@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: IOStateMachine.pm,v 1.4.2.1 2002/07/01 22:14:32 sac Exp $
+# $Id: IOStateMachine.pm,v 1.6 2002/10/22 07:38:49 lapp Exp $
 #
 # BioPerl module Bio::Tools::StateMachine::IOStateMachine
 #
@@ -56,7 +56,7 @@ the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
     bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    http://bugzilla.bioperl.org/           
 
 =head1 AUTHOR
 

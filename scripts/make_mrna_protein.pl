@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w 
 
-#  $Id: make_mrna_protein.pl,v 1.1 2001/10/15 12:32:26 jason Exp $
+#  $Id: make_mrna_protein.pl,v 1.4 2002/12/28 16:31:04 birney Exp $
 # Jason Stajich <jason@bioperl.org>
 #
 # Convert an input mRNA/cDNA sequence into protein
@@ -16,7 +16,7 @@
 # -cds/--fullcds       Expected Full CDS (with start and Stop codon)
 # -throwOnError        Throw an error if no Full CDS
 # -i/--input           Input Filename (defaults to STDIN)
-# -f/--format          Input format (defaults to FASTA/Pearson)
+# -l/--format          Input format (defaults to FASTA/Pearson)
 # -o/--output          Output Filename (defaults to STDOUT)
 
 use strict;
@@ -36,7 +36,7 @@ qq{make_mrna_protein.pl < file.fa > file.prots
 -cds/--fullcds        Expected Full CDS (with start and Stop codon)
 -throwOnError         Throw an error if no Full CDS
 -i/--input            Input Filename (defaults to STDIN)
--f/--format           Input format (defaults to FASTA/Pearson)
+-l/--format           Input format (defaults to FASTA/Pearson)
 -o/--output           Output Filename (defaults to STDOUT)
 };	
 
@@ -53,7 +53,7 @@ GetOptions('f|frame:s'       => \$frame,
 	   'throwOnError'    => \$throw_on_Incomp_CDS,
 	   'h|help'          => \$help,
 	   'i|input:s'       => \$input,
-	   'format:s'        => \$format,
+	   'l|format:s'        => \$format,
 	   'o|output:s'      => \$output,
 	   );
 

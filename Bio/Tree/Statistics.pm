@@ -1,4 +1,4 @@
-# $Id: Statistics.pm,v 1.4 2001/12/14 16:40:20 heikki Exp $
+# $Id: Statistics.pm,v 1.6 2002/12/24 17:52:03 jason Exp $
 #
 # BioPerl module for Bio::Tree::Statistics
 #
@@ -43,12 +43,11 @@ the Bioperl mailing list.  Your participation is much appreciated.
 
 Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+the web:
 
-  bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
-=head1 AUTHOR - Jason Stajich
+=head1 AUTHOR - Aaron Mackey
 
 Email jason@bioperl.org
 
@@ -87,12 +86,6 @@ use Bio::Root::Root;
 
 
 =cut
-
-sub new {
-  my($class,@args) = @_;
-  my $self = $class->SUPER::new(@args);
-}
-
 
 =head2 fu_and_li_D
 

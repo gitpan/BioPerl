@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Map.t,v 1.2 2002/02/11 19:04:21 jason Exp $
+## $Id: Map.t,v 1.3 2002/10/13 13:47:49 jason Exp $
 #
 
 use strict;
@@ -109,7 +109,7 @@ ok $marker3->position->value, 500;
 # Next, what do markers know about Maps?
 #
 
-ok $marker3->known_maps, qw ( 1 ); 
+ok (scalar ($marker3->known_maps), 1); 
 ok $marker3->in_map(1);
 ok ! $marker3->in_map(2);
 

@@ -1,4 +1,4 @@
-# $Id: BPpsilite.pm,v 1.20 2001/12/14 16:40:19 heikki Exp $
+# $Id: BPpsilite.pm,v 1.22 2002/10/22 07:38:45 lapp Exp $
 # Bioperl module Bio::Tools::BPpsilite
 ############################################################
 #	based closely on the Bio::Tools::BPlite modules
@@ -15,8 +15,7 @@
 
 =head1 NAME
 
-Bio::Tools:: BPpsilite - Lightweight BLAST parser for (iterated)
-psiblast reports
+Bio::Tools::BPpsilite - Lightweight BLAST parser for (iterated) psiblast reports
 
 =head1 SYNOPSIS
 
@@ -111,7 +110,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Peter Schattner
 

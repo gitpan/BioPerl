@@ -1,10 +1,10 @@
 #----------------------------------------------------------------------------
-# PACKAGE : Bio::Tools::Blast.pm
+# PACKAGE : Bio::Tools::Blast
 # PURPOSE : To encapsulate code for running, parsing, and analyzing
 #           BLAST reports.
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : March 1996
-# REVISION: $Id: Blast.pm,v 1.24.2.1 2002/03/10 17:00:30 jason Exp $
+# REVISION: $Id: Blast.pm,v 1.30 2002/11/04 09:12:50 heikki Exp $
 # STATUS  : Alpha
 #
 # For the latest version and documentation, visit:
@@ -27,7 +27,6 @@ use Bio::Root::Global     qw(:std);
 use Bio::Root::Utilities  qw(:obj);
 
 require 5.002;
-use Carp;
 
 use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS
             $ID $VERSION $Blast @Blast_programs $Revision $Newline);
@@ -40,7 +39,7 @@ use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS
 
 $ID = 'Bio::Tools::Blast';
 $VERSION  = 0.09; 
-$Revision = '$Id: Blast.pm,v 1.24.2.1 2002/03/10 17:00:30 jason Exp $';  #'
+$Revision = '$Id: Blast.pm,v 1.30 2002/11/04 09:12:50 heikki Exp $';  #'
 
 ## Static Blast object.
 $Blast = {};
@@ -58,7 +57,7 @@ my $MAX_HSP_OVERLAP  = 2;  # Used when tiling multiple HSPs.
 
 =head1 NAME
 
-Bio::Tools::Blast.pm - Bioperl BLAST sequence analysis object
+Bio::Tools::Blast - Bioperl BLAST sequence analysis object
 
 =head1 SYNOPSIS
 
@@ -680,38 +679,36 @@ Blast report.
 =head1 DEMO SCRIPTS
 
 Sample Scripts are included in the central bioperl distribution in the
-'examples/blast/' directory (see L<INSTALLATION | INSTALLATION>). These are also
-available at the following URLs (but it would be safer to use the
-scripts included with the distribution).
+'examples/blast/' directory (see L<INSTALLATION | INSTALLATION>):
 
 =head2 Handy library for working with Bio::Tools::Blast.pm
 
-   http://bio.perl.org/Core/Examples/blast/blast_config.pl
+   examples/blast/blast_config.pl
 
 =head2 Parsing Blast reports one at a time.
 
-   http://bio.perl.org/Core/Examples/blast/parse_blast.pl
-   http://bio.perl.org/Core/Examples/blast/parse_blast2.pl
-   http://bio.perl.org/Core/Examples/blast/parse_positions.pl
+   examples/blast/parse_blast.pl
+   examples/blast/parse_blast2.pl
+   examples/blast/parse_positions.pl
 
 =head2 Parsing sets of Blast reports.
 
-   http://bio.perl.org/Core/Examples/blast/parse_blast.pl
-   http://bio.perl.org/Core/Examples/blast/parse_multi.pl
+   examples/blast/parse_blast.pl
+   examples/blast/parse_multi.pl
 
    B<Warning:> See note about L<Memory Usage Issues>.
 
 =head2 Running Blast analyses one at a time.
 
-   http://bio.perl.org/Core/Examples/blast/run_blast_remote.pl
+   examples/blast/run_blast_remote.pl
 
 =head2 Running Blast analyses given a set of sequences.
 
-   http://bio.perl.org/Core/Examples/blast/blast_seq.pl
+   examples/blast/blast_seq.pl
 
 =head2 HTML-formatting Blast reports.
 
-   http://bio.perl.org/Core/Examples/blast/html.pl
+   examples/blast/html.pl
 
 =head1 TECHNICAL DETAILS
 
@@ -959,7 +956,7 @@ the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
     bioperl-bugs@bio.perl.org
-    http://bio.perl.org/bioperl-bugs/
+    http://bugzilla.bioperl.org/
 
 =head1 AUTHOR
 

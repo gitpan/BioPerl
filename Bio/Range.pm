@@ -1,4 +1,4 @@
-# $Id: Range.pm,v 1.13.2.2 2002/06/24 11:07:44 heikki Exp $
+# $Id: Range.pm,v 1.17 2002/10/22 07:38:24 lapp Exp $
 #
 # BioPerl module for Bio::Range
 #
@@ -22,6 +22,7 @@ Bio::Range - Pure perl RangeI implementation
 
   print join(', ', $range->union($r2), "\n";
   print join(', ', $range->intersection($r2), "\n";
+
   print $range->overlaps($r2), "\n";
   print $range->contains($r2), "\n";
 
@@ -60,7 +61,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 

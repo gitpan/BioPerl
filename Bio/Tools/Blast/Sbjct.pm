@@ -1,9 +1,9 @@
 #------------------------------------------------------------------------------
-# PACKAGE : Bio::Tools::Blast::Sbjct.pm
+# PACKAGE : Bio::Tools::Blast::Sbjct
 # AUTHOR  : Steve Chervitz (sac@bioperl.org) 
 # CREATED : 7 October 1996
 # STATUS  : Alpha
-# REVISION: $Id: Sbjct.pm,v 1.16.2.1 2002/05/01 17:48:16 jason Exp $
+# REVISION: $Id: Sbjct.pm,v 1.20 2002/10/22 07:38:48 lapp Exp $
 #
 # For the latest version and documentation, visit the distribution site:
 #    http://genome-www.stanford.edu/perlOOP/bioperl/blast/
@@ -26,7 +26,7 @@ use Bio::Root::Object  ();
 use strict;
 use vars qw($ID %SUMMARY_OFFSET $Revision);
 $ID = 'Bio::Tools::Blast::Sbjct';
-$Revision = '$Id: Sbjct.pm,v 1.16.2.1 2002/05/01 17:48:16 jason Exp $';  #'
+$Revision = '$Id: Sbjct.pm,v 1.20 2002/10/22 07:38:48 lapp Exp $';  #'
 
 my $_prog       = '';
 my $_signif_fmt = '';
@@ -35,7 +35,7 @@ my $_signif_fmt = '';
 
 =head1 NAME
 
-Bio::Tools::Blast::Sbjct.pm - Bioperl BLAST "Hit" object
+Bio::Tools::Blast::Sbjct - Bioperl BLAST "Hit" object
 
 =head1 SYNOPSIS
 
@@ -216,7 +216,7 @@ the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
     bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    http://bugzilla.bioperl.org/           
 
 =head1 AUTHOR
 

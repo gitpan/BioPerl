@@ -1,4 +1,4 @@
-# $Id: BioFetch.pm,v 1.9.2.2 2002/03/15 14:40:02 heikki Exp $
+# $Id: BioFetch.pm,v 1.13 2002/11/21 17:45:59 lstein Exp $
 #
 # BioPerl module for Bio::DB::BioFetch
 #
@@ -75,7 +75,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Lincoln Stein
 
@@ -393,7 +393,7 @@ sub postprocess_data {
   }
 
   else {
-    $self->throw("Don't know how to preprocess data of type $args{'type'}");
+    $self->throw("Don't know how to postprocess data of type $args{'type'}");
   }
 }
 

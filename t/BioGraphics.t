@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: BioGraphics.t,v 1.1.2.4 2002/07/08 22:50:58 jason Exp $
+# $Id: BioGraphics.t,v 1.9 2002/08/09 16:34:16 lstein Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -95,26 +95,41 @@ my $thing = $data->features('EST');
 
 sub do_write {
   my $test = shift;
-  my $cangif = GD::Image->can('gif');
-  my $output_file = IMAGES . ($cangif ? "/$test.gif" : "/$test.png");
+  my $canpng = GD::Image->can('png');
+  my $output_file = IMAGES . ($canpng ? "/$test.png" : "/$test.gif");
   my $test_sub    = $test;
   my $panel       = eval "$test_sub()" or die "Couldn't run test: $@";
   open OUT,">$output_file" or die "Couldn't open $output_file for writing: $!";
-  print OUT $cangif ? $panel->gd->gif : $panel->gd->png;
+  print OUT $canpng ? $panel->gd->png : $panel->gd->gif;
   close OUT;
 }
 
 sub do_compare {
   my $test = shift;
-  my $cangif = GD::Image->can('gif');
-  my $input_file = IMAGES . ($cangif ? "/$test.gif" : "/$test.png");
+  my $canpng = GD::Image->can('png');
+  my @input_files = glob(IMAGES . ($canpng ? "/$test/*.png" : "/$test/*.gif"));
   my $test_sub    = $test;
   my $panel       = eval "$test_sub()" or die "Couldn't run test";
-  open IN,"<$input_file" or die "Couldn't open $input_file for writing: $!";
+  my $ok = 0;
+  my $test_data = $canpng ? $panel->gd->png : $panel->gd->gif;
+  foreach (@input_files) {
+    my $reference_data = read_file($_);
+    if ($reference_data eq $test_data) {
+      $ok++;
+      last;
+    }
+  }
+  ok($ok);
+}
+
+sub read_file {
+  my $f = shift;
+  open F,$f or die "Can't open $f: $!";
+  binmode(F);
   my $data = '';
-  while (read(IN,$data,1024,length $data)) { 1 }
-  close IN;
-  ok($data eq ($cangif ? $panel->gd->gif : $panel->gd->png));
+  while (read(F,$data,1024,length $data)) { 1 }
+  close F;
+  $data;
 }
 
 
@@ -196,24 +211,24 @@ sub t2 {
 
   my $confirmed_exon1 = $ftr->new(-start=>1,-stop=>20,
 				  -type=>'exon',
-				  -source=>'confirmed',
+				  -desc=>'confirmed',
 				  -name => 'confirmed1',
 				 );
   my $predicted_exon1 = $ftr->new(-start=>30,-stop=>50,
 				  -type=>'exon',
 				  -name=>'predicted1',
-				  -source=>'predicted');
+				  -desc=>'predicted');
   my $predicted_exon2 = $ftr->new(-start=>60,-stop=>100,
 				  -name=>'predicted2',
-				  -type=>'exon',-source=>'predicted');
+				  -type=>'exon',-desc=>'predicted');
 
   my $confirmed_exon3 = $ftr->new(-start=>150,-stop=>190,
-				  -type=>'exon',-source=>'confirmed',
+				  -type=>'exon',-desc=>'confirmed',
 				  -name=>'abc123');
   my $partial_gene = $ftr->new(-segments=>[$confirmed_exon1,$predicted_exon1,$predicted_exon2,$confirmed_exon3],
 			       -name => 'partial gene',
 			       -type => 'transcript',
-			       -source => '(from a big annotation pipeline)'
+			       -desc => '(from a big annotation pipeline)'
 			    );
   my @segments = $partial_gene->segments;
   my $score = 10;
@@ -233,6 +248,7 @@ sub t2 {
 					-pad_left => 20,
 					-pad_right=> 20,
 					-key_style => 'between',
+					-empty_tracks => 'suppress',
 				       );
   my @colors = $panel->color_names();
 
@@ -268,6 +284,7 @@ sub t2 {
 			-bump => 1,
 			-linewidth=>2,
 			-key => 'Signs',
+			-empty_tracks => 'suppress',
 		       );
 
   my $track = $panel->add_track(-glyph=> sub { shift->primary_tag =~ /transcript|alignment/ ? 'transcript2': 'generic'},
@@ -313,13 +330,13 @@ sub t2 {
 		    -key => 'Signals',
 		   );
   $panel->add_track(generic => [],
-		    -key => 'Foobar');
-  
+		    -key => 'Empty');
+
   $panel->add_track(graded_segments => $partial_gene,
 		    -bgcolor =>'blue',
 		    -label   => 1,
 		    -key     => 'Scored thing');
-  
+
   $panel->add_track(diamond => [$segment,$zk154_1,$zk154_2,$zk154_3,$xyz4,$zed_27],
 		    -bgcolor =>'blue',
 		    -label   => 1,

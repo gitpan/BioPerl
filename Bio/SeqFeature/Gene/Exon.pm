@@ -1,4 +1,4 @@
-# $Id: Exon.pm,v 1.6 2001/09/25 22:54:27 dblock Exp $
+# $Id: Exon.pm,v 1.8 2002/10/22 07:38:41 lapp Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::Exon
 #
@@ -18,7 +18,7 @@ Bio::SeqFeature::Gene::Exon - a feature representing an exon
 
     # obtain an exon instance $exon somehow
     print "exon from ", $exon->start(), " to ", $exon->end(),
-          " on seq ", $exon->seqname(), ", strand ", $exon->strand(),
+          " on seq ", $exon->seq_id(), ", strand ", $exon->strand(),
           ", encodes the peptide sequence ", 
           $exon->cds()->translate()->seq(), "\n";
 
@@ -49,7 +49,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Hilmar Lapp
 

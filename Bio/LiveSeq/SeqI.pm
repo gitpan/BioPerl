@@ -1,4 +1,4 @@
-# $Id: SeqI.pm,v 1.23 2001/11/24 21:46:27 jason Exp $
+# $Id: SeqI.pm,v 1.25 2002/10/22 07:38:34 lapp Exp $
 #
 # bioperl module for Bio::LiveSeq::SeqI
 #
@@ -50,7 +50,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Joseph A.L. Insana
 
@@ -125,6 +125,7 @@ use strict;
 use vars qw($VERSION @ISA);
 use Bio::LiveSeq::ChainI 1.9; # to inherit from it
 use Bio::Tools::CodonTable; # for the translate() function
+use Bio::PrimarySeqI;
 
 @ISA=qw(Bio::Root::Root Bio::LiveSeq::ChainI Bio::PrimarySeqI ); # inherit from ChainI
 

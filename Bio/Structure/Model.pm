@@ -1,4 +1,4 @@
-# $Id: Model.pm,v 1.5 2001/12/10 16:10:23 heikki Exp $
+# $Id: Model.pm,v 1.6 2002/10/22 07:38:44 lapp Exp $
 #
 # bioperl module for Bio::Structure::Model
 #
@@ -40,7 +40,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Kris Boulez
 

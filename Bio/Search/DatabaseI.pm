@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: DatabaseI.pm,v 1.5 2002/02/26 07:28:23 jason Exp $
+# $Id: DatabaseI.pm,v 1.6 2002/10/22 07:38:38 lapp Exp $
 #
 # BioPerl module Bio::Search::DatabaseI
 #
@@ -53,7 +53,7 @@ the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
     bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    http://bugzilla.bioperl.org/           
 
 =head1 AUTHOR 
 

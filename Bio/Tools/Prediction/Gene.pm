@@ -1,4 +1,4 @@
-# $Id: Gene.pm,v 1.7 2001/06/19 16:06:46 jason Exp $
+# $Id: Gene.pm,v 1.8 2002/10/22 07:38:48 lapp Exp $
 #
 # BioPerl module for Bio::Tools::Prediction::Gene
 #
@@ -51,7 +51,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Hilmar Lapp
 

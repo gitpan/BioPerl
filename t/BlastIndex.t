@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: BlastIndex.t,v 1.3.2.1 2002/06/04 21:46:52 jason Exp $
+## $Id: BlastIndex.t,v 1.5 2002/08/31 21:38:19 bdesany Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -37,7 +37,7 @@ require Bio::Index::Blast;
 require Bio::Root::IO;
 
 use Cwd;
-END {  unlink qw( Wibbl ); }
+END {  unlink qw( Wibbl Wibbl.pag Wibbl.dir ); }
 
 ok(1);
 
@@ -46,7 +46,9 @@ my $index = new Bio::Index::Blast(-filename => 'Wibbl',
 ok($index);
 
 $index->make_index(Bio::Root::IO->catfile(cwd,"t","data","multi_blast.bls"));
-ok(-e "Wibbl");
+($index->dbm_package eq 'SDBM_File') ? 
+    (ok(-e "Wibbl.pag" && -e "Wibbl.dir")) :
+    (ok(-e "Wibbl"));
 
 foreach my $id ( qw(CATH_RAT PAPA_CARPA) ) {
 

@@ -1,4 +1,4 @@
-# $Id: VariantI.pm,v 1.10.2.1 2002/07/15 13:48:09 heikki Exp $
+# $Id: VariantI.pm,v 1.12 2002/10/22 07:38:49 lapp Exp $
 #
 # BioPerl module for Bio::Variation::VariantI
 #
@@ -74,7 +74,7 @@ report bugs to the Bioperl bug tracking system to help us keep track
  email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 

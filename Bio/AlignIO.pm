@@ -1,4 +1,4 @@
-# $Id: AlignIO.pm,v 1.20.2.1 2002/04/21 14:14:33 jason Exp $
+# $Id: AlignIO.pm,v 1.28 2002/10/22 07:38:23 lapp Exp $
 #
 # BioPerl module for Bio::AlignIO
 #
@@ -25,8 +25,10 @@ Bio::AlignIO - Handler for AlignIO Formats
     use Bio::AlignIO;
 
     $inputfilename = "testaln.fasta";
-    $in  = Bio::AlignIO->new(-file => $inputfilename , '-format' => 'fasta');
-    $out = Bio::AlignIO->new(-file => ">out.aln.pfam" , '-format' => 'pfam');
+    $in  = Bio::AlignIO->new(-file => $inputfilename ,
+                             '-format' => 'fasta');
+    $out = Bio::AlignIO->new(-file => ">out.aln.pfam" ,
+                             '-format' => 'pfam');
     # note: we quote -format to keep older perl's from complaining.
 
     while ( my $aln = $in->next_aln() ) {
@@ -38,7 +40,8 @@ or
     use Bio::AlignIO;
 
     $inputfilename = "testaln.fasta";
-    $in  = Bio::AlignIO->newFh(-file => $inputfilename , '-format' => 'fasta');
+    $in  = Bio::AlignIO->newFh(-file => $inputfilename ,
+                               '-format' => 'fasta');
     $out = Bio::AlignIO->newFh('-format' => 'pfam');
 
     # World's shortest Fasta<->pfam format converter:
@@ -76,7 +79,8 @@ operations to read and write sequence objects:
 
     use Bio::AlignIO;
 
-    $stream = Bio::AlignIO->newFh(-format => 'Fasta'); # read from standard input
+     # read from standard input
+    $stream = Bio::AlignIO->newFh(-format => 'Fasta');
 
     while ( $aln = <$stream> ) {
 	# do something with $aln
@@ -91,13 +95,15 @@ This makes the simplest ever reformatter
     #!/usr/local/bin/perl
 
     $format1 = shift;
-    $format2 = shift || die "Usage: reformat format1 format2 < input > output";
+    $format2 = shift ||
+        die "Usage: reformat format1 format2 < input > output";
 
     use Bio::AlignIO;
 
     $in  = Bio::AlignIO->newFh(-format => $format1 );
     $out = Bio::AlignIO->newFh(-format => $format2 );
-    #note: you might want to quote -format to keep older perl's from complaining.
+    # note: you might want to quote -format to keep 
+    #  older perl's from complaining.
 
     print $out $_ while <$in>;
 
@@ -163,7 +169,6 @@ semantics.
 Specify the format of the file.  Supported formats include:
 
    fasta       FASTA format
-   pfam        pfam format
    selex       selex (hmmer) format
    stockholm   stockholm format
    prodom      prodom (protein domain) format
@@ -174,13 +179,18 @@ Specify the format of the file.  Supported formats include:
    nexus       Swofford et al NEXUS format
    pfam        Pfam sequence alignment format
    phylip      Felsenstein's PHYLIP format
+   emboss      EMBOSS water and needle format
+   mega        MEGA format
+   meme        MEME format
+   psi         PSI-BLAST format
 
 Currently only those formats which were implemented in L<Bio::SimpleAlign>
 have been incorporated in AlignIO.pm.  Specifically, mase, stockholm
-and prodom have only been implemented for input.
+and prodom have only been implemented for input. See the specific module
+(e.g. L<Bio::AlignIO::meme>) for notes on supported versions.
 
 If no format is specified and a filename is given, then the module
-will attempt to deduce it from the filename.  If this is unsuccessful,
+will attempt to deduce it from the filename suffix.  If this is unsuccessful,
 Fasta format is assumed.
 
 The format name is case insensitive.  'FASTA', 'Fasta' and 'fasta' are
@@ -204,6 +214,26 @@ sequence objects into an array like this:
 
 Other operations, such as read(), sysread(), write(), close(), and printf() 
 are not supported.
+
+=over 1
+
+=item -flush
+
+By default, all files (or filehandles) opened for writing alignments
+will be flushed after each write_aln() (making the file immediately
+usable).  If you don't need this facility and would like to marginally
+improve the efficiency of writing multiple sequences to the same file
+(or filehandle), pass the -flush option '0' or any other value that
+evaluates as defined but false:
+
+  my $clustal = new Bio::AlignIO -file   => "<prot.aln",
+                          -format => "clustalw";
+  my $msf = new Bio::AlignIO -file   => ">prot.msf",
+                          -format => "msf",
+                          -flush  => 0; # go as fast as we can!
+  while($seq = $clustal->next_aln) { $msf->write_aln($seq) }
+
+=back
 
 =head1 OBJECT METHODS
 
@@ -239,7 +269,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Peter Schattner
 
@@ -273,9 +303,11 @@ use Bio::Root::IO;
 =head2 new
 
  Title   : new
- Usage   : $stream = Bio::AlignIO->new(-file => $filename, -format => 'Format')
+ Usage   : $stream = Bio::AlignIO->new(-file => $filename,
+                                       '-format' => 'Format')
  Function: Returns a new seqstream
- Returns : A Bio::AlignIO::Handler initialised with the appropriate format
+ Returns : A Bio::AlignIO::Handler initialised with 
+           the appropriate format
  Args    : -file => $filename 
            -format => format
            -fh => filehandle to attach to
@@ -302,7 +334,7 @@ sub new {
 	$format = "\L$format";	# normalize capitalization to lower case
 
 	# normalize capitalization
-	return undef unless( &_load_format_module($format) );
+	return undef unless( $class->_load_format_module($format) );
 	return "Bio::AlignIO::$format"->new(@args);
     }
 }
@@ -370,19 +402,16 @@ sub _initialize {
 =cut
 
 sub _load_format_module {
-  my ($format) = @_;
-  my ($module,$load,$m);
+  my ($self,$format) = @_;
+  my $module = "Bio::AlignIO::" . $format;
+  my $ok;
   
-  $module = "_<Bio/AlignIO/$format.pm";
-  $load = "Bio/AlignIO/$format.pm";
-  
-  return 1 if $main::{$module};
   eval {
-    require $load;
+      $ok = $self->_load_module($module);
   };
-  if( $@ ) {
+  if ( $@ ) {
     print STDERR <<END;
-$load: $format cannot be found
+$self: $format cannot be found
 Exception $@
 For more information about the AlignIO system please see the AlignIO docs.
 This includes ways of checking for formats at compile time, not run time
@@ -438,12 +467,16 @@ sub _guess_format {
    my $class = shift;
    return unless $_ = shift;
    return 'fasta'   if /\.(fasta|fast|seq|fa|fsa|nt|aa)$/i;
-   return 'msf'     if /\.(msf|pileup)$/i;
+   return 'msf'     if /\.(msf|pileup|gcg)$/i;
    return 'pfam'    if /\.(pfam|pfm)$/i;
    return 'selex'   if /\.(selex|slx|selx|slex|sx)$/i;
    return 'phylip'  if /\.(phylip|phlp|phyl|phy|phy|ph)$/i;
    return 'nexus'   if /\.(nexus|nex)$/i;
-   return 'mega'    if( /\.(meg|mega)$/i );
+   return 'mega'     if( /\.(meg|mega)$/i );
+   return 'clustalw' if( /\.aln$/i );
+   return 'meme'     if( /\.meme$/i );
+   return 'emboss'   if( /\.(water|needle)$/i );
+   return 'psi'      if( /\.psi$/i );
 }
 
 sub DESTROY {

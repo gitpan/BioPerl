@@ -1,4 +1,4 @@
-# $Id: BiblioI.pm,v 1.1.2.2 2002/03/15 14:40:02 heikki Exp $
+# $Id: BiblioI.pm,v 1.5 2002/10/22 07:45:13 lapp Exp $
 #
 # BioPerl module for Bio::DB::BiblioI
 #
@@ -49,7 +49,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR
 
@@ -87,8 +87,8 @@ use Bio::Root::RootI;
 @ISA = qw(Bio::Root::RootI);
 
 BEGIN { 
-    $VERSION = do { my @r = (q$Revision: 1.1.2.2 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id: BiblioI.pm,v 1.1.2.2 2002/03/15 14:40:02 heikki Exp $;
+    $VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
+    $Revision = q$Id: BiblioI.pm,v 1.5 2002/10/22 07:45:13 lapp Exp $;
 }
 
 # -----------------------------------------------------------------------------
@@ -161,7 +161,7 @@ sub find { shift->throw_not_implemented; }
 
 # TBD: AFAIK this method is not implemented on the server side.
 #      Let's comment it out for the time being...
-#sub query { shift->_abstractDeath; }
+#sub query { shift->throw_not_implemented(); }
 
 # -----------------------------------------------------------------------------
 

@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Err.pm
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 22 July 1996
-# REVISION: $Id: Err.pm,v 1.12 2002/01/18 08:21:17 sac Exp $
+# REVISION: $Id: Err.pm,v 1.15 2002/10/22 07:38:37 lapp Exp $
 # STATUS  : Alpha
 #
 # For documentation, run this module through pod2html
@@ -45,7 +45,7 @@ $VERSION = 0.041;
 
 =head1 NAME
 
-Bio::Root::Err.pm -  Exception class for Perl 5 objects
+Bio::Root::Err -  Exception class for Perl 5 objects
 
 =head1 SYNOPSIS
 
@@ -81,7 +81,7 @@ This module is included with the central Bioperl distribution:
    http://bio.perl.org/Core/Latest
    ftp://bio.perl.org/pub/DIST
 
-Follow the installation instructions included in the README file.
+Follow the installation instructions included in the INSTALL file.
 
 =head1 DESCRIPTION
 
@@ -89,8 +89,8 @@ A Bio::Root::Err.pm object encapsulates data and methods that facilitate
 working with errors and exceptional conditions that arise in Perl objects.
 There are no biological semantics in this module, as one may suspect from its
 location in the Bio:: hierarchy. The location of this module serves to
-separate it from the namespaces of other Perl Error modules. It also makes it convenient
-for use by Bio:: objects.
+separate it from the namespaces of other Perl Error modules. It also makes it
+convenient for use by Bio:: objects.
 
 The motivation for having an error object is to allow
 Perl 5 objects to deal with errors or exceptional conditions that
@@ -102,14 +102,14 @@ can arise during their construction or manipulation. For example:
      a web-user needs different information than does the
      software engineer.
 
-Bio::Root::Err.pm, along with B<Bio::Root::Object.pm>, attempt to make such problems
-tractable. Please see the B<Bio::Root::Object.pm> documentation for more about
-my error handling philosophy.
+Bio::Root::Err.pm, along with B<Bio::Root::Object.pm>, attempt to make such
+problems tractable. Please see the L<Bio::Root::Object> documentation for more
+about my error handling philosophy.
 
-A B<Bio::Root::Err.pm> object is an example of a Vector-Object: This module inherits
-both from B<Bio::Root::Object.pm> and B<Bio::Root::Vector.pm>. This permits a single Err
-object to exist within a linked list of Err objects OR alone.
-See the B<Bio::Root::Vector.pm> documentation for more about Vector-Objects.
+A B<Bio::Root::Err.pm> object is an example of a Vector-Object: This module
+inherits both from B<Bio::Root::Object.pm> and B<Bio::Root::Vector.pm>. This
+permits a single Err object to exist within a linked list of Err objects OR
+alone. See the L<Bio::Root::Vector> documentation for more about Vector-Objects.
 
 B<The API for this module is not complete since the module is under development.>
 
@@ -127,18 +127,16 @@ This would permit more intelligent and easy to write exception handlers.
 For now the Err.pm object is reconstructed from the output of L<string>().
 
 There are some other third-party Exception classes such as
-Torsten Ekedahl's B<Experimental::Exception.pm> or
-Ken Steven's Throwable.pm or
+Torsten Ekedahl's B<Experimental::Exception.pm> or Ken Steven's Throwable.pm or
 Graham Barr's Error.pm (see L<Other Exception Modules>). These modules
-attempt to introduce a traditional "try-catch-throw"
-exception handling mechanism into Perl. Future version of my modules
-(and perhaps erl itself) may utilize one of these.
+attempt to introduce a traditional "try-catch-throw" exception handling mechanism
+into Perl. Future version of my modules (and perhaps Perl itself) may utilize one
+of these.
 
 =head1 USAGE
 
-A demo script that illustrates working with Bio::Root::Err objects is available at:
-
-    http://bio.perl.org/Core/Examples/Root_object/error.pl
+A demo script that illustrates working with Bio::Root::Err objects is
+examples/root_object/error.pl.
 
 
 =head1 DEPENDENCIES
@@ -163,7 +161,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track the bugs an
 their resolution. Bug reports can be submitted via email or the web:
 
     bioperl-bugs@bio.perl.org
-    http://bio.perl.org/bioperl-bugs/
+    http://bugzilla.bioperl.org/
 
 =head1 AUTHOR Steve Chervitz
 

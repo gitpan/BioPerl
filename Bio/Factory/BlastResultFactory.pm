@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: BlastResultFactory.pm,v 1.4 2002/01/26 20:28:13 heikki Exp $
+# $Id: BlastResultFactory.pm,v 1.5 2002/10/22 07:38:32 lapp Exp $
 #
 # BioPerl module for Bio::Factory::BlastResultFactory
 #
@@ -49,7 +49,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR 
 

@@ -1,4 +1,4 @@
-# $Id: LocatableSeq.pm,v 1.19.2.1 2002/07/12 20:21:06 jason Exp $
+# $Id: LocatableSeq.pm,v 1.22 2002/10/22 07:38:24 lapp Exp $
 #
 # BioPerl module for Bio::LocatableSeq
 #
@@ -70,7 +70,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 
 =head1 APPENDIX
@@ -322,7 +322,7 @@ sub column_from_residue_number {
 
            An exact position returns a Bio::Location::Simple
            object, a position between bases returns a
-           Bio::Location::Fuzzy object where location_type() returns
+           Bio::Location::Fuzzy object where loc_type() returns
            'BETWEEN'. Column before the first residue returns
            undef. Note that if the position is after the last residue
            in the alignment, that there is no guarantee that the
@@ -362,16 +362,33 @@ sub location_from_column {
 	     );
     }
     elsif ($pos == 0 and $self->start == 1) {
-	
     } else {
-	$loc = new Bio::Location::Fuzzy 
+	$loc = new Bio::Location::Simple 
 	    (-start => $pos + $self->start - 1,
 	     -end => $pos +1 + $self->start - 1,
 	     -strand => 1,
-	     -location_type => '^'
+	     -location_type => 'IN-BETWEEN'
 	     );
     }
     return $loc;
+}
+
+sub trunc {
+
+    my ($self, $start, $end) = @_;
+    my $new = $self->SUPER::trunc($start, $end);
+
+    $start = $self->location_from_column($start);
+    $start = $start->start if $start;
+
+    $end = $self->location_from_column($end);
+    $end = $end->end if $end;
+
+    $new->strand($self->strand);
+    $new->start($start) if $start;
+    $new->end($end) if $end;
+
+    return $new;
 }
 
 1;

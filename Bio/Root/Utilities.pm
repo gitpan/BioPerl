@@ -3,7 +3,7 @@
 # PURPOSE : Provides general-purpose utilities of potential interest to any Perl script.
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : Feb 1996
-# REVISION: $Id: Utilities.pm,v 1.20 2002/01/26 20:28:13 heikki Exp $
+# REVISION: $Id: Utilities.pm,v 1.21 2002/10/22 07:38:37 lapp Exp $
 # STATUS  : Alpha
 #
 # This module manages file compression and uncompression using gzip or
@@ -147,7 +147,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track the bugs an
 their resolution. Bug reports can be submitted via email or the web:
 
     bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    http://bugzilla.bioperl.org/           
 
 =head1 AUTHOR 
 

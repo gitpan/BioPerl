@@ -1,4 +1,4 @@
-# $Id: LargeSeq.pm,v 1.10 2001/12/10 16:10:22 heikki Exp $
+# $Id: LargeSeq.pm,v 1.11 2002/10/22 07:38:40 lapp Exp $
 #
 # BioPerl module for Bio::Seq::LargeSeq
 #
@@ -50,7 +50,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Ewan Birney
 

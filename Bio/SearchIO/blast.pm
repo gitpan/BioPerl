@@ -1,4 +1,4 @@
-# $Id: blast.pm,v 1.21.2.4 2002/06/02 19:31:34 jason Exp $
+# $Id: blast.pm,v 1.42 2002/11/23 15:32:23 jason Exp $
 #
 # BioPerl module for Bio::SearchIO::blast
 #
@@ -54,7 +54,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -80,7 +80,7 @@ Internal methods are usually preceded with a _
 
 package Bio::SearchIO::blast;
 use strict;
-use vars qw(@ISA %MAPPING %MODEMAP);
+use vars qw(@ISA %MAPPING %MODEMAP $DEFAULT_BLAST_WRITER_CLASS);
 use Bio::SearchIO;
 
 @ISA = qw(Bio::SearchIO );
@@ -95,92 +95,92 @@ BEGIN {
     # This should really be done more intelligently, like with
     # XSLT
 
-    %MAPPING = ( 
-		 'Hsp_bit-score'  => 'bits',
-		 'Hsp_score'      => 'score',
-		 'Hsp_evalue'     => 'evalue',
-		 'Hsp_pvalue'     => 'pvalue',
-		 'Hsp_query-from' => 'querystart',
-		 'Hsp_query-to'   => 'queryend',
-		 'Hsp_hit-from'   => 'hitstart',
-		 'Hsp_hit-to'     => 'hitend',
-		 'Hsp_positive'   => 'conserved',
-		 'Hsp_identity'   => 'identical',
-		 'Hsp_gaps'      => 'gaps',
-		 'Hsp_hitgaps'   => 'hitgaps',
-		 'Hsp_querygaps' => 'querygaps',
-		 'Hsp_qseq'       => 'queryseq',
-		 'Hsp_hseq'       => 'hitseq',
-		 'Hsp_midline'    => 'homolseq',
-		 'Hsp_align-len'  => 'hsplen',
-		 'Hsp_query-frame'=> 'queryframe',
-		 'Hsp_hit-frame'  => 'hitframe',
+    %MAPPING = 
+	( 
+	  'Hsp_bit-score'  => 'HSP-bits',
+	  'Hsp_score'      => 'HSP-score',
+	  'Hsp_evalue'     => 'HSP-evalue',
+	  'Hsp_pvalue'     => 'HSP-pvalue',
+	  'Hsp_query-from' => 'HSP-query_start',
+	  'Hsp_query-to'   => 'HSP-query_end',
+	  'Hsp_hit-from'   => 'HSP-hit_start',
+	  'Hsp_hit-to'     => 'HSP-hit_end',
+	  'Hsp_positive'   => 'HSP-conserved',
+	  'Hsp_identity'   => 'HSP-identical',
+	  'Hsp_gaps'       => 'HSP-hsp_gaps',
+	  'Hsp_hitgaps'    => 'HSP-hit_gaps',
+	  'Hsp_querygaps'  => 'HSP-query_gaps',
+	  'Hsp_qseq'       => 'HSP-query_seq',
+	  'Hsp_hseq'       => 'HSP-hit_seq',
+	  'Hsp_midline'    => 'HSP-homology_seq',
+	  'Hsp_align-len'  => 'HSP-hsp_length',
+	  'Hsp_query-frame'=> 'HSP-query_frame',
+	  'Hsp_hit-frame'  => 'HSP-hit_frame',
 
-		 'Hit_id'        => 'hitname',
-		 'Hit_len'       => 'hitlen',
-		 'Hit_accession' => 'hitacc',
-		 'Hit_def'       => 'hitdesc',
-		 'Hit_signif'    => 'hitsignif',
-		 'Hit_score'     => 'hitscore',
-		 
-		 'BlastOutput_program'  => 'programname',
-		 'BlastOutput_version'  => 'programver',
-		 'BlastOutput_query-def'=> 'queryname',
-		 'BlastOutput_query-len'=> 'querylen',
-		 'BlastOutput_query-acc'=> 'queryacc',
-		 'BlastOutput_querydesc'=> 'querydesc',
-		 'BlastOutput_db'       => 'dbname',
-		 'BlastOutput_db-len'   => 'dbsize',
-		 'BlastOutput_db-let'   => 'dblets',
-		 'BlastOutput_query-acc'=> 'queryacc',
+	  'Hit_id'        => 'HIT-name',
+	  'Hit_len'       => 'HIT-length',
+	  'Hit_accession' => 'HIT-accession',
+	  'Hit_def'       => 'HIT-description',
+	  'Hit_signif'    => 'HIT-significance',
+	  'Hit_score'     => 'HIT-score',
+	  'Iteration_iter-num'   => 'HIT-iteration',
 
-		 'Iteration_iter-num'   => 'iternum',
-		 'Parameters_matrix'    => { 'param' => 'matrix'},
-		 'Parameters_expect'    => { 'param' => 'expect'},
-		 'Parameters_include'   => { 'param' => 'include'},
-		 'Parameters_sc-match'  => { 'param' => 'match'},
-		 'Parameters_sc-mismatch' => { 'param' => 'mismatch'},
-		 'Parameters_gap-open'  =>   { 'param' => 'gapopen'},
-		 'Parameters_gap-extend'=>   { 'param' => 'gapext'},
-		 'Parameters_filter'    =>  {'param' => 'filter'},
-		 'Parameters_allowgaps' =>   { 'param' => 'allowgaps'},
+	  'BlastOutput_program'  => 'RESULT-algorithm_name',
+	  'BlastOutput_version'  => 'RESULT-algorithm_version',
+	  'BlastOutput_query-def'=> 'RESULT-query_name',
+	  'BlastOutput_query-len'=> 'RESULT-query_length',
+	  'BlastOutput_query-acc'=> 'RESULT-query_accession',
+	  'BlastOutput_querydesc'=> 'RESULT-query_description',
+	  'BlastOutput_db'       => 'RESULT-database_name',
+	  'BlastOutput_db-len'   => 'RESULT-database_entries',
+	  'BlastOutput_db-let'   => 'RESULT-database_letters',
 
-		 'Statistics_db-len'    => {'stat' => 'dbentries'},
-		 'Statistics_db-let'    => { 'stat' => 'dbletters'},
-		 'Statistics_hsp-len'   => { 'stat' => 'hsplength'},
-		 'Statistics_query-len'   => { 'stat' => 'querylength'},
-		 'Statistics_eff-space' => { 'stat' => 'effectivespace'},
-		 'Statistics_eff-spaceused' => { 'stat' => 'effectivespaceused'},
-		 'Statistics_eff-dblen'    => { 'stat' => 'effectivedblength'},
-		 'Statistics_kappa'     => { 'stat' => 'kappa' },
-		 'Statistics_lambda'    => { 'stat' => 'lambda' },
-		 'Statistics_entropy'   => { 'stat' => 'entropy'},
-		 'Statistics_framewindow'=> { 'stat' => 'frameshiftwindow'},
-		 'Statistics_decay'=> { 'stat' => 'decayconst'},
+	  'Parameters_matrix'    => { 'RESULT-parameters' => 'matrix'},
+	  'Parameters_expect'    => { 'RESULT-parameters' => 'expect'},
+	  'Parameters_include'   => { 'RESULT-parameters' => 'include'},
+	  'Parameters_sc-match'  => { 'RESULT-parameters' => 'match'},
+	  'Parameters_sc-mismatch' => { 'RESULT-parameters' => 'mismatch'},
+	  'Parameters_gap-open'  =>   { 'RESULT-parameters' => 'gapopen'},
+	  'Parameters_gap-extend'=>   { 'RESULT-parameters' => 'gapext'},
+	  'Parameters_filter'    =>  {'RESULT-parameters' => 'filter'},
+	  'Parameters_allowgaps' =>   { 'RESULT-parameters' => 'allowgaps'},
 
-		 'Statistics_T'=> { 'stat' => 'T'},
-		 'Statistics_A'=> { 'stat' => 'A'},
-		 'Statistics_X1'=> { 'stat' => 'X1'},
-		 'Statistics_X2'=> { 'stat' => 'X2'},
-		 'Statistics_S1'=> { 'stat' => 'S1'},
-		 'Statistics_S2'=> { 'stat' => 'S2'},
-		 
-		 # WU-BLAST stats
-		 'Statistics_DFA_states'=> { 'stat' => 'num_dfa_states'},
-		 'Statistics_DFA_size'=> { 'stat' => 'dfa_size'},
-		 
-		 'Statistics_search_cputime' => { 'stat' => 'search_cputime'},
-		 'Statistics_total_cputime' => { 'stat' => 'total_cputime'},
-		 'Statistics_search_actualtime' => { 'stat' => 'search_actualtime'},
-		 'Statistics_total_actualtime' => { 'stat' => 'total_actualtime'},
-		 
-		 'Statistics_noprocessors' => { 'stat' => 'no_of_processors'},
-		 'Statistics_neighbortime' => { 'stat' => 'neighborhood_generate_time'},
-		 'Statistics_starttime' => { 'stat' => 'start_time'},
-		 'Statistics_endtime' => { 'stat' => 'end_time'},
-		 
-		 
-		 );
+	  'Statistics_db-len'    => {'RESULT-statistics' => 'dbentries'},
+	  'Statistics_db-let'    => { 'RESULT-statistics' => 'dbletters'},
+	  'Statistics_hsp-len'   => { 'RESULT-statistics' => 'hsplength'},
+	  'Statistics_query-len'   => { 'RESULT-statistics' => 'querylength'},
+	  'Statistics_eff-space' => { 'RESULT-statistics' => 'effectivespace'},
+	  'Statistics_eff-spaceused' => { 'RESULT-statistics' => 'effectivespaceused'},
+	  'Statistics_eff-dblen' => { 'RESULT-statistics' => 'effectivedblength'},
+	  'Statistics_kappa'     => { 'RESULT-statistics' => 'kappa' },
+	  'Statistics_lambda'    => { 'RESULT-statistics' => 'lambda' },
+	  'Statistics_entropy'   => { 'RESULT-statistics' => 'entropy'},
+	  'Statistics_framewindow'=> { 'RESULT-statistics' => 'frameshiftwindow'},
+	  'Statistics_decay'=> { 'RESULT-statistics' => 'decayconst'},
+
+	  'Statistics_T'=> { 'RESULT-statistics' => 'T'},
+	  'Statistics_A'=> { 'RESULT-statistics' => 'A'},
+	  'Statistics_X1'=> { 'RESULT-statistics' => 'X1'},
+	  'Statistics_X2'=> { 'RESULT-statistics' => 'X2'},
+	  'Statistics_S1'=> { 'RESULT-statistics' => 'S1'},
+	  'Statistics_S2'=> { 'RESULT-statistics' => 'S2'},
+
+	  # WU-BLAST stats
+	  'Statistics_DFA_states'=> { 'RESULT-statistics' => 'num_dfa_states'},
+	  'Statistics_DFA_size'=> { 'RESULT-statistics' => 'dfa_size'},
+
+	  'Statistics_search_cputime' => { 'RESULT-statistics' => 'search_cputime'},
+	  'Statistics_total_cputime' => { 'RESULT-statistics' => 'total_cputime'},
+	  'Statistics_search_actualtime' => { 'RESULT-statistics' => 'search_actualtime'},
+	  'Statistics_total_actualtime' => { 'RESULT-statistics' => 'total_actualtime'},
+
+	  'Statistics_noprocessors' => { 'RESULT-statistics' => 'no_of_processors'},
+	  'Statistics_neighbortime' => { 'RESULT-statistics' => 'neighborhood_generate_time'},
+	  'Statistics_starttime' => { 'RESULT-statistics' => 'start_time'},
+	  'Statistics_endtime' => { 'RESULT-statistics' => 'end_time'},
+	  );
+
+    $DEFAULT_BLAST_WRITER_CLASS = 'Bio::Search::Writer::HitTableWriter';
 }
 
 
@@ -190,16 +190,10 @@ BEGIN {
  Usage   : my $obj = new Bio::SearchIO::blast();
  Function: Builds a new Bio::SearchIO::blast object 
  Returns : Bio::SearchIO::blast
- Args    :
+ Args    : -fh/-file => filehandle/filename to BLAST file
+           -format   => 'blast'
 
 =cut
-
-sub new {
-  my($class,@args) = @_;
-
-  my $self = $class->SUPER::new(@args);
-}
-
 
 =head2 next_result
 
@@ -216,33 +210,56 @@ sub next_result{
    
    my $data = '';
    my $seentop = 0;
-   my $reporttype;
+   my ($reporttype,$seenquery,$reportline);
    $self->start_document();
    my @hit_signifs;
+   
    while( defined ($_ = $self->_readline )) {       
        next if( /^\s+$/); # skip empty lines
-       next if( /CPU time:/ || /^>\s*$/);       
-       if( /^([T]?BLAST[NPX])\s*(.+)$/i ) {
-	   if( $seentop ) {
+       next if( /CPU time:/);
+       next if( /^>\s*$/);
+
+       if( /^([T]?BLAST[NPX])\s*(.+)$/i ||
+	   /^(RPS-BLAST)\s*(.+)$/i ) {
+	   if( $seentop ) {	    
 	       $self->_pushback($_);
+	       $self->in_element('hsp') && 
+		   $self->end_element({ 'Name' => 'Hsp'});
+	       $self->in_element('hit') && 
+		   $self->end_element({ 'Name' => 'Hit'});
 	       $self->end_element({ 'Name' => 'BlastOutput'});
 	       return $self->end_document();
 	   }
 	   $self->start_element({ 'Name' => 'BlastOutput' } );
+	   $self->{'_result_count'}++;
 	   $seentop = 1;
 	   $reporttype = $1;
+	   $reportline = $_; # to fix the fact that RPS-BLAST output is wrong
 	   $self->element({ 'Name' => 'BlastOutput_program',
 			    'Data' => $reporttype});
 	   
 	   $self->element({ 'Name' => 'BlastOutput_version',
 			    'Data' => $2});
-       } elsif ( /^Query=\s*(.+)$/ ) {
+       } elsif ( /^Query=\s*(.+)$/ ) {	   
 	   my $q = $1;
-	   my $size = 0;      
+	   my $size = 0;
+	   if( defined $seenquery ) {
+	       $self->_pushback($reportline);
+	       $self->_pushback($_);
+	       $self->end_element({'Name' => 'BlastOutput'});
+	       return $self->end_document();
+	   } else { 
+	       if( ! defined $reporttype ) {
+		   $self->start_element({'Name' => 'BlastOutput'});
+		   $seentop = 1;
+		   $self->{'_result_count'}++;
+	       }
+	   }
+	   $seenquery = $q;
 	   $_ = $self->_readline;
 	   while( defined ($_) && $_ !~ /^\s+$/ ) {	
 	       chomp;
-	       if( /\(([\d,]+)\s+letters\)/ ) {		   
+	       if( /\(([\d,]+)\s+letters.*\)/ ) {		   
 		   $size = $1;
 		   $size =~ s/,//g;
 		   last;
@@ -251,10 +268,11 @@ sub next_result{
 		   $q =~ s/ +/ /g;
 		   $q =~ s/^ | $//g;
 	       }
+
 	       $_ = $self->_readline;
 	   }
 	   chomp($q);
-	   my ($nm,$desc) = split(/\s+/,$q,2);
+	   my ($nm,$desc) = split(/\s+/,$q,2);	   
 	   $self->element({ 'Name' => 'BlastOutput_query-def',
 			    'Data' => $nm});
 	   $self->element({ 'Name' => 'BlastOutput_query-len', 
@@ -309,6 +327,7 @@ sub next_result{
 			   'Data' => $db});
        } elsif( /^>(\S+)\s*(.*)?/ ) {
 	   chomp;
+
 	   $self->in_element('hsp') && $self->end_element({ 'Name' => 'Hsp'});
 	   $self->in_element('hit') && $self->end_element({ 'Name' => 'Hit'});
 	   
@@ -317,8 +336,30 @@ sub next_result{
 	   my $restofline = $2;
 	   $self->element({ 'Name' => 'Hit_id',
 			    'Data' => $id});
-	   my @pieces = split(/\|/,$id);
-	   my $acc = pop @pieces;
+
+	   my ($acc, $version);
+	   if ($id =~ /(gb|emb|dbj|sp|pdb|bbs|ref|lcl)\|(.*)\|(.*)/) {
+	   ($acc, $version) = split /\./, $2; 
+	   } elsif ($id =~ /(pir|prf|pat|gnl)\|(.*)\|(.*)/) {
+	   ($acc, $version) = split /\./, $3;  
+	   } else {
+	   	#punt, not matching the db's at ftp://ftp.ncbi.nih.gov/blast/db/README
+	   	#Database Name                     Identifier Syntax
+        #============================      ========================
+        #GenBank                           gb|accession|locus
+        #EMBL Data Library                 emb|accession|locus
+        #DDBJ, DNA Database of Japan       dbj|accession|locus
+        #NBRF PIR                          pir||entry
+        #Protein Research Foundation       prf||name
+        #SWISS-PROT                        sp|accession|entry name
+        #Brookhaven Protein Data Bank      pdb|entry|chain
+        #Patents                           pat|country|number 
+        #GenInfo Backbone Id               bbs|number 
+        #General database identifier	   gnl|database|identifier
+        #NCBI Reference Sequence           ref|accession|locus
+        #Local Sequence identifier         lcl|identifier
+	   	$acc=$id;
+	   }
 	   $self->element({ 'Name' =>  'Hit_accession',
 			    'Data'  => $acc});	   
 
@@ -337,10 +378,7 @@ sub next_result{
 		   $l =~ s/\,//g;
 		   $self->element({ 'Name' => 'Hit_len',
 				    'Data' => $l });
-		   last;
-	       }  elsif ( /Score/ ) {
-		   $self->_pushback($_);
-		   last;
+		   last;	       
 	       } else { 
 		   $restofline .= $_;
 	       }
@@ -352,7 +390,12 @@ sub next_result{
 	   next;
        } elsif( ($self->in_element('hit') || 
 		 $self->in_element('hsp')) && # wublast
-	       /Score\s*=\s*(\S+)\s*\(([\d\.]+)\s*bits\),\s*Expect\s*=\s*([^,\s]+),\s*(Sum)?\s*P(\(\d+\))?\s*=\s*([^,\s]+)/ 
+	       m/Score\s*=\s*(\S+)\s*       # Bit score
+		\(([\d\.]+)\s*bits\),       # Raw score
+		\s*Expect\s*=\s*([^,\s]+),  # E-value
+		\s*(Sum)?\s*                # SUM
+		P(\(\d+\))?\s*=\s*([^,\s]+) # P-value
+		/ox 
 		  ) {
 	   $self->in_element('hsp') && $self->end_element({'Name' => 'Hsp'});
 	   $self->start_element({'Name' => 'Hsp'});
@@ -364,20 +407,27 @@ sub next_result{
 			     'Data' => $3});
 	   $self->element( {'Name'  => 'Hsp_pvalue',
 			    'Data'  =>$6});       
-       } elsif( ($self->in_element('hit') || $self->in_element('hsp')) && # ncbi blast
-		/Score\s*=\s*(\S+)\s*bits\s*\((\d+)\),\s*Expect(\(\d+\))?\s*=\s*(\S+)/) {
+       } elsif( ($self->in_element('hit') || 
+		 $self->in_element('hsp')) && # ncbi blast
+		m/Score\s*=\s*(\S+)\s*bits\s* # Bit score
+		(\((\d+)\))?,                 # Missing for BLAT pseudo-BLAST fmt 
+		\s*Expect(\(\d+\))?\s*=\s*(\S+) # E-value
+		/ox) {
 	   $self->in_element('hsp') && $self->end_element({ 'Name' => 'Hsp'});
 	   
 	   $self->start_element({'Name' => 'Hsp'});
 	   $self->element( { 'Name' => 'Hsp_score',
-			     'Data' => $2});
+			     'Data' => $3});
 	   $self->element( { 'Name' => 'Hsp_bit-score',
 			     'Data' => $1});
 	   $self->element( { 'Name' => 'Hsp_evalue',
-			     'Data' => $4});
+			     'Data' => $5});
        } elsif( $self->in_element('hsp') &&
-		/Identities\s*=\s*(\d+)\s*\/\s*(\d+)\s*[\d\%\(\)]+\s*(,\s*Positives\s*=\s*(\d+)\/(\d+)\s*[\d\%\(\)]+\s*)?(\,\s*Gaps\s*=\s*(\d+)\/(\d+))?/i ) {
-	   
+		m/Identities\s*=\s*(\d+)\s*\/\s*(\d+)\s*[\d\%\(\)]+\s*
+		(,\s*Positives\s*=\s*(\d+)\/(\d+)\s*[\d\%\(\)]+\s*)? # pos only valid for Protein alignments
+		(\,\s*Gaps\s*=\s*(\d+)\/(\d+))? # Gaps
+		/oxi 
+		) {
 	   $self->element( { 'Name' => 'Hsp_identity',
 			     'Data' => $1});
 	   $self->element( {'Name' => 'Hsp_align-len',
@@ -399,7 +449,7 @@ sub next_result{
 	   }	   
        } elsif( $self->in_element('hsp') &&
 		/Strand\s*=\s*(Plus|Minus)\s*\/\s*(Plus|Minus)/i ) {
-	   # consume this event
+	   # consume this event ( we infer strand from start/end)
 	   next;
        } elsif( $self->in_element('hsp') &&
 		/Frame\s*=\s*([\+\-][1-3])\s*(\/\s*([\+\-][1-3]))?/ ){
@@ -417,10 +467,11 @@ sub next_result{
 	   	   
 	   $self->element({'Name' => 'Hsp_hit-frame',
 			   'Data' => $hitframe});
-       } elsif(  /^Parameters:/ || /^\s+Database:\s+?/ || 
-		 ( $self->in_element('hsp') && (/WARNING/ || /NOTE/)) ) {
+       } elsif(  /^Parameters:/ || /^\s+Database:\s+?/ || /^\s+Subset/ ||
+		 ( $self->in_element('hsp') && (/WARNING/ || /NOTE/ )) ) {
 	   $self->in_element('hsp') && $self->end_element({'Name' => 'Hsp'});
 	   $self->in_element('hit') && $self->end_element({'Name' => 'Hit'});
+	   next if /^\s+Subset/;
 	   my $blast = ( /Parameters\:/ ) ? 'wublast' : 'ncbi'; 
 	   my $last = '';
 	   # default is that gaps are allowed
@@ -431,7 +482,13 @@ sub next_result{
 		   $self->_pushback($_);
 		   # let's handle this in the loop
 		   last;
+	       } elsif( /^Query=/ ) {	
+		   $self->_pushback($reportline);
+		   $self->_pushback($_);
+		   $self->end_element({ 'Name' => 'BlastOutput'});
+		   return $self->end_document();
 	       }
+
 	       # here is where difference between wublast and ncbiblast
 	       # is better handled by different logic
 	       if( /Number of Sequences:\s+([\d\,]+)/i ||
@@ -452,7 +509,7 @@ sub next_result{
 		   } elsif( /nogaps/ ) {
 		       $self->element({'Name' => 'Parameters_allowgaps',
 				       'Data' => 'no'});
-		   } elsif( $last =~ /(Frame|Strand)\s+MatID\s+Matrix name/i ) {
+		   } elsif( $last =~ /(Frame|Strand)\s+MatID\s+Matrix name/i ){
 		       s/^\s+//;
                        #throw away first two slots
 		       my @vals = split;
@@ -556,7 +613,12 @@ sub next_result{
 	   for( my $i = 0; 
 		defined($_) && $i < 3; 
 		$i++ ){	       
-	       chomp;		       
+	       chomp;
+	       if( ($i == 0 &&  /^\s+$/) ||  /^\s*Lambda/i ) { 
+		   $self->_pushback($_) if defined $_;
+		   $self->end_element({'Name' => 'Hsp'});
+		   last; 
+	       }
 	       if( /^((Query|Sbjct):\s+(\d+)\s*)(\S+)\s+(\d+)/ ) {
 		   $data{$2} = $4;
 		   $len = length($1);
@@ -596,19 +658,21 @@ sub next_result{
 
 sub start_element{
    my ($self,$data) = @_;
-    # we currently don't care about attributes
-    my $nm = $data->{'Name'};    
-    if( my $type = $MODEMAP{$nm} ) {
-	if( $self->_eventHandler->will_handle($type) ) {
-	    my $func = sprintf("start_%s",lc $type);
-	    $self->_eventHandler->$func($data->{'Attributes'});
-	}						 
-	unshift @{$self->{'_elements'}}, $type;
-    }
-    if($nm eq 'BlastOutput') {
-	$self->{'_values'} = {};
-	$self->{'_result'}= undef;
-    }
+   # we currently don't care about attributes
+   my $nm = $data->{'Name'};    
+   my $type = $MODEMAP{$nm};
+   if( $type ) {
+       if( $self->_eventHandler->will_handle($type) ) {
+	   my $func = sprintf("start_%s",lc $type);
+	   $self->_eventHandler->$func($data->{'Attributes'});
+       }						 
+       unshift @{$self->{'_elements'}}, $type;
+
+       if($type eq 'result') {
+	   $self->{'_values'} = {};
+	   $self->{'_result'}= undef;
+       }
+   }
 
 }
 
@@ -626,6 +690,7 @@ sub start_element{
 sub end_element {
     my ($self,$data) = @_;
     my $nm = $data->{'Name'};
+    my $type = $MODEMAP{$nm};
     my $rc;
     if($nm eq 'BlastOutput_program' &&
        $self->{'_last_data'} =~ /(t?blast[npx])/i ) {
@@ -650,7 +715,7 @@ sub end_element {
 	$self->element({'Name' => 'Hsp_hit-to',
 			'Data' => $self->{'_Sbjct'}->{'end'}});
     }
-    if( my $type = $MODEMAP{$nm} ) {
+    if( $type = $MODEMAP{$nm} ) {
 	if( $self->_eventHandler->will_handle($type) ) {
 	    my $func = sprintf("end_%s",lc $type);
 	    $rc = $self->_eventHandler->$func($self->{'_reporttype'},
@@ -667,11 +732,11 @@ sub end_element {
 	    $self->{'_values'}->{$MAPPING{$nm}} = $self->{'_last_data'};
 	}
     } else { 
-	print "unknown nm $nm, ignoring\n";
+	$self->debug( "unknown nm $nm, ignoring\n");
     }
     $self->{'_last_data'} = ''; # remove read data if we are at 
 				# end of an element
-    $self->{'_result'} = $rc if( $nm eq 'BlastOutput' );
+    $self->{'_result'} = $rc if( defined $type && $type eq 'result' );
     return $rc;
 
 }
@@ -797,5 +862,23 @@ sub end_document{
    my ($self,@args) = @_;
    return $self->{'_result'};
 }
+
+
+sub write_result {
+   my ($self, $blast, @args) = @_;
+
+   if( not defined($self->writer) ) {
+       $self->warn("Writer not defined. Using a $DEFAULT_BLAST_WRITER_CLASS");
+       $self->writer( $DEFAULT_BLAST_WRITER_CLASS->new() );
+   }
+   $self->SUPER::write_result( $blast, @args );
+}
+
+sub result_count {
+    my $self = shift;
+    return $self->{'_result_count'};
+}
+
+sub report_count { shift->result_count }
 
 1;

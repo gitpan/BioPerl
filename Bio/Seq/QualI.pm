@@ -1,4 +1,4 @@
-# $Id: QualI.pm,v 1.3 2002/02/26 07:53:51 dag Exp $
+# $Id: QualI.pm,v 1.4 2002/10/22 07:38:40 lapp Exp $
 #
 # BioPerl module for Bio::Seq::QualI
 #
@@ -73,7 +73,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Chad Matsalla
 

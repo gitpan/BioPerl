@@ -1,4 +1,4 @@
-# $Id: mega.pm,v 1.4.2.1 2002/04/18 13:05:25 jason Exp $
+# $Id: mega.pm,v 1.8 2002/10/22 07:45:10 lapp Exp $
 #
 # BioPerl module for Bio::AlignIO::mega
 #
@@ -49,7 +49,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -221,6 +221,7 @@ sub write_aln{
 	   $count += $LINELEN;
        }
    }
+   $self->flush if $self->_flush_on_write && defined $self->_fh;
    return 1;
 }
 

@@ -1,4 +1,4 @@
-# $Id: SearchIO.pm,v 1.10.2.1 2002/07/03 16:52:07 jason Exp $
+# $Id: SearchIO.pm,v 1.18 2002/12/13 13:54:03 jason Exp $
 #
 # BioPerl module for Bio::SearchIO
 #
@@ -17,13 +17,14 @@ Bio::SearchIO - Driver for parsing Sequence Database Searches (Blast,FASTA,...)
 =head1 SYNOPSIS
 
     use Bio::SearchIO;
+    # format can be 'fasta', 'blast'
     my $searchio = new Bio::SearchIO( -format => 'blastxml',
                                       -file   => 'blastout.xml' );
     while ( my $result = $searchio->next_result() ) {
        while( my $hit = $result->next_hit ) {
-	# process the Bio::Search::HitI object
-           while( my $align = $sbjct->next_align ) { 
-	    # process the Bio::Search::HSPI object
+	# process the Bio::Search::Hit::HitI object
+           while( my $hsp = $hit->next_hsp ) { 
+	    # process the Bio::Search::HSP::HSPI object
 	}
     }
 
@@ -57,7 +58,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich & Steve Chervitz
 
@@ -105,6 +106,7 @@ use Symbol();
            -result_factory => Object implementing Bio::Factory::ResultFactoryI
            -hit_factory    => Object implementing Bio::Factory::HitFactoryI
            -writer         => Object implementing Bio::SearchIO::SearchWriterI
+           -output_format  => output format, which will dynamically load writer
 
 See L<Bio::Factory::ResultFactoryI>, L<Bio::Factory::HitFactoryI>,
 L<Bio::SearchIO::SearchWriterI>
@@ -126,11 +128,30 @@ sub new {
     @param{ map { lc $_ } keys %param } = values %param; # lowercase keys
     my $format = $param{'-format'} ||
       $class->_guess_format( $param{'-file'} || $ARGV[0] ) || 'blast';
-    
+
+    my $output_format = $param{'-output_format'};
+    my $writer = undef;
+
+    if( defined $output_format ) {
+	if( defined $param{'-writer'} ) {
+	    my $dummy = Bio::Root::Root->new();
+	    $dummy->throw("Both writer and output format specified - not good");
+	}
+
+	if( $output_format =~ /^blast$/i ) {
+	    $output_format = 'TextResultWriter';
+	}
+	my $output_module = "Bio::SearchIO::Writer::".$output_format;
+	$class->_load_module($output_module);
+	$writer = $output_module->new();
+	push(@args,"-writer",$writer);
+    }
+
+
     # normalize capitalization to lower case
     $format = "\L$format";
     
-    return undef unless( &_load_format_module($format) );
+    return undef unless( $class->_load_format_module($format) );
     return "Bio::SearchIO::${format}"->new(@args);
   }
 }
@@ -303,6 +324,7 @@ sub write_result {
    my $str = $self->writer->to_string( $result, @args );
    #print "Got string: \n$str\n";
    $self->_print( "$str" );
+   
    return 1;
 }
 
@@ -386,6 +408,24 @@ sub result_factory {
     return $self->{'_result_factory'};
 }
 
+
+=head2 result_count
+
+ Title   : result_count
+ Usage   : $num = $stream->result_count;
+ Function: Gets the number of Blast results that have been parsed.
+ Returns : integer
+ Args    : none
+ Throws  : none
+
+=cut
+
+sub result_count {
+    my $self = shift;
+    $self->throw_not_implemented;
+}
+
+
 =head2 default_hit_factory_class
 
  Title   : default_hit_factory_class
@@ -409,40 +449,35 @@ sub default_hit_factory_class {
 #    $self->throw_not_implemented;
 }
 
-
 =head2 _load_format_module
 
  Title   : _load_format_module
  Usage   : *INTERNAL SearchIO stuff*
  Function: Loads up (like use) a module at run time on demand
- Example :
- Returns :
- Args    :
+ Example : 
+ Returns : 
+ Args    : 
 
 =cut
 
 sub _load_format_module {
-  my ($format) = @_;
-  my ($module, $load, $m);
-
-  $module = "_<Bio/SearchIO/$format.pm";
-  $load = "Bio/SearchIO/$format.pm";
-
-  return 1 if $main::{$module};
+  my ($self,$format) = @_;
+  my $module = "Bio::SearchIO::" . $format;
+  my $ok;
+  
   eval {
-    require $load;
+      $ok = $self->_load_module($module);
   };
   if ( $@ ) {
-    print STDERR <<END;
-$load: $format cannot be found
+      print STDERR <<END;
+$self: $format cannot be found
 Exception $@
 For more information about the SearchIO system please see the SearchIO docs.
 This includes ways of checking for formats at compile time, not run time
 END
   ;
-    return;
   }
-  return 1;
+  return $ok;
 }
 
 
@@ -457,18 +492,26 @@ END
 
 =cut
 
+
 sub _guess_format {
    my $class = shift;
    return unless $_ = shift;
    return 'blast'   if (/blast/i or /\.bl\w$/i);
    return 'fasta' if (/fasta/i or /\.fas$/i);
    return 'blastxml' if (/blast/i and /\.xml$/i);
+   return 'exonerate' if ( /\.exonerate/i or /\.exon/i );
 }
 
+sub close { 
+    my $self = shift;
+    if( $self->writer ) {
+	$self->_print($self->writer->end_report());
+    }
+    $self->SUPER::close(@_);
+}
 
 sub DESTROY {
     my $self = shift;
-
     $self->close();
 }
 

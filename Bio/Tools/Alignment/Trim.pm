@@ -56,7 +56,7 @@ the bugs and their resolution.  Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Chad Matsalla
 
@@ -73,6 +73,10 @@ package Bio::Tools::Alignment::Trim;
 
 use Bio::Root::Root;
 use strict;
+use Dumpvalue;
+
+
+
 use vars qw($VERSION @ISA %DEFAULTS);
 
 $VERSION = '0.01';
@@ -81,7 +85,9 @@ $VERSION = '0.01';
 
 BEGIN {
     %DEFAULTS = ( 'f_designator' => 'f',
-		  'r_designator' => 'r');
+		  'r_designator' => 'r',
+          'windowsize' => '10',
+          'phreds' => '20');
 }
 
 =head2 new()
@@ -92,13 +98,25 @@ BEGIN {
 	are required to create this object. It is strictly a bundle of
 	functions, as far as I am concerned.
  Returns : A reference to a Bio::Tools::Alignment::Trim object.
- Args    : (none)
+ Args    : (optional)
+     -windowsize (default 10)
+     -phreds (default 20)
+
 
 =cut 
 
 sub new {
     my ($class,@args) = @_;    
     my $self = $class->SUPER::new(@args);
+    my($windowsize,$phreds) =
+        $self->_rearrange([qw(
+                    WINDOWSIZE
+                    PHREDS
+                              )],
+                          @args);
+    $self->{windowsize} = $windowsize || $DEFAULTS{'windowsize'};
+    $self->{phreds} = $phreds || $DEFAULTS{'phreds'};
+          # print("Constructor set phreds to ".$self->{phreds}."\n") if $self->verbose > 0;
     $self->set_designators($DEFAULTS{'f_designator'},
 			   $DEFAULTS{'r_designator'});
     return $self;
@@ -200,28 +218,15 @@ sub dump_hash {
 	my %hash = %{$self->{'qualities'}};
 } # end dump_hash
 
-=head2 trim_singleton()
-
- Title   : trim_singleton()
- Usage   : $o_trim->trim_singleton()
- Function: Not implemented.
- Returns : Nothing.
- Args    : None.
- Notes   : Does nothing. Unimplemented.
-
-=cut 
-
-sub trim_singleton {}
-
 =head2 trim_singlet($sequence,$quality,$name,$class)
 
  Title   : trim_singlet($sequence,$quality,$name,$class)
  Usage   : ($r_trim_points,$trimmed_sequence) =
-	@o_trim->trim_singlet($sequence,$quality,$name,$class);
+	@{$o_trim->trim_singlet($sequence,$quality,$name,$class)};
  Function: Trim a singlet based on its quality.
  Returns : a reference to an array containing the forward and reverse
 	trim points and the trimmed sequence.
- Args    : $sequence : A sequence
+ Args    : $sequence : A sequence (SCALAR, please)
 	   $quality : A _scalar_ of space-delimited quality values.
 	   $name : the name of the sequence
 	   $class : The class of the sequence. One of qw(singlet
@@ -233,46 +238,47 @@ sub trim_singleton {}
 	should return just the trim points or the points and the sequence.
 	I decided that I always wanted both so that's how I implemented
 	it.
+     - Note that the size of the sliding windows is set during construction of
+       the Bio::Tools::Alignment::Trim object.
 
 =cut 
 
 sub trim_singlet {
     my ($self,$sequence,$quality,$name,$class) = @_;
+    # this split is done because I normally store quality values in a
+    # space-delimited scalar rather then in an array.
+    # I do this because serialization of the arrays is tough.
     my @qual = split(' ',$quality);
     my @points;
     my $sequence_length = length($sequence);
     my ($returnstring,$processed_sequence);
-          # find out the leading and trailing trimpoints
-          # for now, the rule for trailing points will be a run of $windowsize each less then 10phreds
-    my $windowsize = 10;
-    my $r_windows = &_sliding_window(\@qual,$windowsize);
-    my $windowtrail = 10;
-    my $phreds = 20;
-          # start_base required: r_quality,$windowsize,$phredvalue
-    my $start_base = &_get_start($r_windows,5,20);
-    if ($start_base > ($sequence_length - 100)) {
-	     $points[0] = ("FAILED");
-	     $points[1] = ("FAILED");
-     	return @points;
-    }
+    # smooth out the qualities
+    my $r_windows = &_sliding_window(\@qual,$self->{windowsize});
+    # find out the leading and trailing trimpoints
+    my $start_base = $self->_get_start($r_windows,$self->{windowsize},$self->{phreds});
+    my (@new_points,$trimmed_sequence);
+    # do you think that any sequence shorter then 100 should be
+    # discarded? I don't think that this should be the decision of this
+    # module.
+    # removed, 020926
     $points[0] = $start_base;
-          #
-          # whew! now for the end base
-          # 
-          # required parameters: reference_to_windows,windowsize,$phredvalue,start_base
-    my $end_base = &_get_end($r_windows,20,20,$start_base);
+    # whew! now for the end base
+    # required parameters: reference_to_windows,windowsize,$phredvalue,start_base
+    my $end_base = &_get_end($r_windows,$self->{windowsize},
+			     $self->{phreds},$start_base);
     $points[1] = $end_base;
     # now do the actual trimming
-    my @new_points = $self->chop_sequence($name,$class,$sequence,@points);
-    my $trimmed_sequence = pop(@new_points);
-    return \@new_points,$trimmed_sequence;
+    # CHAD : I don't think that it is a good idea to call chop_sequence here
+    # because chop_sequence also removes X's and N's and things
+    # and that is not always what is wanted
+    return \@points;
 }
 
 =head2 trim_doublet($sequence,$quality,$name,$class)
 
  Title   : trim_doublet($sequence,$quality,$name,$class) 
  Usage   : ($r_trim_points,$trimmed_sequence) =
-	@o_trim->trim_singlet($sequence,$quality,$name,$class);
+	    @{$o_trim->trim_singlet($sequence,$quality,$name,$class)};
  Function: Trim a singlet based on its quality.
  Returns : a reference to an array containing the forward and reverse
  Args    : $sequence : A sequence
@@ -290,47 +296,44 @@ sub trim_singlet {
 
 =cut 
 
+#'
 sub trim_doublet {
     my ($self,$sequence,$quality,$name,$class) = @_;
     my @qual = split(' ',$quality);
     my @points;
     my $sequence_length = length($sequence);
     my ($returnstring,$processed_sequence);
-    # find out the leading and trailing trimpoints
-    # for now, the rule for trailing points will be a run of $windowsize each less then 10phreds
-    my $windowsize = 10;
-    my $r_windows = &_sliding_window(\@qual,$windowsize);
-    my $windowtrail = 10;
-    my $phreds = 20;
-    # determine where the consensus sequence starts
+          # smooth out the qualities
+    my $r_windows = &_sliding_window(\@qual,$self->{windowsize});
+          # determine where the consensus sequence starts
     my $offset = 0;
     for (my $current = 0; $current<$sequence_length;$current++) {
-	if ($qual[$current] != 0) {
-	    $offset = $current;
-	    last;
-	}
+          if ($qual[$current] != 0) {
+               $offset = $current;
+               last;
+          }
     }
-    # start_base required: r_quality,$windowsize,$phredvalue
-    my $start_base = &_get_start($r_windows,5,20,$offset);
+          # start_base required: r_quality,$windowsize,$phredvalue
+    my $start_base = $self->_get_start($r_windows,$self->{windowsize},$self->{phreds},$offset);
     if ($start_base > ($sequence_length - 100)) {
-	$points[0] = ("FAILED");
-	$points[1] = ("FAILED");
-	return @points;
-    }
+          $points[0] = ("FAILED");
+	     $points[1] = ("FAILED");
+          return @points;
+     }
     $points[0] = $start_base;
-    #
-    # whew! now for the end base
-    # 
-    # required parameters: reference_to_windows,windowsize,$phredvalue,start_base
-    #								    |	
-    # 010420 NOTE: We will no longer get the end base to avoid the Q/--\___/-- syndrome
+         #
+         # whew! now for the end base
+         # 
+         # required parameters: reference_to_windows,windowsize,$phredvalue,start_base
+         #								    |	
+         # 010420 NOTE: We will no longer get the end base to avoid the Q/--\___/-- syndrome
     my $end_base = $sequence_length;
     my $start_of_trailing_zeros = &count_doublet_trailing_zeros(\@qual);
     $points[1] = $end_base;
-    # now do the actual trimming
-    my @new_points = $self->chop_sequence($name,$class,$sequence,@points);
-    my $trimmed_sequence = pop(@new_points);
-    return @new_points,$trimmed_sequence;
+          # CHAD : I don't think that it is a good idea to call chop_sequence here
+          # because chop_sequence also removes X's and N's and things
+          # and that is not always what is wanted
+     return @points;
 }				# end trim_doublet
 
 =head2 chop_sequence($name,$class,$sequence,@points)
@@ -339,7 +342,7 @@ sub trim_doublet {
  Usage   : ($start_point,$end_point,$chopped_sequence) = 
 	$o_trim->chop_sequence($name,$class,$sequence,@points);
  Function: Chop a sequence based on its name, class, and sequence.
- Returns : an array containing three elements:
+ Returns : an array containing three scalars:
 	1- the start trim point
 	2- the end trim point
 	3- the chopped sequence
@@ -356,6 +359,7 @@ sub trim_doublet {
 
 sub chop_sequence {
     my ($self,$name,$class,$sequence,@points) = @_;
+     print("Coming into chop_sequence, \@points are @points\n");
     my $fdesig = $self->{'f_designator'};
     my $rdesig = $self->{'r_designator'};
     if (!$points[0] && !$points[1]) {
@@ -395,14 +399,15 @@ sub chop_sequence {
 	$points[1] -= $number_Ns_trimmed;
 	$points[1] -= 1;
     }
-    push @points,$sequence;
+     push @points,$sequence;
+     print("chop_sequence \@points are @points\n");
     return @points;
 }
 
 =head2 _get_start($r_quals,$windowsize,$phreds,$offset)
 
  Title   : _get_start($r_quals,$windowsize,$phreds,$offset)
- Usage   : $start_base = &_get_start($r_windows,5,20);
+ Usage   : $start_base = $self->_get_start($r_windows,5,20);
  Function: Provide the start trim point for this sequence.
  Returns : a scalar representing the start of the sequence
  Args    : 
@@ -417,21 +422,30 @@ sub chop_sequence {
 =cut 
 
 sub _get_start {
-    my ($r_quals,$windowsize,$phreds,$offset) = @_;
-    # this is to help determine whether the sequence is good at all
+    my ($self,$r_quals,$windowsize,$phreds,$offset) = @_;
+     print("Using $phreds phreds\n")  if $self->verbose > 0;
+          # this is to help determine whether the sequence is good at all
     my @quals = @$r_quals;
     my ($count,$count2,$qualsum);
     if ($offset) { $count = $offset; } else { $count = 0; }
+          # search along the length of the sequence
     for (; ($count+$windowsize) <= scalar(@quals); $count++) {
-	for($count2 = $count; $count2 < $count+$windowsize-1; $count2++) {
-	    unless (!$quals[$count2]) {
-		$qualsum += $quals[$count2];
-	    }
-	}
-	if ($qualsum && $qualsum >= $windowsize*$phreds) {
-	    return $count;
-	}
-	$qualsum = 0;
+               # sum all of the quality values in this window.
+          my $cumulative=0;
+          for($count2 = $count; $count2 < $count+$windowsize; $count2++) {
+               if (!$quals[$count2]) {
+                         # print("Quals don't exist here!\n");
+               }
+               else {
+                    $qualsum += $quals[$count2]; 
+                         # print("Incremented qualsum to ($qualsum)\n");
+               }
+               $cumulative++;
+          }
+               # print("The sum of this window (starting at $count) is $qualsum. I counted $cumulative bases.\n");
+               # if the total of windowsize * phreds is 
+          if ($qualsum && $qualsum >= $windowsize*$phreds) { return $count; }
+	     $qualsum = 0;
     }
     # if ($count > scalar(@quals)-$windowsize) { return; }
     return $count;
@@ -495,7 +509,7 @@ sub _get_end {
     else { }
     if ($qualsum) { } # print ("$qualsum\n");
     return $total_bases;
-}				# end get_end
+} # end get_end
 
 =head2 count_doublet_trailing_zeros($r_qual)
 
@@ -544,35 +558,39 @@ sub _sliding_window {
     my (@window,@quals,$qualsum,$count,$count2,$average,@averages,$bases_counted);
     @quals = @$r_quals;    
     my $size_of_quality = scalar(@quals);
-    for ($count=0; $count <= $size_of_quality; $count++) {
-	$bases_counted = 0;
-      BASE: for($count2 = $count; $count2 < $size_of_quality; $count2++) {
-	  $bases_counted++;
-	  # if the search hits the end of the averages, stop
-	  # this is for the case near the end where bases remaining < windowsize
-	  if ($count2 == $size_of_quality) {
-	      $qualsum += $quals[$count2];
-	      last BASE;
-	  }				
-	  # if the search hits the size of the window
-	  # 010116 this is wrong! elsif ($count2 == $windowsize) {
-	  elsif ($bases_counted == $windowsize) {
-	      $qualsum += $quals[$count2];
-	      last BASE;
-	  }
-	  # otherwise add the quality value
-	  unless (!$quals[$count2]) {
-	      $qualsum += $quals[$count2];
-	  }
-      }
-	unless (!$qualsum || !$windowsize) {
-	    $average = $qualsum / $bases_counted;
-	}
-	if (!$average) { $average = "0"; }
-     	push @averages,$average;
-	$qualsum = 0;
-    }
+          # do this loop for all of the qualities
+     for ($count=0; $count <= $size_of_quality; $count++) {
+          $bases_counted = 0;
+          BASE: for($count2 = $count; $count2 < $size_of_quality; $count2++) {
+               $bases_counted++;
+                    # if the search hits the end of the averages, stop
+                    # this is for the case near the end where bases remaining < windowsize
+               if ($count2 == $size_of_quality) {
+                    $qualsum += $quals[$count2];
+                    last BASE;
+               }				
+                    # if the search hits the size of the window
+               elsif ($bases_counted == $windowsize) {
+                    $qualsum += $quals[$count2];
+                    last BASE;
+               }
+                    # otherwise add the quality value
+               unless (!$quals[$count2]) {
+                    $qualsum += $quals[$count2];
+               }
+          }
+          unless (!$qualsum || !$windowsize) {
+              $average = $qualsum / $bases_counted;
+               if (!$average) { $average = "0"; }
+     	     push @averages,$average;
+          }
+	     $qualsum = 0;
+     }
+          # 02101 Yes, I repaired the mismatching numbers between averages and windows.
+          # print("There are ".scalar(@$r_quals)." quality values. They are @$r_quals\n");
+          # print("There are ".scalar(@averages)." average values. They are @averages\n");
     return \@averages;
+     
 }
 
 =head2 _print_formatted_qualities

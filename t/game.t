@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: game.t,v 1.15.2.2 2002/06/04 19:04:18 jason Exp $
+## $Id: game.t,v 1.17 2002/06/07 21:20:34 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -20,7 +20,7 @@ BEGIN {
     }
     use Test;
     use vars qw($TESTCOUNT);
-    $TESTCOUNT=23;
+    $TESTCOUNT = 23;
     plan tests => $TESTCOUNT;
     
     $error  = 0;
@@ -28,10 +28,9 @@ BEGIN {
     if( $@ ) {
 	print STDERR "XML::Parser::PerlSAX not loaded. This means game test cannot be executed. Skipping\n";
 	foreach ( $Test::ntest..$TESTCOUNT ) {
-	    skip('XML::Parser::PerlSAX not installed',1);
+	    skip('XML::Parser::PerlSAX installed',1);
 	}
-       $error = 1;
-	
+	$error = 1;
     } 
     # make sure we can load it, assuming that the prerequisites are really met
 

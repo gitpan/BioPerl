@@ -1,6 +1,6 @@
 package Bio::DB::GFF::Adaptor::memory;
 use strict;
-# $Id: memory.pm,v 1.4.2.4 2002/07/11 03:02:16 lstein Exp $
+# $Id: memory.pm,v 1.7 2002/12/11 21:49:59 lstein Exp $
 # AUTHOR: Shulamit Avraham
 # This module needs to be cleaned up and documented
 
@@ -73,10 +73,8 @@ sub get_dna {
 sub load_gff_line {
   my $self = shift;
   my $feature_hash  = shift;
-  $feature_hash->{strand} = '' if $feature_hash->{strand} eq '.'; 
-  $feature_hash->{phase} = '' if $feature_hash->{phase} eq '.';
-  #$feature_hash->{strand} = '+' if $feature_hash->{strand} eq '.'; 
-  #$feature_hash->{phase} = '+' if $feature_hash->{phase} eq '.';
+  $feature_hash->{strand} = '' if $feature_hash->{strand} && $feature_hash->{strand} eq '.';
+  $feature_hash->{phase} = ''  if $feature_hash->{phase}  && $feature_hash->{phase} eq '.';
   push @{$self->{data}},$feature_hash;
 }
 
@@ -133,7 +131,7 @@ sub get_abscoords {
   my ($strand,$start,$stop);
   foreach (@found) {
     $strand ||= $_->{strand};
-    $strand = '+' if $strand eq '.'; 
+    $strand = '+' if $strand && $strand eq '.'; 
     $start  = $_->{start} if !defined($start) || $start > $_->{start};
     $stop   = $_->{stop}  if !defined($stop)  || $stop  < $_->{stop};
 
@@ -144,7 +142,7 @@ sub get_abscoords {
     my ($strand,$start,$stop);
     foreach (@found) {
       $strand ||= $_->{strand};
-      $strand = '+' if $strand eq '.'; 
+      $strand = '+' if $strand && $strand eq '.'; 
       $start  = $_->{start} if !defined($start) || $start > $_->{start};
       $stop   = $_->{stop}  if !defined($stop)  || $stop  < $_->{stop};
     }

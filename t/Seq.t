@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Seq.t,v 1.23 2002/01/06 18:50:51 birney Exp $
+## $Id: Seq.t,v 1.26 2002/10/02 01:04:42 lapp Exp $
 
 use strict;
 
@@ -14,14 +14,15 @@ BEGIN {
     }
     use Test;
 
-    plan tests => 38;
+    plan tests => 50;
 }
 
 use Bio::Seq;
 use Bio::Seq::RichSeq;
 use Bio::SeqFeature::Generic;
-use Bio::Annotation;
 use Bio::Species;
+use Bio::Annotation::SimpleValue;
+
 ok(1);
 
 my $seq = Bio::Seq->new(-seq=>'ACTGTGGCGTCAACT',
@@ -51,6 +52,22 @@ ok $seq->id(), 'something',  "saw ".$seq->id;
 ok $seq->accession_number, 'accnum', "saw ". $seq->accession_number ;
 ok $seq->subseq(5, 9),  'tggcg', "subseq(5,9) was ". $seq->subseq(5,9);
 
+# check IdentifiableI and DescribableI interfaces
+ok $seq->isa('Bio::IdentifiableI');
+ok $seq->isa('Bio::DescribableI');
+# make sure all methods are implemented
+ok $seq->authority("bioperl.org"), "bioperl.org";
+ok $seq->namespace("t"), "t";
+ok $seq->version(0), 0;
+ok $seq->lsid_string(), "bioperl.org:t:accnum";
+ok $seq->namespace_string(), "t:accnum.0";
+ok $seq->description(), 'Sample Bio::Seq object';
+ok $seq->display_name(), "something";
+
+# check that feature accession works regardless of lazy things going on
+ok scalar($seq->top_SeqFeatures()), 0;
+ok scalar($seq->flush_SeqFeatures()), 0;
+
 my $newfeat = Bio::SeqFeature::Generic->new( -start => 10,
 					     -end => 12,
 					     -primary => 'silly',
@@ -68,9 +85,11 @@ my $species = new Bio::Species
 			      Metazoa Eukaryota )]);
 $seq->species($species);
 ok $seq->species->binomial, 'Homo sapiens';
-$seq->annotation(new Bio::Annotation('-description' => 'desc-here'));
-ok $seq->annotation->description, 'desc-here', 
-		 'annotation was ' . $seq->annotation();
+$seq->annotation->add_Annotation('description',
+		 Bio::Annotation::SimpleValue->new(-value => 'desc-here'));
+my ($descr) = $seq->annotation->get_Annotations('description');
+ok $descr->value(), 'desc-here';
+ok $descr->tagname(), 'description';
 
 #
 #  translation tests

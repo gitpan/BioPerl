@@ -1,13 +1,14 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: Perl.t,v 1.3 2002/01/08 01:49:45 jason Exp $
+# $Id: Perl.t,v 1.6 2002/12/09 15:45:03 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
 use strict;
-use vars qw($NUMTESTS $BIODBTESTS);
+use vars qw($NUMTESTS $DEBUG $BIODBTESTS);
+$DEBUG = $ENV{'BIOPERLDEBUG'} || 0;
 
 my $error;
 
@@ -22,8 +23,8 @@ BEGIN {
     }
     use Test;
 
-    $NUMTESTS = 9;
-    $BIODBTESTS = 4;
+    $NUMTESTS = 14;
+    $BIODBTESTS = 5;
     plan tests => $NUMTESTS;
     eval { require IO::String };
     if( $@ ) {
@@ -40,11 +41,13 @@ END {
     unlink (  'Perltmp' );
 }
 
-use Bio::Perl qw( read_sequence 
-		  read_all_sequences 
-		  write_sequence 
-		  new_sequence 
-		  get_sequence );
+#use Bio::Perl qw( read_sequence 
+#		  read_all_sequences 
+#		  write_sequence
+#		  new_sequence 
+#		  get_sequence translate     
+#                  translate_as_string);
+use Bio::Perl;
 
 ## End of black magic.
 ##
@@ -61,8 +64,10 @@ unless ( $error ) {
 	ok ($seq_object = get_sequence('swissprot',"ROA1_HUMAN"));
     };
     if ($@) {
-	warn "Warning: Couldn't connect to SWISS-PROT! Do you have network access?\n";
-        skip(1,1, 'no network access');
+	if($DEBUG) {
+	    warn "Warning: Couldn't connect to SWISS-PROT! Do you have network access?\n";
+        }
+	skip('no network access',1);
     }
 
     # embl
@@ -70,8 +75,10 @@ unless ( $error ) {
 	ok ($seq_object = get_sequence('embl',"BUM"));
     };
     if ($@) {
-	warn "Warning: Couldn't connect to EMBL! Do you have network access?\n";
-        skip(1,1, 'no network access');
+	if($DEBUG ) {
+	    warn "Warning: Couldn't connect to EMBL! Do you have network access?\n";
+	}
+        skip('no network access',1);
     }
 
     # genbank
@@ -79,8 +86,10 @@ unless ( $error ) {
 	ok ($seq_object = get_sequence('genbank',"AI129902"));
     };
     if ($@) {
-	warn "Warning: Couldn't connect to GenBank! Do you have network access?\n";
-        skip(1,1, 'no network access');
+	if($DEBUG) {
+	    warn "Warning: Couldn't connect to GenBank! Do you have network access?\n";
+	}
+        skip( 'no network access',1);
     }
 
     # refseq
@@ -88,13 +97,24 @@ unless ( $error ) {
 	ok ($seq_object = get_sequence('genbank',"NM_006732"));
     };
     if ($@) {
-	warn "Warning: Couldn't connect to RefSeq! Do you have network access?\n";
-        skip(1,1, 'no network access');
+	if( $DEBUG ) {
+	    warn "Warning: Couldn't connect to RefSeq! Do you have network access?\n";
+	}
+        skip('no network access',1);
     }
+
+        # genbank
+    eval {
+	ok ($seq_object = get_sequence('genpept',"AAC06201"));
+    };
+    if ($@) {
+	if($DEBUG) {
+	    warn "Warning: Couldn't connect to GenPept! Do you have network access?\n";
+	}
+        skip( 'no network access',1);
+    }
+
 }
-
-
-
 
 # will guess file format from extension
 $filename = 't/data/cysprot1.fa';
@@ -108,4 +128,15 @@ ok (@seq_object_array = read_all_sequences($filename,'fasta'), 2);
 $filename = 'Perltmp';
 ok write_sequence(">$filename",'genbank',$seq_object);
 ok ($seq_object = new_sequence("ATTGGTTTGGGGACCCAATTTGTGTGTTATATGTA","myname","AL12232"));
+
+my $trans;
+
+ok ($trans = translate($seq_object));
+
+ok ($trans = translate("ATTGGTTTGGGGACCCAATTTGTGTGTTATATGTA"));
+
+ok ($trans = translate_as_string($seq_object));
+
+ok ($trans = translate_as_string("ATTGGTTTGGGGACCCAATTTGTGTGTTATATGTA"));
+
 

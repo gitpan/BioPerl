@@ -1,4 +1,4 @@
-# NodeI.pm,v 1.10 2002/04/18 12:52:46 jason Exp
+# $Id: NodeI.pm,v 1.19 2002/12/24 17:52:03 jason Exp $
 #
 # BioPerl module for Bio::Tree::NodeI
 #
@@ -21,21 +21,39 @@ Bio::Tree::NodeI - Interface describing a Tree Node
     use Bio::TreeIO;
     # read in a clustalw NJ in phylip/newick format
     my $treeio = new Bio::TreeIO(-format => 'newick', -file => 'file.dnd');
+
     my $tree = $treeio->next_tree; # we'll assume it worked for demo purposes
+                                   # you might want to test that it was defined
 
     my $rootnode = $tree->get_root_node;
 
     # process just the next generation
-    foreach my $node ( $tree->each_Descendent() ) {
+    foreach my $node ( $rootnode->each_Descendent() ) {
 	print "branch len is ", $node->branch_length, "\n";
     }
+
     # process all the children
-    foreach my $node ( $tree->get_Descendents() ) {
+    my $example_leaf_node;
+    foreach my $node ( $rootnode->get_Descendents() ) {
 	if( $node->is_Leaf ) { 
 	    print "node is a leaf ... "; 
+            # for example use below
+            $example_leaf_node = $node unless defined $example_leaf_node; 
 	}
 	print "branch len is ", $node->branch_length, "\n";
-    }    
+    }
+
+    # The ancestor() method points to the parent of a node
+    # A node can only have one parent
+
+    my $parent = $example_leaf_node->ancestor;
+
+    # parent won't likely have an description because it is an internal node
+    # but child will because it is a leaf
+
+    print "Parent id: ", $parent->id," child id: ", 
+          $example_leaf_node->id, "\n";
+
 
 =head1 DESCRIPTION
 
@@ -43,6 +61,15 @@ A NodeI is capable of the basic structure of building a tree and
 storing the branch length between nodes.  The branch length is the
 length of the branch between the node and its ancestor, thus a root
 node in a Tree will not typically have a valid branch length.
+
+Various implementations of NodeI may extend the basic functions and
+allow storing of other information (like attatching a species object
+or full sequences used to build a tree or alternative sequences).  If
+you don't know how to extend a Bioperl object please ask, happy to
+help, we would also greatly appreciate contributions with improvements
+or extensions of the objects back to the Bioperl code base so that
+others don't have to reinvent your ideas.
+
 
 =head1 FEEDBACK
 
@@ -59,20 +86,17 @@ the Bioperl mailing list.  Your participation is much appreciated.
 
 Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+the web:
 
-  bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 
 Email jason@bioperl.org
 
-Describe contact details here
-
 =head1 CONTRIBUTORS
 
-Additional contributors names and emails here
+Aaron Mackey amackey@virginia.edu
 
 =head1 APPENDIX
 
@@ -130,20 +154,22 @@ sub each_Descendent{
 
 =head2 get_Descendents
 
- Title   : get_Descendents
+ Title   : get_Descendents($sortby)
  Usage   : my @nodes = $node->get_Descendents;
  Function: Recursively fetch all the nodes and their descendents
            *NOTE* This is different from each_Descendent
  Returns : Array or Bio::Tree::NodeI objects
- Args    : none
+ Args    : $sortby [optional] "height", "creation" or coderef to be used
+           to sort the order of children nodes.
 
 =cut
 
 sub get_Descendents{
-   my ($self) = @_;
+   my ($self, $sortby) = @_;
+   $sortby ||= 'height';
    my @nodes;
-   foreach my $node ( $self->each_Descendent ) {
-       push @nodes, ($node->get_Descendents, $node);
+   foreach my $node ( $self->each_Descendent($sortby) ) {
+       push @nodes, ($node->get_Descendents($sortby), $node);
    }
    return @nodes;
 }
@@ -179,7 +205,8 @@ sub descendent_count{
    my $count = 0;
    
    foreach my $node ( $self->each_Descendent ) { 
-       $count += 1 + $node->descendent_count;
+       $count += 1;
+       $node->can('descendent_count') ? $count += $node->descendent_count : next;
    }
    return $count;
 }
@@ -197,9 +224,10 @@ sub descendent_count{
 
 sub to_string{
    my ($self) = @_;
-   return sprintf("%s%s",defined $self->id ? $self->id : '',
-		  defined $self->branch_length ? 
-		  ":" . $self->branch_length : ' ');
+   return sprintf("%s%s",
+		  defined $self->id ? $self->id : '',
+		  defined $self->branch_length ? ':' . $self->branch_length : ' '
+		 );
 }
 
 =head2 height
@@ -228,7 +256,7 @@ sub height{
        my $s = $subnode->height;
        if( $s > $max ) { $max = $s; }
    }
-   return $max + ($self->branch_length || 0);
+   return $max + ($self->branch_length || 1);
 }
 
 =head2 Get/Set methods
@@ -267,6 +295,21 @@ sub branch_length{
 sub id{
     my ($self)= @_;
     $self->throw_not_implemented();
+}
+
+=head2 internal_id
+
+ Title   : internal_id
+ Usage   : my $internalid = $node->internal_id
+ Function: Returns the internal unique id for this Node
+ Returns : unique id
+ Args    : none
+
+=cut
+
+sub internal_id{
+   my ($self) = @_;
+   $self->throw_not_implemented();
 }
 
 =head2 description
@@ -313,7 +356,7 @@ sub bootstrap{
 
 =cut
 
-#'
+
 sub ancestor{
    my ($self,@args) = @_;
     $self->throw_not_implemented();

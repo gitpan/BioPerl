@@ -1,4 +1,4 @@
-# $Id: EventGeneratorI.pm,v 1.6 2002/01/29 20:54:01 jason Exp $
+# $Id: EventGeneratorI.pm,v 1.7 2002/10/22 07:45:14 lapp Exp $
 #
 # BioPerl module for Bio::Event::EventGeneratorI
 #
@@ -42,7 +42,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 

@@ -1,4 +1,4 @@
-# $Id: Thesis.pm,v 1.3.2.1 2002/03/11 16:02:34 jason Exp $
+# $Id: Thesis.pm,v 1.5 2002/10/22 07:45:11 lapp Exp $
 #
 # BioPerl module for Bio::Biblio::Thesis
 #
@@ -63,7 +63,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHORS
 

@@ -1,4 +1,4 @@
-# $Id: SeqPattern.pm,v 1.11 2002/02/25 15:30:56 heikki Exp $
+# $Id: SeqPattern.pm,v 1.14 2002/10/22 07:38:46 lapp Exp $
 #
 # bioperl module for Bio::Tools::SeqPattern
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::Tools::SeqPattern.pm - Bioperl object for a sequence pattern or motif
+Bio::Tools::SeqPattern - Bioperl object for a sequence pattern or motif
 
 =head1 SYNOPSIS
 
@@ -144,10 +144,8 @@ Currently, this module only supports patterns using a grep-like syntax.
 
 =head1 USAGE
 
-A simple demo script is included in the examples/ directory of the central
-Bioperl distribution and is also available from:
-
-    http://bio.perl.org/Core/Examples/seq_pattern.pl
+A simple demo script called seq_pattern.pl is included in the examples/
+directory of the central Bioperl distribution.
 
 =head1 SEE ALSO
 
@@ -175,7 +173,7 @@ the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
     bioperl-bugs@bio.perl.org
-    http://bio.perl.org/bioperl-bugs/
+    http://bugzilla.bioperl.org/
 
 =head1 AUTHOR
 

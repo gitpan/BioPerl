@@ -1,4 +1,4 @@
-# $Id: LargePrimarySeq.pm,v 1.23 2001/11/20 02:09:36 lstein Exp $
+# $Id: LargePrimarySeq.pm,v 1.27 2002/12/01 00:05:21 jason Exp $
 #
 # BioPerl module for Bio::Seq::LargePrimarySeq
 #
@@ -53,12 +53,12 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Ewan Birney, Jason Stajich
 
 Email birney@ebi.ac.uk
-Email jason@chg.mc.duke.edu
+Email jason@bioperl.org
 
 =head1 APPENDIX
 
@@ -191,7 +191,8 @@ sub subseq{
 	   }
 	   $seq = $string;
        }
-       if( $loc->strand < 0 ) { 
+       if( defined $loc->strand && 
+	   $loc->strand < 0 ) { 
 	   $seq = Bio::PrimarySeq->new(-seq => $seq)->revcom()->seq();
        }
        return $seq;
@@ -284,7 +285,7 @@ sub DESTROY {
     my $fh = $self->_fh();
     close($fh) if( defined $fh );
     # this should be handled by Tempfile removal, but we'll unlink anyways.
-    unlink $self->_filename();
+    unlink $self->_filename() if defined $self->_filename() && -e $self->_filename;
     $self->SUPER::DESTROY();
 }
 

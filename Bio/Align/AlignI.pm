@@ -1,4 +1,4 @@
-# $Id: AlignI.pm,v 1.4.2.1 2002/04/21 00:06:22 jason Exp $
+# $Id: AlignI.pm,v 1.7 2002/10/22 07:45:10 lapp Exp $
 #
 # BioPerl module for Bio::Align::AlignI
 #
@@ -17,7 +17,6 @@ Bio::Align::AlignI - An interface for describing sequence alignments.
 =head1 SYNOPSIS
 
   # get a Bio::Align::AlignI somehow - typically using Bio::AlignIO system
-
   # some descriptors
   print $aln->length, "\n";
   print $aln->no_residues, "\n";
@@ -37,7 +36,6 @@ Bio::Align::AlignI - An interface for describing sequence alignments.
   foreach $res (keys %count) {
       printf "Res: %s  Count: %2d\n", $res, $count{$res};
   }
-
 
 =head1 DESCRIPTION
 
@@ -61,7 +59,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -391,11 +389,11 @@ sub match_line {
 
              Goes through all columns and changes residues that are
              identical to residue in first sequence to match '.'
-             character. Sets L<match_char>.
+             character. Sets match_char.
 
              USE WITH CARE: Most MSE formats do not support match
              characters in sequences, so this is mostly for output
-             only. NEXUS format (L<Bio::AlignIO::nexus>) can handle
+             only. NEXUS format (Bio::AlignIO::nexus) can handle
              it.
 
  Returns   : 1
@@ -414,7 +412,7 @@ sub match {
  Usage     : $ali->unmatch()
  Function  : 
 
-             Undoes the effect of method L<match>. Unsets L<match_char>.
+             Undoes the effect of method match. Unsets match_char.
 
  Returns   : 1
  Argument  : a match character, optional, defaults to '.'
@@ -548,12 +546,13 @@ sub consensus_string {
 
              Note that if your alignment sequences contain a lot of
              IUPAC ambiquity codes you often have to manually set
-             alphabet.  L<Bio::PrimarySeq::_guess_type> thinks they
+             alphabet.  Bio::PrimarySeq::_guess_type thinks they
              indicate a protein sequence.
 
  Returns   : consensus string
  Argument  : none
  Throws    : on protein sequences
+
 
 =cut
 
@@ -647,7 +646,6 @@ sub no_sequences {
     $self->throw_not_implemented();
 }
 
-
 =head2 percentage_identity
 
  Title   : percentage_identity
@@ -696,7 +694,7 @@ sub average_percentage_identity{
     my ($self) = @_;
     $self->throw_not_implemented();
 }
-
+    
 =head1 Alignment positions
 
 Methods to map a sequence position into an alignment column and back.

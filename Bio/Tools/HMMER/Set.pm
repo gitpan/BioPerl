@@ -1,4 +1,4 @@
-# $Id: Set.pm,v 1.11.2.1 2002/07/04 17:02:34 jason Exp $
+# $Id: Set.pm,v 1.13 2002/10/22 07:45:23 lapp Exp $
 #
 # BioPerl module for Bio::Tools::HMMER::Set
 #
@@ -50,7 +50,7 @@ the bugs and their resolution.
 Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bioperl.org
-  http://www.bioperl.org/bioperl-bugs/
+  http://www.bugzilla.bioperl.org/
 
 =head1 AUTHOR - Ewan Birney
 
@@ -83,6 +83,7 @@ sub new {
     $name && $self->name($name);
     $acc  && $self->accession($acc);
     $desc && $self->desc($desc);
+
 
     $self->{'domains'} = [];
     $self->{'domainnames'} = {};

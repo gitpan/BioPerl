@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::IOManager.pm
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 26 Mar 1997
-# REVISION: $Id: IOManager.pm,v 1.12 2002/01/26 20:28:13 heikki Exp $
+# REVISION: $Id: IOManager.pm,v 1.13 2002/10/22 07:38:37 lapp Exp $
 # STATUS  : Alpha
 #
 # For documentation, run this module through pod2html
@@ -146,7 +146,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track the bugs an
 their resolution. Bug reports can be submitted via email or the web:
 
     bioperl-bugs@bio.perl.org
-    http://bio.perl.org/bioperl-bugs/
+    http://bugzilla.bioperl.org/
 
 =head1 AUTHOR 
 

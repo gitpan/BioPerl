@@ -1,4 +1,4 @@
-
+# $Id: Species.pm,v 1.24 2002/12/05 13:46:30 heikki Exp $
 #
 # BioPerl module for Bio::Species
 #
@@ -81,7 +81,7 @@ sub new {
   $self->{'common_name'} = undef;
   my ($classification) = $self->_rearrange([qw(CLASSIFICATION)], @args);
   if( defined $classification &&
-      (ref($classification) =~ /array/i) ) {
+      (ref($classification) eq "ARRAY") ) {
       $self->classification(@$classification);
   }
   return $self;
@@ -101,10 +101,14 @@ sub new {
            Catarrhini Primates Eutheria Mammalia Vertebrata
            Chordata Metazoa Eukaryota));
  Returns : Classification array
- Args    : Classification array
+ Args    : Classification array 
+                 OR
+           A reference to the classification array. In the latter case
+           if there is a second argument and it evaluates to true,
+           names will not be validated.
+
 
 =cut
-
 
 
 sub classification {
@@ -112,19 +116,25 @@ sub classification {
 
     if (@args) {
 
+	my ($classif,$force);
+	if(ref($args[0])) {
+	    $classif = shift(@args);
+	    $force = shift(@args);
+	} else {
+	    $classif = \@args;
+	}
+	
         # Check the names supplied in the classification string
-        {
-            # Species should be in lower case
-            my $species = $args[0];
-            $self->validate_species_name( $species );
-
-            # All other names must be in title case
-            for (my $i = 1; $i < @args; $i++) {
-                $self->validate_name( $args[$i] );
-            }
-        }
+	# Species should be in lower case
+	if(! $force) {
+	    $self->validate_species_name($classif->[0]);
+	    # All other names must be in title case
+	    foreach  (@$classif) {
+		$self->validate_name( $_ );
+	    }
+	}
         # Store classification
-        $self->{'classification'} = [ @args ];
+        $self->{'classification'} = $classif;
     }
     return @{$self->{'classification'}};
 }
@@ -137,20 +147,38 @@ sub classification {
  Function: Get or set the common name of the species
  Example : $self->common_name('human')
  Returns : The common name in a string
- Args    : String, which is the common name
+ Args    : String, which is the common name (optional)
 
 =cut
 
-sub common_name {
-    my($self, $name) = @_;
+sub common_name{
+    my $self = shift;
 
-    if ($name) {
-        $self->{'common_name'} = $name;
-    } else {
-        return $self->{'common_name'}
-    }
+    return $self->{'common_name'} = shift if @_;
+    return $self->{'common_name'};
 }
-=head2
+
+=head2 variant
+
+ Title   : variant
+ Usage   : $obj->variant($newval)
+ Function: Get/set variant information for this species object (strain,
+           isolate, etc).
+ Example : 
+ Returns : value of variant (a scalar)
+ Args    : new value (a scalar or undef, optional)
+
+
+=cut
+
+sub variant{
+    my $self = shift;
+
+    return $self->{'variant'} = shift if @_;
+    return $self->{'variant'};
+}
+
+=head2 organelle
 
  Title   : organelle
  Usage   : $self->organelle( $organelle );
@@ -247,7 +275,7 @@ sub sub_species {
            $binomial = $self->binomial('FULL');
  Function: Returns a string "Genus species", or "Genus species subspecies",
            the first argument is 'FULL' (and the species has a subspecies).
- Args    : Optionally the string 'FULL' to get the full name including the
+ Args    : Optionally the string 'FULL' to get the full name including
            the subspecies.
 
 =cut
@@ -258,12 +286,12 @@ sub binomial {
 
     my( $species, $genus ) = $self->classification();
     unless( defined $species) {
-	$species = '';
+	$species = 'sp.';
 	$self->warn("classification was not set");
     }
     $genus = ''   unless( defined $genus);
     my $bi = "$genus $species";
-    if (defined($full) && ($full eq 'FULL')) {
+    if (defined($full) && ((uc $full) eq 'FULL')) {
 	my $ssp = $self->sub_species;
         $bi .= " $ssp" if $ssp;
     }
@@ -273,34 +301,35 @@ sub binomial {
 sub validate_species_name {
     my( $self, $string ) = @_;
 
-    $string =~ /^[\S\d\.]+$||""/ or
-        $self->throw("Invalid species name '$string'");
+    return 1 if $string eq "sp.";
+    return 1 if $string =~ /^[a-z][\w\s]+$/i;
+    $self->throw("Invalid species name '$string'");
 }
 
 sub validate_name {
-    my( $self, $string ) = @_;
+    return 1; # checking is disabled as there is really not much we can
+              # enforce HL 2002/10/03
+#     my( $self, $string ) = @_;
 
-    return $string =~ /^[A-Z][a-z]+$/ or
-        $self->throw("Invalid name '$string' (Wrong case?)");
+#     return 1 if $string =~ /^[\w\s\-\,\.]+$/ or
+#         $self->throw("Invalid name '$string'");
 }
 
 =head2 ncbi_taxid
 
  Title   : ncbi_taxid
  Usage   : $obj->ncbi_taxid($newval)
- Function:
- Returns : value of ncbi_taxid as string
- Args    : newvalue (optional)
+ Function: Get/set the NCBI Taxon ID
+ Returns : the NCBI Taxon ID as a string
+ Args    : newvalue to set or undef to unset (optional)
 
 
 =cut
 
 sub ncbi_taxid {
-    my( $self, $sub ) = @_;
+    my $self = shift;
 
-    if ($sub) {
-        $self->{'_ncbi_taxid'} = $sub;
-    }
+    return $self->{'_ncbi_taxid'} = shift if @_;
     return $self->{'_ncbi_taxid'};
 }
 

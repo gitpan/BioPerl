@@ -1,5 +1,5 @@
 #---------------------------------------------------------------
-# $Id: AnalysisParserI.pm,v 1.4 2002/02/26 07:28:51 jason Exp $
+# $Id: AnalysisParserI.pm,v 1.7 2002/12/01 00:05:19 jason Exp $
 #
 # BioPerl module Bio::AnalysisParserI
 #
@@ -28,8 +28,9 @@ Bio::AnalysisParserI - Generic analysis output parser interface
 	print "Result:  ", $result->analysis_method, 
               ", Query:  ", $result->query_name, "\n";
 
-          while( my $result = $parser->next_result() ) {
-              print "Feature from ", $feature->start, " to ", $feature->end, "\n";
+          while( my $feature = $result->next_feature() ) {
+              print "Feature from ", $feature->start, " to ", 
+                    $feature->end, "\n";
           }
     }
 
@@ -96,14 +97,14 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Steve Chervitz, Jason Stajich, Hilmar Lapp
 
 Email sac@bioperl.org
 
 Authors of Bio::SeqAnalysisParserI on which this module is based:
-Email jason@chg.mc.duke.edu 
+Email jason@bioperl.org 
 Email hlapp@gmx.net
 
 =head1 COPYRIGHT

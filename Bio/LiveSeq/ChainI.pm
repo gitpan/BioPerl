@@ -1,4 +1,4 @@
-# $Id: ChainI.pm,v 1.8 2001/06/19 16:06:44 jason Exp $
+# $Id: ChainI.pm,v 1.9 2002/10/22 07:38:34 lapp Exp $
 #
 # bioperl module for Bio::LiveSeq::ChainI
 #
@@ -46,7 +46,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Joseph A.L. Insana
 

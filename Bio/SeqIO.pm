@@ -1,5 +1,5 @@
 
-# $Id: SeqIO.pm,v 1.42 2002/02/24 16:51:15 bosborne Exp $
+# $Id: SeqIO.pm,v 1.59 2002/11/02 21:04:18 lapp Exp $
 #
 # BioPerl module for Bio::SeqIO
 #
@@ -25,13 +25,13 @@ Bio::SeqIO - Handler for SeqIO Formats
 
     $in  = Bio::SeqIO->new(-file => "inputfilename" , '-format' => 'Fasta');
     $out = Bio::SeqIO->new(-file => ">outputfilename" , '-format' => 'EMBL');
-    # note: we quote -format to keep older perl's from complaining.
+    # note: we quote -format to keep older Perls from complaining.
 
     while ( my $seq = $in->next_seq() ) {
 	$out->write_seq($seq);
     }
 
-now, to actually get at the sequence object, use the standard Bio::Seq
+Now, to actually get at the sequence object, use the standard Bio::Seq
 methods (look at L<Bio::Seq> if you don't know what they are)
 
     use Bio::SeqIO;
@@ -43,8 +43,8 @@ methods (look at L<Bio::Seq> if you don't know what they are)
     }
 
 
-the SeqIO system does have a filehandle binding. Most people find this
-a little confusing, but it does mean you write the worlds smallest
+The SeqIO system does have a filehandle binding. Most people find this
+a little confusing, but it does mean you write the world's smallest
 reformatter
 
     use Bio::SeqIO;
@@ -54,6 +54,7 @@ reformatter
 
     # World's shortest Fasta<->EMBL format converter:
     print $out $_ while <$in>;
+
 
 =head1 DESCRIPTION
 
@@ -67,7 +68,7 @@ genbank format, or EMBL format, or binary trace file format) and
 can either read or write sequence objects (Bio::Seq objects, or
 more correctly, Bio::SeqI implementing objects, of which Bio::Seq is
 one such object). If you want to know what to do with a Bio::Seq
-object, read L<Bio::Seq>
+object, read L<Bio::Seq>.
 
 The idea is that you request a stream object for a particular format.
 All the stream objects have a notion of an internal file that is read
@@ -82,10 +83,6 @@ Each stream object has functions
 and
 
    $stream->write_seq($seq);
-
-also
-
-   $stream->type() # returns 'INPUT' or 'OUTPUT'
 
 As an added bonus, you can recover a filehandle that is tied to the
 SeqIO object, allowing you to use the standard E<lt>E<gt> and print operations
@@ -188,7 +185,6 @@ Specify the format of the file.  Supported formats include:
    EMBL        EMBL format
    GenBank     GenBank format
    swiss       Swissprot format
-   SCF         SCF tracefile format
    PIR         Protein Information Resource format
    GCG         GCG format
    raw         Raw format (one sequence per line, no ID)
@@ -196,13 +192,43 @@ Specify the format of the file.  Supported formats include:
    game        GAME XML format
    phd         phred output
    qual        Quality values (get a sequence of quality scores)
+   Fastq       Fastq format
+   SCF         SCF tracefile format
+   ABI         ABI tracefile format
+   ALF         ALF tracefile format
+   CTF         CTF tracefile format
+   ZTR         ZTR tracefile format
+   PLN         Staden plain tracefile format
+   EXP         Staden tagged experiment tracefile format
 
-If no format is specified and a filename is given, then the module
-will attempt to deduce it from the filename.  If this is unsuccessful,
-Fasta format is assumed.
+If no format is specified and a filename is given then the module
+will attempt to deduce the format from the filename suffix.  If this
+is unsuccessful then Fasta format is assumed.
 
 The format name is case insensitive.  'FASTA', 'Fasta' and 'fasta' are
-all supported.
+all valid suffixes.
+
+Currently, the tracefile formats (except for SCF) require installation
+of the external Staden "io_lib" package, as well as the
+Bio::SeqIO::staden::read package available from the bioperl-ext
+repository.
+
+=item -flush
+
+By default, all files (or filehandles) opened for writing sequences
+will be flushed after each write_seq() (making the file immediately
+usable).  If you don't need this facility and would like to marginally
+improve the efficiency of writing multiple sequences to the same file
+(or filehandle), pass the -flush option '0' or any other value that
+evaluates as defined but false:
+
+  my $gb = new Bio::SeqIO -file   => "<gball.gbk",
+                          -format => "gb";
+  my $fa = new Bio::SeqIO -file   => ">gball.fa",
+                          -format => "fasta",
+                          -flush  => 0; # go as fast as we can!
+  while($seq = $gb->next_seq) { $fa->write_seq($seq) }
+
 
 =back
 
@@ -245,7 +271,8 @@ These provide the tie interface.  See L<perltie> for more details.
 
 User feedback is an integral part of the evolution of this
 and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
+to one of the Bioperl mailing lists.
+
 Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
@@ -258,13 +285,11 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Ewan Birney, Lincoln Stein
 
 Email birney@ebi.ac.uk
-
-Describe contact details here
 
 =head1 APPENDIX
 
@@ -273,7 +298,7 @@ methods. Internal methods are usually preceded with a _
 
 =cut
 
-# Let the code begin...
+#' Let the code begin...
 
 package Bio::SeqIO;
 
@@ -282,20 +307,36 @@ use vars qw(@ISA);
 
 use Bio::Root::Root;
 use Bio::Root::IO;
-use Bio::PrimarySeq;
+use Bio::Factory::SequenceStreamI;
+use Bio::Factory::FTLocationFactory;
+use Bio::Seq::SeqBuilder;
 use Symbol();
 
-@ISA = qw(Bio::Root::Root Bio::Root::IO);
+@ISA = qw(Bio::Root::Root Bio::Root::IO Bio::Factory::SequenceStreamI);
+
+sub BEGIN {
+    eval { require Bio::SeqIO::staden::read; };
+}
+
+my %valid_alphabet_cache;
 
 =head2 new
 
  Title   : new
  Usage   : $stream = Bio::SeqIO->new(-file => $filename, -format => 'Format')
  Function: Returns a new seqstream
- Returns : A Bio::SeqIO::Handler initialised with the appropriate format
- Args    : -file => $filename
-           -format => format
-           -fh => filehandle to attach to
+ Returns : A Bio::SeqIO stream initialised with the appropriate format
+ Args    : Named parameters:
+             -file => $filename
+             -fh => filehandle to attach to
+             -format => format
+
+           Additional arguments may be used to set factories and
+           builders involved in the sequence object creation. None of
+           these must be provided, they all have reasonable defaults.
+             -seqfactory   the L<Bio::Factory::SequenceFactoryI> object
+             -locfactory   the L<Bio::Factory::LocationFactoryI> object
+             -objbuilder   the L<Bio::Factory::ObjectBuilderI> object
 
 See L<Bio::SeqIO::Handler>
 
@@ -323,7 +364,7 @@ sub new {
 	$format = "\L$format";	# normalize capitalization to lower case
 
 	# normalize capitalization
-	return undef unless( &_load_format_module($format) );
+	return undef unless( $class->_load_format_module($format) );
 	return "Bio::SeqIO::$format"->new(@args);
     }
 }
@@ -357,10 +398,8 @@ sub newFh {
  Example : $fh = $obj->fh;      # make a tied filehandle
            $sequence = <$fh>;   # read a sequence object
            print $fh $sequence; # write a sequence object
- Returns : filehandle tied to the Bio::SeqIO::Fh class
- Args    :
-
-See L<Bio::SeqIO::Fh>
+ Returns : filehandle tied to Bio::SeqIO class
+ Args    : none
 
 =cut
 
@@ -377,6 +416,23 @@ sub fh {
 
 sub _initialize {
     my($self, @args) = @_;
+
+    # flush is initialized by the Root::IO init
+
+    my ($seqfact,$locfact,$objbuilder) =
+	$self->_rearrange([qw(SEQFACTORY
+			      LOCFACTORY
+			      OBJBUILDER)
+			   ], @args);
+
+    $locfact = Bio::Factory::FTLocationFactory->new() if ! $locfact;
+    $objbuilder = Bio::Seq::SeqBuilder->new() unless $objbuilder;
+    $self->sequence_builder($objbuilder);
+    $self->location_factory($locfact);
+    # note that this should come last because it propagates the sequence
+    # factory to the sequence builder
+    $seqfact && $self->sequence_factory($seqfact);
+
     # initialize the IO part
     $self->_initialize_io(@args);
 }
@@ -399,36 +455,13 @@ sub _initialize {
  Returns : a Bio::Seq sequence object
  Args    : none
 
-See L<Bio::Root::RootI>
+See L<Bio::Root::RootI>, L<Bio::Factory::SeqStreamI>, L<Bio::Seq>
 
 =cut
 
 sub next_seq {
    my ($self, $seq) = @_;
    $self->throw("Sorry, you cannot read from a generic Bio::SeqIO object.");
-}
-
-=head2 next_primary_seq
-
- Title   : next_primary_seq
- Usage   : $seq = $stream->next_primary_seq
- Function: Provides a primaryseq type of sequence object
- Returns : A Bio::PrimarySeqI object
- Args    : none
-
-See L<Bio::PrimarySeqI>
-
-=cut
-
-sub next_primary_seq {
-   my ($self) = @_;
-
-   # in this case, we default to next_seq. This is because
-   # Bio::Seq's are Bio::PrimarySeqI objects. However we
-   # expect certain sub classes to override this method to provide
-   # less parsing heavy methods to retrieving the objects
-
-   return $self->next_seq();
 }
 
 =head2 write_seq
@@ -463,15 +496,21 @@ sub alphabet {
    my ($self, $value) = @_;
 
    if ( defined $value) {
-       # instead of hard-coding the allowed values once more, we check by
-       # creating a dummy sequence object
-       eval {
-	   my $seq = Bio::PrimarySeq->new('-alphabet' => $value);
-       };
-       if($@) {
-	   $self->throw("Invalid alphabet: $value\n. See Bio::PrimarySeq for allowed values.");
+       $value = lc $value;
+       unless ($valid_alphabet_cache{$value}) {
+	   # instead of hard-coding the allowed values once more, we check by
+	   # creating a dummy sequence object
+	   eval {
+	       require Bio::PrimarySeq;
+	       my $seq = Bio::PrimarySeq->new('-alphabet' => $value);
+		
+	   };
+	   if ($@) {
+	       $self->throw("Invalid alphabet: $value\n. See Bio::PrimarySeq for allowed values.");
+	   }
+	   $valid_alphabet_cache{$value} = 1;
        }
-       $self->{'alphabet'} = "\L$value";
+       $self->{'alphabet'} = $value;
    }
    return $self->{'alphabet'};
 }
@@ -488,27 +527,23 @@ sub alphabet {
 =cut
 
 sub _load_format_module {
-  my ($format) = @_;
-  my ($module, $load, $m);
+    my ($self, $format) = @_;
+    my $module = "Bio::SeqIO::" . $format;
+    my $ok;
 
-  $module = "_<Bio/SeqIO/$format.pm";
-  $load = "Bio/SeqIO/$format.pm";
-
-  return 1 if $main::{$module};
-  eval {
-    require $load;
-  };
-  if ( $@ ) {
+    eval {
+	$ok = $self->_load_module($module);
+    };
+    if ( $@ ) {
     print STDERR <<END;
-$load: $format cannot be found
+$self: $format cannot be found
 Exception $@
 For more information about the SeqIO system please see the SeqIO docs.
 This includes ways of checking for formats at compile time, not run time
 END
   ;
-    return;
   }
-  return 1;
+  return $ok;
 }
 
 =head2 _concatenate_lines
@@ -560,7 +595,7 @@ sub _filehandle {
  Args    :
  Notes   : formats that _filehandle() will guess include fasta,
            genbank, scf, pir, embl, raw, gcg, ace, bsml, swissprot,
-           and phd/phred
+           fastq and phd/phred
 
 =cut
 
@@ -570,6 +605,13 @@ sub _guess_format {
    return 'fasta'   if /\.(fasta|fast|seq|fa|fsa|nt|aa)$/i;
    return 'genbank' if /\.(gb|gbank|genbank)$/i;
    return 'scf'     if /\.scf$/i;
+   return 'scf'     if /\.scf$/i;
+   return 'abi'     if /\.abi$/i;
+   return 'alf'     if /\.alf$/i;
+   return 'ctf'     if /\.ctf$/i;
+   return 'ztr'     if /\.ztr$/i;
+   return 'pln'     if /\.pln$/i;
+   return 'exp'     if /\.exp$/i;
    return 'pir'     if /\.pir$/i;
    return 'embl'    if /\.(embl|ebl|emb|dat)$/i;
    return 'raw'     if /\.(txt)$/i;
@@ -578,6 +620,7 @@ sub _guess_format {
    return 'bsml'    if /\.(bsm|bsml)$/i;
    return 'swiss'   if /\.(swiss|sp)$/i;
    return 'phd'     if /\.(phd|phred)$/i;
+   return 'fastq'   if /\.fastq$/i;
 }
 
 sub DESTROY {
@@ -602,6 +645,102 @@ sub READLINE {
 sub PRINT {
   my $self = shift;
   $self->{'seqio'}->write_seq(@_);
+}
+
+=head2 sequence_factory
+
+ Title   : sequence_factory
+ Usage   : $seqio->sequence_factory($seqfactory)
+ Function: Get/Set the Bio::Factory::SequenceFactoryI
+ Returns : Bio::Factory::SequenceFactoryI
+ Args    : [optional] Bio::Factory::SequenceFactoryI
+
+
+=cut
+
+sub sequence_factory{
+   my ($self,$obj) = @_;   
+   if( defined $obj ) {
+       if( ! ref($obj) || ! $obj->isa('Bio::Factory::SequenceFactoryI') ) {
+	   $self->throw("Must provide a valid Bio::Factory::SequenceFactoryI object to ".ref($self)."::sequence_factory()");
+       }
+       $self->{'_seqio_seqfactory'} = $obj;
+       my $builder = $self->sequence_builder();
+       if($builder && $builder->can('sequence_factory') &&
+	  (! $builder->sequence_factory())) {
+	   $builder->sequence_factory($obj);
+       }
+   }
+   $self->{'_seqio_seqfactory'};
+}
+
+=head2 object_factory
+
+ Title   : object_factory
+ Usage   : $obj->object_factory($newval)
+ Function: This is an alias to sequence_factory with a more generic name.
+ Example : 
+ Returns : value of object_factory (a scalar)
+ Args    : on set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub object_factory{
+    return shift->sequence_factory(@_);
+}
+
+=head2 sequence_builder
+
+ Title   : sequence_builder
+ Usage   : $seqio->sequence_builder($seqfactory)
+ Function: Get/Set the L<Bio::Factory::ObjectBuilderI> used to build sequence
+           objects.
+
+           If you do not set the sequence object builder yourself, it
+           will in fact be an instance of L<Bio::Seq::SeqBuilder>, and
+           you may use all methods documented there to configure it.
+
+ Returns : a L<Bio::Factory::ObjectBuilderI> compliant object
+ Args    : [optional] a L<Bio::Factory::ObjectBuilderI> compliant object
+
+
+=cut
+
+sub sequence_builder{
+    my ($self,$obj) = @_;
+    if( defined $obj ) {
+	if( ! ref($obj) || ! $obj->isa('Bio::Factory::ObjectBuilderI') ) {
+	    $self->throw("Must provide a valid Bio::Factory::ObjectBuilderI object to ".ref($self)."::sequence_builder()");
+	}
+	$self->{'_object_builder'} = $obj;
+    }
+    $self->{'_object_builder'};
+}
+
+=head2 location_factory
+
+ Title   : location_factory
+ Usage   : $seqio->location_factory($locfactory)
+ Function: Get/Set the Bio::Factory::LocationFactoryI object to be used for
+           location string parsing
+ Returns : a L<Bio::Factory::LocationFactoryI> implementing object
+ Args    : [optional] on set, a L<Bio::Factory::LocationFactoryI> implementing
+           object.
+
+
+=cut
+
+sub location_factory{
+    my ($self,$obj) = @_;   
+    if( defined $obj ) {
+	if( ! ref($obj) || ! $obj->isa('Bio::Factory::LocationFactoryI') ) {
+	    $self->throw("Must provide a valid Bio::Factory::LocationFactoryI".
+			 " object to ".ref($self)."->location_factory()");
+	}
+	$self->{'_seqio_locfactory'} = $obj;
+    }
+    $self->{'_seqio_locfactory'};
 }
 
 1;

@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: HSPI.pm,v 1.10.2.1 2002/05/09 18:14:00 jason Exp $
+# $Id: HSPI.pm,v 1.21 2002/11/13 11:27:18 sac Exp $
 #
 # BioPerl module for Bio::Search::HSP::HSPI
 #
@@ -33,9 +33,11 @@ Bio::Search::HSP::HSPI - Interface for a High Scoring Pair in a similarity searc
 
     $hseq = $hsp->hit_string;
 
-    $homo_string = $hsp->homology_string;
+    $homology_string = $hsp->homology_string;
 
     $len = $hsp->length( ['query'|'hit'|'total'] );
+
+    $rank = $hsp->rank;
 
 =head1 DESCRIPTION
 
@@ -74,7 +76,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Steve Chervitz, Jason Stajich
 
@@ -196,6 +198,36 @@ sub frac_conserved {
     $self->throw_not_implemented;
 }
 
+=head2 num_identical
+
+ Title   : num_identical
+ Usage   : $obj->num_identical($newval)
+ Function: returns the number of identical residues in the alignment
+ Returns : integer
+ Args    : integer (optional)
+
+
+=cut
+
+sub num_identical{
+    shift->throw_not_implemented;
+}
+
+=head2 num_conserved
+
+ Title   : num_conserved
+ Usage   : $obj->num_conserved($newval)
+ Function: returns the number of conserved residues in the alignment
+ Returns : inetger
+ Args    : integer (optional)
+
+
+=cut
+
+sub num_conserved{
+    shift->throw_not_implemented();
+}
+
 =head2 gaps
 
  Title    : gaps
@@ -281,9 +313,7 @@ sub homology_string{
 =cut
 
 sub length{
-   my ($self, $type) = @_;
-   $self->throw_not_implemented;
-
+    shift->throw_not_implemented();
 }
 
 =head2 percent_identity
@@ -317,6 +347,38 @@ sub get_aln {
    $self->throw_not_implemented;
 }
 
+
+=head2 seq_inds
+
+ Title   : seq_inds
+ Purpose   : Get a list of residue positions (indices) for all identical 
+           : or conserved residues in the query or sbjct sequence.
+ Example   : @s_ind = $hsp->seq_inds('query', 'identical');
+           : @h_ind = $hsp->seq_inds('hit', 'conserved');
+           : @h_ind = $hsp->seq_inds('hit', 'conserved', 1);
+ Returns   : List of integers 
+           : May include ranges if collapse is true.
+ Argument  : seq_type  = 'query' or 'hit' or 'sbjct'  (default = query)
+              ('sbjct' is synonymous with 'hit') 
+             class     = 'identical' or 'conserved' or 'nomatch' or 'gap'
+                          (default = identical)
+                          (can be shortened to 'id' or 'cons')
+
+             collapse  = boolean, if true, consecutive positions are merged
+                         using a range notation, e.g., "1 2 3 4 5 7 9 10 11" 
+                         collapses to "1-5 7 9-11". This is useful for 
+                         consolidating long lists. Default = no collapse.
+ Throws    : n/a.
+ Comments  : 
+
+See Also   : L<Bio::Search::BlastUtils::collapse_nums()|Bio::Search::BlastUtils>, L<Bio::Search::Hit::HitI::seq_inds()|Bio::Search::Hit::HitI>
+
+=cut
+
+sub seq_inds {
+    shift->throw_not_implemented();
+}
+
 =head2 Inherited from Bio::SeqFeature::SimilarityPair
 
 These methods come from Bio::SeqFeature::SimilarityPair
@@ -344,9 +406,9 @@ These methods come from Bio::SeqFeature::SimilarityPair
  Title   : significance
  Usage   : $evalue = $obj->significance();
            $obj->significance($evalue);
- Function: 
- Returns : 
- Args    : 
+ Function: Get/Set the significance value (see Bio::SeqFeature::SimilarityPair)
+ Returns : significance value (scientific notation string)
+ Args    : significance value (sci notation string)
 
 
 =head2 score
@@ -367,5 +429,254 @@ These methods come from Bio::SeqFeature::SimilarityPair
 
 =cut
 
+# override 
+
+=head2 strand
+
+ Title   : strand
+ Usage   : $hsp->strand('query')
+ Function: Retrieves the strand for the HSP component requested
+ Returns : +1 or -1 (0 if unknown)
+ Args    : 'hit' or 'subject' or 'sbjct' to retrieve the strand of the subject
+           'query' to retrieve the query strand (default)
+           'list' or 'array' to retreive both query and hit together
+
+=cut
+
+sub strand {
+    my $self = shift;
+    my $val = shift;
+    $val = 'query' unless defined $val;
+    $val =~ s/^\s+//;
+
+    if( $val =~ /^q/i ) { 
+	return $self->query->strand(shift);
+    } elsif( $val =~ /^(hi|s)/i ) {
+	return $self->hit->strand(shift);
+    } elsif ( $val =~ m/^(list|array)/) {
+	return ($self->query->strand(shift), $self->hit->strand(shift));
+    } else { 
+	$self->warn("unrecognized component $val requested\n");
+    }
+    return 0;
+}
+
+=head2 start
+
+ Title   : start
+ Usage   : $hsp->start('query')
+ Function: Retrieves the start for the HSP component requested
+ Returns : integer
+ Args    : 'hit' or 'subject' or 'sbjct' to retrieve the start of the subject
+           'query' to retrieve the query start (default)
+
+=cut
+
+sub start {
+    my $self = shift;
+    my $val = shift;
+    $val = 'query' unless defined $val;
+    $val =~ s/^\s+//;
+
+    if( $val =~ /^q/i ) { 
+	return $self->query->start(shift);
+    } elsif( $val =~ /^(hi|s)/i ) {
+	return $self->hit->start(shift);
+    } else { 
+	$self->warn("unrecognized component $val requested\n");
+    }
+    return 0;
+}
+
+=head2 end
+
+ Title   : end
+ Usage   : $hsp->end('query')
+ Function: Retrieves the end for the HSP component requested
+ Returns : integer
+ Args    : 'hit' or 'subject' or 'sbjct' to retrieve the end of the subject
+           'query' to retrieve the query end (default)
+
+=cut
+
+sub end {
+    my $self = shift;
+    my $val = shift;
+    $val = 'query' unless defined $val;
+    $val =~ s/^\s+//;
+
+    if( $val =~ /^q/i ) { 
+	return $self->query->end(shift);
+    } elsif( $val =~ /^(hi|s)/i ) {
+	return $self->hit->end(shift);
+    } else { 
+	$self->warn("unrecognized component $val requested\n");
+    }
+    return 0;
+}
+
+sub seq_str {  
+    my ($self,$type) = @_;
+    if( $type =~ /^q/i ) { return $self->query_string(shift) }
+    elsif( $type =~ /^s/i || $type =~ /^hi/i ) { return $self->hit_string(shift)}
+    elsif ( $type =~ /^ho/i ) { return $self->hit_string(shift) }
+    else { 
+	$self->warn("unknown sequence type $type");
+    }
+    return '';
+}
+
+
+=head2 rank
+
+ Usage     : $hsp->rank( [string] );
+ Purpose   : Get the rank of the HSP within a given Blast hit.
+ Example   : $rank = $hsp->rank;
+ Returns   : Integer (1..n) corresponding to the order in which the HSP
+             appears in the BLAST report.
+
+=cut
+
+sub rank { shift->throw_not_implemented }
+
+=head2 matches
+
+ Usage     : $hsp->matches([seq_type], [start], [stop]);
+ Purpose   : Get the total number of identical and conservative matches 
+           : in the query or sbjct sequence for the given HSP. Optionally can
+           : report data within a defined interval along the seq.
+           : (Note: 'conservative' matches are called 'positives' in the
+	   : Blast report.)
+ Example   : ($id,$cons) = $hsp_object->matches('hit');
+           : ($id,$cons) = $hsp_object->matches('query',300,400);
+ Returns   : 2-element array of integers 
+ Argument  : (1) seq_type = 'query' or 'hit' or 'sbjct' (default = query)
+           :  ('sbjct' is synonymous with 'hit') 
+           : (2) start = Starting coordinate (optional)
+           : (3) stop  = Ending coordinate (optional)
+ Throws    : Exception if the supplied coordinates are out of range.
+ Comments  : Relies on seq_str('match') to get the string of alignment symbols
+           : between the query and sbjct lines which are used for determining
+           : the number of identical and conservative matches.
+
+See Also   : L<length()|length>, L<gaps()|gaps>, L<seq_str()|seq_str>, L<Bio::Search::Hit::BlastHit::_adjust_contigs()|Bio::Search::Hit::BlastHit>
+
+=cut
+
+#-----------
+sub matches {
+#-----------
+    my( $self, %param ) = @_;
+    my(@data);
+    my($seqType, $beg, $end) = ($param{-SEQ}, $param{-START}, $param{-STOP});
+    $seqType ||= 'query';
+   $seqType = 'sbjct' if $seqType eq 'hit';
+
+    if(!defined $beg && !defined $end) {
+	## Get data for the whole alignment.
+	push @data, ($self->num_identical, $self->num_conserved);
+    } else {
+	## Get the substring representing the desired sub-section of aln.
+	$beg ||= 0;
+	$end ||= 0;
+	my($start,$stop) = $self->range($seqType);
+	if($beg == 0) { $beg = $start; $end = $beg+$end; }
+	elsif($end == 0) { $end = $stop; $beg = $end-$beg; }
+
+	if($end >= $stop) { $end = $stop; } ##ML changed from if (end >stop)
+	else { $end += 1;}   ##ML moved from commented position below, makes
+                             ##more sense here
+#	if($end > $stop) { $end = $stop; }
+	if($beg < $start) { $beg = $start; }
+#	else { $end += 1;}
+
+#	my $seq = substr($self->seq_str('match'), $beg-$start, ($end-$beg));
+
+	## ML: START fix for substr out of range error ------------------
+	my $seq = "";
+	if (($self->algorithm eq 'TBLASTN') and ($seqType eq 'sbjct'))
+	{
+	    $seq = substr($self->seq_str('match'),
+			  int(($beg-$start)/3), int(($end-$beg+1)/3));
+
+	} elsif (($self->algorithm eq 'BLASTX') and ($seqType eq 'query'))
+	{
+	    $seq = substr($self->seq_str('match'),
+			  int(($beg-$start)/3), int(($end-$beg+1)/3));
+	} else {
+	    $seq = substr($self->seq_str('match'), 
+			  $beg-$start, ($end-$beg));
+	}
+	## ML: End of fix for  substr out of range error -----------------
+
+	
+	## ML: debugging code
+	## This is where we get our exception.  Try printing out the values going
+	## into this:
+	##
+#	 print STDERR 
+#	     qq(*------------MY EXCEPTION --------------------\nSeq: ") , 
+#	     $self->seq_str("$seqType"), qq("\n),$self->rank,",(  index:";
+#	 print STDERR  $beg-$start, ", len: ", $end-$beg," ), (HSPRealLen:", 
+#	     CORE::length $self->seq_str("$seqType");
+#	 print STDERR ", HSPCalcLen: ", $stop - $start +1 ," ), 
+#	     ( beg: $beg, end: $end ), ( start: $start, stop: stop )\n";
+	 ## ML: END DEBUGGING CODE----------
+
+	if(!CORE::length $seq) {
+	    $self->throw("Undefined sub-sequence ($beg,$end). Valid range = $start - $stop");
+	}
+	## Get data for a substring.
+#	printf "Collecting HSP subsection data: beg,end = %d,%d; start,stop = %d,%d\n%s<---\n", $beg, $end, $start, $stop, $seq;
+#	printf "Original match seq:\n%s\n",$self->seq_str('match');
+	$seq =~ s/ //g;  # remove space (no info).
+	my $len_cons = CORE::length $seq;
+	$seq =~ s/\+//g;  # remove '+' characters (conservative substitutions)
+	my $len_id = CORE::length $seq;
+	push @data, ($len_id, $len_cons);
+#	printf "  HSP = %s\n  id = %d; cons = %d\n", $self->rank, $len_id, $len_cons; <STDIN>;
+    }
+    @data;
+}
+
+=head2 n
+
+ Usage     : $hsp_obj->n()
+ Purpose   : Get the N value (num HSPs on which P/Expect is based).
+           : This value is not defined with NCBI Blast2 with gapping.
+ Returns   : Integer or null string if not defined.
+ Argument  : n/a
+ Throws    : n/a
+ Comments  : The 'N' value is listed in parenthesis with P/Expect value:
+           : e.g., P(3) = 1.2e-30  ---> (N = 3).
+           : Not defined in NCBI Blast2 with gaps.
+           : This typically is equal to the number of HSPs but not always.
+           : To obtain the number of HSPs, use Bio::Search::Hit::HitI::num_hsps().
+
+See Also   : L<Bio::SeqFeature::SimilarityPair::score()|Bio::SeqFeature::SimilarityPair>
+
+=cut
+
+sub n { shift->throw_not_implemented }
+
+=head2 range
+
+ Usage     : $hsp->range( [seq_type] );
+ Purpose   : Gets the (start, end) coordinates for the query or sbjct sequence
+           : in the HSP alignment.
+ Example   : ($query_beg, $query_end) = $hsp->range('query');
+           : ($hit_beg, $hit_end) = $hsp->range('hit');
+ Returns   : Two-element array of integers 
+ Argument  : seq_type = string, 'query' or 'hit' or 'sbjct'  (default = 'query')
+           :  ('sbjct' is synonymous with 'hit') 
+ Throws    : n/a
+ Comments  : This is a convenience method for constructions such as
+             ($hsp->query->start, $hsp->query->end)
+
+=cut
+
+sub range { shift->throw_not_implemented }
+
 
 1;
+

@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: GDB.t,v 1.12.2.1 2002/05/31 19:06:19 jason Exp $
+# $Id: GDB.t,v 1.13 2002/05/31 18:51:02 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'

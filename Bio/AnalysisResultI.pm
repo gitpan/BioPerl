@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: AnalysisResultI.pm,v 1.4 2002/01/23 11:30:21 heikki Exp $
+# $Id: AnalysisResultI.pm,v 1.5 2002/10/22 07:38:24 lapp Exp $
 #
 # BioPerl module Bio::AnalysisResultI
 #
@@ -58,7 +58,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Steve Chervitz, Hilmar Lapp
 

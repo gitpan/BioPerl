@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-##$Id: SeqUtils.t,v 1.8 2001/12/14 13:37:35 heikki Exp $
+##$Id: SeqUtils.t,v 1.10 2002/11/01 11:07:42 heikki Exp $
 
 use strict;
 
@@ -13,7 +13,7 @@ BEGIN {
 	use lib 't';
     }
     use Test;
-    plan tests => 17;
+    plan tests => 18;
 }
 
 use Bio::PrimarySeq;
@@ -65,25 +65,28 @@ my @a = $util->translate_3frames($seq);
 ok scalar @a, 3;
 #foreach $a (@a) {
 #    print 'ID: ', $a->id, ' ', $a->seq, "\n";
-#} 
+#}
 
 @a = $util->translate_6frames($seq);
 ok scalar @a, 6;
 #foreach $a (@a) {
 #    print 'ID: ', $a->id, ' ', $a->seq, "\n";
-#} 
+#}
 
+#
 # test for valid AA return
-my @valid_aa = sort Bio::SeqUtils->valid_aa;
-ok(@valid_aa, 24);
-ok ($valid_aa[1], 'B');
-@valid_aa = sort Bio::SeqUtils->valid_aa(1);
+#
 
-ok(@valid_aa, 24);
-ok ($valid_aa[1], 'Ala');
+my @valid_aa = sort Bio::SeqUtils->valid_aa;
+ok(@valid_aa, 25);
+ok ($valid_aa[1], 'A');
+
+@valid_aa = sort Bio::SeqUtils->valid_aa(1);
+ok(@valid_aa, 25);
+ok ($valid_aa[1], 'Arg');
 
 my %valid_aa = Bio::SeqUtils->valid_aa(2);
-
+ok keys %valid_aa, 50;
 ok($valid_aa{'C'}, 'Cys');
 ok( $valid_aa{'Cys'}, 'C');
 

@@ -1,4 +1,4 @@
-# $Id: Similarity.pm,v 1.6 2001/01/03 17:58:01 jason Exp $
+# $Id: Similarity.pm,v 1.10 2002/11/01 21:39:05 jason Exp $
 #
 # BioPerl module for Bio::SeqFeature::Similarity
 #
@@ -48,7 +48,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
@@ -78,20 +78,22 @@ sub new {
     my ( $caller, @args) = @_;   
     my ($self) = $caller->SUPER::new(@args); 
 
-    my ($evalue, $bits, $frac,$seqlen,$seqdesc) =
-	$self->_rearrange([qw(EXPECT
+    my ($primary,$evalue, $bits, $frac,$seqlen,$seqdesc) =
+	$self->_rearrange([qw(PRIMARY
+			      EXPECT
 			      BITS
 			      FRAC
 			      SEQDESC
 			      SEQLENGTH				      
 			      )],@args);
 
-    $evalue && $self->significance($evalue);
-    $bits   && $self->bits($bits);
-    $frac   && $self->frac_identical($frac);
-    $seqlen && $self->seqlength($seqlen);
-    $seqdesc && $self->seqdesc($seqdesc);
-    $self->primary_tag('similarity') unless( defined $self->primary_tag() );
+    defined $evalue && $self->significance($evalue);
+    defined $bits   && $self->bits($bits);
+    defined $frac   && $self->frac_identical($frac);
+    defined $seqlen && $self->seqlength($seqlen);
+    defined $seqdesc && $self->seqdesc($seqdesc);
+    $primary  = 'similarity' unless defined $primary;
+    $self->primary_tag($primary) unless( defined $self->primary_tag() );
     $self->strand(0) unless( defined $self->strand() );
 
     return $self;
@@ -188,7 +190,13 @@ sub seqlength {
 sub seqdesc {
     my ($self, $value) = @_;
 
-    return $self->annotation()->description();
+    if( defined $value ) { 
+	my $v = Bio::Annotation::SimpleValue->new();
+	$v->value($value);
+	$self->annotation->add_Annotation('description',$v);
+    }
+    my ($v) = $self->annotation()->get_Annotations('description');
+    return $v ? $v->value : undef;
 }
 
 #

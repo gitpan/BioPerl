@@ -19,26 +19,26 @@ Bio::Tools::Sim4::Results - Results of one Sim4 run
 
    # to preset the order of EST and genomic file as given on the sim4 
    # command line:
-   $sim4 = Bio::Tools::Sim4::Results->new(-file => 'result.sim4',
-                                          -estisfirst => 1);
+   my $sim4 = Bio::Tools::Sim4::Results->new(-file => 'result.sim4',
+                                             -estfirst => 1);
    # to let the order be determined automatically (by length comparison):
    $sim4 = Bio::Tools::Sim4->new( -file => 'sim4.results' );
    # filehandle:
    $sim4 = Bio::Tools::Sim4->new( -fh   => \*INPUT );
 
    # parse the results
-   while($exonset = $sim4->next_exonset()) {
+   while(my $exonset = $sim4->next_exonset()) {
        # $exonset is-a Bio::SeqFeature::Generic with Bio::Tools::Sim4::Exons
        # as sub features
-       print "Delimited on sequence ", $exonset->seqname(), 
-             "from ", $exonset->start(), " to ", $exonset->end() "\n";
-       foreach $exon ( $exonset->sub_SeqFeature() ) {
+       print "Delimited on sequence ", $exonset->seq_id(), 
+             "from ", $exonset->start(), " to ", $exonset->end(), "\n";
+       foreach my $exon ( $exonset->sub_SeqFeature() ) {
 	  # $exon is-a Bio::SeqFeature::FeaturePair
 	  print "Exon from ", $exon->start, " to ", $exon->end, 
                 " on strand ", $exon->strand(), "\n";
           # you can get out what it matched using the est_hit attribute
-          $homol = $exon->est_hit();
-          print "Matched to sequence", $homol->seqname, 
+          my $homol = $exon->est_hit();
+          print "Matched to sequence ", $homol->seq_id, 
                 " at ", $homol->start," to ", $homol->end, "\n";
       }
    }
@@ -96,7 +96,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Ewan Birney, Hilmar Lapp
 
@@ -174,7 +174,7 @@ sub analysis_method {
            this method repeatedly until an empty array is returned to get the
            results for all alignments.
 
-           The $exon->seqname() attribute will be set to the identifier of the
+           The $exon->seq_id() attribute will be set to the identifier of the
            respective sequence for both sequences if A=4 was used in the sim4
            run, and otherwise for the second sequence only. If the output does
            not contain the identifier, the filename stripped of path and 
@@ -234,7 +234,7 @@ sub parse_next_alignment {
        /^seq2/ && do {
 	   # the second hit has also the database name in the >name syntax 
 	   # (in brackets).
-	   /^seq2\s+=\s+(\S+)\s+\(>?(\S+)\s*\)\,\s+(\d+)/ ||
+	   /^seq2\s+=\s+(\S+)\s+\(>?(\S+)\s*\)\,\s+(\d+)/||
 	       $self->throw("Sim4 parsing error on seq2 [$_] line. Sorry!");
 	   $seq2props{'filename'} = $1;
 	   $seq2props{'seqname'} = $2;
@@ -309,11 +309,11 @@ sub parse_next_alignment {
 					    '-end'   => $genomseq->{'end'},
 					    '-strand' => $hit_direction);
 	   if(exists($genomseq->{'seqname'})) {
-	       $exon->seqname($genomseq->{'seqname'});
+	       $exon->seq_id($genomseq->{'seqname'});
 	   } else {
 	       # take filename stripped of path as fall back
 	       my ($basename) = &File::Basename::fileparse($genomseq->{'filename'}, '\..*');
-	       $exon->seqname($basename);
+	       $exon->seq_id($basename);
 	   }
 	   $exon->feature1()->add_tag_value('filename',
 					    $genomseq->{'filename'});
@@ -332,12 +332,12 @@ sub parse_next_alignment {
 					    '-strand' => 0,
 					    '-primary' => "aligning_EST");
 	   if(exists($estseq->{'seqname'})) {
-	       $fea2->seqname($estseq->{'seqname'});
+	       $fea2->seq_id($estseq->{'seqname'});
 	   } else {
 	       # take filename stripped of path as fall back
 	       my ($basename) =
 		   &File::Basename::fileparse($estseq->{'filename'}, '\..*');
-	       $fea2->seqname($basename);
+	       $fea2->seq_id($basename);
 	   }
 	   $fea2->add_tag_value('filename', $estseq->{'filename'});
 	   $fea2->seqlength($estseq->{'length'});
@@ -394,7 +394,7 @@ sub next_exonset {
 					     '-strand' => $exons[0]->strand(),
 					     '-primary' => "ExonSet");
     $exonset->source_tag($exons[0]->source_tag());
-    $exonset->seqname($exons[0]->seqname());
+    $exonset->seq_id($exons[0]->seq_id());
     # now add all exons as sub features, with enabling EXPANsion of the region
     # covered in total
     foreach my $exon (@exons) {

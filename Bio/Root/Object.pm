@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Object.pm
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 23 July 1996
-# REVISION: $Id: Object.pm,v 1.22 2002/02/20 21:31:46 bosborne Exp $
+# REVISION: $Id: Object.pm,v 1.23 2002/10/22 07:38:37 lapp Exp $
 # STATUS  : Alpha
 #            
 # For documentation, run this module through pod2html 
@@ -42,7 +42,7 @@ use vars qw($ID $VERSION %Objects_created $Revision @ISA);
 
 $ID       = 'Bio::Root::Object';
 $VERSION  = 0.041;
-$Revision = '$Id: Object.pm,v 1.22 2002/02/20 21:31:46 bosborne Exp $';  #'
+$Revision = '$Id: Object.pm,v 1.23 2002/10/22 07:38:37 lapp Exp $';  #'
 
 ### POD Documentation:
 
@@ -311,7 +311,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track the bugs an
 their resolution. Bug reports can be submitted via email or the web:
 
     bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    http://bugzilla.bioperl.org/           
 
 =head1 AUTHOR 
 

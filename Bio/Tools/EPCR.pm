@@ -1,8 +1,8 @@
-# $Id: EPCR.pm,v 1.5 2001/12/10 16:10:25 heikki Exp $
+# $Id: EPCR.pm,v 1.8 2002/12/01 00:05:21 jason Exp $
 #
 # BioPerl module for Bio::Tools::EPCR
 #
-# Cared for by Jason Stajich <jason@chg.mc.duke.edu>
+# Cared for by Jason Stajich <jason@bioperl.org>
 #
 # Copyright Jason Stajich
 #
@@ -59,11 +59,11 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@chg.mc.duke.edu
+Email jason@bioperl.org
 
 Describe contact details here
 
@@ -141,10 +141,10 @@ sub next_feature {
 						       '-strand'  => $strand,
 						       '-source'  => 'e-PCR',
 						       '-primary' => 'sts',
-						       '-seqname' => $seqname,
+						       '-seq_id'  => $seqname,
 						       '-tag'     => {
 							   'name'=> $mkrname,
-							   'note' => $rest,
+							   'note'=> $rest,
 						       });
     return $markerfeature;
 }

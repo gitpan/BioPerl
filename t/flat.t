@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: flat.t,v 1.1.2.5 2002/06/07 21:23:06 jason Exp $
+# $Id: flat.t,v 1.6 2002/10/13 14:21:38 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -24,7 +24,12 @@ BEGIN {
 
     $NUMTESTS = 7;
     plan tests => $NUMTESTS;
-    eval { require DB_File; require Bio::DB::Flat; require Bio::Root::IO;};
+    eval { 
+	require DB_File; 
+	require Bio::DB::Flat; 
+	require Bio::Root::IO; 
+	1;
+    };
     if( $@ ) {
 	print STDERR "DB_File not loaded. This means flat.t test cannot be executed. Skipping\n";
 	foreach ( $Test::ntest..$NUMTESTS ) {
@@ -100,7 +105,7 @@ sub maketmpdir {
 }
 sub cleanup {    
     eval { 
-      Bio::Root::IO->rmtree($tmpdir);
+      Bio::Root::IO->rmtree($tmpdir) if( defined $tmpdir && -d $tmpdir);
     };
 } 
 

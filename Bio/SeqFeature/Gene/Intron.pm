@@ -1,4 +1,4 @@
-# $Id: Intron.pm,v 1.2 2001/11/20 02:09:37 lstein Exp $
+# $Id: Intron.pm,v 1.3 2002/10/22 07:45:20 lapp Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::Intron
 #
@@ -40,7 +40,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - David Block
 

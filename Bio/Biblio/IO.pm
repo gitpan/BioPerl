@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.4.2.2 2002/03/15 14:40:01 heikki Exp $
+# $Id: IO.pm,v 1.8 2002/10/22 07:45:11 lapp Exp $
 #
 # BioPerl module for Bio::Biblio::IO
 #
@@ -57,7 +57,6 @@ Bio::Biblio::IO - Handling the bibliographic references
 	print $citation->{'_identifier'} . "\n";
     }
 
-
 Now, to actually get a citation in an XML format,
 use I<Bio::Biblio> module which returns an XML string:
 
@@ -90,7 +89,7 @@ output formats:
 Bio::Biblio::IO is a handler module for accessing bibliographic
 citations. The citations can be in different formats - assuming that
 there is a corresponding module knowing that format in Bio::Biblio::IO
-directory (e.g. Bio::Biblio:IO::medlinexml). The format (and the
+directory (e.g. Bio::Biblio::IO::medlinexml). The format (and the
 module name) is given by the argument I<-format>.
 
 Once an instance of C<Bio::Biblio::IO> class is available, the
@@ -181,7 +180,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR
 

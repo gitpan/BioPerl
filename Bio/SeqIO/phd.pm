@@ -1,4 +1,4 @@
-# $Id: phd.pm,v 1.5 2001/12/14 16:40:17 heikki Exp $
+# $Id: phd.pm,v 1.17 2002/12/09 23:50:23 matsallac Exp $
 #
 # Copyright (c) 1997-2001 bioperl, Chad Matsalla. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or
@@ -41,7 +41,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR Chad Matsalla
 
@@ -65,11 +65,19 @@ package Bio::SeqIO::phd;
 use vars qw(@ISA);
 use strict;
 use Bio::SeqIO;
-use Bio::Seq::PrimaryQual;
-use Bio::PrimarySeq;
-use Bio::Seq::SeqWithQuality;
+use Bio::Seq::SeqFactory;
 
 @ISA = qw(Bio::SeqIO);
+
+sub _initialize {
+  my($self,@args) = @_;
+  $self->SUPER::_initialize(@args);    
+  if( ! defined $self->sequence_factory ) {
+      $self->sequence_factory(new Bio::Seq::SeqFactory
+			      (-verbose => $self->verbose(), 
+			       -type => 'Bio::Seq::SeqWithQuality'));      
+  }
+}
 
 =head2 next_seq()
 
@@ -85,57 +93,24 @@ use Bio::Seq::SeqWithQuality;
 =cut
 
 sub next_seq {
-	my ($self,@args) = @_;
-	my $messenger = $self->_next_phd(@_);
-	return $messenger;
-
-}
-
-
-=head2 _next_phd()
-
- Title   : _next_phd()
- Usage   : $seq = $stream->_next_phd() (but do not do this. use next_seq()
-	instead.)
- Function: returns the next phred sequence in the stream
- Returns : Bio::Seq::SeqWithQuality object
- Args    : NONE
- Notes   : An internal method. Use next_seq.
-
-=cut
-
-sub _next_phd {
-    my $something = next_primary_phd( $_[0], 1 );
-    return $something;    
-}
-
-=head2 next_primary_phd()
-
- Title   : next_primary_phd()
- Usage   : $seq = $stream->next_primary_phd()
- Function: returns the next phred sequence in the stream
- Returns : Bio::Seq::SeqWithQuality object
- Args    : NONE (huh?)
-
-=cut
-
-sub next_primary_phd {
-    # print("CSM next_primary_phd!\n");
-    my( $self, $as_next_qual ) = @_;
-    my $entry;
-    # if (!($entry = $self->_readline)) { return; }
-    my ($qual,$seq);
+    my ($self,@args) = @_;
+    my ($entry,$done,$qual,$seq);
+    my ($id,@lines, @bases, @qualities) = ('');
+    if (!($entry = $self->_readline)) { return; }
+	if ($entry =~ /^BEGIN_SEQUENCE\s+(\S+)/) {
+          $id = $1;
+     }
     my $in_dna = 0;
     my $base_number = 0;
-    my $done;
-    my (@lines, @bases, @qualities,$id);
     while ($entry = $self->_readline) {
 	return if (!$entry);
 	chomp($entry);
-	if ($entry =~ /^BEGIN_SEQUENCE\s+(\S+)/) {
-	    $self->debug("Setting id to $1\n");
-	    $id = $1;
-	    $entry = $self->_readline();
+	if ($entry =~ /^BEGIN_CHROMAT:\s+(\S+)/) {
+	     # this is where I used to grab the ID
+          if (!$id) {
+               $id = $1; 
+          }
+          $entry = $self->_readline();
 	}
 	if ($entry =~ /^BEGIN_DNA/) {
 	    $entry =~ /^BEGIN_DNA/;
@@ -153,14 +128,14 @@ sub next_primary_phd {
 	push @qualities,$2;
 	push(@lines,$entry);
     }
-    $self->debug("Creating objects with id = $id\n");
-    my $swq = Bio::Seq::SeqWithQuality->new(
-					    -seq        => join('',@bases),
-					    -qual       => \@qualities,
-					    -id         => $id,
-					    -primary_id => $id,
-					    -display_id => $id,
-					    );
+     # $self->debug("csmCreating objects with id = $id\n");
+    my $swq = $self->sequence_factory->create
+	(-seq        => join('',@bases),
+	 -qual       => \@qualities,
+	 -id         => $id,
+	 -primary_id => $id,
+	 -display_id => $id,
+	 );
     return $swq;
 }
 
@@ -187,6 +162,9 @@ sub next_primary_phd {
 	TRACE_ARRAY_MAX_INDEX: unknown
 	CHEM: unknown
 	DYE: unknown
+     IMPORTANT: This method does not write the trace index where this 
+          call was made. All base calls are placed at index 1.
+
 
 =cut
 
@@ -242,7 +220,7 @@ sub write_seq {
     $trace_min_index = 0 unless defined $trace_min_index;
     push @phredstack,"TRACE_ARRAY_MIN_INDEX: $trace_min_index";
 
-    $trace_max_index = 'unknown' unless defined $trace_max_index;
+    $trace_max_index = '10000'  unless defined $trace_max_index;
     push @phredstack,"TRACE_ARRAY_MAX_INDEX: $trace_max_index";
 
     $chem = 'unknown' unless defined $chem;
@@ -261,9 +239,13 @@ sub write_seq {
     }
     for (my $curr = 1; $curr<=$length; $curr++) {
 	$self->_print (uc($swq->baseat($curr))." ".
-		       $swq->qualat($curr)."\n");
+		       $swq->qualat($curr)." 10".
+               "\n");
     }
     $self->_print ("END_DNA\n\nEND_SEQUENCE\n");
+
+    $self->flush if $self->_flush_on_write && defined $self->_fh;
+    return 1;
 }
 
 1;

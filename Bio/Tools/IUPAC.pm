@@ -1,4 +1,4 @@
-# $Id: IUPAC.pm,v 1.15.2.1 2002/06/19 00:29:43 jason Exp $
+# $Id: IUPAC.pm,v 1.19 2002/11/30 15:39:53 jason Exp $
 #
 # BioPerl module for IUPAC
 #
@@ -19,7 +19,7 @@ Bio::Tools::IUPAC - Generates unique Seq objects from an ambiguous Seq object
  use Bio::Seq;
  use Bio::Tools::IUPAC;
 
- my $ambiseq = new Bio::Seq (-seq => 'ARTCGUTGR', -type => 'Dna');
+ my $ambiseq = new Bio::Seq (-seq => 'ARTCGUTGR', -alphabet => 'dna');
  my $stream  = new Bio::Tools::IUPAC(-seq => $ambiseq);
 
  while ($uniqueseq = $stream->next_seq()) {
@@ -112,7 +112,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bioperl.org
-  http://www.bioperl.org/bioperl-bugs/
+  http://www.bugzilla.bioperl.org/
 
 =head1 AUTHOR - Aaron Mackey
 
@@ -206,12 +206,17 @@ sub new {
 	# parameter not passed as named parameter?
 	$seq = $args[0];
     }
-    $seq->isa('Bio::Seq') or $self->throw("Must supply a Seq.pm object to IUPAC!");
+    $seq->isa('Bio::Seq') or 
+	$self->throw("Must supply a Seq.pm object to IUPAC!");
     $self->{'_SeqObj'} = $seq;
-    if ($self->{'_SeqObj'}->alphabet() =~ m/^[dr]na$/i ) { # nucleotide seq object
-	$self->{'_alpha'} = [ map { $IUB{uc($_)} } split('', $self->{'_SeqObj'}->seq()) ];
-    } elsif ($self->{'_SeqObj'}->alphabet() =~ m/^protein$/i ) { # amino acid seq object
-	$self->{'_alpha'} = [ map { $IUP{uc($_)} } split('', $self->{'_SeqObj'}->seq()) ];
+    if ($self->{'_SeqObj'}->alphabet() =~ m/^[dr]na$/i ) { 
+        # nucleotide seq object
+	$self->{'_alpha'} = [ map { $IUB{uc($_)} } 
+			      split('', $self->{'_SeqObj'}->seq()) ];
+    } elsif ($self->{'_SeqObj'}->alphabet() =~ m/^protein$/i ) { 
+        # amino acid seq object
+	$self->{'_alpha'} = [ map { $IUP{uc($_)} } 
+			      split('', $self->{'_SeqObj'}->seq()) ];
     } else { # unknown type: we could make a guess, but let's not.
 	$self->throw("You must specify the 'type' of sequence provided to IUPAC");
     }
@@ -233,7 +238,7 @@ sub new {
 =cut
 
 sub next_seq{
-    my ($self,@args) = @_;
+    my ($self) = @_;
 
     for my $i ( 0 .. $#{$self->{'_string'}} ) {
 	next unless $self->{'_string'}->[$i] || @{$self->{'_alpha'}->[$i]} > 1;
@@ -295,7 +300,8 @@ sub AUTOLOAD {
     my $self = shift @_;
     my $method = $AUTOLOAD;
     $method =~ s/.*:://;
-    return $self->{'_SeqObj'}->$method(@_);
+    return $self->{'_SeqObj'}->$method(@_)
+	unless $method eq 'DESTROY';
 }
 
 1;

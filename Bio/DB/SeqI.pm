@@ -1,6 +1,6 @@
 
 #
-# $Id: SeqI.pm,v 1.6 2001/07/27 21:00:04 jason Exp $
+# $Id: SeqI.pm,v 1.7 2002/10/22 07:38:29 lapp Exp $
 #
 # BioPerl module for Bio::DB::SeqI.pm
 #
@@ -52,7 +52,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Ewan Birney
 

@@ -1,4 +1,4 @@
-# $Id: GeneStructure.pm,v 1.13 2001/10/23 21:05:48 dblock Exp $
+# $Id: GeneStructure.pm,v 1.14 2002/10/22 07:38:41 lapp Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::GeneStructure
 #
@@ -46,7 +46,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Hilmar Lapp
 

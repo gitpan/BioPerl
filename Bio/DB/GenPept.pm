@@ -1,4 +1,4 @@
-# $Id: GenPept.pm,v 1.23 2002/01/19 22:26:18 jason Exp $
+# $Id: GenPept.pm,v 1.26 2002/11/21 17:45:59 lstein Exp $
 #
 # BioPerl module for Bio::DB::GenPept
 #
@@ -65,7 +65,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Aaron Mackey, Jason Stajich
 
@@ -83,23 +83,30 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::DB::GenPept;
 use strict;
-use vars qw(@ISA $DEFAULTFORMAT %PARAMSTRING );
+use vars qw(@ISA $DEFAULTFORMAT $DEFAULTMODE %PARAMSTRING );
 use Bio::DB::NCBIHelper;
 
 @ISA = qw(Bio::DB::NCBIHelper);
 BEGIN { 
-    $DEFAULTFORMAT = 'genpept';	    
-    %PARAMSTRING = ( 'batch'=>   {  'db'    => 'p',
-				    'form'  => '1',			     
-				    'title' => 'no' },
-		     'single'=>  { 'db'     => 'p',
-				   'form'   => '1',			     
-				   'title'  => 'no'},
-		     'version'=> { 'pg'     => 'hist',
-				   'type'   => 'acc'},
-		     'gi' =>     {  'db'    => 'p',
-				    'form'  => '1',			     
-				    'title' => 'no',}
+    $DEFAULTMODE   = 'single';
+    $DEFAULTFORMAT = 'gp';	    
+    %PARAMSTRING = ( 
+		     'batch' => { 'db'     => 'protein',
+				  'usehistory' => 'n',
+				  'tool'   => 'bioperl',
+				  'retmode' => 'text'},
+		     'gi' => { 'db'     => 'protein',
+			       'usehistory' => 'n',
+			       'tool'   => 'bioperl',
+			       'retmode' => 'text'},
+		     'version' => { 'db'     => 'protein',
+				    'usehistory' => 'n',
+				    'tool'   => 'bioperl',
+				    'retmode' => 'text'},
+		     'single' => { 'db'     => 'protein',
+				   'usehistory' => 'n',
+				   'tool'   => 'bioperl',
+				   'retmode' => 'text'},
 		     );
 }
 
@@ -124,7 +131,7 @@ sub new {
 
 sub get_params {
     my ($self, $mode) = @_;
-    return %{$PARAMSTRING{$mode}};
+    return defined $PARAMSTRING{$mode} ? %{$PARAMSTRING{$mode}} : %{$PARAMSTRING{$DEFAULTMODE}};
 }
 
 =head2 default_format
@@ -171,18 +178,6 @@ sub default_format {
  Function: HTTP::Request
  Returns : 
  Args    : %qualifiers = a hash of qualifiers (ids, format, etc)
-
-=head2 get_Stream_by_batch
-
-  Title   : get_Stream_by_batch
-  Usage   : $seq = $db->get_Stream_by_batch($ref);
-  Function: Retrieves Seq objects from Entrez 'en masse', rather than one
-            at a time.  For large numbers of sequences, this is far superior
-            than get_Stream_by_[id/acc]().
-  Example :
-  Returns : a Bio::SeqIO stream object
-  Args    : $ref : either an array reference, a filename, or a filehandle
-            from which to get the list of unique ids/accession numbers.
 
 =head2 get_Stream_by_id
 

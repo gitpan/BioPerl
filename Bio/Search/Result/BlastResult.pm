@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: BlastResult.pm,v 1.6.2.1 2002/05/30 03:18:05 jason Exp $
+# $Id: BlastResult.pm,v 1.13 2002/12/24 15:48:41 jason Exp $
 #
 # BioPerl module Bio::Search::Result::BlastResult
 #
@@ -64,7 +64,7 @@ the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
     bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    http://bugzilla.bioperl.org/           
 
 =head1 AUTHOR 
 
@@ -110,7 +110,7 @@ use overload
 
 use vars qw(@ISA $Revision );
 
-$Revision = '$Id: BlastResult.pm,v 1.6.2.1 2002/05/30 03:18:05 jason Exp $';  #'
+$Revision = '$Id: BlastResult.pm,v 1.13 2002/12/24 15:48:41 jason Exp $';  #'
 @ISA = qw( Bio::Root::Root Bio::Search::Result::ResultI);
 
 #----------------
@@ -121,10 +121,10 @@ sub new {
     return $self;
 }
 
-sub DESTROY {
-    my $self = shift;
-    #print STDERR "->DESTROYING $self\n";
-}
+#sub DESTROY {
+#    my $self = shift;
+#    print STDERR "->DESTROYING $self\n";
+#}
 
 
 #=================================================
@@ -141,13 +141,12 @@ See L<Bio::Search::Result::ResultI::next_hit()|Bio::Search::Result::ResultI> for
 sub next_hit {
 #----------------
     my ($self) = @_;
-
-    unless($self->{'_hit_queue_started'}) {
-        $self->{'_hit_queue'} = [$self->hits()];
-        $self->{'_hit_queue_started'} = 1;
+    
+    unless(defined $self->{'_hit_queue'}) {	
+        $self->{'_hit_queue'} = [$self->hits()];	
     }
-
-    pop @{$self->{'_hit_queue'}};
+    
+    shift @{$self->{'_hit_queue'}};
 }
 
 =head2 query_name
@@ -323,6 +322,69 @@ sub next_feature{
    return $hsp || undef;
 }
 
+
+sub algorithm { shift->analysis_method( @_ ); }
+sub algorithm_version { shift->analysis_method_version( @_ ); }
+
+=head2 available_parameters
+
+ Title   : available_parameters
+ Usage   : my @params = $report->available_paramters
+ Function: Returns the names of the available parameters
+ Returns : Return list of available parameters used for this report
+ Args    : none
+
+=cut
+
+sub available_parameters{
+    return ();
+}
+
+
+=head2 get_parameter
+
+ Title   : get_parameter
+ Usage   : my $gap_ext = $report->get_parameter('gapext')
+ Function: Returns the value for a specific parameter used
+           when running this report
+ Returns : string
+ Args    : name of parameter (string)
+
+=cut
+
+sub get_parameter{
+    return '';
+}
+
+=head2 get_statistic
+
+ Title   : get_statistic
+ Usage   : my $gap_ext = $report->get_statistic('kappa')
+ Function: Returns the value for a specific statistic available 
+           from this report
+ Returns : string
+ Args    : name of statistic (string)
+
+=cut
+
+sub get_statistic{
+    return '';
+}
+
+=head2 available_statistics
+
+ Title   : available_statistics
+ Usage   : my @statnames = $report->available_statistics
+ Function: Returns the names of the available statistics
+ Returns : Return list of available statistics used for this report
+ Args    : none
+
+=cut
+
+sub available_statistics{
+    return ();
+}
+
 #=================================================
 # End Bio::Search::Result::ResultI implementation
 #=================================================
@@ -362,25 +424,63 @@ sub database_name {
     return $dbname;
 }
 
+=head2 database_entries
 
-=head2 hits
-
- Title   : hits
- Usage   : my @hits = $result->hits
- Function: Returns the available hits for this Result
- Returns : Array of L<Bio::Search::Hit::HitI> objects
- Args    : none
+ Title   : database_entries
+ Usage   : $num_entries = $result->database_entries()
+ Function: Used to obtain the number of entries contained in the database.
+ Returns : a scalar integer representing the number of entities in the database
+           or undef if the information was not available.
+ Args    : [optional] new integer for the number of sequence entries in the db
 
 
 =cut
 
-sub hits{
-   my ($self) = shift;
-   my @hits = ();
-   if( ref $self->{'_hits'}) {
-       @hits = @{$self->{'_hits'}};
-   }
-    return @hits;   
+#---------------
+sub database_entries {
+#---------------
+    my $self = shift;
+    my $dbentries = '';
+    if( ref $self->analysis_subject) {
+      $dbentries = $self->analysis_subject->entries;
+    } 
+    return $dbentries;
+}
+
+
+=head2 database_letters
+
+ Title   : database_letters
+ Usage   : $size = $result->database_letters()
+ Function: Used to obtain the size of database that was searched against.
+ Returns : a scalar integer (units specific to algorithm, but probably the
+           total number of residues in the database, if available) or undef if
+           the information was not available to the Processor object.
+ Args    : [optional] new scalar integer for number of letters in db 
+
+
+=cut
+
+#---------------
+sub database_letters {
+#---------------
+    my $self = shift;
+    my $dbletters = '';
+    if( ref $self->analysis_subject) {
+      $dbletters = $self->analysis_subject->letters;
+    } 
+    return $dbletters;
+}
+
+#---------------
+sub hits {
+#---------------
+    my $self = shift;
+    my @hits = ();
+    if( ref $self->{'_hits'}) {
+        @hits = @{$self->{'_hits'}};
+    }
+    return @hits;
 }
 
 =head2 add_hit
@@ -400,7 +500,6 @@ sub add_hit {
 #---------------
     my ($self, $hit) = @_;
     my $add_it = 1;
-
     unless( ref $hit and $hit->isa('Bio::Search::Hit::HitI')) {
         $add_it = 0;
         $self->throw(-class =>'Bio::Root::BadParameter',
@@ -478,22 +577,23 @@ sub raw_statistics {
 #------------
     my $self = shift; 
     if(@_) {
-         my $params = shift;
-         if( ref $params eq 'ARRAY') {
-              $self->{'_raw_statistics'} = $params;
-         }
-        else {
+	my $params = shift;
+	if( ref $params eq 'ARRAY') {
+	    $self->{'_raw_statistics'} = $params;
+	}
+	else {
             $self->throw(-class =>'Bio::Root::BadParameter',
                          -text => "Can't set statistical params: not an ARRAY ref: $params"
                          );
         }
     }
     if(not defined $self->{'_raw_statistics'}) {
-              $self->{'_raw_statistics'} = [];
+	$self->{'_raw_statistics'} = [];
     }
 
     @{$self->{'_raw_statistics'}};
 }
+
 
 
 =head2 no_hits_found
@@ -502,7 +602,7 @@ sub raw_statistics {
  Purpose   : Get boolean indicator indicating whether or not any hits
              were present in the report.
 
-             This is NOT the same as deteriming the number of hits via
+             This is NOT the same as determining the number of hits via
              the hits() method, which will return zero hits if there were no
              hits in the report or if all hits were filtered out during the parse.
 
@@ -609,101 +709,6 @@ sub psiblast {
         $self->{'_psiblast'} = 1;
     }
     return $self->{'_psiblast'};
-}
-
-
-=head2 database_entries
-
- Title   : database_entries
- Usage   : $num_entries = $result->database_entries()
- Function: Used to obtain the number of entries contained in the database.
- Returns : a scalar integer representing the number of entities in the database
-           or undef if the information was not available.
- Args    : [optional] new integer for the number of sequence entries in the db
-
-
-=cut
-
-sub database_entries {
-    return $_[0]->analysis_subject->entries() || 0;
-}
-
-
-=head2 database_letters
-
- Title   : database_letters
- Usage   : $size = $result->database_letters()
- Function: Used to obtain the size of database that was searched against.
- Returns : a scalar integer (units specific to algorithm, but probably the
-           total number of residues in the database, if available) or undef if
-           the information was not available to the Processor object.
- Args    : [optional] new scalar integer for number of letters in db 
-
-
-=cut
-
-sub database_letters {
-    return $_[0]->analysis_subject->letters() || 0;
-}
-
-
-=head2 available_parameters
-
- Title   : available_parameters
- Usage   : my @params = $report->available_paramters
- Function: Returns the names of the available parameters
- Returns : Return list of available parameters used for this report
- Args    : none
-
-=cut
-
-sub available_parameters{
-    return ();
-}
-
-
-=head2 get_parameter
-
- Title   : get_parameter
- Usage   : my $gap_ext = $report->get_parameter('gapext')
- Function: Returns the value for a specific parameter used
-           when running this report
- Returns : string
- Args    : name of parameter (string)
-
-=cut
-
-sub get_parameter{
-    return '';
-}
-
-=head2 get_statistic
-
- Title   : get_statistic
- Usage   : my $gap_ext = $report->get_statistic('kappa')
- Function: Returns the value for a specific statistic available 
-           from this report
- Returns : string
- Args    : name of statistic (string)
-
-=cut
-
-sub get_statistic{
-    return '';
-}
-
-=head2 available_statistics
-
- Title   : available_statistics
- Usage   : my @statnames = $report->available_statistics
- Function: Returns the names of the available statistics
- Returns : Return list of available statistics used for this report
- Args    : none
-
-=cut
-
-sub available_statistics{
-    return ();
 }
 
 

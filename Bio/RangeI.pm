@@ -1,4 +1,4 @@
-# $Id: RangeI.pm,v 1.25.2.1 2002/03/15 12:50:43 heikki Exp $
+# $Id: RangeI.pm,v 1.30 2002/11/05 02:55:12 lapp Exp $
 #
 # BioPerl module for Bio::RangeI
 #
@@ -55,7 +55,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
@@ -101,7 +101,7 @@ sub _strong {
     my ($r1, $r2) = @_;
     my ($s1, $s2) = ($r1->strand(), $r2->strand());
     
-    return 1 if $s1 != 0 && $s2 != 0 &&  $s1 == $s2;
+    return 1 if $s1 != 0 && $s1 == $s2;
 }
 
 # returns true if strands are equal or either is zero
@@ -212,7 +212,8 @@ sub overlaps {
     
     $self->throw("start is undefined") unless defined $self->start;
     $self->throw("end is undefined") unless defined $self->end;
-    $other->throw("not a Bio::RangeI object") unless  $other->isa('Bio::RangeI');
+    $self->throw("not a Bio::RangeI object") unless defined $other && 
+	$other->isa('Bio::RangeI');
     $other->throw("start is undefined") unless defined $other->start;
     $other->throw("end is undefined") unless defined $other->end;
     
@@ -341,6 +342,7 @@ sub intersection {
     Title   : union
     Usage   : ($start, $stop, $strand) = $r1->union($r2);
             : ($start, $stop, $strand) = Bio::RangeI->union(@ranges);
+              my $newrange = Bio::RangeI->union(@ranges);
     Function: finds the minimal range that contains all of the ranges
     Args    : a range or list of ranges to find the union of
     Returns : the range object containing all of the ranges
@@ -380,10 +382,14 @@ sub union {
 	}
     }
     return undef unless $start or $end;
-    return $self->new('-start' => $start,
-		      '-end' => $end,
-		      '-strand' => $union_strand
-		      );
+    if( wantarray() ) {
+	return ( $start,$end,$union_strand);
+    } else { 
+	return $self->new('-start' => $start,
+			  '-end' => $end,
+			  '-strand' => $union_strand
+			  );
+    }
 }
 
 =head2 overlap_extent

@@ -10,7 +10,7 @@ sub connector {
   my $self = shift;
   my $super = $self->SUPER::connector(@_);
   return $super if $self->all_callbacks;
-  return 'dashed' unless defined($super) && $super eq 'none';
+  return 'dashed' unless defined($super) && ($super eq 'none' or !$super);
 }
 
 # we don't label group (yet)
@@ -29,22 +29,10 @@ sub new {
 sub bump {
   my $bump = shift->SUPER::bump(@_);
   return unless defined $bump;
-  return 1  if $bump > 1;
-  return -1 if $bump < 1;
+  return 1  if $bump >  1;
+  return -1 if $bump < -1;
   return $bump;
 }
-
-#sub layout_width {
-#  my $self = shift;
-#  my @parts = $self->parts or return $self->SUPER::layout_width;
-#  return $self->{layout_width} if exists $self->{layout_width};
-#  my $max = $self->SUPER::layout_width;
-#  foreach (@parts) {
-#    my $part_width = $_->layout_width;
-#    $max = $part_width if $part_width > $max;
-#  }
-#  return $self->{layout_width} = $max;
-#}
 
 1;
 

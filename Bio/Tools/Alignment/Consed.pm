@@ -15,9 +15,9 @@ Bio::Tools::Alignment::Consed - A module to work with objects from consed .ace f
 =head1 SYNOPSIS
 
   # a report for sequencing stuff
-  my $o_consed = new Bio::Tools::Alignment::Consed
-        ( -acefile => "/path/to/an/acefile.ace.1",
-	  -verbose => 1);
+  my $o_consed = new Bio::Tools::Alignment::Consed( 
+      -acefile => "/path/to/an/acefile.ace.1",
+      -verbose => 1);
   my $foo = $o_consed->set_reverse_designator("r");
   my $bar = $o_consed->set_forward_designator("f");
 
@@ -80,7 +80,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 
 =head1 AUTHOR - Chad Matsalla
@@ -100,7 +100,6 @@ package Bio::Tools::Alignment::Consed;
 
 use strict;
 use vars qw($VERSION @ISA $Contigs %DEFAULTS);
-use Carp;
 use FileHandle;
 use Dumpvalue qw(dumpValue);
 use Bio::Tools::Alignment::Trim;
@@ -224,7 +223,7 @@ sub count_sequences_with_grep {
     # this should be migrated to a pure perl implementation ala
     # Tom Christiansen's 'tcgrep'
     # http://www.perl.com/language/ppt/src/grep/tcgrep
-    
+
     open(FILE, $self->{'filename'}) or do { $self->warn("cannot open file ".$self->{'filename'}. " for grepping"); return}; 
     my $counter =0;
     while(<FILE>) { $counter++ if(/^AF/); }
@@ -246,7 +245,7 @@ sub count_sequences_with_grep {
 #	if (!($^O =~ /dec_osf|linux|unix|bsd|solaris|darwin/i)) {
 #	$self->warn("Bio::Tools::Alignment::Consed::count_sequences_with_grep: This sub uses grep which is doesn't run on this operating system, AFAIK. Sorry   .".$^O);
 #	return 1;
-#    }    
+#    }
 #    $grep_cli = `which grep`;
 #    if (!$grep_cli) {
 #	$self->warn("I couldn't see to find grep on this system, or the which command is broken. Bio::Tools::Alignment::Consed::count_sequences_with_grep requires grep and which to find grep.");
@@ -294,6 +293,22 @@ sub get_contigs {
     return @keys;
 }
 
+=head2 get_class($contig_keyname)
+
+ Title   : get_class($contig_keyname)
+ Usage   : $o_consed->get_class($contig_keyname);
+ Function: Return the class name for this contig
+ Returns : A scalar representing the class of this contig.
+ Args    : None.
+ Notes   : 
+
+=cut
+
+sub get_class {
+    my ($self,$contig) = @_;
+    return $self->{contigs}->{$contig}->{class};
+}
+
 =head2 get_quality_array($contig_keyname)
 
  Title   : get_quality_array($contig_keyname)
@@ -316,7 +331,12 @@ See L<get_quality_scalar()|get_quality_scalar>
 
 sub get_quality_array {
     my ($self,$contig) = @_;
-    my @qualities = split(' ',($self->{'contigs'}->{$contig}->{'quality'}=~s/\s+//));
+     my $quality =  $self->{contigs}->{$contig}->{quality};
+          # chad, what is with the s/// ?
+          # my @qualities = split
+	     # (' ',($self->{contigs}->{$contig}->{quality} =~ s/\s+//));
+      my @qualities = split
+	     (' ',$self->{contigs}->{$contig}->{quality});
     return @qualities;
 }
 
@@ -366,7 +386,7 @@ sub get_quality_scalar {
 #'
 sub freeze_hash {
     my $self = shift;
-	$self->warn("This method was removed from the bioperl consed.pm. Sorry.\n");
+	$self->warn("This method (freeze_hash) was removed from the bioperl consed.pm. Sorry.\n");
 	if (1==2) {
 	    $self->debug("Bio::Tools::Alignment::Consed::freeze_hash: \$self->{path} is $self->{path}\n");
 	    my $filename = $self->{'path'}."frozen";
@@ -456,7 +476,8 @@ See L<get_contigs()|get_contigs>
 sub get_contig_number_by_name {
     my ($self,$name) = @_;
     foreach my $currkey (sort keys %{$self->{'contigs'}}) {
-	if ($self->{'contigs'}->{$currkey}->{'name'} && $self->{'contigs'}->{$currkey}->{'name'} eq "$name") {
+	if ($self->{'contigs'}->{$currkey}->{'name'} && 
+	    $self->{'contigs'}->{$currkey}->{'name'} eq "$name") {
 	    return $currkey;
 	}
     }
@@ -733,11 +754,10 @@ sub set_trim_points_singlets_and_singletons {
 	    else { $quality = $self->{'contigs'}->{$_}->{'quality'}; }
 	    $name = $self->{'contigs'}->{$_}->{'name'};
 	    $class = $self->{'contigs'}->{$_}->{'class'};	    
-	    (@points) = $self->{'o_trim'}->trim_singlet($sequence,$quality,$name,$class);
-	    $self->debug("\tConsed::set_trim_points...: Start and end points for $_ is $points[0] and $points[1]\n");
+	    (@points) = @{$self->{'o_trim'}->trim_singlet($sequence,$quality,$name,$class)};
 	    $self->{'contigs'}->{$_}->{'start_point'} = $points[0];
 	    $self->{'contigs'}->{$_}->{'end_point'} = $points[1];
-	    $self->{'contigs'}->{$_}->{'sequence_trimmed'} = $points[2];
+	    $self->{'contigs'}->{$_}->{'sequence_trimmed'} = substr($self->{contigs}->{$_}->{'consensus'},$points[0],$points[1]-$points[0]);
 	}
     }
     $self->debug("Bio::Tools::Alignment::Consed::set_trim_points_singlets_and_singletons: Done setting the quality trimpoints.\n");
@@ -770,14 +790,14 @@ sub set_trim_points_doublets {
     $self->debug("Bio::Tools::Alignment::Consed::set_trim_points_doublets: Setting doublet trim points.\n");
     foreach (sort keys %{$self->{'contigs'}}) {
 	if ($self->{'contigs'}->{$_}->{'class'} eq "doublet") {
-	    $self->debug("Bio::Tools::Alignment::Consed::set_trim_points_doublets: Setting trimpoints for doublet $_\n" .
-			 "The qualities for this doublet are $self->{'contigs'}->{$_}->{'quality'}\n".
-			 "Consed::set_trim_points_doublets: there are ".length($self->{'contigs'}->{$_}->{consensus})." bases in $_\n");
-	    # my ($self,$sequence,$quality,$name,$class) = @_;
+	          # my ($self,$sequence,$quality,$name,$class) = @_;
+          my @quals = split(' ',$self->{'contigs'}->{$_}->{'quality'});
+          
 	    (@points) = $self->{o_trim}->trim_doublet($self->{'contigs'}->{$_}->{'consensus'},$self->{'contigs'}->{$_}->{'quality'},$self->{'contigs'}->{$_}->{name},$self->{'contigs'}->{$_}->{'class'});
 	    $self->{'contigs'}->{$_}->{'start_point'} = $points[0];
 	    $self->{'contigs'}->{$_}->{'end_point'} = $points[1];
-	    $self->{'contigs'}->{$_}->{'sequence_trimmed'} = $points[2];
+               # now set this
+	    $self->{'contigs'}->{$_}->{'sequence_trimmed'} = substr($self->{contigs}->{$_}->{'consensus'},$points[0],$points[1]-$points[0]);
 	    # 010102 the deprecated way to do things:
 	}
     }
@@ -1095,6 +1115,10 @@ sub set_singlet_quality {
 sub set_contig_quality {
     # note: contigs _include_ singletons but _not_ singlets
     my ($self) = shift;
+          # the unexpected results I am referring to here are a doubling of quality values.
+          # the profanity I uttered on discovering this reminded me of the simpsons:
+          # Ned Flanders: "That is the loudest profanity I have ever heard!"
+     $self->warn("set_contig_quality is deprecated and will likely produce unexpected results");
     my $full_filename = $self->{'filename'};
     # Run_SRC3700_2000-08-01_73+74.fasta.screen.contigs.qual
     # from Consed.pm
@@ -1301,7 +1325,7 @@ sub get_singletons {
 			@array = @{$self->{'contigs'}->{$key}->{'member_array'}};
 		}
 		my $num_array_elem = @array;
-		if (@array == 1 && $self->{'contigs'}->{$key}->{'class'} eq "singleton") { push @singletons,$key; }
+		if ($num_array_elem == 1 && $self->{'contigs'}->{$key}->{'class'} && $self->{'contigs'}->{$key}->{'class'} eq "singleton") { push @singletons,$key; }
 	}
 	return @singletons;
 }
@@ -1428,7 +1452,7 @@ sub get_doublets {
 	my @doublets;
 	foreach (sort keys %{$self->{'contigs'}}) {
 	    if ($self->{'contigs'}->{$_}->{name} && $self->{'contigs'}->{$_}->{'class'} eq "doublet") {
-		push @doublets,$self->{'contigs'}->{$_}->{'name'};
+		push @doublets,$_;
 	    }
 	}
 	return @doublets;
@@ -1624,7 +1648,7 @@ sub reverse_and_complement {
 =cut
 
 my $current_base;
-sub reverse_recurse($source,$destination) {
+sub reverse_recurse($$) {
 	(my $r_source,my $r_destination) = @_;
 	if (!@$r_source) { return $r_destination; }
 	$_=pop(@$r_source);

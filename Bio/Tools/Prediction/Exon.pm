@@ -1,4 +1,4 @@
-# $Id: Exon.pm,v 1.9 2001/06/15 16:09:53 jason Exp $
+# $Id: Exon.pm,v 1.10 2002/10/22 07:38:48 lapp Exp $
 #
 # BioPerl module for Bio::Tools::Prediction::Exon
 #
@@ -47,7 +47,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Hilmar Lapp
 

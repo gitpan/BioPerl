@@ -1,4 +1,5 @@
-# $Id: GFF.pm,v 1.52.2.4 2002/07/11 02:10:50 lstein Exp $
+# $Id: GFF.pm,v 1.71 2002/12/22 03:42:21 lstein Exp $
+
 =head1 NAME
 
 Bio::DB::GFF -- Storage and retrieval of sequence annotation data
@@ -446,10 +447,11 @@ use Bio::DB::GFF::Util::Rearrange;
 use Bio::DB::GFF::RelSegment;
 use Bio::DB::GFF::Feature;
 use Bio::DB::GFF::Aggregator;
+use Bio::DasI;
 use Bio::Root::Root;
 
 use vars qw($VERSION @ISA);
-@ISA = qw(Bio::Root::Root);
+@ISA = qw(Bio::Root::Root Bio::DasI);
 
 $VERSION = '1.04';
 my %valid_range_types = (overlaps     => 1,
@@ -470,7 +472,7 @@ my %valid_range_types = (overlaps     => 1,
 These are the arguments:
 
  -adaptor      Name of the adaptor module to use.  If none
-               provided, defaults to "dbi:mysqlopt".
+               provided, defaults to "dbi::mysqlopt".
 
  -aggregator   Array reference to a list of aggregators
                to apply to the database.  If none provided,
@@ -482,23 +484,35 @@ These are the arguments:
 The adaptor argument must correspond to a module contained within the
 Bio::DB::GFF::Adaptor namespace.  For example, the
 Bio::DB::GFF::Adaptor::dbi::mysql adaptor is loaded by specifying
-'dbi:mysql'.  By Perl convention, the adaptors names are lower case
+'dbi::mysql'.  By Perl convention, the adaptors names are lower case
 because they are loaded at run time.
 
-The aggregator array may contain a list of aggregator names, or a list 
-of initialized aggregator objects.  For example, if you wish to change
-the components aggregated by the transcript aggregator, you could
-pass it to the GFF constructor this way:
+The aggregator array may contain a list of aggregator names, a list of
+initialized aggregator objects, or a string in the form
+"aggregator_name{subpart1,subpart2,subpart3/main_method}" (the
+/main_method part is optional).  For example, if you wish to change
+the components aggregated by the transcript aggregator, you could pass
+it to the GFF constructor this way:
 
   my $transcript = 
      Bio::DB::Aggregator::transcript->new(-sub_parts=>[qw(exon intron utr
                                                           polyA spliced_leader)]);
 
   my $db = Bio::DB::GFF->new(-aggregator=>[$transcript,'clone','alignment],
-                             -adaptor   => 'dbi:mysql',
+                             -adaptor   => 'dbi::mysql',
                              -dsn      => 'dbi:mysql:elegans42');
 
-The commonly used 'dbi:mysql' adaptor recognizes the following
+Alternatively, you could create an entirely new transcript aggregator
+this way:
+
+  my $new_agg = 'transcript{exon,intron,utr,polyA,spliced_leader}';
+  my $db      = Bio::DB::GFF->new(-aggregator=>[$new_agg,'clone','alignment],
+                                  -adaptor   => 'dbi::mysql',
+                                  -dsn       => 'dbi:mysql:elegans42');
+
+See L<Bio::DB::GFF::Aggregator> for more details.
+
+The commonly used 'dbi::mysql' adaptor recognizes the following
 adaptor-specific arguments:
 
   Argument       Description
@@ -512,7 +526,7 @@ adaptor-specific arguments:
 
   -pass          the password for authentication
 
-The commonly used 'dbi:mysqlopt' adaptor also recogizes the following
+The commonly used 'dbi::mysqlopt' adaptor also recogizes the following
 arguments.
 
   Argument       Description
@@ -558,7 +572,6 @@ sub new {
   # the aggreator is treated as a ready made object.
   $aggregators = $self->default_aggregators unless defined $aggregators;
   my @a = ref($aggregators) eq 'ARRAY' ? @$aggregators : $aggregators;
-  my @aggregators;
   for my $a (@a) {
     $self->add_aggregator($a);
   }
@@ -568,6 +581,7 @@ sub new {
 
   $self;
 }
+
 
 =head2 types
 
@@ -719,7 +733,7 @@ Arguments:
 
 Here's an example to explain how this works:
 
-  my $db = Bio::DB::GFF->new(-dsn => 'dbi:mysql:human',-adaptor=>'dbi:mysql');
+  my $db = Bio::DB::GFF->new(-dsn => 'dbi:mysql:human',-adaptor=>'dbi::mysql');
 
 If successful, $db will now hold the database accessor object.  We now
 try to fetch the fragment of sequence whose ID is A0000182 and class
@@ -744,7 +758,7 @@ and find the start and stop on the source like this:
 
 If we had another segment, say $s2, which is on the same contiguous
 piece of DNA, we can pass that to the refseq() method in order to
-establish it as the coordinat reference point:
+establish it as the coordinate reference point:
 
   $segment->refseq($s2);
 
@@ -828,12 +842,23 @@ Arguments are as follows:
 
   -types     List of feature types to return.  Argument is an array
 	     reference containing strings of the format "method:source"
+
   -merge     Whether to apply aggregators to the generated features.
+
   -rare      Turn on optimizations suitable for a relatively rare feature type,
              where it makes more sense to filter by feature type first,
              and then by position.
+
   -attributes A hash reference containing attributes to match.
+
   -iterator  Whether to return an iterator across the features.
+
+  -binsize   A true value will create a set of artificial features whose
+             start and stop positions indicate bins of the given size, and
+             whose scores are the number of features in the bin.  The
+             class and method of the feature will be set to "bin",
+             its source to "method:source", and its group to "bin:method:source".
+             This is a handy way of generating histograms of feature density.
 
 If -iterator is true, then the method returns a single scalar value
 consisting of a Bio::SeqIO object.  You can call next_seq() repeatedly
@@ -933,7 +958,7 @@ This method can be used to fetch a named feature from the database.
 GFF annotations are named using the group class and name fields, so
 for features that belong to a group of size one, this method can be
 used to retrieve that group (and is equivalent to the segment()
-method).
+method).  Any Alias attributes are also searched for matching names.
 
 This method may return zero, one, or several Bio::DB::GFF::Feature
 objects.
@@ -970,6 +995,7 @@ sub get_feature_by_name {
   my $features = [];
   my $callback = sub { push @$features,$self->make_feature(undef,\%groups,@_) };
   $self->_feature_by_name($gclass,$gname,$callback);
+  $self->_feature_by_alias($gclass,$gname,$callback) if $self->can('_feature_by_alias');
 
   warn "aggregating...\n" if $self->debug;
   foreach my $a (@aggregators) {  # last aggregator gets first shot
@@ -993,8 +1019,7 @@ sub get_feature_by_name {
  Status  : public
 
 This method can be used to fetch a named feature from the database
-based on its similarity hit.  In this implementation it is identical
-to get_feature_by_target().
+based on its similarity hit.
 
 =cut
 
@@ -1731,7 +1756,14 @@ sub fast_queries {
  Status  : public
 
 This method will append an aggregator to the end of the list of
-registered aggregators.
+registered aggregators.  Three different argument types are accepted:
+
+  1) a Bio::DB::GFF::Aggregator object -- will be added
+  2) a string in the form "aggregator_name{subpart1,subpart2,subpart3/main_method}"
+         -- will be turned into a Bio::DB::GFF::Aggregator object (the /main_method
+        part is optional).
+  3) a valid Perl token -- will be turned into a Bio::DB::GFF::Aggregator
+        subclass, where the token corresponds to the subclass name.
 
 =cut
 
@@ -1742,7 +1774,19 @@ sub add_aggregator {
   if (ref $aggregator) { # an object
     @$list = grep {$_->get_method ne $aggregator->get_method} @$list;
     push @$list,$aggregator;
-  } else {
+  }
+
+  elsif ($aggregator =~ /^(\w+)\{([^\/\}]+)\/?(.*)\}$/) {
+    my($agg_name,$subparts,$mainpart) = ($1,$2,$3);
+    my @subparts = split /,\s*/,$subparts;
+    my @args = (-method    => $agg_name,
+		-sub_parts => \@subparts);
+    push @args,(-main_method => $mainpart) if $mainpart;
+    warn "making an aggregator with (@args), subparts = @subparts" if $self->debug;
+    push @$list,Bio::DB::GFF::Aggregator->new(@args);
+  }
+
+  else {
     my $class = "Bio::DB::GFF::Aggregator::\L${aggregator}\E";
     eval "require $class";
     $self->throw("Unable to load $aggregator aggregator: $@") if $@;
@@ -1885,8 +1929,8 @@ sub do_load_gff {
 			    start  => $2,
 			    stop   => $3,
 			    score  => undef,
-			    strand => '.',
-			    phase  => '.',
+			    strand => undef,
+			    phase  => undef,
 			    gclass => 'Sequence',
 			    gname  => $1,
 			    tstart => undef,
@@ -1900,6 +1944,9 @@ sub do_load_gff {
     next if /^\#/;
     my ($ref,$source,$method,$start,$stop,$score,$strand,$phase,$group) = split "\t";
     next unless defined($ref) && defined($method) && defined($start) && defined($stop);
+    foreach (\$score,\$strand,\$phase) {
+      undef $$_ if $$_ eq '.';
+    }
 
     # handle group parsing
     # protect embedded semicolons in the group; there must be faster/more elegant way
@@ -2234,7 +2281,15 @@ that affect the way information is retrieved:
 
    sparse    A flag.  If true, means that the expected density of the 
              features is such that it will be more efficient to search
-             by type rather than by range.
+             by type rather than by range.  If it is taking a long
+             time to fetch features, give this a try.
+
+   binsize   A true value will create a set of artificial features whose
+             start and stop positions indicate bins of the given size, and
+             whose scores are the number of features in the bin.  The
+             class of the feature will be set to "bin", and its name to
+             "method:source".  This is a handy way of generating histograms
+             of feature density.
 
 The third argument, the $callback, is a code reference to which
 retrieved features are passed.  It is described in more detail below.
@@ -2582,7 +2637,7 @@ sub make_feature {
 
 sub make_aggregated_feature {
   my $self                 = shift;
-  my ($matchsub,$accumulated_features,$parent,$aggregators) = splice(@_,0,4);
+  my ($accumulated_features,$parent,$aggregators) = splice(@_,0,3);
   my $feature = $self->make_feature($parent,undef,@_);
   return [$feature] if $feature && !$feature->group;
 
@@ -2660,7 +2715,6 @@ sub make_match_sub {
   for my $type (@$types) {
     my ($method,$source) = @$type;
     $method ||= '.*';
-#    $source  = $source ? ":$source" : ":?.*";
     $source  = $source ? ":$source" : "(?::.+)?";
     push @expr,"${method}${source}";
   }
@@ -2784,14 +2838,13 @@ sub _features {
   my ($search,$options,$parent) = @_;
   (@{$search}{qw(start stop)}) = (@{$search}{qw(stop start)})
     if defined($search->{start}) && $search->{start} > $search->{stop};
-  
+
   my $types = $self->parse_types($search->{types});  # parse out list of types
   my @aggregated_types = @$types;         # keep a copy
 
   # allow the aggregators to operate on the original
-  my ($match,@aggregators);
+  my @aggregators;
   if ($options->{automerge}) {
-    $match = $self->make_match_sub($types);
     for my $a ($self->aggregators) {
       $a = $a->clone if $options->{iterator};
       unshift @aggregators,$a
@@ -2801,7 +2854,7 @@ sub _features {
 
   if ($options->{iterator}) {
     my @accumulated_features;
-    my $callback = $options->{automerge} ? sub { $self->make_aggregated_feature($match,\@accumulated_features,$parent,\@aggregators,@_) }
+    my $callback = $options->{automerge} ? sub { $self->make_aggregated_feature(\@accumulated_features,$parent,\@aggregators,@_) }
                                          : sub { [$self->make_feature($parent,undef,@_)] };
     return $self->get_features_iterator({ %$search, 
 					  types => \@aggregated_types  },
@@ -2823,7 +2876,8 @@ sub _features {
   if ($options->{automerge}) {
     warn "aggregating...\n" if $self->debug;
     foreach my $a (@aggregators) {  # last aggregator gets first shot
-      $a->aggregate($features,$self) or next;
+      warn "Aggregator $a:\n" if $self->debug;
+      $a->aggregate($features,$self);
     }
   }
 
@@ -2899,9 +2953,9 @@ sub _split_group {
 
     # if the tag eq 'Target' then the class name is embedded in the ID
     # (the GFF format is obviously screwed up here)
-    elsif ($tag eq 'Target' && /\"([^:\"]+):([^\"]+)\"/) {
+    elsif ($tag eq 'Target' && /([^:\"\s]+):([^\"\s]+)/) {
       ($gclass,$gname) = ($1,$2);
-      ($tstart,$tstop) = /(\d+) (\d+)/;
+      ($tstart,$tstop) = / (\d+) (\d+)/;
     }
 
     elsif (!$value) {
@@ -2920,7 +2974,7 @@ sub _split_group {
 
 package Bio::DB::GFF::ID_Iterator;
 use strict;
-use Carp 'croak';
+
 use Bio::Root::Root;
 use vars '@ISA';
 @ISA = 'Bio::Root::Root';
@@ -2961,9 +3015,11 @@ fixed.
 
 L<bioperl>,
 L<Bio::DB::GFF::RelSegment>,
+L<Bio::DB::GFF::Aggregator>,
 L<Bio::DB::GFF::Feature>,
-L<Bio::DB::GFF::Adaptor::dbi::mysql>,
-L<Bio::DB::GFF::Adaptor::dbi::mysqlopt>
+L<Bio::DB::GFF::Adaptor::dbi::mysqlopt>,
+L<Bio::DB::GFF::Adaptor::dbi::oracle>,
+L<Bio::DB::GFF::Adaptor::dbi::memory>
 
 =head1 AUTHOR
 

@@ -1,0 +1,1192 @@
+# $Id: GeneMapper.pm,v 1.13 2002/12/04 15:38:23 jason Exp $
+#
+# bioperl module for Bio::Coordinate::GeneMapper
+#
+# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+#
+# Copyright Heikki Lehvaslaiho
+#
+# You may distribute this module under the same terms as perl itself
+
+# POD documentation - main docs before the code
+
+=head1 NAME
+
+Bio::Coordinate::GeneMapper - transformations between gene related coordinate systems
+
+=head1 SYNOPSIS
+
+  # to use
+  use Bio::Coordinate::GeneMapper;
+
+  # defaults to ID 1 "Standard"
+  $gmap = Bio::Coordinate::GeneMapper->new();
+  $gmap = Bio::Coordinate::GeneMapper -> new (-in => 'chr',
+                                              -out=> 'cds',
+                                              -strict => 1,
+                                              -nozero => 0 );
+
+
+=head1 DESCRIPTION
+
+
+Bio::Coordinate::GeneMapper is a module for simple mapping of
+coodinate locations between various gene related locations in human
+genetics. It uses a relaxed form of Bio::Coordinate::Pair called
+Bio::Coordinate::ExtrapolatingPair which in addition to freely
+extrapolaiting values beyond boundaries disallows the use of location
+zero.
+
+It understands by name the following coordinate systems and mapping
+between them:
+
+                         peptide (peptide length)
+                            ^
+                            | -peptide_offset
+                            |
+                  (frame) propeptide (propeptide length)
+                       ^    ^
+                        \   |
+            translate    \  |
+                          \ |
+                           cds  (transcript start and end)
+                            ^
+        negative_introns    | \
+                    ^       |  \  transcript 
+                     \      |   \
+        inex  =  introns  exons  \
+                       ^    ^    /
+                        \   |   /
+               splice    \  |  /
+                          \ | /
+                          gene (gene length)
+                            ^
+                            | - gene_offset
+                            |
+                           chr (or entry)
+
+
+This structure is kept in global variable $DAG which is a
+representation of a Directed Acyclic Graph. The path calculations
+traversing this graph are done in a helper class. See
+L<Bio::Coordinate::Graph>.
+
+Of these, two operations are special cases, translate and splice.
+Translating and reverse translating are implemented as internal
+methods that do the simple 1E<lt>-E<gt>3 conversion. Splicing needs
+additional information that in BioPerl is represented by
+Bio::SeqFeature::Gene::GeneStructureI modules. Splicing depends on
+method exons() which takes in a more general array of Bio::LocationI
+objects.
+
+
+=head1 FEEDBACK
+
+=head2 Mailing Lists
+
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to the
+Bioperl mailing lists  Your participation is much appreciated.
+
+  bioperl-l@bioperl.org                 - General discussion
+  http://bio.perl.org/MailList.html     - About the mailing lists
+
+=head2 Reporting Bugs
+
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via email
+or the web:
+
+  bioperl-bugs@bio.perl.org
+  http://bugzilla.bioperl.org/
+
+=head1 AUTHOR - Heikki Lehvaslaiho
+
+Email:  heikki@ebi.ac.uk
+Address:
+
+     EMBL Outstation, European Bioinformatics Institute
+     Wellcome Trust Genome Campus, Hinxton
+     Cambs. CB10 1SD, United Kingdom
+
+=head1 APPENDIX
+
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
+
+=cut
+
+
+# Let the code begin...
+
+package Bio::Coordinate::GeneMapper;
+use vars qw(@ISA %COORDINATE_SYSTEMS  %COORDINATE_INTS $TRANSLATION $DAG
+            $NOZERO_VALUES $NOZERO_KEYS);
+use strict;
+
+# Object preamble - inherits from Bio::Root::Root
+use Bio::Root::Root;
+use Bio::Coordinate::Result;
+use Bio::Location::Simple;
+use Bio::Coordinate::Graph;
+use Bio::Coordinate::Collection;
+use Bio::Coordinate::Pair;
+use Bio::Coordinate::ExtrapolatingPair;
+
+@ISA = qw(Bio::Root::Root);
+
+# first set internal values for all translation tables
+
+%COORDINATE_SYSTEMS = (
+		       peptide          => 10,
+		       propeptide       => 9,
+		       frame            => 8,
+		       cds              => 7,
+		       negative_intron  => 6,
+		       intron           => 5,
+		       exon             => 4,
+		       inex             => 3,
+		       gene             => 2,
+		       chr              => 1
+		      );
+
+%COORDINATE_INTS = (
+		    10 => 'peptide',
+		    9 => 'propeptide',
+		    8 => 'frame',
+		    7 => 'cds',
+		    6 => 'negative_intron',
+		    5 => 'intron',
+		    4 => 'exon',
+		    3 => 'inex',
+		    2 => 'gene',
+		    1 => 'chr'
+		   );
+
+$TRANSLATION =  $COORDINATE_SYSTEMS{'cds'}. "-".
+    $COORDINATE_SYSTEMS{'propeptide'};
+
+$DAG = {
+	10 => [],
+	9  => [10],
+	8  => [],
+	7  => [8, 9],
+	6  => [],
+	5  => [6],
+	4  => [7],
+	3  => [],
+	2  => [4, 5, 7],
+	1  => [2]
+       };
+
+$NOZERO_VALUES = {0 => 0, 'in' => 1, 'out' => 2, 'in&out' => 3 };
+$NOZERO_KEYS = { 0 => 0, 1 => 'in', 2 => 'out', 3 => 'in&out' };
+
+
+sub new {
+    my($class,@args) = @_;
+    my $self = $class->SUPER::new(@args);
+
+    # prime the graph
+    my $graph = new Bio::Coordinate::Graph;
+    $graph->hash_of_arrays($DAG);
+    $self->graph($graph);
+
+    my($in, $out, $peptide_offset, $transcript, $exons,
+       $cds, $nozero, $strict) =
+	$self->_rearrange([qw(IN
+                              OUT
+                              PEPTIDE_OFFSET
+                              TRANSCRIPT
+                              EXONS
+                              CDS
+                              NOZERO
+                              STRICT
+			     )],
+			 @args);
+
+    # direction of mapping
+    $self->{_direction} = 1;
+
+    $in  && $self->in($in);
+    $out  && $self->out($out);
+    $cds && $self->cds($cds);
+    $exons  && ref($exons) =~ /ARRAY/i && $self->exons(@$exons);
+    $transcript  && $self->transcript($transcript);
+    $peptide_offset && $self->peptide_offset($peptide_offset);
+    $nozero && $self->nozero($nozero);
+    $strict && $self->strict($strict);
+
+    return $self; # success - we hope!
+}
+
+=head2 graph
+
+ Title   : graph
+ Usage   : $obj->graph('peptide');
+ Function: Set and read the input coordinate system.
+ Example :
+ Returns : value of input system
+ Args    : new value (optional)
+
+=cut
+
+sub graph {
+   my ($self,$value) = @_;
+   if( defined $value) {
+       $self->throw("Not a valid graph [$value]\n")
+	   unless $value->isa('Bio::Coordinate::Graph');
+       $self->{'_graph'} = $value;
+   }
+   return $self->{'_graph'};
+}
+
+=head2 in
+
+ Title   : in
+ Usage   : $obj->in('peptide');
+ Function: Set and read the input coordinate system.
+ Example :
+ Returns : value of input system
+ Args    : new value (optional)
+
+=cut
+
+sub in {
+   my ($self,$value) = @_;
+   if( defined $value) {
+       $self->throw("Not a valid input coordinate system name [$value]\n".
+		    "Valid values are ". join(", ", keys %COORDINATE_SYSTEMS ))
+	   unless defined $COORDINATE_SYSTEMS{$value};
+
+       $self->{'_in'} = $COORDINATE_SYSTEMS{$value};
+   }
+   return $COORDINATE_INTS{ $self->{'_in'} };
+}
+
+
+=head2 out
+
+ Title   : out
+ Usage   : $obj->out('peptide');
+ Function: Set and read the output coordinate system.
+ Example :
+ Returns : value of output system
+ Args    : new value (optional)
+
+=cut
+
+sub out {
+   my ($self,$value) = @_;
+   if( defined $value) {
+       $self->throw("Not a valid input coordinate system name [$value]\n".
+		    "Valid values are ". join(", ", keys %COORDINATE_SYSTEMS ))
+	   unless defined $COORDINATE_SYSTEMS{$value};
+
+       $self->{'_out'} = $COORDINATE_SYSTEMS{$value};
+   }
+   return $COORDINATE_INTS{ $self->{'_out'} };
+}
+
+=head2 strict
+
+ Title   : strict
+ Usage   : $obj->strict('peptide');
+ Function: Set and read weather strict boundaried of coordinate
+           systems are enforced.
+           When strict is on, the end of the coordinate range must be defined.
+ Example :
+ Returns : boolean
+ Args    : boolean (optional)
+
+=cut
+
+sub strict {
+   my ($self,$value) = @_;
+   if( defined $value) {
+       $value ? ( $self->{'_strict'} = 1 ) : ( $self->{'_strict'} = 0 );
+       ## update in each mapper !!
+   }
+   return $self->{'_strict'} || 0 ;
+}
+
+
+=head2 nozero
+
+ Title   : nozero
+ Usage   : $obj->nozero(1);
+ Function: Flag to disable the use of zero in the input,
+           output or both coordinate systems. Use of coordinate
+           systems without zero is a peculiarity  common in
+           human genetics community.
+ Example :
+ Returns : 0 (default), or 'in', 'out', 'in&out'
+ Args    : 0 (default), or 'in', 'out', 'in&out'
+
+=cut
+
+sub nozero {
+   my ($self,$value) = @_;
+
+   if (defined $value) {
+       $self->throw("Not a valid value for nozero [$value]\n".
+		    "Valid values are ". join(", ", keys %{$NOZERO_VALUES} ))
+	   unless defined $NOZERO_VALUES->{$value};
+       $self->{'_nozero'} = $NOZERO_VALUES->{$value};
+   }
+
+   my $res = $self->{'_nozero'} || 0;
+   return $NOZERO_KEYS->{$res};
+}
+
+=head2 peptide
+
+ Title   : peptide
+ Usage   : $obj->peptide_offset($peptide_coord);
+ Function: Read and write the offset of peptide from the start of propeptide
+           and peptide length
+ Returns : a Bio::Location::Simple object
+ Args    : a Bio::LocationI object
+
+=cut
+
+sub peptide {
+   my ($self, $value) = @_;
+   if( defined $value) {
+       $self->throw("I need a Bio::LocationI, not  [". $value. "]")
+	   unless $value->isa('Bio::LocationI');
+
+       $self->throw("Peptide start not defined")
+	   unless defined $value->start;
+       $self->{'_peptide_offset'} = $value->start - 1;
+
+       $self->throw("Peptide end not defined")
+	   unless defined $value->end;
+       $self->{'_peptide_length'} = $value->end - $self->{'_peptide_offset'};
+
+
+       my $a = $self->_create_pair
+	   ('propeptide', 'peptide', $self->strict, 
+	    $self->{'_peptide_offset'}, $self->{'_peptide_length'} );
+       my $mapper =  $COORDINATE_SYSTEMS{'propeptide'}. "-".  $COORDINATE_SYSTEMS{'peptide'};
+       $self->{'_mappers'}->{$mapper} = $a;
+   }
+   return  Bio::Location::Simple->new
+       (-seq_id => 'propeptide', 
+	-start => $self->{'_peptide_offset'} + 1 ,
+	-end => $self->{'_peptide_length'} + $self->{'_peptide_offset'},
+	-strand => 1
+       );
+}
+
+=head2 peptide_offset
+
+ Title   : peptide_offset
+ Usage   : $obj->peptide_offset(20);
+ Function: Set and read the offset of peptide from the start of propeptide
+ Returns : set value or 0
+ Args    : new value (optional)
+
+=cut
+
+sub peptide_offset {
+   my ($self,$offset, $len) = @_;
+   if( defined $offset) {
+       $self->throw("I need an integer, not [$offset]")
+	   unless $offset =~ /^[+-]?\d+$/;
+       $self->{'_peptide_offset'} = $offset;
+
+       if (defined $len) {
+	   $self->throw("I need an integer, not [$len]")
+	       unless $len =~ /^[+-]?\d+$/;
+	   $self->{'_peptide_length'} = $len;
+       }
+
+       my $a = $self->_create_pair
+	   ('propeptide', 'peptide', $self->strict, $offset, $self->{'_peptide_length'} );
+       my $mapper =  $COORDINATE_SYSTEMS{'propeptide'}. "-". $COORDINATE_SYSTEMS{'peptide'};
+       $self->{'_mappers'}->{$mapper} = $a;
+   }
+   return $self->{'_peptide_offset'} || 0;
+}
+
+=head2 peptide_length
+
+ Title   : peptide_length
+ Usage   : $obj->peptide_length(20);
+ Function: Set and read the offset of peptide from the start of propeptide
+ Returns : set value or 0
+ Args    : new value (optional)
+
+=cut
+
+
+sub peptide_length {
+   my ($self, $len) = @_;
+   if( defined $len) {
+       $self->throw("I need an integer, not [$len]")
+	   if defined $len && $len !~ /^[+-]?\d+$/;
+       $self->{'_peptide_length'} = $len;
+   }
+   return $self->{'_peptide_length'};
+}
+
+
+=head2 transcript
+
+ Title   : transcript
+ Usage   : $obj->transcript(20);
+ Function: Set and read the start and end of the  transcipt
+           in chromosamal or entry coordinates
+
+ Returns : set value or 0
+ Args    : new value (optional)
+
+=cut
+
+sub transcript {
+   my ($self,$value) = @_;
+   if( defined $value) {
+       if ($value =~ /^[+-]?\d+$/ ) {
+	   my $loc = Bio::Location::Simple->new(-start=>$value);
+	   $self->{'_cds'} = $loc;
+       }
+       elsif (ref $value &&  $value->isa('Bio::LocationI') ) {
+	   $self->{'_cds'} = $value;
+       } else {
+	   $self->throw("I need an integer or Bio::LocationI, not [$value]")
+       }
+       $self->{'_transcript'} = $value;
+   }
+   return $self->{'_transcript'} || 0;
+}
+
+
+=head2 exons
+
+ Title   : exons
+ Usage   : $obj->exons(@exons);
+ Function: Set and read the offset of CDS from the start of transcipt
+           You do not have to sort the exons before calling this method as
+           they will be sorted automatically
+ Returns : array of Bio::LocationI exons in genome coordinates or 0
+ Args    : array of Bio::LocationI exons in genome (or entry) coordinates
+
+=cut
+
+sub exons {
+   my ($self,@value) = @_;
+   my $cds_mapper =  $COORDINATE_SYSTEMS{'gene'}. "-". $COORDINATE_SYSTEMS{'cds'};
+   my $inex_mapper =
+       $COORDINATE_SYSTEMS{'gene'}. "-". $COORDINATE_SYSTEMS{'inex'};
+   my $exon_mapper =
+       $COORDINATE_SYSTEMS{'gene'}. "-". $COORDINATE_SYSTEMS{'exon'};
+   my $intron_mapper =
+       $COORDINATE_SYSTEMS{'gene'}. "-". $COORDINATE_SYSTEMS{'intron'};
+   my $negative_intron_mapper =
+       $COORDINATE_SYSTEMS{'intron'}. "-". $COORDINATE_SYSTEMS{'negative_intron'};
+   my $exon_cds_mapper =  $COORDINATE_SYSTEMS{'exon'}. "-". $COORDINATE_SYSTEMS{'cds'};
+
+   if(@value) {
+       if (ref($value[0]) &&
+	   $value[0]->isa('Bio::SeqFeatureI') and 
+	   $value[0]->location->isa('Bio::Location::SplitLocationI')) {
+	   @value = $value[0]->location->each_Location;
+       } else {
+	   $self->throw("I need an array , not [@value]")
+	       unless ref \@value eq 'ARRAY';
+	   $self->throw("I need a reference to an array of Bio::LocationIs, not to [".
+			$value[0]. "]")
+	       unless ref $value[0] and $value[0]->isa('Bio::LocationI');
+       }
+
+       # sort the input array
+       if (defined $value[0]->strand && $value[0]->strand == - 1) {  #reverse strand
+	   @value = map { $_->[0] }
+	               sort { $b->[1] <=> $a->[1] }
+                       map { [ $_, $_->start] }
+                       @value;
+       } else {               #undef or forward strand
+	   @value = map { $_->[0] }
+	               sort { $a->[1] <=> $b->[1] }
+                       map { [ $_, $_->start] }
+                       @value;
+       }
+
+       $self->{'_chr_exons'} = \@value;
+
+       # store the chromosomal transcript coordinates
+       # take them to be start of first exon and end of last exon
+#       $self->transcript(Bio::Location::Simple->new
+#			 (-start => $value[0]->start,
+#			  -end => $value[-1]->end
+#			 ));
+#s strand!
+
+       # transform exons from chromosome to gene coordinates
+       # but only if gene coordinate system has been set
+       my @exons ;
+       #my $gene_mapper = $self->$COORDINATE_SYSTEMS{'chr'}. "-". $COORDINATE_SYSTEMS{'gene'};
+       my $gene_mapper = "1-2";
+       if (defined $self->{'_mappers'}->{$gene_mapper} ) {
+
+	   my $tmp_in = $self->{'_in'};
+	   my $tmp_out = $self->{'_out'};
+	   my $tmp_verb = $self->verbose;
+	   $self->verbose(0);
+
+	   $self->in('chr');
+	   $self->out('gene');
+
+	   @exons = map {$self->map($_)} @value;
+
+	   $self->{'_in'} = ($tmp_in);
+	   $self->{'_out'} = ($tmp_out);
+	   $self->verbose($tmp_verb);
+       } else {
+	   @exons = @value;
+       }
+
+       my $cds_map = Bio::Coordinate::Collection->new;
+       my $inex_map = Bio::Coordinate::Collection->new;
+       my $exon_map = Bio::Coordinate::Collection->new;
+       my $exon_cds_map = Bio::Coordinate::Collection->new;
+       my $intron_map = Bio::Coordinate::Collection->new;
+       my $negative_intron_map = Bio::Coordinate::Collection->new;
+
+       my $tr_end = 0;
+       my $coffset;
+       my $exon_counter;
+       my $prev_exon_end;
+
+       for my $exon ( @exons ) {
+
+	   $exon_counter++;
+
+	   #
+	   # gene -> cds
+	   #
+
+	   my $match1 = Bio::Location::Simple->new
+	       (-seq_id =>'gene' ,
+		-start => $exon->start,
+		-end => $exon->end, -strand=>1 );
+	   my $match2 = Bio::Location::Simple->new
+	       (-seq_id => 'cds',
+		-start => $tr_end + 1,
+		-end => $tr_end + $exon->end - $exon->start +1,
+		-strand=>$exon->strand );
+
+	   my $pair = Bio::Coordinate::Pair->new(-in => $match1,
+						 -out => $match2,
+						);
+	   $cds_map->add_mapper($pair);
+
+	   if ($exon->start <= 1 and $exon->end >= 1) {
+	       $coffset = $tr_end - $exon->start + 1;
+	   }
+	   $tr_end = $tr_end  + $exon->end - $exon->start + 1;
+
+	   #
+	   # gene -> intron
+	   #
+
+	   if (defined $prev_exon_end) {
+	       my $match3 = Bio::Location::Simple->new
+		   (-seq_id =>'gene',
+		    -start => $prev_exon_end + 1,
+		    -end => $exon->start -1, -strand=>1 );
+
+	       my $match4 = Bio::Location::Simple->new
+		   (-seq_id => 'intron'. ($exon_counter -1),
+		    -start => 1,
+		    -end => $exon->start - 1 - $prev_exon_end,
+		    -strand=>$exon->strand );
+
+	       # negative intron coordinates
+	       my $match6 = Bio::Location::Simple->new
+		   (-seq_id => 'intron'. ($exon_counter -1),
+		    -start => -1 * ($exon->start - 2 - $prev_exon_end),
+		    -end => 0,
+		    -strand=>$exon->strand );
+
+	       my $pair = Bio::Coordinate::Pair->new(-in => $match3,
+						     -out => $match4
+						    );
+	       my $neg_pair = Bio::Coordinate::Pair->new(-in => $match4,
+							 -out => $match6
+							);
+
+	       $inex_map->add_mapper($pair);
+	       $intron_map->add_mapper($pair);
+	       $negative_intron_map->add_mapper($neg_pair);
+
+	   }
+
+	   # store the value
+	   $prev_exon_end = $exon->end;
+
+	   #
+	   # gene -> exon
+	   #
+	   my $match5 = Bio::Location::Simple->new
+	       (-seq_id => 'exon'. $exon_counter,
+		-start => 1,
+		-end => $exon->end - $exon->start +1,
+		-strand=> $exon->strand );
+
+	   my $pair2 = Bio::Coordinate::Pair->new(-in => $match1,
+						  -out => $match5
+						 );
+	   my $pair3 = Bio::Coordinate::Pair->new(-in => $match5,
+						  -out => $match2
+						 );
+	   $inex_map->add_mapper($pair2);
+	   $exon_map->add_mapper($pair2);
+	   $exon_cds_map->add_mapper($pair3);
+
+       }
+
+       # move coordinate start if exons have negative values
+       if ($coffset) {
+	   foreach my $m ($cds_map->each_mapper) {
+	       $m->out->start($m->out->start - $coffset);
+	       $m->out->end($m->out->end - $coffset);
+	   }
+
+       }
+
+       $self->{'_mappers'}->{$cds_mapper} = $cds_map;
+       $self->{'_mappers'}->{$exon_cds_mapper} = $exon_cds_map;
+       $self->{'_mappers'}->{$inex_mapper} = $inex_map;
+       $self->{'_mappers'}->{$exon_mapper} = $exon_map;
+       $self->{'_mappers'}->{$intron_mapper} = $intron_map;
+       $self->{'_mappers'}->{$negative_intron_mapper} = $negative_intron_map;
+   }
+   return  @{$self->{'_chr_exons'}}  || 0;
+}
+
+
+=head2 cds
+
+ Title   : cds
+ Usage   : $obj->cds(20);
+ Function: Set and read the offset of CDS from the start of transcipt
+
+           Simple input can be an integer which gives the start of the
+           coding region in genomic coordinate. If you want to provide
+           the end of the coding r
+egion or indicate the use of the
+           opposite strand, you have to pass a Bio::Location::Simple
+           object to this method.
+
+ Returns : set value or 0
+ Args    : new value (optional)
+
+=cut
+
+sub cds {
+   my ($self,$value) = @_;
+   if( defined $value) {
+       if ($value =~ /^[+-]?\d+$/ ) {
+	   my $loc = Bio::Location::Simple->new(-start=>$value);
+	   $self->{'_cds'} = $loc;
+       }
+       elsif (ref $value &&  $value->isa('Bio::RangeI') ) {
+	   $self->{'_cds'} = $value;
+       } else {
+	   $self->throw("I need an integer or Bio::RangeI, not [$value]")
+       }
+       # strand !!
+       my $len;
+
+       $len = $self->{'_cds'}->end - $self->{'_cds'}->start +1
+	   if defined $self->{'_cds'}->end;
+
+       my $a = $self->_create_pair
+	   ('chr', 'gene', 0,
+	    $self->{'_cds'}->start-1,
+	    $len,
+	    $self->{'_cds'}->strand);
+       my $mapper =  $COORDINATE_SYSTEMS{'chr'}. "-". $COORDINATE_SYSTEMS{'gene'};
+       $self->{'_mappers'}->{$mapper} = $a;
+
+       # recalculate exon-based mappers
+       if ( defined $self->{'_chr_exons'} ) {
+	   $self->exons(@{$self->{'_chr_exons'}});
+       }
+
+   }
+   return $self->{'_cds'} || 0;
+}
+
+
+=head2 map
+
+ Title   : map
+ Usage   : $newpos = $obj->map(5);
+ Function: Map the location from the input coordinate system
+           to a new value in the output coordinate system.
+ Example :
+ Returns : new value in the output coordiante system
+ Args    : a Bio::Location::Simple
+
+=cut
+
+sub map {
+   my ($self,$value) = @_;
+   my ($res);
+
+   $self->throw("Need to pass me a Bio::Location::Simple or Bio::SeqFeatureI")
+       unless defined $value;
+   $self->throw("Need to pass me a Bio::Location::Simple, not [".
+		ref($value). "]")
+       unless ref($value) && ($value->isa('Bio::Location::Simple') or 
+			      $value->isa('Bio::SeqFeatureI'));
+   $self->throw("Input coordinate system not set")
+       unless $self->{'_in'};
+   $self->throw("Output coordinate system not set")
+       unless $self->{'_out'};
+   $self->throw("Do not be silly. Input and output coordinate ".
+		"systems are the same!")
+       unless $self->{'_in'} != $self->{'_out'};
+   
+   $self->_check_direction();
+
+   $value = $value->location if $value->isa('Bio::SeqFeatureI');
+   print STDERR "=== Start location: ". $value->start. ",".
+       $value->end. " (". $value->strand. ")\n" if $self->verbose > 0;
+
+
+   # if nozero coordinate system is used in the input values
+   if ( defined $self->{'_nozero'} && 
+	( $self->{'_nozero'} == 1 || $self->{'_nozero'} == 3 ) ) {
+       $value->start($value->start + 1)
+	   if defined $value->start && $value->start < 1;
+       $value->end($value->end + 1)
+	   if defined $value->end && $value->end < 1;
+   }
+
+   my @steps = $self->_get_path();
+   print "mapping ", $self->{'_in'}, "->", $self->{'_out'},
+       "  Mappers: ", join(", ", @steps), "\n"  if $self->verbose > 0;
+
+   foreach my $mapper (@steps) {
+       if ($mapper eq $TRANSLATION) {
+	   if ($self->direction == 1) {
+	       $value = $self->_translate($value);
+	       print STDERR "+   $TRANSLATION cds -> propeptide (translate) \n"
+		   if $self->verbose > 0;
+	   } else {
+	       $value = $self->_reverse_translate($value);
+	       print STDERR "+   $TRANSLATION propeptide -> cds (reverse translate) \n"
+		   if $self->verbose > 0;
+	   }
+       }
+       # keep the start and end values, and go on to next iteration
+       #  if this mapper is not set
+       elsif ( ! defined $self->{'_mappers'}->{$mapper} ) {
+	   # update mapper name
+	   $mapper =~ /\d+-(\d+)/;   my ($counter) = $1;
+	   $value->seq_id($COORDINATE_INTS{$counter});
+	   print STDERR "-   $mapper\n" if $self->verbose > 0;
+       } else {
+	   # generic mapping
+	   $value = $self->{'_mappers'}->{$mapper}->map($value);
+	   print STDERR "+  $mapper (", $self->direction, ")\n"
+	       if $self->verbose > 0;
+#	   my @matches = $res->each_match;
+#	   if (@matches > 1) {
+#	       $self->throw('Multiple matches in different coordinate systems not handled')
+#		   if $matches[0]->seq_id ne $matches[-1]->seq_id;
+#	       $value = $res->match;
+#	       $value->start($matches[0]->start);
+#
+#	   } else {
+#	       $value = $res->match if defined $res;
+#	   }
+       }
+       if ( $value->isa('Bio::Location::SplitLocationI')) {
+	   return undef unless $value->match;
+	   if ( $value->each_match > 1 ) {
+	       my @matches = $value->each_match;
+	       $value = Bio::Location::Simple->new
+		   (-seq_id => $matches[0]->seq_id,
+		    -start => $matches[0]->start,
+		    -end => $matches[-1]->end,
+		    -strand=>$matches[0]->strand );
+	   }
+       }
+   }
+   # if nozero coordinate system is asked to be used in the output values
+   if ( defined $value && defined $self->{'_nozero'} && 
+	( $self->{'_nozero'} == 2 || $self->{'_nozero'} == 3 ) ) {
+
+       $value->start($value->start - 1)
+	   if defined $value->start && $value->start < 1;
+       $value->end($value->end - 1) 
+	   if defined $value->end && $value->end < 1;
+   }
+   return $value;
+}
+
+=head2 direction
+
+ Title   : direction
+ Usage   : $obj->direction('peptide');
+ Function: Read-only method for the direction of mapping deduced from
+           predefined input and output coordinate names.
+ Example :
+ Returns : 1 or -1, mapping direction
+ Args    : new value (optional)
+
+=cut
+
+sub direction {
+   my ($self) = @_;
+   return $self->{'_direction'};
+}
+
+
+=head2 swap
+
+ Title   : swap
+ Usage   : $obj->swap;
+ Function: Swap the direction of transformation
+           (input <-> output)
+ Example :
+ Returns : 1
+ Args    : 
+
+=cut
+
+sub swap {
+   my ($self,$value) = @_;
+
+   ($self->{'_in'}, $self->{'_out'}) = ($self->{'_out'}, $self->{'_in'});
+   map { $self->{'_mappers'}->{$_}->swap } keys %{$self->{'_mappers'}};
+
+   # record the changed direction;
+   $self->{_direction} *= -1;
+
+   return 1;
+}
+
+
+=head2 to_string
+
+ Title   : to_string
+ Usage   : $newpos = $obj->to_string(5);
+ Function: Dump the mapping values into human readable format
+ Example :
+ Returns : string
+ Args    : 
+
+=cut
+
+sub to_string {
+   my ($self) = shift;
+
+   print "-" x 40, "\n";
+   my $counter = 1;
+   while (defined $COORDINATE_INTS{$counter} && $COORDINATE_INTS{$counter+1}) {
+       my $in = $COORDINATE_INTS{$counter};
+       my $out = $COORDINATE_INTS{$counter+1};
+       my $mapper = "$counter-". ($counter+1);
+
+
+       printf "\n%12s -> %-12s (%s)\n", $in, $out, $mapper
+	   unless $mapper eq '3-4' or $mapper eq '4-5';
+
+
+       if ($mapper eq $TRANSLATION) {
+	   printf "%9s%-12s\n", "", '"translate"';
+       }
+       elsif ($mapper eq '3-4' or $mapper eq '4-5') {
+	   next;
+       }
+       elsif ($mapper eq '2-3') {
+		   next unless $self->{'_mappers'}->{$mapper};
+#	   	   printf "%10s%-12s\n", "", '"splice"';
+
+		   my $i = 1;
+		   my $ex = 1;
+
+		   my $inex;
+		   foreach my $pair ( $self->{'_mappers'}->{$mapper}->each_mapper ) {
+		       $i%2 == 1 ? ($inex = 'exon') : ($inex = 'intron');
+		       printf "%2s :%8s -> %-12s%-6s\n", $i, $pair->in->start, $pair->out->start, "$inex$ex" ;
+		       printf "%2s :%8s -> %-12s\n", '', $pair->in->end, $pair->out->end ;
+		       $i++; 
+		       $ex++ if $inex eq 'exon';
+		   }
+
+		   printf "\n%12s -> %-12s (%s)\n", 'intron', 'negative intron', '5-6';
+	   	   printf "%10s%-12s\n", "", '"splice"';
+		   $i = 1;
+		   foreach my $pair ( $self->{'_mappers'}->{'5-6'}->each_mapper ) {
+		       printf "%8s :%8s -> %-12s\n", "intron$i", $pair->in->start, $pair->out->start ;
+		       printf "%8s :%8s -> %-12s\n", '', $pair->in->end, $pair->out->end ;
+		       $i++;
+		   }
+
+		   printf "\n%12s -> %-12s (%s)\n", $in, 'cds', '2-7';
+	   	   printf "%10s%-12s\n", "", '"splice"';
+		   $i = 1;
+		   foreach my $pair ( $self->{'_mappers'}->{'2-7'}->each_mapper ) {
+		       printf "%2s :%8s -> %-12s\n", $i, $pair->in->start, $pair->out->start ;
+		       printf "%2s :%8s -> %-12s\n", '', $pair->in->end, $pair->out->end ;
+		       $i++;
+		   }
+
+		   printf "\n%12s -> %-12s (%s)\n", $in, 'exon', '2-4';
+	   	   printf "%10s%-12s\n", "", '"splice"';
+		   $i = 1;
+		   foreach my $pair ( $self->{'_mappers'}->{'2-4'}->each_mapper ) {
+		       printf "%2s :%8s -> %-12s\n", $i, $pair->in->start, $pair->out->start ;
+		       printf "%2s :%8s -> %-12s\n", '', $pair->in->end, $pair->out->end ;
+		       $i++;
+		   }
+
+		   printf "\n%12s -> %-12s (%s)\n", $in, 'intron', '2-5';
+	   	   printf "%10s%-12s\n", "", '"splice"';
+		   $i = 1;
+		   foreach my $pair ( $self->{'_mappers'}->{'2-5'}->each_mapper ) {
+		       printf "%2s :%8s -> %-12s\n", $i, $pair->in->start, $pair->out->start ;
+		       printf "%2s :%8s -> %-12s\n", '', $pair->in->end, $pair->out->end ;
+		       $i++;
+		   }
+
+
+       }
+       elsif (not defined $self->{'_mappers'}->{$mapper}) {
+	   printf "%12s%-12s\n", "", 'undef';
+       } else {
+	   if ($mapper eq '1-2') {
+	       my $end= 'undef';
+	       $end = $self->cds->end -1 if defined $self->cds->end;
+	       printf "%16s%s: %s (%s)\n", ' ', 'gene offset', $self->cds->start-1 , $end;
+	       printf "%16s%s: %s\n", ' ', 'gene strand', $self->cds->strand;
+
+	   }
+	   elsif ($mapper eq '3-4') {
+#	       printf "%16s%s: %s\n", ' ', "transcript (transcipt offset)", $self->transcript;
+	   }
+	   elsif ($mapper eq '9-10') {
+	       printf "%16s%s: %s\n", ' ', "peptide offset", $self->peptide_offset;
+	   }
+
+
+#	   printf "%12s -> %-12s\n",
+#	       $self->{'_mappers'}->{$mapper}->{'_in'}->start, 
+#		   $self->{'_mappers'}->{$mapper}->{'_out'}->start;
+       }
+   } continue {
+       $counter++;
+   }
+
+   print "\nin : ", $self->in, "\n";
+   print "out: ", $self->out, "\n";
+   my $dir;
+   $self->direction ? ($dir='forward') : ($dir='reverse');
+   printf "direction: %-8s(%s)\n",  $dir, $self->direction;
+   print "\n", "-" x 40, "\n";
+
+}
+
+
+=head2 _create_pair
+
+ Title   : _create_pair
+ Usage   : $mapper = $obj->_create_pair('chr', 'gene', 0, 2555, 10000, -1);
+ Function: Internal helper method to create a mapper between 
+           two coordinate systems
+ Returns : a Bio::Coordinate::Pair object
+ Args    : string, input coordinate system name,
+           string, output coordinate system name,
+           boolean, strict mapping
+           positive integer, offset
+           positive integer, length
+           1 || -1 , strand
+
+=cut
+
+sub _create_pair {
+   my ($self, $in, $out, $strict, $offset, $length, $strand ) = @_;
+   $strict ||=0;
+   $strand ||=1;
+   $length ||= 20;
+
+   my $match1 = Bio::Location::Simple->new
+       (-seq_id => $in,
+	-start => $offset+1,
+	-end => $offset+$length, -strand=>1 );
+
+   my $match2 = Bio::Location::Simple->new
+       (-seq_id => $out,
+	-start => 1,
+	-end => $length, -strand=>$strand );
+
+   my $pair = Bio::Coordinate::ExtrapolatingPair->
+       new(-in => $match1,
+	   -out => $match2,
+	   -strict => $strict
+	  );
+
+   return $pair;
+
+}
+
+
+=head2 _translate
+
+ Title   : _translate
+ Usage   : $newpos = $obj->_translate(5);
+ Function: Translate the location from the CDS coordinate system
+           to a new value in the propeptide coordinate system.
+ Example :
+ Returns : new location
+ Args    : a Bio::Location::Simple
+
+=cut
+
+sub _translate {
+   my ($self,$value) = @_;
+
+   $self->throw("Need to pass me a Bio::Location::Simple, not [".
+		ref($value). "]")
+       unless defined $value->isa('Bio::Location::Simple');
+
+   my $loc = new Bio::Location::Simple;
+   $loc->start(int($value->start / 3 )+1);
+   $loc->end(int($value->end / 3 )+1);
+   $loc->seq_id('propeptide');
+   $loc->strand(1);
+   return $loc;
+}
+
+sub _frame {
+   my ($self,$value) = @_;
+
+   $self->throw("Need to pass me a Bio::Location::Simple, not [".
+		ref($value). "]")
+       unless defined $value->isa('Bio::Location::Simple');
+
+   my $loc = new Bio::Location::Simple;
+   $loc->start( ($value->start-1) % 3 +1);
+   $loc->end( ($value->end-1) % 3 +1);
+   $loc->seq_id('frame');
+   $loc->strand(1);
+   return $loc;
+}
+
+
+=head2 _reverse_translate
+
+ Title   : _reverse_translate
+ Usage   : $newpos = $obj->_reverse_translate(5);
+ Function: Reverse translate the location from the propeptide
+           coordinate system to a new value in the CSD.
+           Note that a single peptide location expands to cover
+           the codon triplet
+ Example :
+ Returns : new location in the CDS coordinate system
+ Args    : a Bio::Location::Simple
+
+=cut
+
+sub _reverse_translate {
+   my ($self,$value) = @_;
+
+   $self->throw("Need to pass me a Bio::Location::Simple, not [".
+		ref($value). "]")
+       unless defined $value->isa('Bio::Location::Simple');
+
+   my $loc = new Bio::Location::Simple;
+   $loc->start($value->start * 3 - 2);
+   $loc->end($value->end * 3 );
+   $loc->seq_id('cds');
+   $loc->strand(1);
+   return $loc;
+
+}
+
+
+=head2 _check_direction
+
+ Title   : _check_direction
+ Usage   : $obj->_check_direction();
+ Function: Check and swap when needed the direction the location
+           mapping Pairs based on input and output values
+ Example :
+ Returns : new location
+ Args    : a Bio::Location::Simple
+
+=cut
+
+sub _check_direction {
+   my ($self) = @_;
+
+   my $new_direction = 1;
+   $new_direction = -1 if $self->{'_in'} > $self->{'_out'};
+
+   unless ($new_direction == $self->{_direction} ) {
+       map { $self->{'_mappers'}->{$_}->swap } keys %{$self->{'_mappers'}};
+       # record the changed direction;
+       $self->{_direction} *= -1;
+   }
+   1;
+}
+
+
+=head2 _get_path
+
+ Title   : _get_path
+ Usage   : $obj->_get_path('peptide');
+ Function: internal method for finding that shortest path between
+           input and output coordinate systems.
+           Calcultaions and caching are handled by the graph class.
+           See L<Bio::Coordinate::Graph>.
+ Example :
+ Returns : array of the mappers
+ Args    : none
+
+=cut
+
+sub _get_path {
+   my ($self) = @_;
+
+   my $start = $self->{'_in'} || 0;
+   my $end = $self->{'_out'} || 0;
+
+   # note the order
+   # always go from smaller to bigger: it  makes caching more efficient
+   my $reverse;
+   if ($start > $end) {
+       ($start, $end) = ($end, $start );
+       $reverse++;
+   }
+
+   my @mappers;
+   if (exists $self->{'_previous_path'} and
+       $self->{'_previous_path'} eq "$start$end" ) {
+       # use cache
+       @mappers = @{$self->{'_mapper_path'}};
+   } else {
+       my $mapper;
+       my $prev_node = '';
+       @mappers =
+	   map { $mapper = "$prev_node-$_"; $prev_node = $_; $mapper; }
+	       $self->{'_graph'}->shortest_path($start, $end);
+       shift @mappers;
+
+       $self->{'_previous_path'} = "$start$end";
+       $self->{'_mapper_path'} = \@mappers;
+   }
+
+   $reverse ? return reverse @mappers : return @mappers;
+}
+
+
+1;
+

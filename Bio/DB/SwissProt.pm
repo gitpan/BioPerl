@@ -1,9 +1,9 @@
 #
-# $Id: SwissProt.pm,v 1.16 2002/01/19 03:25:46 jason Exp $
+# $Id: SwissProt.pm,v 1.19 2002/12/01 00:05:19 jason Exp $
 #
 # BioPerl module for Bio::DB::SwissProt
 #
-# Cared for by Jason Stajich <jason@chg.mc.duke.edu>
+# Cared for by Jason Stajich <jason@bioperl.org>
 #
 # Copyright Jason Stajich
 #
@@ -76,11 +76,11 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email Jason Stajich  E<lt>jason@chg.mc.duke.edu E<lt>
+Email Jason Stajich  E<lt>jason@bioperl.org E<lt>
 
 Thanks go to Alexandre Gattiker E<lt>gattiker@isb-sib.chE<gt> of Swiss
 Institute of Bioinformatics for helping point us in the direction of
@@ -115,7 +115,7 @@ $DEFAULTFORMAT = 'swissprot';
 # you can add your own here theoretically.
 %HOSTS = ( 
 	   'expasy' => { 
-	       'default' => 'switzerland',
+	       'default' => 'us',
 	       'baseurl' => 'http://%s/cgi-bin/sprot-retrieve-list.pl',
 	       'hosts'   => 	       
 	       { 

@@ -25,11 +25,12 @@ use strict;
 use Bio::Root::Root;
 use Bio::Annotation::Collection;
 use Bio::RangeI;
+use Bio::Das::SegmentI;
 use Bio::SeqI;
 
 use vars qw($VERSION @ISA);
-@ISA = qw(Bio::Root::Root Bio::RangeI Bio::SeqI);
-$VERSION = '0.30';
+@ISA = qw(Bio::Root::Root Bio::RangeI Bio::SeqI Bio::Das::SegmentI);
+$VERSION = '0.31';
 
 use overload 
   '""'     => 'asString',
@@ -178,7 +179,7 @@ Returns the strand on which the segment resides, either +1, 0 or -1.
 
 sub strand {
   my $self = shift;
-  return $self->stop <=> $self->start;
+  0;
 }
 
 =head2 low
@@ -239,17 +240,22 @@ sub sourceseq { shift->{sourceseq} }
 =head2 class
 
  Title   : class
- Usage   : $s->class
+ Usage   : $s->class([$newclass])
  Function: get the source sequence class
  Returns : a string
- Args    : none
+ Args    : new class (optional)
  Status  : Public
 
-Returns the class for the source sequence for this segment.
+Gets or sets the class for the source sequence for this segment.
 
 =cut
 
-sub class     { shift->{class}     }
+sub class     { 
+  my $self = shift;
+  my $d = $self->{class};
+  $self->{class} = shift if @_;
+  $d;
+}
 
 =head2 subseq
 
@@ -423,10 +429,10 @@ Bio::DB::GFF::RelSegment.
 
 *abs_start  = \&start;
 
-=head2 abs_stop
+=head2 abs_end
 
- Title   : abs_stop
- Usage   : $s->abs_stop
+ Title   : abs_end
+ Usage   : $s->abs_end
  Function: the absolute stop of the segment
  Returns : an integer
  Args    : none
@@ -456,7 +462,7 @@ Bio::DB::GFF::RelSegment.
 
 sub abs_strand {
   my $self = shift;
-  return $self->abs_stop <=> $self->abs_start;
+  return $self->abs_end <=> $self->abs_start;
 }
 
 =head2 abs_ref
@@ -520,7 +526,7 @@ An alias for refseq() but only allows reading.
 
 =cut
 
-sub seq_id { shift->ref }
+sub seq_id { shift->refseq }
 
 =head2 truncated
 

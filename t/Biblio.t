@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: Biblio.t,v 1.10.2.1 2002/03/17 00:45:17 jason Exp $
+# $Id: Biblio.t,v 1.10 2002/03/08 20:48:47 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl Biblio.t'
@@ -70,7 +70,7 @@ unless (-e $testfile2) {
 # check 'use ...'
 eval { require Bio::Biblio };
 print sprintf ($format, 'use Bio::Biblio'); ok (%Bio::Biblio::);
-#print $@ if $@;
+print $@ if $@;
 
 # check 'new...'
 my $biblio;
@@ -91,7 +91,7 @@ skip ($ferror || $xerror,
       defined (eval { $io = new Bio::Biblio::IO ('-format' => 'medlinexml',
 						 '-file'   => $testfile,
 						 '-result' => 'raw') }));
-#print $@ if $@;
+print $@ if $@;
 
 print "Reading and parsing MEDLINE XML file...\n";
 print sprintf ($format, "    citation 1 "); skip ($ferror || $xerror, eval { $io->next_bibref->{'medlineID'} }, 'Text1');

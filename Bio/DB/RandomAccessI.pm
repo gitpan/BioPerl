@@ -1,6 +1,6 @@
 # POD documentation - main docs before the code
 #
-# $Id: RandomAccessI.pm,v 1.10.2.1 2002/03/13 16:37:05 jason Exp $
+# $Id: RandomAccessI.pm,v 1.12 2002/10/22 07:38:29 lapp Exp $
 #
 
 =head1 NAME
@@ -39,7 +39,7 @@ the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
     bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    http://bugzilla.bioperl.org/           
 
 =head1 APPENDIX
 

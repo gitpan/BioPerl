@@ -1,4 +1,4 @@
-# $Id: EventHandlerI.pm,v 1.5 2002/02/03 20:24:03 jason Exp $
+# $Id: EventHandlerI.pm,v 1.8 2002/10/22 07:45:18 lapp Exp $
 #
 # BioPerl module for Bio::SearchIO::EventHandlerI
 #
@@ -45,7 +45,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -167,6 +167,43 @@ sub start_hit {
 =cut
 
 sub end_hit {
+   my ($self,@args) = @_;
+   $self->throw_not_implemented();
+}
+
+
+=head2 register_factory
+
+ Title   : register_factory
+ Usage   : $handler->register_factory('TYPE',$factory);
+ Function: Register a specific factory for a object type class
+ Returns : none
+ Args    : string representing the class and
+           Bio::Factory::ObjectFactoryI
+
+See L<Bio::Factory::ObjectFactoryI> for more information
+
+=cut
+
+sub register_factory{
+   my ($self,@args) = @_;
+   $self->throw_not_implemented();
+}
+
+
+=head2 factory
+
+ Title   : factory
+ Usage   : my $f = $handler->factory('TYPE');
+ Function: Retrieves the associated factory for requested 'TYPE'
+ Returns : a Bio::Factory::ObjectFactoryI or undef if none registered
+ Args    : name of factory class to retrieve
+
+See L<Bio::Factory::ObjectFactoryI> for more information
+
+=cut
+
+sub factory{
    my ($self,@args) = @_;
    $self->throw_not_implemented();
 }

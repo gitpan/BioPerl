@@ -1,4 +1,4 @@
-# $Id: Promoter.pm,v 1.2 2001/11/20 02:09:37 lstein Exp $
+# $Id: Promoter.pm,v 1.4 2002/10/22 07:45:20 lapp Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::Promoter
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::SeqFeature::Gene::Promoter - DESCRIPTION of Object
+Bio::SeqFeature::Gene::Promoter - Describes a promotor      
 
 =head1 SYNOPSIS
 
@@ -40,7 +40,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - David Block
 
@@ -79,5 +79,6 @@ sub new {
   my $self = $class->SUPER::new(@args);
 
 }
+
 
 1;

@@ -1,6 +1,6 @@
 package Bio::Graphics::Glyph::transcript2;
 
-# $Id: transcript2.pm,v 1.3.2.11 2002/07/10 01:25:09 lstein Exp $
+# $Id: transcript2.pm,v 1.15 2002/09/27 01:36:52 lstein Exp $
 
 use strict;
 use Bio::Graphics::Glyph::transcript;
@@ -13,7 +13,7 @@ use constant MIN_WIDTH_FOR_ARROW => 8;
 sub pad_left  {
   my $self = shift;
   my $pad = $self->Bio::Graphics::Glyph::generic::pad_left;
-  return $pad unless $self->feature->strand < 0;
+  return $pad unless ($self->feature->strand||0) < 0;  #uninitialized var warning
   my $first = ($self->parts)[0] || $self;
   my @rect  = $first->bounds();
   my $width = abs($rect[2] - $rect[0]);
@@ -47,7 +47,7 @@ sub draw_component {
     my $f = $self->feature;
 
     if ($f->strand < 0
-	&& 
+	&&
 	$self->{partno} == 0) { # first exon, minus strand transcript
       $self->filled_arrow($gd,-1,@rect);
     } elsif ($f->strand >= 0
@@ -76,7 +76,7 @@ sub draw_connectors {
 
   my $part;
   if (my @parts  = $self->parts) {
-    $part   = $self->feature->strand > 0 ? $parts[-1] : $parts[0];
+    $part   = $self->feature->strand >= 0 ? $parts[-1] : $parts[0];
   } else {
     # no parts -- so draw an intron spanning whole thing
     my($x1,$y1,$x2,$y2) = $self->bounds(0,0);

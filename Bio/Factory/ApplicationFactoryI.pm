@@ -1,4 +1,4 @@
-# $Id: ApplicationFactoryI.pm,v 1.4 2002/02/26 07:31:33 jason Exp $
+# $Id: ApplicationFactoryI.pm,v 1.5 2002/10/22 07:38:32 lapp Exp $
 #
 # BioPerl module for Bio::Factory::ApplicationFactoryI
 #
@@ -40,7 +40,7 @@ report bugs to the Bioperl bug tracking system to help us keep track
  email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 

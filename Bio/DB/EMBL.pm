@@ -1,5 +1,5 @@
 #
-# $Id: EMBL.pm,v 1.9 2002/02/28 08:26:54 heikki Exp $
+# $Id: EMBL.pm,v 1.12 2002/11/29 18:18:55 lstein Exp $
 #
 # BioPerl module for Bio::DB::EMBL
 #
@@ -53,7 +53,7 @@ Bio::DB::EMBL - Database object interface for EMBL entry retrieval
 
 Allows the dynamic retrieval of sequence objects L<Bio::Seq> from the
 EMBL database using the dbfetch script at EBI:
-L<http:E<sol>E<sol>www.ebi.ac.ukE<sol>cgi-binE<sol>dbfetch>.
+L<http://www.ebi.ac.uk/cgi-bin/dbfetch>.
 
 In order to make changes transparent we have host type (currently only
 ebi) and location (defaults to ebi) separated out.  This allows later
@@ -70,8 +70,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org              - General discussion
+  http://bio.perl.org/MailList.html  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -80,7 +80,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
@@ -120,6 +120,18 @@ BEGIN {
 		   );
     $DEFAULTFORMAT = 'embl';
 }
+
+=head2 new
+
+ Title   : new
+ Usage   : $gb = Bio::DB::GenBank->new(@options)
+ Function: Creates a new genbank handle
+ Returns : New genbank handle
+ Args    : -delay   number of seconds to delay between fetches (3s)
+
+NOTE:  There are other options that are used internally.
+
+=cut
 
 sub new {
     my ($class, @args ) = @_;

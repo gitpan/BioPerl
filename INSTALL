@@ -1,4 +1,4 @@
-# $Id: INSTALL,v 1.1.2.8 2002/07/15 22:31:21 jason Exp $
+# $Id: INSTALL,v 1.16 2002/10/11 09:48:42 birney Exp $
 
 Bioperl Install Directions
 
@@ -7,7 +7,7 @@ o System requirements
  - Tested on all common forms of Unix, Win9X/NT/2000, Mac OS X 
    (see the PLATFORMS file for more details)
 
- - perl 5.004 or later *.
+ - perl 5.005 or later *.
 
  - ANSI C or Gnu C compiler for optional extra XS extensions 
 
@@ -20,18 +20,31 @@ o System requirements
    this process even easier.  Simply install the bundle in your CPAN
    shell and all necessary modules will be installed.
 
- - A problem with ExtUtils::MakeMaker and the large number of modules
-   in the Bioperl distribution was preventing installation on IRIX and
-   other OSes where the MAX_ARGS is small.  See the PLATFORMS file
-   for workarounds.
+ - Bioperl on ActiveState for Windows - An ActiveState PPM distribution
+   is available for bioperl.  Issue the following commands in your PPM
+   shell to install Bioperl.
 
- - Bioperl on ActiveState for Windows - An ActiveState PPM distribution is
-   available for bioperl.  Issue the following command in your PPM
-   shell to install the Bioperl PPD.
-   PPM> set repository bioperl http://bioperl.org/DIST/
-   PPM> search bioperl             (this will show you what are the available
-				    bioperl versions)
-   PPM> install bioperl		   (will install the default version
+     PPM>repository add Bioperl http://bioperl.org/DIST/
+
+   Get the number of the Bioperl repository:
+
+     PPM>repository
+
+   Set the Bioperl repository, find Bioperl, install Bioperl:
+
+     PPM>repository set <Bioperl repository number>
+     PPM>search *
+     PPM>install <bioperl package number>
+  
+   As of this writing the Bundle::BioPerl bundle is not found in any
+   ActiveState package but the following command should work in 
+   Command Prompt:
+
+     >perl -MCPAN -e "install Bundle::BioPerl"
+
+   Do not use a Unix make to install Perl modules this way, use nmake. 
+   See "DEPENDENCIES AND Bundle::BioPerl" below for more information
+   on this useful bundle.
 
  - Additional information using Bioperl with MacOS can be 
    found at http://bioperl.org/Core/mac-bioperl.html
@@ -277,12 +290,23 @@ THE TEST SYSTEM
  detects that the network is not present and thus should skip, not
  fail, any tests that require a network connection.
 
-DEPENDANCIES
+DEPENDENCIES AND Bundle::BioPerl
 
 The following packages are used by Bioperl.  Not all are required for
 Bioperl to operate properly, however, some functionality will be
-missing without them.  You can easily install all of these via the
-Bundle::BioPerl CPAN bundle.
+missing without them.  You can easily install all of these, except
+srsperl.pm, using the Bundle::BioPerl CPAN bundle. A command-line
+example:
+
+  >perl -e shell -MCPAN
+  cpan>install Bundle::BioPerl
+  <...installation details...>
+  cpan>quit
+
+or more simply:
+
+  >perl -MCPAN -e "install Bundle::BioPerl"
+
 
 Module			 Where it is Used
 ------------------------------------------------------------------
@@ -345,15 +369,25 @@ DBD::mysql               Mysql driver
 
 GD			 GD graphical drawing library
 			 Bio::Graphics
+                         Requires GD library from www.boutell.com/gd
 
 srsperl.pm		 Sequence Retrieval System (SRS) 
 			 alternative way of retrieving 
 			 sequences
 			 Bio::LiveSeq::IO::SRS.pm
 			 See README in Bio/LiveSeq/IO
+
 Storable		 Persistent object storage & retrieval 
 			 Bio::DB::FileCache
 
-Text::Shellwords	 Thin wrapper around the shellwords.pl
-			 Used as a utillity in for pulling words out.
-	                 Bio::Graphics::FeatureFile
+Parse::RecDescent        Parsing of Unigene files
+
+Text::Shellwords         Text parser
+                         Bio::Graphics::FeatureFile.pm
+
+XML::DOM		 XML parser
+			 Bio::SeqIO::bsml.pm
+
+DB_File                  Perl access to Berkeley DB
+                         Bio::DB::Flat
+                         Bio::SeqFeature::Collection

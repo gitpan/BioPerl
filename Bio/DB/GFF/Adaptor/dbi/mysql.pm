@@ -14,12 +14,12 @@ See L<Bio::DB::GFF>
 use strict;
 use Bio::DB::GFF::Adaptor::dbi;
 use Bio::DB::GFF::Util::Rearrange; # for rearrange()
+use Bio::DB::GFF::Util::Binning;
 use vars qw($VERSION @ISA);
 @ISA = qw(Bio::DB::GFF::Adaptor::dbi);
-$VERSION = '0.50';
+$VERSION = '0.90';
 
 use constant MAX_SEGMENT => 100_000_000;  # the largest a segment can get
-use constant DEFAULT_CHUNK => 2000;
 
 use constant GETSEQCOORDS =><<END;
 SELECT fref,
@@ -109,7 +109,7 @@ The schema uses several tables:
 =item fdata
 
 This is the feature data table.  Its columns are:
-
+-
     fid	           feature ID (integer)
     fref           reference sequence name (string)
     fstart         start position relative to reference (integer)
@@ -287,99 +287,31 @@ the parent class.
 
 =cut
 
-sub get_dna {
-  my $self = shift;
-  my ($ref,$start,$stop,$class) = @_;
-  my ($offset_start,$offset_stop);
-
-  my $has_start = defined $start;
-  my $has_stop  = defined $stop;
-
-  my $reversed;
-  if ($has_start && $has_stop && $start > $stop) {
-    $reversed++;
-    ($start,$stop) = ($stop,$start);
-  }
-
-  # turn start and stop into 0-based offsets
-  my $cs = $self->chunk_size;
-  $start -= 1;  $stop -= 1;
-  $offset_start = int($start/$cs)*$cs;
-  $offset_stop  = int($stop/$cs)*$cs;
-
-  my $sth;
-  # special case, get it all
-  if (!($has_start || $has_stop)) {
-    $sth = $self->dbh->do_query('select fdna,foffset from fdna where fref=? order by foffset',$ref);
-  } 
-
-  elsif (!$has_stop) {
-    $sth = $self->dbh->do_query('select fdna,foffset from fdna where fref=? and foffset>=? order by foffset',
-				$ref,$offset_start);
-  } 
-
-  else {  # both start and stop defined
-    $sth = $self->dbh->do_query('select fdna,foffset from fdna where fref=? and foffset>=? and foffset<=? order by foffset',
-				$ref,$offset_start,$offset_stop);
-  }
-
-  my $dna;
-  while (my($frag,$offset) = $sth->fetchrow_array) {
-    substr($frag,0,$start-$offset) = '' if $has_start && $start > $offset;
-    $dna .= $frag;
-  }
-  substr($dna,$stop-$start+1)  = '' if $has_stop && $stop-$start+1 < length $dna;
-  if ($reversed) {
-    $dna = reverse $dna;
-    $dna =~ tr/gatcGATC/ctagCTAG/;
-  }
-
-  $sth->finish;
-  $dna;
+sub getseqcoords_query {
+   my $self = shift;
+   return GETSEQCOORDS ;
 }
 
-sub chunk_size {
+sub getaliascoords_query{
   my $self = shift;
-  $self->meta('chunk_size') || DEFAULT_CHUNK;
+  return GETALIASCOORDS ;
 }
 
-=head2 make_abscoord_query
 
- Title   : make_abscoord_query
- Usage   : $sth = $db->make_abscoord_query($name,$class);
- Function: create query that finds the reference sequence coordinates given a landmark & classa
- Returns : a DBI statement handle
- Args    : name and class of landmark
- Status  : protected
-
-The statement handler should return rows containing five fields:
-
-  1. reference sequence name
-  2. reference sequence class
-  3. start position
-  4. stop position
-  5. strand ("+" or "-")
-
-This query always returns "Sequence" as the class of the reference
-sequence.
-
-=cut
-
-# given sequence name, return (reference,start,stop,strand)
-sub make_abscoord_query {
+sub getforcedseqcoords_query{
   my $self = shift;
-  my ($name,$class,$refseq) = @_;
-  my $query = GETSEQCOORDS;
-  if ($name =~ /\*/) {
-    $name =~ tr/*/%/;
-    $query =~ s/gname=\?/gname LIKE ?/;
-  }
-  defined $refseq ? $self->dbh->do_query(GETFORCEDSEQCOORDS,$name,$class,$refseq) 
-    : $self->dbh->do_query($query,$name,$class);
+  return GETFORCEDSEQCOORDS ;
 }
+
+
+sub getaliaslike_query{
+  my $self = shift;
+  return GETALIASLIKE ;
+}
+
 
 # override parent
-sub get_abscoords {
+sub get_abscoords_bkup {
   my $self = shift;
   my ($name,$class,$refseq)  = @_;
 
@@ -405,268 +337,45 @@ sub get_abscoords {
 
 }
 
-=head2 make_features_by_name_where_part
 
- Title   : make_features_by_name_where_part
- Usage   : $db->make_features_by_name_where_part
- Function: create the SQL fragment needed to select a feature by its group name & class
- Returns : a SQL fragment and bind arguments
- Args    : see below
- Status  : Protected
-
-=cut
-
-sub make_features_by_name_where_part {
-  my $self = shift;
-  my ($class,$name) = @_;
-  if ($name =~ /\*/) {
-    $name =~ s/\*/%/g;
-    return ("fgroup.gclass=? AND fgroup.gname LIKE ?",$class,$name);
-  } else {
-    return ("fgroup.gclass=? AND fgroup.gname=?",$class,$name);
-  }
-}
-
-sub make_features_by_attribute_where_part {
-  my $self = shift;
-  my $attributes = shift;
-  my @args;
-  my @sql;
-  foreach (keys %$attributes) {
-     push @sql,"(fattribute.fattribute_name=? AND fattribute_to_feature.fattribute_value=?)";
-     push @args,($_,$attributes->{$_});
-  }
-  return (join(' OR ',@sql),@args);
-}
-
-=head2 make_features_by_id_where_part
-
- Title   : make_features_by_id_where_part
- Usage   : $db->make_features_by_id_where_part($ids)
- Function: create the SQL fragment needed to select a set of features by their ids
- Returns : a SQL fragment and bind arguments
- Args    : arrayref of IDs
- Status  : Protected
-
-=cut
-
-sub make_features_by_id_where_part {
-  my $self = shift;
-  my $ids = shift;
-  my $set = join ",",@$ids;
-  return ("fdata.fid IN ($set)");
-}
-
-=head2 make_features_by_gid_where_part
-
- Title   : make_features_by_id_where_part
- Usage   : $db->make_features_by_gid_where_part($ids)
- Function: create the SQL fragment needed to select a set of features by their ids
- Returns : a SQL fragment and bind arguments
- Args    : arrayref of IDs
- Status  : Protected
-
-=cut
-
-sub make_features_by_gid_where_part {
-  my $self = shift;
-  my $ids = shift;
-  my $set = join ",",@$ids;
-  return ("fgroup.gid IN ($set)");
-}
-
-=head2 make_features_select_part
-
- Title   : make_features_select_part
- Usage   : $string = $db->make_features_select_part()
- Function: make select part of the features query
- Returns : a string
- Args    : none
- Status  : protected
-
-This method creates the part of the features query that immediately
-follows the SELECT keyword.
-
-=cut
 
 sub make_features_select_part {
   my $self = shift;
   my $options = shift || {};
-  my $s = <<END;
+  my $s;
+  if (my $b = $options->{bin_width}) {
+
+    $s = <<END;
+fref,
+  1+$b*floor(fstart/$b)   as fstart,
+  $b*(1+floor(fstart/$b)) as fstop,
+  IF(ISNULL(fsource),fmethod,concat(fmethod,':',fsource)),'bin',
+  count(*) as fscore,
+  '.','.','bin',
+  IF(ISNULL(fsource),concat(fref,':',fmethod),concat(fref,':',fmethod,':',fsource)),
+  NULL,NULL,NULL,NULL
+END
+;
+  } else {
+    $s = <<END;
 fref,fstart,fstop,fsource,fmethod,fscore,fstrand,fphase,gclass,gname,ftarget_start,ftarget_stop,fdata.fid,fdata.gid
 END
+;
+}
   $s .= ",count(fdata.fid)" if $options->{attributes} && keys %{$options->{attributes}}>1;
   $s;
 }
 
-=head2 make_features_from_part
 
- Title   : make_features_from_part
- Usage   : $string = $db->make_features_from_part()
- Function: make from part of the features query
- Returns : a string
- Args    : none
- Status  : protected
-
-This method creates the part of the features query that immediately
-follows the FROM keyword.
-
-=cut
-
+# IMPORTANT NOTE:
+# WHETHER OR NOT THIS WORKS IS CRITICALLY DEPENDENT ON THE RELATIVE MAGNITUDE OF THE
 sub make_features_from_part {
   my $self = shift;
+  my $sparse = shift;
   my $options = shift || {};
-  return $options->{attributes} ? "fdata,ftype,fgroup,fattribute,fattribute_to_feature\n"
-                                : "fdata,ftype,fgroup\n";
-}
-
-=head2 make_features_join_part
-
- Title   : make_features_join_part
- Usage   : $string = $db->make_features_join_part()
- Function: make join part of the features query
- Returns : a string
- Args    : none
- Status  : protected
-
-This method creates the part of the features query that immediately
-follows the WHERE keyword.
-
-=cut
-
-sub make_features_join_part {
-  my $self = shift;
-  my $options = shift || {};
-  return !$options->{attributes} ? <<END1 : <<END2;
-  fgroup.gid = fdata.gid 
-  AND ftype.ftypeid = fdata.ftypeid
-END1
-  fgroup.gid = fdata.gid 
-  AND ftype.ftypeid = fdata.ftypeid
-  AND fattribute.fattribute_id=fattribute_to_feature.fattribute_id
-  AND fdata.fid=fattribute_to_feature.fid
-END2
-}
-
-=head2 make_features_order_by_part
-
- Title   : make_features_order_by_part
- Usage   : ($query,@args) = $db->make_features_order_by_part()
- Function: make the ORDER BY part of the features() query
- Returns : a SQL fragment and bind arguments, if any
- Args    : none
- Status  : protected
-
-This method creates the part of the features query that immediately
-follows the ORDER BY part of the query issued by features() and
-related methods.
-
-=cut
-
-sub make_features_order_by_part {
-  my $self = shift;
-  my $options = shift || {};
-  return "fgroup.gname";
-}
-
-=head2 make_features_group_by_part
-
- Title   : make_features_group_by_part
- Usage   : ($query,@args) = $db->make_features_group_by_part()
- Function: make the GROUP BY part of the features() query
- Returns : a SQL fragment and bind arguments, if any
- Args    : none
- Status  : protected
-
-This method creates the part of the features query that immediately
-follows the GROUP BY part of the query issued by features() and
-related methods.
-
-=cut
-
-sub make_features_group_by_part {
-  my $self = shift;
-  my $options = shift || {};
-  my $att = $options->{attributes} or return;
-  my $key_count = keys %$att;
-  return unless $key_count > 1;
-  return ("fdata.fid,fref,fstart,fstop,fsource,
-           fmethod,fscore,fstrand,fphase,gclass,gname,ftarget_start,
-           ftarget_stop,fdata.gid 
-     HAVING count(fdata.fid) > ?",$key_count-1);
-}
-
-=head2 refseq_query
-
- Title   : refseq_query
- Usage   : ($query,@args) = $db->refseq_query($name,$class)
- Function: create SQL fragment that selects the desired reference sequence
- Returns : a list containing the query and bind arguments
- Args    : reference sequence name and class
- Status  : protected
-
-This method is called by make_features_by_range_where_part() to
-construct the part of the select WHERE section that selects a
-particular reference sequence.  It returns a mult-element list in
-which the first element is the SQL fragment and subsequent elements
-are bind values.
-
-The current schema does not distinguish among different classes of
-reference sequence.
-
-=cut
-
-# IMPORTANT NOTE: THE MYSQL SCHEMA IGNORES THE SEQUENCE CLASS
-# THIS SHOULD BE FIXED
-sub refseq_query {
-  my $self = shift;
-  my ($refseq,$refclass) = @_;
-  my $query = "fdata.fref=?";
-  return wantarray ? ($query,$refseq) : $self->dbh->dbi_quote($query,$refseq);
-}
-
-=head2 attributes
-
- Title   : attributes
- Usage   : @attributes = $db->attributes($id,$name)
- Function: get the attributes on a particular feature
- Returns : an array of string
- Args    : feature ID
- Status  : public
-
-Some GFF version 2 files use the groups column to store a series of
-attribute/value pairs.  In this interpretation of GFF, the first such
-pair is treated as the primary group for the feature; subsequent pairs
-are treated as attributes.  Two attributes have special meaning:
-"Note" is for backward compatibility and is used for unstructured text
-remarks.  "Alias" is considered as a synonym for the feature name.
-
-If no name is provided, then attributes() returns a flattened hash, of
-attribute=E<gt>value pairs.  This lets you do:
-
-  %attributes = $db->attributes($id);
-
-Normally, attributes() will be called by the feature:
-
-  @notes = $feature->attributes('Note');
-
-=cut
-
-sub do_attributes {
-  my $self        = shift;
-  my ($id,$tag)   = @_;
-  my $from   = 'fattribute_to_feature,fattribute';
-  my $join   = 'fattribute.fattribute_id=fattribute_to_feature.fattribute_id';
-  my $where1 = 'fid=? AND fattribute_name=?';
-  my $where2 = 'fid=?';
-  my $sth = defined($tag) ? $self->dbh->do_query("SELECT fattribute_value FROM $from WHERE $where1 AND $join",$id,$tag)
-                          : $self->dbh->do_query("SELECT fattribute_name,fattribute_value FROM $from WHERE $where2 AND $join",$id);
-  my @result;
-  while (my @stuff = $sth->fetchrow_array) {
-    push @result,@stuff;
-  }
-  $sth->finish;
-  return @result;
+  my $index = $sparse ? ' USE INDEX(ftypeid)': '';
+  return $options->{attributes} ? "fdata${index},ftype,fgroup,fattribute,fattribute_to_feature\n"
+                                : "fdata${index},ftype,fgroup\n";
 }
 
 =head2 search_notes
@@ -705,292 +414,140 @@ sub search_notes {
 }
 
 
-=head2 overlap_query
 
- Title   : overlap_query
- Usage   : ($query,@args) = $db->overlap_query($start,$stop)
- Function: create SQL fragment that selects the desired features by range
- Returns : a list containing the query and bind arguments
- Args    : the start and stop of a range, inclusive
+################################ loading and initialization ##################################
+
+=head2 schema
+
+ Title   : schema
+ Usage   : $schema = $db->schema
+ Function: return the CREATE script for the schema
+ Returns : a list of CREATE statemetns
+ Args    : none
  Status  : protected
 
-This method is called by make_features_byrange_where_part() to construct the
-part of the select WHERE section that selects a set of features that
-overlap a range. It returns a multi-element list in which the first
-element is the SQL fragment and subsequent elements are bind values.
+This method returns a list containing the various CREATE statements
+needed to initialize the database tables.
 
 =cut
 
-# find features that overlap a given range
-sub overlap_query {
-  my $self = shift;
-  my ($start,$stop) = @_;
+sub schema {
+  my %schema = (
+		fdata =>{ 
+table=> q{
+#create table fdata (
+#    fid	         int not null  auto_increment,
+#    fref         varchar(100)    not null,
+#    fstart       int unsigned   not null,
+#    fstop        int unsigned   not null,
+#    ftypeid      int not null,
+#    fscore        float,
+#    fstrand       enum('+','-'),
+#    fphase        enum('0','1','2'),
+#    gid          int not null,
+#    ftarget_start int unsigned,
+#    ftarget_stop  int unsigned,
+#    primary key(fid),
+#    unique index(fref,fstart,fstop,ftypeid,gid),
+#    index(ftypeid),
+#    index(gid)
+#) type=MyISAM
 
-  my $query    = qq(fdata.fstop>=? AND fdata.fstart<=?);
-  return wantarray ? ($query,$start,$stop) : $self->dbh->dbi_quote($query,$start,$stop);
+
+ create table fdata (
+    fid	                int not null  auto_increment,
+    fref                varchar(100) not null,
+    fstart              int unsigned   not null,
+    fstop               int unsigned   not null,
+    fbin                double(20,6)  not null,
+    ftypeid             int not null,
+    fscore              float,
+    fstrand             enum('+','-'),
+    fphase              enum('0','1','2'),
+    gid                 int not null,
+    ftarget_start       int unsigned,
+    ftarget_stop        int unsigned,
+    primary key(fid),
+    unique index(fref,fbin,fstart,fstop,ftypeid,gid),
+    index(ftypeid),
+    index(gid)
+		   ) type=MyISAM
+}  # fdata table
+}, # fdata
+
+		fgroup =>{ 
+table=> q{
+create table fgroup (
+    gid	    int not null  auto_increment,
+    gclass  varchar(100),
+    gname   varchar(100) binary,
+    primary key(gid),
+    unique(gclass,gname)
+) type=MyISAM
+}
+},
+
+          ftype => {
+table=> q{
+create table ftype (
+    ftypeid      int not null   auto_increment,
+    fmethod       varchar(100) not null,
+    fsource       varchar(100),
+    primary key(ftypeid),
+    index(fmethod),
+    index(fsource),
+    unique ftype (fmethod,fsource)
+)type=MyISAM
+}  #ftype table
+}, #ftype
+
+         fdna => {
+table=> q{
+create table fdna (
+		fref    varchar(100) not null,
+	        foffset int(10) unsigned not null,
+	        fdna    longblob,
+		primary key(fref,foffset)
+)type=MyISAM
+} # fdna table
+},#fdna
+
+        fmeta => {
+table=> q{
+create table fmeta (
+		fname   varchar(255) not null,
+	        fvalue  varchar(255) not null,
+		primary key(fname)
+)type=MyISAM
+} # fmeta table
+},#fmeta
+
+       fattribute => {
+table=> q{
+create table fattribute (
+	fattribute_id     int(10)         unsigned not null auto_increment,
+        fattribute_name   varchar(255)    not null,
+	primary key(fattribute_id)
+)type=MyISAM
+} #fattribute table
+},#fattribute
+
+       fattribute_to_feature => {
+table=> q{
+create table fattribute_to_feature (
+        fid              int(10) not null,
+        fattribute_id    int(10) not null,
+	fattribute_value text,
+        key(fid,fattribute_id),
+	key(fattribute_value(48)),
+        fulltext(fattribute_value)
+)type=MyISAM
+} # fattribute_to_feature table
+    }, # fattribute_to_feature
+);
+  return \%schema;
 }
 
-=head2 contains_query
-
- Title   : contains_query
- Usage   : ($query,@args) = $db->contains_query($start,$stop)
- Function: create SQL fragment that selects the desired features by range
- Returns : a list containing the query and bind arguments
- Args    : the start and stop of a range, inclusive
- Status  : protected
-
-This method is called by make_features_byrange_where_part() to construct the
-part of the select WHERE section that selects a set of features
-entirely enclosed by a range. It returns a multi-element list in which
-the first element is the SQL fragment and subsequent elements are bind
-values.
-
-=cut
-
-# find features that are completely contained within a range
-sub contains_query {
-  my $self = shift;
-  my ($start,$stop) = @_;
-  my $query    = qq(fdata.fstart>=? AND fdata.fstop<=?);
-  return wantarray ? ($query,$start,$stop) : $self->dbh->dbi_quote($query,$start,$stop);
-}
-
-=head2 contained_in_query
-
- Title   : contained_in_query
- Usage   : ($query,@args) = $db->contained_in_query($start,$stop)
- Function: create SQL fragment that selects the desired features by range
- Returns : a list containing the query and bind arguments
- Args    : the start and stop of a range, inclusive
- Status  : protected
-
-This method is called by make_features_byrange_where_part() to construct the
-part of the select WHERE section that selects a set of features
-entirely enclosed by a range. It returns a multi-element list in which
-the first element is the SQL fragment and subsequent elements are bind
-values
-
-=cut
-
-# find features that are completely contained within a range
-sub contained_in_query {
-  my $self = shift;
-  my ($start,$stop) = @_;
-  my $query    = qq(fdata.fstart<=? AND fdata.fstop>=?);
-  return wantarray ? ($query,$start,$stop) : $self->dbh->dbi_quote($query,$start,$stop);
-}
-
-=head2 types_query
-
- Title   : types_query
- Usage   : ($query,@args) = $db->types_query($types)
- Function: create SQL fragment that selects the desired features by type
- Returns : a list containing the query and bind arguments
- Args    : an array reference containing the types
- Status  : protected
-
-This method is called by make_features_byrange_where_part() to construct the
-part of the select WHERE section that selects a set of features based
-on their type. It returns a multi-element list in which the first
-element is the SQL fragment and subsequent elements are bind values.
-The argument is an array reference containing zero or more
-[$method,$source] pairs.
-
-=cut
-
-# generate the fragment of SQL responsible for searching for
-# features with particular types and methods
-sub types_query {
-  my $self = shift;
-  my $types = shift;
-
-  my @method_queries;
-  my @args;
-  for my $type (@$types) {
-    my ($method,$source) = @$type;
-    my $meth_query = $self->exact_match('fmethod',$method) if defined $method && length $method;
-    my $src_query  = $self->exact_match('fsource',$source) if defined $source && length $source;
-    my @pair;
-    if (defined $method && length $method) {
-      push @pair,$self->exact_match('fmethod',$method);
-      push @args,$method;
-    }
-    if (defined $source && length $source) {
-      push @pair,$self->exact_match('fsource',$source);
-      push @args,$source;
-    }
-    push @method_queries,"(" . join(' AND ',@pair) .")" if @pair;
-  }
-  my $query = " (".join(' OR ',@method_queries).")\n" if @method_queries;
-  return wantarray ? ($query,@args) : $self->dbh->dbi_quote($query,@args);
-}
-
-=head2 make_types_select_part
-
- Title   : make_types_select_part
- Usage   : ($string,@args) = $db->make_types_select_part(@args)
- Function: create the select portion of the SQL for fetching features type list
- Returns : query string and bind arguments
- Args    : see below
- Status  : protected
-
-This method is called by get_types() to generate the query fragment
-and bind arguments for the SELECT part of the query that retrieves
-lists of feature types.  The four positional arguments are as follows:
-
- $refseq      reference sequence name
- $start       start of region
- $stop        end of region
- $want_count  true to return the count of this feature type
-
-If $want_count is false, the SQL fragment returned must produce a list
-of feature types in the format (method, source).
-
-If $want_count is true, the returned fragment must produce a list of
-feature types in the format (method, source, count).
-
-=cut
-
-#------------------------- support for the types() query ------------------------
-sub make_types_select_part {
-  my $self = shift;
-  my ($srcseq,$start,$stop,$want_count) = @_;
-  my $query = $want_count ? 'ftype.fmethod,ftype.fsource,count(fdata.ftypeid)'
-                          : 'fmethod,fsource';
-  return $query;
-}
-
-=head2 make_types_from_part
-
- Title   : make_types_from_part
- Usage   : ($string,@args) = $db->make_types_from_part(@args)
- Function: create the FROM portion of the SQL for fetching features type lists
- Returns : query string and bind arguments
- Args    : see below
- Status  : protected
-
-This method is called by get_types() to generate the query fragment
-and bind arguments for the FROM part of the query that retrieves lists
-of feature types.  The four positional arguments are as follows:
-
- $refseq      reference sequence name
- $start       start of region
- $stop        end of region
- $want_count  true to return the count of this feature type
-
-If $want_count is false, the SQL fragment returned must produce a list
-of feature types in the format (method, source).
-
-If $want_count is true, the returned fragment must produce a list of
-feature types in the format (method, source, count).
-
-=cut
-
-sub make_types_from_part {
-  my $self = shift;
-  my ($srcseq,$start,$stop,$want_count) = @_;
-  my $query = defined($srcseq) || $want_count ? 'fdata,ftype' : 'ftype';
-  return $query;
-}
-
-=head2 make_types_join_part
-
- Title   : make_types_join_part
- Usage   : ($string,@args) = $db->make_types_join_part(@args)
- Function: create the JOIN portion of the SQL for fetching features type lists
- Returns : query string and bind arguments
- Args    : see below
- Status  : protected
-
-This method is called by get_types() to generate the query fragment
-and bind arguments for the JOIN part of the query that retrieves lists
-of feature types.  The four positional arguments are as follows:
-
- $refseq      reference sequence name
- $start       start of region
- $stop        end of region
- $want_count  true to return the count of this feature type
-
-=cut
-
-sub make_types_join_part {
-  my $self = shift;
-  my ($srcseq,$start,$stop,$want_count) = @_;
-  my $query = defined($srcseq) || $want_count ? 'fdata.ftypeid=ftype.ftypeid'
-                                              : '';
-  return $query || 1;
-}
-
-=head2 make_types_where_part
-
- Title   : make_types_where_part
- Usage   : ($string,@args) = $db->make_types_where_part(@args)
- Function: create the WHERE portion of the SQL for fetching features type lists
- Returns : query string and bind arguments
- Args    : see below
- Status  : protected
-
-This method is called by get_types() to generate the query fragment
-and bind arguments for the WHERE part of the query that retrieves
-lists of feature types.  The four positional arguments are as follows:
-
- $refseq      reference sequence name
- $start       start of region
- $stop        end of region
- $want_count  true to return the count of this feature type
-
-=cut
-
-sub make_types_where_part {
-  my $self = shift;
-  my ($srcseq,$start,$stop,$want_count,$typelist) = @_;
-  my (@query,@args);
-  if (defined($srcseq)) {
-    push @query,'fdata.fref=?';
-    push @args,$srcseq;
-    if (defined $start or defined $stop) {
-      $start = 1           unless defined $start;
-      $stop  = MAX_SEGMENT unless defined $stop;
-      my ($q,@a) = $self->overlap_query($start,$stop);
-      push @query,"($q)";
-      push @args,@a;
-    }
-  }
-  if (defined $typelist && @$typelist) {
-    my ($q,@a) = $self->types_query($typelist);
-    push @query,($q);
-    push @args,@a;
-  }
-  my $query = @query ? join(' AND ',@query) : '1';
-  return wantarray ? ($query,@args) : $self->dbh->dbi_quote($query,@args);
-}
-
-=head2 make_types_group_part
-
- Title   : make_types_group_part
- Usage   : ($string,@args) = $db->make_types_group_part(@args)
- Function: create the GROUP BY portion of the SQL for fetching features type lists
- Returns : query string and bind arguments
- Args    : see below
- Status  : protected
-
-This method is called by get_types() to generate the query fragment
-and bind arguments for the GROUP BY part of the query that retrieves
-lists of feature types.  The four positional arguments are as follows:
-
- $refseq      reference sequence name
- $start       start of region
- $stop        end of region
- $want_count  true to return the count of this feature type
-
-=cut
-
-sub make_types_group_part {
-  my $self = shift;
-  my ($srcseq,$start,$stop,$want_count) = @_;
-  return unless $srcseq or $want_count;
-  return 'ftype.ftypeid,ftype.fmethod,ftype.fsource';
-}
 
 
 =head2 make_classes_query
@@ -1010,161 +567,6 @@ sub make_classes_query {
 }
 
 
-# why is this here?
-sub get_features_iterator {
-  my $self = shift;
-  $self->SUPER::get_features_iterator(@_);
-}
-
-
-################################ loading and initialization ##################################
-
-=head2 tables
-
- Title   : tables
- Usage   : @tables = $db->tables
- Function: return list of tables that belong to this module
- Returns : list of tables
- Args    : none
- Status  : protected
-
-This method lists the tables known to the module, namely qw(fdata fref
-fgroup ftype fdna fnote fmeta).
-
-=cut
-
-# return list of tables that "belong" to us.
-sub tables {
-  my $schema = shift->schema;
-  return keys %$schema;
-}
-
-=head2 schema
-
- Title   : schema
- Usage   : $schema = $db->schema
- Function: return the CREATE script for the schema
- Returns : a list of CREATE statemetns
- Args    : none
- Status  : protected
-
-This method returns a list containing the various CREATE statements
-needed to initialize the database tables.
-
-=cut
-
-sub schema {
-  my %schema = (
-		fdata => q{
-create table fdata (
-    fid	         int not null  auto_increment,
-    fref         varchar(100)    not null,
-    fstart       int unsigned   not null,
-    fstop        int unsigned   not null,
-    ftypeid      int not null,
-    fscore        float,
-    fstrand       enum('+','-'),
-    fphase        enum('0','1','2'),
-    gid          int not null,
-    ftarget_start int unsigned,
-    ftarget_stop  int unsigned,
-    primary key(fid),
-    unique index(fref,fstart,fstop,ftypeid,gid),
-    index(ftypeid),
-    index(gid)
-)
-},
-
-		fgroup => q{
-create table fgroup (
-    gid	    int not null  auto_increment,
-    gclass  varchar(100),
-    gname   varchar(100),
-    primary key(gid),
-    unique(gclass,gname)
-)
-},
-
-          ftype => q{
-create table ftype (
-    ftypeid      int not null   auto_increment,
-    fmethod       varchar(100) not null,
-    fsource       varchar(100),
-    primary key(ftypeid),
-    index(fmethod),
-    index(fsource),
-    unique ftype (fmethod,fsource)
-)
-},
-
-         fdna => q{
-create table fdna (
-		fref    varchar(100) not null,
-	        foffset int(10) unsigned not null,
-	        fdna    longblob,
-		primary key(fref,foffset)
-)
-},
-
-        fmeta => q{
-create table fmeta (
-		fname   varchar(255) not null,
-	        fvalue  varchar(255) not null,
-		primary key(fname)
-)
-},
-
-       fattribute => q{
-create table fattribute (
-	fattribute_id     int(10)         unsigned not null auto_increment,
-        fattribute_name   varchar(255)    not null,
-	primary key(fattribute_id)
-)
-},
-
-       fattribute_to_feature => q{
-create table fattribute_to_feature (
-        fid              int(10) not null,
-        fattribute_id    int(10) not null,
-	fattribute_value text,
-        key(fid,fattribute_id),
-	key(fattribute_value(48)),
-        fulltext(fattribute_value)
-)
-    },
-);
-  return \%schema;
-}
-
-=head2 default_meta_values
-
- Title   : default_meta_values
- Usage   : %values = $db->default_meta_values
- Function: empty the database
- Returns : a list of tag=>value pairs
- Args    : none
- Status  : protected
-
-This method returns a list of tag=E<gt>value pairs that contain default
-meta information about the database.  It is invoked by initialize() to
-write out the default meta values.  The base class version returns an
-empty list.
-
-For things to work properly, meta value names must be UPPERCASE.
-
-=cut
-
-sub default_meta_values {
-  my $self = shift;
-  return (
-	  chunk_size => DEFAULT_CHUNK,
-	 );
-}
-
-sub dna_chunk_size {
-  shift->meta('chunk_size');
-}
-
 =head2 make_meta_set_query
 
  Title   : make_meta_set_query
@@ -1181,24 +583,6 @@ retrieved.
 
 sub make_meta_set_query {
    return 'REPLACE INTO fmeta VALUES (?,?)';
-}
-
-=head2 make_meta_get_query
-
- Title   : make_meta_get_query
- Usage   : $sql = $db->make_meta_get_query
- Function: return SQL fragment for getting a meta parameter
- Returns : SQL fragment
- Args    : none
- Status  : public
-
-By default this does nothing; meta parameters are not stored or
-retrieved.
-
-=cut
-
-sub make_meta_get_query {
-   return 'SELECT fvalue FROM fmeta WHERE fname=?';
 }
 
 =head2 setup_load
@@ -1228,19 +612,19 @@ sub setup_load {
   }
 
   my $lookup_type = $dbh->prepare_delayed('SELECT ftypeid FROM ftype WHERE fmethod=? AND fsource=?');
-  my $insert_type = $dbh->prepare_delayed('REPLACE INTO ftype (fmethod,fsource) VALUES (?,?)');
+  my $insert_type = $dbh->prepare_delayed('INSERT INTO ftype (fmethod,fsource) VALUES (?,?)');
 
   my $lookup_group = $dbh->prepare_delayed('SELECT gid FROM fgroup WHERE gname=? AND gclass=?');
-  my $insert_group = $dbh->prepare_delayed('REPLACE INTO fgroup (gname,gclass) VALUES (?,?)');
+  my $insert_group = $dbh->prepare_delayed('INSERT INTO fgroup (gname,gclass) VALUES (?,?)');
 
   my $lookup_attribute = $dbh->prepare_delayed('SELECT fattribute_id FROM fattribute WHERE fattribute_name=?');
-  my $insert_attribute = $dbh->prepare_delayed('REPLACE INTO fattribute (fattribute_name) VALUES (?)');
-  my $insert_attribute_value = $dbh->prepare_delayed('REPLACE INTO fattribute_to_feature (fid,fattribute_id,fattribute_value) VALUES (?,?,?)');
+  my $insert_attribute = $dbh->prepare_delayed('INSERT INTO fattribute (fattribute_name) VALUES (?)');
+  my $insert_attribute_value = $dbh->prepare_delayed('INSERT INTO fattribute_to_feature (fid,fattribute_id,fattribute_value) VALUES (?,?,?)');
 
   my $insert_data  = $dbh->prepare_delayed(<<END);
-REPLACE INTO fdata (fref,fstart,fstop,ftypeid,fscore,
+INSERT INTO fdata (fref,fstart,fstop,fbin,ftypeid,fscore,
 		   fstrand,fphase,gid,ftarget_start,ftarget_stop)
-       VALUES(?,?,?,?,?,?,?,?,?,?)
+       VALUES(?,?,?,?,?,?,?,?,?,?,?)
 END
 ;
 
@@ -1297,8 +681,9 @@ sub load_gff_line {
   defined(my $typeid  = $self->get_table_id('ftype', $gff->{method} => $gff->{source})) or return;
   defined(my $groupid = $self->get_table_id('fgroup',$gff->{gname}  => $gff->{gclass})) or return;
 
-  my $result = $s->{sth}{insert_data}->execute($gff->{ref},
-					       $gff->{start},$gff->{stop},
+  my $bin =  bin($gff->{start},$gff->{stop},$self->min_bin);
+  my $result = $s->{sth}{insert_fdata}->execute($gff->{ref},
+					       $gff->{start},$gff->{stop},$bin,
 					       $typeid,
 					       $gff->{score},$gff->{strand},$gff->{phase},
 					       $groupid,
@@ -1324,6 +709,7 @@ sub load_gff_line {
   $fid;
 }
 
+
 sub insert_sequence {
   my $self = shift;
   my($id,$offset,$seq) = @_;
@@ -1332,35 +718,6 @@ sub insert_sequence {
   $sth->execute($id,$offset,$seq) or die $sth->errstr;
 }
 
-=head2 finish_load
-
- Title   : finish_load
- Usage   : $db->finish_load
- Function: called after load_gff_line()
- Returns : number of records loaded
- Args    : none
- Status  : protected
-
-This method performs schema-specific cleanup after loading a set of
-GFF records.  It finishes each of the statement handlers prepared by
-setup_load().
-
-=cut
-
-sub finish_load {
-  my $self = shift;
-
-  my $dbh = $self->features_db or return;
-  $dbh->do('UNLOCK TABLES') if $self->lock_on_load;
-
-  foreach (keys %{$self->{load_stuff}{sth}}) {
-    $self->{load_stuff}{sth}{$_}->finish;
-  }
-
-  my $counter = $self->{load_stuff}{counter};
-  delete $self->{load_stuff};
-  return $counter;
-}
 
 =head2 get_table_id
 
@@ -1403,11 +760,16 @@ sub get_table_id {
 
   unless (defined($s->{$table}{$id_key})) {
 
+    #########################################
+    # retrieval of the last inserted id is now located at the adaptor and not in caching_handle
+    #######################################
     if ( (my $result = $sth->{"lookup_$table"}->execute(@ids)) > 0) {
       $s->{$table}{$id_key} = ($sth->{"lookup_$table"}->fetchrow_array)[0];
     } else {
       $sth->{"insert_$table"}->execute(@ids)
-	&& ($s->{$table}{$id_key} = $sth->{"insert_$table"}->insertid);
+	&& ($s->{$table}{$id_key} = $self->insertid($sth->{"insert_$table"}));
+	#&& ($s->{$table}{$id_key} = $sth->{"insert_$table"}{sth}{mysql_insertid});
+	#&& ($s->{$table}{$id_key} = $sth->{"insert_$table"}->insertid);
     }
   }
 
@@ -1418,6 +780,13 @@ sub get_table_id {
   }
   $id;
 }
+
+sub insertid {
+  my $self = shift;
+  my $s = shift ;
+  $s->{sth}{mysql_insertid};
+}
+
 
 =head2 get_feature_id
 
@@ -1451,3 +820,26 @@ sub get_feature_id {
 }
 
 1;
+
+
+__END__
+
+=head1 BUGS
+
+none ;-)
+
+=head1 SEE ALSO
+
+L<Bio::DB::GFF>, L<bioperl>
+
+=head1 AUTHOR
+
+Lincoln Stein E<lt>lstein@cshl.orgE<gt>.
+
+Copyright (c) 2002 Cold Spring Harbor Laboratory.
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut
+

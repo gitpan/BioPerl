@@ -1,4 +1,4 @@
-# $Id: gcg.pm,v 1.13 2001/10/22 08:22:53 heikki Exp $
+# $Id: gcg.pm,v 1.21 2002/10/25 16:22:01 jason Exp $
 #
 # BioPerl module for Bio::SeqIO::gcg
 #
@@ -46,12 +46,16 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHORS - Ewan Birney & Lincoln Stein
 
 Email: E<lt>birney@ebi.ac.ukE<gt>
        E<lt>lstein@cshl.orgE<gt>       
+
+=head1 CONTRIBUTORS
+
+Jason Stajich, jason@bioperl.org
 
 =head1 APPENDIX
 
@@ -67,10 +71,19 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::SeqIO;
-use Bio::Seq;
-use Bio::Seq::RichSeq;
+use Bio::Seq::SeqFactory;
 
 @ISA = qw(Bio::SeqIO);
+
+sub _initialize {
+  my($self,@args) = @_;
+  $self->SUPER::_initialize(@args);    
+  if( ! defined $self->sequence_factory ) {
+      $self->sequence_factory(new Bio::Seq::SeqFactory
+			      (-verbose => $self->verbose(), 
+			       -type => 'Bio::Seq::RichSeq'));      
+   }
+}
 
 =head2 next_seq
 
@@ -79,7 +92,6 @@ use Bio::Seq::RichSeq;
  Function: returns the next sequence in the stream
  Returns : Bio::Seq object
  Args    :
-
 
 =cut
 
@@ -115,7 +127,7 @@ sub next_seq {
 
        next if($_ eq "\n");       ## skip whitespace lines in formatted seq
        s/[^a-zA-Z]//g;            ## remove anything that is not alphabet char
-       $_ = uc($_);               ## uppercase sequence
+       # $_ = uc($_);               ## uppercase sequence: NO. Keep the case. HL
        $sequence .= $_;
    }
    ##If we parsed out a checksum, we might as well test it
@@ -137,21 +149,21 @@ sub next_seq {
        if($type eq "P") { $type = "prot";    }
    }
 
-   return Bio::Seq::RichSeq->new(-seq  => $sequence, 
-				 -id   => $id, 
-				 -desc => $desc, 
-				 -type => $type,
-				 -dates => [ $date ]
-				 );
+   return $self->sequence_factory->create(-seq  => $sequence, 
+					  -id   => $id, 
+					  -desc => $desc, 
+					  -type => $type,
+					  -dates => [ $date ]
+					  );
 }
 
 =head2 write_seq
 
  Title   : write_seq
  Usage   : $stream->write_seq(@seq)
- Function: writes the fromatted $seq object into the stream
+ Function: writes the formatted $seq object into the stream
  Returns : 1 for success and 0 for error
- Args    : Bio::Seq object, sequence string
+ Args    : array of Bio::PrimarySeqI object
 
 
 =cut
@@ -159,6 +171,9 @@ sub next_seq {
 sub write_seq {
     my ($self,@seq) = @_;
     for my $seq (@seq) {
+	$self->throw("Did not provide a valid Bio::PrimarySeqI object") 
+	    unless defined $seq && ref($seq) && $seq->isa('Bio::PrimarySeqI');
+
 	my $str         = $seq->seq;
 	my $comment     = $seq->desc; 
 	my $id          = $seq->id;
@@ -203,6 +218,8 @@ sub write_seq {
 	$out[$i] .= "\n";
 	return unless $self->_print(@out);
     }
+
+    $self->flush if $self->_flush_on_write && defined $self->_fh;
     return 1;
 }
 

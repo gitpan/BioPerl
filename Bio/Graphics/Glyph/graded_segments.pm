@@ -1,9 +1,11 @@
 package Bio::Graphics::Glyph::graded_segments;
+#$Id: graded_segments.pm,v 1.12 2002/12/23 01:33:41 lstein Exp $
 
 use strict;
-use Bio::Graphics::Glyph::generic;
-use vars '@ISA';
-@ISA = 'Bio::Graphics::Glyph::generic';
+use Bio::Graphics::Glyph::segments;
+use vars '@ISA','$VERSION';
+@ISA = 'Bio::Graphics::Glyph::segments';
+$VERSION = 1.01;
 
 # override draw method to calculate the min and max values for the components
 sub draw {
@@ -13,6 +15,7 @@ sub draw {
   # handle both das-style and Bio::SeqFeatureI style,
   # which use different names for subparts.
   my @parts = $self->parts;
+  @parts    = $self if !@parts && $self->level == 0;
   return $self->SUPER::draw(@_) unless @parts;
 
   # figure out the colors
@@ -43,14 +46,16 @@ sub draw {
       $part->{partcolor} = $fill;
       next;
     }
-    my($r,$g,$b) = map {(255 - (255-$_) * (($s-$min_score)/$span))}
-			($red,$green,$blue);
+    my($r,$g,$b) = map { 255 - (255-$_) * min(max( ($s-$min_score)/$span, 0), 1) }
+      ($red,$green,$blue);
     my $idx      = $self->panel->translate_color($r,$g,$b);
     $part->{partcolor} = $idx;
   }
-
   $self->SUPER::draw(@_);
 }
+
+sub min { $_[0] < $_[1] ? $_[0] : $_[1] }
+sub max { $_[0] > $_[1] ? $_[0] : $_[1] }
 
 sub subseq {
   my $class = shift;
@@ -68,7 +73,6 @@ sub keyglyph {
 
   # two segments, at pixels 0->50, 60->80
   my $offset = $self->panel->offset;
-
 
   my $feature =
     Bio::Graphics::Feature->new(
@@ -89,38 +93,13 @@ sub keyglyph {
 }
 
 # component draws a shaded box
-sub draw_component {
+sub bgcolor { 
   my $self = shift;
-  my $gd = shift;
-  my ($left,$top) = @_;
-  my $color = $self->{partcolor};
-  my @rect = $self->bounds(@_);
-  $self->filled_box($gd,@rect,$color,$color);
+  return $self->{partcolor} || $self->SUPER::bgcolor;
 }
-
-# group sets connector to 'solid'
-sub connector {
+sub fgcolor { 
   my $self = shift;
-  return $self->SUPER::connector(@_) if $self->all_callbacks;
-  return 'solid';
-}
-# group sets connector to 'solid'
-sub bump {
-  my $self = shift;
-  return $self->SUPER::bump(@_) if $self->all_callbacks;
-  return 0;
-}
-# turn off labels
-sub label {
-  my $self = shift;
-  return unless (my @a = $self->feature->sub_SeqFeature) > 0;
-  $self->SUPER::label(@_);
-}
-# turn off and descriptions
-sub description {
-  my $self = shift;
-  return unless (my @a = $self->feature->sub_SeqFeature) > 0;
-  $self->SUPER::description(@_);
+  return $self->{partcolor} || $self->SUPER::fgcolor;
 }
 
 1;

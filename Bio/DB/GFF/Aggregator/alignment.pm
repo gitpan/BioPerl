@@ -12,6 +12,11 @@ Bio::DB::GFF::Aggregator::alignment -- Alignment aggregator
 				   -aggregator => ['alignment'],
 				 );
 
+ -----------------------------
+ Aggregator method: alignment
+ Main method:       -none-
+ Sub methods:       similarity
+ -----------------------------
 
 =head1 DESCRIPTION
 
@@ -59,7 +64,7 @@ sub aggregate {
 
   my (%alignments,%targets,@result);
 
-  warn "running aligner aggregator" if $factory->debug;
+  warn "running alignment aggregator" if $factory->debug;
   for my $feature (@$features) {
 
     if ($matchsub->($feature)) {

@@ -1,4 +1,4 @@
-# $Id: phylip.pm,v 1.10.2.1 2002/04/18 13:05:25 jason Exp $
+# $Id: phylip.pm,v 1.24 2002/12/14 19:32:41 shawnh Exp $
 #
 # BioPerl module for Bio::AlignIO::phylip
 #
@@ -34,7 +34,7 @@ Bio::AlignIO::phylip - PHYLIP format sequence input/output stream
     $phylipstream = new Bio::AlignIO(-interleaved => 0,
 				     -format => 'phylip',
 				     -fh   => \*STDOUT,
-					 -idlength=>10);
+				     -idlength=>10);
     $gcgstream     =  new Bio::AlignIO(-format => 'msf',
 				       -file   => 't/data/cysprot1a.msf');    
 
@@ -60,7 +60,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHORS - Heikki Lehvaslaiho and Jason Stajich
 
@@ -77,7 +77,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::AlignIO::phylip;
-use vars qw(@ISA);
+use vars qw(@ISA $DEFAULTIDLENGTH $DEFAULTLINELEN);
 use strict;
 
 use Bio::SimpleAlign;
@@ -85,18 +85,44 @@ use Bio::AlignIO;
 
 @ISA = qw(Bio::AlignIO);
 
+BEGIN { 
+    $DEFAULTIDLENGTH = 10;
+    $DEFAULTLINELEN = 60;
+}
+
+=head2 new
+
+ Title   : new
+ Usage   : my $alignio = new Bio::AlignIO(-format => 'phylip'
+					  -file   => '>file',
+					  -idlength => 10,
+					  -idlinebreak => 1);
+ Function: Initialize a new L<Bio::AlignIO::phylip> reader or writer
+ Returns : L<Bio::AlignIO> object
+ Args    : [specific for writing of phylip format files]
+           -idlength => integer - length of the id (will pad w/ 
+						    spaces if needed) 
+           -interleaved => boolean - whether or not write as interleaved 
+                                     or sequential format
+           -linelength  => integer of how long a sequence lines should be 
+           -idlinebreak => insert a line break after the sequence id
+                           so that sequence starts on the next line 
+
+=cut
 
 sub _initialize {
   my($self,@args) = @_;
   $self->SUPER::_initialize(@args);
 
-  my ($interleave,$idlength) = $self->_rearrange([qw(INTERLEAVED IDLENGTH)],@args);
-  if( ! defined $interleave ) { $interleave = 1 }  # this is the default
-  $self->interleaved(1) if( $interleave);
-  if (!defined $idlength) {$idlength = 10}
-  $self->idlength($idlength);
-
-
+  my ($interleave,$linelen,$idlinebreak,
+      $idlength) = $self->_rearrange([qw(INTERLEAVED 
+					 LINELENGTH
+					 IDLINEBREAK
+					 IDLENGTH)],@args);
+  $self->interleaved(1) if( $interleave || ! defined $interleave);
+  $self->idlength($idlength || $DEFAULTIDLENGTH);
+  $self->id_linebreak(1) if( $idlinebreak );
+  $self->line_length($linelen) if defined $linelen && $linelen > 0;
   1;
 }
 
@@ -124,12 +150,15 @@ sub next_aln {
     return 0 unless $seqcount and $residuecount;
     
     # first alignment section
+    my $idlen = $self->idlength;
+    $count = 0;
     while( $entry = $self->_readline) {
-	$entry =~ /^\s$/ and last;
-	$entry =~ /^(.{10})\s+(.*)\s$/ && do {
+    	$entry =~ /^\s$/ and last;
+    	$entry =~ /^(.{$idlen})\s+(.*)\s$/ && do {
 	    $name = $1;
 	    $str = $2;
 	    $name =~ s/[\s\/]/_/g;
+	    $name =~ s/_+$//; # remove any trailing _'s
 	    push @names, $name;
 	    
 	    $str =~ s/\s//g;
@@ -142,8 +171,13 @@ sub next_aln {
     # interleaved sections
     $count = 0;
     while( $entry = $self->_readline) {
-	$count = 0, next if $entry =~ /^\s$/;
-	$entry =~ /\s*(.*)$/ && do {
+      #finish current entry
+      if($entry =~/\s*\d+\s+\d+/){
+          $self->_pushback($entry);
+          last;
+      }
+    	$count = 0, next if $entry =~ /^\s$/;
+    	$entry =~ /\s*(.*)$/ && do {
 	    $str = $1;
 	    $str =~ s/\s//g;
 	    $count++;
@@ -202,7 +236,8 @@ sub write_aln {
     my $count = 0;
     my $wrapped = 0;
     my $maxname;
-    my ($length,$date,$name,$seq,$miss,$pad,%hash,@arr,$tempcount,$index,$idlength);
+    my ($length,$date,$name,$seq,$miss,$pad,
+	%hash,@arr,$tempcount,$index,$idlength);
     
     foreach my $aln (@aln) {
 	if( ! $aln || ! $aln->isa('Bio::Align::AlignI')  ) { 
@@ -220,9 +255,17 @@ sub write_aln {
 	foreach $seq ( $aln->each_seq() ) {
 	    $name = $aln->displayname($seq->get_nse);
 	    $name = substr($name, 0, $idlength) if length($name) > $idlength;
-	    $name = sprintf("%-".$idlength."s",$name);
-	    $name .= '   ' if( $self->interleaved());
-	    $hash{$name} = $seq->seq();
+	    $name = sprintf("%-".$idlength."s",$name);	    
+	    if( $self->interleaved() ) {
+		$name .= '   ' ;
+	    } elsif( $self->id_linebreak) { 
+		$name .= "\n"; 
+	    }
+
+      #phylip needs dashes not dots 
+      my $seq = $seq->seq();
+      $seq=~s/\./-/g;
+	    $hash{$name} = $seq;
 	    push(@arr,$name);
 	}
 
@@ -236,16 +279,19 @@ sub write_aln {
 		    $self->_print (sprintf("%".($idlength+3)."s",$dispname));
 		    $tempcount = $count;
 		    $index = 0;
-		    while( ($tempcount + 10 < $length) && ($index < 5)  ) {
-			$self->_print (sprintf("%s ",substr($hash{$name},$tempcount,10)));
-			$tempcount += 10;
+		    while( ($tempcount + $idlength < $length) && ($index < 5)  ) {
+			$self->_print (sprintf("%s ",substr($hash{$name},
+							    $tempcount,
+							    $idlength)));
+			$tempcount += $idlength;
 			$index++;
 		    }
 		    # last
 		    if( $index < 5) {
 			# space to print!
-			$self->_print (sprintf("%s ",substr($hash{$name},$tempcount)));
-			$tempcount += 10;
+			$self->_print (sprintf("%s ",substr($hash{$name},
+							    $tempcount)));
+			$tempcount += $idlength;
 		    }
 		    $self->_print ("\n");
 		}
@@ -261,6 +307,7 @@ sub write_aln {
 	    }	
 	}
     }
+    $self->flush if $self->_flush_on_write && defined $self->_fh;
     return 1;
 }
 
@@ -302,4 +349,44 @@ sub idlength {
 	}
 	return $self->{'_idlength'};
 }
+
+=head2 line_length
+
+ Title   : line_length
+ Usage   : $obj->line_length($newval)
+ Function: 
+ Returns : value of line_length
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub line_length{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'line_length'} = $value;
+    }
+    return $self->{'line_length'} || $DEFAULTLINELEN;
+
+}
+
+=head2 id_linebreak
+
+ Title   : id_linebreak
+ Usage   : $obj->id_linebreak($newval)
+ Function: 
+ Returns : value of id_linebreak
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub id_linebreak{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'_id_linebreak'} = $value;
+    }
+    return $self->{'_id_linebreak'} || 0;
+}
+
 1;

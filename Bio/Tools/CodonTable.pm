@@ -1,4 +1,4 @@
-# $Id: CodonTable.pm,v 1.22 2001/12/13 23:09:51 jason Exp $
+# $Id: CodonTable.pm,v 1.23 2002/10/22 07:38:45 lapp Exp $
 #
 # bioperl module for Bio::Tools::CodonTable
 #
@@ -139,7 +139,7 @@ report bugs to the Bioperl bug tracking system to help us keep track
  email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 

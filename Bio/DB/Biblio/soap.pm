@@ -1,4 +1,4 @@
-# $Id: soap.pm,v 1.1.2.1 2002/04/09 15:24:56 heikki Exp $
+# $Id: soap.pm,v 1.5 2002/10/22 07:45:14 lapp Exp $
 #
 # BioPerl module Bio::DB::Biblio::soap.pm
 #
@@ -44,7 +44,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR
 
@@ -124,8 +124,8 @@ use SOAP::Lite
 
 BEGIN { 
     # set the version for version checking
-    $VERSION = do { my @r = (q$Revision: 1.1.2.1 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id: soap.pm,v 1.1.2.1 2002/04/09 15:24:56 heikki Exp $;
+    $VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
+    $Revision = q$Id: soap.pm,v 1.5 2002/10/22 07:45:14 lapp Exp $;
 
     # where to go...
     $DEFAULT_SERVICE = 'http://industry.ebi.ac.uk/soap/openBQS';
@@ -328,6 +328,15 @@ Method '$method' expects vocabulary name as parameter.
 END_OF_MSG
 }
 
+# 
+# return a copy of a given array, with all its elements replaced
+# with the SOAP-Data objects defining elements type as 'string'
+#
+sub _as_strings {
+    my ($ref_input_array) = @_;
+    my (@result) = map { SOAP::Data->new (type => 'string', value => $_) } @$ref_input_array;
+    return \@result;
+}
     
 # ---------------------------------------------------------------------
 #
@@ -386,15 +395,21 @@ sub find {
    my $new_id;
    if ($collection_id) {
        if (@attrs) {
-	   $new_id = $soap->find (SOAP::Data->type (string => $collection_id), \@keywords, \@attrs)->result;
+	   $new_id = $soap->find (SOAP::Data->type (string => $collection_id),
+				  &_as_strings (\@keywords),
+				  &_as_strings (\@attrs))->result;
        } else {
-	   $new_id = $soap->find (SOAP::Data->type (string => $collection_id), \@keywords)->result;
+	   $new_id = $soap->find (SOAP::Data->type (string => $collection_id),
+				  &_as_strings (\@keywords))->result;
        }
    } else {
        if (@attrs) {
-	   $new_id = $soap->find (\@keywords, \@attrs)->result;
+	   $new_id = $soap->find (&_as_strings (\@keywords),
+				  &_as_strings (\@attrs))->result;
+
+
        } else {
-	   $new_id = $soap->find (\@keywords)->result;
+	   $new_id = $soap->find (&_as_strings (\@keywords))->result;
        }
    }
 

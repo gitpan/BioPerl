@@ -1,4 +1,4 @@
-# $Id: DBLink.pm,v 1.8 2001/11/20 02:09:29 lstein Exp $
+# $Id: DBLink.pm,v 1.12 2002/10/23 18:07:49 lapp Exp $
 #
 # BioPerl module for Bio::Annotation::Link
 #
@@ -26,14 +26,15 @@ Bio::Annotation::DBLink - DESCRIPTION of Object
    $link2->database('dbSNP');
    $link2->primary_id('2367');
 
-   # $feat is Bio::Annotation object, Bio::SeqFeature::Generic inherits it
-   $feat->add_DBLink($link2);
+   # DBLink is-a Bio::AnnotationI object, can be added to annotation
+   # collections, e.g. the one on features or seqs
+   $feat->annotation->add_Annotation('dblink', $link2);
 
 
 =head1 DESCRIPTION
 
-Provides an object which represents a link from one onbject to something
-in another database without proscribing what is in the other database
+Provides an object which represents a link from one object to something
+in another database without prescribing what is in the other database
 
 =head1 AUTHOR - Ewan Birney
 
@@ -55,8 +56,9 @@ use strict;
 
 use Bio::Root::Root;
 use Bio::AnnotationI;
+use Bio::IdentifiableI;
 
-@ISA = qw(Bio::AnnotationI Bio::Root::Root);
+@ISA = qw(Bio::Root::Root Bio::AnnotationI Bio::IdentifiableI);
 
 
 sub new {
@@ -64,24 +66,34 @@ sub new {
 
   my $self = $class->SUPER::new(@args);
 
-  my ($database, $primary_id, $optional_id, $comment) =
+  my ($database, $primary_id, $optional_id, $comment, $tag, $ns, $auth, $v) =
       $self->_rearrange([qw(DATABASE
 			    PRIMARY_ID
 			    OPTIONAL_ID
 			    COMMENT
+			    TAGNAME
+			    NAMESPACE
+			    AUTHORITY
+			    VERSION
 			    )], @args);
   
   $database    && $self->database($database);
   $primary_id  && $self->primary_id($primary_id);
   $optional_id && $self->optional_id($optional_id);
   $comment     && $self->comment($comment);
-  
+  $tag         && $self->tagname($tag);
+  # Bio::IdentifiableI parameters:
+  $ns          && $self->namespace($ns); # this will override $database
+  $auth        && $self->authority($auth);
+  defined($v)  && $self->version($v);
+
   return $self;
 }
 
-=head2 AnnotationI implementing functions
+=head1 AnnotationI implementing functions
 
 =cut
+
 
 =head2 as_text
 
@@ -130,7 +142,35 @@ sub hash_tree{
    return $h;
 }
 
-=head2 Specific accessors for DBLinks
+=head2 tagname
+
+ Title   : tagname
+ Usage   : $obj->tagname($newval)
+ Function: Get/set the tagname for this annotation value.
+
+           Setting this is optional. If set, it obviates the need to
+           provide a tag to Bio::AnnotationCollectionI when adding
+           this object. When obtaining an AnnotationI object from the
+           collection, the collection will set the value to the tag
+           under which it was stored unless the object has a tag
+           stored already.
+
+ Example : 
+ Returns : value of tagname (a scalar)
+ Args    : new value (a scalar, optional)
+
+
+=cut
+
+sub tagname{
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'tagname'} = $value;
+    }
+    return $self->{'tagname'};
+}
+
+=head1 Specific accessors for DBLinks
 
 =cut
 
@@ -184,12 +224,14 @@ sub primary_id{
  Title   : optional_id
  Usage   : $self->optional_id($newval)
  Function: get/set for the optional_id (a string)
-           optional id is a slot for people to use as they wish. The main
-           issue is that some databases do not have a clean single string
-           identifier scheme. It is hoped that the primary_id can behave like
-           a reasonably sane "single string identifier" of objects, and people
-           can use/abuse optional ids to their heart's content to provide
-           precise mappings. 
+
+           optional id is a slot for people to use as they wish. The
+           main issue is that some databases do not have a clean
+           single string identifier scheme. It is hoped that the
+           primary_id can behave like a reasonably sane "single string
+           identifier" of objects, and people can use/abuse optional
+           ids to their heart's content to provide precise mappings.
+
  Example : 
  Returns : value of optional_id
  Args    : newvalue (optional)
@@ -225,6 +267,86 @@ sub comment {
       $self->{'comment'} = $value;
     }
     return $self->{'comment'};
+}
+
+=head1 Methods for Bio::IdentifiableI compliance
+
+=head2 object_id
+
+ Title   : object_id
+ Usage   : $string    = $obj->object_id()
+ Function: a string which represents the stable primary identifier
+           in this namespace of this object. For DNA sequences this
+           is its accession_number, similarly for protein sequences
+
+           This is aliased to primary_id().
+ Returns : A scalar
+
+
+=cut
+
+sub object_id {
+    return shift->primary_id(@_);
+}
+
+=head2 version
+
+ Title   : version
+ Usage   : $version    = $obj->version()
+ Function: a number which differentiates between versions of
+           the same object. Higher numbers are considered to be
+           later and more relevant, but a single object described
+           the same identifier should represent the same concept
+
+ Returns : A number
+
+=cut
+
+sub version{
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'_version'} = $value;
+    }
+    return $self->{'_version'};
+}
+
+
+=head2 authority
+
+ Title   : authority
+ Usage   : $authority    = $obj->authority()
+ Function: a string which represents the organisation which
+           granted the namespace, written as the DNS name for  
+           organisation (eg, wormbase.org)
+
+ Returns : A scalar
+
+=cut
+
+sub authority {
+    my ($obj,$value) = @_;
+    if( defined $value) {
+	$obj->{'authority'} = $value;
+    }
+    return $obj->{'authority'};
+}
+
+=head2 namespace
+
+ Title   : namespace
+ Usage   : $string    = $obj->namespace()
+ Function: A string representing the name space this identifier
+           is valid in, often the database name or the name
+           describing the collection 
+
+           For DBLink this is the same as database().
+ Returns : A scalar
+
+
+=cut
+
+sub namespace{
+    return shift->database(@_);
 }
 
 1;

@@ -1,4 +1,4 @@
-# $Id: BPlite.pm,v 1.32 2002/01/04 14:50:27 jason Exp $
+# $Id: BPlite.pm,v 1.36 2002/10/08 10:10:05 birney Exp $
 ##############################################################################
 # Bioperl module Bio::Tools::BPlite
 ##############################################################################
@@ -37,7 +37,7 @@ Bio::Tools::BPlite - Lightweight BLAST parser
 	    $hsp->query->end;
 	    $hsp->hit->start;
 	    $hsp->hit->end;
-	    $hsp->hit->seqname;
+	    $hsp->hit->seq_id;
 	    $hsp->hit->overlaps($exon);
 	}
     }
@@ -118,7 +118,7 @@ contain the alignment sequences from the blast report.
  $hsp->homologySeq;   $hsp->hs;
  $hsp->query->start;
  $hsp->query->end;
- $hsp->query->seqname;
+ $hsp->query->seq_id;
  $hsp->hit->primary_tag; # "similarity"
  $hsp->hit->source_tag;  # "BLAST"
  $hsp->hit->start;
@@ -403,6 +403,12 @@ sub _parseHeader {
       elsif (($_ =~ /^Parameters|^\s+Database:/) && ($header_flag==1)) { # if we entered a header, and saw nothing before the stats at the end, then it was empty
 	  $self->_pushback($_);
 	  return 0;		# there's nothing in the report
+      }
+      # bug fix suggested by MI Sadowski via Martin Lomas
+      # see bug report #1118
+      if( ref($self->_fh()) !~ /GLOB/ && $self->_fh()->can('EOF') && eof($self->_fh()) ) {
+	  $self->warn("unexpected EOF in file\n");
+	  return -1;
       }
   }
   return -1; # EOF

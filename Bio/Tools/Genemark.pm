@@ -1,4 +1,4 @@
-# $Id: Genemark.pm,v 1.9 2001/11/20 02:09:40 lstein Exp $
+# $Id: Genemark.pm,v 1.11 2002/10/22 07:38:45 lapp Exp $
 #
 # BioPerl module for Bio::Tools::Genemark
 #
@@ -77,7 +77,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Hilmar Lapp, Mark Fiers
 
@@ -281,7 +281,7 @@ sub _parse_predictions {
 	    if($prednr != $current_gene_no) {
  	        # a new gene, store the old one if it exists
 		if (defined ($gene)) {
-		    $gene->seqname($seqname);
+		    $gene->seq_id($seqname);
 		    $self->_add_prediction($gene);	    
 		    $gene = undef ;
 		}

@@ -1,4 +1,4 @@
-# $Id: TranscriptI.pm,v 1.5.2.1 2002/04/18 13:05:25 jason Exp $
+# $Id: TranscriptI.pm,v 1.7 2002/10/22 07:38:41 lapp Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::TranscriptI
 #
@@ -42,7 +42,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Hilmar Lapp
 

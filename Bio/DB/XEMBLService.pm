@@ -1,5 +1,5 @@
 #
-# $Id: XEMBLService.pm,v 1.2 2002/02/13 11:02:45 heikki Exp $
+# $Id: XEMBLService.pm,v 1.3 2002/10/22 07:38:29 lapp Exp $
 #
 # BioPerl module for Bio::DB::XEMBLService
 #
@@ -41,7 +41,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Lincoln Stein
 

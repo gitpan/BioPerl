@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.10 2001/08/16 08:40:04 heikki Exp $
+# $Id: IO.pm,v 1.14 2002/11/04 09:07:45 heikki Exp $
 #
 # BioPerl module for Bio::Variation::IO
 #
@@ -207,7 +207,7 @@ report bugs to the Bioperl bug tracking system to help us keep track
  email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
@@ -250,12 +250,10 @@ use Bio::SeqIO;
 
 =cut
 
-my $entry = 0;
 
 sub new {
    my ($class, %param) = @_;
    my ($format);
-   my ($handler, $stream);
 
    @param{ map { lc $_ } keys %param } = values %param;  # lowercase keys
    $format = $param{'-format'}
@@ -263,37 +261,28 @@ sub new {
              || 'flat';
    $format = "\L$format"; # normalize capitalization to lower case
 
-   if ( &_load_format_module($format) == 0 ) { # normalize capitalization
-       return undef;
-   }
-
-   $stream = "Bio::Variation::IO::$format"->new(%param);
-   return $stream;
+   return undef unless $class->_load_format_module($format);
+   return "Bio::Variation::IO::$format"->new(%param);
 }
 
 
 sub _load_format_module {
-  my ($format) = @_;
-  my ($module, $load, $m);
-
-  $module = "_<Bio/Variation/IO/$format.pm";
-  $load = "Bio/Variation/IO/$format.pm";
-
-  return 1 if $main::{$module};
+  my ($class, $format) = @_;
+  my $module = "Bio::Variation::IO::" . $format;
+  my $ok;  
   eval {
-    require $load;
+      $ok = $class->_load_module($module);
   };
   if ( $@ ) {
     print STDERR <<END;
-$load: $format cannot be found
+$class: $format cannot be found
 Exception $@
 For more information about the IO system please see the IO docs.
 This includes ways of checking for formats at compile time, not run time
 END
   ;
-    return;
   }
-  return 1;
+  return $ok;
 }
 
 =head2 next
@@ -356,9 +345,5 @@ sub _guess_format {
    return 'xml'     if /\.xml$/i;
 }
 
-sub PRINT {
-  my $self = shift;
-  $self->{'seqio'}->write(@_);
-}
 
 1;

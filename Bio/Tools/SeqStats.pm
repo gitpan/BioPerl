@@ -1,4 +1,4 @@
-# $Id: SeqStats.pm,v 1.15 2001/11/20 02:09:40 lstein Exp $
+# $Id: SeqStats.pm,v 1.16 2002/10/22 07:38:46 lapp Exp $
 #
 # BioPerl module for Bio::Tools::SeqStats
 #
@@ -143,7 +143,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR -  Peter Schattner
 

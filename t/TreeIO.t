@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: TreeIO.t,v 1.7.2.1 2002/04/21 14:30:22 jason Exp $
+## $Id: TreeIO.t,v 1.14 2002/11/05 17:26:15 heikki Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -18,7 +18,7 @@ BEGIN {
     }
 
     use Test;
-    plan tests => 12; 
+    plan tests => 17; 
 
 #    eval { require XML::Parser::PerlSAX; };
 #    if( $@ ) {
@@ -47,7 +47,7 @@ END {
 }
 use Bio::TreeIO;
 use Bio::Root::IO;
-my $verbose = $ENV{'BIOPERLDEBUG'};
+my $verbose = $ENV{'BIOPERLDEBUG'} || 0;
 ok(1);
 
 my $treeio = new Bio::TreeIO(-verbose => $verbose,
@@ -118,7 +118,7 @@ $treeio = new Bio::TreeIO(-verbose => $verbose,
 			  -file    => Bio::Root::IO->catfile('t','data','hs_fugu.newick'));
 $tree = $treeio->next_tree();
 @nodes = $tree->get_nodes();
-ok(@nodes, 4);
+ok(@nodes, 5);
 # no relable order for the bottom nodes because they have no branchlen
 my @vals = qw(SINFRUP0000006110);
 my $saw = 0;
@@ -134,3 +134,74 @@ if( $verbose ) {
 	print "\t", $node->id, "\n";
     }
 }
+
+$treeio = new Bio::TreeIO(-format => 'newick', 
+			  -fh => \*DATA);
+my $treeout = new Bio::TreeIO(-format => 'tabtree');
+my $treeout2 = new Bio::TreeIO(-format => 'newick');
+
+$tree = $treeio->next_tree;
+
+if( $verbose > 0  ) {
+    $treeout->write_tree($tree);
+    $treeout2->write_tree($tree);
+}
+@nodes = $tree->get_nodes;
+
+my( $i, $c, $g);
+
+for ($i = 0; $i <= $#nodes; $i++) {
+    next unless defined $nodes[$i]->id;
+    if ($nodes[$i]->id eq 'C') {
+	$c = $i;
+    }
+    if ($nodes[$i]->id eq 'G') {
+	$g = $i;
+    }
+}
+$nodes[$c]->ancestor;
+$nodes[$g]->ancestor;
+my $cancestor = $nodes[$c]->ancestor;
+my $gancestor = $nodes[$g]->ancestor; 
+$cancestor->id('C-ancestor'); # let's provide a way to test if we suceeded
+$gancestor->id('G-ancestor'); # in our swapping
+
+$cancestor->remove_Descendent($nodes[$c]);
+$gancestor->remove_Descendent($nodes[$g]);
+$cancestor->add_Descendent($nodes[$g],1);
+$gancestor->add_Descendent($nodes[$c],1);
+
+@nodes = $tree->get_nodes();
+
+for ($i = 0; $i <= $#nodes; $i++) {
+    next unless defined $nodes[$i]->id;
+    if ($nodes[$i]->id eq 'C') {
+	ok($nodes[$i]->ancestor->id, 'G-ancestor');
+	$c = $i;
+    }
+    if ($nodes[$i]->id eq 'G') {
+	$g = $i;
+	ok($nodes[$i]->ancestor->id, 'C-ancestor');
+    }
+}
+
+if( $verbose > 0  ) {
+    $treeout2->write_tree($tree);
+}
+
+$treeio = new Bio::TreeIO(-verbose => $verbose,
+			  -file   => Bio::Root::IO->catfile('t','data', 
+							    'test.nhx'));
+
+ok($treeio);
+$tree = $treeio->next_tree;
+
+ok(ref($tree) && $tree->isa('Bio::Tree::TreeI'));
+
+@nodes = $tree->get_nodes;
+ok(@nodes, 12, scalar @nodes);
+
+
+
+__DATA__
+(((A:1,B:1):1,(C:1,D:1):1):1,((E:1,F:1):1,(G:1,H:1):1):1);

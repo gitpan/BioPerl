@@ -1,4 +1,4 @@
-# $Id: CytoMap.pm,v 1.1 2002/02/11 09:36:23 heikki Exp $
+# $Id: CytoMap.pm,v 1.2 2002/10/22 07:45:15 lapp Exp $
 #
 # BioPerl module for Bio::Map::CytoMap
 #
@@ -51,7 +51,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 

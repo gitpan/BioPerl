@@ -7,6 +7,8 @@ package Bio::Graphics::Glyph::heterogeneous_segments;
 # -waba_weak   => 'red'
 # -waba_coding => 'green' 
 
+# $Id: heterogeneous_segments.pm,v 1.5 2002/12/23 01:33:41 lstein Exp $
+
 use strict;
 use Bio::Graphics::Glyph::graded_segments;
 use vars '@ISA';
@@ -20,6 +22,7 @@ sub draw {
   # handle both das-style and Bio::SeqFeatureI style,
   # which use different names for subparts.
   my @parts = $self->parts;
+  @parts    = $self if !@parts && $self->level == 0;
   return $self->SUPER::draw(@_) unless @parts;
 
   # figure out the colors
@@ -63,16 +66,6 @@ sub keyglyph {
   $factory->set_option(connector  => 'solid');
   my $glyph = $factory->make_glyph(0,$feature);
   return $glyph;
-}
-
-# component draws a shaded box
-sub draw_component {
-  my $self = shift;
-  my $gd = shift;
-  my ($left,$top) = @_;
-  my $color = $self->{partcolor};
-  my @rect = $self->bounds(@_);
-  $self->filled_box($gd,@rect,$color,$color);
 }
 
 1;

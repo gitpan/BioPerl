@@ -1,7 +1,7 @@
-# $Id: Split.pm,v 1.20.2.3 2002/07/15 00:11:30 jason Exp $
+# $Id: Split.pm,v 1.35 2002/12/28 03:26:32 lapp Exp $
 #
 # BioPerl module for Bio::Location::SplitLocation
-# Cared for by Jason Stajich <jason@chg.mc.duke.edu>
+# Cared for by Jason Stajich <jason@bioperl.org>
 #
 # Copyright Jason Stajich
 #
@@ -56,11 +56,11 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@chg.mc.duke.edu
+Email jason@bioperl.org
 
 =head1 APPENDIX
 
@@ -78,27 +78,14 @@ use strict;
 
 use Bio::Root::Root;
 use Bio::Location::SplitLocationI;
-use Bio::Location::Simple;
+use Bio::Location::Atomic;
 
-@ISA = qw(Bio::Location::Simple Bio::Location::SplitLocationI );
+@ISA = qw(Bio::Location::Atomic Bio::Location::SplitLocationI );
 
 BEGIN { 
     # as defined by BSANE 0.03
     @CORBALOCATIONOPERATOR= ('NONE','JOIN', undef, 'ORDER');  
 }
-
-=head2 new
-
- Title   : new
- Usage   : my $splitloc = new Bio::Location::Split( @args);
- Function: Builds a location which contains multiple sub pieces
- Returns : Bio::Location::Split
- Args    : -split_type => 'JOIN' or 'ORDER'
-           -seq_id   => The ID of the containing sequence for this feature
-           -locations=> array ref of Bio::LocationI objects contained within
-                        this location
-=cut
-
 
 sub new {
     my ($class, @args) = @_;
@@ -119,6 +106,29 @@ sub new {
     return $self;
 }
 
+=head2 each_Location
+
+ Title   : each_Location
+ Usage   : @locations = $locObject->each_Location($order);
+ Function: Conserved function call across Location:: modules - will
+           return an array containing the component Location(s) in
+           that object, regardless if the calling object is itself a
+           single location or one containing sublocations.
+ Returns : an array of Bio::LocationI implementing objects
+ Args    : Optional sort order to be passed to sub_Location()
+
+=cut
+
+sub each_Location {
+    my ($self, $order) = @_;
+    my @locs = ();
+    foreach my $subloc ($self->sub_Location($order)) {
+	# Recursively check to get hierarchical split locations:
+	push @locs, $subloc->each_Location($order);
+    }
+    return @locs;
+}
+
 =head2 sub_Location
 
  Title   : sub_Location
@@ -130,7 +140,7 @@ sub new {
            those on other sequences).
 
            The sort order can be optionally specified or suppressed by the
-           value of the first argument. The default is a forward sort.
+           value of the first argument. The default is no sort.
 
  Returns : an array of Bio::LocationI implementing objects
  Args    : Optionally 1, 0, or -1 for specifying a forward, no, or reverse
@@ -152,14 +162,14 @@ sub sub_Location {
     # return the array if no ordering requested
     return @sublocs if( ($order == 0) || (! @sublocs) );
     
-    # sort those locations that are on the sequence as the top (`master')
+    # sort those locations that are on the same sequence as the top (`master')
     # if the top seq is undefined, we take the first defined in a sublocation
     my $seqid = $self->seq_id();
     my $i = 0;
     while((! defined($seqid)) && ($i <= $#sublocs)) {
 	$seqid = $sublocs[$i++]->seq_id();
     }
-    if(! $self->seq_id && $seqid) {
+    if((! $self->seq_id()) && $seqid) {
 	$self->warn("sorted sublocation array requested but ".
 		    "root location doesn't define seq_id ".
 		    "(at least one sublocation does!)");
@@ -169,14 +179,18 @@ sub sub_Location {
 		@sublocs);
     if(@locs) {
       if($order == 1) {
-	# Schwartzian transforms for performance boost
-	@locs = map {$_->[0]}
-	  sort { $a->[1] <=> $b->[1] }
-	    map { [$_=>$_->start] } @locs;
+	  # Schwartzian transforms for performance boost	  
+	  @locs = map { $_->[0] }
+	  sort { (defined $a && defined $b) ? 
+		     $a->[1] <=> $b->[1] : $a ? -1 : 1 }
+	  map { [$_, $_->start] } @locs;
+
       } else { # $order == -1
 	@locs = map {$_->[0]}
-	  sort { $b->[1] <=> $a->[1] }
-	    map { [$_=>$_->end] } @locs;
+	        sort { 
+		    (defined $a && defined $b) ? 
+			$b->[1] <=> $a->[1] : $a ? -1 : 1 }
+ 	        map { [$_, $_->end] } @locs;
       }
     }
     # push the rest unsorted
@@ -263,6 +277,56 @@ sub is_single_sequence {
 }
 
 =head1 LocationI methods
+
+=head2 strand
+
+ Title   : strand
+ Usage   : $obj->strand($newval)
+ Function: For SplitLocations, setting the strand of the container
+           (this object) is a short-cut for setting the strand of all
+           sublocations.
+
+           In get-mode, checks if no sub-location is remote, and if
+           all have the same strand. If so, it returns that shared
+           strand value. Otherwise it returns undef.
+
+ Example : 
+ Returns : on get, value of strand if identical between sublocations 
+           (-1, 1, or undef)
+ Args    : new value (-1 or 1, optional)
+
+
+=cut
+
+sub strand{
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'strand'} = $value;
+	# propagate to all sublocs
+	foreach my $loc ($self->sub_Location(0)) {
+	    $loc->strand($value) if ! $loc->is_remote();
+	}
+    } else {
+	my ($strand, $lstrand);
+	foreach my $loc ($self->sub_Location(0)) {
+	    # we give up upon any location that's remote or doesn't have
+	    # the strand specified, or has a differing one set than 
+	    # previously seen.
+	    # calling strand() is potentially expensive if the subloc is also
+	    # a split location, so we cache it
+	    $lstrand = $loc->strand();
+	    if((! $lstrand) ||
+	       ($strand && ($strand != $lstrand)) ||
+	       $loc->is_remote()) {
+		$strand = undef;
+		last;
+	    } elsif(! $strand) {
+		$strand = $lstrand;
+	    }
+	}
+	return $strand;
+    }
+}
 
 =head2 start
 
@@ -434,8 +498,25 @@ sub end_pos_type {
   Title   : seq_id
   Usage   : my $seqid = $location->seq_id();
   Function: Get/Set seq_id that location refers to
+
+            We override this here in order to propagate to all sublocations
+            which are not remote (provided this root is not remote either)
   Returns : seq_id
   Args    : [optional] seq_id value to set
+
+
+=cut
+
+sub seq_id {
+    my ($self, $seqid) = @_;
+
+    if(! $self->is_remote()) {
+	foreach my $subloc ($self->sub_Location(0)) {
+	    $subloc->seq_id($seqid) if ! $subloc->is_remote();
+	}
+    }
+    return $self->SUPER::seq_id($seqid);
+}
 
 =head2 coordinate_policy
 
@@ -477,20 +558,18 @@ sub to_FTstring {
     my @strs;
     foreach my $loc ( $self->sub_Location() ) {	
 	my $str = $loc->to_FTstring();
-	if( defined $self->seq_id && 
-	    defined $loc->seq_id && 
-	    $loc->seq_id ne $self->seq_id ) {
+	# we only append the remote seq_id if it hasn't been done already
+	# by the sub-location (which it should if it knows it's remote)
+	# (and of course only if it's necessary)
+	if( (! $loc->is_remote) &&
+	    defined($self->seq_id) && defined($loc->seq_id) &&
+	    ($loc->seq_id ne $self->seq_id) ) {
 	    $str = sprintf("%s:%s", $loc->seq_id, $str);
 	} 
 	push @strs, $str;
     }    
-       
+
     my $str = sprintf("%s(%s)",lc $self->splittype, join(",", @strs));
-# for bug #1074 -- still investigating if this is ever needed
-# --jason
-#    if( $self->strand == -1 ) {
-#	$str = sprintf("complement(%s)",$str);
-#    }
     return $str;
 }
 

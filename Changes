@@ -1,5 +1,102 @@
-$Id: Changes,v 1.23.2.6 2002/07/15 01:42:34 jason Exp $
+$Id: Changes,v 1.30 2002/12/28 16:35:52 birney Exp $
 Revision history for Bioperl core modules
+
+1.2  Stable major release
+ 
+    o More functionality added to Bio::Perl, the newbie module
+
+    o Bug fixes in Bio::TreeIO::newick fixes bug introduced in 1.0.2
+      Support for New Hampshire Extended (NHX) format parsing.
+
+    o Bio::Tools added support for parsing Genomewise, Pseudowise, Est2Genome,
+      Tmhmm, SignalP, Seg, RepeatMasker, FootPrinter, and a lightweight
+      Hmmpfam parser.
+
+    o New ontology parsing Bio::Ontology
+
+    o Bug fixes in Bio::SearchIO for HMMer parsing, support for
+      multi-report (mlib) fasta reports, support for waba and exonerate.
+
+    o Bio::ClusterIO for parsing Unigene clusters
+
+    o Bio::Assembly added for representing phrap and ace assembly clusters.
+
+    o Rudimentary support for writing Chado XML (see 
+      GMOD project: www.gmod.org for more information) 
+
+    o Bio::Coordinate for mapping between different coordinate systems such 
+      as protein -> cDNA -> Exon -> DNA and back.  Useful for mapping
+      features into different coordinate systems.  
+
+    o Bio::DB::GenBank/Bio::DB::GenPept now support Entrez queries
+      with the get_Stream_by_query method and supports the latest
+      NCBI eutils interface.
+
+    o Bugs fixed in Bio::SeqFeature::Collection an in-memory fast
+      object for extracting subsets of features : currently only
+      supports extraction by location.
+
+1.1.1 Developer release
+
+    o Deprecated modules are now listed in the DEPRECATED file
+
+    o New HowTo documents located in doc/howto describing 
+      a domain of Bioperl.
+
+    o Note that bugs are now stored at bugzilla.bioperl.org
+      and all old bugs are searchable through the bugzilla interface.
+
+    o Several reported bugs in Bio::Tools::Sigcleave and Bio::SimpleAlign 
+      have been addressed.
+
+    o Support for Genewise parsing in Bio::Tools::Genewise
+
+    o Start of Ontology framework with Bio::Ontology
+
+    o Speedup to the Bio::Root::Root object method _rearrange.
+      A global _load_module method was implemented to simplify the
+      dynamic loading of modules ala Bio::SeqIO::genbank.  This
+      method is now used by all the XXIO (AlignIO,TreeIO,SearchIO,SeqIO,
+      etc).
+
+    o Several performance improvements to sequence parsing in Bio::SeqIO.
+      Attempt to speedup by reducing object creation overhead.
+
+    o Bio::DB::GenBank and Bio::DB::GenPept use the NCBI's approved
+      method for sequence retrieval with their E-utils CGI scripts.
+      More work to support Entrez queries to their fullest is planned
+      before 1.2 release.
+
+    o Numerous fixes to Bio::SearchIO and sequence parsing (swissprot)
+
+1.1 Developer release 
+
+    o Bio::Tools::Run has been broken off into a new pkg bioperl-run,
+      this separation removes some of the complexity in our test suite
+      and separates the core modules in bioperl from those that need
+      external programs to run.
+
+    o With latest ExtUtils::MakeMaker module installed SGI/IRIX should
+      not run into trouble running the makefile
+
+    o Bio::Location and Bio::SeqIO::FTHelper are fixed to properly 
+      read,create,and write locations for grouped/split locations
+      (like mRNA features on genomic sequence).  
+
+    o Bio::Tools::Phlyo added for wrappers for parsing Molphy (protml)
+      and PAML (codeml,aaml, etc) parsing.
+
+    o Bio::Tree:: objects expanded to handle testing monophyly,
+      paraphyly, least common ancestor, etc.
+
+    o Bio::Coordinate for mapping locations from different coordinate spaces 
+
+    o Bio::SearchIO::waba added for parsing WABA, Bio::SearchIO::hmmer
+      added for parsing hmmpfam and hmmsearch output.
+
+    o Bio::SearchIO::Writer::TextResultWriter for outputting
+      a pseudo-blast textfile format
+
 
 1.0.2 Bug fix release
 
@@ -87,18 +184,21 @@ Revision history for Bioperl core modules
   This represents a major release of bioperl with significant
   improvements over the 0.7.x series of releases.   
 
+    o Bio::Tools::Blast is officially deprecated.  Please see
+      Bio::SearchIO for BLAST and FastA parsing.
+
+    o The methods trunc() and subseq() in Bio::PrimarySeqI now accepts
+      Bio::LocationI objects as well as start/end.
+
     o Bio::Biblio contains modules for Bibliographic data. 
       Bio::DB::Biblio contains the query modules.  Additionally one can
       parse medlinexml from the ebi bibliographic query service (BQS)
       system and Pubmed xml from NCBI.  See Martin Senger's
       documentation in Bio::Biblio for more information.
     
-    o Bio::DB::Registry is a sequence database registry part of Open
-      Bioinformatics Database Access.  Additionally Bio::DB::Flat was
-      introduced to support the cross-project OBDA standard for
-      indexed flatfiles.  See http://obda.open-bio.org for more
-      information.  This project is under active development so the
-      modules in this release represent preliminary implementations.
+    o Bio::DB::Registry is a sequence database registry part of 
+      Open Bioinformatics Database Access.  See
+      http://obda.open-bio.org for more information.
     
     o File-based and In-Memory Sequence caching is provided by
       Bio::DB::InMemoryCache and Bio::DB::FileCache which acts like a
@@ -109,53 +209,8 @@ Revision history for Bioperl core modules
 
     o XEMBL SOAP service access in provided in Bio::DB::XEMBL.
 
-    o Bio::Map and Bio::MapIO for biological map navigation and a
-      framework afor parsing them in.
- 
-    o Interface for executing EMBOSS programs locally in Bio::Factory::EMBOSS
-      Future work will integrate Pasteur Institute's Pise and EBI's openBSA 
-      analysis queues for remote analysis.
-
-    o Bio::AnnotationCollectionI and Bio::Annotation::Collection
-      introduced as new objects for handling Sequence Annotation
-      information (dblinks, references, etc) and is more robust that
-      previous annotation handling object.
-
-    o Bio::SearchIO was introduced to support an extensible framework
-      for sequence database search results.  Currently blast, NCBI XML
-      blast format (-m 7), and FastA parsing are implemented.  The
-      Bio::Search objects were added to represent the Result, Hit, and
-      HSP objects retrieved from a search.  To support this new
-      direction Bio::Tools::Blast is officially deprecated.
-
-    o Bio::SearchIO::Writer system allows output of Bio::Search
-      objects in a tabular or HTML form.
-
-    o Bio::DB::GFF is Lincoln Stein's database implementation of GFF
-      files which can be used for DAS backends and is part of the
-      Generic Model Organism Database project (http://gmod.sourceforge.net).
-
-    o Bio::Tree and Bio::TreeIO namespaces and modules were added to
-      support representation and parsing of phylogenetic trees.
-
-    o Bio::Structure as added in 0.9.1 and includes a pdb parser and
-      objects to represent protein structure.
-
-    o More Multiple Sequence formats have been added for parsing or writing. 
-
-    o The methods trunc() and subseq() in Bio::PrimarySeqI now accepts
-      Bio::LocationI objects as well as start/end.
-
-    o Bio::SimpleAlign now supports two methods for calculating
-      average and overall percentage identity. 
-
-    o 30% speedup was achieved in SeqIO genbank and embl parsers,
-      future releases will focus on an event based parsing system
-      where we hope to achieve improved parsing speeds.
-
     o A FAQ has been started and is included in the release to provide
       a starting point for frequent questions and issues.
-
 
 0.9.3 Developer's release
     

@@ -1,4 +1,4 @@
-# $Id: Entry.pm,v 1.13.2.3 2002/05/21 09:15:56 krbou Exp $
+# $Id: Entry.pm,v 1.17 2002/10/22 07:38:44 lapp Exp $
 #
 # bioperl module for Bio::Structure::Entry
 #
@@ -44,7 +44,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Kris Boulez
 

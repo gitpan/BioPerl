@@ -1,16 +1,16 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: SimpleAlign.t,v 1.25.2.2 2002/03/18 14:31:09 jason Exp $
+## $Id: SimpleAlign.t,v 1.31 2002/12/09 13:28:02 shawnh Exp $
 use strict;
-use constant NUMTESTS => 53;
+use constant NUMTESTS => 59;
 
-BEGIN {     
+BEGIN {
     eval { require Test; };
     if( $@ ) {
 	use lib 't';
     }
     use Test;
-    
+
     plan tests => NUMTESTS;
 }
 
@@ -25,6 +25,10 @@ $str = Bio::AlignIO->new(-file=> Bio::Root::IO->catfile("t","data","testaln.pfam
 ok defined($str) && ref($str) && $str->isa('Bio::AlignIO');
 $aln = $str->next_aln();
 ok $aln->get_seq_by_pos(1)->get_nse, '1433_LYCES/9-246', " failed pfam input test";
+
+my $aln1 = $aln->remove_columns(['mismatch']);
+ok ($aln1->match_line, '::*::::*:**:*:*:***:**.***::*.*::**::**:***..**:*:*.::::*:.:*.*.**:***.**:*.:.**::**.*:***********:::*:.:*:**.*::*:.*.:*:**:****************::');
+
 
 my $aln2 = $aln->select(1,3);
 ok $aln2;
@@ -43,15 +47,15 @@ ok $seqs[0]->no_gaps, 3;
 @seqs = $aln->each_alphabetically();
 ok scalar @seqs, 16;
 
-ok $aln->column_from_residue_number('1433_LYCES', 10), 2; 
+ok $aln->column_from_residue_number('1433_LYCES', 10), 2;
 ok $aln->displayname('1433_LYCES/9-246', 'my_seq'), 'my_seq';
 ok $aln->displayname('1433_LYCES/9-246'), 'my_seq';
-ok substr ($aln->consensus_string(50), 0, 60), 
+ok substr ($aln->consensus_string(50), 0, 60),
     "RE??VY?AKLAEQAERYEEMV??MK?VAE??????ELSVEERNLLSVAYKNVIGARRASW";
-ok substr ($aln->consensus_string(100), 0, 60), 
+ok substr ($aln->consensus_string(100), 0, 60),
     "?????????L????E????M???M????????????L??E?RNL?SV?YKN??G??R??W";
-ok substr ($aln->consensus_string(0), 0, 60), 
-    "REDLVYLAKLAEQAERYEEMVEFMKKVAESGAPAEELSVEERNLLSVAYKNVIGARRASW";
+ok substr ($aln->consensus_string(0), 0, 60),
+    "REDLVYLAKLAEQAERYEEMVEFMKKVAELGAPAEELSVEERNLLSVAYKNVIGARRASW";
 
 ok (@seqs = $aln->each_seq_with_id('143T_HUMAN'));
 ok scalar @seqs, 1;
@@ -74,7 +78,7 @@ ok $aln->displayname('1433_LYCES/9-246'), '1433_LYCES/9-246';
 ok $aln->uppercase;
 ok $aln->map_chars('\.','-');
 @seqs = $aln->each_seq_with_id('143T_HUMAN');
-ok substr($seqs[0]->seq, 0, 60), 
+ok substr($seqs[0]->seq, 0, 60),
     'KTELIQKAKLAEQAERYDDMATCMKAVTEQGA---ELSNEERNLLSVAYKNVVGGRRSAW';
 
 ok($aln->match_line, '       ::*::::*  : *   *:           *: *:***:**.***::*. *::**::**:***      .  .      **  :* :*   .  :: ::   *:  .     :* .*. **:***.** :*.            :  .*  *   :   : **.*:***********:::* : .: *  :** .*::*: .*. : *: **:****************::     ');
@@ -88,8 +92,9 @@ ok (($aln->missing_char(), 'P') and  ($aln->missing_char('X'), 'X')) ;
 ok (($aln->match_char(), '.') and  ($aln->match_char('-'), '-')) ;
 ok (($aln->gap_char(), '-') and  ($aln->gap_char('.'), '.')) ;
 
-# write test for:
-# purge()
+
+ok $aln->purge(0.7), 12;
+ok $aln->no_sequences, 3;
 
 eval { require 'IO/String.pm' };
 if( $@ ) {
@@ -104,13 +109,13 @@ if( $@ ) {
 my $string;
 my $out = IO::String->new($string);
 
-my $s1 = new Bio::LocatableSeq (-id => 'AAA', 
+my $s1 = new Bio::LocatableSeq (-id => 'AAA',
 			    -seq => 'aawtat-tn-',
 			    -start => 1,
 			    -end => 8,
   			    -alphabet => 'dna'
 			    );
-my $s2 = new Bio::LocatableSeq (-id => 'BBB', 
+my $s2 = new Bio::LocatableSeq (-id => 'BBB',
 			    -seq => '-aaaat-tt-',
 			    -start => 1,
 			    -end => 7,
@@ -166,3 +171,17 @@ eval {
 };
 
 ok ($@ =~ /EX/ );
+
+
+#sort_alphabetically
+my $s3 = new Bio::LocatableSeq (-id => 'ABB',
+			    -seq => '-attat-tt-',
+			    -start => 1,
+			    -end => 7,
+  			    -alphabet => 'dna'
+			    );
+$a->add_seq($s3);
+
+ok $a->get_seq_by_pos(2)->id,"BBB";
+ok $a->sort_alphabetically;
+ok $a->get_seq_by_pos(2)->id,"ABB";

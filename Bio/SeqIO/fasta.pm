@@ -1,4 +1,4 @@
-# $Id: fasta.pm,v 1.27 2001/10/22 08:22:53 heikki Exp $
+# $Id: fasta.pm,v 1.41 2002/12/24 12:14:14 birney Exp $
 # BioPerl module for Bio::SeqIO::fasta
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
@@ -43,7 +43,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHORS - Ewan Birney & Lincoln Stein
 
@@ -61,15 +61,30 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::SeqIO::fasta;
-use vars qw(@ISA);
+use vars qw(@ISA $WIDTH);
 use strict;
 # Object preamble - inherits from Bio::Root::Object
 
 use Bio::SeqIO;
-use Bio::Seq;
-use Bio::PrimarySeq;
+use Bio::Seq::SeqFactory;
+use Bio::Seq::SeqFastaSpeedFactory;
 
 @ISA = qw(Bio::SeqIO);
+
+BEGIN { $WIDTH = 60}
+
+sub _initialize {
+  my($self,@args) = @_;
+  $self->SUPER::_initialize(@args);  
+  my ($width) = $self->_rearrange([qw(WIDTH)], @args);
+  $width && $self->width($width);
+  if( ! defined $self->sequence_factory ) {
+      # we default to the speed factory
+      # print STDERR "Going to load default sequence factory...\n";
+      $self->sequence_factory(Bio::Seq::SeqFastaSpeedFactory->new());
+      #$self->sequence_factory(new Bio::Seq::SeqFactory(-verbose => $self->verbose(), -type => 'Bio::Seq'));      
+  }
+}
 
 =head2 next_seq
 
@@ -82,71 +97,55 @@ use Bio::PrimarySeq;
 =cut
 
 sub next_seq {
-    return next_primary_seq( $_[0], 1 );
-}
+    my( $self ) = @_;
+    my $seq;
+    my $alphabet;
+    local $/ = "\n>";
+    return unless my $entry = $self->_readline;
 
-=head2 next_primary_seq
+    if ($entry eq '>')  {	# very first one
+	return unless $entry = $self->_readline;
+    }
+    
+    my ($top,$sequence) = $entry =~ /^>?(.+?)\n([^>]*)/s
+	or $self->throw("Can't parse fasta entry");
+    my ($id,$fulldesc) = $top =~ /^\s*(\S+)\s*(.*)/
+	or $self->throw("Can't parse fasta header");
+    if ($id eq '') {$id=$fulldesc;} # FIX incase no space between > and name \AE
+    $sequence =~ s/\s//g;	# Remove whitespace
 
- Title   : next_primary_seq
- Usage   : $seq = $stream->next_primary_seq()
- Function: returns the next sequence in the stream
- Returns : Bio::PrimarySeq object
- Args    : NONE
+    # for empty sequences we need to know the mol.type
+    $alphabet = $self->alphabet();
+    if(length($sequence) == 0) {
+	if(! defined($alphabet)) {
+	    # let's default to dna
+	    $alphabet = "dna";
+	}
+    } else {
+	# we don't need it really, so disable
+	$alphabet = undef;
+    }
 
-=cut
+    $seq = $self->sequence_factory->create(
+					   -seq         => $sequence,
+					   -id          => $id,
+					   # Ewan's note - I don't think this healthy
+					   # but obviously to taste.
+					   #-primary_id  => $id,
+					   -desc        => $fulldesc,
+					   -alphabet    => $alphabet,
+					   -direct      => 1,
+					   );
 
-sub next_primary_seq {
-  my( $self, $as_next_seq ) = @_;
-  my $seq;
-  my $alphabet;
-  local $/ = "\n>";
 
-  return unless my $entry = $self->_readline;
 
-  if ($entry eq '>')  {  # very first one
-    return unless $entry = $self->_readline;
-  }
 
-  my ($top,$sequence) = $entry =~ /^>?(.+?)\n([^>]*)/s
-    or $self->throw("Can't parse fasta entry");
-  my ($id,$fulldesc) = $top =~ /^\s*(\S+)\s*(.*)/
-    or $self->throw("Can't parse fasta header");
-  if ($id eq '') {$id=$fulldesc;} # FIX incase no space between > and name \AE
-  $sequence =~ s/\s//g; # Remove whitespace
+    # if there wasn't one before, set the guessed type
+    unless ( defined $alphabet ) {
+	$self->alphabet($seq->alphabet());
+    }
+    return $seq;
 
-  # for empty sequences we need to know the mol.type
-  $alphabet = $self->alphabet();
-  if(length($sequence) == 0) {
-      if(! defined($alphabet)) {
-	  # let's default to dna
-	  $alphabet = "dna";
-      }
-  } else {
-      # we don't need it really, so disable
-      $alphabet = undef;
-  }
-
-  # create the seq object
-  if ($as_next_seq) {
-    # Return a Bio::Seq if asked for
-    $seq = Bio::Seq->new(-seq        => $sequence,
-		         -id         => $id,
-		         -primary_id => $id,
-		         -desc       => $fulldesc,
-			 -alphabet    => $alphabet
-		         );
-  } else {
-    $seq = Bio::PrimarySeq->new(-seq        => $sequence,
-		                -id         => $id,
-		                -primary_id => $id,
-		                -desc       => $fulldesc,
-				-alphabet    => $alphabet
-		                );
-  }
-  # if there wasn't one before, set the guessed type
-  $self->alphabet($seq->alphabet());
-  
-  return $seq;
 }
 
 =head2 write_seq
@@ -155,28 +154,53 @@ sub next_primary_seq {
  Usage   : $stream->write_seq(@seq)
  Function: writes the $seq object into the stream
  Returns : 1 for success and 0 for error
- Args    : Bio::Seq object
+ Args    : array of 1 to n Bio::PrimarySeqI objects
 
 
 =cut
 
 sub write_seq {
    my ($self,@seq) = @_;
+   my $width = $self->width;
    foreach my $seq (@seq) {
-     my $str = $seq->seq;
-     my $top = $seq->display_id();
-     if ($seq->can('desc') and my $desc = $seq->desc()) {
-	 $desc =~ s/\n//g;
-        $top .= " $desc";
-     }
-     if(length($str) > 0) {
-	 $str =~ s/(.{1,60})/$1\n/g;
-     } else {
-	 $str = "\n";
-     }
-     $self->_print (">",$top,"\n",$str) or return;
+       $self->throw("Did not provide a valid Bio::PrimarySeqI object") 
+	   unless defined $seq && ref($seq) && $seq->isa('Bio::PrimarySeqI');
+
+       my $str = $seq->seq;
+       my $top = $seq->display_id();
+       if ($seq->can('desc') and my $desc = $seq->desc()) {
+	   $desc =~ s/\n//g;
+	   $top .= " $desc";
+       }
+       if(length($str) > 0) {
+	   $str =~ s/(.{1,$width})/$1\n/g;
+       } else {
+	   $str = "\n";
+       }
+       $self->_print (">",$top,"\n",$str) or return;
    }
+
+   $self->flush if $self->_flush_on_write && defined $self->_fh;
    return 1;
+}
+
+=head2 width
+
+ Title   : width
+ Usage   : $obj->width($newval)
+ Function: Get/Set the line width for FASTA output
+ Returns : value of width
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub width{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'width'} = $value;
+    }
+    return $self->{'width'} || $WIDTH;
 }
 
 1;

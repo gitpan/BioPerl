@@ -1,21 +1,23 @@
 # -*-Perl-*- mode (to keep my emacs happy)
+# $Id: SeqIO.t,v 1.59 2002/11/09 15:09:15 jason Exp $
 
 use strict;
-use vars qw($DEBUG);
+use vars qw($DEBUG $TESTCOUNT);
 BEGIN {     
     eval { require Test; };
     if( $@ ) {
 	use lib 't';
     }
     use Test;
-    plan tests => 92;
+    $TESTCOUNT = 146;
+    plan tests => $TESTCOUNT;
 }
 
 use Bio::Seq;
 use Bio::SeqIO;
 use Bio::SeqIO::MultiFile;
 use Bio::Root::IO;
-use Bio::Annotation;
+use Bio::Annotation::Collection;
 
 ok(1);
 
@@ -94,7 +96,16 @@ $ast = Bio::SeqIO->new( '-format' => 'embl' ,
 $ast->verbose($verbosity);
 my $as = $ast->next_seq();
 ok defined $as->seq;
-
+ok($as->display_id, 'HSHNCPA1');
+ok($as->accession_number, 'X79536');
+ok($as->seq_version, 1);
+ok($as->version, 1);
+ok($as->desc, 'H.sapiens mRNA for hnRNPcore protein A1');
+ok($as->molecule, 'RNA');
+ok($as->alphabet, 'rna');
+ok(scalar $as->all_SeqFeatures(), 4);
+ok($as->length, 1198);
+ok($as->species->binomial(), 'Homo sapiens');
 
 $ast = Bio::SeqIO->new( '-format' => 'GenBank' , 
 			'-file' => Bio::Root::IO->catfile("t","data","roa1.genbank"));
@@ -124,12 +135,14 @@ $ast = Bio::SeqIO->new( '-verbosity' => $verbosity,
 $as = $ast->next_seq();
 ok defined $as->seq;
 ok($as->id, 'ROA1_HUMAN', "id is ".$as->id);
-ok($as->primary_id, 'ROA1');
+#ok($as->primary_id, 'ROA1');
+skip($as->primary_id =~ /^Bio::Seq::/, $as->primary_id, 'ROA1');
 ok($as->length, 371);
 ok($as->alphabet, 'protein');
 ok($as->division, 'HUMAN');
 ok(scalar $as->all_SeqFeatures(), 16);
 
+ok(scalar $as->annotation->get_Annotations('reference'), 11);
 ($ent, $seq, $out) = undef;
 
 $ent = Bio::SeqIO->new( '-file' => Bio::Root::IO->catfile("t","data","test.embl"),
@@ -139,7 +152,7 @@ $seq = $ent->next_seq();
 
 ok(defined $seq->seq(), 1, 
    'failure to read Embl with ^ location and badly split double quotes');
-
+ok(scalar $seq->annotation->get_Annotations('reference'), 3);
 $out = Bio::SeqIO->new('-file'=> ">". Bio::Root::IO->catfile("t","data","embl.out"), 
 		       '-format' => 'embl');
 
@@ -204,21 +217,28 @@ my $seqnum = 0;
 my $species;
 my @cl;
 my $lasts;
+my @ids = qw(DDU63596 DDU63595 HUMBDNF);
+my @tids = (44689, 44689, 9606);
+my @tnames = ("Dictyostelium discoideum","Dictyostelium discoideum","Homo sapiens");
 while($seq = $stream->next_seq()) {
-    $seqnum++;
-    if($seqnum == 3) {
-	ok $seq->display_id(), "HUMBDNF";
+    if($seqnum < 3) {
+	ok $seq->display_id(), $ids[$seqnum];
 	$species = $seq->species();
 	@cl = $species->classification();
-	ok( $species->binomial(), "Homo sapiens", 
+	ok( $species->binomial(), $tnames[$seqnum], 
 	    'species parsing incorrect for genbank');
 	ok( $cl[3] ne $species->genus(), 1, 
 	    'genus duplicated in genbank parsing');
+	ok( $species->ncbi_taxid, $tids[$seqnum] );
     }
+    $seqnum++;
     $lasts = $seq;
 }
 ok $lasts->display_id(), "HUMBETGLOA";
+my ($ref) = $lasts->annotation->get_Annotations('reference');
+ok($ref->medline, 94173918);
 $stream->close();
+
 $ent = Bio::SeqIO->new( '-file' => Bio::Root::IO->catfile("t","data","test.embl"), 
 			'-format' => 'embl');
 $ent->verbose($verbosity);
@@ -227,7 +247,6 @@ $species = $seq->species();
 @cl = $species->classification();
 ok( $cl[3] ne $species->genus(), 1, 'genus duplicated in EMBL parsing');
 $ent->close();
-
 
 $seq = Bio::SeqIO->new( '-format' => 'GenBank' , 
 			-file => Bio::Root::IO->catfile("t","data","testfuzzy.genbank"));
@@ -238,9 +257,12 @@ my @features = $as->all_SeqFeatures();
 ok(@features,21);
 my $lastfeature = pop @features;
 
-ok($lastfeature->strand, -1);
+# this is a split location; the root doesn't have strand
+ok($lastfeature->strand, undef);
 my $location = $lastfeature->location;
-ok($location->strand, -1);
+$location->verbose(-1); # silence the warning of undef seq_id()
+# see above; splitlocs roots do not have a strand really
+ok($location->strand, undef);
 ok($location->start, 83202);
 ok($location->end, 84996);
 
@@ -270,38 +292,53 @@ my $seqio = Bio::SeqIO->new( '-format' => 'swiss' ,
 ok(defined( $seq = $seqio->next_seq));
 
 # more tests to verify we are actually parsing correctly
-ok($seq->primary_id, 'MA32');
+skip($seq->primary_id =~ /^Bio::Seq/, $seq->primary_id, 'MA32');
 ok($seq->display_id, 'MA32_HUMAN');
 ok($seq->length, 282);
 ok($seq->division, 'HUMAN');
 ok($seq->alphabet, 'protein');
 ok(scalar $seq->all_SeqFeatures(), 2);
 
-my $seen = 0;
-foreach my $gn ( $seq->annotation->get_Annotations('gene_name') ) {
-    if( $gn->value =~ /SF2/ ) {
-	$seen = 1;
-    }	       
+my @genenames = qw(GC1QBP HABP1 SF2P32 C1QBP);
+my ($ann) = $seq->annotation->get_Annotations('gene_name');
+foreach my $gn ( $ann->get_all_values() ) {
+    ok ($gn, shift(@genenames));
 }
+ok $ann->value(-joins => [" AND "," OR "]), "GC1QBP OR HABP1 OR SF2P32 OR C1QBP";
 
-ok $seen;
 # test for feature locations like ?..N
 ok(defined( $seq = $seqio->next_seq));
 
-ok($seq->primary_id, 'ACON');
+skip($seq->primary_id =~ /^Bio::Seq/, $seq->primary_id, 'ACON');
 ok($seq->display_id, 'ACON_CAEEL');
 ok($seq->length, 788);
 ok($seq->division, 'CAEEL');
 ok($seq->alphabet, 'protein');
 ok(scalar $seq->all_SeqFeatures(), 5);
 
-$seen = 0;
 foreach my $gn ( $seq->annotation->get_Annotations('gene_name') ) {
-    if( $gn->value =~ /F54H12/ ) {
-	$seen = 1;
-    }	       
+    ok ($gn->value, 'F54H12.1');
 }
-ok($seen);
+
+# test species in swissprot -- this can be a n:n nightmare
+ok ($seq = $seqio->next_seq());
+ok ($seq->species->binomial, "Homo sapiens");
+ok ($seq->species->common_name, "Human");
+ok ($seq->species->ncbi_taxid, 9606);
+
+ok ($seq = $seqio->next_seq());
+ok ($seq->species->binomial, "Bos taurus");
+ok ($seq->species->common_name, "Bovine");
+ok ($seq->species->ncbi_taxid, 9913);
+
+# multiple genes in swissprot
+ok ($seq = $seqio->next_seq());
+($ann) = $seq->annotation->get_Annotations("gene_name");
+@genenames = qw(CALM1 CAM1 CALM CAM CALM2 CAM2 CAMB CALM3 CAM3 CAMC);
+foreach my $gn ( $ann->get_all_values() ) {
+    ok ($gn, shift(@genenames));
+}
+ok $ann->value(-joins => [" AND "," OR "]), "(CALM1 OR CAM1 OR CALM OR CAM) AND (CALM2 OR CAM2 OR CAMB) AND (CALM3 OR CAM3 OR CAMC)";
 
 # test dos Linefeeds in gcg parser
 $str = Bio::SeqIO->new('-file' => Bio::Root::IO->catfile("t","data","test_badlf.gcg"), 
@@ -314,8 +351,9 @@ print "Sequence 1 of 1 from GCG stream:\n", $seq->seq, "\n" if( $DEBUG);
 
 
 $str  = new Bio::SeqIO(-format => 'genbank',
-			    -file   => Bio::Root::IO->catfile("t","data","AF165282.gb"),
-			    -verbose => $verbosity);
+		       -file   => Bio::Root::IO->catfile("t","data",
+							 "AF165282.gb"),
+		       -verbose => $verbosity);
 
 $seq = $str->next_seq;
 @features = $seq->all_SeqFeatures();
@@ -326,7 +364,11 @@ $location = $features[1]->location;
 ok($location->isa('Bio::Location::SplitLocationI'));
 @sublocs = $location->sub_Location();
 ok(@sublocs, 29);
- 
+
+# version and primary ID - believe it or not, this wasn't working
+ok ($seq->version, 1);
+ok ($seq->seq_version, 1);
+ok ($seq->primary_id, "5734104");
 
 # PIR testing
 
@@ -351,8 +393,7 @@ my $primaryseq = new Bio::PrimarySeq( -seq => 'AGAGAGAGATA',
 
 my $embl = new Bio::SeqIO(-format => 'embl', 
 			  -verbose => $verbosity -1,
-			  -file => ">".Bio::Root::IO->catfile("t","data","primaryseq.embl")
-			  );
+			  -file => ">primaryseq.embl");
 
 ok($embl->write_seq($primaryseq));
 my $scalar = "test";
@@ -361,4 +402,35 @@ eval {
 };
 ok ($@);
 
-unlink(Bio::Root::IO->catfile("t","data","primaryseq.embl"));
+unlink("primaryseq.embl");
+
+
+# revcomp split location
+my $gb = new Bio::SeqIO(-format => 'genbank',
+    -file   => Bio::Root::IO->catfile(qw(t data revcomp_mrna.gb)));
+
+$seq = $gb->next_seq();
+
+$gb = new Bio::SeqIO(-format => 'genbank',
+    -file   => ">tmp_revcomp_mrna.gb");
+
+$gb->write_seq($seq);
+undef $gb;
+ok(! -z "tmp_revcomp_mrna.gb");
+
+# INSERT DIFFING CODE HERE
+
+unlink("tmp_revcomp_mrna.gb");
+
+
+# test secondary accessions in EMBL (bug #1332)
+
+$seqio = new Bio::SeqIO(-format =>'embl', -file => Bio::Root::IO->catfile
+			( qw(t data ECAPAH02.embl)));
+$seq = $seqio->next_seq;
+
+ok($seq->accession_number, 'D10483');
+ok($seq->seq_version, 2);
+my @accs = $seq->get_secondary_accessions();
+ok($accs[0], 'J01597');
+ok($accs[-1], 'X56742');

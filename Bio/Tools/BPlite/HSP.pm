@@ -45,7 +45,7 @@ Bio::Tools::BPlite::HSP - Blast report High Scoring Pair (HSP)
 	    $hsp->query->end;
 	    $hsp->hit->start;
 	    $hsp->hit->end;
-	    $hsp->hit->seqname;
+	    $hsp->hit->seq_id;
 	    $hsp->hit->overlaps($exon);
 	}
     }
@@ -87,7 +87,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Peter Schattner
 
@@ -206,8 +206,8 @@ sub new {
 			 -source=>"BLAST" ) ) }
     
     # name the sequences
-    $self->query->seqname($qname); # query name
-    $self->hit->seqname($sname);   # hit name
+    $self->query->seq_id($qname); # query name
+    $self->hit->seq_id($sname);   # hit name
 
     # set lengths
     $self->query->seqlength($qlength); # query length

@@ -1,14 +1,16 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: Biblio_biofetch.t,v 1.3.2.4 2002/06/04 21:46:52 jason Exp $
+# $Id: Biblio_biofetch.t,v 1.6 2002/06/15 14:29:20 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
 use strict;
 use vars qw($NUMTESTS $DEBUG);
-$DEBUG=0;
+use vars qw($NUMTESTS $DEBUG);
+$DEBUG = $ENV{'BIOPERLDEBUG'} || 0;
+
 my $error;
 
 BEGIN { 
@@ -22,12 +24,15 @@ BEGIN {
     }
     use Test;
 
-    $NUMTESTS = 13;
+    $NUMTESTS = 11;
     plan tests => $NUMTESTS;
     eval { require 'IO/String.pm' };
     if( $@ ) {
+	if( $DEBUG ) {
+	    print STDERR "IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping tests.\n" if($DEBUG);
+	}
 	for( $Test::ntest..$NUMTESTS ) {
-	    skip("IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping tests",1);
+	    skip("IO::String not installed. Skipping tests",1);
 	}
        $error = 1; 
     }
@@ -36,11 +41,13 @@ BEGIN {
 if( $error ==  1 ) {
     exit(0);
 }
-
+END{ 
+    foreach ( $Test::ntest..$NUMTESTS) {
+	skip('unable to run all of the Biblio_biofetch tests',1);
+    }
+}
 use Bio::Biblio;
-ok 1;
 use Bio::Biblio::IO;
-ok 1;
 
 ## End of black magic.
 ##
@@ -51,7 +58,7 @@ ok 1;
 my ($db,$ref,$refio);
 # get a single ref
 
-my $verbose = 0;
+my $verbose =  $DEBUG || 0;
 
 $ref = $refio = undef;
 
@@ -60,17 +67,19 @@ $ref = $refio = undef;
 
 eval { 
     ok ($db = new Bio::Biblio (-access => 'biofetch',
-				   -verbose=>$verbose));
+			       -verbose=>$verbose));
     ok(defined($ref = $db->get_by_id('20063307')));
     ok $ref->identifier, '20063307';
 };
 
 if ($@) {
-    print STDERR "Warning: Couldn't connect to BioFetch server with Bio::DB::Medline.pm!\n";
-	print STDERR $@ if( $DEBUG );
-
+    if( $DEBUG  ) { 
+	print STDERR "Warning: Couldn't connect to BioFetch server with Bio::DB::Medline.pm!\n" . $@;
+    }
     foreach ( $Test::ntest..$NUMTESTS) { 
-	skip('could not connect to Medline',1);}
+	skip('No network access - could not connect to Medline',1);
+    }
+    exit(0);
 }
 
 $ref = $refio = undef;
@@ -93,6 +102,7 @@ if ($@) {
 	warn "Batch access test failed.Error: $@\n";
     }
     foreach ( $Test::ntest..$NUMTESTS ) { skip('no network access',1); }
+    exit(0);
 }
 
 eval {

@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Vector.pm
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 15 April 1997
-# REVISION: $Id: Vector.pm,v 1.8 2002/01/23 11:30:22 heikki Exp $
+# REVISION: $Id: Vector.pm,v 1.10 2002/10/22 07:38:37 lapp Exp $
 # STATUS  : Alpha
 #
 # WARNING: This is considered an experimental module.
@@ -85,9 +85,8 @@ This is not necessarily ideal and is expected to change.
 
 =head1 USAGE
 
-For a usage demo of Bio::Root::Vector.pm, see:
-
-    http://bio.perl.org/Core/Examples/Root_object/Vector
+For a usage demo of Bio::Root::Vector.pm see the scripts in the 
+examples/root_object/vector directory.
 
 
 =head1 DEPENDENCIES
@@ -126,7 +125,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track the bugs an
 their resolution. Bug reports can be submitted via email or the web:
 
     bioperl-bugs@bio.perl.org
-    http://bio.perl.org/bioperl-bugs/
+    http://bugzilla.bioperl.org/
 
 =head1 AUTHOR 
 

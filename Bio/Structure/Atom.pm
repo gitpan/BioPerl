@@ -1,4 +1,4 @@
-# $Id: Atom.pm,v 1.6 2001/12/10 16:10:23 heikki Exp $
+# $Id: Atom.pm,v 1.8 2002/10/22 07:38:44 lapp Exp $
 #
 # bioperl module for Bio::Structure::Atom
 #
@@ -40,7 +40,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Kris Boulez
 
@@ -275,6 +275,46 @@ sub tempfactor {
 		$self->{'tempfactor'} = $value;
 	}
 	return $self->{'tempfactor'};
+}
+
+
+=head2 segID()
+
+ Title   : segID
+ Usage   : $segID = $atom->segID($segID)
+ Function: Sets/gets the segID
+ Returns : Returns the segID for this atom
+ Args    : reference to an Atom
+
+=cut
+
+sub segID {
+	my($self, $value) = @_;
+
+	if (defined $value) {
+		$self->{'segID'} = $value;
+	}
+	return $self->{'segID'};
+}
+
+
+=head2 pdb_atomname()
+
+ Title   : pdb_atomname
+ Usage   : $pdb_atomname = $atom->pdb_atomname($pdb_atomname)
+ Function: Sets/gets the pdb_atomname (atomname used in the PDB file)
+ Returns : Returns the pdb_atomname for this atom
+ Args    : reference to an Atom
+
+=cut
+
+sub pdb_atomname {
+	my($self, $value) = @_;
+
+	if (defined $value) {
+		$self->{'pdb_atomname'} = $value;
+	}
+	return $self->{'pdb_atomname'};
 }
 
 

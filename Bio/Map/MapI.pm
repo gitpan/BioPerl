@@ -1,4 +1,4 @@
-# MapI.pm,v 1.5 2002/04/18 12:52:48 jason Exp
+# $Id: MapI.pm,v 1.6 2002/10/22 07:45:15 lapp Exp $
 #
 # BioPerl module for Bio::Map::MapI
 #
@@ -46,7 +46,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 

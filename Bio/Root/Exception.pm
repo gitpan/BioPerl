@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: Exception.pm,v 1.11.2.3 2002/07/01 22:49:54 sac Exp $
+# $Id: Exception.pm,v 1.14 2002/06/29 00:42:17 sac Exp $
 #
 # BioPerl module Bio::Root::Exception
 #

@@ -1,4 +1,4 @@
-# $Id: Domain.pm,v 1.10 2001/12/14 16:40:19 heikki Exp $
+# $Id: Domain.pm,v 1.11 2002/10/08 08:38:34 lapp Exp $
 #
 # BioPerl module for Bio::Tools::HMMER::Domain
 #
@@ -135,7 +135,7 @@ sub get_nse {
 	$sep1 = "/";
     }
 
-    return sprintf("%s%s%d%s%d",$self->seqname,$sep1,$self->start,$sep2,$self->end);
+    return sprintf("%s%s%d%s%d",$self->seq_id,$sep1,$self->start,$sep2,$self->end);
 }
 
 

@@ -2,7 +2,7 @@
 ## Bioperl Test Harness Script for Modules
 ##
 # CVS Version
-# $Id: SeqFeature.t,v 1.20.2.1 2002/04/21 01:51:46 jason Exp $
+# $Id: SeqFeature.t,v 1.26 2002/07/02 09:42:23 heikki Exp $
 
 
 # Before `make install' is performed this script should be runnable with
@@ -20,7 +20,7 @@ BEGIN {
     }
     use Test;
 
-    plan tests => 41;
+    plan tests => 62;
 }
 
 use Bio::Seq;
@@ -30,6 +30,14 @@ use Bio::SeqFeature::SimilarityPair;
 use Bio::Tools::Blast;
 use Bio::SeqFeature::Computation;
 
+use Bio::SeqIO;
+use Bio::SeqFeature::Gene::Transcript;
+use Bio::SeqFeature::Gene::UTR;
+use Bio::SeqFeature::Gene::Exon;
+use Bio::SeqFeature::Gene::Poly_A_site;
+use Bio::SeqFeature::Gene::GeneStructure;
+
+use Bio::Location::Fuzzy;
 
 ok(1);
 
@@ -199,3 +207,79 @@ ok(defined $sfeat->start);
 ok($sfeat->start,0);
 ok(defined $sfeat->end);
 ok($sfeat->end,0);
+
+
+# tests for Bio::SeqFeature::Gene::* objects
+# using information from acc: AB077698 as a guide
+
+ok my $seqio = new Bio::SeqIO(-format => 'genbank',
+			 -file   => Bio::Root::IO->catfile("t","data","AB077698.gb"));
+ok my $geneseq = $seqio->next_seq();
+
+ok my $gene = new Bio::SeqFeature::Gene::GeneStructure(-primary => 'gene',
+						    -start   => 1,
+						    -end     => 2701,
+						    -strand  => 1);
+
+ok my $transcript = new Bio::SeqFeature::Gene::Transcript(-primary => 'CDS',
+						       -start   => 80,
+						       -end     => 1144,
+						       -tag     => { 
+							   'gene' => "CHCR",
+							   'note' => "Cys3His CCG1-Required Encoded on BAC clone RP5-842K24 (AL050310) The human CHCR (Cys3His CCG1-Required) protein is highly related to EXP/MBNL (Y13829, NM_021038, AF401998) and MBLL (NM_005757,AF061261), which together comprise the human Muscleblind family",
+							   'codon_start' => 1,
+							   'protein_id'  => 'BAB85648.1',
+						       });
+
+ok my $poly_A_site1 = new Bio::SeqFeature::Gene::Poly_A_site
+    (-primary => 'polyA_site',
+     -start => 2660,
+     -end   => 2660,
+     -tag   => { 
+	 'note' => "Encoded on BAC clone RP5-842K24 (AL050310); PolyA_site#2 used by CHCR EST clone DKFZp434G2222 (AL133625)"
+	 });
+
+ok my $poly_A_site2 = new Bio::SeqFeature::Gene::Poly_A_site
+    (-primary => 'polyA_site',
+     -start => 1606,
+     -end   => 1606,
+     -tag   => { 
+	 'note' => "Encoded on BAC clone RP5-842K24 (AL050310); PolyA_site#1 used by CHCR EST clone PLACE1010202 (AK002178)",
+     });
+
+ok my $fiveprimeUTR = new Bio::SeqFeature::Gene::UTR(-primary => "utr5prime");
+ok $fiveprimeUTR->location(new Bio::Location::Fuzzy(-start => "<1",
+						 -end   => 79));
+ok my $threeprimeUTR = new Bio::SeqFeature::Gene::UTR(-primary => "utr3prime",
+						   -start   => 1145,
+						   -end     => 2659);
+
+# Did a quick est2genome against genomic DNA (this is on Chr X) to
+# get the gene structure by hand since it is not in the file
+# --Jason
+
+ok my $exon1 = new Bio::SeqFeature::Gene::Exon(-primary => 'exon',
+					       -start => 80,
+					       -end   => 177);
+ok $geneseq->add_SeqFeature($exon1);
+
+ok $geneseq->add_SeqFeature($fiveprimeUTR);
+ok $geneseq->add_SeqFeature($threeprimeUTR);
+ok $geneseq->add_SeqFeature($poly_A_site1);
+ok $geneseq->add_SeqFeature($poly_A_site2);
+
+ok $transcript->add_utr($fiveprimeUTR, 'utr5prime');
+ok $transcript->add_utr($threeprimeUTR, 'utr3prime');
+
+ok $transcript->add_exon($exon1);
+
+# API only supports a single poly-A site per transcript at this point 
+$transcript->poly_A_site($poly_A_site2);
+$geneseq->add_SeqFeature($transcript);
+$gene->add_transcript($transcript);
+$geneseq->add_SeqFeature($gene);
+
+my ($t) = $gene->transcripts(); # get 1st transcript
+ok(defined $t); 
+ok($t->mrna->length, 1595);
+ok($gene->utrs, 2);

@@ -1,4 +1,4 @@
-# $Id: SeqWords.pm,v 1.5.2.1 2002/04/03 09:28:13 heikki Exp $
+# $Id: SeqWords.pm,v 1.7 2002/10/22 07:38:46 lapp Exp $
 
 #---------------------------------------------------------------------------
 # PACKAGE    : SeqWords.pm
@@ -101,7 +101,7 @@ the bugs and their resolution.
 Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR
 

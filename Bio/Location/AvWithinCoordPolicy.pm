@@ -1,9 +1,9 @@
-# $Id: AvWithinCoordPolicy.pm,v 1.2 2001/05/16 14:57:39 heikki Exp $
+# $Id: AvWithinCoordPolicy.pm,v 1.4 2002/12/01 00:05:20 jason Exp $
 #
 # BioPerl module for Bio::Location::AvWithinCoordPolicy
 #
 # Cared for by Hilmar Lapp <hlapp@gmx.net>
-#          and Jason Stajich <jason@chg.mc.duke.edu>
+#          and Jason Stajich <jason@bioperl.org>
 #
 # Copyright Hilmar Lapp, Jason Stajich
 #
@@ -48,11 +48,11 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Hilmar Lapp, Jason Stajich
 
-Email hlapp@gmx.net, jason@chg.mc.duke.edu
+Email E<lt>hlapp@gmx.netE<gt>, E<lt>jason@bioperl.orgE<gt>
 
 =head1 APPENDIX
 

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: oligo_count.pl,v 1.1 2001/11/24 17:16:05 jason Exp $
+# $Id: oligo_count.pl,v 1.3 2002/08/27 18:17:19 bosborne Exp $
 #
 # Author: Charles Kim <cckim@stanford.edu>
 # Submitted to bioperl scripts project 2001/08/06

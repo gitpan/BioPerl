@@ -1,4 +1,4 @@
-# $Id: fasta.pm,v 1.6.2.1 2002/04/18 13:05:25 jason Exp $
+# $Id: fasta.pm,v 1.11 2002/12/14 19:09:05 birney Exp $
 #
 # BioPerl module for Bio::AlignIO::fasta
 
@@ -17,7 +17,7 @@
 
 =head1 NAME
 
-Bio::AlignIO::fasta - fasta sequence input/output stream
+Bio::AlignIO::fasta - FastA MSA Sequence input/output stream
 
 =head1 SYNOPSIS
 
@@ -25,8 +25,10 @@ Do not use this module directly.  Use it via the L<Bio::AlignIO> class.
 
 =head1 DESCRIPTION
 
-This object can transform L<Bio::SimpleAlign> objects to and from fasta flat
-file databases.
+This object can transform L<Bio::SimpleAlign> objects to and from
+fasta flat file databases.  This is for the fasta sequence format NOT
+FastA analysis program.  To process the pairwise alignments from a
+FastA (FastX, FastN, FastP, tFastA, etc) use the Bio::SearchIO module.
 
 =head1 FEEDBACK
 
@@ -37,7 +39,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHORS - Peter Schattner
 
@@ -95,7 +97,7 @@ sub next_aln {
 		    $start = 1;
 		    $end = length($seqchar);   #ps 9/6/00
 		}
-		
+#		print STDERR  "Going to add with $seqchar $seqname\n";
 		$seq = new Bio::LocatableSeq('-seq'=>$seqchar,
 				    '-id'=>$seqname,
 				    '-start'=>$start,
@@ -137,14 +139,20 @@ sub next_aln {
 #
    if ($end <= 0) { undef $aln; return $aln;}
 
-
-    $seq = new Bio::LocatableSeq('-seq'=>$seqchar,
+# This logic now also reads empty lines at the 
+# end of the file. Skip this is seqchar and seqname is null
+    if( length($seqchar) == 0 && length($seqname) == 0 ) {
+	# skip
+    } else {
+#	print STDERR "end to add with $seqchar $seqname\n";
+	$seq = new Bio::LocatableSeq('-seq'=>$seqchar,
 			'-id'=>$seqname,
 			'-start'=>$start,
 			'-end'=>$end,
 			);
 
-    $aln->add_seq($seq);
+	$aln->add_seq($seq);
+    }
 
     return $aln;
 
@@ -184,6 +192,7 @@ sub write_aln {
 	    }
 	}
     }
+    $self->flush if $self->_flush_on_write && defined $self->_fh;
     return 1;
 }
 

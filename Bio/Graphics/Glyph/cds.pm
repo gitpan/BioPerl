@@ -6,8 +6,8 @@ use Bio::Graphics::Util qw(frame_and_offset);
 use Bio::Tools::CodonTable;
 use Bio::Graphics::Glyph::translation;
 use vars '@ISA','$VERSION';
-@ISA = qw(Bio::Graphics::Glyph::segments Bio::Graphics::Glyph::translation);
-$VERSION = '1.01';
+@ISA = qw(Bio::Graphics::Glyph::segmented_keyglyph Bio::Graphics::Glyph::translation);
+$VERSION = '1.02';
 
 sub connector   { 0 };
 sub description {
@@ -22,7 +22,7 @@ sub draw {
   my ($gd,$left,$top) = @_;
 
   my @parts = $self->parts;
-
+  @parts    = $self if !@parts && $self->level == 0;
   return $self->SUPER::draw(@_) unless @parts;
 
   my $fits = $self->protein_fits;
@@ -44,14 +44,16 @@ sub draw {
 
   # figure out the colors of each part
   # sort minus strand features backward
-  @parts = sort {$b->left <=> $a->left} @parts if $strand < 0;
+  @parts = map { $_->[0] }
+  sort { $b->[1] <=> $a->[1] }
+  map { [$_, $_->left ] } @parts if $strand < 0;
   my $translate_table = Bio::Tools::CodonTable->new;
 
   for (my $i=0; $i < @parts; $i++) {
     my $part    = $parts[$i];
     my $feature = $part->feature;
     my $pos     = $strand > 0 ? $feature->start : $feature->end;
-    my $phase           = eval {$feature->phase} || 0;
+    my $phase   = eval {$feature->phase} || 0;
     my ($frame,$offset) = frame_and_offset($pos,
 					   $feature->strand,
 					   -$phase);
@@ -128,8 +130,49 @@ sub draw_component {
   for (my $i=0;$i<@residues;$i++) {
     my $x = $strand > 0 ? $start + $i * $pixels_per_residue
                         : $stop  - $i * $pixels_per_residue;
-    $gd->char($font,$x,$y1,$residues[$i],$color) if $x >= $x1 && $x <= $x2;
+    next unless ($x >= $x1 && $x <= $x2);
+    $gd->char($font,$x+1,$y1,$residues[$i],$color);
   }
+}
+
+sub make_key_feature {
+  my $self = shift;
+  my @gatc = qw(g a t c);
+  my $offset = $self->panel->offset;
+  my $scale = 1/$self->scale;  # base pairs/pixel
+  my $start = $offset;
+  my $stop  = $offset + 100 * $scale;
+  my $seq   = join('',map{$gatc[rand 4]} (1..1500));
+  my $feature =
+    Bio::Graphics::Feature->new(-start=> $start,
+				-end  => $stop,
+				-seq  => $seq,
+				-name => $self->option('key'),
+				-strand=> +1,
+			       );
+  $feature->add_segment(Bio::Graphics::Feature->new(
+						    -start=> $start,
+						    -end => $start + ($stop - $start)/2,
+						    -seq  => $seq,
+						    -name => $self->option('key'),
+						    -strand=> +1,
+						   ),
+			Bio::Graphics::Feature->new(
+						    -start=> $start + ($stop - $start)/2+1,
+						    -end => $stop,
+						    -seq  => $seq,
+						    -name => $self->option('key'),
+						    -phase=> 1,
+						    -strand=> +1,
+						   ));
+  $feature;
+}
+
+# never allow our components to bump
+sub bump {
+  my $self = shift;
+  return $self->SUPER::bump(@_) if $self->all_callbacks;
+  return 0;
 }
 
 1;

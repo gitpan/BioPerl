@@ -1,13 +1,15 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: DB.t,v 1.29 2002/01/19 22:26:17 jason Exp $
+# $Id: DB.t,v 1.36 2002/11/29 19:42:24 lstein Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
 use strict;
-use vars qw($NUMTESTS);
+use lib '..','.','./blib/lib';
+use vars qw($NUMTESTS $DEBUG);
+$DEBUG = $ENV{'BIOPERLDEBUG'} || 0;
 
 my $error;
 
@@ -22,7 +24,7 @@ BEGIN {
     }
     use Test;
 
-    $NUMTESTS =51;
+    $NUMTESTS = 78;
     plan tests => $NUMTESTS;
     eval { require IO::String };
     if( $@ ) {
@@ -34,6 +36,12 @@ BEGIN {
     }
 }
 
+END { 
+    foreach ( $Test::ntest..$NUMTESTS) {
+	skip('unable to run all of the DB tests',1);
+    }
+}
+
 if( $error ==  1 ) {
     exit(0);
 }
@@ -41,6 +49,7 @@ if( $error ==  1 ) {
 require Bio::DB::GenBank;
 require Bio::DB::GenPept;
 require Bio::DB::SwissProt;
+
 
 my $testnum;
 my $verbose = 0;
@@ -52,23 +61,25 @@ my $verbose = 0;
 ## total number of tests that will be run. 
 
 
-my ($gb,$seq,$seqio);
+my ($gb,$seq,$seqio,$query);
 # get a single seq
 
 
-eval {         
-    ok defined ( $gb = new Bio::DB::GenBank('-verbose'=>$verbose) );     
+eval {
+    ok defined ( $gb = new Bio::DB::GenBank('-verbose'=>$verbose,'-delay'=>0) );
     ok( defined ($seq = $gb->get_Seq_by_id('MUSIGHBA1')));
     ok( $seq->length, 408); 
-    ok( defined ($seq = $gb->get_Seq_by_acc('AF303112'))); 
+    ok( defined ($seq = $gb->get_Seq_by_acc('AF303112')));
     ok($seq->length, 1611);
-    ok( defined ($seq = $gb->get_Seq_by_version('AF303112.1'))); 
+    ok( defined ($seq = $gb->get_Seq_by_version('AF303112.1')));
     ok($seq->length, 1611);
-    ok( defined ($seq = $gb->get_Seq_by_gi('405830'))); 
+    ok( defined ($seq = $gb->get_Seq_by_gi('405830')));
     ok($seq->length, 1743);
 };
 if ($@) {
-    warn "Warning: Couldn't connect to Genbank with Bio::DB::GenBank.pm!\nError: $@\nDo you have network access? Skipping all other tests";
+    if( $DEBUG ) { 
+	warn "Warning: Couldn't connect to Genbank with Bio::DB::GenBank.pm!\nError: $@\nDo you have network access? Skipping all other tests";
+    }
     foreach ( $Test::ntest..$NUMTESTS ) { skip('no network access',1); }
     exit(0);
 }
@@ -76,7 +87,7 @@ if ($@) {
 $seq = $seqio = undef;
 
 eval {
-    ok( defined($seqio = $gb->get_Stream_by_batch([ qw(J00522 AF303112 
+    ok( defined($seqio = $gb->get_Stream_by_id([ qw(J00522 AF303112 
 							 2981014)])));
     ok($seqio->next_seq->length, 408);
     ok($seqio->next_seq->length, 1611);
@@ -84,27 +95,29 @@ eval {
 };
 
 if ($@) {
-    warn "Batch access test failed.\nError: $@\n";
+    if( $DEBUG ) { warn "Batch access test failed.\nError: $@\n"; }
     foreach ( $Test::ntest..$NUMTESTS ) { skip('no network access',1); }
     exit(0);
 }
 $seq = $seqio = undef;
 
 eval { 
-    ok defined($gb = new Bio::DB::GenPept('-verbose'=>$verbose)); 
+    ok defined($gb = new Bio::DB::GenPept('-verbose'=>$verbose,'-delay'=>0)); 
     ok( defined($seq = $gb->get_Seq_by_id('195055')));
     ok( $seq->length, 136); 
     $seq = $gb->get_Seq_by_acc('AAC06201');
     ok(defined $seq);
     ok($seq->length, 353);
-    $seqio = $gb->get_Stream_by_batch([ qw(AAC06201 195055)]);
+    $seqio = $gb->get_Stream_by_id([ qw(AAC06201 195055)]);
     ok( defined $seqio);
     ok( $seqio->next_seq->length(), 353); 
     ok( $seqio->next_seq->length(), 136);
 };
 
 if ($@) {
-    warn "Warning: Couldn't connect to Genbank with Bio::DB::GenPept.pm!\n$@";
+    if( $DEBUG ) { 
+	warn "Warning: Couldn't connect to Genbank with Bio::DB::GenPept.pm!\n$@";
+    }
     foreach( $Test::ntest..$NUMTESTS ) { 
 	skip('could not connect with GenPept',1); 
     }
@@ -112,28 +125,33 @@ if ($@) {
 }
 $seq  = $seqio = undef;
 
-eval { 
-    ok defined($gb = new Bio::DB::SwissProt('-verbose'=>$verbose)); 
+eval {
+    ok defined($gb = new Bio::DB::SwissProt('-verbose'=>$verbose,-retrievaltype=>'pipeline','-delay'=>0));
     ok(defined($seq = $gb->get_Seq_by_id('YNB3_YEAST')));
     ok( $seq->length, 125);
     ok($seq->division, 'YEAST');
+
     ok(defined($seq = $gb->get_Seq_by_acc('P43780')));
     ok( $seq->length, 103); 
+
     ok( defined( $seq = $gb->get_Seq_by_acc('O39869')));
     ok( $seq->length, 56);
+
     ok($seq->primary_id, 'O39869');
     ok($seq->division, 'UNK');
- 
+
     # test for bug #958
     $seq = $gb->get_Seq_by_id('P18584');
     ok( defined $seq );
     ok( $seq->length, 497);
-    ok( $seq->primary_id, 'DEGP');
+    skip($seq->primary_id =~ /^Bio::Seq/, $seq->primary_id, 'DEGP');
     ok( $seq->display_id, 'DEGP_CHLTR');
     ok( $seq->division, 'CHLTR');
 
     ok( defined($gb = new Bio::DB::SwissProt('-verbose'=>$verbose, 
-					     '-retrievaltype' => 'tempfile')));
+					     '-retrievaltype' => 'tempfile',
+					     '-delay' => 0,
+					    )));
     ok(defined($seqio = $gb->get_Stream_by_id(['KPY1_ECOLI', 'KPY1_HUMAN'])));
     undef $gb; # testing to see if we can remove gb
     ok( defined($seq = $seqio->next_seq()));
@@ -144,7 +162,9 @@ eval {
 };
 
 if ($@) {
-    print STDERR "Warning: Couldn't connect to SwissProt with Bio::DB::Swiss.pm!\n$@";
+    if( $DEBUG ) { 
+	print STDERR "Warning: Couldn't connect to SwissProt with Bio::DB::Swiss.pm!\n$@";
+    }
     foreach ( $Test::ntest..$NUMTESTS) { 
 	skip('could not connect to swissprot',1);
     }
@@ -155,15 +175,16 @@ $seq = undef;
 eval {
     ok defined ( $gb = new Bio::DB::GenBank('-verbose' =>$verbose,
 					    '-format' => 'fasta',
-					    '-retrievaltype' => 'tempfile') );
+					    '-retrievaltype' => 'tempfile',
+					    '-delay' => 0) );
     ok( defined ($seq = $gb->get_Seq_by_id('MUSIGHBA1')));
     ok($seq->length, 408); 
     $seq = $gb->get_Seq_by_acc('AF303112');
     ok( defined $seq);
     ok( $seq->length, 1611);
     # batch mode requires genbank format
-    $gb->request_format("genbank");
-    ok(defined($seqio = $gb->get_Stream_by_batch([ qw(J00522 AF303112 
+    $gb->request_format("gb");
+    ok(defined($seqio = $gb->get_Stream_by_id([ qw(J00522 AF303112 
 							2981014)])));
     ok( $seqio->next_seq->length, 408);
     undef $gb;  # test the case where the db is gone, 
@@ -171,13 +192,109 @@ eval {
 
     ok($seqio->next_seq->length, 1611);
     ok($seqio->next_seq->length, 1156);
-    
 };
 
 if ($@) {
-    warn "Warning: Couldn't connect to complete GenBank tests with a tempfile with Bio::DB::GenBank.pm!\n $@\n";
+    if( $DEBUG ) {
+	warn "Warning: Couldn't connect to complete GenBank tests with a tempfile with Bio::DB::GenBank.pm!\n $@\n";
+    }
     foreach ( $Test::ntest..$NUMTESTS ) { 
 	skip('could not connect to Genbank',1); 
     }
 }
+$seq = $seqio = undef;
+
+$seq = undef;
+# test pipeline creation
+eval {
+    ok defined ( $gb = new Bio::DB::GenBank('-verbose' =>$verbose,
+					    '-retrievaltype' => 'pipeline',
+					    '-delay'  => 0,
+					   ) );
+    ok( defined ($seq = $gb->get_Seq_by_id('MUSIGHBA1')));
+    ok($seq->length, 408); 
+    $seq = $gb->get_Seq_by_acc('AF303112');
+    ok( defined $seq);
+    ok( $seq->length, 1611);
+    ok(defined($seqio = $gb->get_Stream_by_id([ qw(J00522 AF303112 
+							2981014)])));
+    ok( $seqio->next_seq->length, 408);
+    undef $gb;  # test the case where the db is gone,
+                # but the pipeline should remain until seqio goes away
+
+    ok($seqio->next_seq->length, 1611);
+    ok($seqio->next_seq->length, 1156);
+};
+
+if ($@) {
+    if( $DEBUG ) {
+	warn "Warning: Couldn't connect to complete GenBank tests with a pipeline with Bio::DB::GenBank.pm!\n $@\n";
+    }
+    foreach ( $Test::ntest..$NUMTESTS ) { 
+	skip('could not connect to Genbank',1); 
+    }
+}
+$seq = $seqio = undef;
+
+
+# test query facility
+eval {
+  ok defined ( $query = Bio::DB::Query::GenBank->new('-verbose' => $verbose,
+						     '-db'      => 'nucleotide',
+						     '-query'   => 'Onchocerca volvulus[Organism]',
+						     '-mindate' => '1/1/2002',
+						     '-maxdate' => '1/30/2002'));
+  ok $query->count > 0;
+  my @ids = $query->ids;
+  ok @ids > 0;
+  ok @ids == $query->count;
+  ok defined ($gb = Bio::DB::GenBank->new('-verbose' =>$verbose,
+					  '-delay'  => 0,
+					 ));
+  ok defined ($seqio = $gb->get_Stream_by_query($query));
+  ok($seqio->next_seq->length,13747);
+  ok($seqio->next_seq->length,3766);
+  ok($seqio->next_seq->length,3857);
+};
+
+if ($@) {
+    if( $DEBUG ) {
+	warn "Warning: Couldn't connect to complete GenBank query tests!\n $@\n";
+    }
+    foreach ( $Test::ntest..$NUMTESTS ) { 
+	skip('could not connect to Genbank',1); 
+    }
+  }
+
+$seq = $seqio = undef;
+
+# test query facility
+eval {
+  ok defined ( $query = Bio::DB::Query::GenBank->new('-verbose' => $verbose,
+						     '-db'      => 'nucleotide',
+						     '-ids'     => [qw(J00522
+								       AF303112
+								       2981014)]));
+  ok $query->count > 0;
+  my @ids = $query->ids;
+  ok @ids > 0;
+  ok @ids == $query->count;
+  ok defined ($gb = Bio::DB::GenBank->new('-verbose' =>$verbose,
+					  '-delay'  => 0,
+					 ));
+  ok defined ($seqio = $gb->get_Stream_by_query($query));
+  ok($seqio->next_seq->length, 408);
+  ok($seqio->next_seq->length, 1611);
+  ok($seqio->next_seq->length, 1156);
+};
+
+if ($@) {
+    if( $DEBUG ) {
+	warn "Warning: Couldn't connect to complete GenBank query tests!\n $@\n";
+    }
+    foreach ( $Test::ntest..$NUMTESTS ) { 
+	skip('could not connect to Genbank',1); 
+    }
+  }
+
 $seq = $seqio = undef;

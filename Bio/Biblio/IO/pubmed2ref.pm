@@ -1,4 +1,4 @@
-# $Id: pubmed2ref.pm,v 1.1 2002/03/08 09:11:56 senger Exp $
+# $Id: pubmed2ref.pm,v 1.2 2002/10/22 07:45:13 lapp Exp $
 #
 # BioPerl module Bio::Biblio::IO::pubmed2ref.pm
 #
@@ -37,7 +37,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR
 
@@ -75,8 +75,8 @@ use Bio::Biblio::IO::medline2ref;
 
 BEGIN { 
     # set the version for version checking
-    $VERSION = do { my @r = (q$Revision: 1.1 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id: pubmed2ref.pm,v 1.1 2002/03/08 09:11:56 senger Exp $;
+    $VERSION = do { my @r = (q$Revision: 1.2 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
+    $Revision = q$Id: pubmed2ref.pm,v 1.2 2002/10/22 07:45:13 lapp Exp $;
 }
 
 # ---------------------------------------------------------------------

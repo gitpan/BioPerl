@@ -1,4 +1,4 @@
-# $Id: qual.pm,v 1.10.2.2 2002/06/04 21:35:53 jason Exp $
+# $Id: qual.pm,v 1.22 2002/12/27 19:42:32 birney Exp $
 #
 # Copyright (c) 1997-9 bioperl, Chad Matsalla. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or
@@ -43,7 +43,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR Chad Matsalla
 
@@ -67,11 +67,21 @@ package Bio::SeqIO::qual;
 use vars qw(@ISA);
 use strict;
 use Bio::SeqIO;
-use Bio::Seq::PrimaryQual;
-use Bio::Seq::SeqWithQuality;
+use Bio::Seq::SeqFactory;
 require 'dumpvar.pl';
 
 @ISA = qw(Bio::SeqIO);
+
+
+sub _initialize {
+  my($self,@args) = @_;
+  $self->SUPER::_initialize(@args);    
+  if( ! defined $self->sequence_factory ) {
+      $self->sequence_factory(new Bio::Seq::SeqFactory
+			      (-verbose => $self->verbose(), 
+			       -type => 'Bio::Seq::PrimaryQual'));      
+  }
+}
 
 =head2 next_seq()
 
@@ -84,9 +94,32 @@ require 'dumpvar.pl';
 =cut
 
 sub next_seq {
-        my ($self,@args) = @_;
-        my $qual = $self->_next_qual(@args);
-        return $qual;
+    my ($self,@args) = @_;
+    my ($qual,$seq);
+    my $alphabet;
+    local $/ = "\n>";
+
+    return unless my $entry = $self->_readline;
+
+    if ($entry eq '>')  {	# very first one
+	return unless $entry = $self->_readline;
+    }
+
+    # original: my ($top,$sequence) = $entry =~ /^(.+?)\n([^>]*)/s
+    my ($top,$sequence) = $entry =~ /^(.+?)\n([^>]*)/s
+	or $self->throw("Can't parse entry [$entry]");
+    my ($id,$fulldesc) = $top =~ /^\s*(\S+)\s*(.*)/
+	or $self->throw("Can't parse fasta header");
+    $id =~ s/^>//;
+    # create the seq object
+    $sequence =~ s/\n+/ /g;
+    return $self->sequence_factory->create
+	(-qual        => $sequence,
+	 -id         => $id,
+	 -primary_id => $id,
+	 -display_id => $id,
+	 -desc       => $fulldesc
+	 );
 }
 
 =head2 _next_qual
@@ -161,17 +194,17 @@ sub next_primary_qual {
 	$obj is a reference to either a SeqWithQuality object or a
 	PrimaryQual object. If $source->id() fails, ">unknown" will be
 	the header. If the SeqWithQuality object has $source->length() of
-	"DIFFERENT" (read the pod, luke), write_qual will use the length
+	"DIFFERENT" (read the pod, luke), write_seq will use the length
 	of the PrimaryQual object within the SeqWithQuality object.
 
 =cut
 
 sub write_seq {
-    my ($self,%args) = @_;
-    my ($source)  = $self->_rearrange([qw(SOURCE)], %args);
+    my ($self,@args) = @_;
+    my ($source)  = $self->_rearrange([qw(SOURCE)], @args);
 
-    if (!$source || ( ref($source) ne "Bio::Seq::SeqWithQuality" && 
-		      ref($source) ne "Bio::Seq::PrimaryQual")) {
+    if (!$source || ( !$source->isa('Bio::Seq::SeqWithQuality') && 
+		      !$source->isa('Bio::Seq::PrimaryQual')   )) {
 	$self->throw("You must pass a Bio::Seq::SeqWithQuality or a Bio::Seq::PrimaryQual object to write_seq as a parameter named \"source\"");
     }
     my $header = $source->id();
@@ -186,12 +219,14 @@ sub write_seq {
 	$length = $source->qual_obj()->length();
     }
     # print("Printing $header to a file.\n");
-    for (my $count = 1; $count<$length; $count+= 50) {
+    for (my $count = 1; $count<=$length; $count+= 50) {
 	if ($count+50 > $length) { $max = $length; }
 	else { $max = $count+49; }
 	my @slice = @{$source->subqual($count,$max)};
-	$self->_print (join(' ',@slice), " \n");
+	$self->_print (join(' ',@slice), "\n");
     }
+
+    $self->flush if $self->_flush_on_write && defined $self->_fh;
     return 1;
 }
 

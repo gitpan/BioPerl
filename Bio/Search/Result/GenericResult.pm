@@ -1,4 +1,4 @@
-# $Id: GenericResult.pm,v 1.7.2.2 2002/05/31 18:08:30 jason Exp $
+# $Id: GenericResult.pm,v 1.15 2002/12/05 13:46:34 heikki Exp $
 #
 # BioPerl module for Bio::Search::Result::GenericResult
 #
@@ -21,9 +21,11 @@ Bio::Search::Result::GenericResult - Generic Implementation of Bio::Search::Resu
     use Bio::SearchIO;
     my $io = new Bio::SearchIO(-format => 'blast',
  			       -file   => 't/data/HUMBETGLOA.tblastx');
-    my $result = $io->next_result;
-    while( $hit = $result->next_hits()) {  
-    # insert code here for hit processing
+    while( my $result = $io->next_result) {
+        # process all search results within the input stream
+        while( my $hit = $result->next_hits()) {  
+        # insert code here for hit processing
+        }
     }
 
     use Bio::Search::Result::GenericResult;
@@ -40,7 +42,7 @@ Bio::Search::Result::GenericResult - Generic Implementation of Bio::Search::Resu
 	  -parameters        => { 'e' => '0.001' },
 	  -statistics        => { 'kappa' => 0.731 },
 	  -algorithm         => 'blastp',
-           -algorithm_version => '2.1.2',
+          -algorithm_version => '2.1.2',
 	  );
 
     my $id = $result->query_name();
@@ -87,7 +89,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich and Steve Chervitz
 
@@ -116,6 +118,9 @@ use strict;
 use Bio::Root::Root;
 use Bio::Search::Result::ResultI;
 
+use overload 
+    '""' => \&to_string;
+
 @ISA = qw(Bio::Root::Root Bio::Search::Result::ResultI);
 
 =head2 new
@@ -134,7 +139,9 @@ use Bio::Search::Result::ResultI;
            -parameters        => hash ref of search parameters (key => value)
            -statistics        => hash ref of search statistics (key => value)
            -algorithm         => program name (blastx)
-           -algorithm_version => version of the algorithm (2.1.2)
+           -algorithm_version   => version of the algorithm (2.1.2)
+           -algorithm_reference => literature reference string for this algorithm
+
 =cut
 
 sub new {
@@ -149,22 +156,27 @@ sub new {
 
   my ($qname,$qacc,$qdesc,$qlen,
       $dbname,$dblet,$dbent,$params,   
-      $stats, $hits, $algo, $algo_v) = $self->_rearrange([qw(QUERY_NAME
-							     QUERY_ACCESSION
-							     QUERY_DESCRIPTION
-							     QUERY_LENGTH
-							     DATABASE_NAME
-							     DATABASE_LETTERS
-							     DATABASE_ENTRIES
-							     PARAMETERS
-							     STATISTICS
-							     HITS
-							     ALGORITHM
-							     ALGORITHM_VERSION
-							     )],@args);
+      $stats, $hits, $algo, $algo_v,
+      $prog_ref, $algo_r) = $self->_rearrange([qw(QUERY_NAME
+                                                  QUERY_ACCESSION
+                                                  QUERY_DESCRIPTION
+                                                  QUERY_LENGTH
+                                                  DATABASE_NAME
+                                                  DATABASE_LETTERS
+                                                  DATABASE_ENTRIES
+                                                  PARAMETERS
+                                                  STATISTICS
+                                                  HITS
+                                                  ALGORITHM
+                                                  ALGORITHM_VERSION
+                                                  PROGRAM_REFERENCE
+                                                  ALGORITHM_REFERENCE
+                                                 )],@args);
 
+  $algo_r ||= $prog_ref;         
   defined $algo   && $self->algorithm($algo);
   defined $algo_v && $self->algorithm_version($algo_v);
+  defined $algo_r && $self->algorithm_reference($algo_r);
 
   defined $qname && $self->query_name($qname);
   defined $qacc  && $self->query_accession($qacc);
@@ -478,9 +490,9 @@ sub available_statistics{
    return keys %{$self->{'_statistics'}};
 }
 
-=head2 Bio::Search::Result::GenericResult specific methods
+=head2 Bio::Search::Report 
 
-=cut
+Bio::Search::Result::GenericResult specific methods
 
 =head2 add_hit
 
@@ -569,6 +581,27 @@ sub add_statistic {
    return;
 }
 
+
+=head2 num_hits
+
+ Title   : num_hits
+ Usage   : my $hitcount= $result->num_hits
+ Function: returns the number of hits for this query result
+ Returns : integer
+ Args    : none
+
+
+=cut
+
+sub num_hits{
+   my ($self) = shift;
+   if (not defined $self->{'_hits'}) {
+       $self->throw("Can't get Hits: data not collected.");
+    }
+    return scalar(@{$self->{'_hits'}});
+}
+
+
 =head2 hits
 
  Title   : hits
@@ -580,13 +613,149 @@ sub add_statistic {
 
 =cut
 
-sub hits {
-    my $self = shift;
-    my @hits = ();
-    if( ref $self->{'_hits'}) {
-        @hits = @{$self->{'_hits'}};
+sub hits{
+   my ($self) = shift;
+   my @hits = ();
+   if( ref $self->{'_hits'}) {
+       @hits = @{$self->{'_hits'}};
+   }
+    return @hits;   
+}
+
+=head2 algorithm_reference
+
+ Title   : algorithm_reference
+ Usage   : $obj->algorithm_reference($newval)
+ Function: 
+ Returns : string containing literature reference for the algorithm
+ Args    : newvalue string (optional)
+ Comments: Formerly named program_reference(), which is still supported
+           for backwards compatibility.
+
+=cut
+
+sub algorithm_reference{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'algorithm_reference'} = $value;
     }
-    return @hits;
+    return $self->{'algorithm_reference'};
+}
+
+
+sub program_reference { shift->algorithm_reference(@_); }
+
+
+=head2 no_hits_found
+
+See documentation in L<Bio::Search::Result::ResultI::no_hits_found()|Bio::Search::Result::ResultI>
+
+=cut
+
+#-----------
+sub no_hits_found {
+#-----------
+    my ($self, $round) = @_;
+
+    my $result = 0;   # final return value of this method.
+    # Watch the double negative! 
+    # result = 0 means "yes hits were found"
+    # result = 1 means "no hits were found" (for the indicated iteration or all iterations)
+
+    # If a iteration was not specified and there were multiple iterations,
+    # this method should return true only if all iterations had no hits found.
+    if( not defined $round ) {
+        if( $self->{'_iterations'} > 1) {
+            $result = 1;
+            foreach my $i( 1..$self->{'_iterations'} ) {
+                if( not defined $self->{"_iteration_$i"}->{'_no_hits_found'} ) {
+                    $result = 0;
+                    last;
+                }
+            }
+        }
+        else {
+            $result = $self->{"_iteration_1"}->{'_no_hits_found'};
+        }
+    }
+    else {
+        $result = $self->{"_iteration_$round"}->{'_no_hits_found'};
+    }
+
+    return $result;
+}
+
+
+=head2 set_no_hits_found
+
+See documentation in L<Bio::Search::Result::ResultI::set_no_hits_found()|Bio::Search::Result::ResultI>
+
+=cut
+
+#-----------
+sub set_no_hits_found {
+#-----------
+    my ($self, $round) = @_;
+    $round ||= 1;
+    $self->{"_iteration_$round"}->{'_no_hits_found'} = 1;
+}
+
+
+=head2 iterations
+
+See documentation in L<Bio::Search::Result::ResultI::iterations()|Bio::Search::Result::ResultI>
+
+=cut
+
+#----------------
+sub iterations {
+#----------------
+    my ($self, $num ) = @_;
+    if( defined $num ) {
+        $self->{'_iterations'} = $num;
+    }
+    return $self->{'_iterations'};
+}
+
+
+=head2 psiblast
+
+See documentation in L<Bio::Search::Result::ResultI::psiblast()|Bio::Search::Result::ResultI>
+
+=cut
+
+#----------------
+sub psiblast {
+#----------------
+    my ($self, $val ) = @_;
+    if( $val ) {
+        $self->{'_psiblast'} = 1;
+    }
+    return $self->{'_psiblast'};
+}
+
+
+=head2 to_string
+
+ Title   : to_string
+ Usage   : print $blast->to_string;
+ Function: Returns a string representation for the Blast result. 
+           Primarily intended for debugging purposes.
+ Example : see usage
+ Returns : A string of the form:
+           [GenericResult] <analysis_method> query=<name> <description> db=<database
+           e.g.:
+           [GenericResult] BLASTP query=YEL060C vacuolar protease B, db=PDBUNIQ 
+ Args    : None
+
+=cut
+
+#---------------
+sub to_string {
+#---------------
+    my $self = shift;
+    my $str = "[GenericResult] " . $self->algorithm . " query=" . $self->query_name . " " . $self->query_description .", db=" . $self->database_name;
+    return $str;
 }
 
 1;

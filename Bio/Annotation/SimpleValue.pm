@@ -1,4 +1,4 @@
-
+# $Id: SimpleValue.pm,v 1.9 2002/10/31 09:45:39 lapp Exp $
 #
 # BioPerl module for Bio::Annotation::SimpleValue
 #
@@ -45,7 +45,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bioperl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - bioperl
 
@@ -70,6 +70,7 @@ use strict;
 # Object preamble - inherits from Bio::Root::Root
 
 use Bio::AnnotationI;
+#use Bio::Ontology::TermI;
 use Bio::Root::Root;
 
 @ISA = qw(Bio::Root::Root Bio::AnnotationI);
@@ -80,7 +81,9 @@ use Bio::Root::Root;
  Usage   : my $sv = new Bio::Annotation::SimpleValue;
  Function: Instantiate a new SimpleValue object
  Returns : Bio::Annotation::SimpleValue object
- Args    : -value => $value to initialize the object data field [optional]
+ Args    : -value    => $value to initialize the object data field [optional]
+           -tagname  => $tag to initialize the tagname [optional]
+           -tag_term => ontology term representation of the tag [optional]
 
 =cut
 
@@ -89,13 +92,19 @@ sub new{
 
    my $self = $class->SUPER::new(@args);
 
-   my ($value) = $self->_rearrange([qw(VALUE)], @args);
+   my ($value,$tag,$term) =
+       $self->_rearrange([qw(VALUE TAGNAME TAG_TERM)], @args);
+
+   # set the term first
+   defined $term   && $self->tag_term($term);
    defined $value  && $self->value($value);
+   defined $tag    && $self->tagname($tag);
+
    return $self;
 }
 
 
-=head2 AnnotationI implementing functions
+=head1 AnnotationI implementing functions
 
 =cut
 
@@ -135,7 +144,39 @@ sub hash_tree{
    $h->{'value'} = $self->value;
 }
 
-=head2 Specific accessors for SimpleValue
+=head2 tagname
+
+ Title   : tagname
+ Usage   : $obj->tagname($newval)
+ Function: Get/set the tagname for this annotation value.
+
+           Setting this is optional. If set, it obviates the need to
+           provide a tag to AnnotationCollection when adding this
+           object.
+
+ Example : 
+ Returns : value of tagname (a scalar)
+ Args    : new value (a scalar, optional)
+
+
+=cut
+
+sub tagname{
+    my $self = shift;
+
+    # check for presence of an ontology term
+    if($self->{'_tag_term'}) {
+	# keep a copy in case the term is removed later
+	$self->{'tagname'} = $_[0] if @_;
+	# delegate to the ontology term object
+	return $self->tag_term->name(@_);
+    }
+    return $self->{'tagname'} = shift if @_;
+    return $self->{'tagname'};
+}
+
+
+=head1 Specific accessors for SimpleValue
 
 =cut
 
@@ -157,6 +198,39 @@ sub value{
       $self->{'value'} = $value;
     }
     return $self->{'value'};
+}
+
+=head2 tag_term
+
+ Title   : tag_term
+ Usage   : $obj->tag_term($newval)
+ Function: Get/set the L<Bio::Ontology::TermI> object representing
+           the tag name.
+
+           This is so you can specifically relate the tag of this
+           annotation to an entry in an ontology. You may want to do
+           this to associate an identifier with the tag, or a
+           particular category, such that you can better match the tag
+           against a controlled vocabulary.
+
+           This accessor will return undef if it has never been set
+           before in order to allow this annotation to stay
+           light-weight if an ontology term representation of the tag
+           is not needed. Once it is set to a valid value, tagname()
+           will actually delegate to the name() of this term.
+
+ Example : 
+ Returns : a L<Bio::Ontology::TermI> compliant object, or undef
+ Args    : on set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub tag_term{
+    my $self = shift;
+
+    return $self->{'_tag_term'} = shift if @_;
+    return $self->{'_tag_term'};
 }
 
 1;

@@ -1,13 +1,14 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: EMBL_DB.t,v 1.7.2.3 2002/07/08 22:53:40 jason Exp $
+# $Id: EMBL_DB.t,v 1.12 2002/12/02 15:38:31 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
 use strict;
-use vars qw($NUMTESTS);
+use vars qw($NUMTESTS $DEBUG);
+$DEBUG = $ENV{'BIOPERLDEBUG'} || 0;
 
 my $error;
 
@@ -32,6 +33,11 @@ BEGIN {
        $error = 1; 
     }
 }
+END { 
+    foreach ( $Test::ntest..$NUMTESTS) {
+	skip('unable to run all of the Biblio_biofetch tests',1);
+    }
+}
 
 if( $error ==  1 ) {
     exit(0);
@@ -39,7 +45,6 @@ if( $error ==  1 ) {
 
 require Bio::DB::EMBL;
 
-my $testnum;
 my $verbose = 0;
 
 ## End of black magic.
@@ -70,10 +75,13 @@ eval {
 };
 
 if ($@) {
-    warn "Warning: Couldn't connect to EMBL with Bio::DB::EMBL.pm!\n$@";
-    
+    if( $DEBUG ) {
+	warn "Warning: Couldn't connect to EMBL with Bio::DB::EMBL.pm!\n$@";
+    }
     foreach ( $Test::ntest..$NUMTESTS) { 
-	 skip('could not connect to embl',1);}
+	 skip('could not connect to embl',1);
+     }
+    exit(0);
 }
 
 $seq = $seqio = undef;
@@ -83,14 +91,16 @@ eval {
 			    -retrievaltype => 'tempfile',
 			    -format => 'fasta'
 			    ); 
-    ok( defined($seqio = $db->get_Stream_by_batch(['J00522 AF303112 J02231'])));
+    ok( defined($seqio = $db->get_Stream_by_acc(['J00522 AF303112 J02231'])));
     ok($seqio->next_seq->length, 408);
     ok($seqio->next_seq->length, 1611);
     ok($seqio->next_seq->length, 200);
 };
 
 if ($@) {
-    warn "Batch access test failed.\nError: $@\n";
+    if( $DEBUG ) {
+	warn "Batch access test failed.\nError: $@\n";
+    }
     foreach ( $Test::ntest..$NUMTESTS ) { skip('no network access',1); }
 }
 

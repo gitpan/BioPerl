@@ -1,4 +1,4 @@
-# $Id: DNAMutation.pm,v 1.9.2.1 2002/03/20 13:08:24 heikki Exp $
+# $Id: DNAMutation.pm,v 1.11 2002/10/22 07:38:49 lapp Exp $
 #
 # BioPerl module for Bio::Variation::DNAMutation
 #
@@ -68,7 +68,7 @@ report bugs to the Bioperl bug tracking system to help us keep track
  email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 

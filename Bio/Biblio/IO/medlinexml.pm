@@ -1,4 +1,4 @@
-# $Id: medlinexml.pm,v 1.3 2002/03/07 17:53:47 senger Exp $
+# $Id: medlinexml.pm,v 1.5 2002/10/22 07:45:13 lapp Exp $
 #
 # BioPerl module Bio::Biblio::IO::medlinexml.pm
 #
@@ -16,7 +16,7 @@ Bio::Biblio::IO::medlinexml - A converter of XML files with MEDLINE citations
 Do not use this object directly, it is recommended to access it and use
 it through the I<Bio::Biblio::IO> module:
 
-  use Bio::Biblio:IO;
+  use Bio::Biblio::IO;
   my $io = new Bio::Biblio::IO (-format => 'medlinexml');
 
 =head1 DESCRIPTION
@@ -43,7 +43,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR
 
@@ -89,8 +89,8 @@ use XML::Parser;
 
 BEGIN { 
     # set the version for version checking
-    $VERSION = do { my @r = (q$Revision: 1.3 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id: medlinexml.pm,v 1.3 2002/03/07 17:53:47 senger Exp $;
+    $VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
+    $Revision = q$Id: medlinexml.pm,v 1.5 2002/10/22 07:45:13 lapp Exp $;
 }
 
 # -----------------------------------------------------------------------------

@@ -1,3 +1,5 @@
+# $Id: HSPTableWriter.pm,v 1.12 2002/11/23 15:32:24 jason Exp $
+
 =head1 NAME
 
 Bio::SearchIO::Writer::HSPTableWriter - Tab-delimited data for Bio::Search::HSP::HSPI objects
@@ -129,7 +131,7 @@ the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
     bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    http://bugzilla.bioperl.org/           
 
 =head1 AUTHOR 
 
@@ -181,7 +183,7 @@ my %column_map = (
                   'hit_length'            => ['4', 'hit', 'hit_length', 'd', 'LEN_H'],
                   'round'                 => ['5', 'hit', 'iteration', 'd', 'ROUND', 'hit'],
                   'rank'                  => ['6', 'hsp', 'rank', 'd', 'RANK'],
-                  'expect'                => ['7', 'hsp', 'evalue', '.1e', 'EXPCT'],
+                  'expect'                => ['7', 'hsp', 'expect', '.1e', 'EXPCT'],
                   'score'                 => ['8', 'hsp', 'score', 'd', 'SCORE'],
                   'bits'                  => ['9', 'hsp', 'bits', 'd', 'BITS'],
                   'frac_identical_query'  => ['10', 'hsp', 'frac_identical/query', '.2f', 'FR_IDQ'],
@@ -225,24 +227,64 @@ L<the SYNOPSIS section | SYNOPSIS>.
            : in each Hit of the supplied ResultI object. 
            :
  Throws    : n/a
+
 =cut
 
 sub to_string {
     my ($self, $result, $include_labels) = @_;
-
+    
     my $str = $include_labels ? $self->column_labels() : '';
-    my $func_ref = $self->row_data_func;
-    my $printf_fmt = $self->printf_fmt;
-
-    foreach my $hit($result->hits) {
-	foreach my $hsp($hit->hsps) {
-	    my @row_data  = &{$func_ref}($result, $hit, $hsp);
-	    $str .= sprintf "$printf_fmt\n", @row_data;
+    my ($resultfilter,$hitfilter,
+	$hspfilter) = ( $self->filter('RESULT'),
+			$self->filter('HIT'),
+			$self->filter('HSP'));
+    if( ! defined $resultfilter || &{$resultfilter}($result) ) {
+	my $func_ref = $self->row_data_func;
+	my $printf_fmt = $self->printf_fmt;
+	$result->can('rewind') && 
+	    $result->rewind(); # insure we're at the beginning
+	while( my $hit = $result->next_hit) {
+	    next if( defined $hitfilter && ! &{$hitfilter}($hit) );
+	    $hit->can('rewind') && $hit->rewind;# insure we're at the beginning
+	    while(my $hsp = $hit->next_hsp) {
+		next if ( defined $hspfilter && ! &{$hspfilter}($hsp));
+		my @row_data  = &{$func_ref}($result, $hit, $hsp);
+		$str .= sprintf "$printf_fmt\n", @row_data;
+	    }
 	}
     }
     $str =~ s/\t\n/\n/gs;
     return $str;
 }
+
+=head2 end_report
+
+ Title   : end_report
+ Usage   : $self->end_report()
+ Function: The method to call when ending a report, this is
+           mostly for cleanup for formats which require you to 
+           have something at the end of the document.  Nothing for
+           a text message.
+ Returns : string
+ Args    : none
+
+=cut
+
+sub end_report {
+    return '';
+}
+
+=head2 filter
+
+ Title   : filter
+ Usage   : $writer->filter('hsp', \&hsp_filter);
+ Function: Filter out either at HSP,Hit,or Result level
+ Returns : none
+ Args    : string => data type,
+           CODE reference
+
+
+=cut
 
 
 1;

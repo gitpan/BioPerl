@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Exception.t,v 1.1.2.4 2002/07/15 18:59:04 jason Exp $
+## $Id: Exception.t,v 1.4 2002/10/13 13:44:49 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -9,7 +9,7 @@ my $error;
 
 use strict;
 use lib '.';
-use lib './examples/exceptions';
+use lib './scripts/exceptions';
 
 BEGIN {     
     # to handle systems with no installed Test module
@@ -79,7 +79,7 @@ catch Bio::Root::Exception with {
 
 # Try to call a subroutine that doesn't exist. But because it occurs within a try block,
 # the Error module will create a Error::Simple to capture it. Handy eh?
-if( $^V ne 5.6.0 ) { # Yes we do want string compare here, read up on $^V
+if( defined $^V && $^V ge 5.6.1 ) {
     try {
 	$test->foobar();
     }
@@ -88,6 +88,6 @@ if( $^V ne 5.6.0 ) { # Yes we do want string compare here, read up on $^V
 	ok(ref $err, 'Error::Simple');
     }; 
 } else { 
-    skip("Can't run this test on perl == 5.6.0",1);
+    skip("Can't run this test on perl < 5.6.1",1);
 }
 

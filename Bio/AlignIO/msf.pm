@@ -1,4 +1,4 @@
-# $Id: msf.pm,v 1.11.2.1 2002/04/18 13:05:25 jason Exp $
+# $Id: msf.pm,v 1.16 2002/11/26 16:34:39 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::msf
 
@@ -37,7 +37,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHORS - Peter Schattner
 
@@ -87,19 +87,19 @@ sub next_aln {
 
     my $aln =  Bio::SimpleAlign->new(-source => 'gcg' );
 
-
     while( $entry = $self->_readline) {
         $entry =~ /\/\// && last; # move to alignment section
-        $entry =~ /Name:\s+(\S+)/ && do { $name = $1;
-			       		$hash{$name} = ""; # blank line
-			       		push(@names,$name); # we need it ordered!
-			   		};
+	$entry =~ /Name:\s+(\S+)/ && do { $name = $1;
+					  $hash{$name} = ""; # blank line
+					  push(@names,$name); # we need it ordered!
+				       };
        # otherwise - skip
     }
 
    # alignment section
 
    while( $entry = $self->_readline) {
+       next if ( $entry =~ /^\s+(\d+)/ ) ;
        $entry =~ /^\s*(\S+)\s+(.*)$/ && do {
 	   $name = $1;
 	   $str = $2;
@@ -235,6 +235,7 @@ sub write_aln {
 	    $count = $tempcount;
     	}     			
     }
+    $self->flush if $self->_flush_on_write && defined $self->_fh;
     return 1;
 }
 

@@ -1,8 +1,8 @@
-
+# $Id: Grail.pm,v 1.6 2002/12/01 00:05:21 jason Exp $
 #
 # BioPerl module for Bio::Tools::Grail
 #
-# Cared for by Jason Stajich <jason@chg.mc.duke.edu>
+# Cared for by Jason Stajich <jason@bioperl.org>
 #
 # Copyright Jason Stajich
 #
@@ -68,11 +68,11 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@chg.mc.duke.edu
+Email jason@bioperl.org
 
 Describe contact details here
 

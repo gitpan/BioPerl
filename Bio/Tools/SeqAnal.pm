@@ -1,9 +1,9 @@
 #-------------------------------------------------------------------------------
-# PACKAGE : Bio::Tools::SeqAnal.pm
+# PACKAGE : Bio::Tools::SeqAnal
 # PURPOSE : To provide a base class for different sequence analysis tools.
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 27 Mar 1998
-# REVISION: $Id: SeqAnal.pm,v 1.9 2002/01/25 09:06:32 sac Exp $
+# REVISION: $Id: SeqAnal.pm,v 1.12 2002/10/22 07:38:46 lapp Exp $
 # STATUS  : Alpha
 #
 # For documentation, run this module through pod2html
@@ -27,7 +27,7 @@ $VERSION  = 0.011;
 
 =head1 NAME
 
-Bio::Tools::SeqAnal.pm - Bioperl sequence analysis base class.
+Bio::Tools::SeqAnal - Bioperl sequence analysis base class.
 
 =head1 SYNOPSIS
 
@@ -177,7 +177,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track the bugs an
 their resolution. Bug reports can be submitted via email or the web:
 
     bioperl-bugs@bio.perl.org
-    http://bio.perl.org/bioperl-bugs/
+    http://bugzilla.bioperl.org/
 
 =head1 AUTHOR
 

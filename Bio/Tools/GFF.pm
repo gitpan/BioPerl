@@ -1,4 +1,4 @@
-# $Id: GFF.pm,v 1.15.2.1 2002/05/21 21:06:22 jason Exp $
+# $Id: GFF.pm,v 1.26 2002/11/24 21:35:40 jason Exp $
 #
 # BioPerl module for Bio::Tools::GFF
 #
@@ -64,7 +64,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Matthew Pocock
 
@@ -140,9 +140,9 @@ sub next_feature {
 
     # be graceful about empty lines or comments, and make sure we return undef
     # if the input's consumed
-    while(($gff_string = $self->_readline()) && defined($gff_string)) {
-	next if($gff_string =~ /^\#/);
-	next if($gff_string =~ /^\s*$/);
+    while(($gff_string = $self->_readline()) && defined($gff_string)) {	
+	next if($gff_string =~ /^\#/ || $gff_string =~ /^\s*$/ ||
+		$gff_string =~ /^\/\//);
 	last;
     }
     return undef unless $gff_string;
@@ -201,7 +201,7 @@ sub _from_gff1_string {
        $feat->throw("[$string] does not look like GFF to me");
    }
    $frame = 0 unless( $frame =~ /^\d+$/);
-   $feat->seqname($seqname);
+   $feat->seq_id($seqname);
    $feat->source_tag($source);
    $feat->primary_tag($primary);
    $feat->start($start);
@@ -250,7 +250,7 @@ sub _from_gff2_string {
    if ( !defined $frame ) {
        $feat->throw("[$string] does not look like GFF2 to me");
    }
-   $feat->seqname($seqname);
+   $feat->seq_id($seqname);
    $feat->source_tag($source);
    $feat->primary_tag($primary);
    $feat->start($start);
@@ -265,48 +265,69 @@ sub _from_gff2_string {
    if ( $strand eq '+' ) { $feat->strand(1); }
    if ( $strand eq '.' ) { $feat->strand(0); }
 
-   #  <Begin Inefficient Code from Mark Wilkinson>
-   # this routine is necessay to allow the presence of semicolons in quoted text
-   # Semicolons are the delimiting character for new tag/value attributes.
-   # it is more or less a "state" machine, with the "quoted" flag going up and down
-   # as we pass thorugh quotes to distinguish free-text semicolon and hash symbols from GFF control characters
 
-   #$attribs =~ s/\#(.*)$//;				 # remove comments field (format:  #blah blah blah...  at the end of the GFF line)
-   my @att = split //, $attribs;         # split into individual characters
-   my $num = $#att;                 # count them
-   my $flag = 0;
-	my @parsed;		# this is needed to hold the characters that have been parsed	
-	for (my $a = 0; $a <= $num ; $a +=1){   # run through each character one at a time and check it
-		if ($att[$a] eq "\""){$flag=($flag==0)?1:0}  # flag up on entering quoted text, down on leaving it
-		if (($att[$a] eq ";") && $flag){$att[$a] = "INSERT_SEMICOLON_HERE"}  # replace semicolon with an unusual message if the quoted text flag is up
-		if (($att[$a] eq "#") && !$flag){last}  # an unquoted hash symbol means the beginning of the comments field - discard
-		push @parsed, $att[$a]                  # take the parsed character and push it onto the parsed list
-	}
+   #  <Begin Inefficient Code from Mark Wilkinson> 
+   # this routine is necessay to allow the presence of semicolons in
+   # quoted text Semicolons are the delimiting character for new
+   # tag/value attributes.  it is more or less a "state" machine, with
+   # the "quoted" flag going up and down as we pass thorugh quotes to
+   # distinguish free-text semicolon and hash symbols from GFF control
+   # characters
+   
+   
+   my $flag = 0; # this could be changed to a bit and just be twiddled
+   my @parsed;
 
-	$attribs = join "", @parsed; # rejoin into a single string
+   # run through each character one at a time and check it
+   # NOTE: changed to foreach loop which is more efficient in perl
+   # --jasons
 
-   # <End Inefficient Code>   Please feel free to fix this and make it more "perlish"
+   foreach my $a ( split //, $attribs ) { 
+       # flag up on entering quoted text, down on leaving it
+       if( $a eq '"') { $flag = ( $flag == 0 ) ? 1:0 }
+       elsif( $a eq ';' && $flag ) { $a = "INSERT_SEMICOLON_HERE"}
+       elsif( $a eq '#' && ! $flag ) { last } 
+       push @parsed, $a;
+   }
+   $attribs = join "", @parsed; # rejoin into a single string
+
+   # <End Inefficient Code>   
+   # Please feel free to fix this and make it more "perlish"
 
    my @key_vals = split /;/, $attribs;   # attributes are semicolon-delimited
 
    foreach my $pair ( @key_vals ) {
-       $pair =~ s/INSERT_SEMICOLON_HERE/;/g;  # replace semicolons that were removed from free-text above.
-       my ($blank, $key, $values) = split  /^\s*([\w\d]+)\s/, $pair;	# separate the key from the value
+       # replace semicolons that were removed from free-text above.
+       $pair =~ s/INSERT_SEMICOLON_HERE/;/g;        
 
-       my @values;								
+       # separate the key from the value
+       my ($blank, $key, $values) = split  /^\s*([\w\d]+)\s/, $pair; 
 
-       while ($values =~ s/"(.*?)"//){          # free text is quoted, so match each free-text block and remove it from the $values string
-       		push @values, $1;          # and push it on to the list of values (tags may have more than one value... and the value may be undef)
+
+       if( defined $values ) {
+	   my @values;
+	   # free text is quoted, so match each free-text block
+	   # and remove it from the $values string
+	   while ($values =~ s/"(.*?)"//){
+	       # and push it on to the list of values (tags may have
+	       # more than one value... and the value may be undef)	       
+	       push @values, $1;
+	   }
+
+	   # and what is left over should be space-separated
+	   # non-free-text values
+
+	   my @othervals = split /\s+/, $values;  
+	   foreach my $othervalue(@othervals){
+	       # get rid of any empty strings which might 
+	       # result from the split
+	       if (CORE::length($othervalue) > 0) {push @values, $othervalue}  
+	   }
+
+	   foreach my $value(@values){
+	       $feat->add_tag_value($key, $value);
+	   }
        }
-
-       my @othervals = split /\s+/, $values;  # and what is left over should be space-separated non-free-text values
-       foreach my $othervalue(@othervals){
-       		if (CORE::length($othervalue) > 0){push @values, $othervalue}  # get rid of any empty strings which might result from the split
-       }
-
-       foreach my $value(@values){
-       	   	$feat->add_tag_value($key, $value);
-      }
    }
 }
 
@@ -316,16 +337,16 @@ sub _from_gff2_string {
  Usage   : $gffio->write_feature($feature);
  Function: Writes the specified SeqFeatureI object in GFF format to the stream
            associated with this instance.
- Example :
- Returns : 
- Args    : A Bio::SeqFeatureI implementing object to be serialized
+ Returns : none
+ Args    : An array of Bio::SeqFeatureI implementing objects to be serialized
 
 =cut
 
 sub write_feature {
-    my ($self, $feature) = @_;
-    
-    $self->_print($self->gff_string($feature)."\n");
+    my ($self, @features) = @_;
+    foreach my $feature ( @features ) {
+	$self->_print($self->gff_string($feature)."\n");
+    }
 }
 
 =head2 gff_string
@@ -388,7 +409,7 @@ sub _gff1_string{
    }
    
    if( $feat->can('seqname') ) {
-       $name = $feat->seqname();
+       $name = $feat->seq_id();
        $name ||= 'SEQ';
    } else {
        $name = 'SEQ';
@@ -450,13 +471,11 @@ sub _gff2_string{
    }
 
    if( $feat->can('seqname') ) {
-       $name = $feat->seqname();
+       $name = $feat->seq_id();
        $name ||= 'SEQ';
    } else {
        $name = 'SEQ';
    }
-
-
    $str = join("\t",
                  $name,
 		 $feat->source_tag(),
@@ -479,23 +498,36 @@ sub _gff2_string{
    # MW
 
    my $valuestr;
-   if ($feat->all_tags){  # only play this game if it is worth playing...
-        $str .= "\t";     # my interpretation of the GFF2 specification suggests the need for this additional TAB character...??
-        foreach my $tag ( $feat->all_tags ) {
-            my $valuestr; # a string which will hold one or more values for this tag, with quoted free text and space-separated individual values.
-            foreach my $value ( $feat->each_tag_value($tag) ) {
-         		if ($value =~ /[^A-Za-z0-9_]/){
-         			$value =~ s/\t/\\t/g;          # substitute tab and newline characters
-         			$value =~ s/\n/\\n/g;          # to their UNIX equivalents
-         			$value = '"' . $value . '" '}  # if the value contains anything other than valid tag/value characters, then quote it
-				$value = "\"\"" unless $value;  # if it is completely empty, then just make empty double quotes
-         		$valuestr .=  $value . " ";								# with a trailing space in case there are multiple values
-         															# for this tag (allowed in GFF2 and .ace format)		
-            }
-            $str .= "$tag $valuestr ; ";                              # semicolon delimited with no '=' sign
-        }
-   		chop $str; chop $str  # remove the trailing semicolon and space
-    }
+   my @all_tags = $feat->all_tags;
+   if (@all_tags) {  # only play this game if it is worth playing...
+       $str .= "\t"; # my interpretation of the GFF2
+                     # specification suggests the need 
+                     # for this additional TAB character...??
+       foreach my $tag ( @all_tags ) {
+	   my $valuestr; # a string which will hold one or more values 
+	                 # for this tag, with quoted free text and 
+	                 # space-separated individual values.
+	   foreach my $value ( $feat->each_tag_value($tag) ) {
+	       if ($value =~ /[^A-Za-z0-9_]/){
+		   $value =~ s/\t/\\t/g; # substitute tab and newline 
+		                         # characters
+		   $value =~ s/\n/\\n/g; # to their UNIX equivalents
+		   $value = '"' . $value . '" '} # if the value contains 
+	                                         # anything other than valid 
+	                                         # tag/value characters, then 
+	                                         # quote it
+	       $value = "\"\"" unless defined $value; 
+                                              # if it is completely empty, 
+	                                      # then just make empty double 
+	                                      # quotes
+	       $valuestr .=  $value . " "; # with a trailing space in case 
+	                                   # there are multiple values
+	       # for this tag (allowed in GFF2 and .ace format)		
+	   }
+	   $str .= "$tag $valuestr ; ";	# semicolon delimited with no '=' sign
+       }
+       chop $str; chop $str  # remove the trailing semicolon and space
+       }
    return $str;
 }
 
@@ -516,6 +548,73 @@ sub gff_version {
     $self->{'GFF_VERSION'} = $value;
   }
   return $self->{'GFF_VERSION'};
+}
+
+# Make filehandles
+
+=head2 newFh
+
+ Title   : newFh
+ Usage   : $fh = Bio::Tools::GFF->newFh(-file=>$filename,-format=>'Format')
+ Function: does a new() followed by an fh()
+ Example : $fh = Bio::Tools::GFF->newFh(-file=>$filename,-format=>'Format')
+           $feature = <$fh>;    # read a feature object
+           print $fh $feature ; # write a feature object
+ Returns : filehandle tied to the Bio::Tools::GFF class
+ Args    :
+
+=cut
+
+sub newFh {
+  my $class = shift;
+  return unless my $self = $class->new(@_);
+  return $self->fh;
+}
+
+=head2 fh
+
+ Title   : fh
+ Usage   : $obj->fh
+ Function:
+ Example : $fh = $obj->fh;      # make a tied filehandle
+           $feature = <$fh>;   # read a feature object
+           print $fh $feature; # write a feature object
+ Returns : filehandle tied to Bio::Tools::GFF class
+ Args    : none
+
+=cut
+
+
+sub fh {
+  my $self = shift;
+  my $class = ref($self) || $self;
+  my $s = Symbol::gensym;
+  tie $$s,$class,$self;
+  return $s;
+}
+
+sub DESTROY {
+    my $self = shift;
+
+    $self->close();
+}
+
+sub TIEHANDLE {
+    my ($class,$val) = @_;
+    return bless {'gffio' => $val}, $class;
+}
+
+sub READLINE {
+  my $self = shift;
+  return $self->{'gffio'}->next_feature() unless wantarray;
+  my (@list, $obj);
+  push @list, $obj while $obj = $self->{'gffio'}->next_feature();
+  return @list;
+}
+
+sub PRINT {
+  my $self = shift;
+  $self->{'gffio'}->write_feature(@_);
 }
 
 1;

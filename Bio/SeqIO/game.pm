@@ -1,4 +1,4 @@
-# $Id: game.pm,v 1.19.2.3 2002/06/04 17:43:08 jason Exp $
+# $Id: game.pm,v 1.26 2002/10/12 15:48:50 jason Exp $
 #
 # BioPerl module for Bio::SeqIO::game
 #
@@ -311,7 +311,7 @@ sub next_seq {
   #  If there's more sequences:
   if ($seq) {
     # Get the next seq.
-    my $handler = Bio::SeqIO::game::seqHandler->new($seq);
+    my $handler = Bio::SeqIO::game::seqHandler->new(-seq => $seq);
     my $options = {Handler=>$handler};
     my $parser  = XML::Parser::PerlSAX->new($options);
     my $pseq = $parser->parse(Source => { String => $xmldoc });
@@ -447,7 +447,7 @@ sub next_primary_seq {
     
   if ($seq) {
     # Get the next seq.
-    my $handler = Bio::SeqIO::game::seqHandler->new($seq);
+    my $handler = Bio::SeqIO::game::seqHandler->new(-seq => $seq);
     my $options = {Handler=>$handler};
     my $parser  = XML::Parser::PerlSAX->new($options);
     my $pseq = $parser->parse(Source => { String => $xmldoc });
@@ -558,6 +558,9 @@ sub write_seq {
 	}
     }
     $writer->endTag([$bxgame, 'game']);
+
+    $self->flush if $self->_flush_on_write && defined $self->_fh;
+    return 1;
 }
 
 

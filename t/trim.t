@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: trim.t,v 1.3 2001/12/24 17:46:30 jason Exp $
+## $Id: trim.t,v 1.4 2002/10/30 14:21:59 heikki Exp $
 #
 
 #####
@@ -11,9 +11,8 @@
 #####
 
 
-use ExtUtils::testlib;
 use strict;
-require 'dumpvar.pl';
+#require 'dumpvar.pl';
 
 BEGIN {
     # to handle systems with no installed Test module
@@ -26,7 +25,8 @@ BEGIN {
     use Test;
     plan tests => 7;
 }
-my $DEBUG = 0;
+my $DEBUG = $ENV{'BIOPERLDEBUG'};
+
 print("Checking if the Bio::Tools::Alignment::Consed module could be used...\n") if($DEBUG);
 use Bio::Tools::Alignment::Consed;
 use Bio::Root::IO;

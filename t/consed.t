@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: consed.t,v 1.2.2.1 2002/05/30 19:22:13 jason Exp $
+## $Id: consed.t,v 1.5 2002/10/30 14:21:59 heikki Exp $
 #
 #####
 #
@@ -9,11 +9,8 @@
 #
 #####
 
-
-use ExtUtils::testlib;
 use strict;
-require 'dumpvar.pl';
-
+use vars qw($TESTCOUNT);
 BEGIN {
     # to handle systems with no installed Test module
     # we include the t dir (where a copy of Test.pm is located)
@@ -23,7 +20,8 @@ BEGIN {
         use lib 't';
     }
     use Test;
-    plan tests => 15;
+    $TESTCOUNT = 16;
+    plan tests => $TESTCOUNT;
 }
 
 use Bio::Root::IO;
@@ -31,6 +29,12 @@ use Bio::Tools::Alignment::Consed;
 use vars qw($DEBUG);
 $DEBUG = $ENV{'BIOPERLDEBUG'} || -1;
 
+if( $^O =~ /mswin/i ) {
+    for ( $Test::ntest..$TESTCOUNT ) {
+	skip("Cannot run consed module on windows",1,1);	
+    }
+    exit(0);
+}
 print("Checking if the Bio::Tools::Alignment::Consed module could be used...\n") if $DEBUG > 0;
 	# test 1
 ok(1);
@@ -45,7 +49,7 @@ print("Checking if a new CSM::Consed object was created...\n") if( $DEBUG > 0);
 ok defined $o_consed;
 
 	# set the verbosity to a valid value (1)
-my $verbosity = $o_consed->verbose(1);
+ok my $verbosity = $o_consed->verbose(1);
 
 # set the verbosity to "none"
 $o_consed->verbose(0);

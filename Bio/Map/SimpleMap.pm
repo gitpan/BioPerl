@@ -1,5 +1,5 @@
-# $Id: SimpleMap.pm,v 1.6.2.2 2002/04/18 13:05:24 jason Exp $
-
+# $Id: SimpleMap.pm,v 1.8 2002/10/22 07:45:16 lapp Exp $
+#
 # BioPerl module for Bio::Map::SimpleMap
 #
 # Cared for by Jason Stajich <jason@bioperl.org>
@@ -52,7 +52,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 

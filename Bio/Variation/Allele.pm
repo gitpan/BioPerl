@@ -1,4 +1,4 @@
-# $Id: Allele.pm,v 1.6.2.1 2002/03/20 13:08:24 heikki Exp $
+# $Id: Allele.pm,v 1.9 2002/10/22 07:38:49 lapp Exp $
 #
 # BioPerl module for Bio::Variation::Allele
 #
@@ -57,7 +57,7 @@ report bugs to the Bioperl bug tracking system to help us keep track
  email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
@@ -234,5 +234,60 @@ sub repeat_count {
     }
     return $self->{'repeat_count'};
 }
+
+=head2 count
+
+ Title   : count
+ Usage   : $obj->count();
+ Function: 
+
+            Sets and returns the number of times this allele was observed.
+
+ Example : 
+ Returns : string
+ Args    : string
+
+=cut
+
+sub count {
+    my ($self,$value) = @_;
+    if( defined $value) {
+	if (  not $value =~ /^\d+$/ ) {
+	    $self->throw("[$value] for count has to be a positive integer\n");
+	} else {
+	    $self->{'count'} = $value;
+	}
+    }
+    return $self->{'count'};
+}
+
+
+=head2 frequency
+
+ Title   : frequency
+ Usage   : $obj->frequency();
+ Function: 
+
+            Sets and returns the frequency of the allele in the observed
+            population.
+
+ Example : 
+ Returns : string
+ Args    : string
+
+=cut
+
+sub frequency {
+    my ($self,$value) = @_;
+    if( defined $value) {
+	if (  not $value =~ /^\d+$/ ) {
+	    $self->throw("[$value] for frequency has to be a positive integer\n");
+	} else {
+	    $self->{'frequency'} = $value;
+	}
+    }
+    return $self->{'frequency'};
+}
+
 
 1;

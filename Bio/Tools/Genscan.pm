@@ -1,4 +1,4 @@
-# $Id: Genscan.pm,v 1.20 2001/11/30 15:58:43 lapp Exp $
+# $Id: Genscan.pm,v 1.22 2002/10/22 07:38:46 lapp Exp $
 #
 # BioPerl module for Bio::Tools::Genscan
 #
@@ -73,7 +73,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
@@ -339,7 +339,7 @@ sub _parse_predictions {
 	}
 	if(/^\s*$/ && defined($gene)) {
 	    # current gene is completed
-	    $gene->seqname($seqname);
+	    $gene->seq_id($seqname);
 	    $self->_add_prediction($gene);
 	    $gene = undef;
 	    next;

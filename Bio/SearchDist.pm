@@ -1,4 +1,4 @@
-# $Id: SearchDist.pm,v 1.15 2001/11/20 02:09:28 lstein Exp $
+# $Id: SearchDist.pm,v 1.16 2002/10/22 07:38:24 lapp Exp $
 
 #
 # BioPerl module for Bio::SearchDist
@@ -85,7 +85,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 APPENDIX
 

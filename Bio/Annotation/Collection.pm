@@ -1,4 +1,4 @@
-# $Id: Collection.pm,v 1.8.2.1 2002/06/10 18:23:03 jason Exp $
+# $Id: Collection.pm,v 1.16 2002/11/22 22:48:25 birney Exp $
 
 #
 # BioPerl module for Bio::Annotation::Collection.pm
@@ -55,7 +55,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bioperl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Ewan Birney
 
@@ -80,12 +80,13 @@ use strict;
 # Object preamble - inherits from Bio::Root::Root
 
 use Bio::AnnotationCollectionI;
+use Bio::AnnotationI;
 use Bio::Root::Root;
 use Bio::Annotation::TypeManager;
 use Bio::Annotation::SimpleValue;
 
 
-@ISA = qw(Bio::Root::Root Bio::AnnotationCollectionI);
+@ISA = qw(Bio::Root::Root Bio::AnnotationCollectionI Bio::AnnotationI);
 
 
 =head2 new
@@ -110,7 +111,7 @@ sub new{
 }
 
 
-=head2 Bio::Annotation::CollectionI implementing methods
+=head1 L<Bio::AnnotationCollectionI> implementing methods
 
 =cut
 
@@ -133,20 +134,64 @@ sub get_all_annotation_keys{
 
  Title   : get_Annotations
  Usage   : my @annotations = $collection->get_Annotations('key')
- Function: Retrieves all the Bio::AnnotationI objects for a specific key
+ Function: Retrieves all the Bio::AnnotationI objects for one or more
+           specific key(s).
+
+           If no key is given, returns all annotation objects.
+
+           The returned objects will have their tagname() attribute set to
+           the key under which they were attached, unless the tagname was
+           already set.
+
  Returns : list of Bio::AnnotationI - empty if no objects stored for a key
- Args    : string which is key for annotations
+ Args    : keys (list of strings) for annotations (optional)
 
 =cut
 
 sub get_Annotations{
-   my ($self,$key) = @_;
+    my ($self,@keys) = @_;
 
-   if( !defined $self->{'_annotation'}->{$key} ) {
-       return ();
-   } else {
-       return @{$self->{'_annotation'}->{$key}};
-   }
+    my @anns = ();
+    @keys = $self->get_all_annotation_keys() unless @keys;
+    foreach my $key (@keys) {
+	if(exists($self->{'_annotation'}->{$key})) {
+	    push(@anns,
+		 map {
+		     $_->tagname($key) if ! $_->tagname(); $_;
+		 } @{$self->{'_annotation'}->{$key}});
+	}
+    }
+    return @anns;
+}
+
+=head2 get_all_Annotations
+
+ Title   : get_all_Annotations
+ Usage   :
+ Function: Similar to get_Annotations, but traverses and flattens nested
+           annotation collections. This means that collections in the
+           tree will be replaced by their components.
+
+           Keys will not be passed on to nested collections. I.e., if the
+           tag name of a nested collection matches the key, it will be
+           flattened in its entirety.
+
+           Hence, for un-nested annotation collections this will be identical
+           to get_Annotations.
+ Example :
+ Returns : an array of L<Bio::AnnotationI> compliant objects
+ Args    : keys (list of strings) for annotations (optional)
+
+
+=cut
+
+sub get_all_Annotations{
+    my ($self,@keys) = @_;
+
+    return map {
+	$_->isa("Bio::AnnotationCollectionI") ?
+	    $_->get_all_Annotations() : $_;
+    } $self->get_Annotations(@keys);
 }
 
 =head2 get_num_of_annotations
@@ -167,7 +212,7 @@ sub get_num_of_annotations{
    return $count;
 }
 
-=head2 Implementation specific functions - mainly for adding
+=head1 Implementation specific functions - mainly for adding
 
 =cut
 
@@ -175,50 +220,71 @@ sub get_num_of_annotations{
 
  Title   : add_Annotation
  Usage   : $self->add_Annotation('reference',$object);
+           $self->add_Annotation($object,'Bio::MyInterface::DiseaseI');
+           $self->add_Annotation($object);
            $self->add_Annotation('disease',$object,'Bio::MyInterface::DiseaseI');
- Function: Adds an annotation for a specific 
+ Function: Adds an annotation for a specific key.
+
+           If the key is omitted, the object to be added must provide a value
+           via its tagname().
+
+           If the archetype is provided, this and future objects added under
+           that tag have to comply with the archetype and will be rejected
+           otherwise.
+
  Returns : none
  Args    : annotation key ('disease', 'dblink', ...)
            object to store (must be Bio::AnnotationI compliant)
-           [optional] object archytype to map future storage of object 
+           [optional] object archetype to map future storage of object 
                       of these types to
 
 =cut
 
 sub add_Annotation{
-   my ($self,$key,$object,$archytype) = @_;
+   my ($self,$key,$object,$archetype) = @_;
    
+   # if there's no key we use the tagname() as key
+   if(ref($key) && $key->isa("Bio::AnnotationI") &&
+      (! ($object && ref($object)))) {
+       $archetype = $object if $object;
+       $object = $key;
+       $key = $object->tagname();
+       $key = $key->name() if $key && ref($key); # OntologyTermI
+       $self->throw("Annotation object must have a tagname if key omitted")
+	   unless $key;
+   }
+
    if( !defined $object ) {
        $self->throw("Must have at least key and object in add_Annotation");
    }
 
    if( !ref $object ) {
-       $self->throw("Must add an object. Use Bio::Annotation::Comment, SimpleValue or ControledVocabTerm for simple text additions");
+       $self->throw("Must add an object. Use Bio::Annotation::{Comment,SimpleValue,OntologyTerm} for simple text additions");
    }
 
    if( !$object->isa("Bio::AnnotationI") ) {
        $self->throw("object must be AnnotationI compliant, otherwise we wont add it!");
    }
 
-   # ok, now we are ready! If we don't have an archytype, set it
+   # ok, now we are ready! If we don't have an archetype, set it
    # from the type of the object
 
-   if( !defined $archytype ) {
-       $archytype = ref $object;
+   if( !defined $archetype ) {
+       $archetype = ref $object;
    }
 
    # check typemap, storing if needed.
    my $stored_map = $self->_typemap->type_for_key($key);
 
    if( defined $stored_map ) {
-       # check validity, irregardless of archytype. A little cheeky
+       # check validity, irregardless of archetype. A little cheeky
        # this means isa stuff is executed correctly
 
        if( !$self->_typemap()->is_valid($key,$object) ) {
-	   $self->throw("Object $object was not valid with key $key. If you were adding new keys in, perhaps you want to make use of the archytype method to allow registration to a more basic type");
+	   $self->throw("Object $object was not valid with key $key. If you were adding new keys in, perhaps you want to make use of the archetype method to allow registration to a more basic type");
        }
    } else {
-       $self->_typemap->_add_type_map($key,$archytype);
+       $self->_typemap->_add_type_map($key,$archetype);
    }
 
    # we are ok to store
@@ -232,8 +298,152 @@ sub add_Annotation{
    return 1;
 }
 
+=head2 remove_Annotations
 
-=head2 Backward compatible functions
+ Title   : remove_Annotations
+ Usage   :
+ Function: Remove the annotations for the specified key from this collection.
+ Example :
+ Returns : an array Bio::AnnotationI compliant objects which were stored
+           under the given key(s)
+ Args    : the key(s) (tag name(s), one or more strings) for which to
+           remove annotations (optional; if none given, flushes all
+           annotations)
+
+
+=cut
+
+sub remove_Annotations{
+    my ($self, @keys) = @_;
+
+    @keys = $self->get_all_annotation_keys() unless @keys;
+    my @anns = $self->get_Annotations(@keys);
+    # flush
+    foreach (@keys) {
+	delete $self->{'_annotation'}->{$_};
+    }
+    return @anns;
+}
+
+=head2 flatten_Annotations
+
+ Title   : flatten_Annotations
+ Usage   :
+ Function: Flattens part or all of the annotations in this collection.
+
+           This is a convenience method for getting the flattened
+           annotation for the given keys, removing the annotation for
+           those keys, and adding back the flattened array.
+
+           This should not change anything for un-nested collections.
+ Example :
+ Returns : an array Bio::AnnotationI compliant objects which were stored
+           under the given key(s)
+ Args    : list of keys (strings) the annotation for which to flatten,
+           defaults to all keys if not given
+
+
+=cut
+
+sub flatten_Annotations{
+    my ($self,@keys) = @_;
+
+    my @anns = $self->get_all_Annotations(@keys);
+    my @origanns = $self->remove_Annotations(@keys);
+    foreach (@anns) {
+	$self->add_Annotation($_);
+    }
+    return @origanns;
+}
+
+=head1 Bio::AnnotationI methods implementations
+
+   This is to allow nested annotation: you can a collection as an
+   annotation object to an annotation collection.
+
+=cut
+
+=head2 as_text
+
+ Title   : as_text
+ Usage   :
+ Function: See L<Bio::AnnotationI>
+ Example :
+ Returns : a string
+ Args    : none
+
+
+=cut
+
+sub as_text{
+    my $self = shift;
+
+    my $txt = "Collection consisting of ";
+    my @texts = ();
+    foreach my $ann ($self->get_Annotations()) {
+	push(@texts, $ann->as_text());
+    }
+    if(@texts) {
+	$txt .= join(", ", map { '['.$_.']'; } @texts);
+    } else {
+	$txt .= "no elements";
+    }
+    return $txt;
+}
+
+=head2 hash_tree
+
+ Title   : hash_tree
+ Usage   :
+ Function: See L<Bio::AnnotationI>
+ Example :
+ Returns : a hash reference
+ Args    : none
+
+
+=cut
+
+sub hash_tree{
+    my $self = shift;
+    my $tree = {};
+
+    foreach my $key ($self->get_all_annotation_keys()) {
+	# all contained objects will support hash_tree() 
+	# (they are AnnotationIs)
+	$tree->{$key} = [$self->get_Annotations($key)];
+    }
+    return $tree;
+}
+
+=head2 tagname
+
+ Title   : tagname
+ Usage   : $obj->tagname($newval)
+ Function: Get/set the tagname for this annotation value.
+
+           Setting this is optional. If set, it obviates the need to
+           provide a tag to Bio::AnnotationCollectionI when adding
+           this object. When obtaining an AnnotationI object from the
+           collection, the collection will set the value to the tag
+           under which it was stored unless the object has a tag
+           stored already.
+
+ Example : 
+ Returns : value of tagname (a scalar)
+ Args    : new value (a scalar, optional)
+
+
+=cut
+
+sub tagname{
+    my $self = shift;
+
+    return $self->{'tagname'} = shift if @_;
+    return $self->{'tagname'};
+}
+
+
+=head1 Backward compatible functions
 
 Functions put in for backward compatibility with old
 Bio::Annotation.pm stuff
@@ -442,14 +652,14 @@ sub add_DBLink{
 sub each_DBLink{
    my ($self) = @_;
 
-   $self->deprecated("each_DBLink (old style Annotation) on new style Annotation::Collection");
+   $self->deprecated("each_DBLink (old style Annotation) on new style Annotation::Collection - use get_Annotations('dblink')");
    
    return $self->get_Annotations('dblink');
 }
 
 
 
-=head2 Implementation management functions
+=head1 Implementation management functions
 
 =cut
 

@@ -1,4 +1,4 @@
-# $Id: bl2seq.pm,v 1.11.2.1 2002/04/18 13:05:25 jason Exp $
+# $Id: bl2seq.pm,v 1.13 2002/10/22 07:38:25 lapp Exp $
 #
 # BioPerl module for Bio::AlignIO::bl2seq
 
@@ -75,7 +75,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Peter Schattner
 

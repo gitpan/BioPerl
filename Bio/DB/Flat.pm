@@ -1,5 +1,5 @@
 #
-# $Id: Flat.pm,v 1.4 2002/02/28 12:01:50 lstein Exp $
+# $Id: Flat.pm,v 1.6 2002/12/22 22:02:13 lstein Exp $
 #
 # BioPerl module for Bio::DB::Flat
 #
@@ -51,7 +51,7 @@ the bugs and their resolution.  Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Lincoln Stein
 
@@ -220,7 +220,7 @@ sub primary_namespace {
 sub secondary_namespaces {
   my $self = shift;
   my $d    = $self->{flat_secondary_namespaces};
-  $self->{flat_secondary_namespaces} = (ref($_[0]) eq 'ARRAY' ? shift : \@_) if @_;
+  $self->{flat_secondary_namespaces} = (ref($_[0]) eq 'ARRAY' ? shift : [@_]) if @_;
   return unless $d;
   $d = [$d] if $d && ref($d) ne 'ARRAY';  # just paranoia
   return wantarray ? @$d : $d;

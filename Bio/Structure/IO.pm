@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.2 2002/03/04 15:35:57 krbou Exp $
+# $Id: IO.pm,v 1.3 2002/10/22 07:45:21 lapp Exp $
 #
 # BioPerl module for Bio::Structure::IO
 #
@@ -228,7 +228,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Ewan Birney, Lincoln Stein, Kris Boulez
 

@@ -1,8 +1,8 @@
-# $Id: SeqAnalysisParserI.pm,v 1.8.2.1 2002/04/21 14:14:13 jason Exp $
+# $Id: SeqAnalysisParserI.pm,v 1.12 2002/12/01 00:05:19 jason Exp $
 #
 # BioPerl module for Bio::SeqAnalysisParserI
 #
-# Cared for by Jason Stajich <jason@chg.mc.duke.edu>,
+# Cared for by Jason Stajich <jason@bioperl.org>,
 # and Hilmar Lapp <hlapp@gmx.net>
 #
 # Copyright Jason Stajich, Hilmar Lapp
@@ -63,11 +63,11 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Hilmar Lapp, Jason Stajich
 
-Email Hilmar Lapp E<lt>hlapp@gmx.netE<gt>, Jason Stajich E<lt>jason@chg.mc.duke.eduE<gt>
+Email Hilmar Lapp E<lt>hlapp@gmx.netE<gt>, Jason Stajich E<lt>jason@bioperl.orgE<gt>
 
 =head1 APPENDIX
 
@@ -97,7 +97,7 @@ use Carp;
 =cut
 
 sub next_feature {
-    my ($self);
+    my ($self) = shift;
     $self->throw_not_implemented();
 }
 

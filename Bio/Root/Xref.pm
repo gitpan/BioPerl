@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Xref.pm
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 8 May 1997
-# REVISION: $Id: Xref.pm,v 1.8 2002/01/23 11:30:22 heikki Exp $
+# REVISION: $Id: Xref.pm,v 1.9 2002/10/22 07:38:37 lapp Exp $
 # STATUS  : Pre-Alpha 
 #
 # WARNING: This is considered an experimental module.
@@ -99,7 +99,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track the bugs an
 their resolution. Bug reports can be submitted via email or the web:
 
     bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    http://bugzilla.bioperl.org/           
 
 =head1 AUTHOR 
 

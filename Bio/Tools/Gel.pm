@@ -1,4 +1,4 @@
-# $Id: Gel.pm,v 1.4.2.1 2002/04/21 14:30:22 jason Exp $
+# $Id: Gel.pm,v 1.6 2002/10/22 07:45:22 lapp Exp $
 # BioPerl module for Bio::Tools::Gel
 # Copyright Allen Day <allenday@ucla.edu>
 # You may distribute this module under the same terms as perl itself
@@ -65,7 +65,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Allen Day
 

@@ -1,4 +1,4 @@
-# $Id: AnalysisResult.pm,v 1.11 2002/01/22 17:28:56 sac Exp $
+# $Id: AnalysisResult.pm,v 1.12 2002/10/22 07:38:45 lapp Exp $
 #
 # BioPerl module for Bio::Tools::AnalysisResult
 #
@@ -71,7 +71,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Hilmar Lapp
 

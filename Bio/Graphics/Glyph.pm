@@ -9,6 +9,13 @@ $VERSION = '1.02';
 
 my %LAYOUT_COUNT;
 
+# the CM1 and CM2 constants control the size of the hash used to
+# detect collisions.
+use constant CM1 => 200; # big bin, x axis
+use constant CM2 => 50;  # big bin, y axis
+use constant CM3 => 50;  # small bin, x axis
+use constant CM4 => 50;  # small bin, y axis
+
 # a bumpable graphical object that has bumpable graphical subparts
 
 # args:  -feature => $feature_object (may contain subsequences)
@@ -35,7 +42,10 @@ sub new {
   if (@subfeatures) {
 
     # dynamic glyph resolution
-    @subglyphs = sort { $a->left  <=> $b->left }  $factory->make_glyph($level+1,@subfeatures);
+    @subglyphs = map { $_->[0] }
+    sort { $a->[1] <=> $b->[1] }
+    map { [$_, $_->left ] } 
+    $factory->make_glyph($level+1,@subfeatures);
 
     $self->{parts}   = \@subglyphs;
   }
@@ -44,7 +54,7 @@ sub new {
   if (defined $start && defined $stop) {
     ($start,$stop) = ($stop,$start) if $start > $stop;  # sheer paranoia
     # the +1 here is critical for allowing features to meet nicely at nucleotide resolution
-    my ($left,$right) = $factory->map_pt($start,$stop+1); 
+    my ($left,$right) = $factory->map_pt($start,$stop+1);
     $self->{left}    = $left;
     $self->{width}   = $right - $left + 1;
   }
@@ -56,18 +66,20 @@ sub new {
       $self->{width}   = $w if !defined($self->{width}) || $w > $self->{width};
   }
 
+  $self->{point} = $arg{-point} ? $self->height : undef;
   #Handle glyphs that don't actually fill their space, but merely mark a point.
   #They need to have their collision bounds altered.  We will (for now)
   #hard code them to be in the center of their feature.
-  $self->{point} = $arg{-point} ? $self->height : undef;
-  if($self->option('point')){
-    my ($left,$right) = $factory->map_pt($self->start,$self->stop);
-    my $center = int(($left+$right)/2);
+# note: this didn't actually seem to work properly, all features were aligned on
+# their right edges.  It works to do it in individual point-like glyphs such as triangle.
+#  if($self->option('point')){
+#    my ($left,$right) = $factory->map_pt($self->start,$self->stop);
+#    my $center = int(($left+$right)/2 + 0.5);
 
-    $self->{width} = $self->height;
-    $self->{left}  = $center - ($self->{width});
-    $self->{right} = $center + ($self->{width});
-  }
+#    $self->{width} = $self->height;
+#    $self->{left}  = $center - ($self->{width});
+#    $self->{right} = $center + ($self->{width});
+#  }
 
   return $self;
 }
@@ -108,6 +120,17 @@ sub stop    {
   return $self->{stop}
 }
 sub end     { shift->stop }
+sub length { my $self = shift; $self->stop - $self->start };
+sub score {
+    my $self = shift;
+    return $self->{score} if exists $self->{score};
+    return $self->{score} = ($self->{feature}->score || 0);
+}
+sub strand {
+    my $self = shift;
+    return $self->{strand} if exists $self->{strand};
+    return $self->{strand} = ($self->{feature}->strand || 0);
+}
 sub map_pt  { shift->{factory}->map_pt(@_) }
 sub map_no_trunc { shift->{factory}->map_no_trunc(@_) }
 
@@ -129,8 +152,8 @@ sub add_group {
   my $self = shift;
   my @features = ref($_[0]) eq 'ARRAY' ? @{$_[0]} : @_;
   my $f    = Bio::Graphics::Feature->new(
-				     -segments=>\@features,
-				     -type => 'group'
+					 -segments=>\@features,
+					 -type => 'group'
 					);
   $self->add_feature($f);
 }
@@ -143,14 +166,10 @@ sub top {
 }
 sub left {
   my $self = shift;
-#  return $self->{cache_left} if exists $self->{cache_left};
-#  $self->{cache_left} = $self->{left} - $self->pad_left;
   return $self->{left} - $self->pad_left;
 }
 sub right {
   my $self = shift;
-#  return $self->{cache_right} if exists $self->{cache_right};
-#  $self->{cache_right} = $self->left + $self->layout_width - 1;
   return $self->left + $self->layout_width - 1;
 }
 sub bottom {
@@ -175,7 +194,6 @@ sub layout_height {
 }
 sub layout_width {
   my $self = shift;
-#  return $self->{layout_width} ||= $self->width + $self->pad_left + $self->pad_right;
   return $self->width + $self->pad_left + $self->pad_right;
 }
 
@@ -204,13 +222,19 @@ sub box {
 sub unfilled_box {
   my $self = shift;
   my $gd   = shift;
-  my ($x1,$y1,$x2,$y2) = @_;
+  my ($x1,$y1,$x2,$y2,$fg,$bg) = @_;
 
-  my $fg = $self->fgcolor;
-  my $bg = $self->bgcolor;
   my $linewidth = $self->option('linewidth') || 1;
 
+  unless ($fg) {
+      $fg ||= $self->fgcolor;
   $fg = $self->set_pen($linewidth,$fg) if $linewidth > 1;
+  }
+
+  unless ($bg) {
+      $bg ||= $self->bgcolor;
+      $bg = $self->set_pen($linewidth,$bg) if $linewidth > 1;
+  }
 
   # draw a box
   $gd->rectangle($x1,$y1,$x2,$y2,$fg);
@@ -218,8 +242,6 @@ sub unfilled_box {
   # if the left end is off the end, then cover over
   # the leftmost line
   my ($width) = $gd->getBounds;
-
-  $bg = $self->set_pen($linewidth,$bg) if $linewidth > 1;
 
   $gd->line($x1,$y1+$linewidth,$x1,$y2-$linewidth,$bg)
     if $x1 < $self->panel->pad_left;
@@ -237,12 +259,17 @@ sub boxes {
   my @result;
 
   $self->layout;
+  my @parts = $self->parts;
+  @parts    = $self if !@parts && $self->option('box_subparts') && $self->level>0;
+
   for my $part ($self->parts) {
-    if (eval{$part->feature->primary_tag} eq 'group') {
-      push @result,$part->boxes($left+$self->left,$top+$self->top);
+    if (eval{$part->feature->primary_tag} eq 'group' or
+	($part->level == 0 && $self->option('box_subparts'))) {
+      push @result,$part->boxes($left+$self->left+$self->pad_left,$top+$self->top+$self->pad_top);
     } else {
       my ($x1,$y1,$x2,$y2) = $part->box;
-      push @result,[$part->feature,$x1,$top+$self->top+$y1,$x2,$top+$self->top+$y2];
+      push @result,[$part->feature,$x1,$top+$self->top+$self->pad_top+$y1,
+		                   $x2,$top+$self->top+$self->pad_top+$y2];
     }
   }
   return wantarray ? @result : \@result;
@@ -327,8 +354,6 @@ sub connector {
 #              0    no bumping
 #              +1   bump down
 #              -1   bump up
-#              +2   simple (hyper) bump up
-#              -2   simple (hyper) bump down
 sub bump {
   my $self = shift;
   return $self->option('bump');
@@ -337,7 +362,9 @@ sub bump {
 # we also look for the "color" option for Ace::Graphics compatibility
 sub fgcolor {
   my $self = shift;
-  my $index = $self->option('fgcolor') || $self->option('color') || return 0;
+  my $color = $self->option('fgcolor');
+  my $index = defined $color ? $color : $self->option('color');
+  $index = 'black' unless defined $index;
   $self->factory->translate_color($index);
 }
 
@@ -350,7 +377,9 @@ sub fillcolor {
 # we also look for the "background-color" option for Ace::Graphics compatibility
 sub bgcolor {
   my $self = shift;
-  my $index = $self->option('bgcolor') || $self->option('fillcolor') || return 0;
+  my $bgcolor = $self->option('bgcolor');
+  my $index = defined $bgcolor ? $bgcolor : $self->option('fillcolor');
+  $index = 'white' unless defined $index;
   $self->factory->translate_color($index);
 }
 sub font {
@@ -358,11 +387,13 @@ sub font {
 }
 sub fontcolor {
   my $self = shift;
-  $self->color('fontcolor') || $self->fgcolor;
+  my $fontcolor = $self->color('fontcolor');
+  return defined $fontcolor ? $fontcolor : $self->fgcolor;
 }
 sub font2color {
   my $self = shift;
-  $self->color('font2color') || $self->fontcolor;
+  my $font2color = $self->color('font2color');
+  return defined $font2color ? $font2color : $self->fgcolor;
 }
 sub tkcolor { # "track color"
   my $self = shift;
@@ -374,15 +405,70 @@ sub connector_color {
   $self->color('connector_color') || $self->fgcolor;
 }
 
+sub layout_sort {
+
+    my $self = shift;
+    my $sortfunc;
+
+    my $opt = $self->option("sort_order");
+    if (!$opt) {
+       $sortfunc = eval 'sub { $a->left <=> $b->left }';
+    } elsif (ref $opt eq 'CODE') {
+       $sortfunc = $opt;
+    } elsif ($opt =~ /^sub\s+\{/o) {
+       $sortfunc = eval $opt;
+    } else {
+       # build $sortfunc for ourselves:
+       my @sortbys = split(/\s*\|\s*/o, $opt);
+       $sortfunc = 'sub { ';
+       my $sawleft = 0;
+
+       # not sure I can make this schwartzian transfored
+       for my $sortby (@sortbys) {
+           if ($sortby eq "left" || $sortby eq "default") {
+               $sortfunc .= '($a->left <=> $b->left) || ';
+               $sawleft++;
+           } elsif ($sortby eq "right") {
+               $sortfunc .= '($a->right <=> $b->right) || ';
+           } elsif ($sortby eq "low_score") {
+               $sortfunc .= '($a->score <=> $b->score) || ';
+           } elsif ($sortby eq "high_score") {
+               $sortfunc .= '($b->score <=> $a->score) || ';
+           } elsif ($sortby eq "longest") {
+               $sortfunc .= '(($b->length) <=> ($a->length)) || ';
+           } elsif ($sortby eq "shortest") {
+               $sortfunc .= '(($a->length) <=> ($b->length)) || ';
+           } elsif ($sortby eq "strand") {
+               $sortfunc .= '($b->strand <=> $a->strand) || ';
+           }
+       }
+       unless ($sawleft) {
+           $sortfunc .= ' ($a->left <=> $b->left) ';
+       } else {
+           $sortfunc .= ' 0';
+       }
+       $sortfunc .= '}';
+       $sortfunc = eval $sortfunc;
+    }
+
+    # would be nice to cache this somehow, but won't this override the
+    # settings for other tracks?
+    # $self->factory->set_option(sort_order => $sortfunc);
+
+    return sort $sortfunc @_;
+}
+
 # handle collision detection
 sub layout {
   my $self = shift;
   return $self->{layout_height} if exists $self->{layout_height};
 
-  (my @parts = $self->parts)
-    || return $self->{layout_height} = $self->height + $self->pad_top + $self->pad_bottom;
+  my @parts = $self->parts;
+  return $self->{layout_height}
+    = $self->height + $self->pad_top + $self->pad_bottom unless @parts;
 
   my $bump_direction = $self->bump;
+  my $bump_limit = $self->option('bump_limit') || -1;
 
   $_->layout foreach @parts;  # recursively lay out
 
@@ -396,58 +482,43 @@ sub layout {
     return $self->{layout_height} = $highest + $self->pad_top + $self->pad_bottom;
   }
 
-  if (abs($bump_direction) <= 1) {  # original bump algorithm
+  my (%bin1,%bin2);
+  for my $g ($self->layout_sort(@parts)) {
 
-    my %occupied; # format of occupied: key={top,bottom}, value=right
-    for my $g (sort { $a->left <=> $b->left } @parts) {
+    my $pos = 0;
+    my $bumplevel = 0;
+    my $left   = $g->left;
+    my $right  = $g->right;
+    my $height = $g->{layout_height};
 
-      my $pos = 0;
-      my $left   = $g->left;
-      my $right  = $g->right;
-      my $height = $g->{layout_height};
+    while (1) {
 
-      while (1) {
-	# look for collisions
-	my $bottom = $pos + $height;
-
-	my $collision;
-	for my $key (keys %occupied) {
-	  my ($oldtop,$oldbottom) = split /,/,$key;
-	  my $oldright = $occupied{$key};
-	  next if $oldright+2  < $left;
-	  next if $oldbottom   < $pos;
-	  next if $oldtop      > $bottom;
-	  $collision = [$oldtop,$oldbottom,$oldright];
-	  last;
+      # stop bumping if we've gone too far down
+      if ($bump_limit > 0 && $bumplevel++ >= $bump_limit) {
+	$g->{overbumped}++;  # this flag can be used to suppress label and description
+	foreach ($g->parts) {
+	  $_->{overbumped}++;
 	}
-	last unless $collision;
-
-	if ($bump_direction > 0) {
-	  $pos += $collision->[1]-$collision->[0] + BUMP_SPACING;    # collision, so bump
-
-	} else {
-	  $pos -= BUMP_SPACING;
-	}
-
+	last;
       }
 
-      $g->move(0,$pos);
-      my $key = join ',',$g->top,$g->bottom;
-      $occupied{$key} = $right if !exists $occupied{$key} or $occupied{$key} < $right;
-    }
-  }
+      # look for collisions
+      my $bottom = $pos + $height;
+      $self->collides(\%bin1,CM1,CM2,$left,$pos,$right,$bottom) or last;
+      my $collision = $self->collides(\%bin2,CM3,CM4,$left,$pos,$right,$bottom) or last;
 
-  else {  # abs(bump) >= 2 -- simple bump algorithm
-    my $pos = 0;
-    my $last;
-    for my $g (sort { $a->left <=> $b->left } @parts) {
-      next if !defined($last);
-      $pos += $bump_direction > 0 ? $last->{layout_height} + BUMP_SPACING 
-                                  : - ($g->{layout_height}+BUMP_SPACING);
-      $g->move(0,$pos);
-    } continue {
-      $last = $g;
+      if ($bump_direction > 0) {
+	$pos += $collision->[3]-$collision->[1] + BUMP_SPACING;    # collision, so bump
+
+      } else {
+	$pos -= BUMP_SPACING;
+      }
+
     }
+
+    $g->move(0,$pos);
+    $self->add_collision(\%bin1,CM1,CM2,$left,$g->top,$right,$g->bottom);
+    $self->add_collision(\%bin2,CM3,CM4,$left,$g->top,$right,$g->bottom);
   }
 
   # If -1 bumping was allowed, then normalize so that the top glyph is at zero
@@ -467,6 +538,48 @@ sub layout {
     $bottom = $_->bottom if $_->bottom > $bottom;
   }
   return $self->{layout_height} = $self->pad_bottom + $self->pad_top + $bottom - $self->top  + 1;
+}
+
+# the $%occupied structure is a hash of {left,top} = [left,top,right,bottom]
+sub collides {
+  my $self = shift;
+  my ($occupied,$cm1,$cm2,$left,$top,$right,$bottom) = @_;
+  my @keys = $self->_collision_keys($cm1,$cm2,$left,$top,$right,$bottom);
+  my $collides = 0;
+  for my $k (@keys) {
+    next unless exists $occupied->{$k};
+    for my $bounds (@{$occupied->{$k}}) {
+      my ($l,$t,$r,$b) = @$bounds;
+      next unless $right >= $l and $left <= $r and $bottom >= $t and $top <= $b;
+      $collides = $bounds;
+      last;
+    }
+  }
+  $collides;
+}
+
+sub add_collision {
+  my $self = shift;
+  my ($occupied,$cm1,$cm2,$left,$top,$right,$bottom) = @_;
+  my $value = [$left,$top,$right+2,$bottom];
+  my @keys = $self->_collision_keys($cm1,$cm2,@$value);
+  push @{$occupied->{$_}},$value foreach @keys;
+}
+
+sub _collision_keys {
+  my $self = shift;
+  my ($binx,$biny,$left,$top,$right,$bottom) = @_;
+  my @keys;
+  my $bin_left   = int($left/$binx);
+  my $bin_right  = int($right/$binx);
+  my $bin_top    = int($top/$biny);
+  my $bin_bottom = int($bottom/$biny);
+  for (my $x=$bin_left;$x<=$bin_right; $x++) {
+    for (my $y=$bin_top;$y<=$bin_bottom; $y++) {
+      push @keys,join(',',$x,$y);
+    }
+  }
+  @keys;
 }
 
 sub draw {
@@ -509,6 +622,7 @@ sub level {
 
 sub draw_connectors {
   my $self = shift;
+  return if $self->{overbumped};
   my $gd = shift;
   my ($dx,$dy) = @_;
   my @parts = sort { $a->left <=> $b->left } $self->parts;
@@ -520,9 +634,9 @@ sub draw_connectors {
   if (@parts) {
     my($x1,$y1,$x2,$y2) = $self->bounds(0,0);
     my($xl,$xt,$xr,$xb) = $parts[0]->bounds;
-    $self->_connector($gd,$dx,$dy,$x1,$xt,$x1,$xb,$xl,$xt,$xr,$xb);
+    $self->_connector($gd,$dx,$dy,$x1,$xt,$x1,$xb,$xl,$xt,$xr,$xb)      if $x1 <= $self->panel->left;
     my ($xl2,$xt2,$xr2,$xb2) = $parts[-1]->bounds;
-    $self->_connector($gd,$dx,$dy,$parts[-1]->bounds,$x2,$xt2,$x2,$xb2) if $xr2 >= $xr;
+    $self->_connector($gd,$dx,$dy,$parts[-1]->bounds,$x2,$xt2,$x2,$xb2) if $x2 >= $self->panel->right;
   }
 
 }
@@ -746,7 +860,7 @@ sub draw_component {
   my $panel = $self->panel;
   return unless $x2 >= $panel->left and $x1 <= $panel->right;
 
-  if ($self->option('strand_arrow')) {
+  if ($self->option('strand_arrow') || $self->option('stranded')) {
     $self->filled_arrow($gd,$self->feature->strand,
 			$x1, $y1,
 			$x2, $y2)
@@ -786,7 +900,8 @@ sub keyglyph {
   my $self = shift;
   my $feature = $self->make_key_feature;
   my $factory = $self->factory->clone;
-  $factory->set_option(label => 1);
+  $factory->set_option(label       => 1);
+  $factory->set_option(description => 0);
   $factory->set_option(bump  => 0);
   $factory->set_option(connector  => 'solid');
   return $factory->make_glyph(0,$feature);
@@ -1138,6 +1253,10 @@ glyph pages for more options.
 
   -description  Whether to draw a description  0 (false)
 
+  -sort_order   Specify layout sort order      "default"
+
+  -bump_limit   Maximum number of levels to bump 0 (unlimited)
+
 For glyphs that consist of multiple segments, the -connector option
 controls what's drawn between the segments.  The default is 0 (no
 connector).  Options include "hat", an upward-angling conector,
@@ -1147,16 +1266,20 @@ color of the connector, if any.
 
 The label is printed above the glyph.  You may pass an anonymous
 subroutine to -label, in which case the subroutine will be invoked
-with the feature as its single argument.  The subroutine must return a
-string to render as the label.  Otherwise, you may return the number
-"1", in which case the feature's info(), seqname() and primary_tag()
-methods will be called (in that order) until a suitable name is found.
+with the feature as its single argument.  and is expected to return
+the string to use as the description.  If you provide the numeric
+value "1" to -description, the description will be read off the
+feature's seqname(), info() and primary_tag() methods will be called
+until a suitable name is found.  To create a label with the
+text "1", pass the string "1 ".  (A 1 followed by a space).
 
 The description is printed below the glyph.  You may pass an anonymous
-subroutine to -label, in which case the subroutine will be invoked
-with the feature as its single argument.  The subroutine must return a
-string to render as the label.  Otherwise, you may return the number
-"1", in which case the feature's source_tag() method will be invoked.
+subroutine to -description, in which case the subroutine will be
+invoked with the feature as its single argument and is expected to
+return the string to use as the description.  If you provide the
+numeric value "1" to -description, the description will be read off
+the feature's source_tag() method.  To create a description with the
+text "1", pass the string "1 ".  (A 1 followed by a space).
 
 In the case of ACEDB Ace::Sequence feature objects, the feature's
 info(), Brief_identification() and Locus() methods will be called to
@@ -1165,6 +1288,42 @@ create a suitable description.
 The -strand_arrow option, if true, requests that the glyph indicate
 which strand it is on, usually by drawing an arrowhead.  Not all
 glyphs can respond appropriately to this request.
+
+By default, features are drawn with a layout based only on the
+position of the feature, assuring a maximal "packing" of the glyphs
+when bumped.  In some cases, however, it makes sense to display the
+glyphs sorted by score or some other comparison, e.g. such that more
+"important" features are nearer the top of the display, stacked above
+less important features.  The -sort_order option allows a few
+different built-in values for changing the default sort order (which
+is by "left" position): "low_score" (or "high_score") will cause
+features to be sorted from lowest to highest score (or vice versa).
+"left" (or "default") and "right" values will cause features to be
+sorted by their position in the sequence.  "longer" (or "shorter")
+will cause the longest (or shortest) features to be sorted first, and
+"strand" will cause the features to be sorted by strand: "+1"
+(forward) then "0" (unknown, or NA) then "-1" (reverse).
+
+In all cases, the "left" position will be used to break any ties.  To
+break ties using another field, options may be strung together using a
+"|" character; e.g. "strand|low_score|right" would cause the features
+to be sorted first by strand, then score (lowest to highest), then by
+"right" position in the sequence.  Finally, a subroutine coderef can
+be provided, which should expect to receive two feature objects (via
+the special sort variables $a and $b), and should return -1, 0 or 1
+(see Perl's sort() function for more information); this subroutine
+will be used without further modification for sorting.  For example,
+to sort a set of database search hits by bits (stored in the features'
+"score" fields), scaled by the log of the alignment length (with
+"left" position breaking any ties):
+
+  sort_order = sub { ( $b->score/log($b->length)
+                                      <=>
+                       $a->score/log($a->length) )
+                                      ||
+                     ( $a->start <=> $b->start )
+                   }
+
 
 =head1 SUBCLASSING Bio::Graphics::Glyph
 

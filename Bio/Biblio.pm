@@ -1,4 +1,4 @@
-# $Id: Biblio.pm,v 1.5.2.1 2002/04/21 14:30:22 jason Exp $
+# $Id: Biblio.pm,v 1.7 2002/10/22 07:45:09 lapp Exp $
 #
 # BioPerl module Bio::Biblio
 #
@@ -137,7 +137,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR
 
@@ -193,8 +193,8 @@ use Bio::DB::BiblioI;
 
 
 BEGIN { 
-    $VERSION = do { my @r = (q$Revision: 1.5.2.1 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id: Biblio.pm,v 1.5.2.1 2002/04/21 14:30:22 jason Exp $;
+    $VERSION = do { my @r = (q$Revision: 1.7 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
+    $Revision = q$Id: Biblio.pm,v 1.7 2002/10/22 07:45:09 lapp Exp $;
 }
 
 # -----------------------------------------------------------------------------

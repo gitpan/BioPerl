@@ -1,4 +1,4 @@
-# $Id: Position.pm,v 1.8 2002/02/11 09:24:51 heikki Exp $
+# $Id: Position.pm,v 1.9 2002/10/22 07:45:16 lapp Exp $
 #
 # BioPerl module for Bio::Map::Position
 #
@@ -55,7 +55,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 

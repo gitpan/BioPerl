@@ -1,4 +1,4 @@
-# $Id: SearchResultEventBuilder.pm,v 1.14 2002/02/06 16:09:25 jason Exp $
+# $Id: SearchResultEventBuilder.pm,v 1.25 2002/12/18 19:22:29 jason Exp $
 #
 # BioPerl module for Bio::SearchIO::SearchResultEventBuilder
 #
@@ -42,7 +42,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -71,10 +71,9 @@ use strict;
 
 use Bio::Root::Root;
 use Bio::SearchIO::EventHandlerI;
-use Bio::Search::Result::GenericResult;
-use Bio::Search::Hit::GenericHit;
-use Bio::Search::HSP::GenericHSP;
-
+use Bio::Search::HSP::HSPFactory;
+use Bio::Search::Hit::HitFactory;
+use Bio::Search::Result::ResultFactory;
 
 @ISA = qw(Bio::Root::Root Bio::SearchIO::EventHandlerI);
 
@@ -84,17 +83,28 @@ use Bio::Search::HSP::GenericHSP;
  Usage   : my $obj = new Bio::SearchIO::SearchResultEventBuilder();
  Function: Builds a new Bio::SearchIO::SearchResultEventBuilder object 
  Returns : Bio::SearchIO::SearchResultEventBuilder
- Args    :
+ Args    : -hsp_factory    => Bio::Factory::ObjectFactoryI
+           -hit_factory    => Bio::Factory::ObjectFactoryI
+           -result_factory => Bio::Factory::ObjectFactoryI
 
+See L<Bio::Factory::ObjectFactoryI> for more information
 
 =cut
 
-sub new {
-  my($class,@args) = @_;
+sub new { 
+    my ($class,@args) = @_;
+    my $self = $class->SUPER::new(@args);
+    my ($hspF,$hitF,$resultF) = $self->_rearrange([qw(HSP_FACTORY
+						      HIT_FACTORY
+						      RESULT_FACTORY)],@args);
+    $self->register_factory('hsp', $hspF || Bio::Search::HSP::HSPFactory->new());
+    $self->register_factory('hit', $hitF || Bio::Search::Hit::HitFactory->new());
+    $self->register_factory('result', $resultF || Bio::Search::Result::ResultFactory->new());
 
-  my $self = $class->SUPER::new(@args);
-  return $self;
+    return $self;
 }
+
+# new comes from the superclass
 
 =head2 will_handle
 
@@ -130,7 +140,8 @@ sub will_handle{
 sub start_result {
    my ($self,$type) = @_;
    $self->{'_resulttype'} = $type;
-   $self->{'_subjects'} = [];   
+   $self->{'_hits'} = [];   
+   $self->{'_hsps'} = [];
    return;
 }
 
@@ -144,25 +155,30 @@ sub start_result {
 =cut
 
 sub end_result {
-    my ($self,$type,$data) = @_;
+    my ($self,$type,$data) = @_;    
+    if( defined $data->{'runid'} &&
+	$data->{'runid'} !~ /^\s+$/ ) {	
 
-    my $result = new Bio::Search::Result::GenericResult
-	('-database_name'           => $data->{'dbname'},
-	 '-database_letters'        => $data->{'dblets'},
-	 '-database_entries'        => $data->{'dbsize'},
-	 '-query_name'              => $data->{'queryname'},
-	 '-query_length'            => $data->{'querylen'},
-	 '-query_accession'         => $data->{'queryacc'},
-	 '-query_description'       => $data->{'querydesc'},
-	 
-#	 '-program_name'            => $data->{'programname'},
-#	 '-program_version'         => $data->{'programver'},
-	 '-algorithm'              => $type,
-	 '-algorithm_version'      => $data->{'programver'},	 
-	 '-parameters'        => $data->{'param'},
-	 '-statistics'        => $data->{'stat'},
-	 '-hits'              => $self->{'_hits'});
-
+	if( $data->{'runid'} !~ /^lcl\|/) { 
+	    $data->{"RESULT-query_name"}= $data->{'runid'};
+	} else { 
+	    ($data->{"RESULT-query_name"},$data->{"RESULT-query_description"}) = split(/\s+/,$data->{"RESULT-query_description"},2);
+	}
+	
+	if( my @a = split(/\|/,$data->{'RESULT-query_name'}) ) {
+	    my $acc = pop @a ; # this is for accession |1234|gb|AAABB1.1|AAABB1
+	    # this is for |123|gb|ABC1.1|
+	    $acc = pop @a if( ! defined $acc || $acc =~ /^\s+$/);
+	    $data->{"RESULT-query_accession"}= $acc;
+	}
+	delete $data->{'runid'};
+    }
+    my %args = map { my $v = $data->{$_}; s/RESULT//; ($_ => $v); } 
+               grep { /^RESULT/ } keys %{$data};
+    
+    $args{'-algorithm'} =  uc( $args{'-algorithm_name'} || $type);
+    $args{'-hits'}      =  $self->{'_hits'};
+    my $result = $self->factory('result')->create(%args);
     $self->{'_hits'} = [];
     return $result;
 }
@@ -196,72 +212,53 @@ sub start_hsp {
 
 sub end_hsp {
     my ($self,$type,$data) = @_;
-    
     # this code is to deal with the fact that Blast XML data
     # always has start < end and one has to infer strandedness
     # from the frame which is a problem for the Search::HSP object
     # which expect to be able to infer strand from the order of 
     # of the begin/end of the query and hit coordinates
 
-    if( defined $data->{'queryframe'} && # this is here to protect from undefs
-	(( $data->{'queryframe'} < 0 && 
-	   $data->{'querystart'} < $data->{'queryend'} ) ||       
-	 $data->{'queryframe'} > 0 && 
-	 ( $data->{'querystart'} > $data->{'queryend'} ) ) 
+    if( defined $data->{'HSP-query_frame'} && # this is here to protect from undefs
+	(( $data->{'HSP-query_frame'} < 0 && 
+	   $data->{'HSP-query_start'} < $data->{'HSP-query_end'} ) ||       
+	 $data->{'HSP-query_frame'} > 0 && 
+	 ( $data->{'HSP-query_start'} > $data->{'HSP-query_end'} ) ) 
 	)
     { 
 	# swap
-	($data->{'querystart'},
-	 $data->{'queryend'}) = ($data->{'queryend'},				 $data->{'querystart'});
+	($data->{'HSP-query_start'},
+	 $data->{'HSP-query_end'}) = ($data->{'HSP-query_end'},
+				      $data->{'HSP-query_start'});
     } 
-    if( defined $data->{'hitframe'} && # this is here to protect from undefs
-	((defined $data->{'hitframe'} && $data->{'hitframe'} < 0 && 
-	  $data->{'hitstart'} < $data->{'hitend'} ) ||       
-	 defined $data->{'hitframe'} && $data->{'hitframe'} > 0 && 
-	 ( $data->{'hitstart'} > $data->{'hitend'} ) )
+    if( defined $data->{'HSP-hit_frame'} && # this is here to protect from undefs
+	((defined $data->{'HSP-hit_frame'} && $data->{'HSP-hit_frame'} < 0 && 
+	  $data->{'HSP-hit_start'} < $data->{'HSP-hit_end'} ) ||       
+	 defined $data->{'HSP-hit_frame'} && $data->{'HSP-hit_frame'} > 0 && 
+	 ( $data->{'HSP-hit_start'} > $data->{'HSP-hit_end'} ) )
 	) 
     { 
 	# swap
-	($data->{'hitstart'},
-	 $data->{'hitend'}) = ($data->{'hitend'},
-			       $data->{'hitstart'});
+	($data->{'HSP-hit_start'},
+	 $data->{'HSP-hit_end'}) = ($data->{'HSP-hit_end'},
+			       $data->{'HSP-hit_start'});
     }
-    $data->{'queryframe'} ||= 0;
-    $data->{'hitframe'} ||= 0;
+    $data->{'HSP-query_frame'} ||= 0;
+    $data->{'HSP-hit_frame'} ||= 0;
     # handle Blast 2.1.2 which did not support data member: hsp_align-len
+    $data->{'HSP-query_length'} ||= length ($data->{'HSP-query_seq'} || '');
+    $data->{'HSP-hit_length'}   ||= length ($data->{'HSP-hit_seq'} || '');
+    $data->{'HSP-hsp_length'}   ||= length ($data->{'HSP-homology_seq'} || '');
     
-    $data->{'querylen'} ||= length $data->{'queryseq'};
-    $data->{'hitlen'}   ||= length $data->{'hitseq'};
-    $data->{'hsplen'}   ||= length $data->{'homolseq'};
-    
+    my %args = map { my $v = $data->{$_}; s/HSP//; ($_ => $v) } 
+               grep { /^HSP/ } keys %{$data};
+    $args{'-algorithm'} =  uc( $args{'-algorithm_name'} || $type);
+    # copy this over from result
+    $args{'-query_name'} = $data->{'RESULT-query_name'};
+    $args{'-hit_name'} = $data->{'HIT-name'};
+    my ($rank) = scalar @{$self->{'_hsps'}} + 1;
+    $args{'-rank'} = $rank;
 
-    my $hsp = new Bio::Search::HSP::GenericHSP
-	(
-	 '-algorithm'     => $type,
-	 '-score'         => $data->{'score'} || $data->{'swscore'},
-	 '-bits'          => $data->{'bits'},
-	 '-identical'     => $data->{'identical'},
-	 '-hsp_length'    => $data->{'hsplen'},
-	 '-conserved'     => $data->{'conserved'},
-	 '-hsp_gaps'      => $data->{'gaps'},
-	 '-hit_gaps'      => $data->{'hitgaps'},
-	 '-query_gaps'    => $data->{'querygaps'},
-	 '-evalue'        => $data->{'evalue'},
-	 '-pvalue'        => $data->{'pvalue'},
-	 '-query_start'   => $data->{'querystart'},
-	 '-query_end'     => $data->{'queryend'},
-	 '-hit_start'     => $data->{'hitstart'},
-	 '-hit_end'       => $data->{'hitend'},
-	 '-query_seq'     => $data->{'queryseq'},
-	 '-hit_seq'       => $data->{'hitseq'},
-	 '-homology_seq'  => $data->{'homolseq'},
-	 '-query_length'  => $data->{'querylen'},
-	 '-hit_length'    => $data->{'hitlen'},
-	 '-query_name'    => $data->{'queryname'},
-	 '-hit_name'      => $data->{'hitname'},
-	 '-query_frame'   => $data->{'queryframe'},
-	 '-hit_frame'     => $data->{'hitframe'},
-	 );
+    my $hsp = $self->factory('hsp')->create(%args);
     push @{$self->{'_hsps'}}, $hsp;
     return $hsp;
 }
@@ -297,19 +294,68 @@ sub start_hit{
 =cut
 
 sub end_hit{
-   my ($self,$type,$data) = @_;   
-    my $hit = new Bio::Search::Hit::GenericHit
-	( '-algorithm' => $type,
-	  '-name'        => $data->{'hitname'}, 
-	  '-length'      => $data->{'hitlen'},
-	  '-accession'   => $data->{'hitacc'},
-	  '-description' => $data->{'hitdesc'},
-	  '-significance'=> $data->{'hitsignif'},
-	  '-score'       => $data->{'hitscore'},
-	  '-hsps'        => $self->{'_hsps'});
-   push @{$self->{'_hits'}}, $hit;
-   $self->{'_hsps'} = [];
-   return $hit;
+    my ($self,$type,$data) = @_;   
+    my %args = map { my $v = $data->{$_}; s/HIT//; ($_ => $v); } grep { /^HIT/ } keys %{$data};
+
+    # I hate special cases, but this is here because NCBI BLAST XML
+    # doesn't play nice and is undergoing mutation -jason
+    if( $args{'-name'} =~ /BL_ORD_ID/ ) {
+	($args{'-name'}, $args{'-description'}) = split(/\s+/,$args{'-description'},2);
+    }
+    $args{'-algorithm'} =  uc( $args{'-algorithm_name'} || $type);
+    $args{'-hsps'}      = $self->{'_hsps'};
+    $args{'-query_len'} =  $data->{'RESULT-query_length'};
+    my ($hitrank) = scalar @{$self->{'_hits'}} + 1;
+    $args{'-rank'} = $hitrank;
+    my $hit = $self->factory('hit')->create(%args);
+    push @{$self->{'_hits'}}, $hit;
+    $self->{'_hsps'} = [];
+    return $hit;
 }
+
+=head2 Factory methods
+
+=cut
+
+=head2 register_factory
+
+ Title   : register_factory
+ Usage   : $handler->register_factory('TYPE',$factory);
+ Function: Register a specific factory for a object type class
+ Returns : none
+ Args    : string representing the class and
+           Bio::Factory::ObjectFactoryI
+
+See L<Bio::Factory::ObjectFactoryI> for more information
+
+=cut
+
+sub register_factory{
+   my ($self, $type,$f) = @_;
+   if( ! defined $f || ! ref($f) || 
+       ! $f->isa('Bio::Factory::ObjectFactoryI') ) { 
+       $self->throw("Cannot set factory to value $f".ref($f)."\n");
+   }
+   $self->{'_factories'}->{lc($type)} = $f;
+}
+
+
+=head2 factory
+
+ Title   : factory
+ Usage   : my $f = $handler->factory('TYPE');
+ Function: Retrieves the associated factory for requested 'TYPE'
+ Returns : a Bio::Factory::ObjectFactoryI or undef if none registered
+ Args    : name of factory class to retrieve
+
+See L<Bio::Factory::ObjectFactoryI> for more information
+
+=cut
+
+sub factory{
+   my ($self,$type) = @_;
+   return $self->{'_factories'}->{lc($type)} || $self->throw("No factory registered for $type");
+}
+
 
 1;

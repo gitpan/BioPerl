@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: BPlite.t,v 1.20 2002/01/08 09:45:25 birney Exp $
+## $Id: BPlite.t,v 1.21 2002/10/08 08:38:35 lapp Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -56,7 +56,7 @@ ok $hsp->sbjctSeq, $seq;
 ok $hsp->homologySeq, $seq;
 ok $hsp->query->start, 1;
 ok $hsp->query->end, 504;
-ok $hsp->query->seqname, $report->query;
+ok $hsp->query->seq_id, $report->query;
 ok $hsp->query->primary_tag, "similarity";
 ok $hsp->query->source_tag, "BLAST";
 ok $hsp->hit->length, 1512;
@@ -77,7 +77,7 @@ ok $hsp->hsplength, 261;
 ok $hsp->query->start, 64;
 ok $hsp->query->end, 324;
 ok $hsp->query->length, 261;
-ok $hsp->query->seqname, $report->query;
+ok $hsp->query->seq_id, $report->query;
 ok $hsp->hit->start, 182;
 ok $hsp->hit->end, 844;
 ok $hsp->hit->length, 663;

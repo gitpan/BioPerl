@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: LocatableSeq.t,v 1.6 2001/10/22 08:22:58 heikki Exp $
+## $Id: LocatableSeq.t,v 1.7 2002/07/01 15:57:27 heikki Exp $
 use strict;
 use constant NUMTESTS => 22;
 
@@ -40,9 +40,9 @@ ok $loc->isa('Bio::Location::Simple');
 ok $loc->to_FTstring, 2;
 
 ok $loc = $seq->location_from_column(6);
-ok $loc->isa('Bio::Location::Fuzzy');
+ok $loc->isa('Bio::Location::Simple');
 ok $loc->start, 3;
-ok $loc->location_type, 'BETWEEN';
+ok $loc->location_type, 'IN-BETWEEN';
 ok $loc->to_FTstring, '3^4';
 
 

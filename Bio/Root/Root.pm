@@ -1,7 +1,7 @@
 package Bio::Root::Root;
 use strict;
 
-# $Id: Root.pm,v 1.10.2.2 2002/07/01 22:38:14 sac Exp $
+# $Id: Root.pm,v 1.30 2002/12/16 09:44:28 birney Exp $
 
 =head1 NAME
 
@@ -58,7 +58,7 @@ here.
 =head2 Throwing Exceptions
 
 One of the functionalities that Bio::Root::RootI provides is the
-ability throw() exceptions with pretty stack traces. Bio::Root::Root
+ability to throw() exceptions with pretty stack traces. Bio::Root::Root
 enhances this with the ability to use B<Error.pm> (available from CPAN)
 if it has also been installed. 
 
@@ -150,13 +150,15 @@ methods. Internal methods are usually preceded with a _
 use vars qw(@ISA $DEBUG $ID $Revision $VERSION $VERBOSITY $ERRORLOADED);
 use strict;
 use Bio::Root::RootI;
-use Carp 'confess';
+use Bio::Root::IO;
+
 @ISA = 'Bio::Root::RootI';
 
 BEGIN { 
+
     $ID        = 'Bio::Root::Root';
     $VERSION   = 1.0;
-    $Revision  = '$Id: Root.pm,v 1.10.2.2 2002/07/01 22:38:14 sac Exp $ ';
+    $Revision  = '$Id: Root.pm,v 1.30 2002/12/16 09:44:28 birney Exp $ ';
     $DEBUG     = 0;
     $VERBOSITY = 0;
     $ERRORLOADED = 0;
@@ -165,7 +167,7 @@ BEGIN {
 
     # $main::DONT_USE_ERROR is intended for testing purposes and also
     # when you don't want to use the Error module, even if it is installed.
-    # Just put a BEGIN { $DONT_USE_ERROR = 1; } at the top of your script.
+    # Just put a INIT { $DONT_USE_ERROR = 1; } at the top of your script.
     if( not $main::DONT_USE_ERROR ) {
         if ( eval "require Error"  ) {
             import Error qw(:try);
@@ -176,40 +178,63 @@ BEGIN {
     } 
     if( !$ERRORLOADED ) {
         require Carp; import Carp qw( confess );
-    }
+    }    
     $main::DONT_USE_ERROR;  # so that perl -w won't warn "used only once"
 
 }
 
-=head2 _create_object()
 
- Title   : _create_object()
- Usage   : $obj->create_object(@args)
- Function: Method which actually creates the blessed  hashref
- Returns : Blessed hashref
- Args    : Ignored
 
-Override this method, the new() method, or _initialize() to make a
-custom constructor.
+=head2 new
+
+ Purpose   : generic instantiation function can be overridden if 
+             special needs of a module cannot be done in _initialize
 
 =cut
 
-sub _create_object {
-  my ($class,@args) = @_;
-  $class = ref($class) if ref($class);
-  return bless {},$class;
+sub new {
+#    my ($class, %param) = @_;
+    my $class = shift;
+    my $self = {};
+    bless $self, ref($class) || $class;
+
+    if(@_ > 1) {
+	# if the number of arguments is odd but at least 3, we'll give
+	# it a try to find -verbose
+	shift if @_ % 2;
+	my %param = @_;
+	## See "Comments" above regarding use of _rearrange().
+	$self->verbose($param{'-VERBOSE'} || $param{'-verbose'});
+    }
+    return $self;
 }
+
+		     
+=head2 verbose
+
+ Title   : verbose
+ Usage   : $self->verbose(1)
+ Function: Sets verbose level for how ->warn behaves
+           -1 = no warning
+            0 = standard, small warning
+            1 = warning with stack trace
+            2 = warning becomes throw
+ Returns : The current verbosity setting (integer between -1 to 2)
+ Args    : -1,0,1 or 2
+
+
+=cut
 
 sub verbose {
    my ($self,$value) = @_;
    # allow one to set global verbosity flag
-   if( $DEBUG ) { return $DEBUG }
+   return $DEBUG  if $DEBUG;
+   return $VERBOSITY unless ref $self;
    
-   if(ref($self) && (defined $value || ! defined $self->{'_root_verbose'}) ) {
-       $value = 0 unless defined $value;
-       $self->{'_root_verbose'} = $value;
-   }
-   return (ref($self) ? $self->{'_root_verbose'} : $VERBOSITY);
+    if (defined $value || ! defined $self->{'_root_verbose'}) {
+       $self->{'_root_verbose'} = $value || 0;
+    }
+    return $self->{'_root_verbose'};
 }
 
 sub _register_for_cleanup {
@@ -231,8 +256,10 @@ sub _unregister_for_cleanup {
 
 sub _cleanup_methods {
   my $self = shift;
+  return unless ref $self && $self->isa('HASH');
   my $methods = $self->{'_root_cleanup_methods'} or return;
   @$methods;
+
 }
 
 =head2 throw
@@ -253,7 +280,7 @@ sub _cleanup_methods {
            (i.e., a simple string is given), A Bio::Root::Exception 
            is thrown.
  Returns : n/a
- Args    : A string giving a descriptive error message
+ Args    : A string giving a descriptive error message, optional
            Named parameters:
            '-class'  a string for the name of a class that derives 
                      from Error.pm, such as any of the exceptions 
@@ -271,7 +298,7 @@ sub _cleanup_methods {
            Bio::Root::Root::throw() by defining a scalar named
            $main::DONT_USE_ERROR (define it in your main script
            and you don't need the main:: part) and setting it to 
-           a true value.
+           a true value; you must do this within a BEGIN subroutine.
 
 =cut
 
@@ -304,15 +331,15 @@ sub throw{
            }
        } else {
            $class ||= "Bio::Root::Exception";
-   
-	   my %args;
+
+   	   my %args;
 	   if( @args % 2 == 0 && $args[0] =~ /^-/ ) {
 	       %args = @args;
 	       $args{-text} = $text;
 	       $args{-object} = $self;
 	   }
- 
-           throw $class ( %args || @args );
+
+           throw $class ( scalar keys %args > 0 ? %args : @args ); # (%args || @args) puts %args in scalar context!
        }
    }
    else {
@@ -321,6 +348,7 @@ sub throw{
        my $std = $self->stack_trace_dump();
        my $title = "------------- EXCEPTION $class -------------";
        my $footer = "\n" . '-' x CORE::length($title);
+       $text ||= '';
 
        my $out = "\n$title\n" .
            "MSG: $text\n". $std . $footer . "\n";
@@ -328,6 +356,71 @@ sub throw{
        die $out;
    }
 }
+
+=head2 debug
+
+ Title   : debug
+ Usage   : $obj->debug("This is debugging output");
+ Function: Prints a debugging message when verbose is > 0
+ Returns : none
+ Args    : message string(s) to print to STDERR
+
+=cut
+
+sub debug{
+   my ($self,@msgs) = @_;
+   
+   if( $self->verbose > 0 ) { 
+       print STDERR join("", @msgs);
+   }   
+}
+
+=head2 _load_module
+
+ Title   : _load_module
+ Usage   : $self->_load_module("Bio::SeqIO::genbank");
+ Function: Loads up (like use) the specified module at run time on demand.
+ Example : 
+ Returns : TRUE on success. Throws an exception upon failure.
+.
+ Args    : The module to load (_without_ the trailing .pm).
+
+=cut
+
+sub _load_module {
+    my ($self, $name) = @_;
+    my ($module, $load, $m);
+    $module = "_<$name.pm";
+    return 1 if $main::{$module};
+
+    # untaint operation for safe web-based running (modified after a fix
+    # a fix by Lincoln) HL
+    if ($name !~ /^([\w:]+)$/) {
+	$self->throw("$name is an illegal perl package name");
+    }
+
+    $load = "$name.pm";
+    my $io = Bio::Root::IO->new();
+    # catfile comes from IO
+    $load = $io->catfile((split(/::/,$load)));
+    eval {
+        require $load;
+    };
+    if ( $@ ) {
+        $self->throw("Failed to load module $name. ".$@);
+    }
+    return 1;
+}
+
+
+sub DESTROY {
+    my $self = shift;
+    my @cleanup_methods = $self->_cleanup_methods or return;
+    for my $method (@cleanup_methods) {
+      $method->($self);
+    }
+}
+
 
 
 1;

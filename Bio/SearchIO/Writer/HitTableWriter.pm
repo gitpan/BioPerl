@@ -1,3 +1,5 @@
+# $Id: HitTableWriter.pm,v 1.14 2002/12/24 15:46:47 jason Exp $
+
 =head1 NAME
 
 Bio::SearchIO::Writer::HitTableWriter - Tab-delimited data for Bio::Search::Hit::HitI objects
@@ -47,7 +49,7 @@ Bio::SearchIO::Writer::HitTableWriter - Tab-delimited data for Bio::Search::Hit:
 
 You can also specify different column labels if you don't want to use
 the defaults.  Do this by specifying a C<-labels> hash reference
-parameter when creating the HitTableWriter object.  The keys of the
+parameter when creating the HitTableWriter object. The keys of the
 hash should be the column number (left-most column = 1) for the label(s)
 you want to specify. Here's an example:
 
@@ -105,6 +107,7 @@ is not specified, this list, in this order, will be used as the default.
     end_hit*               # Ending coordinate of the aligned portion of the hit sequence
     strand_query           # Strand of the aligned query sequence
     strand_hit             # Strand of the aligned hit sequence
+    frame                  # Frame of the alignment (0,1,2)
     ambiguous_aln          # Ambiguous alignment indicator ('qs', 'q', 's')
     hit_description        # Full description of the hit sequence
     query_description      # Full description of the query sequence
@@ -119,7 +122,7 @@ corresponding method in Bio::Search::Result::BlastHit.
 =head1 TODO
 
 Figure out the best way to incorporate algorithm-specific score columns.
-The best route is probably to have algorith-specific subclasses 
+The best route is probably to have algorithm-specific subclasses 
 (e.g., BlastHitTableWriter, FastaHitTableWriter).
 
 =head1 FEEDBACK
@@ -131,7 +134,7 @@ Bioperl modules.  Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
     bioperl-l@bioperl.org              - General discussion
-    http://bio.perl.org/MailList.html  - About the mailing lists
+    http://bioperl.org/MailList.html   - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -140,7 +143,7 @@ the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
     bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    http://bugzilla.bioperl.org/
 
 =head1 AUTHOR 
 
@@ -151,7 +154,7 @@ and comments.
 
 =head1 COPYRIGHT
 
-Copyright (c) 2001 Steve Chervitz. All Rights Reserved.
+Copyright (c) 2001, 2002 Steve Chervitz. All Rights Reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
@@ -178,12 +181,15 @@ use vars qw( @ISA );
 @ISA = qw( Bio::SearchIO::Writer::ResultTableWriter );
 
 
-# Array fields: column, object, method[/argument], printf format, column label
-# Methods for result object are defined in Bio::Search::Result::ResultI.
-# Methods for hit object are defined in Bio::Search::Hit::HitI.
-# Tech note: If a bogus method is supplied, it will result in all values to be zero.
-#            Don't know why this is.
-# TODO (maybe): Allow specification of separate mantissa/exponent for significance data.
+# Array fields: column, object, method[/argument], printf format,
+# column label Methods for result object are defined in
+# Bio::Search::Result::ResultI.  Methods for hit object are defined in
+# Bio::Search::Hit::HitI.  Tech note: If a bogus method is supplied,
+# it will result in all values to be zero.  Don't know why this is.
+
+# TODO (maybe): Allow specification of separate mantissa/exponent for
+# significance data.
+
 my %column_map = (
                   'query_name'            => ['1', 'result', 'query_name', 's', 'QUERY' ],
                   'query_length'          => ['2', 'result', 'query_length', 'd', 'LEN_Q'],
@@ -191,7 +197,7 @@ my %column_map = (
                   'hit_length'            => ['4', 'hit', 'length', 'd', 'LEN_H'],
                   'round'                 => ['5', 'hit', 'iteration', 'd', 'ROUND'],
                   'expect'                => ['6', 'hit', 'significance', '.1e', 'EXPCT'],
-                  'score'                 => ['7', 'hit', 'score', 'd', 'SCORE'],
+                  'score'                 => ['7', 'hit', 'raw_score', 'd', 'SCORE'],
                   'bits'                  => ['8', 'hit', 'bits', 'd', 'BITS'],
                   'num_hsps'              => ['9', 'hit', 'num_hsps', 'd', 'HSPS'],
                   'frac_identical_query'  => ['10', 'hit', 'frac_identical/query', '.2f', 'FR_IDQ'],
@@ -211,9 +217,10 @@ my %column_map = (
                   'end_hit'               => ['24', 'hit', 'end/hit', 'd', 'END_H'],
                   'strand_query'          => ['25', 'hit', 'strand/query', 's', 'STRND_Q'],
                   'strand_hit'            => ['26', 'hit', 'strand/hit', 's', 'STRND_H'],
-                  'ambiguous_aln'         => ['27', 'hit', 'ambiguous_aln', 's', 'AMBIG'],
-                  'hit_description'       => ['28', 'hit', 'description', 's', 'DESC_H'],
-                  'query_description'     => ['29', 'result', 'query_description', 's', 'DESC_Q'],
+                  'frame'                 => ['27', 'hit', 'frame', 'd', 'FRAME'],
+                  'ambiguous_aln'         => ['28', 'hit', 'ambiguous_aln', 's', 'AMBIG'],
+                  'hit_description'       => ['29', 'hit', 'description', 's', 'DESC_H'],
+                  'query_description'     => ['30', 'result', 'query_description', 's', 'DESC_Q'],
                  );
 
 sub column_map { return %column_map }
@@ -248,14 +255,51 @@ sub to_string {
     my $str = $include_labels ? $self->column_labels() : '';
     my $func_ref = $self->row_data_func;
     my $printf_fmt = $self->printf_fmt;
-
-    foreach my $hit($result->hits) {
-        my @row_data  = &{$func_ref}($result, $hit);
-        $str .= sprintf "$printf_fmt\n", @row_data;
+    
+    my ($resultfilter,$hitfilter) = ( $self->filter('RESULT'),
+				      $self->filter('HIT') );
+    if( ! defined $resultfilter ||
+        &{$resultfilter}($result) ) {
+	$result->can('rewind') && 
+	    $result->rewind(); # insure we're at the beginning
+	foreach my $hit($result->hits) {	    
+	    next if( defined $hitfilter && ! &{$hitfilter}($hit));
+	    my @row_data  = map { defined $_ ? $_ : 0 } &{$func_ref}($result, $hit);
+	    $str .= sprintf "$printf_fmt\n", @row_data;
+	}
     }
     $str =~ s/\t\n/\n/gs;
     return $str;
 }
 
+=head2 end_report
+
+ Title   : end_report
+ Usage   : $self->end_report()
+ Function: The method to call when ending a report, this is
+           mostly for cleanup for formats which require you to 
+           have something at the end of the document.  Nothing for
+           a text message.
+ Returns : string
+ Args    : none
+
+=cut
+
+sub end_report {
+    return '';
+}
+
+
+=head2 filter
+
+ Title   : filter
+ Usage   : $writer->filter('hsp', \&hsp_filter);
+ Function: Filter out either at HSP,Hit,or Result level
+ Returns : none
+ Args    : string => data type,
+           CODE reference
+
+
+=cut
 
 1;

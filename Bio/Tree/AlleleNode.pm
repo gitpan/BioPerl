@@ -1,4 +1,4 @@
-# $Id: AlleleNode.pm,v 1.3 2001/12/01 19:48:27 jason Exp $
+# $Id: AlleleNode.pm,v 1.4 2002/10/22 07:45:24 lapp Exp $
 #
 # BioPerl module for Bio::Tree::AlleleNode
 #
@@ -40,7 +40,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 

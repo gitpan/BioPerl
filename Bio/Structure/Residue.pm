@@ -1,4 +1,4 @@
-# $Id: Residue.pm,v 1.5 2001/12/10 16:10:23 heikki Exp $
+# $Id: Residue.pm,v 1.7 2002/10/22 07:38:44 lapp Exp $
 #
 # bioperl module for Bio::Structure::Residue
 #
@@ -40,7 +40,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Kris Boulez
 
@@ -54,6 +54,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 # Let the code begin...
+
 
 package Bio::Structure::Residue;
 use vars qw(@ISA);

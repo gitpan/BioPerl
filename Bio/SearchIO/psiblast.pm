@@ -1,5 +1,5 @@
 #------------------------------------------------------------------
-# $Id: psiblast.pm,v 1.12 2002/01/26 20:28:15 heikki Exp $
+# $Id: psiblast.pm,v 1.17 2002/12/24 15:48:41 jason Exp $
 #
 # BioPerl module Bio::SearchIO::psiblast
 #
@@ -100,7 +100,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR 
 
@@ -269,14 +269,13 @@ sub new {
   $args{-USE_FACTORIES} = 1;
 
   my $self = $class->Bio::SearchIO::new(%args);
-
   $self->_init_state_machine( %args, -transition_table => \@state_transitions);
 
   $self->_init_parse_params( %args );
 
   $self->pause_between_reports( 1 );
 
-  $self->{'_report_count'} = 0;
+  $self->{'_result_count'} = 0;
 
   return $self;
 }
@@ -427,12 +426,13 @@ sub _init_parse_params {
 #Initializes parameters used during parsing of Blast reports.
 
     my ( $self, @param ) = @_;
-
     # -FILT_FUNC has been replaced by -HIT_FILTER.
     # Leaving -FILT_FUNC in place for backward compatibility
-    my($signif, $filt_func, $hit_filter, $min_len, $check_all, $gapped, $score, 
-       $overlap, $stats, $best, $shallow_parse, $hold_raw) =
-	$self->_rearrange([qw(SIGNIF FILT_FUNC HIT_FILTER MIN_LEN CHECK_ALL_HITS GAPPED SCORE
+    my($signif, $filt_func, $hit_filter, $min_len, $check_all, 
+       $gapped, $score, $overlap, $stats, $best, $shallow_parse, 
+       $hold_raw) =
+	$self->_rearrange([qw(SIGNIF FILT_FUNC HIT_FILTER MIN_LEN 
+			      CHECK_ALL_HITS GAPPED SCORE
 			      OVERLAP STATS BEST SHALLOW_PARSE HOLD_RAW_DATA)], @param);
 
     $self->{'_hit_filter'} = $hit_filter || $filt_func || 0;
@@ -663,7 +663,7 @@ sub _process_header {
 #    print STDERR "Processing Header...\n";
 
     $current_iteration = 0;
-    $self->{'_report_count'}++;
+    $self->{'_result_count'}++;
     # Finish off the current Blast object, if any
     my $blast = $self->{'_current_blast'} = $self->result_factory->create_result();
 
@@ -998,7 +998,7 @@ sub _process_alignment {
     
     # Now construct the BlastHit objects from the alignment section
 
-#	debug(1);
+    # debug(1);
 
     $self->{'_hit_count'}++;
 
@@ -1024,10 +1024,10 @@ sub _process_alignment {
     my $hit; 
     $hit = $self->hit_factory->create_hit( %hit_params );
 
-    #printf STDERR "NEW HIT: %s, SIGNIFICANCE = %g\n", $hit->name, $hit->expect;  <STDIN>;
+    # printf STDERR "NEW HIT: %s, SIGNIFICANCE = %g\n", $hit->name, $hit->expect;  <STDIN>;
     # The BLAST report may have not had a description section.
     if(not $self->{'_has_descriptions'}) {
-      $self->_process_significance($hit->signif, $score);
+	$self->_process_significance($hit->signif, $score);
     }
     
     # Collect overall signif data if we don't already have it,
@@ -1050,7 +1050,6 @@ sub _process_alignment {
     } elsif($hit_signif <= $max_signif and $score >= $min_score) {
         $add_hit = 1;
     }
-
     $add_hit && $self->{'_current_blast'}->add_hit( $hit );
 }
 
@@ -1127,11 +1126,13 @@ sub pause_between_reports {
     $self->{'_pause_between_reports'};
 }
 
-# The number of reports that have been parsed.
-sub report_count {
+sub result_count {
     my $self = shift;
-    return $self->{'_report_count'};
+    return $self->{'_result_count'};
 }
+
+# For backward compatibility:
+sub report_count { shift->result_count }
 
 sub next_result {
    my ($self) = @_;
@@ -1146,6 +1147,22 @@ sub next_result {
    $self->{'_current_blast'} = undef;
    return $blast;
 }
+
+=head2 write_result
+
+ Title   : write_result
+ Usage   : $stream->write_result($result_result, @other_args)
+ Function: Writes data from the $result_result object into the stream.
+         : Delegates to the to_string() method of the associated 
+         : WriterI object.
+ Returns : 1 for success and 0 for error
+ Args    : Bio::Search:Result::ResultI object,
+         : plus any other arguments for the Writer
+ Throws  : Bio::Root::Exception if a Writer has not been set.
+
+See L<Bio::Root::Exception>
+
+=cut
 
 sub write_result {
    my ($self, $blast, @args) = @_;

@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: ResultI.pm,v 1.12.2.2 2002/05/31 18:08:31 jason Exp $
+# $Id: ResultI.pm,v 1.16 2002/11/13 11:23:11 sac Exp $
 #
 # BioPerl module Bio::Search::Result::ResultI
 #
@@ -76,7 +76,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR 
 
@@ -314,7 +314,7 @@ sub available_statistics{
 =head2 algorithm
 
  Title   : algorithm
- Usage   : my $r_type = $hsp->algorithm
+ Usage   : my $r_type = $result->algorithm
  Function: Obtain the name of the algorithm used to obtain the Result
  Returns : string (e.g., BLASTP)
  Args    : [optional] scalar string to set value
@@ -322,13 +322,14 @@ sub available_statistics{
 =cut
 
 sub algorithm{
-    return '';
+   my ($self) = @_;
+   $self->throw_not_implemented();
 }
 
 =head2 algorithm_version
 
  Title   : algorithm_version
- Usage   : my $r_version = $hsp->algorithm_version
+ Usage   : my $r_version = $result->algorithm_version
  Function: Obtain the version of the algorithm used to obtain the Result
  Returns : string (e.g., 2.1.2)
  Args    : [optional] scalar string to set algorithm version value
@@ -336,8 +337,124 @@ sub algorithm{
 =cut
 
 sub algorithm_version{
-    return '';
+   my ($self) = @_;
+   $self->throw_not_implemented();
 }
+
+
+=head2 algorithm_reference
+
+ Title   : algorithm_reference
+ Usage   : $obj->algorithm_reference($newval)
+ Function: 
+ Returns : value of the literature reference for the algorithm
+ Args    : newvalue (optional)
+ Comments: The default implementation in ResultI returns an empty string
+           rather than throwing a NotImplemented exception, since
+           the ref may not always be available and is not critical.
+
+=cut
+
+sub algorithm_reference{
+   my ($self) = @_;
+   return '';
+}
+
+=head2 num_hits
+
+ Title   : num_hits
+ Usage   : my $hitcount= $result->num_hits
+ Function: returns the number of hits for this query result
+ Returns : integer
+ Args    : none
+
+
+=cut
+
+sub num_hits{
+   my ($self,@args) = @_;
+   $self->throw_not_implemented();
+}
+
+=head2 hits
+
+ Title   : hits
+ Usage   : my @hits = $result->hits
+ Function: Returns the available hits for this Result
+ Returns : Array of L<Bio::Search::Hit::HitI> objects
+ Args    : none
+
+
+=cut
+
+sub hits{
+   my ($self,@args) = @_;
+   $self->throw_not_implemented();
+}
+
+=head2 no_hits_found
+
+ Usage     : $nohits = $blast->no_hits_found( [iteration_number] ); 
+ Purpose   : Get boolean indicator indicating whether or not any hits
+             were present in the report.
+
+             This is NOT the same as determining the number of hits via
+             the hits() method, which will return zero hits if there were no
+             hits in the report or if all hits were filtered out during the parse.
+
+             Thus, this method can be used to distinguish these possibilities
+             for hitless reports generated when filtering.
+
+ Returns   : Boolean
+ Argument  : (optional) integer indicating the iteration number (PSI-BLAST)
+             If iteration number is not specified and this is a PSI-BLAST result,
+             then this method will return true only if all iterations had
+             no hits found.
+
+=cut
+
+#-----------
+sub no_hits_found { shift->throw_not_implemented }
+
+
+
+=head2 set_no_hits_found
+
+ Usage     : $blast->set_no_hits_found( [iteration_number] ); 
+ Purpose   : Set boolean indicator indicating whether or not any hits
+             were present in the report.
+ Returns   : n/a
+ Argument  : (optional) integer indicating the iteration number (PSI-BLAST)
+
+=cut
+
+sub set_no_hits_found { shift->throw_not_implemented }
+
+
+=head2 iterations
+
+ Usage     : $num_iterations = $blast->iterations;  (get)
+             $blast->iterations($num_iterations);   (set)
+ Purpose   : Set/get the number of iterations in the Blast Report (PSI-BLAST).
+ Returns   : Total number of iterations in the report
+ Argument  : integer  (when setting)
+
+=cut
+
+sub iterations { shift->throw_not_implemented }
+
+
+=head2 psiblast
+
+ Usage     : if( $blast->psiblast ) { ... }
+ Purpose   : Set/get a boolean indicator whether or not the report 
+             is a PSI-BLAST report.
+ Returns   : 1 if PSI-BLAST, undef if not.
+ Argument  : 1 (when setting)
+
+=cut
+
+sub psiblast { shift->throw_not_implemented }
 
 1;
 

@@ -1,4 +1,4 @@
-# $Id: RichSeq.pm,v 1.7 2001/06/29 20:43:51 jason Exp $
+# $Id: RichSeq.pm,v 1.9 2002/11/11 18:16:31 lapp Exp $
 #
 # BioPerl module for Bio::Seq::RichSeq
 #
@@ -27,6 +27,24 @@ like EMBL, GenBank, and SwissProt. Methods added to the Bio::SeqI
 interface therefore focus on databank-specific information. Note that
 not every rich databank format may use all of the properties provided.
 
+=head1 Implemented Interfaces
+
+This class implementes the following interfaces.
+
+=over 4
+
+=item Bio::Seq::RichSeqI
+
+Note that this includes implementing Bio::PrimarySeqI and Bio::SeqI.
+
+=item Bio::IdentifiableI
+
+=item Bio::DescribableI
+
+=item Bio::AnnotatableI
+
+=back
+
 =head1 FEEDBACK
 
 =head2 Mailing Lists
@@ -46,7 +64,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Ewan Birney
 

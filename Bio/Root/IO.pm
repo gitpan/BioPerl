@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.21 2002/01/09 16:13:03 jason Exp $
+# $Id: IO.pm,v 1.37 2002/12/01 00:09:11 jason Exp $
 #
 # BioPerl module for Bio::Root::IO
 #
@@ -73,7 +73,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
@@ -97,11 +97,14 @@ use vars qw(@ISA $FILESPECLOADED $FILETEMPLOADED $FILEPATHLOADED
 use strict;
 
 use Symbol;
+use POSIX qw(dup);
+use IO::Handle;
 use Bio::Root::Root;
 
 @ISA = qw(Bio::Root::Root);
 
 my $TEMPCOUNTER;
+my $HAS_WIN32 = 0;
 
 BEGIN {
     $TEMPCOUNTER = 0;
@@ -119,6 +122,17 @@ BEGIN {
 	print STDERR "Cannot load File::Path: $@" if( $VERBOSE > 0 );
 	# do nothing
     }
+
+
+    # If on Win32, attempt to find Win32 package
+
+    if($^O =~ /mswin/i) {
+	eval {
+	    require Win32;
+	    $HAS_WIN32 = 1;
+	};
+    }
+
     # Try to provide a path separator. Why doesn't File::Spec export this,
     # or did I miss it?
     if($^O =~ /mswin/i) {
@@ -212,8 +226,10 @@ sub _initialize_io {
 
     $self->_register_for_cleanup(\&_io_cleanup);
 
-    my ($input, $file, $fh) = $self->_rearrange([qw(INPUT FILE FH)], @args);
-
+    my ($input, $file, $fh, $flush) = $self->_rearrange([qw(INPUT 
+							    FILE FH 
+							    FLUSH)], @args);
+    
     delete $self->{'_readbuffer'};
     delete $self->{'_filehandle'};
 
@@ -246,6 +262,9 @@ sub _initialize_io {
 	$self->file($file);
     }
     $self->_fh($fh) if $fh; # if not provided, defaults to STDIN and STDOUT
+
+    $self->_flush_on_write(defined $flush ? $flush : 1);
+
     return 1;
 }
 
@@ -258,7 +277,6 @@ sub _initialize_io {
  Returns : value of _filehandle
  Args    : newvalue (optional)
 
-
 =cut
 
 sub _fh {
@@ -267,6 +285,74 @@ sub _fh {
 	$obj->{'_filehandle'} = $value;
     }
     return $obj->{'_filehandle'};
+}
+
+=head2 mode
+
+ Title   : mode
+ Usage   : $obj->mode()
+ Function:
+ Example :
+ Returns : mode of filehandle:
+           'r' for readable
+           'w' for writeable
+           '?' if mode could not be determined
+ Args    : -force (optional), see notes.
+ Notes   : once mode() has been called, the filehandle's mode is cached
+           for further calls to mode().  to override this behavior so
+           that mode() re-checks the filehandle's mode, call with arg
+           -force
+
+=cut
+
+sub mode {
+    my ($obj, @arg) = @_;
+	my %param = @arg;
+    return $obj->{'_mode'} if defined $obj->{'_mode'} and !$param{-force};
+
+    print STDERR "testing mode... " if $obj->verbose;
+
+    # we need to dup() the original filehandle because
+    # doing fdopen() calls on an already open handle causes
+    # the handle to go stale. is this going to work for non-unix
+    # filehandles? -allen
+
+    my $fh = Symbol::gensym();
+
+    my $iotest = new IO::Handle;
+
+    #test for a readable filehandle;
+    $iotest->fdopen( dup(fileno($obj->_fh)) , 'r' );
+    if($iotest->error == 0){
+
+      # note the hack here, we actually have to try to read the line
+      # and if we get something, pushback() it into the readbuffer.
+      # this is because solaris and windows xp (others?) don't set
+      # IO::Handle::error.  for non-linux the r/w testing is done
+      # inside this read-test, instead of the write test below.  ugh.
+
+      if($^O eq 'linux'){
+        $obj->{'_mode'} = 'r';
+        return $obj->{'_mode'};
+      } else {
+        my $line = $iotest->getline;
+        $obj->_pushback($line) if defined $line;
+        $obj->{'_mode'} = defined $line ? 'r' : 'w';
+	return $obj->{'_mode'};
+      }
+    }
+    $iotest->clearerr;
+
+    #test for a writeable filehandle;
+    $iotest->fdopen( dup(fileno($obj->_fh)) , 'w' );
+    if($iotest->error == 0){
+      $obj->{'_mode'} = 'w';
+#      return $obj->{'_mode'};
+    }
+
+    #wtf type of filehandle is this?
+#    $obj->{'_mode'} = '?';
+    return $obj->{'_mode'};
 }
 
 =head2 file
@@ -308,7 +394,7 @@ sub _print {
 =head2 _readline
 
  Title   : _readline
- Usage   : $obj->_readline
+ Usage   : $obj->_readline(%args)
  Function: Reads a line of input.
 
            Note that this method implicitely uses the value of $/ that is
@@ -317,25 +403,30 @@ sub _print {
            Note also that the current implementation does not handle pushed
            back input correctly unless the pushed back input ends with the
            value of $/.
+
  Example :
+ Args    : Accepts a hash of arguments, currently only -raw is recognized
+           passing (-raw => 1) prevents \r\n sequences from being changed
+           to \n.  The default value of -raw is undef, allowing \r\n to be
+           converted to \n.
  Returns : 
 
 =cut
 
 sub _readline {
     my $self = shift;
+    my %param =@_;
+
     my $fh = $self->_fh || \*STDIN;
     my $line;
-    
+
     # if the buffer been filled by _pushback then return the buffer
     # contents, rather than read from the filehandle
-    if(exists($self->{'_readbuffer'})) {
-	$line = $self->{'_readbuffer'};
-	delete $self->{'_readbuffer'};	
-    } else {
-	$line = <$fh>;
-    }
-    $line =~ s/\r\n/\n/g if (defined $line);
+	$line = shift @{$self->{'_readbuffer'}} || <$fh>;
+
+    #don't stip line endings if -raw is specified
+    $line =~ s/\r\n/\n/g if( (!$param{-raw}) && (defined $line) );
+
     return $line;
 }
 
@@ -343,7 +434,8 @@ sub _readline {
 
  Title   : _pushback
  Usage   : $obj->_pushback($newvalue)
- Function: puts a line previously read with _readline back into a buffer
+ Function: puts a line previously read with _readline back into a buffer.
+           buffer can hold as many lines as system memory permits.
  Example :
  Returns :
  Args    : newvalue
@@ -352,8 +444,9 @@ sub _readline {
 
 sub _pushback {
     my ($obj, $value) = @_;
-    $value .= $obj->{'_readbuffer'} if(exists($obj->{'_readbuffer'}));
-    $obj->{'_readbuffer'} = $value;
+
+	$obj->{'_readbuffer'} ||= [];
+	push @{$obj->{'_readbuffer'}}, $value;
 }
 
 =head2 close
@@ -373,6 +466,36 @@ sub close {
    $self->{'_filehandle'} = undef;
    delete $self->{'_readbuffer'};
 }
+
+
+=head2 flush
+
+ Title   : flush
+ Usage   : $io->flush()
+ Function: Flushes the filehandle
+ Example :
+ Returns :
+ Args    :
+
+=cut
+
+sub flush {
+  my ($self) = shift;
+  
+  if( !defined $self->{'_filehandle'} ) {
+    $self->throw("Attempting to call flush but no filehandle active");
+  }
+
+  if( ref($self->{'_filehandle'}) =~ /GLOB/ ) {
+    my $oldh = select($self->{'_filehandle'});
+    $| = 1;
+    select($oldh);
+  } else {
+    $self->{'_filehandle'}->flush();
+  }
+}
+  
+
 
 sub _io_cleanup {
     my ($self) = @_;
@@ -423,12 +546,17 @@ sub exists_exe {
     $exe = $self if(!(ref($self) || $exe));
     $exe .= '.exe' if(($^O =~ /mswin/i) && ($exe !~ /\.(exe|com|bat|cmd)$/i));
     return $exe if(-e $exe); # full path and exists
-    $exe =~ s/^$PATHSEP//;
+
+    # Ewan's comment. I don't think we need this. People should not be
+    # asking for a program with a pathseparator starting it
+    
+    # $exe =~ s/^$PATHSEP//;
+
     # Not a full path, or does not exist. Let's see whether it's in the path.
     if($FILESPECLOADED) {
 	foreach my $dir (File::Spec->path()) {
 	    my $f = Bio::Root::IO->catfile($dir, $exe);	    
-	    return $f if(-e $f );
+	    return $f if(-e $f && -x $f );
 	}
     }    
     return 0;
@@ -458,19 +586,32 @@ sub tempfile {
     my %params = @args;
 
     # map between naming with and without dash
-    foreach my $key (grep { $_ =~ /^-/; } keys(%params)) {
-	$params{substr($key,1)} = $params{$key};
-	delete $params{$key};
+    foreach my $key (keys(%params)) {
+	if( $key =~ /^-/  ) {
+	    my $v = $params{$key};
+	    delete $params{$key};
+	    $params{uc(substr($key,1))} = $v;
+	} else { 
+	    # this is to upper case
+	    my $v = $params{$key};
+	    delete $params{$key};	    
+	    $params{uc($key)} = $v;
+	}
     }
-
     $params{'DIR'} = $TEMPDIR if(! exists($params{'DIR'}));
+    unless (exists $params{'UNLINK'} && 
+	    defined $params{'UNLINK'} &&
+	    ! $params{'UNLINK'} ) {
+	$params{'UNLINK'} = 1;
+    } else { $params{'UNLINK'} = 0 }
+	    
     if($FILETEMPLOADED) {
 	if(exists($params{'TEMPLATE'})) {
 	    my $template = $params{'TEMPLATE'};
 	    delete $params{'TEMPLATE'};
 	    ($tfh, $file) = File::Temp::tempfile($template, %params);
 	} else {
-	    ($tfh, $file) = File::Temp::tempfile(@args);
+	    ($tfh, $file) = File::Temp::tempfile(%params);
 	}
     } else {
 	my $dir = $params{'DIR'};
@@ -480,6 +621,12 @@ sub tempfile {
 				sprintf( "%s.%s.%s",  
 					 $ENV{USER} || 'unknown', $$, 
 					 $TEMPCOUNTER++)));
+
+	# sneakiness for getting around long filenames on Win32?
+	if( $HAS_WIN32 ) {
+	    $file = Win32::GetShortPathName($file);
+	}
+
 	# taken from File::Temp
 	if ($] < 5.006) {
 	    $tfh = &Symbol::gensym;
@@ -500,8 +647,13 @@ sub tempfile {
 	    $self->throw("Could not open tempfile $file: $!\n");
 	}
     }
-    push @{$self->{'_rootio_tempfiles'}}, $file;
-    return ($tfh,$file);
+
+    if(  $params{'UNLINK'} ) {
+	push @{$self->{'_rootio_tempfiles'}}, $file;
+    } 
+
+
+    return wantarray ? ($tfh,$file) : $tfh;
 }
 
 =head2  tempdir
@@ -530,7 +682,8 @@ sub tempdir {
     #
     # we are planning to cleanup temp files no matter what
     my %params = @args;
-    $self->{'_cleanuptempdir'} = $params{CLEANUP} == 1;
+    $self->{'_cleanuptempdir'} = ( defined $params{CLEANUP} && 
+				   $params{CLEANUP} == 1);
     my $tdir = $self->catfile($TEMPDIR,
 			      sprintf("dir_%s-%s-%s", 
 				      $ENV{USER} || 'unknown', $$, 
@@ -706,6 +859,27 @@ sub rmtree {
     }
 
     $count;
+}
+
+=head2 _flush_on_write
+
+ Title   : _flush_on_write
+ Usage   : $obj->_flush_on_write($newval)
+ Function: Boolean flag to indicate whether to flush 
+           the filehandle on writing when the end of 
+           a component is finished (Sequences,Alignments,etc)
+ Returns : value of _flush_on_write
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _flush_on_write {
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'_flush_on_write'} = $value;
+    }
+    return $self->{'_flush_on_write'};
 }
 
 1;

@@ -1,4 +1,4 @@
-
+# $Id: Perl.pm,v 1.16 2002/12/28 16:35:53 birney Exp $
 #
 # BioPerl module for Bio::Perl
 #
@@ -16,47 +16,54 @@ Bio::Perl - Functional access to BioPerl for people who don't know objects
 
 =head1 SYNOPSIS
 
-   use Bio::Perl qw(read_sequence read_all_sequences write_sequence new_sequence get_sequence);
+  use Bio::Perl;
 
-# will guess file format from extension
-   $seq_object = read_sequence($filename); 
+  # will guess file format from extension
+  $seq_object = read_sequence($filename);
 
-# forces genbank format
-   $seq_object = read_sequence($filename,'genbank'); 
+  # forces genbank format
+  $seq_object = read_sequence($filename,'genbank');
 
-# reads an array of sequences
-   @seq_object_array = read_all_sequences($filename,'fasta'); 
+  # reads an array of sequences
+  @seq_object_array = read_all_sequences($filename,'fasta');
 
-# sequences are Bio::Seq objects, so the following methods work
-# for more info see L<Bio::Seq>, or do 'perldoc Bio/Seq.pm'
+  # sequences are Bio::Seq objects, so the following methods work
+  # for more info see L<Bio::Seq>, or do 'perldoc Bio/Seq.pm'
 
-   print "Sequence name is ",$seq_object->display_id,"\n";
-   print "Sequence acc  is ",$seq_object->accession_number,"\n";
-   print "First 5 bases is ",$seq_object->subseq(1,5),"\n";
+  print "Sequence name is ",$seq_object->display_id,"\n";
+  print "Sequence acc  is ",$seq_object->accession_number,"\n";
+  print "First 5 bases is ",$seq_object->subseq(1,5),"\n";
 
-# get the whole sequence as a single string
+  # get the whole sequence as a single string
 
-   $sequence_as_a_string = $seq_object->seq();
+  $sequence_as_a_string = $seq_object->seq();
 
-# writing sequences
+  # writing sequences
 
-   write_sequence(">$filename",'genbank',$seq_object);
+  write_sequence(">$filename",'genbank',$seq_object);
 
-   write_sequence(">$filename",'genbank',@seq_object_array);
+  write_sequence(">$filename",'genbank',@seq_object_array);
 
-# making a new sequence from just strings you have
-# from something else
+  # making a new sequence from just strings you have
+  # from something else
 
-   $seq_object = new_sequence("ATTGGTTTGGGGACCCAATTTGTGTGTTATATGTA","myname","AL12232");
+  $seq_object = new_sequence("ATTGGTTTGGGGACCCAATTTGTGTGTTATATGTA",
+      "myname","AL12232");
 
 
-# getting a sequence from a database (assumes internet connection)
+  # getting a sequence from a database (assumes internet connection)
 
-   $seq_object = get_sequence('swissprot',"ROA1_HUMAN");
+  $seq_object = get_sequence('swissprot',"ROA1_HUMAN");
 
-   $seq_object = get_sequence('embl',"AI129902");
+  $seq_object = get_sequence('embl',"AI129902");
 
-   $seq_object = get_sequence('genbank',"AI129902");
+  $seq_object = get_sequence('genbank',"AI129902");
+
+  # BLAST a sequence (assummes an internet connection)
+
+  $blast_report = blast_sequence($seq_object);
+  
+  write_blast(">blast.out",$blast_report);
 
 
 =head1 DESCRIPTION
@@ -80,7 +87,7 @@ the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Ewan Birney
 
@@ -90,7 +97,7 @@ Describe contact details here
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. 
+The rest of the documentation details each of the object methods.
 Internal methods are usually preceded with a _
 
 =cut
@@ -100,19 +107,20 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Perl;
-use vars qw(@ISA @EXPORT_OK $DBOKAY);
+use vars qw(@ISA @EXPORT @EXPORT_OK $DBOKAY);
 use strict;
 use Carp;
 use Exporter;
 
 use Bio::SeqIO;
 use Bio::Seq;
-BEGIN { 
-    eval { 
+BEGIN {
+    eval {
 	require Bio::DB::EMBL;
 	require Bio::DB::GenBank;
 	require Bio::DB::SwissProt;
 	require Bio::DB::RefSeq;
+	require Bio::DB::GenPept;
     };
     if( $@ ) {
 	$DBOKAY = 0;
@@ -123,8 +131,12 @@ BEGIN {
 
 @ISA = qw(Exporter);
 
-@EXPORT_OK = qw(read_sequence read_all_sequences write_sequence 
-		new_sequence get_sequence);
+@EXPORT = qw(read_sequence read_all_sequences write_sequence 
+	     new_sequence get_sequence translate translate_as_string 
+	     reverse_complement revcom revcom_as_string 
+	     reverse_complement_as_string blast_sequence write_blast);
+
+@EXPORT_OK = @EXPORT;
 
 
 =head2 read_sequence
@@ -247,13 +259,18 @@ sub write_sequence{
    my $error = 0;
    my $seqname = "sequence1";
 
+   # catch users who haven't passed us a filename we can open
+   if( $filename !~ /^\>/ && $filename !~ /^|/ ) {
+       $filename = ">".$filename;
+   }
+
    my $seqio = Bio::SeqIO->new('-file' => $filename, '-format' => $format);
 
    foreach my $seq ( @sequence_objects ) {
        my $seq_obj;
 
        if( !ref $seq ) {
-	   if( length $seq > 50 ) { 
+	   if( length $seq > 50 ) {
 	       # odds are this is a sequence as a string, and someone has not figured out
 	       # how to make objects. Warn him/her and then make a sequence object
 	       # from this
@@ -286,7 +303,7 @@ sub write_sequence{
  Usage   :
  Function:
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
@@ -306,6 +323,114 @@ sub new_sequence{
    $accession && $seq_object->accession_number($accession);
 
    return $seq_object;
+}
+
+=head2 blast_sequence
+
+ Title   : blast_sequence
+ Usage   : $blast_result = blast_sequence($seq)
+           $blast_result = blast_sequence('MFVEGGTFASEDDDSASAEDE');
+
+ Function: If the computer has Internet accessibility, blasts
+           the sequence using the NCBI BLAST server against nrdb.
+
+           It choose the flavour of BLAST on the basis of the sequence.
+
+           This function uses Bio::Tools::Run::RemoteBlast, which itself
+           use Bio::SearchIO - as soon as you want to more, check out
+           these modules
+ Returns : Bio::Search::Result::GenericResult.pm
+
+ Args    : Either a string of protein letters or nucleotides, or a
+           Bio::Seq object
+
+=cut
+
+sub blast_sequence {
+    my ($seq,$verbose) = shift;
+
+    if( !defined $verbose ) {
+	$verbose = 1;
+    }
+
+    if( !ref $seq ) {
+	$seq = Bio::Seq->new( -seq => $seq, -id => 'blast-sequence-temp-id');
+    } elsif ( !$seq->isa('Bio::PrimarySeqI') ) {
+	croak("[$seq] is an object, but not a Bio::Seq object, cannot be blasted");
+    }
+
+    require Bio::Tools::Run::RemoteBlast;
+
+    my $prog = 'blastp';
+    my $e_val= '1e-10';
+
+    my @params = ( '-prog' => $prog,
+		   '-expect' => $e_val,
+		   '-readmethod' => 'SearchIO' );
+
+    my $factory = Bio::Tools::Run::RemoteBlast->new(@params);
+
+    my $r = $factory->submit_blast($seq);
+    if( $verbose ) {
+	print STDERR "Submitted Blast for [".$seq->id."] ";
+    }
+    sleep 5;
+
+    my $result;
+
+    LOOP :
+    while( my @rids = $factory->each_rid) {
+	foreach my $rid ( @rids ) {
+	    my $rc = $factory->retrieve_blast($rid);
+	    if( !ref($rc) ) {
+		if( $rc < 0 ) {
+		    $factory->remove_rid($rid);
+		}
+		if( $verbose ) {
+		    print STDERR ".";
+		}
+		sleep 10;
+	    } else {
+		$result = $rc->next_result();
+		$factory->remove_rid($rid);
+		last LOOP;
+	    }
+	}
+    }
+
+    if( $verbose ) {
+	print STDERR "\n";
+    }
+    return $result;
+}
+
+=head2 write_blast
+
+ Title   : write_blast
+ Usage   : write_blast($filename,$blast_report);
+
+ Function: Writes a BLAST result object (or more formally
+           a SearchIO result object) out to a filename
+           in BLAST-like format
+
+ Returns : none
+
+ Args    : filename as a string
+           Bio::SearchIO::Results object
+
+=cut
+
+sub write_blast {
+    my ($filename,$blast) = @_;
+
+    if( $filename !~ /^\>/ && $filename !~ /^|/ ) {
+	$filename = ">".$filename;
+    }
+
+    my $output = Bio::SearchIO->new( -output_format => 'blast', -file => $filename);
+
+    $output->write_result($blast);
+
 }
 
 =head2 get_sequence
@@ -330,6 +455,7 @@ sub new_sequence{
 =cut
 
 my $genbank_db = undef;
+my $genpept_db = undef;
 my $embl_db = undef;
 my $swiss_db = undef;
 my $refseq_db = undef;
@@ -344,31 +470,38 @@ sub get_sequence{
 
    my $db;
 
-   if( $db_type =~ /gen/ ) {
+   if( $db_type =~ /genbank/ ) {
        if( !defined $genbank_db ) {
 	   $genbank_db = Bio::DB::GenBank->new();
-       } 
+       }
        $db = $genbank_db;
+   }
+   if( $db_type =~ /genpept/ ) {
+       if( !defined $genpept_db ) {
+	   $genpept_db = Bio::DB::GenPept->new();
+       } 
+       $db = $genpept_db;
    }
 
    if( $db_type =~ /swiss/ ) {
        if( !defined $swiss_db ) {
 	   $swiss_db = Bio::DB::SwissProt->new();
-       } 
+       }
        $db = $swiss_db;
    }
 
    if( $db_type =~ /embl/ ) {
        if( !defined $embl_db ) {
 	   $embl_db = Bio::DB::EMBL->new();
-       } 
+       }
        $db = $embl_db;
    }
 
-   if( $db_type =~ /refseq/ or ($db_type !~ /swiss/ and $identifier =~ /_/)) {
+   if( $db_type =~ /refseq/ or ($db_type !~ /swiss/ and 
+				$identifier =~ /^\s*N\S+_/)) {
        if( !defined $refseq_db ) {
 	   $refseq_db = Bio::DB::RefSeq->new();
-       } 
+       }
        $db = $refseq_db;
    }
 
@@ -382,5 +515,183 @@ sub get_sequence{
 
    return $seq;
 }
+
+
+=head2 translate
+
+ Title   : translate
+ Usage   : $seqobj = translate($seq_or_string_scalar)
+
+ Function: translates a DNA sequence object OR just a plain
+           string of DNA to amino acids
+ Returns : A Bio::Seq object
+
+ Args    : Either a sequence object or a string of
+           just DNA sequence characters
+
+=cut
+
+sub translate {
+   my ($scalar) = shift;
+
+   my $obj;
+
+   if( ref $scalar ) {
+     if( !$scalar->isa("Bio::PrimarySeqI") ) {
+        confess("Expecting a sequence object not a $scalar");
+     } else {
+        $obj= $scalar;
+
+     }
+
+   } else {
+
+     # check this looks vaguely like DNA
+     my $n = ( $scalar =~ tr/ATGCNatgc/ATGCNatgcn/ );
+
+     if( $n < length($scalar) * 0.85 ) {
+       confess("Sequence [$scalar] is less than 85% ATGCN, which doesn't look very DNA to me");
+     }
+
+     $obj = Bio::PrimarySeq->new(-id => 'internalbioperlseq',-seq => $scalar);
+   }
+
+   return $obj->translate();
+}
+
+
+=head2 translate_as_string
+
+ Title   : translate_as_string
+ Usage   : $seqstring = translate_as_string($seq_or_string_scalar)
+
+ Function: translates a DNA sequence object OR just a plain
+           string of DNA to amino acids
+ Returns : A stirng of just amino acids
+
+ Args    : Either a sequence object or a string of
+           just DNA sequence characters
+
+=cut
+
+sub translate_as_string {
+   my ($scalar) = shift;
+
+   my $obj = Bio::Perl::translate($scalar);
+
+   return $obj->seq;
+}
+
+
+=head2 reverse_complement
+
+ Title   : reverse_complement
+ Usage   : $seqobj = reverse_complement($seq_or_string_scalar)
+
+ Function: reverse complements a string or sequnce argument
+           producing a Bio::Seq - if you want a string, you
+           can use reverse_complement_as_string
+ Returns : A Bio::Seq object
+
+ Args    : Either a sequence object or a string of
+           just DNA sequence characters
+
+=cut
+
+sub reverse_complement {
+   my ($scalar) = shift;
+
+   my $obj;
+
+   if( ref $scalar ) {
+     if( !$scalar->isa("Bio::PrimarySeqI") ) {
+        confess("Expecting a sequence object not a $scalar");
+     } else {
+        $obj= $scalar;
+
+     }
+
+   } else {
+
+     # check this looks vaguely like DNA
+     my $n = ( $scalar =~ tr/ATGCNatgc/ATGCNatgcn/ );
+
+     if( $n < length($scalar) * 0.85 ) {
+       confess("Sequence [$scalar] is less than 85% ATGCN, which doesn't look very DNA to me");
+     }
+
+     $obj = Bio::PrimarySeq->new(-id => 'internalbioperlseq',-seq => $scalar);
+   }
+
+   return $obj->revcom();
+}
+
+=head2 revcom
+
+ Title   : revcom
+ Usage   : $seqobj = revcom($seq_or_string_scalar)
+
+ Function: reverse complements a string or sequnce argument
+           producing a Bio::Seq - if you want a string, you
+           can use reverse_complement_as_string
+
+           This is an alias for reverse_complement
+ Returns : A Bio::Seq object
+
+ Args    : Either a sequence object or a string of
+           just DNA sequence characters
+
+=cut
+
+sub revcom {
+    return &Bio::Perl::reverse_complement(@_);
+}
+
+
+=head2 reverse_complement_as_string
+
+ Title   : reverse_complement_as_string
+ Usage   : $string = reverse_complement_as_string($seq_or_string_scalar)
+
+ Function: reverse complements a string or sequnce argument
+           producing a string
+ Returns : A string of DNA letters
+
+ Args    : Either a sequence object or a string of
+           just DNA sequence characters
+
+=cut
+
+sub reverse_complement_as_string {
+   my ($scalar) = shift;
+
+   my $obj = &Bio::Perl::reverse_complement($scalar);
+
+   return $obj->seq;
+}
+
+
+=head2 revcom_as_string
+
+ Title   : revcom_as_string
+ Usage   : $string = revcom_as_string($seq_or_string_scalar)
+
+ Function: reverse complements a string or sequnce argument
+           producing a string
+ Returns : A string of DNA letters
+
+ Args    : Either a sequence object or a string of
+           just DNA sequence characters
+
+=cut
+
+sub revcom_as_string {
+   my ($scalar) = shift;
+
+   my $obj = &Bio::Perl::reverse_complement($scalar);
+
+   return $obj->seq;
+}
+
 
 1;

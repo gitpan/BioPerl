@@ -1,4 +1,4 @@
-# $Id: Transcript.pm,v 1.17.2.1 2002/05/09 20:51:15 jason Exp $
+# $Id: Transcript.pm,v 1.25 2002/12/29 09:37:51 lapp Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::Transcript
 #
@@ -42,7 +42,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
@@ -168,7 +168,8 @@ sub flush_promoters {
 
 sub exons {
     my ($self, $type) = @_;
-    return $self->get_unordered_feature_type('Bio::SeqFeature::Gene::ExonI', $type);
+    return $self->get_unordered_feature_type('Bio::SeqFeature::Gene::ExonI', 
+					     $type);
 }
 
 =head2 exons_ordered
@@ -224,7 +225,6 @@ sub add_exon {
 	$self->throw("$fea does not implement Bio::SeqFeature::Gene::ExonI");
     }
     $self->_add($fea,'Bio::SeqFeature::Gene::Exon');
-    return;
 }
 
 =head2 flush_exons
@@ -255,18 +255,18 @@ sub flush_exons {
  Usage   : @introns = $gene->introns();
  Function: Get all intron features this gene structure.
 
-           Note that this implementation generates these features on-the-fly,
-           that is, it simply treats all regions between exons as introns,
-           assuming that exons do not overlap. A consequence is that a
-           consistent correspondence between the elements in the returned
-           array and the array exons() returns will exist only if the
-           exons are properly sorted within their types (forward for plus-
-           strand and reverse for minus-strand transcripts). To ensure
-           correctness the elements in the array returned will always be
-           sorted.
+           Note that this implementation generates these features
+           on-the-fly, that is, it simply treats all regions between
+           exons as introns, assuming that exons do not overlap. A
+           consequence is that a consistent correspondence between the
+           elements in the returned array and the array that exons()
+           returns will exist only if the exons are properly sorted
+           within their types (forward for plus- strand and reverse
+           for minus-strand transcripts). To ensure correctness the
+           elements in the array returned will always be sorted.
 
- Returns : An array of Bio::SeqFeature::Gene::Intron objects representing the
-           intron regions.
+ Returns : An array of Bio::SeqFeature::Gene::Intron objects representing
+           the intron regions.
  Args    : 
 
 
@@ -287,16 +287,17 @@ sub introns {
 	last if $strand; # we're done if we've got 1 or -1
     }
     $rev_order = ($exons[0]->end() < $exons[1]->start() ? 0 : 1);
+
     # Make sure exons are sorted. Because we assume they don't overlap, we
     # simply sort by start position.
     if((! defined($strand)) || ($strand != -1) || (! $rev_order)) {
 	# always sort forward for plus-strand transcripts, and for negative-
 	# strand transcripts that appear to be unsorted or forward sorted
-        @exons = sort { $a->start() <=> $b->start(); } @exons;
+        @exons = map { $_->[0] } sort { $a->[1] <=> $b->[1] } map { [ $_, $_->start()] } @exons;
     } else {
 	# sort in reverse order for transcripts on the negative strand and
 	# found to be in reverse order
-        @exons = sort { $b->start() <=> $a->start(); } @exons;	
+        @exons = map { $_->[0] } sort { $b->[1] <=> $a->[1] } map { [ $_, $_->start()] } @exons;
     }
     # loop over all intervening gaps
     for(my $i = 0; $i < $#exons; $i++) {
@@ -305,8 +306,8 @@ sub introns {
 
 	if(defined($exons[$i]->strand()) &&
 	   (($exons[$i]->strand() * $strand) < 0)) {
-	    $self->throw("Transcript mixes plus and minus strand. ".
-			 "This makes no sense.");
+	    $self->throw("Transcript mixes plus and minus strand exons. ".
+			 "Computing introns makes no sense then.");
 	}
 	$start = $exons[$i+$rev_order]->end() + 1;     # $i or $i+1
 	$end = $exons[$i+1-$rev_order]->start() - 1;   # $i+1 or $i
@@ -318,7 +319,7 @@ sub introns {
 						     '-source'  => ref($self));
 	my $seq = $self->entire_seq();
 	$intron->attach_seq($seq) if $seq;
-	$intron->seqname($self->seqname());
+	$intron->seq_id($self->seq_id());
 	push(@introns, $intron);
     }
     return @introns;
@@ -400,7 +401,6 @@ sub utrs {
 sub add_utr {
     my ($self, $fea, $type) = @_;
     $self->_add($fea,'Bio::SeqFeature::Gene::UTR',$type);
-    return;
 }
 
 =head2 flush_utrs
@@ -489,17 +489,18 @@ sub flush_sub_SeqFeature {
 
  Title   : cds
  Usage   : $seq = $transcript->cds();
- Function: Returns the CDS (coding sequence) as defined by the exons of this
-           transcript and the attached sequence.
+ Function: Returns the CDS (coding sequence) as defined by the exons
+           of this transcript and the attached sequence.
 
            If no sequence is attached this method will return undef.
 
-           Note that the implementation provided here returns a concatenation
-           of all coding exons, thereby assuming that exons do not overlap. 
+           Note that the implementation provided here returns a
+           concatenation of all coding exons, thereby assuming that
+           exons do not overlap.
 
-           Note also that you cannot set the CDS via this method. Set a single
-           CDS feature as a single exon, or derive your own class if you want
-           to store a predicted CDS.
+           Note also that you cannot set the CDS via this method. Set
+           a single CDS feature as a single exon, or derive your own
+           class if you want to store a predicted CDS.
 
  Example :
  Returns : A Bio::PrimarySeqI implementing object.
@@ -526,7 +527,7 @@ sub cds {
     }
     my $cds = $self->_make_cds(@exons);
     return undef unless $cds;
-    return Bio::PrimarySeq->new('-id' => $self->seqname(),
+    return Bio::PrimarySeq->new('-id' => $self->seq_id(),
 				'-seq' => $cds,
 				'-alphabet' => "dna");
 }
@@ -580,7 +581,7 @@ sub mrna {
     # get the coding part
     $seq = $self->cds();
     if(! $seq) {
-	$seq = Bio::PrimarySeq->new('-id' => $self->seqname(),
+	$seq = Bio::PrimarySeq->new('-id' => $self->seq_id(),
 				    '-alphabet' => "rna",
 				    '-seq' => "");
     }
@@ -666,7 +667,8 @@ sub _make_cds {
 
 
 sub features {
-    my ($self)=@_;
+    my ($self) = shift;
+    $self->{'_features'} = [] unless defined $self->{'_features'};
     return @{$self->{'_features'}};
 }
 
@@ -758,6 +760,7 @@ sub _add {
 	$self->parent->_expand_region($fea);
     }
     push(@{$self->{'_features'}}, $fea);
+    1;
 }
 
 sub _stranded_sort {
@@ -774,9 +777,9 @@ sub _stranded_sort {
 	}
     }
     if (defined $strand && $strand == - 1) {  #reverse strand
-	return sort {$b->start <=> $a->start} @list;
+	return map { $_->[0] } sort {$b->[1] <=> $a->[1]} map { [$_, $_->start] } @list;
     } else {               #undef or forward strand
-	return sort {$a->start <=> $b->start} @list;
+	return map { $_->[0] } sort {$a->[1] <=> $b->[1]} map { [$_, $_->start] } @list;
     }
 }
 
@@ -794,8 +797,3 @@ sub _new_of_type {
 }
 
 1;
-
-
-
-
-

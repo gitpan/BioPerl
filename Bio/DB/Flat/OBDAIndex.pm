@@ -1,4 +1,4 @@
-# $Id: OBDAIndex.pm,v 1.4.2.3 2002/03/15 14:40:02 heikki Exp $
+# $Id: OBDAIndex.pm,v 1.12 2002/11/28 14:44:30 jason Exp $
 #
 # BioPerl module for Bio::DB::Flat::OBDAIndex
 #
@@ -165,7 +165,7 @@ the bugs and their resolution.  Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Michele Clamp
 
@@ -195,7 +195,7 @@ use Bio::Seq;
 use constant CONFIG_FILE_NAME => 'config.dat';
 use constant HEADER_SIZE      => 4;
 
-my @formats = {'FASTA','SWISSPROT','EMBL'};
+my @formats = ['FASTA','SWISSPROT','EMBL'];
 
 =head2 new
 
@@ -296,17 +296,22 @@ sub new_from_registry {
 
 sub get_Seq_by_id {
     my ($self,$id) = @_;
-
+   
     my ($fh,$length) = $self->get_stream_by_id($id);
-
+    
     if (!defined($self->format)) {
 	$self->throw("Can't create sequence - format is not defined");
     }
-
+   
+    if(!$fh){
+      return;
+    }
     if (!defined($self->{_seqio})) {
+     
 	$self->{_seqio} = new Bio::SeqIO(-fh => $fh,
 					 -format => $self->format);
     } else {
+      
 	$self->{_seqio}->fh($fh);
     }
     
@@ -367,9 +372,9 @@ sub get_stream_by_id {
     
     my ($fileid,$pos,$length) = split(/\t/,$rest);
 
-#    print "Found id entry $newid $fileid $pos $length:$rest\n";
+    #print STDERR "OBDAIndex Found id entry $newid $fileid $pos $length:$rest\n";
 
-    if (!defined($newid)) {
+    if (!$newid) {
       return;
     }
 
@@ -635,7 +640,7 @@ sub make_index {
     if (! -d $rootdir) {
 	$self->throw("Index directory [$rootdir] is not a directory. Cant' build indices");
     }
-    if (!defined(@files)) {
+    if (!(@files)) {
 	$self->throw("Must enter an array of filenames to index");
     }
     
@@ -699,7 +704,7 @@ sub _index_file {
     my $new_primary_entry;
     
     my $length;
-    my $pos = 0;
+    #my $pos = 0;
     my $fh = \*FILE;
 
     my $done = -1;
@@ -1116,7 +1121,7 @@ sub make_config_file {
 
     my @second = keys %$second_patterns;
 
-    if (defined(@second))  {
+    if ((@second))  {
 	print CON "secondary_namespaces";
 
 	foreach my $second (@second) {
@@ -1232,7 +1237,7 @@ sub read_config_file {
 
     my @fileid_keys = keys (%{$self->{_fileid}});
     
-    if (!defined(@fileid_keys)) {
+    if (!(@fileid_keys)) {
 	$self->throw("No flatfile fileid files in config - check the index has been made correctly");
     }
 
@@ -1286,7 +1291,7 @@ sub get_filehandle_by_fileid {
     if (!defined($self->{_fileid}{$fileid})) {
 	$self->throw("ERROR: undefined fileid in index [$fileid]");
     }
-
+   
     return $self->{_fileid}{$fileid};
 }
 

@@ -1,4 +1,4 @@
-# $Id: PositionProxy.pm,v 1.1 2002/02/26 15:38:21 birney Exp $
+# $Id: PositionProxy.pm,v 1.4 2002/10/22 07:38:41 lapp Exp $
 #
 # BioPerl module for Bio::SeqFeature::PositionProxy
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::SeqFeature::PositionProxy
+Bio::SeqFeature::PositionProxy - handle features when truncation/revcom sequences span a feature
 
 =head1 SYNOPSIS
 
@@ -48,7 +48,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Ewan Birney
 
@@ -328,7 +328,7 @@ sub entire_seq {
 =head2 seqname
 
  Title   : seqname
- Usage   : $obj->seqname($newval)
+ Usage   : $obj->seq_id($newval)
  Function: There are many cases when you make a feature that you
            do know the sequence name, but do not know its actual
            sequence. This is an attribute such that you can store

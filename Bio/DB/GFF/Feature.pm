@@ -75,9 +75,10 @@ use Bio::Root::Root;
 use Bio::LocationI;
 
 use vars qw($VERSION @ISA $AUTOLOAD);
-@ISA = qw(Bio::DB::GFF::RelSegment Bio::SeqFeatureI Bio::LocationI Bio::Root::Root);
+@ISA = qw(Bio::DB::GFF::RelSegment Bio::SeqFeatureI 
+	  Bio::Root::Root);
 
-$VERSION = '0.60';
+$VERSION = '0.61';
 #' 
 
 *segments = \&sub_SeqFeature;
@@ -223,8 +224,9 @@ sub new {
     @{$self}{qw(ref refstart refstrand)} = ($srcseq,1,'+');
   }
 
-  @{$self}{qw(type fstrand score phase group db_id group_id)} =
-    (Bio::DB::GFF::Typename->new($method,$source),$fstrand,$score,$phase,$group,$db_id,$group_id);
+  @{$self}{qw(type fstrand score phase group db_id group_id absolute)} =
+    (Bio::DB::GFF::Typename->new($method,$source),$fstrand,$score,$phase,
+     $group,$db_id,$group_id,$factory->{absolute});
 
   $self;
 }
@@ -358,8 +360,6 @@ sub strand {
     return Bio::DB::GFF::RelSegment::_to_strand($self->{fstrand});
   }
   return $self->SUPER::strand;
-#  return 0 unless defined $self->{start};
-#  return $self->{start} < $self->{stop} ? '+1' : '-1';
 }
 
 =head2 group
@@ -383,6 +383,20 @@ sub group  {
   $d;
 }
 
+=head2 display_id
+
+ Title   : display_id
+ Usage   : $display_id = $f->display_id([$display_id])
+ Function: get or set the feature display id
+ Returns : a Bio::DB::GFF::Featname object
+ Args    : a new display_id (optional)
+ Status  : Public
+
+This method is an alias for group().  It is provided for
+Bio::SeqFeatureI compatibility.
+
+=cut
+
 =head2 info
 
  Title   : info
@@ -397,7 +411,9 @@ compatibility.
 
 =cut
 
-*info   = \&group;
+*info         = \&group;
+*display_id   = \&group;
+*display_name = \&group;
 
 =head2 target
 
@@ -421,6 +437,22 @@ sub target {
   return unless $group->can('start');
   $group;
 }
+
+=head2 hit
+
+ Title   : hit
+ Usage   : $hit = $f->hit([$new_hit])
+ Function: get or set the feature hit
+ Returns : a Bio::DB::GFF::Featname object
+ Args    : a new group (optional)
+ Status  : Public
+
+This is the same as target(), for compatibility with
+Bio::SeqFeature::SimilarityPair.
+
+=cut
+
+*hit = \&target;
 
 =head2 id
 
@@ -581,34 +613,39 @@ sub add_subfeature {
 sub location {
    my $self = shift;
    require Bio::Location::Split unless Bio::Location::Split->can('new');
+   require Bio::Location::Simple unless Bio::Location::Simple->can('new');
+
    my $location;
    if (my @segments = $self->segments) {
-       $location = Bio::Location::Split->new();
+       $location = Bio::Location::Split->new(-seq_id => $self->seq_id);
        foreach (@segments) {
-          $location->add_sub_Location($_);
+          $location->add_sub_Location($_->location);
        }
    } else {
-       $location = $self;
+       $location = Bio::Location::Simple->new(-start  => $self->start,
+					      -end    => $self->stop,
+					      -strand => $self->strand,
+					      -seq_id => $self->seq_id);
    }
    $location;
 }
 
-sub coordinate_policy {
-   require Bio::Location::WidestCoordPolicy unless Bio::Location::WidestCoordPolicy->can('new');
-   return Bio::Location::WidestCoordPolicy->new();
-}
+=head2 entire_seq
 
-sub min_start { shift->low }
-sub max_start { shift->low }
-sub min_end   { shift->high }
-sub max_end   { shift->high}
-sub start_pos_type { 'EXACT' }
-sub end_pos_type   { 'EXACT' }
-sub to_FTstring {
-  my $self = shift;
-  my $low  = $self->min_start;
-  my $high = $self->max_end;
-  return "$low..$high";
+ Title   : entire_seq
+ Usage   : $whole_seq = $sf->entire_seq()
+ Function: gives the entire sequence that this seqfeature is attached to
+ Example :
+ Returns : a Bio::PrimarySeqI compliant object, or undef if there is no
+           sequence attached
+ Args    : none
+
+
+=cut
+
+sub entire_seq {
+    my $self = shift;
+    $self->factory->segment($self->sourceseq);
 }
 
 =head2 merged_segments
@@ -641,25 +678,34 @@ sub merged_segments {
   my $truename = overload::StrVal($self);
 
   return @{$self->{merged_segs}{$type}} if exists $self->{merged_segs}{$type};
-  my @segs = sort {
-                $a->start <=> $b->start
-		  ||
-                $a->type cmp  $b->type
-		 } $self->sub_SeqFeature($type);
+  my @segs = map  { $_->[0] } 
+             sort { $a->[1] <=> $b->[1] ||
+		    $a->[2] cmp $b->[2] }
+             map  { [$_, $_->start, $_->type] } $self->sub_SeqFeature($type);
 
   # attempt to merge overlapping segments
   my @merged = ();
   for my $s (@segs) {
     my $previous = $merged[-1] if @merged;
-    if (defined($previous) && $previous->stop+1 >= $s->start){
-      $previous->{stop} = $s->{stop};
+    my ($pscore,$score) = (eval{$previous->score}||0,eval{$s->score}||0);
+    if (defined($previous) 
+	&& $previous->stop+1 >= $s->start
+	&& $previous->score == $s->score
+       ) {
+      if ($self->absolute && $self->strand < 0) {
+	$previous->{start} = $s->{start};
+      } else {
+	$previous->{stop} = $s->{stop};
+      }
       # fix up the target too
       my $g = $previous->{group};
       if ( ref($g) &&  $g->isa('Bio::DB::GFF::Homol')) {
 	my $cg = $s->{group};
 	$g->{stop} = $cg->{stop};
       }
-    } elsif (defined($previous) && $previous->start == $s->start && $previous->stop == $s->stop) {
+    } elsif (defined($previous) 
+	     && $previous->start == $s->start 
+	     && $previous->stop == $s->stop) {
       next;
     } else {
       my $copy = $s->clone;
@@ -806,6 +852,8 @@ sub all_tags {
   }
   @tags;
 }
+*get_all_tags = \&all_tags;
+
 sub has_tag {
   my $self = shift;
   my $tag  = shift;
@@ -916,8 +964,14 @@ sub sort_features {
   my $strand = $self->strand or return;
   my $subfeat = $self->{subfeatures} or return;
   for my $type (keys %$subfeat) {
-    $subfeat->{$type} = [sort {$a->start<=>$b->start} @{$subfeat->{$type}}] if $strand > 0;
-    $subfeat->{$type} = [sort {$b->start<=>$a->start} @{$subfeat->{$type}}] if $strand < 0;
+      $subfeat->{$type} = [map { $_->[0] }
+			   sort {$a->[1] <=> $b->[1] }
+			   map { [$_,$_->start] }
+			   @{$subfeat->{$type}}] if $strand > 0;
+      $subfeat->{$type} = [map { $_->[0] }
+			   sort {$b->[1] <=> $a->[1]}
+			   map { [$_,$_->start] }
+			   @{$subfeat->{$type}}] if $strand < 0;
   }
 }
 
@@ -978,7 +1032,7 @@ sub gff_string {
 
   my $group_field = join ' ; ',@group;
   my $strand = ('-','.','+')[$self->strand+1];
-  my $ref = $self->ref;
+  my $ref = $self->refseq;
   my $n   = ref($ref) ? $ref->name : $ref;
   my $phase = $self->phase;
   $phase = '.' unless defined $phase;

@@ -1,7 +1,7 @@
-# $Id: Fuzzy.pm,v 1.19.2.4 2002/07/15 00:15:05 jason Exp $
+# $Id: Fuzzy.pm,v 1.24 2002/12/01 00:05:20 jason Exp $
 #
 # BioPerl module for Bio::Location::Fuzzy
-# Cared for by Jason Stajich <jason@chg.mc.duke.edu>
+# Cared for by Jason Stajich <jason@bioperl.org>
 #
 # Copyright Jason Stajich
 #
@@ -50,11 +50,11 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@chg.mc.duke.edu
+Email jason@bioperl.org
 
 =head1 APPENDIX
 
@@ -70,9 +70,9 @@ use vars qw(@ISA );
 use strict;
 
 use Bio::Location::FuzzyLocationI;
-use Bio::Location::Simple;
+use Bio::Location::Atomic;
 
-@ISA = qw(Bio::Location::Simple Bio::Location::FuzzyLocationI );
+@ISA = qw(Bio::Location::Atomic Bio::Location::FuzzyLocationI );
 
 BEGIN {
     use vars qw( %FUZZYCODES %FUZZYPOINTENCODE %FUZZYRANGEENCODE 
@@ -116,8 +116,8 @@ BEGIN {
 
  Title   : new
  Usage   : my $fuzzyloc = new Bio::Location::Fuzzy( @args);
- Function: Builds a location with ambiguous start/end range info
- Returns : Bio::Location::Fuzzy object
+ Function:
+ Returns : 
  Args    : -start    => value for start  (initialize by superclass)
            -end      => value for end    (initialize by superclass)
            -strand   => value for strand (initialize by superclass)
@@ -147,6 +147,7 @@ sub new {
     $end_ext   && $self->max_end($self->min_end + $end_ext);
     $start_fuz && $self->start_pos_type($start_fuz);
     $end_fuz   && $self->end_pos_type($end_fuz);
+
     return $self;
 }
 
@@ -172,6 +173,12 @@ sub location_type {
 		$value = 'WITHIN';
 	    } elsif( $value =~ /\^/ ) {
 		$value = 'BETWEEN';
+
+
+		$self->throw("Use Bio::Location::Simple for IN-BETWEEN locations [". $self->start. "] and [". $self->end. "]")
+		    if defined $self->start && defined $self->end && ($self->end - 1 == $self->start);
+
+
 	    } elsif( $value ne 'EXACT' && $value ne 'WITHIN' && 
 		     $value ne 'BETWEEN' ) {
 		$self->throw("Did not specify a valid location type");
@@ -219,11 +226,15 @@ sub location_type {
 sub start {
     my($self,$value) = @_;
     if( defined $value ) {
-	my ($encode,$min,$max) = $self->_fuzzypointdecode($value);	
+	my ($encode,$min,$max) = $self->_fuzzypointdecode($value);
 	$self->start_pos_type($encode);
 	$self->min_start($min);
 	$self->max_start($max);
     }
+
+    $self->throw("Use Bio::Location::Simple for IN-BETWEEN locations [". $self->SUPER::start. "] and [". $self->SUPER::end. "]")
+	if $self->location_type eq 'BETWEEN'  && defined $self->SUPER::end && ($self->SUPER::end - 1 == $self->SUPER::start);
+
     return $self->SUPER::start();
 }
 
@@ -245,6 +256,10 @@ sub end {
 	$self->min_end($min);
 	$self->max_end($max);
     }
+
+    $self->throw("Use Bio::Location::Simple for IN-BETWEEN locations [". $self->SUPER::start. "] and [". $self->SUPER::end. "]")
+	if $self->location_type eq 'BETWEEN' && defined $self->SUPER::start && ($self->SUPER::end - 1 == $self->SUPER::start);
+
     return $self->SUPER::end();
 }
 
@@ -483,13 +498,23 @@ sub to_FTstring {
 	    if( defined $vals{"max_$point"} ) {
 		$strs{$point} .= $vals{"max_$point"};
 	    }
+	    if(($vals{$point."_code"} eq 'WITHIN') || 
+	       ($vals{$point."_code"} eq 'BETWEEN')) {
+		$strs{$point} = "(".$strs{$point}.")";
+	    }
 	} else { 
 	    $strs{$point} = $vals{$point};
 	}
+	
     }
     my $str = $strs{'start'} . $delimiter . $strs{'end'};
+    if($self->is_remote() && $self->seq_id()) {
+	$str = $self->seq_id() . ":" . $str;
+    }
     if( $self->strand == -1 ) {
-	$str = sprintf("complement(%s)", $str);
+	$str = "complement(" . $str . ")";
+    } elsif($self->location_type() eq "WITHIN") {
+	$str = "(".$str.")";
     }
     return $str;
 }

@@ -1,4 +1,4 @@
-# $Id: UpdateableSeqI.pm,v 1.3 2002/01/08 01:30:26 jason Exp $
+# $Id: UpdateableSeqI.pm,v 1.4 2002/10/22 07:45:09 lapp Exp $
 #
 # BioPerl module for Bio::UpdateableSeqI
 #
@@ -43,7 +43,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - David Block
 

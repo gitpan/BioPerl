@@ -1,4 +1,4 @@
-# $Id: DNAAlphabet.pm,v 1.2 2001/12/11 22:45:45 jason Exp $
+# $Id: DNAAlphabet.pm,v 1.3 2002/10/22 07:45:21 lapp Exp $
 #
 # BioPerl module for Bio::Symbol::DNAAlphabet
 #
@@ -44,7 +44,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 

@@ -1,5 +1,5 @@
 package Bio::Graphics::Glyph::transcript;
-# $Id: transcript.pm,v 1.3.2.11 2002/07/10 01:25:09 lstein Exp $
+# $Id: transcript.pm,v 1.12 2002/10/26 18:07:21 lstein Exp $
 
 use strict;
 use Bio::Graphics::Glyph::segments;
@@ -10,7 +10,8 @@ sub pad_left  {
   my $self = shift;
   my $pad  = $self->SUPER::pad_left;
   return $pad if $self->{level} > 0;
-  return $pad unless $self->feature->strand < 0;
+  my $strand = $self->feature->strand;
+  return $pad unless defined $strand && $strand < 0;
   return $self->arrow_length > $pad ? $self->arrow_length : $pad;
 }
 
@@ -18,7 +19,8 @@ sub pad_right {
   my $self = shift;
   my $pad  = $self->SUPER::pad_right;
   return $pad if $self->{level} > 0;
-  return $pad unless $self->feature->strand > 0;
+  my $strand = $self->feature->strand;
+  return $pad unless defined($strand) && $strand > 0;
   return $self->arrow_length > $pad ? $self->arrow_length : $pad;
 }
 

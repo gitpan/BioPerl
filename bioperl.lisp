@@ -1,4 +1,6 @@
-
+;;
+;; $Id: bioperl.lisp,v 1.25 2002/11/30 15:43:04 jason Exp $
+;;
 ;; Perl mode set up
 
 (assoc "\\.pl$" auto-mode-alist)
@@ -17,7 +19,7 @@
 (defun bioperl-object-start (perl-object-name perl-caretaker-name caretaker-email)
   "Places standard bioperl object notation headers and footers"
   (interactive "sName of Object: \nsName of caretaker: \nsEmail: ")
-  (insert "# $Id: bioperl.lisp,v 1.18 2002/01/28 20:14:14 heikki Exp $\n#\n# BioPerl module for " perl-object-name "\n#\n# Cared for by " perl-caretaker-name " <" caretaker-email ">\n#\n# Copyright " perl-caretaker-name "\n#\n# You may distribute this module under the same terms as perl itself\n\n")
+  (insert "# $Id: bioperl.lisp,v 1.25 2002/11/30 15:43:04 jason Exp $\n#\n# BioPerl module for " perl-object-name "\n#\n# Cared for by " perl-caretaker-name " <" caretaker-email ">\n#\n# Copyright " perl-caretaker-name "\n#\n# You may distribute this module under the same terms as perl itself\n\n")
   (insert "# POD documentation - main docs before the code\n\n")
   (insert "=head1 NAME\n\n" perl-object-name " - DESCRIPTION of Object\n\n")
   (insert "=head1 SYNOPSIS\n\nGive standard usage here\n\n")
@@ -26,7 +28,7 @@
   (insert "User feedback is an integral part of the evolution of this and other\nBioperl modules. Send your comments and suggestions preferably to\nthe Bioperl mailing list.  Your participation is much appreciated.\n\n")
   (insert "  bioperl-l@bioperl.org              - General discussion\n  http://bioperl.org/MailList.shtml  - About the mailing lists\n\n")
   (insert "=head2 Reporting Bugs\n\nReport bugs to the Bioperl bug tracking system to help us keep track\nof the bugs and their resolution. Bug reports can be submitted via\nemail or the web:\n\n")
-  (insert "  bioperl-bugs@bioperl.org\n  http://bioperl.org/bioperl-bugs/\n\n")
+  (insert "  bioperl-bugs@bioperl.org\n  http://bugzilla.bioperl.org/\n\n")
   (insert "=head1 AUTHOR - " perl-caretaker-name "\n\nEmail " caretaker-email "\n\nDescribe contact details here\n\n")
   (insert "=head1 CONTRIBUTORS\n\nAdditional contributors names and emails here\n\n")
   (insert "=head1 APPENDIX\n\nThe rest of the documentation details each of the object methods.\nInternal methods are usually preceded with a _\n\n=cut\n\n")
@@ -39,9 +41,9 @@
   (insert "\n@ISA = qw(Bio::Root::Root );\n\n")
   (insert "=head2 new\n\n Title   : new\n Usage   : my $obj = new "
 	  perl-object-name "();\n Function: Builds a new "
-	  perl-object-name " object \n Returns : "
+	  perl-object-name " object \n Returns : an instance of "
 	  perl-object-name "\n Args    :\n\n\n=cut\n\n")
-  (insert "sub new {\n  my($class,@args) = @_;\n\n  my $self = $class->SUPER::new(@args);\n\n}\n")
+  (insert "sub new {\n  my($class,@args) = @_;\n\n  my $self = $class->SUPER::new(@args);\n  return $self;\n}\n")
   (insert "\n\n1;")
   )
 
@@ -49,7 +51,7 @@
 						 caretaker-email)
   "Places standard bioperl object notation headers and footers"
   (interactive "sName of Object: \nsName of caretaker: \nsEmail: ")
-  (insert "# $Id: bioperl.lisp,v 1.18 2002/01/28 20:14:14 heikki Exp $\n#\n# BioPerl module for " perl-object-name "\n#\n# Cared for by " perl-caretaker-name " <" caretaker-email ">\n#\n# Copyright " perl-caretaker-name "\n#\n# You may distribute this module under the same terms as perl itself\n\n")
+  (insert "# $Id: bioperl.lisp,v 1.25 2002/11/30 15:43:04 jason Exp $\n#\n# BioPerl module for " perl-object-name "\n#\n# Cared for by " perl-caretaker-name " <" caretaker-email ">\n#\n# Copyright " perl-caretaker-name "\n#\n# You may distribute this module under the same terms as perl itself\n\n")
   (insert "# POD documentation - main docs before the code\n\n")
   (insert "=head1 NAME\n\n" perl-object-name " - DESCRIPTION of Interface\n\n")
   (insert "=head1 SYNOPSIS\n\nGive standard usage here\n\n")
@@ -65,8 +67,9 @@
   (insert "\n# Let the code begin...\n\n")
   (insert "\npackage " perl-object-name ";\n")
   (insert "use vars qw(@ISA);\n")
-  (insert "use strict;\nuse Carp;\nuse Bio::Root::Root;\n\n")
-  (insert "@ISA = qw( Bio::Root::Root );")
+  (insert "use strict;\nuse Carp;\nuse Bio::Root::RootI;\n\n")
+  (insert "@ISA = qw( Bio::Root::RootI );")
+  (insert "\n\n1;")
   )
 
 
@@ -83,8 +86,8 @@
 (defun bioperl-getset (field-name)
   "puts in a bioperl method for a get/set method complete with pod boiler-plate"
   (interactive "sfield name:")
-  (insert "=head2 " field-name "\n\n Title   : " field-name "\n Usage   : $obj->" field-name "($newval)\n Function: \n Example : \n Returns : value of " field-name "\n Args    : newvalue (optional)\n\n\n=cut\n\n")
-  (insert "sub " field-name "{\n   my ($self,$value) = @_;\n   if( defined $value) {\n      $self->{'" field-name "'} = $value;\n    }\n    return $self->{'" field-name "'};\n")
+  (insert "=head2 " field-name "\n\n Title   : " field-name "\n Usage   : $obj->" field-name "($newval)\n Function: \n Example : \n Returns : value of " field-name " (a scalar)\n Args    : on set, new value (a scalar or undef, optional)\n\n\n=cut\n\n")
+  (insert "sub " field-name "{\n    my $self = shift;\n\n    return $self->{'" field-name "'} = shift if @_;\n    return $self->{'" field-name "'};")
   (insert "\n}\n"))
 
 

@@ -1,4 +1,4 @@
-# $Id: biofetch.pm,v 1.1.2.2 2002/03/14 13:21:58 heikki Exp $
+# $Id: biofetch.pm,v 1.5 2002/10/22 07:45:14 lapp Exp $
 #
 # BioPerl module Bio::DB::Biblio::biofetch.pm
 #
@@ -50,7 +50,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR
 
@@ -105,8 +105,8 @@ use Bio::Biblio::IO;
 BEGIN {
 
     # set the version for version checking
-    $VERSION = do { my @r = (q$Revision: 1.1.2.2 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id: biofetch.pm,v 1.1.2.2 2002/03/14 13:21:58 heikki Exp $;
+    $VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
+    $Revision = q$Id: biofetch.pm,v 1.5 2002/10/22 07:45:14 lapp Exp $;
 
     # you can add your own here theoretically.
     %HOSTS = (
@@ -231,7 +231,6 @@ sub get_seq_stream {
 	($rformat,$ioformat) = $self->request_format();
 	$self->postprocess_data('type'=> 'string',
 				'location' => $content);
-        print STDERR "str is $$content\n" if ( $self->verbose > 0);
 	$stream = new Bio::Biblio::IO('-format' => $ioformat,
 #				      '-data'   => "<tag>". $$content. "</tag>");
 				      '-data'   => $$content

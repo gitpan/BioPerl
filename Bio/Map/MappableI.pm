@@ -1,4 +1,4 @@
-# $Id: MappableI.pm,v 1.8 2002/02/11 19:04:45 jason Exp $
+# $Id: MappableI.pm,v 1.9 2002/10/22 07:45:15 lapp Exp $
 #
 # BioPerl module for Bio::Map::MappableI
 #
@@ -52,7 +52,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 

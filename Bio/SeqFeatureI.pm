@@ -1,4 +1,4 @@
-# $Id: SeqFeatureI.pm,v 1.27 2001/12/28 08:00:01 sac Exp $
+# $Id: SeqFeatureI.pm,v 1.43 2002/12/02 14:00:19 jason Exp $
 #
 # BioPerl module for Bio::SeqFeatureI
 #
@@ -18,7 +18,7 @@ Bio::SeqFeatureI - Abstract interface of a Sequence Feature
 
     # get a seqfeature somehow, eg,
 
-    foreach $feat ( $annseq->all_SeqFeatures() ) {
+    foreach $feat ( $seq->top_SeqFeatures() ) {
             print "Feature from ", $feat->start, "to ", 
 	          $feat->end, " Primary tag  ", $feat->primary_tag, 
 	          ", produced by ", $feat->source_tag(), "\n";
@@ -35,13 +35,13 @@ Bio::SeqFeatureI - Abstract interface of a Sequence Feature
             }
 	    print "new feature\n" if $feat->has_tag('new');
 	    # features can have sub features
-	    my @subfeat = $feat->sub_SeqFeature();
+	    my @subfeat = $feat->get_SeqFeatures();
 	}
 
 =head1 DESCRIPTION
 
 This interface is the functions one can expect for any Sequence
-Feature, whatever its implemtation or whether it is a more complex
+Feature, whatever its implementation or whether it is a more complex
 type (eg, a Gene). This object doesn\'t actually provide any
 implemention, it just provides the definitions of what methods one can
 call. See Bio::SeqFeature::Generic for a good standard implementation
@@ -63,7 +63,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 APPENDIX
 
@@ -81,51 +81,22 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::RangeI;
+use Bio::Seq;
 
 use Carp;
 
 @ISA = qw(Bio::RangeI);
 
-=head2 Bio::RangeI methods
-
-List of interfaces inherited from  L<Bio::RangeI>.
-
-=head2 start
-
- Title   : start
- Usage   : $start = $feat->start
- Function: Returns the start coordinate of the feature
- Returns : integer
- Args    : none
-
-
-=head2 end
-
- Title   : end
- Usage   : $end = $feat->end
- Function: Returns the end coordinate of the feature
- Returns : integer
- Args    : none
-
-=head2 strand
-
- Title   : strand
- Usage   : $strand = $feat->strand()
- Function: Returns strand information, being 1,-1 or 0
- Returns : -1,1 or 0
- Args    : none
-
-
-=cut
-
-=head2 SeqFeatureI specific methods
+=head1 SeqFeatureI specific methods
 
 New method interfaces.
 
-=head2 sub_SeqFeature
+=cut
 
- Title   : sub_SeqFeature
- Usage   : @feats = $feat->sub_SeqFeature();
+=head2 get_SeqFeatures
+
+ Title   : get_SeqFeatures
+ Usage   : @feats = $feat->get_SeqFeatures();
  Function: Returns an array of sub Sequence Features
  Returns : An array
  Args    : none
@@ -133,12 +104,25 @@ New method interfaces.
 
 =cut
 
-sub sub_SeqFeature{
+sub get_SeqFeatures{
    my ($self,@args) = @_;
 
    $self->throw_not_implemented();
 }
 
+=head2 display_name
+
+ Title   : display_name
+ Usage   : $name = $feat->display_name()
+ Function: Returns the human-readable name of the feature for displays.
+ Returns : a string
+ Args    : none
+
+=cut
+
+sub display_name { 
+    shift->throw_not_implemented();
+}
 
 =head2 primary_tag
 
@@ -195,10 +179,10 @@ sub has_tag{
 
 }
 
-=head2 each_tag_value
+=head2 get_tag_values
 
- Title   : each_tag_value
- Usage   : @values = $self->each_tag_value('some_tag')
+ Title   : get_tag_values
+ Usage   : @values = $self->get_tag_values('some_tag')
  Function: 
  Returns : An array comprising the values of the specified tag.
  Args    :
@@ -206,16 +190,14 @@ sub has_tag{
 
 =cut
 
-sub each_tag_value {
-   my ($self,@args) = @_;
-
-   $self->throw_not_implemented();
+sub get_tag_values {
+    shift->throw_not_implemented();
 }
 
-=head2 all_tags
+=head2 get_all_tags
 
- Title   : all_tags
- Usage   : @tags = $feat->all_tags()
+ Title   : get_all_tags
+ Usage   : @tags = $feat->get_all_tags()
  Function: gives all tags for this feature
  Returns : an array of strings
  Args    : none
@@ -223,10 +205,99 @@ sub each_tag_value {
 
 =cut
 
-sub all_tags{
-   my ($self,@args) = @_;
+sub get_all_tags{
+    shift->throw_not_implemented();
+}
 
-   $self->throw_not_implemented();
+=head2 attach_seq
+
+ Title   : attach_seq
+ Usage   : $sf->attach_seq($seq)
+ Function: Attaches a Bio::Seq object to this feature. This
+           Bio::Seq object is for the *entire* sequence: ie
+           from 1 to 10000
+
+           Note that it is not guaranteed that if you obtain a feature from
+           an object in bioperl, it will have a sequence attached. Also,
+           implementors of this interface can choose to provide an empty
+           implementation of this method. I.e., there is also no guarantee 
+           that if you do attach a sequence, seq() or entire_seq() will not
+           return undef.
+
+           The reason that this method is here on the interface is to enable
+           you to call it on every SeqFeatureI compliant object, and
+           that it will be implemented in a useful way and set to a useful 
+           value for the great majority of use cases. Implementors who choose
+           to ignore the call are encouraged to specifically state this in
+           their documentation.
+
+ Example :
+ Returns : TRUE on success
+ Args    : a Bio::PrimarySeqI compliant object
+
+
+=cut
+
+sub attach_seq {
+    shift->throw_not_implemented();
+}
+
+=head2 seq
+
+ Title   : seq
+ Usage   : $tseq = $sf->seq()
+ Function: returns the truncated sequence (if there is a sequence attached) 
+           for this feature
+ Example :
+ Returns : sub seq (a Bio::PrimarySeqI compliant object) on attached sequence
+           bounded by start & end, or undef if there is no sequence attached
+ Args    : none
+
+
+=cut
+
+sub seq {
+    shift->throw_not_implemented();
+}
+
+=head2 entire_seq
+
+ Title   : entire_seq
+ Usage   : $whole_seq = $sf->entire_seq()
+ Function: gives the entire sequence that this seqfeature is attached to
+ Example :
+ Returns : a Bio::PrimarySeqI compliant object, or undef if there is no
+           sequence attached
+ Args    : none
+
+
+=cut
+
+sub entire_seq {
+    shift->throw_not_implemented();
+}
+
+
+=head2 seq_id
+
+ Title   : seq_id
+ Usage   : $obj->seq_id($newval)
+ Function: There are many cases when you make a feature that you
+           do know the sequence name, but do not know its actual
+           sequence. This is an attribute such that you can store
+           the ID (e.g., display_id) of the sequence.
+
+           This attribute should *not* be used in GFF dumping, as
+           that should come from the collection in which the seq
+           feature was found.
+ Returns : value of seq_id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub seq_id {
+    shift->throw_not_implemented();
 }
 
 =head2 gff_string
@@ -280,7 +351,171 @@ sub _static_gff_formatter{
    return $static_gff_formatter;
 }
 
+=head1 Bio::RangeI methods
 
+List of interfaces inherited from Bio::RangeI (see L<Bio::RangeI>
+for details).
+
+=cut
+
+=head2 start
+
+ Title   : start
+ Usage   : $start = $feat->start
+ Function: Returns the start coordinate of the feature
+ Returns : integer
+ Args    : none
+
+
+=head2 end
+
+ Title   : end
+ Usage   : $end = $feat->end
+ Function: Returns the end coordinate of the feature
+ Returns : integer
+ Args    : none
+
+=head2 strand
+
+ Title   : strand
+ Usage   : $strand = $feat->strand()
+ Function: Returns strand information, being 1,-1 or 0
+ Returns : -1,1 or 0
+ Args    : none
+
+
+=cut
+
+=head1 Decorating methods
+
+These methods have an implementation provided by Bio::SeqFeatureI,
+but can be validly overwritten by subclasses
+
+=head2 spliced_seq
+
+  Title   : spliced_seq
+
+  Usage   : $seq = $feature->spliced_seq()
+            $seq = $feature_with_remote_locations->spliced_seq($db_for_seqs)
+
+  Function: Provides a sequence of the feature which is the most
+            semantically "relevant" feature for this sequence. A default
+            implementation is provided which for simple cases returns just
+            the sequence, but for split cases, loops over the split location
+            to return the sequence. In the case of split locations with
+            remote locations, eg
+
+            join(AB000123:5567-5589,80..1144)
+
+            in the case when a database object is passed in, it will attempt
+            to retrieve the sequence from the database object, and "Do the right thing",
+            however if no database object is provided, it will generate the correct
+            number of N's (DNA) or X's (protein, though this is unlikely).
+
+            This function is deliberately "magical" attempting to second guess
+            what a user wants as "the" sequence for this feature
+
+            Implementing classes are free to override this method with their
+            own magic if they have a better idea what the user wants
+
+  Args    : [optional] A Bio::DB::RandomAccessI compliant object
+  Returns : A Bio::Seq
+
+=cut
+
+sub spliced_seq {
+    my ($self,$db) = shift;
+
+    if( ! $self->location->isa("Bio::Location::SplitLocationI") ) {
+	return $self->seq(); # nice and easy!
+    }
+
+    # redundant test, but the above ISA is probably not ideal.
+    if( ! $self->location->isa("Bio::Location::SplitLocationI") ) {
+	$self->throw("not atomic, not split, yikes, in trouble!");
+    }
+
+    my $seqstr;
+    my $seqid = $self->entire_seq->display_id;
+    # This is to deal with reverse strand features
+    # so we are really sorting features 5' -> 3' on their strand
+    # i.e. rev strand features will be sorted largest to smallest
+    # as this how revcom CDSes seem to be annotated in genbank.
+    # Might need to eventually allow this to be programable?    
+    # (can I mention how much fun this is NOT! --jason)
+    
+    my ($mixed,$fstrand) = (0);
+    if( $self->isa('Bio::Das::SegmentI') &&
+	! $self->absolute ) { 
+	$self->warn("Calling spliced_seq with a Bio::Das::SegmentI which does have absolute set to 1 -- be warned you may not be getting things on the correct strand");
+    }
+    
+    my @locs = map { $_->[0] }
+    # sort so that most negative is first basically to order
+    # the features on the opposite strand 5'->3' on their strand
+    # rather than they way most are input which is on the fwd strand
+
+    sort { $a->[1] <=> $b->[1] } # Yes Tim, Schwartzian transformation
+    map { 
+	$fstrand = $_->strand unless defined $fstrand;
+	$mixed = 1 if defined $_->strand && $fstrand != $_->strand;
+	[ $_, $_->start* ($_->strand || 1)];	    
+    } $self->location->each_Location; 
+    
+    if ( $mixed ) { 
+	$self->warn("Mixed strand locations, spliced seq using the input order rather than trying to sort");    
+	@locs = $self->location->each_Location; 
+    }
+
+    foreach my $loc ( @locs  ) {
+	if( ! $loc->isa("Bio::Location::Atomic") ) {
+	    $self->throw("Can only deal with one level deep locations");
+	}
+	my $called_seq;
+	if( $fstrand != $loc->strand ) {
+	    $self->warn("feature strand is different from location strand!");
+	}
+	# deal with remote sequences
+
+	if( $loc->seq_id ne $seqid ) {
+	    if( defined $db ) {
+		my $sid = $loc->seq_id;
+		$sid =~ s/\.\d+//g;
+		eval {
+		    $called_seq = $db->get_Seq_by_acc($sid);
+		};
+		if( $@ ) {
+		    $self->warn("In attempting to join a remote location, sequence $sid was not in database. Will provide padding N's. Full exception \n\n$@");
+		    $called_seq = undef;
+		}
+	    } else {
+		$called_seq = undef;
+	    }
+	    if( !defined $called_seq ) {
+		$seqstr .= 'N' x $self->length;
+		next;
+	    }
+	} else {
+	    $called_seq = $self->entire_seq;
+	}
+	
+	if( $self->isa('Bio::Das::SegmentI') ) {
+	    my ($s,$e) = ($loc->start,$loc->end);	    
+	    $seqstr .= $called_seq->subseq($s,$e)->seq();
+	} else { 
+	    # This is dumb subseq should work on locations...
+	    if( $loc->strand == 1 ) {
+		$seqstr .= $called_seq->subseq($loc->start,$loc->end);
+	    } else {
+		$seqstr .= $called_seq->trunc($loc->start,$loc->end)->revcom->seq();
+	    }
+	}
+    }
+    my $out = Bio::Seq->new( -id => $self->entire_seq->display_id . "_spliced_feat",
+				      -seq => $seqstr);
+    
+    return $out;
+}
 
 =head1 RangeI methods
 

@@ -1,4 +1,4 @@
-# $Id: GenBank.pm,v 1.43 2002/01/19 22:26:18 jason Exp $
+# $Id: GenBank.pm,v 1.47 2002/11/29 18:18:55 lstein Exp $
 #
 # BioPerl module for Bio::DB::GenBank
 #
@@ -37,6 +37,17 @@ Bio::DB::GenBank - Database object interface to GenBank
     $seq = $gb->get_Seq_by_acc('J00522'); # Accession Number
     $seq = $gb->get_Seq_by_version('J00522.1'); # Accession.version
     $seq = $gb->get_Seq_by_gi('405830'); # GI Number
+
+    # get a stream via a query string
+    my $seqio = $gb->get_Stream_by_query('Oryza sativa[Organism] AND EST');
+    while( my $seq =  $seqio->next_seq ) {
+      print "seq length is ", $seq->length,"\n";
+    }
+
+    # or using a Bio::DB::Query::GenBank query
+    my $query = Bio::DB::Query::GenBank->new(-query   =>'Oryza sativa AND EST',
+                                             -reldate => '30');
+    my $seqio = $gb->get_Stream_by_query($query);
 
     # or ... best when downloading very large files, prevents
     # keeping all of the file in memory
@@ -89,7 +100,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Aaron Mackey, Jason Stajich
 
@@ -108,49 +119,53 @@ preceded with a _
 
 package Bio::DB::GenBank;
 use strict;
-use vars qw(@ISA %PARAMSTRING);
+use vars qw(@ISA %PARAMSTRING $DEFAULTFORMAT $DEFAULTMODE);
 use Bio::DB::NCBIHelper;
 
 @ISA = qw(Bio::DB::NCBIHelper);
 BEGIN {    
+    $DEFAULTMODE   = 'single';
+    $DEFAULTFORMAT = 'gp';	    
     %PARAMSTRING = ( 
-# new stype batch entrez - but only returns HTML
-#		     'batch'  => { 
-#			 'cmd' => 'Retrieve',
-#			 'db'  => 'nucleotide',
-#		     },
-# old style
-#		     'batch'  => { 
-#			 'db' => 'n',
-#			 'FORMAT'  => 0,
-#			 'REQUEST_TYPE' => 'LIST_OF_GIS',
-#			 'ORGNAME'  => '',
-#			 'LIST_ORG' => '(None)',
-#			 'QUERY'    => "",
-#			 'SAVETO'   => 'YES',
-#			 'NOHEADER' => 'YES',
-#		     },
-		     'batch'=>  { 'db'     => 'n',
-				   'form'   => '1',
-				   'title'  => 'no', 
-			       },
-		     'single'=>  { 'db'     => 'n',
-				   'form'   => '1',
-				   'title'  => 'no', 
-			       },
-		     'version'=> { 'pg'     => 'hist',
-				   'type'   => 'acc',
-			       },
-		     'gi' =>     {  'db'    => 'n',
-				    'form'  => '1',
-				    'title' => 'no',
-				}
+		     'batch' => { 'db'     => 'protein',
+				  'usehistory' => 'n',
+				  'tool'   => 'bioperl',
+				  'retmode' => 'text'},
+		     'query' => { 'usehistory' => 'y',
+				  'tool'   => 'bioperl',
+				  'retmode' => 'text'},
+		     'gi' => { 'db'     => 'protein',
+			       'usehistory' => 'n',
+			       'tool'   => 'bioperl',
+			       'retmode' => 'text'},
+		     'version' => { 'db'     => 'protein',
+				    'usehistory' => 'n',
+				    'tool'   => 'bioperl',
+				    'retmode' => 'text'},
+		     'single' => { 'db'     => 'protein',
+				   'usehistory' => 'n',
+				   'tool'   => 'bioperl',
+				   'retmode' => 'text'},
 		     );
 }
 
 # new is in NCBIHelper
 
 # helper method to get db specific options
+
+=head2 new
+
+ Title   : new
+ Usage   : $gb = Bio::DB::GenBank->new(@options)
+ Function: Creates a new genbank handle
+ Returns : New genbank handle
+ Args    : -delay   number of seconds to delay between fetches (3s)
+
+NOTE:  There are other options that are used internally.  By NCBI policy, this
+module introduces a 3s delay between fetches.  If you are fetching multiple genbank
+ids, it is a good idea to use get
+
+=cut
 
 =head2 get_params
 
@@ -165,7 +180,7 @@ BEGIN {
 
 sub get_params {
     my ($self, $mode) = @_;
-    return %{$PARAMSTRING{$mode}};
+    return defined $PARAMSTRING{$mode} ? %{$PARAMSTRING{$mode}} : %{$PARAMSTRING{$DEFAULTMODE}};
 }
 
 # from Bio::DB::WebDBSeqI from Bio::DB::RandomAccessI
@@ -211,25 +226,21 @@ sub get_params {
 
 =head1 Routines implemented by Bio::DB::NCBIHelper
 
-=head2 get_request
+=head2 get_Stream_by_query
 
- Title   : get_request
- Usage   : my $url = $self->get_request
- Function: HTTP::Request
- Returns : 
- Args    : %qualifiers = a hash of qualifiers (ids, format, etc)
-
-=head2 get_Stream_by_batch
-
-  Title   : get_Stream_by_batch
-  Usage   : $seq = $db->get_Stream_by_batch($ref);
+  Title   : get_Stream_by_query
+  Usage   : $seq = $db->get_Stream_by_query($query);
   Function: Retrieves Seq objects from Entrez 'en masse', rather than one
             at a time.  For large numbers of sequences, this is far superior
             than get_Stream_by_[id/acc]().
   Example :
   Returns : a Bio::SeqIO stream object
-  Args    : $ref : either an array reference, a filename, or a filehandle
-            from which to get the list of unique ids/accession numbers.
+  Args    : $query :   An Entrez query string or a
+            Bio::DB::Query::GenBank object.  It is suggested that you
+            create a Bio::DB::Query::GenBank object and get the entry
+            count before you fetch a potentially large stream.
+
+=cut
 
 =head2 get_Stream_by_id
 
@@ -261,6 +272,28 @@ sub get_params {
   Args    : $ref : a reference to an array of gi numbers for
                    the desired sequence entries
   Note    : For GenBank, this just calls the same code for get_Stream_by_id()
+
+=head2 get_Stream_by_batch
+
+  Title   : get_Stream_by_batch
+  Usage   : $seq = $db->get_Stream_by_batch($ref);
+  Function: Retrieves Seq objects from Entrez 'en masse', rather than one
+            at a time.
+  Example :
+  Returns : a Bio::SeqIO stream object
+  Args    : $ref : either an array reference, a filename, or a filehandle
+            from which to get the list of unique ids/accession numbers.
+
+NOTE: This method is redundant and deprecated.  Use get_Stream_by_id()
+instead.
+
+=head2 get_request
+
+ Title   : get_request
+ Usage   : my $url = $self->get_request
+ Function: HTTP::Request
+ Returns : 
+ Args    : %qualifiers = a hash of qualifiers (ids, format, etc)
 
 1;
 __END__

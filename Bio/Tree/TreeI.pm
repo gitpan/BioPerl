@@ -1,4 +1,4 @@
-# TreeI.pm,v 1.7 2002/04/18 12:52:46 jason Exp
+# $Id: TreeI.pm,v 1.11 2002/12/24 17:52:03 jason Exp $
 #
 # BioPerl module for Bio::Tree::TreeI
 #
@@ -44,10 +44,9 @@ the Bioperl mailing list.  Your participation is much appreciated.
 
 Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+the web:
 
-  bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -55,7 +54,8 @@ Email jason@bioperl.org
 
 =head1 CONTRIBUTORS
 
-Elia Stupka, elia@ebi.ac.uk
+Aaron Mackey amackey@virginia.edu
+Elia Stupka, elia@fugu-sg.org
 
 =head1 APPENDIX
 
@@ -128,7 +128,6 @@ sub number_nodes{
    return 0;
 }
 
-
 =head2 total_branch_length
 
  Title   : total_branch_length
@@ -149,9 +148,11 @@ sub branch_length {
  Title   : height
  Usage   : my $height = $tree->height
  Function: Gets the height of tree - this LOG_2($number_nodes)
+           WARNING: this is only true for strict binary trees.  The TreeIO
+           system is capable of building non-binary trees, for which this
+           method will currently return an incorrect value!!
  Returns : integer
  Args    : none
-
 
 =cut
 
@@ -160,6 +161,40 @@ sub height{
    my $nodect =  $self->number_nodes;
    return 0 if( ! $nodect ); 
    return log($nodect) / log(2);
+}
+
+=head2 id
+
+ Title   : id
+ Usage   : my $id = $tree->id();
+ Function: An id value for the tree
+ Returns : scalar
+ Args    : 
+
+
+=cut
+
+sub id{
+   my ($self,@args) = @_;
+   $self->throw_not_implemented();
+}
+
+=head2 score
+
+ Title   : score
+ Usage   : $obj->score($newval)
+ Function: Sets the associated score with this tree
+           This is a generic slot which is probably best used 
+           for log likelihood or other overall tree score
+ Returns : value of score
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub score{
+   my ($self,$value) = @_;
+   $self->throw_not_implemented();
 }
 
 1;

@@ -1,9 +1,9 @@
 #----------------------------------------------------------------------------
-# PACKAGE : Bio::Tools::Blast::HSP.pm
+# PACKAGE : Bio::Tools::Blast::HSP
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : March 1996
 # STATUS  : Alpha
-# REVISION: $Id: HSP.pm,v 1.15 2002/01/25 09:06:32 sac Exp $
+# REVISION: $Id: HSP.pm,v 1.18 2002/10/22 07:38:48 lapp Exp $
 #
 # For the latest version and documentation, visit the distribution site:
 #    http://genome-www.stanford.edu/perlOOP/bioperl/blast/
@@ -27,7 +27,7 @@ use Bio::Root::Object ();
 use strict;
 use vars qw($ID $GAP_SYMBOL @SCORE_CUTOFFS $Revision %STRAND_SYMBOL);
 $ID       = 'Bio::Tools::Blast::HSP';
-$Revision = '$Id: HSP.pm,v 1.15 2002/01/25 09:06:32 sac Exp $';  #'
+$Revision = '$Id: HSP.pm,v 1.18 2002/10/22 07:38:48 lapp Exp $';  #'
 
 $GAP_SYMBOL    = '-';          # Need a more general way to handle gap symbols.
 @SCORE_CUTOFFS = ( 100, 30 );  # Bit score cutoffs (see homol_score()).
@@ -37,7 +37,7 @@ $GAP_SYMBOL    = '-';          # Need a more general way to handle gap symbols.
 
 =head1 NAME
 
-Bio::Tools::Blast::HSP.pm - Bioperl BLAST High-Scoring Segment Pair object
+Bio::Tools::Blast::HSP - Bioperl BLAST High-Scoring Segment Pair object
 
 =head1 SYNOPSIS
 
@@ -130,7 +130,7 @@ the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
     bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    http://bugzilla.bioperl.org/           
 
 =head1 AUTHOR
 

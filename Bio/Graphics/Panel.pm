@@ -3,11 +3,10 @@ package Bio::Graphics::Panel;
 use strict;
 use Bio::Graphics::Glyph::Factory;
 use Bio::Graphics::Feature;
-use Carp 'cluck';
 use GD;
 use vars '$VERSION';
 
-$VERSION = '1.01';
+$VERSION = 1.04;
 
 use constant KEYLABELFONT => gdMediumBoldFont;
 use constant KEYSPACING   => 5; # extra space between key columns
@@ -16,6 +15,7 @@ use constant KEYCOLOR     => 'wheat';
 use constant KEYSTYLE     => 'bottom';
 use constant KEYALIGN     => 'left';
 use constant GRIDCOLOR    => 'lightcyan';
+use constant MISSING_TRACK_COLOR =>'gray';
 
 my %COLORS;  # translation table for symbolic color names to RGB triple
 
@@ -38,7 +38,9 @@ sub new {
   my $keyalign = $options{-key_align} || KEYALIGN;
   my $allcallbacks = $options{-all_callbacks} || 0;
   my $gridcolor    = $options{-gridcolor} || GRIDCOLOR;
-  my $grid         = $options{-grid} || 0;
+  my $grid         = $options{-grid}       || 0;
+  my $empty_track_style   = $options{-empty_tracks} || 'key';
+  my $truecolor    = $options{-truecolor}  || 0;
 
   $offset   ||= $options{-segment}->start-1 if $options{-segment};
   $length   ||= $options{-segment}->length  if $options{-segment};
@@ -67,6 +69,8 @@ sub new {
 		key_style => $keystyle,
 		key_align => $keyalign,
 		all_callbacks => $allcallbacks,
+		truecolor     => $truecolor,
+		empty_track_style    => $empty_track_style,
 	       },$class;
 }
 
@@ -95,13 +99,32 @@ sub pad_bottom {
   $g;
 }
 
+# values of empty_track_style are:
+#    "suppress" -- suppress empty tracks entirely (default)
+#    "key"      -- show just the key in "between" mode
+#    "line"     -- draw a thin grey line
+#    "dashed"   -- draw a dashed line
+sub empty_track_style {
+  my $self = shift;
+  my $g = $self->{empty_track_style};
+  $self->{empty_track_style} = shift if @_;
+  $g;
+}
+
+sub key_style {
+  my $self = shift;
+  my $g = $self->{key_style};
+  $self->{key_style} = shift if @_;
+  $g;
+}
+
 # numerous direct calls into array used here for performance considerations
 sub map_pt {
   my $self   = shift;
   my $offset = $self->{offset};
   my $scale  = $self->{scale} || $self->scale;
-  my $pl = $self->{pad_left};
-  my $pr = $self->{width} - $self->{pad_right};
+  my $pl     = $self->{pad_left};
+  my $pr     = $self->{width} - $self->{pad_right};
   my @result;
   foreach (@_) {
     my $val = int (0.5 + $pl + ($_-$offset-1) * $scale);
@@ -115,9 +138,8 @@ sub map_pt {
 sub map_no_trunc {
   my $self   = shift;
   my $offset = $self->{offset};
-  my $scale  = $self->{scale} || $self->scale;
+  my $scale  = $self->scale;
   my $pl = $self->{pad_left};
-  my $pr = $self->{width} - $self->{pad_right};
   my @result;
   foreach (@_) {
     my $val = int (0.5 + $pl + ($_-$offset-1) * $scale);
@@ -128,7 +150,8 @@ sub map_no_trunc {
 
 sub scale {
   my $self = shift;
-  $self->{scale} ||= ($self->{width}-$self->pad_left-$self->pad_right-1)/($self->length-1);
+  $self->{scale} ||= ($self->{width}-$self->pad_left-$self->pad_right-1)/($self->length-1);  # wrong!
+#  $self->{scale} ||= ($self->{width}-$self->pad_left-$self->pad_right-1)/($self->length);   # right, but I don't want to fix regression tests!
 }
 
 sub start { shift->{offset}+1}
@@ -149,7 +172,7 @@ sub left {
 }
 sub right {
   my $self = shift;
-  $self->width - $self->pad_left;
+  $self->width - $self->pad_right;
 }
 
 sub spacing {
@@ -233,20 +256,25 @@ sub _do_add_track {
   $glyph_name = $map if defined $map;
   $glyph_name ||= 'generic';
 
-  my $panel_map = ref($map) eq 'CODE'
-    ?  sub {
-          my $feature = shift;
-	  return 'track' if eval { $feature->primary_tag  eq 'track' };
-	  return 'group' if eval { $feature->primary_tag  eq 'group' };
-	  return $map->($feature);
-	}
-      :
-	sub {
-	  my $feature = shift;
-	  return 'track' if eval { $feature->primary_tag  eq 'track' };
-	  return 'group' if eval { $feature->primary_tag  eq 'group' };
-	  return $glyph_name;
-	};
+  my $panel_map =
+    ref($map) eq 'CODE' ?  sub {
+      my $feature = shift;
+      return 'track' if eval { $feature->primary_tag  eq 'track' };
+      return 'group' if eval { $feature->primary_tag  eq 'group' };
+      return $map->($feature);
+    }
+   : ref($map) eq 'HASH' ? sub {
+     my $feature = shift;
+     return 'track' if eval { $feature->primary_tag  eq 'track' };
+     return 'group' if eval { $feature->primary_tag  eq 'group' };
+     return eval {$map->{$feature->primary_tag}} || 'generic';
+   }
+   : sub {
+     my $feature = shift;
+     return 'track' if eval { $feature->primary_tag  eq 'track' };
+     return 'group' if eval { $feature->primary_tag  eq 'group' };
+     return $glyph_name;
+   };
 
   $self->_add_track($position,$features,-map=>$panel_map,-stylesheet=>$ss,-options=>\%options);
 }
@@ -284,25 +312,45 @@ sub _add_track {
 
 sub height {
   my $self = shift;
-  my $spacing    = $self->spacing;
-  my $key_height = $self->format_key;
+  my $spacing           = $self->spacing;
+  my $key_height        = $self->format_key;
+  my $empty_track_style = $self->empty_track_style;
+  my $key_style         = $self->key_style;
+  my $bottom_key        = $key_style eq 'bottom';
+  my $between_key       = $key_style eq 'between';
+  my $draw_empty        = $empty_track_style =~ /^(line|dashed)$/;
+  my $keyheight         = $self->{key_font}->height;
   my $height = 0;
-  foreach (@{$self->{tracks}}) {
-    next unless $_->parts;
-    $height += $_->layout_height + $spacing;
+  for my $track (@{$self->{tracks}}) {
+    my $draw_between =  $between_key && $track->option('key');
+    my $has_parts = $track->parts;
+    next if !$has_parts && ($empty_track_style eq 'suppress'
+		        or  $empty_track_style eq 'key' && $bottom_key);
+    $height += $keyheight if $draw_between;
+    $height += $self->spacing;
+    $height += $track->layout_height;
   }
+
+  # get rid of spacing under last track
+  $height -= $self->spacing unless $bottom_key;
   return $height + $key_height + $self->pad_top + $self->pad_bottom;
 }
 
 sub gd {
-  my $self = shift;
+  my $self        = shift;
+  my $existing_gd = shift;
+
+  local $^W = 0;  # can't track down the uninitialized variable warning
 
   return $self->{gd} if $self->{gd};
 
   my $width  = $self->width;
   my $height = $self->height;
 
-  my $gd = GD::Image->new($width,$height);
+  my $gd = $existing_gd || GD::Image->new($width,$height,
+					  ($self->{truecolor} && GD::Image->can('isTrueColor') ? 1 : ())
+					 );
+
   my %translation_table;
   for my $name ('white','black',keys %COLORS) {
     my $idx = $gd->colorAllocate(@{$COLORS{$name}});
@@ -310,28 +358,38 @@ sub gd {
   }
 
   $self->{translations} = \%translation_table;
-  $self->{gd}                = $gd;
-  $gd->fill(0,0,$self->bgcolor) if $self->bgcolor;
+  $self->{gd}           = $gd;
+  if ($self->bgcolor) {
+    $gd->fill(0,0,$self->bgcolor);
+  } elsif (eval {$gd->isTrueColor}) {
+    $gd->fill(0,0,$translation_table{'white'});
+  }
 
   my $pl = $self->pad_left;
   my $pt = $self->pad_top;
   my $offset = $pt;
   my $keyheight   = $self->{key_font}->height;
+  my $bottom_key  = $self->{key_style} eq 'bottom';
   my $between_key = $self->{key_style} eq 'between';
+  my $left_key    = $self->{key_style} eq 'left';
+  my $right_key   = $self->{key_style} eq 'right';
+  my $empty_track_style = $self->empty_track_style;
   my $spacing = $self->spacing;
 
   # we draw in two steps, once for background of tracks, and once for
   # the contents.  This allows the grid to sit on top of the track background.
   for my $track (@{$self->{tracks}}) {
-    next unless $track->parts;
+    my $draw_between = $between_key && $track->option('key');
+    next if !$track->parts && ($empty_track_style eq 'suppress'
+			   or  $empty_track_style eq 'key' && $bottom_key);
     $gd->filledRectangle($pl,
 			 $offset,
 			 $width-$self->pad_right,
 			 $offset+$track->layout_height
-			 + ($self->{key_style} eq 'between' ? $self->{key_font}->height : 0),
+			 + ($between_key ? $self->{key_font}->height : 0),
 			 $track->tkcolor)
       if defined $track->tkcolor;
-    $offset += $keyheight if $between_key && $track->option('key');
+    $offset += $keyheight if $draw_between;
     $offset += $track->layout_height + $spacing;
   }
 
@@ -339,13 +397,30 @@ sub gd {
 
   $offset = $pt;
   for my $track (@{$self->{tracks}}) {
-    next unless $track->parts;
-    $offset += $self->draw_between_key($gd,$track,$offset) if $between_key && $track->option('key');
+    my $draw_between = $between_key && $track->option('key');
+    my $has_parts = $track->parts;
+    next if !$has_parts && ($empty_track_style eq 'suppress'
+			or  $empty_track_style eq 'key' && $bottom_key);
+
+    if ($draw_between) {
+      $offset += $self->draw_between_key($gd,$track,$offset);
+    }
+
+    elsif ($self->{key_style} =~ /^(left|right)$/) {
+      $self->draw_side_key($gd,$track,$offset,$self->{key_style});
+    }
+
+    $self->draw_empty($gd,$offset,$empty_track_style)
+      if !$has_parts && $empty_track_style=~/^(line|dashed)$/;
+
     $track->draw($gd,0,$offset,0,1);
+    $self->track_position($track,$offset);
     $offset += $track->layout_height + $spacing;
   }
 
+
   $self->draw_bottom_key($gd,$pl,$offset) if $self->{key_style} eq 'bottom';
+
   return $self->{gd} = $gd;
 }
 
@@ -353,17 +428,34 @@ sub boxes {
   my $self = shift;
   my @boxes;
   my $offset = 0;
+
   my $pl = $self->pad_left;
   my $pt = $self->pad_top;
-  my $between = $self->{key_style} eq 'between';
+  my $between_key       = $self->{key_style} eq 'between';
+  my $bottom_key        = $self->{key_style} eq 'bottom';
+  my $empty_track_style = $self->empty_track_style;
+  my $keyheight         = $self->{key_font}->height;
+  my $spacing = $self->spacing;
+
   for my $track (@{$self->{tracks}}) {
-    next unless $track->parts;
-    $offset += $self->{key_font}->height if $between && $track->option('key');
+    my $draw_between =  $between_key && $track->option('key');
+    next if !$track->parts && ($empty_track_style eq 'suppress'
+			    or  $empty_track_style eq 'key' && $bottom_key);
+    $offset += $keyheight if $draw_between;
     my $boxes = $track->boxes(0,$offset+$pt);
+    $self->track_position($track,$offset);
     push @boxes,@$boxes;
     $offset += $track->layout_height + $self->spacing;
   }
   return wantarray ? @boxes : \@boxes;
+}
+
+sub track_position {
+  my $self  = shift;
+  my $track = shift;
+  my $d = $self->{_track_position}{$track};
+  $self->{_track_position}{$track} = shift if @_;
+  $d;
 }
 
 # draw the keys -- between
@@ -376,6 +468,16 @@ sub draw_between_key {
           : $self->pad_left;
   $gd->string($self->{key_font},$x,$offset,$key,1);
   return $self->{key_font}->height;
+}
+
+# draw the keys -- left or right side
+sub draw_side_key {
+  my $self   = shift;
+  my ($gd,$track,$offset,$side) = @_;
+  my $key = $track->option('key') or return;
+  my $pos = $side eq 'left' ? $self->pad_left - $self->{key_font}->width * CORE::length($key)-3
+                            : $self->width - $self->pad_right+3;
+  $gd->string($self->{key_font},$pos,$offset,$key,1);
 }
 
 # draw the keys -- bottom
@@ -395,13 +497,21 @@ sub draw_bottom_key {
 # Format the key section, and return its height
 sub format_key {
   my $self = shift;
+  return 0 unless $self->key_style eq 'bottom';
 
   return $self->{key_height} if defined $self->{key_height};
 
-  if ($self->{key_style} eq 'between') {
-    my @key_tracks = grep {$_->option('key')} @{$self->{tracks}};
+  my $suppress = $self->{empty_track_style} eq 'suppress';
+  my $between  = $self->{key_style}         eq 'between';
+
+  if ($between) {
+    my @key_tracks = $suppress
+      ? grep {$_->option('key') && $_->parts} @{$self->{tracks}}
+      : grep {$_->option('key')} @{$self->{tracks}};
     return $self->{key_height} = @key_tracks * $self->{key_font}->height;
-  } elsif ($self->{key_style} eq 'bottom') {
+  }
+
+  elsif ($self->{key_style} eq 'bottom') {
 
     my ($height,$width) = (0,0);
     my %tracks;
@@ -410,7 +520,9 @@ sub format_key {
     # determine how many glyphs become part of the key
     # and their max size
     for my $track (@{$self->{tracks}}) {
+
       next unless $track->option('key');
+      next if $suppress && !$track->parts;
 
       my $glyph;
       if (my @parts = $track->parts) {
@@ -424,12 +536,14 @@ sub format_key {
       }
       next unless $glyph;
 
+
       $tracks{$track} = $glyph;
       my ($h,$w) = ($glyph->layout_height,
 		    $glyph->layout_width);
       $height = $h if $h > $height;
       $width  = $w if $w > $width;
       push @glyphs,$glyph;
+
     }
 
     $width += $self->key_spacing;
@@ -473,6 +587,22 @@ sub format_key {
   else {  # no known key style, neither "between" nor "bottom"
     return $self->{key_height} = 0;
   }
+}
+
+sub draw_empty {
+  my $self  = shift;
+  my ($gd,$offset,$style) = @_;
+  $offset  += $self->spacing/2;
+  my $left  = $self->pad_left;
+  my $right = $self->width-$self->pad_right;
+  my $color = $self->translate_color(MISSING_TRACK_COLOR);
+  if ($style eq 'dashed') {
+    $gd->setStyle($color,$color,gdTransparent,gdTransparent);
+    $gd->line($left,$offset,$right,$offset,gdStyled);
+  } else {
+    $gd->line($left,$offset,$right,$offset,$color);
+  }
+  $offset;
 }
 
 # draw a grid
@@ -525,7 +655,7 @@ sub ticks {
   return ($interval,$interval/10);
 }
 
-# reverse of translate(); given index, return rgb tripler
+# reverse of translate(); given index, return rgb triplet
 sub rgb {
   my $self = shift;
   my $idx  = shift;
@@ -538,18 +668,32 @@ sub translate_color {
   my @colors = @_;
   if (@colors == 3) {
     my $gd = $self->gd or return 1;
-    return $gd->colorClosest(@colors);
+    return $self->colorClosest($gd,@colors);
   }
   elsif ($colors[0] =~ /^\#([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})$/i) {
     my $gd = $self->gd or return 1;
     my ($r,$g,$b) = (hex($1),hex($2),hex($3));
-    return $gd->colorClosest($r,$g,$b);
+    return $self->colorClosest($gd,$r,$g,$b);
   }
   else {
     my $color = $colors[0];
     my $table = $self->{translations} or return 1;
     return defined $table->{$color} ? $table->{$color} : 1;
   }
+}
+
+# workaround for bad GD
+sub colorClosest {
+  my ($self,$gd,@c) = @_;
+  return $self->{closestcache}{"@c"} if exists $self->{closestcache}{"@c"};
+  return $self->{closestcache}{"@c"} = $gd->colorClosest(@c) if $GD::VERSION < 2.04;
+  my ($value,$index);
+  for (keys %COLORS) {
+    my ($r,$g,$b) = @{$COLORS{$_}};
+    my $dist = ($r-$c[0])**2 + ($g-$c[1])**2 + ($b-$c[2])**2;
+    ($value,$index) = ($dist,$_) if !defined($value) || $dist < $value;
+  }
+  return $self->{closestcache}{"@c"} = $self->{translations}{$index};
 }
 
 sub bgcolor {
@@ -753,82 +897,66 @@ Bio::Graphics::Panel - Generate GD images of Bio::Seq objects
 
 =head1 SYNOPSIS
 
-  use Bio::Graphics;
-  use Bio::DB::BioFetch;  # or some other Bio::SeqI generator
+ # This script parses a GenBank or EMBL file named on the command
+ # line and produces a PNG rendering of it.  Call it like this:
+ # render.pl my_file.embl | display -
 
-  # get a Bio::SeqI object somehow
-  my $bf     = Bio::DB::BioFetch->new;
-  my $cosmid = $bf->getSeq_by_id('CEF58D5');
+ use strict;
+ use Bio::Graphics;
+ use Bio::SeqIO;
 
-  my @features = $seq->all_SeqFeatures;
-  my @CDS      = grep {$_->primary_tag eq 'CDS'}  @features;
-  my @gene     = grep {$_->primary_tag eq 'gene'} @features;
-  my @tRNAs    = grep {$_->primary_tag eq 'tRNA'} @features;
+ my $file = shift                       or die "provide a sequence file as the argument";
+ my $io = Bio::SeqIO->new(-file=>$file) or die "couldn't create Bio::SeqIO";
+ my $seq = $io->next_seq                or die "couldn't find a sequence in the file";
 
-  # let the drawing begin...
-  my $panel = Bio::Graphics::Panel->new(
-				      -segment => $cosmid,
-				      -width  => 800
-				     );
+ my @features = $seq->all_SeqFeatures;
 
-  $panel->add_track(arrow => $cosmid,
-	  	   -bump => 0,
-		   -double=>1,
-		   -tick => 2);
+ # sort features by their primary tags
+ my %sorted_features;
+ for my $f (@features) {
+   my $tag = $f->primary_tag;
+   push @{$sorted_features{$tag}},$f;
+ }
 
-  $panel->add_track(transcript  => \@gene,
-		   -bgcolor    =>  'blue',
-		   -fgcolor    =>  'black',
-		   -key        => 'Genes',
-		   -bump       =>  +1,
-		   -height     =>  10,
-		   -label      => 1,
-		   -description=> 1
-		 ) ;
+ my $panel = Bio::Graphics::Panel->new(
+ 				      -segment   => $seq,
+ 				      -key_style => 'between',
+ 				      -width     => 800,
+ 				      -pad_left  => 10,
+ 				      -pad_right => 10,
+ 				      );
+ $panel->add_track($seq,
+ 		  -glyph => 'arrow',
+ 		  -bump => 0,
+ 		  -double=>1,
+ 		  -tick => 2);
 
-  $panel->add_track(transcript2  => \@CDS,
-		    -bgcolor    =>  'cyan',
-		    -fgcolor    =>  'black',
-		    -key        => 'CDS',
-		    -bump       =>  +1,
-		    -height     =>  10,
-		    -label      => \&cds_label,
-		    -description=> \&cds_description,
-		 );
+ $panel->add_track($seq,
+ 		  -glyph  => 'generic',
+ 		  -bgcolor => 'blue',
+ 		  -label  => 1,
+ 		 );
 
-  $panel->add_track(generic    => \@tRNAs,
-		    -bgcolor   =>  'red',
-		    -fgcolor   =>  'black',
-		    -key       => 'tRNAs',
-		    -bump      =>  +1,
-		    -height    =>  8,
-		    -label      => 1,
-		   );
+ # general case
+ my @colors = qw(cyan orange blue purple green chartreuse magenta yellow aqua);
+ my $idx    = 0;
+ for my $tag (sort keys %sorted_features) {
+   my $features = $sorted_features{$tag};
+   $panel->add_track($features,
+ 		    -glyph    =>  'generic',
+ 		    -bgcolor  =>  $colors[$idx++ % @colors],
+ 		    -fgcolor  => 'black',
+ 		    -font2color => 'red',
+ 		    -key      => "${tag}s",
+ 		    -bump     => +1,
+ 		    -height   => 8,
+ 		    -label    => 1,
+ 		    -description => 1,
+ 		   );
+ }
 
-  my $gd = $panel->gd;
-  print $gd->can('png') ? $gd->png : $gd->gif;
-
-  # these are callbacks used to generate nice labels and descriptions for
-  # the features...
-  sub cds_label {
-    my $feature = shift;
-    my @notes;
-    foreach (qw(product gene)) {
-      next unless $feature->has_tag($_);
-      @notes = $feature->each_tag_value($_);
-      last;
-    }
-    $notes[0];
-  }
-
-  sub cds_description {
-    my $feature = shift;
-    my @notes = $feature->each_tag_value('notes')
-                if $feature->has_tag('notes');
-    return unless @notes;
-    substr($notes[0],30) = '...' if length $notes[0] > 30;
-    $notes[0];
-  }
+ print $panel->png;
+ exit 0;
 
 =head1 DESCRIPTION
 
@@ -938,8 +1066,17 @@ a set of tag/value pairs as follows:
 
   -key_style   Whether to print key at bottom of     none
 	       panel ("bottom"), between each
-	       track ("between"), or not at all
-	       ("none").
+	       track ("between"), to the left of
+               each track ("left"), to the right
+               of each track ("right") or
+               not at all ("none").
+
+  -empty_tracks What to do when a track is empty.    suppress
+              Options are to suppress the track
+              completely ("suppress"), to show just
+              the key in "between" mode ("key"),
+              to draw a thin grey line ("line"),
+              or to draw a dashed line ("dashed").
 
   -all_callbacks Whether to invoke callbacks on      false
                the automatic "track" and "group"
@@ -956,6 +1093,7 @@ a set of tag/value pairs as follows:
 
   -gridcolor   Color of the grid                     lightcyan
 
+
 Typically you will pass new() an object that implements the
 Bio::RangeI interface, providing a length() method, from which the
 panel will derive its scale.
@@ -964,6 +1102,16 @@ panel will derive its scale.
 				     -width   => 800);
 
 new() will return undef in case of an error.
+
+Note that if you use the "left" or "right" key styles, you are
+responsible for allocating sufficient -pad_left or -pad_right room for
+the labels to appear.  The necessary width is the number of characters
+in the longest key times the font width (gdMediumBoldFont by default)
+plus 3 pixels of internal padding.  The simplest way to calculate this
+is to iterate over the possible track labels, find the largest one,
+and then to compute its width using the formula:
+
+  $width = gdMediumBoldFont->width * length($longest_key) +3;
 
 =back
 
@@ -1160,11 +1308,16 @@ Typical usage is:
 unshift_track() works like add_track(), except that the new track is
 added to the top of the image rather than the bottom.
 
-=item $gd = $panel-E<gt>gd
+=item $gd = $panel-E<gt>gd([$gd])
 
 The gd() method lays out the image and returns a GD::Image object
 containing it.  You may then call the GD::Image object's png() or
 jpeg() methods to get the image data.
+
+Optionally, you may pass gd() a preexisting GD::Image object that you
+wish to draw on top of.  If you do so, you should call the width() and
+height() methods first to ensure that the image has sufficient
+dimensions.
 
 =item $png = $panel-E<gt>png
 
@@ -1188,6 +1341,13 @@ Ace::Sequence::Feature, a Das::Segment::Feature, or another Bioperl
 Bio::SeqFeatureI object.  The coordinates are the topleft and
 bottomright corners of the glyph, including any space allocated for
 labels.
+
+=item $position = $panel-E<gt>track_position($track)
+
+After calling gd() or boxes(), you can learn the resulting Y
+coordinate of a track by calling track_position() with the value
+returned by add_track() or unshift_track().  This will return undef if
+called before gd() or boxes() or with an invalid track.
 
 =back
 
@@ -1221,6 +1381,11 @@ some are shared by all glyphs:
 
   -bump	      Bump direction		   0
 
+  -sort_order Specify layout sort order    "default"
+
+  -bump_limit Maximum number of levels     undef (unlimited)
+              to bump
+
   -connector  Type of connector to         none
 	      use to connect related
 	      features.  Options are
@@ -1233,6 +1398,11 @@ some are shared by all glyphs:
   -all_callbacks Whether to invoke         undef
               callbacks for autogenerated
               "track" and "group" glyphs
+
+  -box_subparts Return boxes around feature          false
+               subparts rather than around the
+               feature itself.
+
 
 B<Specifying colors:> Colors can be expressed in either of two ways:
 as symbolic names such as "cyan" and as HTML-style #RRGGBB triples.
@@ -1300,15 +1470,61 @@ B<Collision control:> The -bump argument controls what happens when
 glyphs collide.  By default, they will simply overlap (value 0).  A
 -bump value of +1 will cause overlapping glyphs to bump downwards
 until there is room for them.  A -bump value of -1 will cause
-overlapping glyphs to bump upwards.  Bump values of +2 and -2
-implement a simpler bump algorithm in which each horizontal position
-is occupied by one and only one feature.  The bump argument can also
-be a code reference; see below.
+overlapping glyphs to bump upwards.  The bump argument can also be a
+code reference; see below.
 
 B<Keys:> The -key argument declares that the track is to be shown in a
 key appended to the bottom of the image.  The key contains a picture
 of a glyph and a label describing what the glyph means.  The label is
 specified in the argument to -key.
+
+B<box_subparts:> Ordinarily, when you invoke the boxes() methods to
+retrieve the rectangles surrounding the glyphs (which you need to do
+to create clickable imagemaps, for example), the rectangles will
+surround the top level features.  If you wish for the rectangles to
+surround subpieces of the glyph, such as the exons in a transcript,
+set box_subparts to a true value.
+
+B<sort_order>: By default, features are drawn with a layout based only on the
+position of the feature, assuring a maximal "packing" of the glyphs
+when bumped.  In some cases, however, it makes sense to display the
+glyphs sorted by score or some other comparison, e.g. such that more
+"important" features are nearer the top of the display, stacked above
+less important features.  The -sort_order option allows a few
+different built-in values for changing the default sort order (which
+is by "left" position): "low_score" (or "high_score") will cause
+features to be sorted from lowest to highest score (or vice versa).
+"left" (or "default") and "right" values will cause features to be
+sorted by their position in the sequence.  "longer" (or "shorter")
+will cause the longest (or shortest) features to be sorted first, and
+"strand" will cause the features to be sorted by strand: "+1"
+(forward) then "0" (unknown, or NA) then "-1" (reverse).
+
+In all cases, the "left" position will be used to break any ties.  To
+break ties using another field, options may be strung together using a
+"|" character; e.g. "strand|low_score|right" would cause the features
+to be sorted first by strand, then score (lowest to highest), then by
+"right" position in the sequence.  Finally, a subroutine coderef can
+be provided, which should expect to receive two feature objects (via
+the special sort variables $a and $b), and should return -1, 0 or 1
+(see Perl's sort() function for more information); this subroutine
+will be used without further modification for sorting.  For example,
+to sort a set of database search hits by bits (stored in the features'
+"score" fields), scaled by the log of the alignment length (with
+"left" position breaking any ties):
+
+  sort_order = sub { ( $b->score/log($b->length)
+                                      <=>
+                       $a->score/log($a->length) )
+                                      ||
+                     ( $a->start <=> $b->start )
+                   }
+
+B<bump_limit>: When bumping is chosen, colliding features will
+ordinarily move upward or downward without limit.  When many features
+collide, this can lead to excessively high images.  You can limit the
+number of levels that features will bump by providing a numeric
+B<bump_limit> option.
 
 =head2 Options and Callbacks
 
@@ -1328,9 +1544,22 @@ object, C<$option_name>, the name of the option to configure,
 C<$part_no>, an integer index indicating which subpart of the feature
 is being drawn, C<$total_parts>, an integer indicating the total
 number of subfeatures in the feature, and finally C<$glyph>, the Glyph
-object itself.  The latter fields are useful in the common case of
-treating the first or last subfeature differently, such as using a
-different color for the terminal exon of a gene.
+object itself.  The latter fields are useful in the case of treating
+the first or last subfeature differently, such as using a different
+color for the terminal exon of a gene.  Usually you will only need to
+examine the first argument.  This example shows a callback examining
+the score() attribute of a feature (possibly a BLAST hit) and return
+the color "red" for high-scoring features, and "green" for low-scoring
+features:
+
+  sub callback {
+     my $feature = shift;
+     if ($feature->score > 90) {
+       return 'red';
+     else {
+       return 'green';
+    }
+  }
 
 The callback should return a string indicating the desired value of
 the option.  To tell the panel to use the default value for this
@@ -1347,9 +1576,13 @@ disable the -bump, -label and -description options.  This is to avoid,
 for example, a label being attached to each exon in a transcript, or
 the various segments of a gapped alignment bumping each other.  You
 can override this behavior and force your callback to be invoked by
-providing add_track() with a true B<-all_callbacks> argument.  In this 
+providing add_track() with a true B<-all_callbacks> argument.  In this
 case, you must be prepared to handle configuring options for the
 "group" and "track" glyphs.
+
+In particular, this means that in order to control the -bump option
+with a callback, you should specify -all_callbacks=E<gt>1, and turn on
+bumping when the callback is in the track or group glyphs.
 
 =head2 ACCESSORS
 
@@ -1374,6 +1607,10 @@ and then caches the result.
    pad_left()	      Get/set left padding
    pad_bottom()	      Get/set bottom padding
    pad_right()	      Get/set right padding
+   start()            Get the start of the sequence (bp; read only)
+   end()              Get the end of the sequence (bp; read only)
+   left()             Get the left side of the drawing area (pixels; read only)
+   right()            Get the right side of the drawing area (pixels; read only)
 
 =head2 COLOR METHODS
 

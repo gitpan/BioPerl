@@ -1,8 +1,8 @@
-
+# $Id: SeqI.pm,v 1.25 2002/12/05 13:46:30 heikki Exp $
 #
 # BioPerl module for Bio::SeqI
 #
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
+# Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
 # Copyright Ewan Birney
 #
@@ -12,31 +12,47 @@
 
 =head1 NAME
 
-Bio::SeqI - Abstract Interface of Sequence (with features)
+Bio::SeqI [Developers] - Abstract Interface of Sequence (with features)
 
 =head1 SYNOPSIS
 
-    # get a Bio::SeqI somehow, eg, via SeqIO. See SeqIO info
-    # for more information
+    # Bio::SeqI is the interface class for sequences.
 
-    $seqio  = Bio::SeqIO->new ( '-format' => 'Fasta' , -file => 'myfile.fasta');
-    $seqobj = $seqio->next_seq();
+    # If you are a newcomer to bioperl, you should
+    # start with Bio::Seq documentation. This
+    # documentation is mainly for developers using
+    # Bioperl.
 
+    # Bio::SeqI implements Bio::PrimarySeqI
+    $seq      = $seqobj->seq(); # actual sequence as a string
+    $seqstr   = $seqobj->subseq(10,50);
+
+    # Bio::SeqI has annotationcollections
+
+    $ann      = $seqobj->annotation(); # annotation object
+
+    # Bio::SeqI has sequence features
     # features must implement Bio::SeqFeatureI
 
-    @features = $seqobj->top_SeqFeatures(); # just top level
-    @features = $seqobj->all_SeqFeatures(); # descend into sub features
+    @features = $seqobj->get_SeqFeatures(); # just top level
+    @features = $seqobj->get_all_SeqFeatures(); # descend into sub features
 
-    $seq      = $seqobj->seq(); # actual sequence as a string
-    $seqstr   = $seqobj->subseq(10,50);    
-    $ann      = $seqobj->annotation(); # annotation object
+
 
 =head1 DESCRIPTION
 
-SeqI is the abstract interface of annotated Sequence. These methods
-are those which you can be guarenteed to get for any annseq. There aren't
-many here, because too many complicated functions here prevent implementations
-which are just wrappers around a database or similar delayed mechanisms.
+Bio::SeqI is the abstract interface of annotated Sequences. These
+methods are those which you can be guarenteed to get for any Bio::SeqI
+- for most users of the package the documentation (and methods) in
+this class are not at useful - this is a developers only class which
+defines what methods have to be implmented by other Perl objects to
+comply to the Bio::SeqI interface. Go "perldoc Bio::Seq" or "man
+Bio::Seq" for more information.
+
+
+There aren't many here, because too many complicated functions here
+prevent implementations which are just wrappers around a database or
+similar delayed mechanisms.
 
 Most of the clever stuff happens inside the SeqFeatureI system.
 
@@ -65,7 +81,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Ewan Birney
 
@@ -88,54 +104,60 @@ use strict;
 
 use vars qw(@ISA);
 use Bio::PrimarySeqI;
-use Carp;
+use Bio::AnnotatableI;
+use Bio::FeatureHolderI;
 
 # Object preamble - inheriets from Bio::PrimarySeqI
 
-@ISA = qw(Bio::PrimarySeqI);
+@ISA = qw(Bio::PrimarySeqI Bio::AnnotatableI Bio::FeatureHolderI);
 
-=head2 top_SeqFeatures
+=head2 get_SeqFeatures
 
- Title   : top_SeqFeatures
- Usage   : my @features = $seq->top_SeqFeatures();
- Function: (may be deprecated in the future)
- Returns : An array of top level sequence features, 
-           features which contain features are NOT flattened
+ Title   : get_SeqFeatures
+ Usage   : my @feats = $seq->get_SeqFeatures();
+ Function: retrieve just the toplevel sequence features attached to this seq
+ Returns : array of Bio::SeqFeatureI objects
  Args    : none
 
+This method comes through extension of Bio::FeatureHolderI. See
+L<Bio::FeatureHolderI> and L<Bio::SeqFeatureI> for more information.
 
 =cut
 
-sub top_SeqFeatures{
-   my ($self) = @_;
-   $self->throw_not_implemented;
-}
+=head2 get_all_SeqFeatures
 
-
-=head2 all_SeqFeatures
-
- Title   : all_SeqFeatures
- Usage   : @features = $annseq->all_SeqFeatures()
+ Title   : get_all_SeqFeatures
+ Usage   : @features = $annseq->get_all_SeqFeatures()
  Function: returns all SeqFeatures, included sub SeqFeatures
- Returns : an array
+ Returns : an array of Bio::SeqFeatureI objects
  Args    : none
 
+This method comes through extension of Bio::FeatureHolderI. See
+L<Bio::FeatureHolderI> and L<Bio::SeqFeatureI> for more information.
 
 =cut
 
-sub all_SeqFeatures{
-   my ($self) = @_;
-   $self->throw_not_implemented();
-}
+=head2 feature_count
+
+ Title   : feature_count
+ Usage   : $seq->feature_count()
+ Function: Return the number of SeqFeatures attached to a sequence
+ Returns : integer representing the number of SeqFeatures
+ Args    : none
+
+This method comes through extension of Bio::FeatureHolderI. See
+L<Bio::FeatureHolderI> for more information.
+
+=cut
 
 =head2 seq
 
  Title   : seq
- Usage   : my $sequence  = $seq->seq();
- Function: Get/Set the sequence as a string
+ Usage   : my $string = $seq->seq();
+ Function: Retrieves the sequence string for the sequence object
  Returns : string
- Args    : (optional) sequence string to set 
-           (if permitted by the implementation)
+ Args    : none
+
 
 =cut
 
@@ -147,10 +169,11 @@ sub seq{
 =head2 write_GFF
 
  Title   : write_GFF
- Usage   : $seq->write_GFF(\*OUTPUTHANDLE);
- Function: Utility methods which creates GFF output
+ Usage   : $seq->write_GFF(\*FILEHANDLE);
+ Function: Convience method to write out all the sequence features
+           in GFF format to the provided filehandle (STDOUT by default)
  Returns : none
- Args    : (optional) filehandle to write to (default is STDOUT)
+ Args    : [optional] filehandle to write to (default is STDOUT)
 
 
 =cut
@@ -160,54 +183,35 @@ sub write_GFF{
 
    $fh || do { $fh = \*STDOUT; };
 
-   foreach my $sf ( $self->all_SeqFeatures() ) {
+   foreach my $sf ( $self->get_all_SeqFeatures() ) {
        print $fh $sf->gff_string, "\n";
    }
+
 }
 
 =head2 annotation
 
  Title   : annotation
  Usage   : $obj->annotation($seq_obj)
- Function: Get/Set Annotation object associated with the sequence.  
-           This is where features with no explicit location are aggregated. 
- Returns : Bio::AnnotationCollectionI object
- Args    : None or Bio::Annotation object
+ Function: retrieve the attached annotation object
+ Returns : Bio::AnnotationCollectionI or none;
 
 See L<Bio::AnnotationCollectionI> and L<Bio::Annotation::Collection>
-for more information
+for more information. This method comes through extension from
+L<Bio::AnnotatableI>.
 
 =cut
-
-sub annotation {
-   my ($obj) = @_;
-   $obj->throw_not_implemented();
-}
-
-=head2 feature_count
-
- Title   : feature_count
- Usage   : $seq->feature_count()
- Function: Return the number of SeqFeatures attached to a sequence
- Returns : number of SeqFeatures
- Args    : none
-
-
-=cut
-
-sub feature_count {
-    my ($obj) = @_;
-    $obj->throw_not_implemented();
-}
 
 =head2 species
 
  Title   : species
- Usage   : $species = $self->species();
+ Usage   :
  Function: Gets or sets the species
+ Example : $species = $self->species();
  Returns : Bio::Species object
  Args    : Bio::Species object or none;
 
+See L<Bio::Species> for more information
 
 =cut
 
@@ -220,11 +224,14 @@ sub species {
 
  Title   : primary_seq
  Usage   : $obj->primary_seq($newval)
- Function: Get/Set the underlying primary sequence for a SeqI.
-           This cannot always be assumed some implementations
-           may not provide a primary sequence underneath.
- Returns : value of primary_seq
- Args    : newvalue (optional)
+ Function: Retrieve the underlying Bio::PrimarySeqI object if available.
+           This is in the event one has a sequence with lots of features
+           but want to be able to narrow the object to just one with
+           the basics of a sequence (no features or annotations).
+ Returns : Bio::PrimarySeqI
+ Args    : Bio::PrimarySeqI or none;
+
+See L<Bio::PrimarySeqI> for more information
 
 =cut
 

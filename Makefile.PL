@@ -1,6 +1,6 @@
 ## --Makefile.PL for Bioperl core module distribution--##
 ## ----------------------------------------------------##
-## $Id: Makefile.PL,v 1.30.2.10 2002/06/11 13:09:53 jason Exp $
+## $Id: Makefile.PL,v 1.50 2002/12/27 19:42:32 birney Exp $
 ##----------------------------------------------------
 
 #
@@ -27,8 +27,13 @@
 	     'SOAP::Lite'               => '0.0/SOAP protocol/XEMBL Services (also Bibliographic queries in Biblio::) /Bio::DB::XEMBLService',
 	     'HTML::Parser'             => '0.0/HTML parsing/HTML parsing of GDB page/Bio::DB::GDB',
 	     'DBD::mysql'               => '0.0/Mysql driver/loading and querying of Mysql-based GFF feature databases/Bio::DB::GFF',
-	     'GD'                       => '1.19/Graphical Drawing Toolkit/Rendering Sequences and Features/Bio::Graphics',
+	     'GD'                       => '1.3/Graphical Drawing Toolkit/Rendering Sequences and Features/Bio::Graphics',
+	     'Text::Shellwords'         => '0.0/Execute shell commands/test scripts/Bio::Graphics',
 	     'Storable'                 => '0.0/Persistent object storage and retrieval/Storing sequence objects in local file cache/Bio::DB::FileCache',
+	     'Graph::Directed'          => '0.0/Generic Graph data stucture and algorithms/Ontology Engine implementation for the GO parser/Bio::Ontology::SimpleOntologyEngine',
+# Bio::Microarray is not in core bioperl yet
+#	     'enum'                     => '0.0/C style enumerated types and bitmask flags in Perl/Bio::Microarray::Affymetrix::*',
+
 # rare function let's not scare people
 # 	     'srsperl.pm'               => '0.0/Sequence Retrieval System (SRS) perl API/alternative way of retrieving sequences/Bio::LiveSeq::IO::SRS.pm'
 	     );
@@ -72,14 +77,14 @@ print STDERR "Generated sub tests. go make show_tests to see available subtests\
 
 sub MY::postamble {
              $tline;
-           }
+         }
 
 #
-# Prompt user for BioGFFDB stuff
+# Prompt user for BioDBGFF stuff
 #
 
 if(  eval { require DBI } && grep {/mysql/} DBI->available_drivers) {
-  my $proceed = user_prompt("Do you want to run the BioGFFDB tests (requires a mysql database) y/n",'n');
+  my $proceed = prompt("Do you want to run the BioDBGFF tests (requires a mysql database) y/n",'n');
   if( $proceed =~ /^[yY]/) {
     my $cfg = {dbd_driver => 'mysql'};
     GFFQueryDb($cfg,{'prompt'=>1,'verbose'=>1});
@@ -96,17 +101,6 @@ if(  eval { require DBI } && grep {/mysql/} DBI->available_drivers) {
   }
 }
 
-sub user_prompt ($;$) {
-    my($mess,$def)=@_;
-    Carp::confess("prompt function called without an argument") unless defined $mess;
-    my $dispdef = defined $def ? "[$def] " : " ";
-    $def = defined $def ? $def : "";
-    my $ans;
-    local $|=1;
-    print STDERR "$mess $dispdef";
-    chomp($ans = <STDIN>);
-    return ($ans ne '') ? $ans : $def;
-}
 
 ############################################################################
 #
@@ -132,27 +126,27 @@ sub GFFQueryDb {
 
   my $test_db =  exists($options->{"$d-test-db"}) ?
     $options->{"$d-test-db"} : ($cfg->{'test_db'} || 'test');
-  $test_db = user_prompt
+  $test_db = prompt
     ("Which database should I use for testing the $db drivers?",
      $test_db) if $prompt;
 
   my $test_host = exists($options->{"$d-test-host"}) ?
     $options->{"$d-test-host"} : ($cfg->{'test_host'} || 'localhost');
-  $test_host = user_prompt
+  $test_host = prompt
     ("On which host is database $test_db running (hostname, ip address or host:port)", $test_host) if $prompt;
 
   my($test_user, $test_pass);
 
   $test_user = exists($options->{"$d-test-user"}) ?
     $options->{"$d-test-user"} : ($cfg->{'test_user'} || "undef");
-  $test_user = user_prompt
+  $test_user = prompt
     ("User name for connecting to database $test_db?", $test_user)
       if $prompt;
   $test_user = undef if $test_user eq 'undef';
 
   $test_pass = exists($options->{"$d-test-pass"}) ?
     $options->{"$d-test-pass"} : ($cfg->{'test_pass'} || "undef");
-  $test_pass = user_prompt
+  $test_pass = prompt
     ("Password for connecting to database $test_db?", $test_pass)
       if $prompt;
   $test_pass = undef if $test_pass eq 'undef';
@@ -190,16 +184,18 @@ sub GFFQueryDb {
 # Let the code begin...
 
 require 5.005;
-use ExtUtils::MakeMaker;
+use ExtUtils::MakeMaker ;
 
 $do_autoload_finesse = 0;
 $NAME     = 'Bio';
 $DISTNAME = "bioperl";
-$VERSION  = "1.0.1";
+$VERSION  = "1.1";
 
 if( $do_autoload_finesse == 1 ) {
     fatal("Autoload finessing does not work at the moment!");
 }
+
+
 
 @BACKUP_FILES = qw(./Seq.pm.bak);
 
@@ -225,11 +221,12 @@ foreach $name ( keys %packages ) {
 if( $error == 1 ) {
     print <<QQ_ERROR_QQ;
 
-Warning:
+Information:
 
    There are some external packages and perl modules, listed above, which 
    bioperl uses. This only effects the functionality which is listed above:
-   the rest of bioperl will work fine.
+   the rest of bioperl will work fine, which includes nearly all of the
+   core packages.
 
    The installation of these external packages is very simple. You
    can read more about bioperl external dependencies at
@@ -241,6 +238,16 @@ Warning:
 QQ_ERROR_QQ
 }
 
+open(CONF,'>bioperl.conf') or die "couldn't open bioperl.conf";
+
+print CONF<<'!NO!GROK!';
+VERSION		1.2
+AUTHORS		file://AUTHORS
+!NO!GROK!
+
+close CONF;
+
+
 WriteMakefile(
     NAME	=> $NAME,
     DISTNAME    => $DISTNAME,
@@ -250,12 +257,29 @@ WriteMakefile(
                       DIST_DEFAULT => 'all tardist',
                    },
     ($] ge '5.005')  ? (
-	'AUTHOR' => 'Bioperl Team (bioperl-l@bioperl.org)',
-	'ABSTRACT' => 'Bioinformatics Toolkit',
-	) : (),
-     'realclean'  => {  FILES        => join(' ',@BACKUP_FILES) }
+     'AUTHOR'   => 'Bioperl Team (bioperl-l@bioperl.org)',
+     'ABSTRACT' => 'Bioinformatics Toolkit',
+    ) : (),
+    'realclean' => {  FILES        => join(' ',@BACKUP_FILES) },
+    DIR         => [  ], # directories with other Makefile.PL's in them
+    PL_FILES	=> {
+			'bioperl.PL' => 'bioperl.pod',
+			'biodatabases.PL' => 'biodatabases.pod',
+			'biodesign.PL' => 'biodesign.pod',
+			'bioscripts.PL' => 'bioscripts.pod',
+		   },
 );
 
 
+sub MY::manifypods {
+    my $self = shift;
+    #print STDERR "In manifypods moment\n";
+    if( 1 ) {
+        return "\nmanifypods : pure_all\n\t$self->{NOECHO}\$(NOOP)\n"
+      }
+      else {
+        return $self->SUPER::manifypods(@_);
+      }
+    }
 
 

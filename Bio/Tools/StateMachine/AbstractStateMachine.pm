@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: AbstractStateMachine.pm,v 1.7 2002/02/26 07:30:18 jason Exp $
+# $Id: AbstractStateMachine.pm,v 1.9 2002/10/22 07:38:49 lapp Exp $
 #
 # BioPerl module Bio::Tools::StateMachine::AbstractStateMachine
 #
@@ -15,7 +15,7 @@ Bio::Tools::StateMachine::AbstractStateMachine - Abstract state machine object
 =head1 SYNOPSIS
 
 Here is a portion of an implementation. For the full example, see
-examples/state-machine/state-machine.pl in the Bioperl distribution.
+examples/state-machine.pl in the Bioperl distribution.
 
     package SimpleStateMachine;
 
@@ -184,7 +184,7 @@ the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
     bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    http://bugzilla.bioperl.org/           
 
 =head1 AUTHOR 
 

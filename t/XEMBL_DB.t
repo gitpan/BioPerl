@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: XEMBL_DB.t,v 1.2.2.3 2002/03/15 19:23:23 jason Exp $
+# $Id: XEMBL_DB.t,v 1.4 2002/03/15 20:29:22 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'

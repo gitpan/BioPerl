@@ -1,4 +1,4 @@
-# $Id: MedlineArticle.pm,v 1.2.2.2 2002/06/19 00:28:25 jason Exp $
+# $Id: MedlineArticle.pm,v 1.5 2002/10/22 07:45:11 lapp Exp $
 #
 # BioPerl module for Bio::Biblio::MedlineArticle
 #
@@ -108,7 +108,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHORS
 

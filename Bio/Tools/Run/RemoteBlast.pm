@@ -1,8 +1,8 @@
-# $Id: RemoteBlast.pm,v 1.9.2.2 2002/03/15 14:40:04 heikki Exp $
+# $Id: RemoteBlast.pm,v 1.14 2002/12/23 13:01:50 birney Exp $
 #
-# BioPerl module for Bio::Tools::StandAloneBlast
+# BioPerl module for Bio::Tools::Run::RemoteBlast
 #
-# Cared for by Jason Stajich
+# Cared for by Jason Stajich, Mat Wiepert
 #
 # Copyright Jason Stajich
 #
@@ -12,63 +12,91 @@
 
 =head1 NAME
 
-Bio::Tools::Run::RemoteBlast - Object for remote execution of the NCBI Blast via HTTP
+Bio::Tools::Run::RemoteBlast - Object for remote execution of the NCBI Blast
+via HTTP
 
 =head1 SYNOPSIS
 
-Remote-blast "factory object" creation and blast-parameter initialization:
+  #Remote-blast "factory object" creation and blast-parameter initialization
 
   use Bio::Tools::Run::RemoteBlast;
   use strict;
-  my $v = 1;
   my $prog = 'blastp';
   my $db   = 'swissprot';
   my $e_val= '1e-10';
 
   my @params = ( '-prog' => $prog,
-  		 '-data' => $db,
-  		 '-expect' => $e_val );
+         '-data' => $db,
+         '-expect' => $e_val,
+         '-readmethod' => 'SearchIO' );
 
   my $factory = Bio::Tools::Run::RemoteBlast->new(@params);
-  $v = 1;
+
+  #change a paramter
+  $Bio::Tools::Run::RemoteBlast::HEADER{'ENTREZ_QUERY'} = 'Homo sapiens [ORGN]';
+
+  #remove a parameter
+  delete $Bio::Tools::Run::RemoteBlast::HEADER{'FILTER'};
+
+  my $v = 1;
+  #$v is just to turn on and off the messages
+  
   my $str = Bio::SeqIO->new(-file=>'amino.fa' , '-format' => 'fasta' );
-  my $input = $str->next_seq();
-  #  Blast a sequence against a database:
-  my $r = $factory->submit_blast($input);
-  print STDERR "waiting..." if( $v > 0 );
-  while ( my @rids = $factory->each_rid ) {
+
+  while (my $input = $str->next_seq()){
+    #Blast a sequence against a database:
+
+    #Alternatively, you could  pass in a file with many
+    #sequences rather than loop through sequence one at a time
+    #Remove the loop starting 'while (my $input = $str->next_seq())'
+    #and swap the two lines below for an example of that.
+    my $r = $factory->submit_blast($input);
+    #my $r = $factory->submit_blast('amino.fa');
+
+    print STDERR "waiting..." if( $v > 0 );
+    while ( my @rids = $factory->each_rid ) {
       foreach my $rid ( @rids ) {
-  	  my $rc = $factory->retrieve_blast($rid);
-  	  if( !ref($rc) ) {
-  	      if( $rc < 0 ) { 		
-  		      $factory->remove_rid($rid);
-  		  }
-  	      print STDERR "." if ( $v > 0 );
-  	      sleep 5;
-  	  } else { 
-  	      $factory->remove_rid($rid);
-  	      my $result = $rc->next_result;
-  	      print "db is ", $result->database_name(), "\n";
-  	      my $count = 0;
-  	      while( my $hit = $result->next_hit ) {		
-  		  $count++;
-  		  next unless ( $v > 0);
-  		  print "hit name is ", $hit->name, "\n";
-  		  while( my $hsp = $hit->next_hsp ) {
-  		      print "score is ", $hsp->score, "\n";
-  		  } 
-  	      }
-  	  }
+        my $rc = $factory->retrieve_blast($rid);
+        if( !ref($rc) ) {
+          if( $rc < 0 ) {
+            $factory->remove_rid($rid);
+          }
+          print STDERR "." if ( $v > 0 );
+          sleep 5;
+        } else {
+          my $result = $rc->next_result();
+          #save the output
+          my $filename = $result->query_name()."\.out";
+          $factory->save_output($filename);
+          $factory->remove_rid($rid);
+          print "\nQuery Name: ", $result->query_name(), "\n";
+          while ( my $hit = $result->next_hit ) {
+            next unless ( $v > 0);
+            print "\thit name is ", $hit->name, "\n";
+            while( my $hsp = $hit->next_hsp ) {
+              print "\t\tscore is ", $hsp->score, "\n";
+            }
+          }
+        }
       }
+    }
   }
 
+  # This example shows how to change a CGI parameter:
+  $Bio::Tools::Run::RemoteBlast::HEADER{'MATRIX_NAME'} = 'BLOSUM25';
 
-Various additional options and input formats are available.  See the
-DESCRIPTION section for details.
+  # And this is how to delete a CGI parameter:
+  delete $Bio::Tools::Run::RemoteBlast::HEADER{'FILTER'};
+
 
 =head1 DESCRIPTION
 
 Class for remote execution of the NCBI Blast via HTTP.
+
+For a description of the many CGI parameters see:
+http://www.ncbi.nlm.nih.gov/BLAST/Doc/urlapi.html
+
+Various additional options and input formats are available.
 
 =head1 FEEDBACK
 
@@ -103,7 +131,7 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Tools::Run::RemoteBlast;
 
-use vars qw($AUTOLOAD @ISA %BLAST_PARAMS $URLBASE %HEADER %RETRIEVALHEADER 
+use vars qw($AUTOLOAD @ISA %BLAST_PARAMS $URLBASE %HEADER %RETRIEVALHEADER
 	    $RIDLINE);
 use strict;
 
@@ -115,7 +143,7 @@ use Bio::Tools::BPlite;
 use Bio::SearchIO;
 use LWP;
 use HTTP::Request::Common;
-BEGIN {      
+BEGIN {
     $URLBASE = 'http://www.ncbi.nlm.nih.gov/blast/Blast.cgi';
     %HEADER = ('CMD'                          => 'Put',
 	       'PROGRAM'                      => '',
@@ -128,7 +156,7 @@ BEGIN {
 	       'FORMAT_OBJECT'                => 'Alignment',
 	       'SERVICE'                      => 'plain',
 	       );
-    
+
     %RETRIEVALHEADER = ('CMD'            => 'Get',
 			'RID'            => '',
 			'ALIGNMENT_VIEW' => 'Pairwise',
@@ -136,10 +164,10 @@ BEGIN {
 			'ALIGNMENTS'     => 50,
 			'FORMAT_TYPE'    => 'Text',
 			);
-    
+
     $RIDLINE = 'RID\s+=\s+(\d+-\d+-\d+)';
 
-     %BLAST_PARAMS = ( 'prog' => 'blastp',
+    %BLAST_PARAMS = ( 'prog' => 'blastp',
 		       'data' => 'nr',
 		       'expect' => '1e-3',
 		       'readmethod' => 'SearchIO'
@@ -155,13 +183,13 @@ sub new {
     my $self = $caller->SUPER::new(@args);
     # so that tempfiles are cleaned up
     $self->_initialize_io();
-    my ($prog, $data, $expect, 
-	$readmethod) = $self->_rearrange([qw(PROG DATA 
-					     EXPECT 
-					     READMETHOD)], 
+    my ($prog, $data, $expect,
+	$readmethod) = $self->_rearrange([qw(PROG DATA
+					     EXPECT
+					     READMETHOD)],
 					 @args);
-    
-    $readmethod = $BLAST_PARAMS{'readmethod'} unless defined $readmethod;    
+
+    $readmethod = $BLAST_PARAMS{'readmethod'} unless defined $readmethod;
     $prog = $BLAST_PARAMS{'prog'}     unless defined $prog;
     $data = $BLAST_PARAMS{'data'}     unless defined $data;
     $expect = $BLAST_PARAMS{'expect'} unless defined $expect;
@@ -169,7 +197,7 @@ sub new {
     $self->program($prog);
     $self->database($data);
     $self->expect($expect);
-    
+
     return $self;
 }
 
@@ -188,7 +216,7 @@ sub header {
     my %h = %HEADER;
     $h{'PROGRAM'} = $self->program;
     $h{'DATABASE'} = $self->database;
-    $h{'EXPECT'}  = $self->expect;    
+    $h{'EXPECT'}  = $self->expect;
     return %h;
 }
 
@@ -229,9 +257,10 @@ sub program {
 	    $self->warn("trying to set program to an invalid program name ($val) -- defaulting to blastp");
 	    $val = 'blastp';
 	}
-	$self->{'_program'} = $val;
+#	$self->{'_program'} = $val;
+	$HEADER{'PROGRAM'} = $val;
     }
-    return $self->{'_program'};
+    return $HEADER{'PROGRAM'};
 }
 
 
@@ -248,9 +277,10 @@ sub program {
 sub database {
     my ($self, $val) = @_;
     if( defined $val ) {
-	$self->{'_database'} = $val;
+#	$self->{'_database'} = $val;
+ 	$HEADER{'DATABASE'} = $val;
     }
-    return $self->{'_database'};
+    return $HEADER{'DATABASE'};
 }
 
 
@@ -267,15 +297,16 @@ sub database {
 sub expect {
     my ($self, $val) = @_;
     if( defined $val ) {
-	$self->{'_expect'} = $val;
+#	$self->{'_expect'} = $val;
+ 	$HEADER{'EXPECT'} = $val;
     }
-    return $self->{'_expect'};
+    return $HEADER{'EXPECT'};
 }
 
 =head2 ua
 
  Title   : ua
- Usage   : my $ua = $self->ua or 
+ Usage   : my $ua = $self->ua or
            $self->ua($ua)
  Function: Get/Set a LWP::UserAgent for use
  Returns : reference to LWP::UserAgent Object
@@ -295,7 +326,7 @@ sub ua {
 =head2 proxy
 
  Title   : proxy
- Usage   : $httpproxy = $db->proxy('http')  or 
+ Usage   : $httpproxy = $db->proxy('http')  or
            $db->proxy(['http','ftp'], 'http://myproxy' )
  Function: Get/Set a proxy for use of proxy
  Returns : a string indicating the proxy
@@ -306,7 +337,7 @@ sub ua {
 
 sub proxy {
     my ($self,$protocol,$proxy) = @_;
-    return undef if ( !defined $self->ua || !defined $protocol 
+    return undef if ( !defined $self->ua || !defined $protocol
 		      || !defined $proxy );
     return $self->ua->proxy($protocol,$proxy);
 }
@@ -328,7 +359,7 @@ sub remove_rid {
 }
 
 sub each_rid {
-    my ($self) = @_;    
+    my ($self) = @_;
     return keys %{$self->{'_rids'}};
 }
 
@@ -346,13 +377,15 @@ sub each_rid {
 =cut
 
 sub submit_blast {
-    my ($self, $input) = @_;    
-    my @seqs = $self->_load_input($input);        
+    my ($self, $input) = @_;
+    my @seqs = $self->_load_input($input);
     return 0 unless ( @seqs );
     my $tcount = 0;
-    my %header = $self->header;    
+    my %header = $self->header;
     foreach my $seq ( @seqs ) {
-	$header{'QUERY'} = $seq->seq();
+	#If query has a fasta header, the output has the query line.
+	$header{'QUERY'} = ">".(defined $seq->display_id() ? $seq->display_id() : "").
+		" ".(defined $seq->desc() ? $seq->desc() : "")."\n".$seq->seq();
 	my $request = POST $URLBASE, [%header];
 	$self->warn($request->as_string) if ( $self->verbose > 0);
 	my $response = $self->ua->request( $request);
@@ -360,7 +393,10 @@ sub submit_blast {
 	if( $response->is_success ) {
 	    if( $self->verbose > 0 ) {
 		my ($tempfh) = $self->tempfile();
+		# Hmm, what exactly are we trying to do here?
 		print $tempfh $response->content;
+		close($tempfh);
+		undef $tempfh;
 	    }
 	    my @subdata = split(/\n/, $response->content );
 	    my $count = 0;
@@ -368,16 +404,16 @@ sub submit_blast {
 		if( /$RIDLINE/ ) {
 		    $count++;
 		    print STDERR $_ if( $self->verbose > 0);
-		    $self->add_rid($1);		    
+		    $self->add_rid($1);		
 		    last;
-		}	      
+		}	
 	    }
 	    if( $count == 0 ) {
 		$self->warn("req was ". $request->as_string() . "\n");
 		$self->warn(join('', @subdata));
 	    }    	
 	    $tcount += $count;
-	} else { 
+	} else {
 	    # should try and be a little more verbose here
 	    $self->warn("req was ". $request->as_string() . "\n" .
 			$response->error_as_HTML);
@@ -392,9 +428,9 @@ sub submit_blast {
  Title   : retrieve_blast
  Usage   : my $blastreport = $blastfactory->retrieve_blast($rid);
  Function: Attempts to retrieve a blast report from remote blast queue
- Returns : -1 on error, 
+ Returns : -1 on error,
            0 on 'job not finished',
-           Bio::Tools::BPlite or Bio::Tools::Blast object 
+           Bio::Tools::BPlite or Bio::Tools::Blast object
            (depending on how object was initialized) on success
  Args    : Remote Blast ID (RID)
 
@@ -402,7 +438,7 @@ sub submit_blast {
 
 sub retrieve_blast {
     my($self, $rid) = @_;
-    my ($fh,$tempfile) = $self->tempfile();
+    my (undef,$tempfile) = $self->tempfile();
     my %hdr = %RETRIEVALHEADER;
     $hdr{'RID'} = $rid;
     my $req = POST $URLBASE, [%hdr];
@@ -425,6 +461,8 @@ sub retrieve_blast {
 		$blastobj = new Bio::SearchIO(-file => $tempfile,
 					      -format => 'blast');
 	    }
+	    #save tempfile
+	    $self->file($tempfile);
 	    return $blastobj;
 	} elsif( $size < 500 ) { # search had a problem
 	    open(ERR, "<$tempfile") or $self->throw("cannot open file $tempfile");
@@ -434,18 +472,55 @@ sub retrieve_blast {
 	} else { # still working
 	    return 0;
 	}
-    } else { 
+    } else {
 	$self->warn($response->error_as_HTML);
 	return -1;
     }
 }
 
+=head2 save_output
+
+ Title   : saveoutput
+ Usage   : my $saveoutput = $self->save_output($filename)
+ Function: Method to save the blast report
+ Returns : 1 (throws error otherwise)
+ Args    : string [rid, filename]
+
+=cut
+
+sub save_output {
+    my ($self, $filename) = @_;
+    if( ! defined $filename ) {
+        	$self->throw("Can't save blast output.  You must specify a filename to save to.");
+    }
+    #should be set when retrieving blast
+   	my $blastfile = $self->file;
+   	#open temp file and output file, have to filter out some HTML
+	open(TMP, $blastfile) or $self->throw("cannot open $blastfile");
+	open(SAVEOUT, ">$filename") or $self->throw("cannot open $filename");
+	my $seentop=0;
+	while(<TMP>) {
+		next if (/<pre>/);	
+		if( /^(?:[T]?BLAST[NPX])\s*.+$/i ||
+	   		/^RPS-BLAST\s*.+$/i ) {
+	   		$seentop=1;
+	   	}
+	   	next if !$seentop;
+	    if( $seentop ) {
+			print SAVEOUT;
+		}
+	}
+	close SAVEOUT;
+	close TMP;
+	return 1;	
+}
+
 sub _load_input {
     my ($self, $input) = @_;
-    
-    if( ! defined $input ) { 
+
+    if( ! defined $input ) {
 	$self->throw("Calling remote blast with no input");	
-    }    
+    }
     my @seqs;
     if( ! ref $input ) {
 	if( -e $input ) {

@@ -1,4 +1,4 @@
-# $Id: selex.pm,v 1.6.2.1 2002/04/18 13:05:25 jason Exp $
+# $Id: selex.pm,v 1.10 2002/10/22 07:38:26 lapp Exp $
 #
 # BioPerl module for Bio::AlignIO::selex
 
@@ -37,7 +37,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHORS - Peter Schattner
 
@@ -153,16 +153,17 @@ sub write_aln {
     my ($self,@aln) = @_;
     my ($namestr,$seq,$add);
     my ($maxn);
-  foreach my $aln (@aln) {
-    $maxn = $aln->maxdisplayname_length();
-      foreach $seq ( $aln->each_seq() ) {
-	$namestr = $aln->displayname($seq->get_nse());
-	$add = $maxn - length($namestr) + 2;
-	$namestr .= " " x $add;
-	$self->_print (sprintf("%s  %s\n",$namestr,$seq->seq())) or return;
-      }
-   }
-   return 1;
+    foreach my $aln (@aln) {
+	$maxn = $aln->maxdisplayname_length();
+	foreach $seq ( $aln->each_seq() ) {
+	    $namestr = $aln->displayname($seq->get_nse());
+	    $add = $maxn - length($namestr) + 2;
+	    $namestr .= " " x $add;
+	    $self->_print (sprintf("%s  %s\n",$namestr,$seq->seq())) or return;
+	}
+    }
+    $self->flush if $self->_flush_on_write && defined $self->_fh;
+    return 1;
 }
 
 1;

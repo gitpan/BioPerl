@@ -22,16 +22,18 @@ BEGIN {
     }
     use Test;
     plan test => TEST_COUNT;
+    $ENV{ORACLE_HOME} ||= '/home/oracle/Home';
 }
 
 sub bail ($;$);
 sub user_prompt ($;$);
 sub fail ($);
-use lib './blib/lib';
+use lib '..','./blib/lib';
+use lib "$ENV{HOME}/cvswork/bioperl-live/";
 use Bio::DB::GFF;
 use Bio::SeqIO;
 
-my $adaptor = -e 't/do_biodbgff.tests' ? 'dbi::mysqlopt' : 'memory';
+my $adaptor = -e 't/do_biodbgff.tests' ? 'dbi::mysql' : 'memory';
 my @args;
 
 if ($adaptor =~ /^dbi/) {
@@ -74,6 +76,7 @@ ok($types{'transposon:tc1'},2);
 
 # exercise segment
 my $segment1 = $db->segment('Contig1');
+
 ok($segment1);
 ok($segment1->length,37450);
 ok($segment1->start,1);
@@ -98,7 +101,7 @@ ok($t->attributes('Note'),'function unknown');
 ok(join(' ',sort $t->attributes('Gene')),'abc-1 xyz-2');
 my $att = $t->attributes;
 ok(scalar @{$att->{Gene}},2);
-@t = $db->fetch_feature_by_attribute('Gene'=>'abc-1');
+@t = sort $db->fetch_feature_by_attribute('Gene'=>'abc-1');
 ok(@t>0);
 ok($t[0] eq $t);
 my $seg = $db->segment('Contig1');
@@ -188,10 +191,7 @@ ok($segment6->dna,$dna);
 undef $@;
 my $result = eval { $segment6->ref('Contig2') };
 ok(!$result);
-
-# note, the test for $DB::package was inserted because throw() was not behaving
-# properly when run under perl debugger.
-ok(defined $DB::package or "$@" =~ /are on different sequence segments/);
+ok("$@" =~ /are on different sequence segments/);
 
 # types across a segment
 $segment1 = $db->segment('Contig1');
@@ -243,7 +243,7 @@ my $aggregator = Bio::DB::GFF::Aggregator->new('-method'      => 'aggregated_tra
 					       '-sub_parts'   => ['exon','CDS']);
 $db->add_aggregator($aggregator);
 $segment1 = $db->segment('Contig1');
-@features = $segment1->features('aggregated_transcript');
+@features = sort $segment1->features('aggregated_transcript');  # sort so that trans-1 comes first
 ok(scalar @features,2);
 ok($features[0]->Exon > 0);
 ok($features[0]->Cds > 0);

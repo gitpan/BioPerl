@@ -1,4 +1,4 @@
-# $Id: ESTScan.pm,v 1.8 2001/11/20 02:09:40 lstein Exp $
+# $Id: ESTScan.pm,v 1.10 2002/10/22 07:38:45 lapp Exp $
 #
 # BioPerl module for Bio::Tools::ESTScan
 #
@@ -62,7 +62,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
@@ -202,7 +202,7 @@ sub next_prediction {
 	$predobj->strand($gene->strand());
 	$predobj->score($gene->score()); # FIXME or $1, or $2 ?
 	$predobj->primary_tag("InternalExon");
-	$predobj->seqname($seq->display_id());
+	$predobj->seq_id($seq->display_id());
 	# add to gene structure object
 	$gene->add_exon($predobj);
 	# add predicted CDS
@@ -256,7 +256,7 @@ sub next_prediction {
 							 '-end' => $end);
 	    $predobj->source_tag("ESTScan");
 	    $predobj->primary_tag("InternalExon");
-	    $predobj->seqname($seq->display_id());
+	    $predobj->seq_id($seq->display_id());
 	    $predobj->strand($gene->strand());
 	    $predobj->score($gene->score());
 	    # add the exon to the gene structure object
@@ -289,7 +289,7 @@ sub next_prediction {
 		$fea = Bio::SeqFeature::Generic->new('-start' => $start,
 						     '-end' => $start);
 		$fea->source_tag("ESTScan");
-		$fea->seqname($seq->display_id());
+		$fea->seq_id($seq->display_id());
 		$fea->strand($predobj->strand());
 		if($indel eq 'X') {
 		    # an insertion (depends on viewpoint: to get the 'real'

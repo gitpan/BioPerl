@@ -1,4 +1,4 @@
-# $Id: Tree.pm,v 1.5 2001/11/24 21:12:06 jason Exp $
+# $Id: Tree.pm,v 1.13 2002/12/24 17:52:03 jason Exp $
 #
 # BioPerl module for Bio::Tree::Tree
 #
@@ -42,20 +42,17 @@ the Bioperl mailing list.  Your participation is much appreciated.
 
 Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+the web:
 
-  bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 
 Email jason@bioperl.org
 
-Describe contact details here
-
 =head1 CONTRIBUTORS
 
-Additional contributors names and emails here
+Aaron Mackey amackey@virginia.edu
 
 =head1 APPENDIX
 
@@ -75,9 +72,10 @@ use strict;
 # Object preamble - inherits from Bio::Root::Root
 
 use Bio::Root::Root;
+use Bio::Tree::TreeFunctionsI;
 use Bio::Tree::TreeI;
 
-@ISA = qw(Bio::Root::Root Bio::Tree::TreeI );
+@ISA = qw(Bio::Root::Root Bio::Tree::TreeI Bio::Tree::TreeFunctionsI   );
 
 =head2 new
 
@@ -117,12 +115,25 @@ sub new {
 sub get_nodes{
    my ($self, @args) = @_;
    
-   my ($order) = $self->_rearrange([qw(ORDER)],@args);
+   my ($order, $sortby) = $self->_rearrange([qw(ORDER SORTBY)],@args);
+   $order ||= 'depth';
+   $sortby ||= 'height';
 
-   # this is depth search I believe
-   my $node = $self->get_root_node;
-   my @children = ($node,$node->get_Descendents);
-   return @children;
+   if ($order =~ m/^b|(breadth)$/oi) {
+       my $node = $self->get_root_node;
+       my @children = ($node);
+       for (@children) {
+	   push @children, $_->each_Descendent($sortby);
+       }
+       return @children;
+   }
+
+   if ($order =~ m/^d|(depth)$/oi) {
+       # this is depth-first search I believe
+       my $node = $self->get_root_node;
+       my @children = ($node,$node->get_Descendents($sortby));
+       return @children;
+   }
 }
 
 =head2 get_root_node
@@ -181,15 +192,57 @@ sub total_branch_length {
    return $sum;
 }
 
+=head2 id
 
-# decorated intereface TreeI Implements this
+ Title   : id
+ Usage   : my $id = $tree->id();
+ Function: An id value for the tree
+ Returns : scalar
+ Args    : [optional] new value to set
 
+
+=cut
+
+sub id{
+   my ($self,$val) = @_;
+   if( defined $val ) { 
+       $self->{'_treeid'} = $val;
+   }
+   return $self->{'_treeid'};
+}
+
+=head2 score
+
+ Title   : score
+ Usage   : $obj->score($newval)
+ Function: Sets the associated score with this tree
+           This is a generic slot which is probably best used 
+           for log likelihood or other overall tree score
+ Returns : value of score
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub score{
+   my ($self,$val) = @_;
+   if( defined $val ) { 
+       $self->{'_score'} = $val;
+   }
+   return $self->{'_score'};
+}
+
+
+# decorated interface TreeI Implements this
 
 =head2 height
 
  Title   : height
  Usage   : my $height = $tree->height
  Function: Gets the height of tree - this LOG_2($number_nodes)
+           WARNING: this is only true for strict binary trees.  The TreeIO
+           system is capable of building non-binary trees, for which this
+           method will currently return an incorrect value!!
  Returns : integer
  Args    : none
 
@@ -204,5 +257,6 @@ sub total_branch_length {
 
 
 =cut
+
 
 1;

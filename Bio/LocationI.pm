@@ -1,7 +1,7 @@
-# $Id: LocationI.pm,v 1.11.2.1 2002/04/22 22:55:13 jason Exp $
+# $Id: LocationI.pm,v 1.18 2002/12/01 00:05:19 jason Exp $
 #
 # BioPerl module for Bio::LocationI
-# Cared for by Jason Stajich <jason@chg.mc.duke.edu>
+# Cared for by Jason Stajich <jason@bioperl.org>
 #
 # Copyright Jason Stajich
 #
@@ -45,7 +45,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -93,11 +93,12 @@ sub location_type {
 
   Title   : start
   Usage   : $start = $location->start();
-  Function: Get the start coordinate of this location as defined by the
-            currently active coordinate computation policy. In simple cases,
-            this will return the same number as min_start() and max_start(),
-            in more ambiguous cases like fuzzy locations the number may be
-            equal to one or neither of both.
+  Function: Get the start coordinate of this location as defined by
+            the currently active coordinate computation policy. In
+            simple cases, this will return the same number as
+            min_start() and max_start(), in more ambiguous cases like
+            fuzzy locations the number may be equal to one or neither
+            of both.
 
             We override this here from RangeI in order to delegate
             'get' to a L<Bio::Location::CoordinatePolicy> implementing
@@ -108,6 +109,8 @@ sub location_type {
 
   Returns : A positive integer value.
   Args    : none
+
+See L<Bio::Location::CoordinatePolicy> for more information
 
 =cut
 
@@ -127,12 +130,12 @@ sub start {
   Title   : end
   Usage   : $end = $location->end();
   Function: Get the end coordinate of this location as defined by the
-            currently active coordinate computation policy. In simple cases,
-            this will return the same number as min_end() and max_end(),
-            in more ambiguous cases like fuzzy locations the number may be
-            equal to one or neither of both.
+            currently active coordinate computation policy. In simple
+            cases, this will return the same number as min_end() and
+            max_end(), in more ambiguous cases like fuzzy locations
+            the number may be equal to one or neither of both.
 
-            We override this here from L<Bio::RangeI> in order to delegate
+            We override this here from Bio::RangeI in order to delegate
             'get' to a L<Bio::Location::CoordinatePolicy> implementing
             object. Implementing classes may also wish to provide
             'set' functionality, in which case they *must* override
@@ -141,6 +144,9 @@ sub start {
 
   Returns : A positive integer value.
   Args    : none
+
+See L<Bio::Location::CoordinatePolicy> and L<Bio::RangeI> for more
+information
 
 =cut
 
@@ -292,6 +298,36 @@ sub seq_id {
     return $self->{'_seqid'};
 }
 
+=head2 is_remote
+
+ Title   : is_remote
+ Usage   : $is_remote_loc = $loc->is_remote()
+ Function: Whether or not a location is a remote location.
+
+           A location is said to be remote if it is on a different
+           'object' than the object which 'has' this
+           location. Typically, features on a sequence will sometimes
+           have a remote location, which means that the location of
+           the feature is on a different sequence than the one that is
+           attached to the feature. In such a case, $loc->seq_id will
+           be different from $feat->seq_id (usually they will be the
+           same).
+
+           While this may sound weird, it reflects the location of the
+           kind of AB18375:450-900 which can be found in GenBank/EMBL
+           feature tables.
+
+ Example : 
+ Returns : TRUE if the location is a remote location, and FALSE otherwise
+ Args    : 
+
+
+=cut
+
+sub is_remote{
+    shift->throw_not_implemented();
+}
+
 =head2 coordinate_policy
 
   Title   : coordinate_policy
@@ -299,12 +335,12 @@ sub seq_id {
             $location->coordinate_policy($mypolicy); # set may not be possible
   Function: Get the coordinate computing policy employed by this object.
 
-            See Bio::Location::CoordinatePolicyI for documentation about
-            the policy object and its use.
+            See L<Bio::Location::CoordinatePolicyI> for documentation
+            about the policy object and its use.
 
-            The interface *does not* require implementing classes to accept
-            setting of a different policy. The implementation provided here
-            does, however, allow to do so.
+            The interface *does not* require implementing classes to
+            accept setting of a different policy. The implementation
+            provided here does, however, allow to do so.
 
             Implementors of this interface are expected to initialize
             every new instance with a
@@ -317,6 +353,9 @@ sub seq_id {
 
   Returns : A L<Bio::Location::CoordinatePolicyI> implementing object.
   Args    : On set, a L<Bio::Location::CoordinatePolicyI> implementing object.
+
+See L<Bio::Location::CoordinatePolicyI> for more information
+
 
 =cut
 
@@ -353,5 +392,24 @@ sub to_FTstring {
     my($self) = @_;
     $self->throw_not_implemented();
 }
+
+=head2 each_Location
+
+ Title   : each_Location
+ Usage   : @locations = $locObject->each_Location($order);
+ Function: Conserved function call across Location:: modules - will
+           return an array containing the component Location(s) in
+           that object, regardless if the calling object is itself a
+           single location or one containing sublocations.
+ Returns : an array of Bio::LocationI implementing objects
+ Args    : Optional sort order to be passed to sub_Location() for Splits
+
+=cut
+
+sub each_Location {
+    my ($self,@args) = @_;
+    $self->throw_not_implemented();
+}
+
 1;
 

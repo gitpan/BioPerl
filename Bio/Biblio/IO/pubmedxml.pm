@@ -1,4 +1,4 @@
-# $Id: pubmedxml.pm,v 1.2 2002/03/08 09:11:56 senger Exp $
+# $Id: pubmedxml.pm,v 1.4 2002/10/22 07:45:13 lapp Exp $
 #
 # BioPerl module Bio::Biblio::IO::pubmedxml.pm
 #
@@ -16,7 +16,7 @@ Bio::Biblio::IO::pubmedxml - A converter of XML files with PUBMED citations
 Do not use this object directly, it is recommended to access it and use
 it through the I<Bio::Biblio::IO> module:
 
-  use Bio::Biblio:IO;
+  use Bio::Biblio::IO;
   my $io = new Bio::Biblio::IO (-format => 'pubmedxml');
 
 =head1 DESCRIPTION
@@ -43,7 +43,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR
 
@@ -86,8 +86,8 @@ use Bio::Biblio::IO::medlinexml;
 
 BEGIN { 
     # set the version for version checking
-    $VERSION = do { my @r = (q$Revision: 1.2 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id: pubmedxml.pm,v 1.2 2002/03/08 09:11:56 senger Exp $;
+    $VERSION = do { my @r = (q$Revision: 1.4 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
+    $Revision = q$Id: pubmedxml.pm,v 1.4 2002/10/22 07:45:13 lapp Exp $;
 }
 
 sub _initialize {

@@ -1,4 +1,4 @@
-# $Id: psi.pm,v 1.1.2.2 2002/04/18 13:05:25 jason Exp $
+# $Id: psi.pm,v 1.6 2002/12/23 19:36:39 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::psi
 #
@@ -16,7 +16,7 @@ Bio::AlignIO::psi - Read/Write PSI-BLAST profile alignment files
 
 =head1 SYNOPSIS
 
-Give standard usage here
+This module will parse PSI-BLAST output of the format seqid XXXX  
 
 =head1 DESCRIPTION
 
@@ -40,7 +40,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -64,10 +64,11 @@ Internal methods are usually preceded with a _
 
 
 package Bio::AlignIO::psi;
-use vars qw(@ISA $BlockLen);
+use vars qw(@ISA $BlockLen $IdLength);
 use strict;
 
-BEGIN { $BlockLen = 100; }
+$BlockLen = 100; 
+$IdLength = 13;
 
 # Object preamble - inherits from Bio::Root::Root
 
@@ -143,20 +144,22 @@ sub write_aln {
     my @seqs = $aln->each_seq;
     my $len = 1;
     my $alnlen = $aln->length;
+    my $idlen = $IdLength;
+    my @ids = map { substr($_->display_id,0,$idlen) } @seqs;
     while( $len < $alnlen ) {
 	my $start = $len;
 	my $end   = $len + $BlockLen;
 	if( $end > $alnlen ) { $end = $alnlen; }
+	my $c = 0;
 	foreach my $seq ( @seqs ) {
-	    $self->_print(sprintf("%-13s %s\n",
-				  $seq->display_id,
+	    $self->_print(sprintf("%-".$idlen."s %s\n",
+				  $ids[$c++],
 				  $seq->subseq($start,$end)));
 	}
-	print TMP "\n";
 	$self->_print("\n");
 	$len += $BlockLen+1;
     }
-    
+    $self->flush if $self->_flush_on_write && defined $self->_fh;
     return 1;
 }
 

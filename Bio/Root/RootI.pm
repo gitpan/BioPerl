@@ -1,4 +1,4 @@
-# $Id: RootI.pm,v 1.47.2.6 2002/07/01 22:31:14 sac Exp $
+# $Id: RootI.pm,v 1.61 2002/12/16 09:44:28 birney Exp $
 #
 # BioPerl module for Bio::Root::RootI
 #
@@ -108,31 +108,19 @@ use Carp 'confess','carp';
 BEGIN { 
     $ID        = 'Bio::Root::RootI';
     $VERSION   = 1.0;
-    $Revision  = '$Id: RootI.pm,v 1.47.2.6 2002/07/01 22:31:14 sac Exp $ ';
+    $Revision  = '$Id: RootI.pm,v 1.61 2002/12/16 09:44:28 birney Exp $ ';
     $DEBUG     = 0;
     $VERBOSITY = 0;
 }
 
-
-=head2 new
-
- Purpose   : generic instantiation function can be overridden if 
-             special needs of a module cannot be done in _initialize
-
-=cut
-
 sub new {
-    local($^W) = 0;
-    my ($caller, @args) = @_;
-
-    my $self = $caller->_create_object(@args);
-
-    my %param = @args;
-    my $verbose =  $param{'-VERBOSE'} || $param{'-verbose'};
-
-    ## See "Comments" above regarding use of _rearrange().
-    $self->verbose($verbose);
-    return $self;
+  my $class = shift;
+  my @args = @_;
+  unless ( $ENV{'BIOPERLDEBUG'} ) {
+      carp("Use of new in Bio::Root::RootI is deprecated.  Please use Bio::Root::Root instead");
+  }
+  eval "require Bio::Root::Root";
+  return Bio::Root::Root->new(@args);
 }
 
 # for backwards compatibility
@@ -141,25 +129,6 @@ sub _initialize {
     return 1;
 }
 
-=head2 _create_object
-
- Title   : _create_object()
- Usage   : $obj->create_object(@args)
- Function: Abstract method which actually creates the blessed object reference
- Returns : Blessed object (hashref, arrayref, scalarref)
- Args    : Implementation-specific
-
-=cut
-
-sub _create_object {
-  my $class = shift;
-  my @args = @_;
-  unless ( $ENV{'BIOPERLDEBUG'} ) {
-      carp("Use of Bio::Root::RootI is deprecated.  Please use Bio::Root::Root instead");
-  }
-  eval "require Bio::Root::Root";
-  return Bio::Root::Root->new(@args);
-}
 
 =head2 throw
 
@@ -202,8 +171,13 @@ sub throw{
 
 sub warn{
     my ($self,$string) = @_;
-
-    my $verbose = $self->verbose;
+    
+    my $verbose;
+    if( $self->can('verbose') ) {
+	$verbose = $self->verbose;
+    } else {
+	$verbose = 0;
+    }
 
     if( $verbose == 2 ) {
 	$self->throw($string);
@@ -224,24 +198,6 @@ sub warn{
     print STDERR $out;
 }
 
-=head2 debug
-
- Title   : debug
- Usage   : $obj->debug("This is debugging output");
- Function: Prints a debugging message when verbose is > 0
- Returns : none
- Args    : message string to print to STDERR
-
-=cut
-
-sub debug{
-   my ($self,$msg) = @_;
-   
-   if( $self->verbose > 0 ) { 
-       print STDERR $msg;
-   }   
-}
-
 =head2 deprecated
 
  Title   : deprecated
@@ -258,27 +214,6 @@ sub deprecated{
    if( $self->verbose >= 0 ) { 
        print STDERR $msg, "\n", $self->stack_trace_dump;
    }
-}
-
-		     
-=head2 verbose
-
- Title   : verbose
- Usage   : $self->verbose(1)
- Function: Sets verbose level for how ->warn behaves
-           -1 = no warning
-            0 = standard, small warning
-            1 = warning with stack trace
-            2 = warning becomes throw
- Returns : The current verbosity setting (integer between -1 to 2)
- Args    : -1,0,1 or 2
-
-
-=cut
-
-sub verbose{
-   my ($self,$value) = @_;
-   $self->throw_not_implemented();
 }
 
 =head2 stack_trace_dump
@@ -351,11 +286,14 @@ sub stack_trace{
  Usage     : $object->_rearrange( array_ref, list_of_arguments)
  Purpose   : Rearranges named parameters to requested order.
  Example   : $self->_rearrange([qw(SEQUENCE ID DESC)],@param);
-           : Where @param = (-sequence => $s, 
-	   :                 -id       => $i, 
-	   :	             -desc     => $d);
+           : Where @param = (-sequence => $s,
+	   :	                -desc     => $d,
+	   :                    -id       => $i);
  Returns   : @params - an array of parameters in the requested order.
-           : The above example would return ($s, $i, $d)
+           : The above example would return ($s, $i, $d).
+           : Unspecified parameters will return undef. For example, if
+           :        @param = (-sequence => $s);
+           : the above _rearrange call would return ($s, undef, undef)
  Argument  : $order : a reference to an array which describes the desired
            :          order of the named parameters.
            : @param : an array of parameters, either as a list (in
@@ -368,8 +306,11 @@ sub stack_trace{
            :          first one should be hyphenated.)
  Source    : This function was taken from CGI.pm, written by Dr. Lincoln
            : Stein, and adapted for use in Bio::Seq by Richard Resnick and
-           : then adapted for use in Bio::Root::Object.pm by Steve Chervitz.
- Comments  : (SAC)
+           : then adapted for use in Bio::Root::Object.pm by Steve Chervitz,
+           : then migrated into Bio::Root::RootI.pm by Ewan Birney.
+ Comments  :
+           : Uppercase tags are the norm, 
+           : (SAC)
            : This method may not be appropriate for method calls that are
            : within in an inner loop if efficiency is a concern.
            :
@@ -395,14 +336,34 @@ sub stack_trace{
 	   :
            : Personal note (SAC): I have found all uppercase tags to
            : be more managable: it involves less single-quoting,
-           : the code is more readable, and there are no method naming conlicts.
+           : the key names stand out better, and there are no method naming 
+           : conflicts.
+           : The drawbacks are that it's not as easy to type as lowercase,
+           : and lots of uppercase can be hard to read.
+           :
            : Regardless of the style, it greatly helps to line
 	   : the parameters up vertically for long/complex lists.
 
 =cut
 
-#----------------'
 sub _rearrange {
+    my $dummy = shift;
+    my $order = shift;
+
+    return @_ unless (substr($_[0]||'',0,1) eq '-');
+    push @_,undef unless $#_ %2;
+    my %param;
+    while( @_ ) {
+	(my $key = shift) =~ tr/a-z\055/A-Z/d; #deletes all dashes!
+	$param{$key} = shift;
+    }
+    map { $_ = uc($_) } @$order; # for bug #1343, but is there perf hit here?
+    return @param{@$order};
+}
+
+
+#----------------'
+sub _rearrange_old {
 #----------------
     my($self,$order,@param) = @_;
     
@@ -416,7 +377,7 @@ sub _rearrange {
     #return ('') x $#{$order} unless @param;
     
     # ...all we need to do is return an empty array:
-    return unless @param;
+    # return unless @param;
     
     # If we've got parameters, we need to check to see whether
     # they are named or simply listed. If they are listed, we
@@ -424,7 +385,7 @@ sub _rearrange {
 
     # The mod test fixes bug where a single string parameter beginning with '-' gets lost.
     # This tends to happen in error messages such as: $obj->throw("-id not defined")
-    return @param unless (defined($param[0]) && $param[0]=~/^-/ && ($#param+1) % 2 == 0);
+    return @param unless (defined($param[0]) && $param[0]=~/^-/o && ($#param % 2));
 
     # Tester
 #    print "\n_rearrange() named parameters:\n";
@@ -433,33 +394,34 @@ sub _rearrange {
     # Now we've got to do some work on the named parameters.
     # The next few lines strip out the '-' characters which
     # preceed the keys, and capitalizes them.
-    my $i;
-    for ($i=0;$i<@param;$i+=2) {
+    for (my $i=0;$i<@param;$i+=2) {
 	$param[$i]=~s/^\-//;
 	$param[$i]=~tr/a-z/A-Z/;
     }
     
     # Now we'll convert the @params variable into an associative array.
-    local($^W) = 0;  # prevent "odd number of elements" warning with -w.
+    # local($^W) = 0;  # prevent "odd number of elements" warning with -w.
     my(%param) = @param;
     
-    my(@return_array);
+    # my(@return_array);
     
     # What we intend to do is loop through the @{$order} variable,
     # and for each value, we use that as a key into our associative
     # array, pushing the value at that key onto our return array.
-    my($key);
+    # my($key);
     
-    foreach $key (@{$order}) {
-	my($value) = $param{$key};
-	delete $param{$key};
-	push(@return_array,$value);
-    }
+    #foreach (@{$order}) {
+	# my($value) = $param{$key};
+	# delete $param{$key};
+	#push(@return_array,$param{$_});
+    #}
+
+    return @param{@{$order}};
     
 #    print "\n_rearrange() after processing:\n";
 #    my $i; for ($i=0;$i<@return_array;$i++) { printf "%20s => %s\n", ${$order}[$i], $return_array[$i]; } <STDIN>;
 
-    return @return_array;
+    # return @return_array;
 }
 
 =head2 _register_for_cleanup
@@ -614,13 +576,5 @@ sub warn_not_implemented {
     }
 }
 
-
-sub DESTROY {
-    my $self = shift;
-    my @cleanup_methods = $self->_cleanup_methods or return;
-    for my $method (@cleanup_methods) {
-      $method->($self);
-    }
-}
 
 1;

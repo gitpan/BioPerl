@@ -1,7 +1,7 @@
 #
-# $Id: DBFetch.pm,v 1.3.2.1 2002/03/13 16:37:05 jason Exp $
+# $Id: DBFetch.pm,v 1.8 2002/12/22 22:02:13 lstein Exp $
 #
-# BioPerl module for Bio::DB::EMBL
+# BioPerl module for Bio::DB::DBFetch
 #
 # Cared for by Heikki Lehvaslaiho <Heikki@ebi.ac.uk>
 #
@@ -50,7 +50,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
@@ -73,8 +73,8 @@ use vars qw(@ISA $MODVERSION $DEFAULTFORMAT $DEFAULTLOCATION
 $MODVERSION = '0.1';
 use HTTP::Request::Common;
 use Bio::DB::WebDBSeqI;
-use Bio::Root::Root;
-@ISA = qw(Bio::DB::WebDBSeqI Bio::Root::Root);
+
+@ISA = qw(Bio::DB::WebDBSeqI);
 
 # the new way to make modules a little more lightweight
 
@@ -118,7 +118,7 @@ sub get_request {
     } else {
 	$uid = $uids;
     }
-    $self->debug("\n$url$format_string&id=$uid\n");
+
     return GET $url. $format_string. '&id='. $uid;
 }
 
@@ -136,10 +136,23 @@ sub get_request {
 
 =cut
 
-# don't need to do anything
-
+# remove occasional blank lines at top of web output
 sub postprocess_data {
-    my ($self, %args) = @_;
+  my ($self, %args) = @_;
+  if ($args{type} eq 'string') {
+    ${$args{location}} =~ s/^\s+//;  # get rid of leading whitespace
+  }
+  elsif ($args{type} eq 'file') {
+    open F,$args{location} or $self->throw("Cannot open $args{location}: $!");
+    my @data = <F>;
+    for (@data) {
+      last unless /^\s+$/;
+      shift @data;
+    }
+    open F,">$args{location}" or $self->throw("Cannot write to $args{location}: $!");
+    print F @data;
+    close F;
+  }
 }
 
 =head2 default_format
@@ -159,10 +172,10 @@ sub default_format {
 
 =head1 Bio::DB::DBFetch specific routines
 
-=head2 get_Stream_by_batch
+=head2 get_Stream_by_id
 
-  Title   : get_Stream_by_batch
-  Usage   : $seq = $db->get_Stream_by_batch($ref);
+  Title   : get_Stream_by_id
+  Usage   : $seq = $db->get_Stream_by_id($ref);
   Function: Retrieves Seq objects from the server 'en masse', rather than one
             at a time.  For large numbers of sequences, this is far superior
             than get_Stream_by_[id/acc]().
@@ -171,11 +184,14 @@ sub default_format {
   Args    : $ref : either an array reference, a filename, or a filehandle
             from which to get the list of unique ids/accession numbers.
 
+NOTE: for backward compatibility, this method is also called
+get_Stream_by_batch.
+
 =cut
 
-sub get_Stream_by_batch {
+sub get_Stream_by_id {
     my ($self, $ids) = @_;
-    return $self->get_seq_stream('-uids' => $ids, '-mode' => 'single');
+    return $self->get_seq_stream('-uids' => $ids, '-mode' => 'batch');
 }
 
 =head2 get_Seq_by_version

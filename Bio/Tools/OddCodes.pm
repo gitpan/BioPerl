@@ -1,4 +1,4 @@
-#$Id: OddCodes.pm,v 1.9 2001/11/20 02:09:40 lstein Exp $
+#$Id: OddCodes.pm,v 1.10 2002/10/22 07:45:22 lapp Exp $
 #-----------------------------------------------------------------------------
 # PACKAGE    : OddCodes.pm
 # PURPOSE    : To write amino acid sequences in alternative alphabets
@@ -93,7 +93,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bioperl.org
-  http://www.bioperl.org/bioperl-bugs/
+  http://www.bugzilla.bioperl.org/
 
 =head1 AUTHOR
 

@@ -1,4 +1,4 @@
-# $Id: NC_Feature.pm,v 1.2.2.1 2002/05/09 20:51:15 jason Exp $
+# $Id: NC_Feature.pm,v 1.5 2002/10/22 07:45:20 lapp Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::NC_Feature.pm
 #
@@ -40,11 +40,11 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - David Block
 
-Email dblock@gene.pbi.nrc.ca
+Email dblock@gnf.org
 
 Describe contact details here
 
@@ -80,9 +80,9 @@ sub new {
 
 
 =head2 is_coding
-
+    
  Title   : is_coding
-  Usage   : if ($feature->is_coding()) {
+ Usage   : if ($feature->is_coding()) {
                      #do something
             }
  Function: Whether or not the feature codes for amino acid.

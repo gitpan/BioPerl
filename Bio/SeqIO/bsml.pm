@@ -84,7 +84,7 @@ Bio::SeqIO::bsml - BSML sequence input/output stream
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head2 Things Still to Do
 
@@ -135,11 +135,15 @@ package Bio::SeqIO::bsml;
 use vars qw(@ISA);
 use strict;
 
-use Bio::Seq::RichSeq;
 use Bio::SeqIO;
 use Bio::SeqFeature::Generic;
 use Bio::Species;
 use XML::DOM;
+use Bio::Seq::SeqFactory;
+use Bio::Annotation::Collection;
+use Bio::Annotation::Comment;
+use Bio::Annotation::Reference;
+use Bio::Annotation::DBLink;
 
 @ISA = qw(Bio::SeqIO);
 
@@ -148,7 +152,18 @@ my $nvtoken = ": ";  # The token used if a name/value pair has to be stuffed
                      # into a single line
 
 =head1 METHODS
-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
+
+=cut
+
+# LS: this seems to get overwritten on line 1317, generating a redefinition error.  Dead code?
+# CAT: This was inappropriately added in revision 1.10 - I added the check for existance of a sequence factory to the actual _initialize
+# sub _initialize {
+#   my($self,@args) = @_;
+#   $self->SUPER::_initialize(@args);  
+#   if( ! defined $self->sequence_factory ) {
+#       $self->sequence_factory(new Bio::Seq::SeqFactory(-verbose => $self->verbose(), -type => 'Bio::Seq::RichSeq'));
+#   }
+# }
 
 =head2 next_seq
 
@@ -163,7 +178,7 @@ my $nvtoken = ": ";  # The token used if a name/value pair has to be stuffed
 sub next_seq {
     my $self = shift;
     my ($desc);
-    my $bioSeq = Bio::Seq::RichSeq->new(-verbose =>$self->verbose());
+    my $bioSeq = $self->sequence_factory->create_sequence(-verbose =>$self->verbose());
     
     unless (exists $self->{'domtree'}) {
 	$self->throw("A BSML document has not yet been parsed.");
@@ -574,26 +589,19 @@ sub to_bsml {
 	# Array references to hold <Attribute> values (not objects):
 	my $seqDesc = [];
 	push @{$seqDesc}, ["comment" , "This file generated to BSML 2.2 standards - joins will be collapsed to a single feature enclosing all members of the join"];
-	push @{$seqDesc}, ["description" , $bioSeq->desc];
-	push @{$seqDesc}, ["primary_id" , $bioSeq->primary_id];
-
-	# NONE of these methods are required by the SeqI interface; therefore
-	# we eval{} them.
-	eval { push @{$seqDesc}, ["keyword" , $bioSeq->keywords]    };
-	eval { push @{$seqDesc}, ["version" , $bioSeq->seq_version] };
-	eval { push @{$seqDesc}, ["division" , $bioSeq->division]   };
-	eval { push @{$seqDesc}, ["pid" , $bioSeq->pid]             };
-	  #	push @{$seqDesc}, ["bio_object" , ref($bioSeq)];
-	eval {
-	  foreach my $dt ($bioSeq->get_dates() ) {
+	push @{$seqDesc}, ["description" , eval{$bioSeq->desc}];
+	push @{$seqDesc}, ["keyword" , eval{$bioSeq->keywords}];
+	push @{$seqDesc}, ["version" , eval{$bioSeq->seq_version}];
+	push @{$seqDesc}, ["division" , eval{$bioSeq->division}];
+	push @{$seqDesc}, ["pid" , eval{$bioSeq->pid}];
+#	push @{$seqDesc}, ["bio_object" , ref($bioSeq)];
+	push @{$seqDesc}, ["primary_id" , eval{$bioSeq->primary_id}];
+	foreach my $dt (eval{$bioSeq->get_dates()} ) {
 	    push @{$seqDesc}, ["date" , $dt];
-	  }
-	};
-	eval {
-	  foreach my $ac ($bioSeq->get_secondary_accessions() ) {
+	}
+	foreach my $ac (eval{$bioSeq->get_secondary_accessions()} ) {
 	    push @{$seqDesc}, ["secondary_accession" , $ac];
-	  }
-	};
+	}
 	
 	# Determine the accession number and a unique identifier
 	my $acc = $bioSeq->accession_number eq "unknown" ?
@@ -614,11 +622,12 @@ sub to_bsml {
 	# Map over <Sequence> attributes
 	my %attr = ( 'title'         => $bioSeq->display_id,
 		     'length'        => $bioSeq->length,
-		     'molecule'      => $mol{ lc($bioSeq->alphabet) },
 		     'ic-acckey'     => $acc,
 		     'id'            => $id,
 		     'representation' => 'raw',
 		     );
+	$attr{molecule} = $mol{ lc($bioSeq->molecule) } if $bioSeq->can('molecule');
+
 
 	foreach my $a (keys %attr) {
 	    $xmlSeq->setAttribute($a, $attr{$a}) if ($attr{$a} ne "");
@@ -700,8 +709,8 @@ sub to_bsml {
 		    'class' => $class , 
 		    'value-type' => $bioFeat->source_tag });
 		# Check for Bio::Annotations on the * <Feature> *.
-		$self->_parse_annotation( -xml => $xml, -obj => $bioFeat, 
-					  -desc => $featDesc, -id => $id
+		$self->_parse_annotation( -xml => $xml, -obj => $bioFeat,
+					  -desc => $featDesc, -id => $id,
 					  -refs =>$featRefs, );
 		# Add the description stuff for the <Feature>
 		foreach my $de (@{$featDesc}) {
@@ -821,6 +830,8 @@ sub write_seq {
 	if ($args->{PRINTMIME});
     $self->_print( $out );
     # Return the DOM tree in case the user wants to do something with it
+
+    $self->flush if $self->_flush_on_write && defined $self->_fh;
     return $xml;
 }
 
@@ -1326,6 +1337,11 @@ sub _initialize {
       # current_node => the <Sequence> node next in line for next_seq
       $self->{'current_node'} = 0;
   }
+    
+  $self->sequence_factory( new Bio::Seq::SeqFactory
+			   ( -verbose => $self->verbose(), 
+			     -type => 'Bio::Seq::RichSeq')) 
+      if( ! defined $self->sequence_factory );
 }
 
 
@@ -1355,6 +1371,7 @@ sub _parseparams {
         $param[$i]=~s/^\-//;
         $param[$i]=~tr/a-z/A-Z/;
     }
+    pop @param if @param %2;  # not an even multiple
     %hash = @param;
     return \%hash;
 }

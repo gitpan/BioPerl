@@ -1,9 +1,9 @@
-# $Id: WidestCoordPolicy.pm,v 1.4 2001/11/20 02:09:33 lstein Exp $
+# $Id: WidestCoordPolicy.pm,v 1.6 2002/12/01 00:05:20 jason Exp $
 #
 # BioPerl module for Bio::Location::WidestCoordPolicy
 #
 # Cared for by Hilmar Lapp <hlapp@gmx.net>
-#          and Jason Stajich <jason@chg.mc.duke.edu>
+#          and Jason Stajich <jason@bioperl.org>
 #
 # Copyright Hilmar Lapp, Jason Stajich
 #
@@ -46,11 +46,11 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Hilmar Lapp, Jason Stajich
 
-Email hlapp@gmx.net, jason@chg.mc.duke.edu
+Email hlapp@gmx.net, jason@bioperl.org
 
 =head1 APPENDIX
 

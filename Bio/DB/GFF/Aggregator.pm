@@ -219,8 +219,8 @@ sub disaggregate {
   my $types = shift;
   my $factory = shift;
 
-  my $sub_features = Bio::DB::GFF->parse_types($self->get_part_names);
-  my $main_feature = Bio::DB::GFF->parse_types($self->get_main_name);
+  my $sub_features = $factory->parse_types($self->get_part_names);
+  my $main_feature = $factory->parse_types($self->get_main_name);
 
   if (@$types) {
     my (@synthetic_types,@unchanged);
@@ -246,7 +246,7 @@ sub disaggregate {
     $self->passthru(undef);
   }
 
-  return $self->components > 0;
+  return $self->component_count > 0;
 }
 
 
@@ -297,9 +297,9 @@ sub aggregate {
   for my $feature (@$features) {
     if ($feature->group && $matchsub->($feature)) {
       if ($main_method && lc $feature->method eq lc $main_method) {
-	$aggregates{$feature->group}{base} ||= $feature->clone;
+	$aggregates{$feature->group,$feature->refseq}{base} ||= $feature->clone;
       } else {
-	push @{$aggregates{$feature->group}{subparts}},$feature;
+	push @{$aggregates{$feature->group,$feature->refseq}{subparts}},$feature;
       }
       push @result,$feature if $passthru && $passthru->($feature);
 
@@ -477,6 +477,11 @@ sub components {
   return wantarray ? @$d : $d;
 }
 
+sub component_count {
+  my @c = shift->components;
+  scalar @c;
+}
+
 sub passthru {
   my $self = shift;
   my $d = $self->{passthru};
@@ -566,7 +571,11 @@ None known yet.
 
 =head1 SEE ALSO
 
-L<Bio::DB::GFF>
+L<Bio::DB::GFF>,
+L<Bio::DB::GFF::Aggregator::alignment>,
+L<Bio::DB::GFF::Aggregator::clone>,
+L<Bio::DB::GFF::Aggregator::transcript>,
+L<Bio::DB::GFF::Aggregator::none>
 
 =head1 AUTHOR
 

@@ -1,9 +1,9 @@
 #-----------------------------------------------------------------------------
-# PACKAGE : Bio::Tools::WWW.pm
+# PACKAGE : Bio::Tools::WWW
 # PURPOSE : To encapsulate commonly used URLs for web key websites in bioinformatics.
 # AUTHOR  : Steve Chervitz
 # CREATED : 27 Aug 1996 
-# REVISION: $Id: WWW.pm,v 1.8 2002/01/11 08:05:35 sac Exp $
+# REVISION: $Id: WWW.pm,v 1.12 2002/10/22 07:38:46 lapp Exp $
 #
 # For documentation, run this module through pod2html 
 # (preferably from Perl v5.004 or better).
@@ -30,7 +30,7 @@ $AUTHORITY = 'nobody@localhost';
 
 $ID = 'Bio::Tools::WWW';
 $VERSION = 0.014;
-$Revision = '$Id: WWW.pm,v 1.8 2002/01/11 08:05:35 sac Exp $'; #'
+$Revision = '$Id: WWW.pm,v 1.12 2002/10/22 07:38:46 lapp Exp $'; #'
 
 ## Static object.
 $BioWWW = {};
@@ -42,7 +42,7 @@ $BioWWW->{'_name'} = "Static $ID object";
 
 =head1 NAME
 
-Bio::Tools::WWW.pm - Bioperl manager for web resources related to biology.
+Bio::Tools::WWW - Bioperl manager for web resources related to biology.
 
 =head1 SYNOPSIS
 
@@ -99,14 +99,10 @@ correct or exhaustive and will require periodic updating.
 By keeping URL management within Bio::Tools::WWW.pm, other generic 
 modules can easily access a variety of different web sites without 
 having to know about a potential multitude of specific modules 
-specialized for one database or another. A specific example
-of this is in B<Bio::Tools::Blast.pm> where the function blast_to_html()
-needs access to different URLs in order to add database links
-to the Blast report. An alternative approach would be to have
-multiple blast_to_html() functions defined within modules
-specialized for Blast analyses of different datasets. This, however,
-may create maintenance headaches when updating the different
-versions of the function. 
+specialized for one database or another. An alternative approach would
+be to have addresses defined within modules specialized for different
+web sites. This, however, may create maintenance headaches when updating
+these addresses.
 
 =head2 Complex Websites
 
@@ -144,7 +140,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track the bugs an
 their resolution. Bug reports can be submitted via email or the web:
 
     bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    http://bugzilla.bioperl.org/           
 
 =head1 AUTHOR
 

@@ -1,6 +1,6 @@
 package Bio::Graphics::FeatureFile;
 
-# $Id: FeatureFile.pm,v 1.1.2.14 2002/07/04 14:40:00 lstein Exp $
+# $Id: FeatureFile.pm,v 1.20 2002/12/14 00:37:17 lstein Exp $
 # This package parses and renders a simple tab-delimited format for features.
 # It is simpler than GFF, but still has a lot of expressive power.
 # See __END__ for the file format
@@ -119,7 +119,7 @@ use Carp;
 use IO::File;
 use Text::Shellwords;
 use vars '$VERSION';
-$VERSION = '1.02';
+$VERSION = '1.04';
 
 # default colors for unconfigured features
 my @COLORS = qw(cyan blue red yellow green wheat turquoise orange);
@@ -129,10 +129,10 @@ use constant WIDTH => 600;
 
 =over 4
 
-=item $features = Bio::Graphics::FeatureFile->new(@args)
+=item $features = Bio::Graphics::FeatureFile-E<gt>new(@args)
 
 Create a new Bio::Graphics::FeatureFile using @args to initialize the
-object.  Arguments are -name=>value pairs:
+object.  Arguments are -name=E<gt>value pairs:
 
   Argument         Value
   --------         -----
@@ -222,9 +222,10 @@ sub new {
 
 # render our features onto a panel using configuration data
 # return the number of tracks inserted
+
 =over 4
 
-=item ($rendered,$panel) = $features->render([$panel])
+=item ($rendered,$panel) = $features-E<gt>render([$panel])
 
 Render features in the data set onto the indicated
 Bio::Graphics::Panel.  If no panel is specified, creates one.
@@ -306,7 +307,7 @@ sub _stat {
 
 =over 4
 
-=item $error = $features->error([$error])
+=item $error = $features-E<gt>error([$error])
 
 Get/set the current error message.
 
@@ -323,7 +324,7 @@ sub error {
 
 =over 4
 
-=item $smart_features = $features->smart_features([$flag]
+=item $smart_features = $features-E<gt>smart_features([$flag]
 
 Get/set the "smart_features" flag.  If this is set, then any features
 added to the featurefile object will have their configurator() method
@@ -381,12 +382,14 @@ sub parse_line {
 
   s/\r//g;  # get rid of carriage returns left over by MS-DOS/Windows systems
 
-  return if /^[\#]/;
+  return if /^\s*[\#]/;
 
   if (/^\s+(.+)/ && $self->{current_tag}) { # continuation line
       my $value = $1;
       my $cc = $self->{current_config} ||= 'general';       # in case no configuration named
       $self->{config}{$cc}{$self->{current_tag}} .= ' ' . $value;
+      # respect newlines in code subs
+      $self->{config}{$cc}{$self->{current_tag}} .= "\n" if $self->{config}{$cc}{$self->{current_tag}}=~ /^sub\s*{/;
       return;
   }
 
@@ -398,7 +401,7 @@ sub parse_line {
      return;
   }
 
-  if (/^([\w ]+?)\s*=\s*(.*)/) {   # key value pair within a configuration section
+  if (/^([\w: -]+?)\s*=\s*(.*)/) {   # key value pair within a configuration section
     my $tag = lc $1;
     my $cc = $self->{current_config} ||= 'general';       # in case no configuration named
     my $value = defined $2 ? $2 : '';
@@ -489,7 +492,7 @@ sub parse_line {
 				  -type     => $type,
 				  $strand ? (-strand   => make_strand($strand)) : (),
 				  -segments => \@parts,
-				  -source   => $description,
+				  -desc     => $description,
 				  -ref      => $ref,
 				  defined($url) ? (-url      => $url) : (),
 				 );
@@ -505,7 +508,7 @@ sub parse_line {
 
 =over 4
 
-=item $features->add_feature($feature [=>$type])
+=item $features-E<gt>add_feature($feature [=E<gt>$type])
 
 Add a new Bio::FeatureI object to the set.  If $type is specified, the
 object will be added with the indicated type.  Otherwise, the
@@ -527,10 +530,10 @@ sub add_feature {
 
 =over 4
 
-=item $features->add_type($type=>$hashref)
+=item $features-E<gt>add_type($type=E<gt>$hashref)
 
 Add a new feature type to the set.  The type is a string, such as
-"EST".  The hashref is a set of key=>value pairs indicating options to
+"EST".  The hashref is a set of key=E<gt>value pairs indicating options to
 set on the type.  Example:
 
   $features->add_type(EST => { glyph => 'generic', fgcolor => 'blue'})
@@ -561,7 +564,7 @@ sub add_type {
 
 =over 4
 
-=item $features->set($type,$tag,$value)
+=item $features-E<gt>set($type,$tag,$value)
 
 Change an individual option for a particular type.  For example, this
 will change the foreground color of EST features to my favorite color:
@@ -596,7 +599,7 @@ sub DESTROY { shift->destroy(@_) }
 
 =over 4
 
-=item $value = $features->setting($stanza => $option)
+=item $value = $features-E<gt>setting($stanza =E<gt> $option)
 
 In the two-element form, the setting() method returns the value of an
 option in the configuration stanza indicated by $stanza.  For example:
@@ -640,7 +643,7 @@ sub _setting {
 
 =over 4
 
-=item $value = $features->code_setting($stanza=>$option);
+=item $value = $features-E<gt>code_setting($stanza=E<gt>$option);
 
 This works like setting() except that it is also able to evaluate code
 references.  These are options whose values begin with the characters
@@ -659,7 +662,7 @@ sub code_setting {
   my $setting = $self->_setting($section=>$option);
   return unless defined $setting;
   return $setting if ref($setting) eq 'CODE';
-  return $setting unless $setting =~ /^sub\s+\{/;
+  return $setting unless $setting =~ /^sub\s*\{/;
   my $coderef = eval $setting;
   warn $@ if $@;
   $self->set($section,$option,$coderef);
@@ -668,7 +671,7 @@ sub code_setting {
 
 =over 4
 
-=item $flag = $features->safe([$flag]);
+=item $flag = $features-E<gt>safe([$flag]);
 
 This gets or sets and "safe" flag.  If the safe flag is set, then
 calls to setting() will invoke code_setting(), allowing values that
@@ -691,11 +694,11 @@ sub safe {
 
 =over 4
 
-=item @args = $features->style($type)
+=item @args = $features-E<gt>style($type)
 
 Given a feature type, returns a list of track configuration arguments
 suitable for suitable for passing to the
-Bio::Graphics::Panel->add_track() method.
+Bio::Graphics::Panel-E<gt>add_track() method.
 
 =back
 
@@ -715,10 +718,10 @@ sub style {
 
 =over 4
 
-=item $glyph = $features->glyph($type);
+=item $glyph = $features-E<gt>glyph($type);
 
 Return the name of the glyph corresponding to the given type (same as
-$features->setting($type=>'glyph')).
+$features-E<gt>setting($type=E<gt>'glyph')).
 
 =back
 
@@ -736,7 +739,7 @@ sub glyph {
 
 =over 4
 
-=item @types = $features->configured_types()
+=item @types = $features-E<gt>configured_types()
 
 Return a list of all the feature types currently known to the feature
 file set.  Roughly equivalent to:
@@ -756,7 +759,7 @@ sub configured_types {
 
 =over 4
 
-=item  @types = $features->types()
+=item  @types = $features-E<gt>types()
 
 This is similar to the previous method, but will return *all* feature
 types, including those that are not configured with a stanza.
@@ -774,7 +777,7 @@ sub types {
 
 =over 4
 
-=item @features = $features->features($type)
+=item @features = $features-E<gt>features($type)
 
 Return a list of all the feature types of type "$type".  If the
 featurefile object was created by parsing a file or text scalar, then
@@ -804,7 +807,7 @@ sub make_strand {
 
 =over 4
 
-=item @refs = $features->refs
+=item @refs = $features-E<gt>refs
 
 Return the list of reference sequences referred to by this data file.
 
@@ -820,7 +823,7 @@ sub refs {
 
 =over 4
 
-=item  $min = $features->min
+=item  $min = $features-E<gt>min
 
 Return the minimum coordinate of the leftmost feature in the data set.
 
@@ -832,7 +835,7 @@ sub min { shift->{min} }
 
 =over 4
 
-=item $max = $features->max
+=item $max = $features-E<gt>max
 
 Return the maximum coordinate of the rightmost feature in the data set.
 
@@ -955,13 +958,13 @@ sub new_panel {
 
 =over 4
 
-=item $mtime = $features->mtime
+=item $mtime = $features-E<gt>mtime
 
-=item $atime = $features->atime
+=item $atime = $features-E<gt>atime
 
-=item $ctime = $features->ctime
+=item $ctime = $features-E<gt>ctime
 
-=item $size = $features->size
+=item $size = $features-E<gt>size
 
 Returns stat() information about the data file, for featurefile
 objects created using the -file option.  Size is in bytes.  mtime,
@@ -983,7 +986,7 @@ sub size  { shift->{stat}->[7];  }
 
 =over 4
 
-=item $label = $features->feature2label($feature)
+=item $label = $features-E<gt>feature2label($feature)
 
 Given a feature, determines the configuration stanza that bests
 describes it.  Uses the feature's type() method if it has it (DasI
@@ -1004,7 +1007,7 @@ sub feature2label {
 
 =over 4
 
-=item $link = $features->make_link($feature)
+=item $link = $features-E<gt>make_link($feature)
 
 Given a feature, tries to generate a URL to link out from it.  This
 uses the 'link' option, if one is present.  This method is a
@@ -1026,13 +1029,18 @@ sub make_link {
 
 sub link_pattern {
   my $self = shift;
-  my ($pattern,$feature) = @_;
+  my ($pattern,$feature,$panel) = @_;
   $pattern =~ s/\$(\w+)/
-    $1 eq 'name'   ? $feature->name
-      : $1 eq 'class'  ? $feature->class
-      : $1 eq 'type'   ? $feature->method
-      : $1 eq 'method' ? $feature->method
-      : $1 eq 'source' ? $feature->source
+    $1 eq 'ref'           ? $feature->location->seq_id
+      : $1 eq 'name'      ? $feature->display_name
+      : $1 eq 'class'     ? $feature->class
+      : $1 eq 'type'      ? $feature->method
+      : $1 eq 'method'    ? $feature->method
+      : $1 eq 'source'    ? $feature->source
+      : $1 eq 'start'     ? $feature->start
+      : $1 eq 'end'       ? $feature->end
+      : $1 eq 'segstart'  ? $panel->start
+      : $1 eq 'segend'    ? $panel->end
       : $1
        /exg;
   return $pattern;
@@ -1061,7 +1069,7 @@ sub invert_types {
 
 =over 4
 
-=item $citation = $features->citation($feature)
+=item $citation = $features-E<gt>citation($feature)
 
 Given a feature, tries to generate a citation for it, using the
 "citation" option if one is present.  This method is a convenience for
@@ -1081,7 +1089,7 @@ sub citation {
 
 =over 4
 
-=item $name = $features->name([$feature])
+=item $name = $features-E<gt>name([$feature])
 
 Get/set the name of this feature set.  This is a convenience method
 useful for keeping track of multiple feature sets.

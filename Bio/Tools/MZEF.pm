@@ -1,4 +1,4 @@
-# $Id: MZEF.pm,v 1.7 2001/05/16 14:57:44 heikki Exp $
+# $Id: MZEF.pm,v 1.9 2002/10/22 07:38:46 lapp Exp $
 #
 # BioPerl module for Bio::Tools::MZEF
 #
@@ -72,7 +72,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
@@ -279,7 +279,7 @@ sub _parse_predictions {
 	    next;
 	}
     }
-    # $gene->seqname($seqname);
+    # $gene->seq_id($seqname);
     $self->_add_prediction($gene) if defined($gene);
     $self->_predictions_parsed(1);
 }

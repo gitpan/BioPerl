@@ -1,4 +1,4 @@
-# $Id: CoordinatePolicyI.pm,v 1.3 2002/01/08 01:25:31 jason Exp $
+# $Id: CoordinatePolicyI.pm,v 1.4 2002/10/22 07:38:34 lapp Exp $
 #
 # BioPerl module for Bio::Location::CoordinatePolicyI
 # Cared for by Hilmar Lapp <hlapp@gmx.net>
@@ -53,7 +53,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Hilmar Lapp, Jason Stajich
 

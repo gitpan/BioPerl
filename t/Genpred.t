@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Genpred.t,v 1.12 2001/12/06 17:29:52 bosborne Exp $
+## $Id: Genpred.t,v 1.13 2002/10/08 08:38:35 lapp Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -98,7 +98,7 @@ ok($gene->exons, 23);
 my $genemark = Bio::Tools::Genemark->new('-file' => Bio::Root::IO->catfile("t", "data", "genemark.out"));
 
 my $gmgene = $genemark->next_prediction();
-ok $gmgene->seqname(), "Hvrn.contig8";
+ok $gmgene->seq_id(), "Hvrn.contig8";
 ok $genemark->analysis_date(), "Thu Mar 22 10:25:00 2001";
 
 my $i = 0;

@@ -1,4 +1,4 @@
-# $Id: Transcript.pm,v 1.16 2001/12/10 16:10:20 heikki Exp $
+# $Id: Transcript.pm,v 1.17 2002/09/25 08:58:23 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::Transcript
 #
@@ -636,7 +636,8 @@ sub old_subseq {
   } else {
     $str=substr($seq,$offset,$length);
     if (CORE::length($str) < $length) {
-      $self->warn("Attention, cannot return the length requested for subseq",1); # ignorable
+      $self->warn("Attention, cannot return the length requested ".
+		  "for subseq",1) if $self->verbose > 0; # ignorable
     }
     return $str;
   }

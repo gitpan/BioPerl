@@ -1,4 +1,4 @@
-# $Id: flat.pm,v 1.11 2001/10/22 08:22:57 heikki Exp $
+# $Id: flat.pm,v 1.12 2002/10/22 07:38:50 lapp Exp $
 # BioPerl module for Bio::Variation::IO::flat
 #
 # Cared for by Heikki Lehvaslaiho <Heikki@ebi.ac.uk>
@@ -47,7 +47,7 @@ report bugs to the Bioperl bug tracking system to help us keep track
  email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 

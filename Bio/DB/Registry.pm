@@ -1,6 +1,6 @@
 # POD documentation - main docs before the code
 
-# $Id: Registry.pm,v 1.9.2.2 2002/06/05 09:50:50 heikki Exp $
+# $Id: Registry.pm,v 1.12 2002/10/22 07:38:29 lapp Exp $
 
 
 =head1 NAME
@@ -15,7 +15,7 @@ Bio::DB::Registry - Access to the Open Bio Database Access registry scheme
 
     @available_services = $registry->services;
 
-    $db = $registry->get_database('embl'); 
+    $db = $registry->get_database('embl');
     # $db is a Bio::DB::SeqI implementing class
 
     $seq = $db->get_Seq_by_acc("J02231");
@@ -24,7 +24,7 @@ Bio::DB::Registry - Access to the Open Bio Database Access registry scheme
 
 This module provides access to the Open Bio Database Access scheme,
 which provides a cross language and cross platform specification of how
-to get to databases. 
+to get to databases.
 
 
 =head1 CONTACT
@@ -37,8 +37,8 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
-    bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    bioperl-bugs@bio.perl.org
+    http://bugzilla.bioperl.org/
 
 =head1 APPENDIX
 
@@ -166,7 +166,6 @@ sub _load_registry {
  Function: Retrieve a Database object which implements Bio::DB::SeqI interface
  Returns : Bio::DB::SeqI object
  Args    : string describing the name of the database
-
 
 =cut
 

@@ -1,10 +1,10 @@
 #-------------------------------------------------------------------------------
-# PACKAGE : Bio::Tools::Blast::HTML.pm
+# PACKAGE : Bio::Tools::Blast::HTML
 # PURPOSE : To encapsulate code for HTML formatting BLAST reports.
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 28 Apr 1998
 # STATUS  : Alpha
-# REVISION: $Id: HTML.pm,v 1.11 2002/01/25 09:06:32 sac Exp $
+# REVISION: $Id: HTML.pm,v 1.15 2002/11/04 09:12:51 heikki Exp $
 # 
 # For the latest version and documentation, visit the distribution site:
 #    http://bio.perl.org/Projects/Blast/
@@ -28,7 +28,6 @@ use strict;
 use Exporter;
 
 use Bio::Tools::WWW  qw(:obj); 
-use Carp;
 
 use vars qw( @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS
              $ID %DbUrl %SGDUrl $Revision
@@ -40,7 +39,7 @@ use vars qw( @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS
 %EXPORT_TAGS = ( std => [qw(&get_html_func  &strip_html)] );
 
 $ID = 'Bio::Tools::Blast::HTML';
-$Revision = '$Id: HTML.pm,v 1.11 2002/01/25 09:06:32 sac Exp $';  #'
+$Revision = '$Id: HTML.pm,v 1.15 2002/11/04 09:12:51 heikki Exp $';  #'
 
 my $_set_markup = 0;
 my $_gi_link = '';
@@ -50,8 +49,7 @@ my $_gi_link = '';
 
 =head1 NAME
 
-Bio::Tools::Blast::HTML.pm - Bioperl Utility module for HTML
-formatting Blast reports
+Bio::Tools::Blast::HTML - Bioperl Utility module for HTML formatting Blast reports
 
 =head1 SYNOPSIS
 
@@ -134,7 +132,7 @@ track the bugs and  their resolution. Bug reports can be submitted
 via email or the web:
 
     bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    http://bugzilla.bioperl.org/           
 
 =head1 AUTHOR
 

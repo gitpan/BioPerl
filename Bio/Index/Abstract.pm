@@ -1,6 +1,6 @@
 
 #
-# $Id: Abstract.pm,v 1.39 2001/12/13 23:08:36 jason Exp $
+# $Id: Abstract.pm,v 1.41 2002/12/17 02:08:36 jason Exp $
 #
 # BioPerl module for Bio::Index::Abstract
 #
@@ -55,7 +55,7 @@ the bugs and their resolution.  Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Ewan Birney, James Gilbert
 
@@ -128,13 +128,12 @@ BEGIN {
 sub new {
     my($class, @args) = @_;
     my $self = $class->SUPER::new(@args);
-
     my( $filename, $write_flag, $dbm_package, $cachesize, $ffactor ) =
         $self->_rearrange([qw(FILENAME 
 			      WRITE_FLAG
 			      DBM_PACKAGE
-				  CACHESIZE
-				  FFACTOR
+			      CACHESIZE
+			      FFACTOR
 			      )], @args);
     
     # Store any parameters passed
@@ -199,21 +198,21 @@ sub dbm_package {
     my( $self, $value ) = @_;
     my $to_require = 0;
     if( $value || ! $self->{'_dbm_package'} ) {
-		my $type = $value || $USE_DBM_TYPE || 'DB_File';	
-		if( $type =~ /DB_File/i ) {
-	    	eval { 
-				require DB_File;
-	    	};
-	    	$type = ( $@ ) ? 'SDBM_File' : 'DB_File';
-		} 	
-		if( $type ne 'DB_File' ) {
-	    	eval { require "$type.pm"; };
-	    	$self->throw($@) if( $@ );
-		}
-		$self->{'_dbm_package'} = $type;
-		if( ! defined $USE_DBM_TYPE ) {
-	    	$USE_DBM_TYPE = $self->{'_dbm_package'};
-		}	
+	my $type = $value || $USE_DBM_TYPE || 'DB_File';	
+	if( $type =~ /DB_File/i ) {
+	    eval { 
+		require DB_File;
+	    };
+	    $type = ( $@ ) ? 'SDBM_File' : 'DB_File';
+	} 	
+	if( $type ne 'DB_File' ) {
+	    eval { require "$type.pm"; };
+	    $self->throw($@) if( $@ );
+	}
+	$self->{'_dbm_package'} = $type;
+	if( ! defined $USE_DBM_TYPE ) {
+	    $USE_DBM_TYPE = $self->{'_dbm_package'};
+	}	
     } 
     return $self->{'_dbm_package'};
 }
@@ -710,7 +709,7 @@ sub _file_count {
 
 sub add_record {
     my( $self, $id, @rec ) = @_;
-    print STDERR "Adding key $id\n" if( $self->verbose > 0 );
+    $self->debug( "Adding key $id\n") if( $self->verbose > 0 );
     $self->db->{$id} = $self->pack_record( @rec );
     return 1;
 }
@@ -793,8 +792,7 @@ sub count_records {
 
 sub DESTROY {
     my $self = shift;
-
-    untie %{$self->db};
+    untie($self->{'_DB'});
 }
 
 1;

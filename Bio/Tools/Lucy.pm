@@ -1,4 +1,4 @@
-# $Id: Lucy.pm,v 1.3 2001/12/10 16:10:25 heikki Exp $ 
+# $Id: Lucy.pm,v 1.6 2002/10/22 07:38:46 lapp Exp $ 
 #
 # BioPerl module for Bio::Tools::Lucy
 #
@@ -51,8 +51,7 @@ www.tigr.org/softlab
 There are a few methods that will only be available if you make some
 minor changes to the source for Lucy and then recompile.  The changes
 are in the 'lucy.c' file and there is a diff between the original and
-the modified file available at:
-www.angelfire.com/linux/bioinformatics/perl/lucy.diff
+the modified file in the Appendix
 
 Please contact the author of this module if you have any problems
 making these modifications.
@@ -140,7 +139,7 @@ the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
     bioperl-bugs@bio.perl.org
-    http://bio.perl.org/bioperl-bugs/
+    http://bugzilla.bioperl.org/
 
 =head1 AUTHOR
 
@@ -656,5 +655,37 @@ sub get_rejects {
     return $self->{reject};
 }
 
-    
+=head2 Diff for Lucy source code 
+
+  352a353,354
+  >       /* AGW added next line */
+  >       fprintf(stderr, "Empty: %s\n", seqs[i].name);
+  639a642,643
+  > 	    /* AGW added next line */
+  > 	    fprintf(stderr, "Short/ no insert: %s\n", seqs[i].name);
+  678c682,686
+  < 	if (left) seqs[i].left+=left;
+  ---
+  > 	if (left) {
+  > 	  seqs[i].left+=left;
+  > 	  /*  AGW added next line */
+  > 	  fprintf(stderr, "%s has PolyA (left).\n", seqs[i].name);
+  > 	}
+  681c689,693
+  < 	if (right) seqs[i].right-=right;
+  ---
+  > 	if (right) {
+  > 	  seqs[i].right-=right;
+  > 	  /* AGW added next line */
+  > 	  fprintf(stderr, "%s has PolyA (right).\n", seqs[i].name);
+  > 	}
+  682a695,696
+  > 	  /* AGW added next line */
+  > 	  fprintf(stderr, "Dropped PolyA: %s\n", seqs[i].name);	
+  734a749,750
+  > 	  /* AGW added next line */
+  > 	  fprintf(stderr, "Vector: %s\n", seqs[i].name);
+
+=cut
+
 1;

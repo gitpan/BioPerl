@@ -1,4 +1,4 @@
-# $Id: MultiFile.pm,v 1.7 2001/01/28 06:45:10 lapp Exp $
+# $Id: MultiFile.pm,v 1.8 2002/10/22 07:38:42 lapp Exp $
 #
 # BioPerl module for Bio::SeqIO::MultiFile
 #
@@ -46,7 +46,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  Bug reports can be submitted via email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Ewan Birney
 

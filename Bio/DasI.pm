@@ -1,4 +1,4 @@
-# $Id: DasI.pm,v 1.3.2.1 2002/04/04 08:01:42 heikki Exp $
+# $Id: DasI.pm,v 1.15 2002/11/11 18:16:29 lapp Exp $
 #
 # BioPerl module for Bio::DasI
 #
@@ -17,12 +17,13 @@ Bio::DasI - DAS-style access to a feature database
 =head1 SYNOPSIS
 
   # Open up a feature database somehow...
+  $db = Bio::DasI->new(@args);
 
   @segments = $db->segment(-name  => 'NT_29921.4',
                            -start => 1,
 			   -end   => 1000000);
 
-  # segments are Bio::DasSegmentI - compliant objects
+  # segments are Bio::Das::SegmentI - compliant objects
 
   # fetch a list of features
   @features = $db->features(-type=>['type1','type2','type3']);
@@ -43,10 +44,10 @@ Bio::DasI - DAS-style access to a feature database
   # count types
   %types   = $db->types(-enumerate=>1);
 
-  @feature = $db->get_feature_by_name($name);
-  @feature = $db->get_feature_by_id($id);
+  @feature = $db->get_feature_by_name($class=>$name);
   @feature = $db->get_feature_by_target($target_name);
   @feature = $db->get_feature_by_attribute($att1=>$value1,$att2=>$value2);
+  $feature = $db->get_feature_by_id($id);
 
   $error = $db->error;
 
@@ -56,7 +57,7 @@ Bio::DasI is a simplified alternative interface to sequence annotation
 databases used by the distributed annotation system (see
 L<Bio::Das>). In this scheme, the genome is represented as a series of
 features, a subset of which are named.  Named features can be used as
-reference points for retrieving "segments" (see L<Bio::DasSegmentI>),
+reference points for retrieving "segments" (see L<Bio::Das::SegmentI>),
 and these can, in turn, be used as the basis for exploring the genome
 further.
 
@@ -64,9 +65,9 @@ In addition to a name, each feature has a "class", which is
 essentially a namespace qualifier and a "type", which describes what
 type of feature it is.  Das uses the GO consortium's ontology of
 feature types, and so the type is actually an object of class
-Bio::DasFeatureTypeI (see L<Bio::DasFeatureTypeI>). Bio::DasI provides
-methods for interrogating the database for the types it contains and
-the counts of each type.
+Bio::Das::FeatureTypeI (see L<Bio::Das::FeatureTypeI>). Bio::DasI
+provides methods for interrogating the database for the types it
+contains and the counts of each type.
 
 =head1 FEEDBACK
 
@@ -85,7 +86,7 @@ the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Lincoln Stein
 
@@ -93,7 +94,8 @@ Email lstein@cshl.org
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -105,16 +107,45 @@ use strict;
 
 use vars qw(@ISA);
 use Bio::Root::RootI;
+use Bio::Das::SegmentI;
+use Bio::SeqFeature::CollectionI;
+# Object preamble - inherits from Bio::Root::Root;
+@ISA = qw(Bio::Root::RootI Bio::SeqFeature::CollectionI);
 
-# Object preamble - inherits from Bio::Root;
-@ISA = qw(Bio::Root::RootI);
+=head2 new
+
+ Title   : new
+ Usage   : Bio::DasI->new(@args)
+ Function: Create new Bio::DasI object
+ Returns : a Bio::DasI object
+ Args    : see below
+
+The new() method creates a new object.  The argument list is either a
+single argument consisting of a connection string, or the following
+list of -name=E<gt>value arguments:
+
+   Argument        Description
+   --------        -----------
+
+   -dsn            Connection string for database
+   -adaptor        Name of an adaptor class to use when connecting
+   -aggregator     Array ref containing list of aggregators
+                     "semantic mappers" to apply to database
+   -user           Authentication username
+   -pass           Authentication password
+
+Implementors of DasI may add other arguments.
+
+=cut
+
+sub new {shift->throw_not_implemented}
 
 =head2 types
 
  Title   : types
  Usage   : $db->types(@args)
  Function: return list of feature types in database
- Returns : a list of Bio::DasFeatureTypeI objects
+ Returns : a list of Bio::Das::FeatureTypeI objects
  Args    : see below
 
 This routine returns a list of feature types known to the database. It
@@ -124,12 +155,12 @@ Arguments are -option=E<gt>value pairs as follows:
 
   -enumerate  if true, count the features
 
-The returned value will be a list of Bio::DasFeatureTypeI objects (see
-L<Bio::DasFeatureTypeI>.
+The returned value will be a list of Bio::Das::FeatureTypeI objects
+(see L<Bio::Das::FeatureTypeI>.
 
 If -enumerate is true, then the function returns a hash (not a hash
 reference) in which the keys are the stringified versions of
-Bio::DasFeatureTypeI and the values are the number of times each
+Bio::Das::FeatureTypeI and the values are the number of times each
 feature appears in the database.
 
 =cut
@@ -144,8 +175,8 @@ sub types {  shift->throw_not_implemented; }
  Returns : segment object(s)
  Args    : see below
 
-This method generates a Bio::DasSegmentI object (see
-L<Bio::DasSegmentI>).  The segment can be used to find overlapping
+This method generates a Bio::Das::SegmentI object (see
+L<Bio::Das::SegmentI>).  The segment can be used to find overlapping
 features and the raw sequence.
 
 When making the segment() call, you specify the ID of a sequence
@@ -173,7 +204,7 @@ Arguments are -option=E<gt>value pairs as follows:
  -end          End of the segment relative to the landmark.  If not specified,
                defaults to the end of the landmark.
 
-The return value is a list of Bio::DasSegmentI objects.  If the method
+The return value is a list of Bio::Das::SegmentI objects.  If the method
 is called in a scalar context and there are no more than one segments
 that satisfy the request, then it is allowed to return the segment.
 Otherwise, the method must throw a "multiple segment exception".
@@ -200,7 +231,8 @@ their type
 Arguments are -option=E<gt>value pairs as follows:
 
   -types     List of feature types to return.  Argument is an array
-             of Bio::DasFeatureTypeI objects.
+             of Bio::Das::FeatureTypeI objects or a set of strings
+             that can be converted into FeatureTypeI objects.
 
   -callback   A callback to invoke on each feature.  The subroutine
               will be passed each Bio::SeqFeatureI object in turn.
@@ -218,19 +250,132 @@ attributes are ANDed together.  See L<Bio::DB::ConstraintsI> for a
 more sophisticated take on this.
 
 If one provides a callback, it will be invoked on each feature in
-turn.  If the callback returns a false false value, iteration will be
+turn.  If the callback returns a false value, iteration will be
 interrupted.  When a callback is provided, the method returns undef.
 
 =cut
 
 sub features { shift->throw_not_implemented }
 
+=head2 get_feature_by_name
+
+ Title   : get_feature_by_name
+ Usage   : $db->get_feature_by_name(-class=>$class,-name=>$name)
+ Function: fetch features by their name
+ Returns : a list of Bio::SeqFeatureI objects
+ Args    : the class and name of the desired feature
+ Status  : public
+
+This method can be used to fetch named feature(s) from the database.
+The -class and -name arguments have the same meaning as in segment(),
+and the method also accepts the following short-cut forms:
+
+  1) one argument: the argument is treated as the feature name
+  2) two arguments: the arguments are treated as the class and name
+     (note: this uses _rearrange() so the first argument must not
+     begin with a hyphen or it will be interpreted as a named
+     argument).
+
+This method may return zero, one, or several Bio::SeqFeatureI objects.
+The implementor may allow the name to contain wildcards, in which case
+standard C-shell glob semantics are expected.
+
+=cut
+
+sub get_feature_by_name {
+  shift->throw_not_implemented();
+}
+
+=head2 get_feature_by_target
+
+ Title   : get_feature_by_target
+ Usage   : $db->get_feature_by_target($class => $name)
+ Function: fetch features by their similarity target
+ Returns : a list of Bio::SeqFeatureI objects
+ Args    : the class and name of the desired feature
+ Status  : public
+
+This method can be used to fetch a named feature from the database
+based on its similarity hit.  The arguments are the same as
+get_feature_by_name().  If this is not implemented, the interface
+defaults to using get_feature_by_name().
+
+=cut
+
+sub get_feature_by_target {
+  shift->get_feature_by_name(@_);
+}
+
+=head2 get_feature_by_id
+
+ Title   : get_feature_by_id
+ Usage   : $db->get_feature_by_target($id)
+ Function: fetch a feature by its ID
+ Returns : a Bio::SeqFeatureI objects
+ Args    : the ID of the feature
+ Status  : public
+
+If the database provides unique feature IDs, this can be used to
+retrieve a single feature from the database.  If not overridden, this
+interface calls get_feature_by_name() and returns the first element.
+
+=cut
+
+sub get_feature_by_id {
+  (shift->get_feature_by_name(@_))[0];
+}
+
+=head2 get_feature_by_attribute
+
+ Title   : get_feature_by_attribute
+ Usage   : $db->get_feature_by_attribute(attribute1=>value1,attribute2=>value2)
+ Function: fetch features by combinations of attribute values
+ Returns : a list of Bio::SeqFeatureI objects
+ Args    : the class and name of the desired feature
+ Status  : public
+
+This method can be used to fetch a set of features from the database.
+Attributes are a list of name=E<gt>value pairs.  They will be
+logically ANDed together.  If an attribute value is an array
+reference, the list of values in the array is treated as an
+alternative set of values to be ORed together.
+
+=cut
+
+sub get_feature_by_attribute {
+  shift->throw_not_implemented();
+}
+
+
+=head2 search_notes
+
+ Title   : search_notes
+ Usage   : $db->search_notes($search_term,$max_results)
+ Function: full-text search on features, ENSEMBL-style
+ Returns : an array of [$name,$description,$score]
+ Args    : see below
+ Status  : public
+
+This routine performs a full-text search on feature attributes (which
+attributes depend on implementation) and returns a list of
+[$name,$description,$score], where $name is the feature ID,
+$description is a human-readable description such as a locus line, and
+$score is the match strength.
+
+Since this is a decidedly non-standard thing to do (but the generic
+genome browser uses it), the default method returns an empty list.
+You do not have to implement it.
+
+=cut
+
+sub search_notes { return }
+
 =head2 get_seq_stream
 
  Title   : get_seq_stream
- Usage   : my $seqio = $self->get_seq_sream(@args)
+ Usage   : $seqio = $db->get_seq_stream(@args)
  Function: Performs a query and returns an iterator over it
- Returns : a Bio::SeqIO stream capable of returning Bio::DasSegmentI objects
+ Returns : a Bio::SeqIO stream capable of returning Bio::SeqFeatureI objects
  Args    : As in features()
  Status  : public
 
@@ -249,5 +394,22 @@ as the name is more descriptive.
 
 sub get_seq_stream { shift->throw_not_implemented }
 sub get_feature_stream {shift->get_seq_stream(@_) }
+
+=head2 refclass
+
+ Title   : refclass
+ Usage   : $class = $db->refclass
+ Function: returns the default class to use for segment() calls
+ Returns : a string
+ Args    : none
+ Status  : public
+
+For data sources which use namespaces to distinguish reference
+sequence accessions, this returns the default namespace (or "class")
+to use.  This interface defines a default of "Accession".
+
+=cut
+
+sub refclass { "Accession" }
 
 1;

@@ -1,4 +1,4 @@
-# $Id: Sbjct.pm,v 1.22 2002/01/04 14:51:33 jason Exp $
+# $Id: Sbjct.pm,v 1.23 2002/10/22 07:45:23 lapp Exp $
 ###############################################################################
 # Bio::Tools::BPlite::Sbjct
 ###############################################################################
@@ -71,7 +71,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Peter Schattner
 

@@ -1,4 +1,4 @@
-# $Id: Mutation.pm,v 1.5 2001/11/20 02:09:32 lstein Exp $
+# $Id: Mutation.pm,v 1.6 2002/10/22 07:38:34 lapp Exp $
 #
 # BioPerl module for Bio::LiveSeq::Mutation
 #
@@ -75,7 +75,7 @@ report bugs to the Bioperl bug tracking system to help us keep track
  email or the web:
 
   bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
