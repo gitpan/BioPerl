@@ -1,4 +1,4 @@
-# $Id: ObjectFactory.pm,v 1.1.2.1 2003/03/27 10:07:56 lapp Exp $
+# $Id: ObjectFactory.pm,v 1.2 2003/05/15 21:35:27 sac Exp $
 #
 # BioPerl module for Bio::Factory::ObjectFactory
 #
@@ -215,7 +215,7 @@ sub interface{
 =head2 _validate_type
 
  Title   : _validate_type
- Usage   :
+ Usage   : $factory->_validate_type($object)
  Function: Called to let derived factories validate the type set
            via type().
 
@@ -227,6 +227,11 @@ sub interface{
  Returns : TRUE if the type is to be considered valid, and FALSE otherwise.
            Instead of returning FALSE this method may also just throw
            an informative exception.
+
+           The default implementation here will throw an exception
+           if the supplied object does not inherit from the interface
+           provided by the interface() method.
+
  Args    : A hash reference blessed into the specified type, allowing
            queries like isa().
 

@@ -1,4 +1,4 @@
-# $Id: Reference.pm,v 1.18 2002/09/25 18:11:33 lapp Exp $
+# $Id: Reference.pm,v 1.19 2003/12/22 08:50:00 juguang Exp $
 #
 # BioPerl module for Bio::Annotation::Reference
 #
@@ -53,6 +53,7 @@ The rest of the documentation details each of the object methods. Internal metho
 package Bio::Annotation::Reference;
 use vars qw(@ISA);
 use strict;
+# use overload '""' => \&as_text;
 
 use Bio::Annotation::DBLink;
 use Bio::AnnotationI;

@@ -1,4 +1,4 @@
-# $Id: BPbl2seq.pm,v 1.21.2.2 2003/06/03 14:38:18 jason Exp $
+# $Id: BPbl2seq.pm,v 1.23 2003/06/03 14:37:50 jason Exp $
 #
 # Bioperl module Bio::Tools::BPbl2seq
 #	based closely on the Bio::Tools::BPlite modules
@@ -141,6 +141,7 @@ use Symbol;
  Args    : -file     input file (alternative to -fh)
            -fh       input stream (alternative to -file)
            -queryname    name of query sequence
+           -report_type What type of BLAST was run (blastn,blastp,tblastn...)
 
 =cut
 
@@ -150,14 +151,15 @@ sub new {
     # initialize IO
     $self->_initialize_io(@args);
 
-     my ($queryname,$rt) = $self->_rearrange([qw(QUERYNAME 
-						 REPORT_TYPE)], @args);
+    my ($queryname,$rt) = $self->_rearrange([qw(QUERYNAME 
+						REPORT_TYPE)], @args);
     $queryname = 'unknown' if( ! defined $queryname );
     if( $rt && $rt =~ /BLAST/i ) {
 	$self->{'BLAST_TYPE'} = uc($rt);
     } else { 
 	$self->warn("Must provide which type of BLAST was run (blastp,blastn, tblastn, tblastx, blastx) if you want strand information to get set properly for DNA query or subjects");
     }
+
     my $sbjct = $self->getSbjct();
     $self->{'_current_sbjct'} = $sbjct;
 
@@ -235,7 +237,7 @@ sub next_feature{
    my ($sbjct, $hsp);
    $sbjct = $self->{'_current_sbjct'};
    unless( defined $sbjct ) {
-       $self->debug(" No hit object found for bl2seq report \n ") ;
+       $self->debug(" No hit object found for bl2seq report \n ");
        return undef;
    }
    $hsp = $sbjct->nextHSP;

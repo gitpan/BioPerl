@@ -1,4 +1,4 @@
-# $Id: unigene.pm,v 1.16.2.2 2003/09/15 01:50:47 andrew Exp $
+# $Id: unigene.pm,v 1.19 2003/09/11 04:41:47 andrew Exp $
 # BioPerl module for Bio::ClusterIO::unigene
 #
 # Cared for by Andrew Macgregor <andrew@anatomy.otago.ac.nz>

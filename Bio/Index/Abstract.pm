@@ -1,6 +1,6 @@
 
 #
-# $Id: Abstract.pm,v 1.41 2002/12/17 02:08:36 jason Exp $
+# $Id: Abstract.pm,v 1.42 2003/10/15 12:01:33 jason Exp $
 #
 # BioPerl module for Bio::Index::Abstract
 #
@@ -589,7 +589,8 @@ sub make_index {
 
 	    # if it is the same size - fine. Otherwise die 
 	    if( -s $file == $size ) {
-		warn "File $file already indexed. Skipping...\n";
+		warn "File $file already indexed. Skipping...\n" 
+		    if $self->verbose >= 0;
 		next FILE;
 	    } else {
 		$self->throw("In index, $file has changed size ($size). Indicates that the index is out of date");

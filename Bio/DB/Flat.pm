@@ -1,5 +1,5 @@
 #
-# $Id: Flat.pm,v 1.6 2002/12/22 22:02:13 lstein Exp $
+# $Id: Flat.pm,v 1.15 2003/11/21 03:03:38 lstein Exp $
 #
 # BioPerl module for Bio::DB::Flat
 #
@@ -16,9 +16,12 @@ Bio::DB::Flat - Interface for indexed flat files
 =head1 SYNOPSIS
 
   $db = Bio::DB::Flat->new(-directory  => '/usr/share/embl',
+			   -dbname     => 'mydb',
                            -format     => 'embl',
+                           -index      => 'bdb',
                            -write_flag => 1);
-  $db->build_index('/usr/share/embl/primate.embl','/usr/share/embl/protists.embl');
+  $db->build_index('/usr/share/embl/primate.embl',
+                   '/usr/share/embl/protists.embl');
   $seq       = $db->get_Seq_by_id('BUM');
   @sequences = $db->get_Seq_by_acc('DIV' => 'primate');
   $raw       = $db->fetch_raw('BUM');
@@ -80,37 +83,49 @@ use constant CONFIG_FILE_NAME => 'config.dat';
 =head2 new
 
  Title   : new
- Usage   : my $db = new Bio::Flat->new(
+ Usage   : my $db = Bio::DB::Flat->new(
                      -directory  => $root_directory,
-		     -write_flag => 0,
-                     -index      => 'bdb'|'flat',
+		     -dbname     => 'mydb',
+		     -write_flag => 1,
+                     -index      => 'bdb',
                      -verbose    => 0,
 		     -out        => 'outputfile',
                      -format     => 'genbank');
- Function: create a new Bio::Index::BDB object
- Returns : new Bio::Index::BDB object
+ Function: create a new Bio::DB::Flat object
+ Returns : new Bio::DB::Flat object
  Args    : -directory    Root directory containing "config.dat"
-           -write_flag   If true, allows reindexing.
+           -write_flag   If true, allows creation/updating.
            -verbose      Verbose messages
            -out          File to write to when write_seq invoked
+           -index        'bdb' or 'binarysearch'
  Status  : Public
 
-The root -directory indicates where the flat file indexes will be
-stored.  The build_index() and write_seq() methods will automatically
-create a human-readable configuration file named "config.dat" in this
-file.
+The required -directory argument indicates where the flat file indexes
+will be stored.  The build_index() and write_seq() methods will
+automatically create subdirectories of this root directory.  Each
+subdirectory will contain a human-readable configuration file named
+"config.dat" that specifies where the individual indexes are stored.
+
+The required -dbname argument gives a name to the database index.  The
+index files will actually be stored in a like-named subdirectory
+underneath the root directory.
 
 The -write_flag enables writing new entries into the database as well
 as the creation of the indexes.  By default the indexes will be opened
 read only.
 
--index is one of "bdb" or "flat" and indicates the type of index to
-generate.  "bdb" corresponds to Berkeley DB.  You *must* be using
-BerkeleyDB version 2 or higher, and have the Perl BerkeleyDB extension
-installed (DB_File will *not* work).
+-index is one of "bdb" or "binarysearch" and indicates the type of
+index to generate.  "bdb" corresponds to Berkeley DB.  You *must* be
+using BerkeleyDB version 2 or higher, and have the Perl BerkeleyDB
+extension installed (DB_File will *not* work). "binarysearch"
+corresponds to the OBDA "flat" indexed file.
 
-The -out argument species the output file for writing objects created
-with write_seq().  
+The -out argument specifies the output file for writing objects created
+with write_seq().
+
+The -format argument specifies the format of the input file or files. If
+the file suffix is one that Bioperl can already associate with a format
+then this is optional.
 
 =cut
 
@@ -120,21 +135,50 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   # first we initialize ourselves
-  my ($flat_directory) = @_ == 1 ? shift
-                                 : $self->_rearrange([qw(DIRECTORY)],@_);
+  my ($flat_directory,$dbname) = $self->_rearrange([qw(DIRECTORY DBNAME)],@_);
+
+  defined $flat_directory
+    or $self->throw('Please supply a -directory argument');
+  defined $dbname
+    or $self->throw('Please supply a -dbname argument');
 
   # set values from configuration file
   $self->directory($flat_directory);
-  $self->_read_config() if -e $flat_directory;
+  $self->dbname($dbname);
+
+  $self->throw("Base directory $flat_directory doesn't exist")
+    unless -e $flat_directory;
+  $self->throw("$flat_directory isn't a directory")
+    unless -d _;
+  my $dbpath = Bio::Root::IO->catfile($flat_directory,$dbname);
+  unless (-d $dbpath) {
+    $self->debug("creating db directory $dbpath\n");
+    mkdir $dbpath,0777 or $self->throw("Can't create $dbpath: $!");
+  }
+  $self->_read_config();
 
   # but override with initialization values
   $self->_initialize(@_);
 
+  $self->throw('you must specify an indexing scheme') 
+    unless $self->indexing_scheme;
+
   # now we figure out what subclass to instantiate
   my $index_type = $self->indexing_scheme eq 'BerkeleyDB/1' ? 'BDB'
-                  :$self->indexing_scheme eq 'flat/1'       ? 'Flat'
+                  :$self->indexing_scheme eq 'flat/1'       ? 'Binary'
                   :$self->throw("unknown indexing scheme: ".$self->indexing_scheme);
   my $format     = $self->file_format;
+
+  # because Michele and Lincoln did it differently
+  # Michele's way is via a standalone concrete class
+  if ($index_type eq 'Binary') {
+    my $child_class = 'Bio::DB::Flat::BinarySearch';
+    eval "use $child_class";
+    $self->throw($@) if $@;
+    return $child_class->new(@_);
+  }
+
+  # Lincoln uses Bio::SeqIO style delegation.
   my $child_class= "Bio\:\:DB\:\:Flat\:\:$index_type\:\:\L$format";
   eval "use $child_class";
   $self->throw($@) if $@;
@@ -151,19 +195,20 @@ sub new {
 sub _initialize {
   my $self = shift;
 
-  my ($flat_write_flag,$flat_indexing,$flat_verbose,$flat_outfile,$flat_format)
-    = $self->_rearrange([qw(WRITE_FLAG INDEX VERBOSE OUT FORMAT)],@_);
+  my ($flat_write_flag,$dbname,$flat_indexing,$flat_verbose,$flat_outfile,$flat_format)
+    = $self->_rearrange([qw(WRITE_FLAG DBNAME INDEX VERBOSE OUT FORMAT)],@_);
 
   $self->write_flag($flat_write_flag) if defined $flat_write_flag;
 
   if (defined $flat_indexing) {
     # very permissive
     $flat_indexing = 'BerkeleyDB/1' if $flat_indexing =~ /bdb/;
-    $flat_indexing = 'flat/1'       if $flat_indexing =~ /flat/;
+    $flat_indexing = 'flat/1'       if $flat_indexing =~ /^(flat|binary)/;
     $self->indexing_scheme($flat_indexing);
   }
 
   $self->verbose($flat_verbose)    if defined $flat_verbose;
+  $self->dbname($dbname)           if defined $dbname;
   $self->out_file($flat_outfile)   if defined $flat_outfile;
   $self->file_format($flat_format) if defined $flat_format;
 }
@@ -179,6 +224,38 @@ sub _set_namespaces {
 
   $self->file_format($self->default_file_format)
     unless defined $self->{flat_format};
+}
+
+=head2 new_from_registry
+
+ Title   : new_from_registry
+ Usage   : $db = Bio::DB::Flat->new_from_registry(%config)
+ Function: creates a new Bio::DB::Flat object in a Bio::DB::Registry-
+           compatible fashion
+ Returns : new Bio::DB::Flat
+ Args    : provided by the registry, see below
+ Status  : Public
+
+The following registry-configuration tags are recognized:
+
+  location     Root of the indexed flat file; corresponds to the new() method's
+               -directory argument.
+
+=cut
+
+sub new_from_registry {
+   my ($self,%config) =  @_;
+   my $location = $config{'location'} or $self->throw('location tag must be specified.');
+   my $dbname   = $config{'dbname'}   or $self->throw('dbname tag must be specified.');
+   #my $index    = $self->new(-directory => $location,
+   #			      -dbname    => $dbname,
+   #			     );
+   # my $index = $config{'protocol'} or $self->throw('index or protocol tag must be specified.');
+   my $db = $self->new(-directory => $location,
+			-dbname    => $dbname,
+		       # -index     => $index   LS: PROTOCOL DOES NOT SPECIFY INDEXING SCHEME
+		      );
+    $db;
 }
 
 # accessors
@@ -206,7 +283,12 @@ sub out_file {
   $self->{flat_outfile} = shift if @_;
   $d;
 }
-
+sub dbname {
+  my $self = shift;
+  my $d = $self->{flat_dbname};
+  $self->{flat_dbname} = shift if @_;
+  $d;
+}
 sub primary_namespace {
   my $self = shift;
   my $d    = $self->{flat_primary_namespace};
@@ -234,6 +316,27 @@ sub file_format {
   $d;
 }
 
+# return the alphabet
+sub alphabet {
+  my $self = shift;
+  my $d    = $self->{flat_alphabet};
+  $self->{flat_alphabet} = shift if @_;
+  $d;
+}
+
+sub parse_one_record {
+  my $self  = shift;
+  my $fh    = shift;
+  my $parser =
+    $self->{cached_parsers}{fileno($fh)}
+      ||= Bio::SeqIO->new(-fh=>$fh,-format=>$self->default_file_format);
+  my $seq = $parser->next_seq or return;
+  $self->{flat_alphabet} ||= $seq->alphabet;
+  my $ids = $self->seq_to_ids($seq);
+  return $ids;
+}
+
+
 # return the indexing scheme
 sub indexing_scheme {
   my $self = shift;
@@ -247,8 +350,9 @@ sub add_flat_file {
   my ($file_path,$file_length,$nf) = @_;
 
   # check that file_path is absolute
-  File::Spec->file_name_is_absolute($file_path)
-      or $self->throw("the flat file path $file_path must be absolute");
+  unless (File::Spec->file_name_is_absolute($file_path)) {
+    $file_path = File::Spec->rel2abs($file_path);
+  }
 
   -r $file_path or $self->throw("flat file $file_path cannot be read: $!");
 
@@ -280,7 +384,9 @@ sub write_config {
   print F "index\t$index_type\n";
 
   my $format     = $self->file_format;
-  print F "format\t$format\n";
+  my $alphabet   = $self->alphabet;
+  my $alpha      = $alphabet ? "/$alphabet" : '';
+  print F "format\tURN:LSID:open-bio.org:${format}${alpha}\n";
 
   my @filenos = $self->_filenos or $self->throw("cannot write config file because no flat files defined");
   for my $nf (@filenos) {
@@ -348,10 +454,7 @@ sub _filenos {
 # read the configuration file
 sub _read_config {
   my $self   = shift;
-  my $config = shift;
-
-  my $path = defined $config ? Bio::Root::IO->catfile($config,CONFIG_FILE_NAME) 
-                             : $self->_config_path;
+  my $path = $self->_config_path;
   return unless -e $path;
 
   open (F,$path) or $self->throw("open error on $path: $!");
@@ -368,7 +471,15 @@ sub _read_config {
 
   $self->indexing_scheme($1);
 
-  $self->file_format($config{format}[0]) if $config{format};
+  if ($config{format}) {
+    # handle LSID format
+    if ($config{format}[0] =~ /^URN:LSID:open-bio\.org:(\w+)(?:\/(\w+))/) {
+      $self->file_format($1);
+      $self->alphabet($2);
+    } else {  # compatibility with older versions
+      $self->file_format($config{format}[0]);
+    }
+  }
 
   # set up primary namespace
   my $primary_namespace = $config{primary_namespace}[0]
@@ -396,7 +507,7 @@ sub _config_path {
 sub _catfile {
   my $self = shift;
   my $component = shift;
-  Bio::Root::IO->catfile($self->directory,$component);
+  Bio::Root::IO->catfile($self->directory,$self->dbname,$component);
 }
 
 sub _config_name { CONFIG_FILE_NAME }
@@ -463,26 +574,6 @@ sub get_Seq_by_acc {
 sub fetch_raw {
   my ($self,$id,$namespace) = @_;
   $self->throw_not_implemented;
-}
-
-# This is the method that must be implemented in
-# child classes.  It is passed a filehandle which should
-# point to the next record to be indexed in the file, 
-# and returns a two element list
-# consisting of a key and an adjustment value.
-# The key can be a scalar, in which case it is treated
-# as the primary ID, or a hashref containing namespace=>[id] pairs,
-# one of which MUST correspond to the primary namespace.
-# The adjustment value is normally zero, but can be a positive or
-# negative integer which will be added to the current file position
-# in order to calculate the correct end of the record.
-sub parse_one_record {
-  my $self = shift;
-  my $fh   = shift;
-  $self->throw_not_implemented;
-  # here's what you would implement
-  my (%keys,$offset);
-  return (\%keys,$offset);
 }
 
 sub default_file_format {

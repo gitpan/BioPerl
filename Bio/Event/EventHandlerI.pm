@@ -1,4 +1,4 @@
-# $Id: EventHandlerI.pm,v 1.5 2002/10/22 07:45:14 lapp Exp $
+# $Id: EventHandlerI.pm,v 1.6 2003/04/09 04:53:14 sac Exp $
 #
 # BioPerl module for Bio::Event::EventHandlerI
 #
@@ -22,7 +22,7 @@ Bio::Event::EventHandlerI - An Event Handler Interface
 
 =head1 DESCRIPTION
 
-This interface describes the basic methods required for a
+This interface describes the basic methods required for
 EventHandlers.  These are essentially SAX methods. 
 
 =head1 FEEDBACK

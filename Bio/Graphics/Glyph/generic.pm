@@ -147,14 +147,15 @@ sub dna_fits {
 
 sub arrowhead {
   my $self = shift;
-  my $gd   = shift;
+  my $image = shift;
   my ($x,$y,$height,$orientation) = @_;
 
   my $fg = $self->set_pen;
   my $style = $self->option('arrowstyle') || 'regular';
 
   if ($style eq 'filled') {
-    my $poly = new GD::Polygon;
+    my $poly_pkg = $self->polygon_package;
+    my $poly = $poly_pkg->new();
     if ($orientation >= 0) {
       $poly->addPt($x-$height,$y-$height);
       $poly->addPt($x,$y);
@@ -164,29 +165,30 @@ sub arrowhead {
       $poly->addPt($x,$y);
       $poly->addPt($x+$height,$y+$height,$y);
     }
-    $gd->filledPolygon($poly,$fg);
-  } else {
+    $image->filledPolygon($poly,$fg);
+  }
+  else {
     if ($orientation >= 0) {
-      $gd->line($x-$height,$y-$height,$x,$y,$fg);
-      $gd->line($x,$y,$x-$height,$y+$height,$fg);
+      $image->line($x,$y,$x-$height,$y-$height,$fg);
+      $image->line($x,$y,$x-$height,$y+$height,$fg);
     } else {
-      $gd->line($x+$height,$y-$height,$x,$y,$fg);
-      $gd->line($x,$y,$x+$height,$y+$height,$fg);
+      $image->line($x,$y,$x+$height,$y-$height,$fg);
+      $image->line($x,$y,$x+$height,$y+$height,$fg);
     }
   }
 }
 
 sub arrow {
-  my $self = shift;
-  my $gd   = shift;
+  my $self  = shift;
+  my $image = shift;
   my ($x1,$x2,$y) = @_;
 
   my $fg     = $self->set_pen;
   my $height = $self->height/3;
 
-  $gd->line($x1,$y,$x2,$y,$fg);
-  $self->arrowhead($gd,$x2,$y,$height,+1) if $x1 < $x2;
-  $self->arrowhead($gd,$x2,$y,$height,-1) if $x2 < $x1;
+  $image->line($x1,$y,$x2,$y,$fg);
+  $self->arrowhead($image,$x2,$y,$height,+1) if $x1 < $x2;
+  $self->arrowhead($image,$x2,$y,$height,-1) if $x2 < $x1;
 }
 
 sub reversec {
@@ -206,8 +208,10 @@ Bio::Graphics::Glyph::generic - The "generic" glyph
 
 =head1 DESCRIPTION
 
-This is identical to the "box" glyph.  It is the default glyph used
-when not otherwise specified.
+This is identical to the "box" glyph except that it will draw the
+subparts of features that contain subfeatures.  The subparts are not
+connected -- use the "segments" glyph for that.  "Generic" is the
+default glyph used when not otherwise specified.
 
 =head2 OPTIONS
 
@@ -247,6 +251,8 @@ L<Bio::Graphics::Glyph> for a full explanation.
   -strand_arrow Whether to indicate            0 (false)
                  strandedness
 
+  -hilite       Highlight color                undef (no color)
+
 -pad_top and -pad_bottom allow you to insert some blank space between
 the glyph's boundary and its contents.  This is useful if you are
 changing the glyph's height dynamically based on its feature's score.
@@ -281,6 +287,7 @@ L<Bio::Graphics::Glyph::transcript>,
 L<Bio::Graphics::Glyph::transcript2>,
 L<Bio::Graphics::Glyph::translation>,
 L<Bio::Graphics::Glyph::triangle>,
+L<Bio::Graphics::Glyph::xyplot>,
 L<Bio::DB::GFF>,
 L<Bio::SeqI>,
 L<Bio::SeqFeatureI>,

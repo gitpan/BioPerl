@@ -1,4 +1,4 @@
-# $Id: Provider.pm,v 1.4 2002/10/22 07:45:11 lapp Exp $
+# $Id: Provider.pm,v 1.6 2003/05/30 15:33:00 jason Exp $
 #
 # BioPerl module for Bio::Biblio::Provider
 #
@@ -16,7 +16,7 @@ Bio::Biblio::Provider - Representation of a general provider
     # usually this class is not instantiated but can be...
     $obj = new Bio::Biblio::Provider (-type => 'Department');
 
- --- OR ---
+  #--- OR ---
 
     $obj = new Bio::Biblio::Provider;
     $obj->type ('Department');
@@ -35,7 +35,7 @@ and they are inherited by all provider types.
 
 =head1 SEE ALSO
 
-=over
+=over 4
 
 =item *
 

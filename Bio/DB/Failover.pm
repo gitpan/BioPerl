@@ -1,6 +1,6 @@
 # POD documentation - main docs before the code
 
-# $Id: Failover.pm,v 1.5.2.1 2003/06/25 13:44:18 heikki Exp $
+# $Id: Failover.pm,v 1.6 2003/02/17 06:48:29 shawnh Exp $
 
 
 =head1 NAME

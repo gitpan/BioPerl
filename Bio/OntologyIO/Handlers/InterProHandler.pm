@@ -1,4 +1,4 @@
-# $Id: InterProHandler.pm,v 1.7.2.2 2003/03/27 10:07:57 lapp Exp $
+# $Id: InterProHandler.pm,v 1.10 2003/12/09 13:06:05 juguang Exp $
 #
 # BioPerl module for InterProHandler
 #
@@ -57,6 +57,8 @@ http://bugzilla.bioperl.org/
 Email dimitrov@gnf.org
 
 =head1 CONTRIBUTORS
+
+Juguang Xiao, juguang@tll.org.sg
 
 Additional contributors names and emails here
 
@@ -428,6 +430,14 @@ sub start_element {
 					-name => "Repeat") );
     $ont->add_term($fact->create_object(-identifier => "PTM",
 				 -name => "post-translational modification"));
+    $ont->add_term($fact->create_object(
+        -identifier => "Active_site",
+        -name => 'Active_site'
+    ));
+    $ont->add_term($fact->create_object(
+        -identifier => "Binding_site",
+        -name => 'Binding_site'
+    ));
   } elsif ($element->{Name} eq 'interpro') {
     my %record_args = %{$element->{Attributes}};
     my $id = $record_args{"id"};
@@ -712,7 +722,7 @@ sub _increment_record_count{
 
 sub _increment_processed_count{
   $processed_count++;
-  print $processed_count."\n" if $processed_count % 100 == 0;
+  print STDERR $processed_count."\n" if $processed_count % 100 == 0;
 }
 
 1;

@@ -83,7 +83,7 @@ use Bio::Root::IO;
  Function: Builds a new Bio::Tools::Phylo::Phylip::ProtDist object 
  Returns : Bio::Tools::ProtDist
  Args    : -fh/-file => $val, # for initing input, see Bio::Root::IO
-
+           -program  => 'programname' # name of the program
 
 =cut
 
@@ -92,14 +92,15 @@ sub new {
 
   my $self = $class->SUPER::new(@args);
   $self->_initialize_io(@args);
-
+  my ($prog) = $self->_rearrange([qw(PROGRAM)], @args);
+  $self->{'_program'} = $prog;
   return $self;
 }
 
-=head2 next_result
+=head2 next_matrix
 
- Title   : next_result
- Usage   : my $matrix = $parser->next_result
+ Title   : next_matrix
+ Usage   : my $matrix = $parser->next_matrix
  Function: Get the next result set from parser data
  Returns : L<Bio::Matrix::PhylipDist>
  Args    : none
@@ -112,31 +113,43 @@ sub next_matrix{
    my @names;
    my @values;
    my $entry;
+   my $size = 0;
    while ($entry=$self->_readline) {
-       if($#names >=0 && $entry =~/^\s+\d+$/){
-           last;
-       }
-       elsif($entry=~/^\s+\d+\n$/){
-           next;
+       if($#names >=0 && $entry =~/^\s+\d+\n$/){
+	   $self->_pushback($_);
+	   last;
+       } elsif($entry=~/^\s+(\d+)\n$/){	   
+	   $size = $1;
+	   next;
+       } elsif( $entry =~ s/^\s+(\-?\d+\.\d+)/$1/ ) {
+	   my (@line) = split( /\s+/,$entry);
+	   push @{$values[-1]}, @line;
+	   next;
        }
        my ($n,@line) = split( /\s+/,$entry);
+       
        push @names, $n;
        push @values, [@line];
-    }
-    $#names>=0 || return;
-    my %dist;
-    my $i=0;
-    foreach my $name(@names){
-      my $j=0;
-      foreach my $n(@names) {
-        $dist{$name}{$n} = [$i,$j];
-        $j++;
-      }
-     $i++;
-    }
-    my $matrix = Bio::Matrix::PhylipDist->new(-matrix=>\%dist,
-                                              -names =>\@names,
-                                              -values=>\@values);
+   }
+   if( scalar @names != $size ) {
+       $self->warn("The number of entries ".(scalar @names).
+		   " is not the same $size");
+   }
+   $#names>=0 || return;
+   my %dist;
+   my $i=0;
+   foreach my $name(@names){
+       my $j=0;
+       foreach my $n(@names) {
+	   $dist{$name}{$n} = [$i,$j];
+	   $j++;
+       }
+       $i++;
+   }
+   my $matrix = Bio::Matrix::PhylipDist->new(-program => $self->{'_program'},
+					     -matrix  => \%dist,
+					     -names   => \@names,
+					     -values  => \@values);
     return $matrix;
 }
 

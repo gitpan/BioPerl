@@ -1,8 +1,8 @@
 # -*-Perl-*-
-# $Id: Index.t,v 1.23.2.2 2003/03/24 20:52:45 jason Exp $
+# $Id: Index.t,v 1.28 2003/06/10 21:34:57 jason Exp $
 
 use strict;
-my $error;
+my $exit;
 BEGIN {     
     eval { require Test; };
     use vars qw($NUMTESTS);
@@ -11,31 +11,24 @@ BEGIN {
 	use lib 't';
     }
     use Test;
+    $exit = 0;
+    eval { require Bio::Index::Fasta;
+	   require Bio::Index::SwissPfam;
+	   require Bio::Index::EMBL;
+	   require Bio::Index::GenBank;
+	   require Bio::Index::Swissprot;
+	   require DB_File;	   
+       };
+    if( $@ ) {
+	$exit = 1;
+    }
     plan tests => $NUMTESTS;
-    $error = 0;    
 }
-
-eval { require Bio::DB::FileCache };
-
-use Bio::Root::IO;
-use Bio::Index::Fasta;
-use Bio::Index::SwissPfam;
-use Bio::Index::EMBL;
-use Bio::Index::GenBank;
-use Bio::Index::Swissprot;
-use Bio::DB::InMemoryCache;
-
-
-use vars qw ($dir);
-
-($Bio::Root::IO::FILESPECLOADED && File::Spec->can('cwd') && ($dir = File::Spec->cwd) ) ||
-    ($dir = `pwd`) || ($dir = '.');
- 
 END { 
     foreach ( $Test::ntest..$NUMTESTS) {
-	skip('Bio::DB::FileCache not loaded because one or more of Storable, DB_File or File::Temp not installed',1);
-    }
+	skip('DB_File not loaded because one or more of Storable, DB_File or File::Temp not installed',1);
 
+    } 
     foreach my $root ( qw( Wibbl Wibbl2 Wibbl3 Wibbl4 Wibbl5 
 			   ) ) {
 	if( -e "$root" ) { unlink $root;}
@@ -43,6 +36,19 @@ END {
 	if( -e "$root.dir") { unlink "$root.dir";}
    }
  }
+
+exit(0) if $exit;
+
+use Bio::Root::IO;
+use Bio::DB::InMemoryCache;
+
+eval { require Bio::DB::FileCache };
+
+use vars qw ($dir);
+
+($Bio::Root::IO::FILESPECLOADED && File::Spec->can('cwd') && 
+ ($dir = File::Spec->cwd) ) ||
+    ($dir = `pwd`) || ($dir = '.');
 
 chomp( $dir );
 {
@@ -133,7 +139,6 @@ my $cache = Bio::DB::InMemoryCache->new( -seqdb => $gb_ind );
 ok ( $cache->get_Seq_by_id('AI129902') );
 
 if (Bio::DB::FileCache->can('new')) {
-  
     $cache = Bio::DB::FileCache->new(-seqdb => $gb_ind,
 				     -keep  => 1,
 				     -file  => 'filecache.idx');
@@ -171,5 +176,5 @@ if (Bio::DB::FileCache->can('new')) {
     ok( $species->genus(), 'Homo');
     ok ($species->common_name(), 'human');    
 } else {
-  skip('Bio::DB::FileCache not loaded because one or more of Storable, DB_File or File::Temp not installed',1);
+    skip('Bio::DB::FileCache not loaded because one or more of Storable, DB_File or File::Temp not installed',1);
 }

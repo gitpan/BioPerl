@@ -1,5 +1,5 @@
 
-# $Id: Ace.pm,v 1.10 2002/10/22 07:38:29 lapp Exp $
+# $Id: Ace.pm,v 1.11 2003/03/06 13:27:53 bosborne Exp $
 #
 # BioPerl module for Bio::DB::Ace
 #
@@ -156,7 +156,7 @@ sub get_Seq_by_id {
   $dna =~ s/^>.*\n//;
   $dna =~ s/\n//g;
 
-  $out = Bio::Seq->new( -id => $id, -type => 'Dna', -seq => $dna, -name => "Sequence from Bio::DB::Ace $id");
+  $out = Bio::Seq->new( -id => $id, -alphabet => 'Dna', -seq => $dna, -name => "Sequence from Bio::DB::Ace $id");
   return $out;
 
 }

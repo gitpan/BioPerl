@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: HSPI.pm,v 1.21.2.1 2003/01/22 22:51:00 jason Exp $
+# $Id: HSPI.pm,v 1.31 2003/08/09 21:47:18 jason Exp $
 #
 # BioPerl module for Bio::Search::HSP::HSPI
 #
@@ -17,7 +17,13 @@ Bio::Search::HSP::HSPI - Interface for a High Scoring Pair in a similarity searc
 
 =head1 SYNOPSIS
 
-    $r_type = $hsp->algorithm
+    # Bio::Search::HSP::HSPI objects cannot be instantiated since this
+    # module defines a pure interface.
+
+    # Given an object that implements the Bio::Search::HSP::HSPI  interface,
+    # you can do the following things with it:
+
+    $r_type = $hsp->algorithm;
 
     $pvalue = $hsp->pvalue();
 
@@ -44,7 +50,7 @@ Bio::Search::HSP::HSPI - Interface for a High Scoring Pair in a similarity searc
 Bio::Search::HSP::HSPI objects cannot be instantiated since this
 module defines a pure interface.
 
-Given an object that implements the Bio::Search::HSP::HSPI  interface,
+Given an object that implements the L<Bio::Search::HSP::HSPI> interface,
 you can do the following things with it:
 
 =head1 SEE ALSO
@@ -159,6 +165,7 @@ sub evalue {
    my ($self) = @_;
    $self->throw_not_implemented;
 }
+
 
 =head2 frac_identical
 
@@ -379,9 +386,9 @@ sub seq_inds {
     shift->throw_not_implemented();
 }
 
-=head2 Inherited from Bio::SeqFeature::SimilarityPair
+=head2 Inherited from L<Bio::SeqFeature::SimilarityPair>
 
-These methods come from Bio::SeqFeature::SimilarityPair
+These methods come from L<Bio::SeqFeature::SimilarityPair>
 
 =head2 query
 
@@ -449,14 +456,18 @@ sub strand {
     $val = 'query' unless defined $val;
     $val =~ s/^\s+//;
 
-    if( $val =~ /^q/i ) { 
-	return $self->query->strand(shift);
-    } elsif( $val =~ /^(hi|s)/i ) {
-	return $self->hit->strand(shift);
-    } elsif ( $val =~ m/^(list|array)/) {
-	return ($self->query->strand(shift), $self->hit->strand(shift));
+    if( $val =~ /^q/i ) {
+	return $self->query->strand(@_);
+    } elsif( $val =~ /^hi|^s/i ) {
+	return $self->hit->strand(@_);
+    } elsif (  $val =~ /^list|array/i ) {
+	# do we really need to pass on additional arguments here? HL
+	# (formerly this was strand(shift) which is really bad coding because
+	# it breaks if the callee allows setting to undef)
+	return ($self->query->strand(@_), 
+		$self->hit->strand(@_) );
     } else { 
-	$self->warn("unrecognized component $val requested\n");
+	$self->warn("unrecognized component '$val' requested\n");
     }
     return 0;
 }
@@ -479,11 +490,17 @@ sub start {
     $val =~ s/^\s+//;
 
     if( $val =~ /^q/i ) { 
-	return $self->query->start(shift);
+        return $self->query->start(@_);
     } elsif( $val =~ /^(hi|s)/i ) {
-	return $self->hit->start(shift);
+	return $self->hit->start(@_);
+    } elsif (  $val =~ /^list|array/i ) {	
+	# do we really need to pass on additional arguments here? HL
+	# (formerly this was strand(shift) which is really bad coding because
+	# it breaks if the callee allows setting to undef)
+	return ($self->query->start(@_), 
+		$self->hit->start(@_) );
     } else { 
-	$self->warn("unrecognized component $val requested\n");
+	$self->warn("unrecognized component '$val' requested\n");
     }
     return 0;
 }
@@ -506,13 +523,59 @@ sub end {
     $val =~ s/^\s+//;
 
     if( $val =~ /^q/i ) { 
-	return $self->query->end(shift);
+        return $self->query->end(@_);
     } elsif( $val =~ /^(hi|s)/i ) {
-	return $self->hit->end(shift);
-    } else { 
-	$self->warn("unrecognized component $val requested\n");
+	return $self->hit->end(@_);
+    } elsif (  $val =~ /^list|array/i ) {	
+	# do we really need to pass on additional arguments here? HL
+	# (formerly this was strand(shift) which is really bad coding because
+	# it breaks if the callee allows setting to undef)
+	return ($self->query->end(@_), 
+		$self->hit->end(@_) );
+    } else {
+	$self->warn("unrecognized end component '$val' requested\n");
     }
     return 0;
+}
+
+=head2 seq
+
+ Usage     : $hsp->seq( [seq_type] );
+ Purpose   : Get the query or sbjct sequence as a Bio::Seq.pm object.
+ Example   : $seqObj = $hsp->seq('query');
+ Returns   : Object reference for a Bio::Seq.pm object.
+ Argument  : seq_type = 'query' or 'hit' or 'sbjct' (default = 'query').
+           :  ('sbjct' is synonymous with 'hit') 
+           : default is 'query'
+ Throws    : Propagates any exception that occurs during construction
+           : of the Bio::Seq.pm object.
+ Comments  : The sequence is returned in an array of strings corresponding
+           : to the strings in the original format of the Blast alignment.
+           : (i.e., same spacing).
+
+See Also   : L<seq_str()|seq_str>, L<seq_inds()|seq_inds>, B<Bio::Seq>
+
+=cut
+
+#-------
+sub seq {
+#-------
+    my($self,$seqType) = @_; 
+    $seqType ||= 'query';
+    $seqType = 'sbjct' if $seqType eq 'hit';
+    my $str = $self->seq_str($seqType);
+    if( $seqType =~ /^(m|ho)/i ) {
+        $self->throw("cannot call seq on the homology match string, it isn't really a sequence, use get_aln to convert the HSP to a Bio::AlignIO and generate a consensus from that.");
+    }
+    require Bio::LocatableSeq;
+    my $id = $seqType =~ /^q/i ? $self->query->seq_id : $self->hit->seq_id;
+    new Bio::LocatableSeq (-ID    => $id,
+                           -SEQ   => $str,
+                           -START => $self->start($seqType),
+                           -END   => $self->end($seqType),
+                           -STRAND=> $self->strand($seqType),
+                           -DESC  => "$seqType sequence ",
+                           );
 }
 
 =head2 seq_str
@@ -535,12 +598,13 @@ See Also   : L<seq()|seq>, L<seq_inds()|seq_inds>, B<_set_match_seq()>
 
 sub seq_str {  
     my $self = shift;
-    my $type = shift;
-    if( $type =~ /^q/i ) { return $self->query_string(shift) }
-    elsif( $type =~ /^(s|hi)/i ) { return $self->hit_string(shift)}
-    elsif ( $type =~ /^(ho|ma)/i ) { return $self->hit_string(shift) }
+    my $type = shift || 'query';
+
+    if( $type =~ /^q/i ) { return $self->query_string(@_) }
+    elsif( $type =~ /^(s)|(hi)/i ) { return $self->hit_string(@_)}
+    elsif ( $type =~ /^(ho)|(ma)/i  ) { return $self->homology_string(@_) }
     else { 
-	$self->warn("unknown sequence type $type");
+        $self->warn("unknown sequence type $type");
     }
     return '';
 }
@@ -565,7 +629,7 @@ sub rank { shift->throw_not_implemented }
            : in the query or sbjct sequence for the given HSP. Optionally can
            : report data within a defined interval along the seq.
            : (Note: 'conservative' matches are called 'positives' in the
-	   : Blast report.)
+           : Blast report.)
  Example   : ($id,$cons) = $hsp_object->matches('hit');
            : ($id,$cons) = $hsp_object->matches('query',300,400);
  Returns   : 2-element array of integers 
@@ -587,73 +651,75 @@ sub matches {
 #-----------
     my( $self, %param ) = @_;
     my(@data);
-    my($seqType, $beg, $end) = ($param{-SEQ}, $param{-START}, $param{-STOP});
+    my($seqType, $beg, $end) = ($param{-SEQ}, 
+                                $param{-START}, 
+                                $param{-STOP});
     $seqType ||= 'query';
-   $seqType = 'sbjct' if $seqType eq 'hit';
+    $seqType = 'sbjct' if $seqType eq 'hit';
 
-    if(!defined $beg && !defined $end) {
-	## Get data for the whole alignment.
-	push @data, ($self->num_identical, $self->num_conserved);
+    if( !defined $beg && !defined $end) {
+        ## Get data for the whole alignment.
+        push @data, ($self->num_identical, $self->num_conserved);
     } else {
-	## Get the substring representing the desired sub-section of aln.
-	$beg ||= 0;
-	$end ||= 0;
-	my($start,$stop) = $self->range($seqType);
-	if($beg == 0) { $beg = $start; $end = $beg+$end; }
-	elsif($end == 0) { $end = $stop; $beg = $end-$beg; }
+        ## Get the substring representing the desired sub-section of aln.
+        $beg ||= 0;
+        $end ||= 0;
+        my($start,$stop) = $self->range($seqType);
+        if($beg == 0) { $beg = $start; $end = $beg+$end; }
+        elsif($end == 0) { $end = $stop; $beg = $end-$beg; }
 
-	if($end >= $stop) { $end = $stop; } ##ML changed from if (end >stop)
-	else { $end += 1;}   ##ML moved from commented position below, makes
+        if($end >= $stop) { $end = $stop; } ##ML changed from if (end >stop)
+        else { $end += 1;}   ##ML moved from commented position below, makes
                              ##more sense here
-#	if($end > $stop) { $end = $stop; }
-	if($beg < $start) { $beg = $start; }
-#	else { $end += 1;}
+#        if($end > $stop) { $end = $stop; }
+        if($beg < $start) { $beg = $start; }
+#        else { $end += 1;}
 
-#	my $seq = substr($self->seq_str('match'), $beg-$start, ($end-$beg));
+#        my $seq = substr($self->seq_str('match'), $beg-$start, ($end-$beg));
 
-	## ML: START fix for substr out of range error ------------------
-	my $seq = "";
-	if (($self->algorithm eq 'TBLASTN') and ($seqType eq 'sbjct'))
-	{
-	    $seq = substr($self->seq_str('match'),
-			  int(($beg-$start)/3), int(($end-$beg+1)/3));
+        ## ML: START fix for substr out of range error ------------------
+        my $seq = "";
+        if (($self->algorithm =~ /TBLAST[NX]/) && ($seqType eq 'sbjct'))
+        {
+            $seq = substr($self->seq_str('match'),
+                          int(($beg-$start)/3), 
+                          int(($end-$beg+1)/3));
 
-	} elsif (($self->algorithm eq 'BLASTX') and ($seqType eq 'query'))
-	{
-	    $seq = substr($self->seq_str('match'),
-			  int(($beg-$start)/3), int(($end-$beg+1)/3));
-	} else {
-	    $seq = substr($self->seq_str('match'), 
-			  $beg-$start, ($end-$beg));
-	}
-	## ML: End of fix for  substr out of range error -----------------
+        } elsif (($self->algorithm =~ /T?BLASTX/) && ($seqType eq 'query')) {
+            $seq = substr($self->seq_str('match'),
+                          int(($beg-$start)/3), int(($end-$beg+1)/3));
+        } else {
+            $seq = substr($self->seq_str('match'), 
+                          $beg-$start, ($end-$beg));
+        }
+        ## ML: End of fix for  substr out of range error -----------------
 
-	
-	## ML: debugging code
-	## This is where we get our exception.  Try printing out the values going
-	## into this:
-	##
-#	 print STDERR 
-#	     qq(*------------MY EXCEPTION --------------------\nSeq: ") , 
-#	     $self->seq_str("$seqType"), qq("\n),$self->rank,",(  index:";
-#	 print STDERR  $beg-$start, ", len: ", $end-$beg," ), (HSPRealLen:", 
-#	     CORE::length $self->seq_str("$seqType");
-#	 print STDERR ", HSPCalcLen: ", $stop - $start +1 ," ), 
-#	     ( beg: $beg, end: $end ), ( start: $start, stop: stop )\n";
-	 ## ML: END DEBUGGING CODE----------
+        
+        ## ML: debugging code
+        ## This is where we get our exception.  Try printing out the values going
+        ## into this:
+        ##
+#         print STDERR 
+#             qq(*------------MY EXCEPTION --------------------\nSeq: ") , 
+#             $self->seq_str("$seqType"), qq("\n),$self->rank,",(  index:";
+#         print STDERR  $beg-$start, ", len: ", $end-$beg," ), (HSPRealLen:", 
+#             CORE::length $self->seq_str("$seqType");
+#         print STDERR ", HSPCalcLen: ", $stop - $start +1 ," ), 
+#             ( beg: $beg, end: $end ), ( start: $start, stop: stop )\n";
+         ## ML: END DEBUGGING CODE----------
 
-	if(!CORE::length $seq) {
-	    $self->throw("Undefined sub-sequence ($beg,$end). Valid range = $start - $stop");
-	}
-	## Get data for a substring.
-#	printf "Collecting HSP subsection data: beg,end = %d,%d; start,stop = %d,%d\n%s<---\n", $beg, $end, $start, $stop, $seq;
-#	printf "Original match seq:\n%s\n",$self->seq_str('match');
-	$seq =~ s/ //g;  # remove space (no info).
-	my $len_cons = CORE::length $seq;
-	$seq =~ s/\+//g;  # remove '+' characters (conservative substitutions)
-	my $len_id = CORE::length $seq;
-	push @data, ($len_id, $len_cons);
-#	printf "  HSP = %s\n  id = %d; cons = %d\n", $self->rank, $len_id, $len_cons; <STDIN>;
+        if(!CORE::length $seq) {
+            $self->throw("Undefined sub-sequence ($beg,$end). Valid range = $start - $stop");
+        }
+        ## Get data for a substring.
+#        printf "Collecting HSP subsection data: beg,end = %d,%d; start,stop = %d,%d\n%s<---\n", $beg, $end, $start, $stop, $seq;
+#        printf "Original match seq:\n%s\n",$self->seq_str('match');
+        $seq =~ s/ //g;  # remove space (no info).
+        my $len_cons = CORE::length $seq;
+        $seq =~ s/\+//g;  # remove '+' characters (conservative substitutions)
+        my $len_id = CORE::length $seq;
+        push @data, ($len_id, $len_cons);
+#        printf "  HSP = %s\n  id = %d; cons = %d\n", $self->rank, $len_id, $len_cons; <STDIN>;
     }
     @data;
 }
@@ -696,6 +762,7 @@ sub n { shift->throw_not_implemented }
 
 sub range { shift->throw_not_implemented }
 
+sub expect { shift->evalue(@_) }
 
 1;
 

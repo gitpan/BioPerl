@@ -1,4 +1,4 @@
-# $Id: SeqPattern.pm,v 1.14 2002/10/22 07:38:46 lapp Exp $
+# $Id: SeqPattern.pm,v 1.16 2003/07/27 22:27:36 allenday Exp $
 #
 # bioperl module for Bio::Tools::SeqPattern
 #
@@ -46,7 +46,7 @@ tasks with sequence patterns such as:
 Other features to look for in the future:
 
   -- Full pattern syntax checking
-  -- Conversion between expanded and ondensed forms of the pattern
+  -- Conversion between expanded and condensed forms of the pattern
 
 =head1 MOTIVATIONS
 
@@ -85,17 +85,17 @@ define the behavior or the expand() method.
  ------------------------------------------
  Symbol       Meaning      Nucleic Acid
  ------------------------------------------
-  A            A           Adenine
-  C            C           Cytosine
-  G            G           Guanine
-  T            T           Thymine
-  U            U           Uracil
-  M          A or C  
-  R          A or G        Any purine
-  W          A or T    
-  S          C or G     
-  Y          C or T        Any pyrimidine
-  K          G or T     
+  A            A           (A)denine
+  C            C           (C)ytosine
+  G            G           (G)uanine
+  T            T           (T)hymine
+  U            U           (U)racil
+  M          A or C        a(M)ino group
+  R          A or G        pu(R)ine
+  W          A or T        (W)eak bond
+  S          C or G        (S)trong bond
+  Y          C or T        p(Y)rimidine
+  K          G or T        (K)eto group
   V        A or C or G  
   H        A or C or T  
   D        A or G or T  
@@ -179,10 +179,6 @@ or the web:
 
 Steve Chervitz, sac@bioperl.org
 
-=head1 VERSION
-
-Bio::Tools::SeqPattern.pm, 0.011
-
 =head1 COPYRIGHT
 
 Copyright (c) 1997-8 Steve Chervitz. All Rights Reserved.
@@ -206,9 +202,8 @@ package Bio::Tools::SeqPattern;
 use Bio::Root::Root;
 @ISA = qw(Bio::Root::Root);
 use strict;
-use vars qw ($ID $VERSION);
+use vars qw ($ID);
 $ID  = 'Bio::Tools::SeqPattern';
-$VERSION = 0.011;
 
 ## These constants may be more appropriate in a Bio::Dictionary.pm 
 ## type of class.

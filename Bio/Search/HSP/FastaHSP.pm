@@ -1,4 +1,4 @@
-# $Id: FastaHSP.pm,v 1.4.2.1 2003/02/28 09:47:19 jason Exp $
+# $Id: FastaHSP.pm,v 1.7 2003/12/10 21:19:51 jason Exp $
 #
 # BioPerl module for Bio::Search::HSP::FastaHSP
 #
@@ -149,7 +149,6 @@ sub get_aln {
     }
     $self->debug("hs seq is '$hs'\n");
     $self->debug("qs seq is '$qs'\n");
-	
 
     $hs = substr($hs, $start,$self->length('total'));
     $qs = substr($qs, $start,$self->length('total'));
@@ -166,7 +165,7 @@ sub get_aln {
     }
 
     my $seqonly = $qs;
-    $seqonly =~ s/[\-\s]//g;
+    $seqonly =~ s/\s+//g;
     my ($q_nm,$s_nm) = ($self->query->seq_id(),
 			$self->hit->seq_id());
     unless( defined $q_nm && CORE::length ($q_nm) ) {
@@ -175,17 +174,17 @@ sub get_aln {
     unless( defined $s_nm && CORE::length ($s_nm) ) {
 	$s_nm = 'hit';
     }
-    my $query = new Bio::LocatableSeq('-seq'   => $qs,
+    my $query = new Bio::LocatableSeq('-seq'   => $seqonly,
 				      '-id'    => $q_nm,
-				      '-start' => 1,
-				      '-end' => CORE::length($seqonly),
+				      '-start' => $self->query->start,
+				      '-end'   => $self->query->end,
 				      );
     $seqonly = $hs;
-    $seqonly =~ s/[\-\s]//g;
-    my $hit =  new Bio::LocatableSeq('-seq'   => $hs,
+    $seqonly =~ s/\s+//g;
+    my $hit =  new Bio::LocatableSeq('-seq'    => $seqonly,
 				      '-id'    => $s_nm,
-				      '-start' => 1,
-				      '-end' => CORE::length($seqonly),
+				      '-start' => $self->hit->start,
+				      '-end'   => $self->hit->end,
 				      );
     $aln->add_seq($query);
     $aln->add_seq($hit);

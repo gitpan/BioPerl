@@ -1,4 +1,4 @@
-# $Id: Collection.pm,v 1.9.2.1 2003/02/21 03:07:19 jason Exp $
+# $Id: Collection.pm,v 1.15 2003/09/03 18:19:08 jason Exp $
 #
 # BioPerl module for Bio::SeqFeature::Collection
 #
@@ -24,7 +24,7 @@ range, that match a certain feature type, etc.
   use Bio::Root::IO;
   # let's first input some features
   my $gffio = Bio::Tools::GFF->new(-file => Bio::Root::IO->catfile
-  				 ("t","data","myco_sites.gff"), 
+  				 ("t","data","myco_sites.gff"),
   				 -gff_version => 2);
   my @features = ();
   # loop over the input stream
@@ -53,7 +53,7 @@ range, that match a certain feature type, etc.
 
   # subset should have 22 entries for this dataset
   print "size is ", scalar @subset, "\n";
-  print "total number of features in collection is ", 
+  print "total number of features in collection is ",
          $col->feature_count(),"\n";
 
 =head1 DESCRIPTION
@@ -66,8 +66,22 @@ provided by the DB_File interface to the Berkeley DB.
 
 This is based on work done by Lincoln for storage in a mysql instance
 - this is intended to be an embedded in-memory implementation for
-easily quering for subsets of a large range set.  All features are
-held in memory even if the -usefile flag is provided.
+easily quering for subsets of a large range set.
+
+Collections can be made persistant by keeping the indexfile and
+passing in the -keep flag like this:
+
+  my $collection = new Bio::SeqFeature::Collection(-keep => 1,
+                                                   -file => 'col.idx');
+  $collaction->add_features(\@features);
+  undef $collection;
+
+  # To reuse this collection, next time you initialize a Collection object
+  # specify the filename and the index will be reused.
+  $collection = new Bio::SeqFeature::Collection(-keep => 1,
+                                                -file => 'col.idx');
+
+
 
 =head1 FEEDBACK
 
@@ -84,9 +98,8 @@ the Bioperl mailing list.  Your participation is much appreciated.
 
 Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+the web:
 
-  bioperl-bugs@bioperl.org
   http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Jason Stajich
@@ -96,7 +109,9 @@ Email jason@bioperl.org
 =head1 CONTRIBUTORS
 
 Using code and strategy developed by Lincoln Stein (lstein@cshl.org)
-in Bio::DB::GFF implementation.
+in Bio::DB::GFF implementation.  Credit also to Lincoln for suggesting
+using Storable to serialize features rather than my previous implementation
+which kept the features in memory.
 
 =head1 APPENDIX
 
@@ -116,10 +131,11 @@ use strict;
 # Object preamble - inherits from Bio::Root::Root
 
 use Bio::Root::Root;
-use Bio::Root::IO;
 use Bio::DB::GFF::Util::Binning;
 use DB_File;
 use Bio::Location::Simple;
+use Bio::SeqFeature::Generic;
+use Storable qw(freeze thaw);
 
 @ISA = qw(Bio::Root::Root );
 
@@ -138,7 +154,7 @@ use constant MIN_BIN    => 1_000;
 
  Title   : new
  Usage   : my $obj = new Bio::SeqFeature::Collection();
- Function: Builds a new Bio::SeqFeature::Collection object 
+ Function: Builds a new Bio::SeqFeature::Collection object
  Returns : Bio::SeqFeature::Collection
  Args    :
 
@@ -146,10 +162,11 @@ use constant MIN_BIN    => 1_000;
                           (default is 100,000,000)
            -maxbin        maximum value to use for binning
                           (default is 1,000)
-           -usefile       boolean to use a file to store
-                          BTREE rather than an in-memory structure 
-                          (default is false or in-memory).
-
+           -file          filename to store/read the
+                          BTREE from rather than an in-memory structure
+                          (default is false and in-memory).
+           -keep          boolean, will not remove index file on
+                          object destruction.
            -features      Array ref of features to add initially
 
 =cut
@@ -158,9 +175,9 @@ sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
-  my ($maxbin,$minbin,$usefile,$features) = $self->_rearrange([qw(MAXBIN MINBIN
-							 USEFILE
-							 FEATURES)],@args);
+  my ($maxbin,$minbin, $file, $keep,
+      $features) = $self->_rearrange([qw(MAXBIN MINBIN FILE KEEP
+					 FEATURES)],@args);
 
   defined $maxbin && $self->max_bin($maxbin);
   defined $minbin && $self->min_bin($minbin);
@@ -168,24 +185,14 @@ sub new {
   defined $features &&  $self->add_features($features);
   $DB_BTREE->{'flags'} = R_DUP ;
   $DB_BTREE->{'compare'} = \&_compare;
-#  $DB_BTREE->{'compare'} = \&_comparepack;
   $self->{'_btreehash'} = {};
-
-  my $tmpname = undef;
-  if( $usefile ) { 
-      $self->{'_io'} = new Bio::Root::IO;
-      (undef,$tmpname) = $self->{'_io'}->tempfile();
-      unlink($tmpname);
-      $self->debug("tmpfile is $tmpname");
-  } 
-  $self->{'_btree'} = tie %{$self->{'_btreehash'}}, 
-  'DB_File', $tmpname, O_RDWR|O_CREAT, 0640, $DB_BTREE;
-  
-#  possibly storing/retrieving as floats for speed improvement?
-#  $self->{'_btree'}->filter_store_key  ( sub { $_ = pack ("d", $_) } );
-#  $self->{'_btree'}->filter_fetch_key  ( sub { $_ = unpack("d", $_) } );
-
-  $self->{'_features'} = [];
+  if( $file ) {
+      $self->debug("using file $file");
+      $self->indexfile($file);
+  }
+  $self->keep($keep);
+  $self->{'_btree'} = tie %{$self->{'_btreehash'}},
+  'DB_File', $self->indexfile, O_RDWR|O_CREAT, 0640, $DB_BTREE;
   return $self;
 }
 
@@ -202,21 +209,20 @@ sub new {
 =cut
 
 sub add_features{
-   my ($self,$feats) = @_;   
-   if( ref($feats) !~ /ARRAY/i ) { 
+   my ($self,$feats) = @_;
+   if( ref($feats) !~ /ARRAY/i ) {
        $self->warn("Must provide a valid Array reference to add_features");
        return 0;
    }
    my $count = 0;
-   foreach my $f ( @$feats ) { 
+   foreach my $f ( @$feats ) {
        if( ! $f || ! ref($f) || ! $f->isa('Bio::RangeI') ) {
 	   $self->warn("Must provide valid Bio::RangeI objects to add_features, skipping object '$f'\n");
 	   next;
        }
-       my $bin = bin($f->start,$f->end,$self->min_bin);       
-
-       push @{$self->{'_features'}}, $f;
-       $self->{'_btreehash'}->{$bin} = $#{$self->{'_features'}};
+       my $bin = bin($f->start,$f->end,$self->min_bin);
+       my $serialized = &feature_freeze($f);
+       $self->{'_btree'}->put($bin,$serialized);
        $self->debug( "$bin for ". $f->location->to_FTstring(). " matches ".$#{$self->{'_features'}}. "\n");
        $count++;
    }
@@ -229,7 +235,7 @@ sub add_features{
  Title   : features_in_range
  Usage   : my @features = $collection->features_in_range($range)
  Function: Retrieves a list of features which were contained or overlap the
-           the requested range (see Args for way to specify overlap or 
+           the requested range (see Args for way to specify overlap or
 				only those containe)d
  Returns : List of Bio::SeqFeatureI objects
  Args    : -range => Bio::RangeI object defining range to search,
@@ -238,12 +244,12 @@ sub add_features{
            -end    => end,
            -strand  => strand
 
-           -contain => boolean - true if feature must be completely 
+           -contain => boolean - true if feature must be completely
                        contained with range
                        OR false if should include features that simply overlap
                        the range. Default: true.
            -strandmatch =>  'strong',  ranges must have the same strand
-                            'weak',    ranges must have the same 
+                            'weak',    ranges must have the same
                                            strand or no strand
                             'ignore', ignore strand information
                            Default. 'ignore'.
@@ -254,9 +260,9 @@ sub features_in_range{
    my $self = shift;
    my (@args) = @_;
    my ($range, $contain, $strandmatch,$start,$end,$strand);
-   if( @args == 1 ) { 
+   if( @args == 1 ) {
        $range = shift @args;
-   } else { 
+   } else {
        ($start,$end,$strand,$range,
 	$contain,$strandmatch) = $self->_rearrange([qw(START END
 						       STRAND
@@ -274,8 +280,8 @@ sub features_in_range{
    if( defined $1 ) { $strand .= 1; }
 
    if( !defined $start && !defined $end ) {
-       if( ! defined $range || !ref($range) || ! $range->isa("Bio::RangeI") ) 
-       { 
+       if( ! defined $range || !ref($range) || ! $range->isa("Bio::RangeI") )
+       {
 	   $self->warn("Must defined a valid Range for the method feature_in_range");
 	   return ();
        }
@@ -284,7 +290,7 @@ sub features_in_range{
    my $r = new Bio::Location::Simple(-start => $start,
 				     -end   => $end,
 				     -strand => $strand);
-   
+
    my @features;
    my $maxbin = $self->max_bin;
    my $minbin = $self->min_bin;
@@ -292,35 +298,36 @@ sub features_in_range{
    my ($k,$v,@bins) = ("",undef);
    while ($tier >= $minbin) {
 	my ($tier_start,$tier_stop) = (bin_bot($tier,$start),
-				       bin_top($tier,$end));       
+				       bin_top($tier,$end));
        if( $tier_start == $tier_stop ) {
 	   my @vals = $self->{'_btree'}->get_dup($tier_start);
 	   if( scalar @vals > 0 ) {
-	       push @bins, map { $self->{'_features'}->[$_] } @vals;
-	   } 
-       } else {	   
+	       push @bins, map { thaw($_) } @vals;
+	   }
+       } else {	
 	   $k = $tier_start;
 	   my @vals;
 	   for( my $rc = $self->{'_btree'}->seq($k,$v,R_CURSOR);
 	        $rc == 0;
 	        $rc = $self->{'_btree'}->seq($k,$v, R_NEXT) ) {
 	       last if( $k > $tier_stop || $k < $tier_start);
-	       push @vals, $v;
-	   }
-	   foreach my $v ( @vals ) {
-	       if( defined $self->{'_features'}->[$v] ) {
-		   push @bins, $self->{'_features'}->[$v] ;
-	       } else { 
-		   
-	       } 
-	       
+	       push @bins, thaw($v);
 	   }
        }
        $tier /= 10;
-   }   
-   	       
+   }
+   my %seen = ();
+   foreach my $t ( map { ref($_) } @bins) {
+       next if $seen{$t}++;
+       eval "require $t";
+
+       if( $@ ) {
+	   $self->warn("Trying to thaw a stored feature $t which does not appear in your Perl library. $@");
+	   next;
+       }
+   }
    $strandmatch = 'ignore' unless defined $strandmatch;
-   return ( $contain ) ? grep { $r->contains($_,$strandmatch) } @bins : 
+   return ( $contain ) ? grep { $r->contains($_,$strandmatch) } @bins :
        grep { $r->overlaps($_,$strandmatch)} @bins;
 }
 
@@ -338,28 +345,33 @@ sub features_in_range{
 
 sub remove_features{
    my ($self,$feats) = @_;
-   if( ref($feats) !~ /ARRAY/i ) { 
+   if( ref($feats) !~ /ARRAY/i ) {
        $self->warn("Must provide a valid Array reference to remove_features");
        return 0;
    }
    my $countprocessed = 0;
+
    foreach my $f ( @$feats ) {
        next if ! ref($f) || ! $f->isa('Bio::RangeI');
        my $bin = bin($f->start,$f->end,$self->min_bin);
        my @vals = $self->{'_btree'}->get_dup($bin);
        my $vcount = scalar @vals;
-       foreach my $v ( @vals )  {	   
-	   # eventually this array will become sparse...	   
-	   if( $self->{'_features'}->[$v] == $f ) {
-	       $self->{'_features'}->[$v] = undef;
+
+       foreach my $v ( @vals )  {
+	   # Once we have uniquely identifiable field
+	   # I think it will work better.
+	   if( $v eq &feature_freeze($f) ) {
 	       $self->{'_btree'}->del_dup($bin,$v);
 	       $vcount--;
+	       $countprocessed++;
 	   }
-       } 
-       if( $vcount == 0 ) { 
+       }
+       if( $vcount == 0 ) {
 	   $self->{'_btree'}->del($bin);
        }
    }
+   $countprocessed;
+
 }
 
 =head2 get_all_features
@@ -375,7 +387,18 @@ sub remove_features{
 
 sub get_all_features{
    my ($self) = @_;
-   return grep {defined $_} @{ $self->{'_features'} };
+   my @features;
+   my ($key,$value);
+   for (my $status = $self->{'_btree'}->seq($key, $value, R_FIRST) ;
+	$status == 0 ;
+	$status = $self->{'_btree'}->seq($key, $value, R_NEXT) )
+   {   next unless defined $value;
+       push @features, &thaw($value);
+   }
+   if( scalar @features !=  $self->feature_count() ) {
+       $self->warn("feature count does not match actual count\n");
+   }
+   return @features;
 }
 
 
@@ -392,7 +415,7 @@ sub get_all_features{
 
 sub min_bin {
   my ($self,$min) = @_;
-  if( defined $min ) { 
+  if( defined $min ) {
       $self->{'_min_bin'} = $min;
   }
   return $self->{'_min_bin'}  || MIN_BIN;
@@ -411,7 +434,7 @@ sub min_bin {
 
 sub max_bin {
   my ($self,$max) = @_;
-  if( defined $max ) { 
+  if( defined $max ) {
       $self->{'_max_bin'} = $max;
   }
   return $self->{'max_bin'} || MAX_BIN;
@@ -428,25 +451,86 @@ sub max_bin {
 
 =cut
 
-sub feature_count{
-   my ($self) = @_;
-   return scalar ( grep {defined $_} @{ $self->{'_features'} });
+sub feature_count {
+    my $self = shift;
+    my $count = 0;
+    for ( keys %{$self->{'_btreehash'}} ) {
+	my $v = $self->{'_btreehash'}->{$_};
+	next unless defined  $v;
+	$count++;
+    }
+    $count;
 }
 
-sub _compare{ if( defined $_[0] && ! defined $_[1] ) { return -1 }
-	      elsif ( defined $_[1] && ! defined $_[0] ) { return 1}
-	      $_[0] <=> $_[1]}
+=head2 indexfile
 
-sub _comparepack { unpack("d", $_[0]) <=> unpack("d", $_[1]) ;}
+ Title   : indexfile
+ Usage   : $obj->indexfile($newval)
+ Function: Get/set the filename where index is kept
+ Returns : value of indexfile (a filename string)
+ Args    : on set, new value (a filename string )
 
-sub DESTROY { 
+
+=cut
+
+sub indexfile{
+    my $self = shift;
+
+    return $self->{'indexfile'} = shift if @_;
+    return $self->{'indexfile'};
+}
+
+=head2 keep
+
+ Title   : keep
+ Usage   : $obj->keep($newval)
+ Function: Get/set boolean flag to keep the indexfile after
+           exiting program
+ Example :
+ Returns : value of keep (boolean)
+ Args    : on set, new value (boolean)
+
+
+=cut
+
+sub keep{
+    my $self = shift;
+
+    return $self->{'keep'} = shift if @_;
+    return $self->{'keep'};
+}
+
+sub _compare{
+    if( defined $_[0] && ! defined $_[1]) {
+	return -1;
+    } elsif ( defined $_[1] && ! defined $_[0]) {
+	return 1;
+    }
+    $_[0] <=> $_[1];
+}
+
+sub feature_freeze {
+    my $obj = shift;
+    for my $funcref ( $obj->_cleanup_methods ) {
+	$obj->_unregister_for_cleanup($funcref);
+    }
+    return freeze($obj);
+}
+
+sub feature_thaw {
+    return thaw(shift);
+}
+
+sub DESTROY {
     my $self = shift;
     $self->SUPER::DESTROY();
-    if( defined $self->{'_io'} )  {
-	$self->{'_io'}->_io_cleanup();    
-	$self->{'_io'} = undef;
+    $self->{'_btree'} = undef;
+    untie(%{$self->{'_btreehash'}});
+
+    if( ! $self->keep && $self->indexfile ) {
+	$self->debug( "unlinking ".$self->indexfile. "\n");
+	unlink($self->indexfile);
     }
-    $self->{'_btree'} = undef; 
 }
 
 1;

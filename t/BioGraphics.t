@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: BioGraphics.t,v 1.9.2.1 2003/07/05 00:32:05 lstein Exp $
+# $Id: BioGraphics.t,v 1.14 2003/11/15 19:12:09 lstein Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -12,6 +12,7 @@ use vars qw($NUMTESTS $DEBUG);
 use lib '..','.','./blib/lib';
 use constant IMAGES => './t/data/biographics';
 use constant FILES  => './t/data/biographics';
+use constant IMAGE_TESTS => 0;
 
 my $error;
 
@@ -26,7 +27,7 @@ BEGIN {
     }
     use Test;
 
-    $NUMTESTS = 17;
+    $NUMTESTS = 14 + (IMAGE_TESTS ? 3 : 0);
     plan tests => $NUMTESTS;
 
     eval {
@@ -58,7 +59,7 @@ my $write   = 0;
 ## the print "1..x\n" in the BEGIN block to reflect the
 ## total number of tests that will be run. 
 
-my @images = qw(t1 t2 t3);
+my @images = IMAGE_TESTS ? qw(t1 t2 t3) : ();
 
 # parse command line arguments
 while (@ARGV && $ARGV[0] =~ /^--?(\w+)/) {
@@ -339,6 +340,7 @@ sub t2 {
 
   $panel->add_track(graded_segments => $partial_gene,
 		    -bgcolor =>'blue',
+		    -vary_fg => 1,
 		    -label   => 1,
 		    -key     => 'Scored thing');
 

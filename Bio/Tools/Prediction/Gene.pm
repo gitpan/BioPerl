@@ -1,4 +1,4 @@
-# $Id: Gene.pm,v 1.8 2002/10/22 07:38:48 lapp Exp $
+# $Id: Gene.pm,v 1.11 2003/05/17 19:03:58 heikki Exp $
 #
 # BioPerl module for Bio::Tools::Prediction::Gene
 #
@@ -16,7 +16,7 @@ Bio::Tools::Prediction::Gene - a predicted gene structure feature
 
 =head1 SYNOPSIS
 
-See documentation of methods.
+  #See documentation of methods.
 
 =head1 DESCRIPTION
 
@@ -83,10 +83,9 @@ sub new {
     
     my $self = $class->SUPER::new(@args);
 
-    my ($primary) = $self->_rearrange([qw(PRIMARY)],@args);
+    my ($primary,$ptag) = $self->_rearrange([qw(PRIMARY PRIMARY_TAG)],@args);
+    $self->primary_tag('predicted_gene') unless $primary || $ptag;
 
-    $primary = 'predicted_gene' unless $primary;
-    $self->primary_tag($primary);
     return $self; 
 }
 

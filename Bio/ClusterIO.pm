@@ -1,4 +1,4 @@
-# $Id: ClusterIO.pm,v 1.11.2.1 2003/01/21 01:11:17 jason Exp $
+# $Id: ClusterIO.pm,v 1.12 2003/01/21 01:10:45 jason Exp $
 #
 # BioPerl module for Bio::ClusterIO.pm
 #

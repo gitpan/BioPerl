@@ -14,7 +14,7 @@ BEGIN {
 	use lib 't';
     }
     use Test;
-    plan tests => 4;
+    plan tests => 3;
 }
 
 use Bio::Tree::RandomFactory;
@@ -26,8 +26,9 @@ use vars qw($FILE1);
 $FILE1 = 'out.tre';
 END { unlink $FILE1; }
  
-my $ssize = 10;
+my $ssize = 5;
 my $factory = new Bio::Tree::RandomFactory(-sample_size => $ssize);
+my $stats = new Bio::Tree::Statistics();
 
 my $tree = $factory->next_tree;
 
@@ -39,10 +40,3 @@ $treeio->write_tree($tree);
 undef $treeio;
 
 ok(-s $FILE1);
-my $mutcount = 100;
-$factory->add_Mutations($tree, $mutcount);
-
-my $stats = new Bio::Tree::Statistics();
-my $D = $stats->fu_and_li_D($tree);
-ok($D);
-

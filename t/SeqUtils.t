@@ -1,10 +1,10 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-##$Id: SeqUtils.t,v 1.10.2.1 2003/08/12 20:17:13 jason Exp $
+##$Id: SeqUtils.t,v 1.13 2003/08/12 20:16:48 jason Exp $
 
 use strict;
 
-BEGIN {     
+BEGIN {
     # to handle systems with no installed Test module
     # we include the t dir (where a copy of Test.pm is located)
     # as a fallback
@@ -13,11 +13,12 @@ BEGIN {
 	use lib 't';
     }
     use Test;
-    plan tests => 18;
+    plan tests => 21;
 }
 
 use Bio::PrimarySeq;
 use Bio::SeqUtils;
+use Bio::LiveSeq::Mutation;
 ok 1;
 
 my ($seq, $util, $ascii, $ascii_aa, $ascii3);
@@ -30,7 +31,7 @@ $ascii3 =
     'AlaAsxCysAspGluPheGlyHisIleXaaLysLeuMetAsnXaaProGlnArgSerThrSecValTrpXaaTyrGlx';
 
 $seq = Bio::PrimarySeq->new('-seq'=> $ascii,
-			       '-alphabet'=>'protein', 
+			    '-alphabet'=>'protein', 
 			       '-id'=>'test');
 
 # one letter amino acid code to three letter code
@@ -90,3 +91,43 @@ ok keys %valid_aa, 50;
 ok($valid_aa{'C'}, 'Cys');
 ok( $valid_aa{'Cys'}, 'C');
 
+
+#
+# Mutate
+#
+
+my $string1 = 'aggt';
+$seq = Bio::PrimarySeq->new('-seq'=> 'aggt',
+			    '-alphabet'=>'dna',
+			    '-id'=>'test3');
+
+# point
+Bio::SeqUtils->mutate($seq,
+                      Bio::LiveSeq::Mutation->new(-seq => 'c',
+                                                  -pos => 3
+                                                 )
+                     );
+ok $seq->seq, 'agct';
+
+# insertion and deletion
+my @mutations = (
+                 Bio::LiveSeq::Mutation->new(-seq => 'tt',
+                                             -pos => 2,
+                                             -len => 0
+                                            ),
+                 Bio::LiveSeq::Mutation->new(-pos => 2,
+                                             -len => 2
+                                            )
+);
+
+Bio::SeqUtils->mutate($seq, @mutations);
+ok $seq->seq, 'agct';
+
+# insertion to the end of the sequence
+Bio::SeqUtils->mutate($seq,
+                      Bio::LiveSeq::Mutation->new(-seq => 'aa',
+                                                  -pos => 5,
+                                                  -len => 0
+                                                 )
+                     );
+ok $seq->seq, 'agctaa';

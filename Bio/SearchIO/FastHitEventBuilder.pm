@@ -1,4 +1,4 @@
-# $Id: FastHitEventBuilder.pm,v 1.6 2002/12/05 13:46:35 heikki Exp $
+# $Id: FastHitEventBuilder.pm,v 1.7 2003/06/10 17:52:44 jason Exp $
 #
 # BioPerl module for Bio::SearchIO::FastHitEventBuilder
 #
@@ -281,6 +281,18 @@ See L<Bio::Factory::ObjectFactoryI> for more information
 sub factory{
    my ($self,$type) = @_;
    return $self->{'_factories'}->{lc($type)} || $self->throw("No factory registered for $type");
+}
+
+=head2 inclusion_threshold
+
+See L<Bio::SearchIO::blast::inclusion_threshold>.
+
+=cut
+
+sub inclusion_threshold {
+    my $self = shift;
+    return $self->{'_inclusion_threshold'} = shift if @_;
+    return $self->{'_inclusion_threshold'};
 }
 
 1;

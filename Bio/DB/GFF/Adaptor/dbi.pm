@@ -1,4 +1,4 @@
-# $Id: dbi.pm,v 1.41.2.1 2003/07/05 00:52:30 lstein Exp $
+# $Id: dbi.pm,v 1.49 2003/10/01 21:46:02 lstein Exp $
 
 =head1 NAME
 
@@ -1370,12 +1370,6 @@ related methods.
 sub make_features_group_by_part {
   my $self = shift;
   my $options = shift || {};
-  my $att = $options->{attributes} or return;
-  my $key_count = keys %$att;
-  return unless $key_count > 1;
-  #return ("fdata.fid having count(fdata.fid) > ?",$key_count-1);
-  return ("fref,fstart,fstop,fsource,fmethod,fscore,fstrand,fphase,gclass,gname,ftarget_start,ftarget_stop,fdata.fid,fdata.gid having count(fdata.fid) > ?",$key_count-1);
-
   if (my $att = $options->{attributes}) {
     my $key_count = keys %$att;
     return unless $key_count > 1;
@@ -1457,12 +1451,18 @@ Normally, attributes() will be called by the feature:
 sub do_attributes {
   my $self        = shift;
   my ($id,$tag)   = @_;
-  my $from   = 'fattribute_to_feature,fattribute';
-  my $join   = 'fattribute.fattribute_id=fattribute_to_feature.fattribute_id';
-  my $where1 = 'fid=? AND fattribute_name=?';
-  my $where2 = 'fid=?';
-  my $sth = defined($tag) ? $self->dbh->do_query("SELECT fattribute_value FROM $from WHERE $where1 AND $join",$id,$tag)
-                          : $self->dbh->do_query("SELECT fattribute_name,fattribute_value FROM $from WHERE $where2 AND $join",$id);
+  my $sth;
+  if ($id) {
+    my $from   = 'fattribute_to_feature,fattribute';
+    my $join   = 'fattribute.fattribute_id=fattribute_to_feature.fattribute_id';
+    my $where1 = 'fid=? AND fattribute_name=?';
+    my $where2 = 'fid=?';
+    $sth = defined($tag) ? $self->dbh->do_query("SELECT fattribute_value FROM $from WHERE $where1 AND $join",$id,$tag)
+                         : $self->dbh->do_query("SELECT fattribute_name,fattribute_value FROM $from WHERE $where2 AND $join",$id);
+  }
+  else {
+    $sth = $self->dbh->do_query("SELECT fattribute_name FROM fattribute");
+  }
   my @result;
   while (my @stuff = $sth->fetchrow_array) {
     push @result,@stuff;
@@ -1507,7 +1507,7 @@ sub overlap_query_nobin {
 =head2 contains_query_nobin
 
  Title   : contains_query
- Usage   : ($query,@args) = $db->contains_query($start,$stop)
+ Usage   : ($query,@args) = $db->contains_query_nobin($start,$stop)
  Function: create SQL fragment that selects the desired features by range
  Returns : a list containing the query and bind arguments
  Args    : the start and stop of a range, inclusive
@@ -1909,7 +1909,7 @@ sub overlap_query {
   return wantarray ? ($query,@args) : $self->dbh->dbi_quote($query,@args);
 }
 
-# find features that are completely contained within a range
+# find features that are completely contained within a ranged
 sub contains_query {
   my $self = shift;
   my ($start,$stop) = @_;
@@ -1930,6 +1930,83 @@ sub contained_in_query {
   my @args  = (@bargs,@iargs);
   return wantarray ? ($query,@args) : $self->dbh->dbi_quote($query,@args);
 }
+
+# implement the _delete_features() method
+sub _delete_features {
+  my $self = shift;
+  my @feature_ids = @_;
+  my $dbh          = $self->features_db;
+  my $fields       = join ',',map{$dbh->quote($_)} @feature_ids;
+  my $query = "delete from fdata where fid in ($fields)";
+  warn "$query\n" if $self->debug;
+  my $result = $dbh->do($query);
+  defined $result or $self->throw($dbh->errstr);
+  $result;
+}
+
+# implement the _delete_groups() method
+sub _delete_groups {
+  my $self = shift;
+  my @group_ids    = @_;
+  my $dbh          = $self->features_db;
+  my $fields       = join ',',map{$dbh->quote($_)} @group_ids;
+
+  my $query = "delete from fdata  where gid in ($fields)";
+  warn "$query\n" if $self->debug;
+  my $result = $dbh->do($query);
+  defined $result or $self->throw($dbh->errstr);
+
+  $query  = "delete from fgroup where gid in ($fields)";
+  warn "$query\n" if $self->debug;
+  $result = $dbh->do($query);
+  defined $result or $self->throw($dbh->errstr);
+  $result;
+}
+
+# implement the _delete() method
+sub _delete {
+  my $self = shift;
+  my $delete_spec = shift;
+  my $ranges      = $delete_spec->{segments} || [];
+  my $types       = $delete_spec->{types}    || [];
+  my $force       = $delete_spec->{force};
+  my $range_type  = $delete_spec->{range_type};
+  my $dbh         = $self->features_db;
+
+  my $query = 'delete from fdata';
+  my @where;
+
+  my @range_part;
+  for my $segment (@$ranges) {
+    my $ref   = $dbh->quote($segment->abs_ref);
+    my $start = $segment->abs_start;
+    my $stop  = $segment->abs_stop;
+    my $range =  $range_type eq 'overlaps'     ? $self->overlap_query($start,$stop)
+               : $range_type eq 'contains'     ? $self->contains_query($start,$stop)
+	       : $range_type eq 'contained_in' ? $self->contained_in_query($start,$stop)
+	       : $self->throw("Invalid range type '$range_type'");
+    push @range_part,"(fref=$ref AND $range)";
+  }
+  push @where,'('. join(' OR ',@range_part).')' if @range_part;
+
+  # get all the types
+  if (@$types) {
+    my $types_where = $self->types_query($types);
+    my $types_query = "select ftypeid from ftype where $types_where";
+    my $result      = $dbh->selectall_arrayref($types_query);
+    my @typeids     = map {$_->[0]} @$result;
+    my $typelist    = join ',',map{$dbh->quote($_)} @typeids;
+    push @where,"(ftypeid in ($typelist))";
+  }
+  $self->throw("This operation would delete all feature data and -force not specified")
+    unless @where || $force;
+  $query .= " where ".join(' and ',@where) if @where;
+  warn "$query\n" if $self->debug;
+  my $result = $dbh->do($query);
+  defined $result or $self->throw($dbh->errstr);
+  $result;
+}
+
 
 1;
 

@@ -1,4 +1,4 @@
-# $Id: HSPFactory.pm,v 1.4 2002/10/22 07:45:17 lapp Exp $
+# $Id: HSPFactory.pm,v 1.5 2003/01/22 22:33:51 jason Exp $
 #
 # BioPerl module for Bio::Search::HSP::HSPFactory
 #
@@ -135,14 +135,14 @@ sub create{
 
 sub type{
     my ($self,$type) = @_;
-   if( defined $type ) { 
-       # redundancy with the create method which also calls _load_module
-       # I know - but this is not a highly called object so I am going 
-       # to leave it in
-       eval {$self->_load_module($type) };
-       if( $@ ){ $self->warn("Cannot find module $type, unable to set type") } 
-       else { $self->{'_type'} = $type; }
-   }
+    if( defined $type ) { 
+	# redundancy with the create method which also calls _load_module
+	# I know - but this is not a highly called object so I am going 
+	# to leave it in
+	eval {$self->_load_module($type) };
+	if( $@ ){ $self->warn("Cannot find module $type, unable to set type. $@") } 
+	else { $self->{'_type'} = $type; }
+    }
     return $self->{'_type'} || $DEFAULT_TYPE;
 }
 

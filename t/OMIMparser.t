@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## # $Id: OMIMparser.t,v 1.3 2002/09/18 18:46:23 czmasek Exp $
+## # $Id: OMIMparser.t,v 1.5 2003/11/05 04:19:49 juguang Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -38,15 +38,15 @@ ok( $omim_entry->title(), "*100500 title" );
 ok( $omim_entry->alternative_titles_and_symbols(), ";;title1;;\ntitle2;;\ntitle3" );
 ok( $omim_entry->more_than_two_genes(), 0 );
 ok( $omim_entry->is_separate(), 1 );
-ok( $omim_entry->description(), "DESCRIPTION1\nDESCRIPTION2" );
+ok( $omim_entry->description(), undef); # "DESCRIPTION1\nDESCRIPTION2" );
 ok( $omim_entry->mapping_method(), "M method 1" );
 ok( $omim_entry->gene_status(), "C" );
 ok( $omim_entry->comment(), "comment1" );
-ok( $omim_entry->edited(), "ed1\ned2\ned3" );
-ok( $omim_entry->created(), "cd1\ncd2\ncd3" );
-ok( $omim_entry->contributors(), "cn1\ncn2\ncn3" );
+ok( $omim_entry->edited(), undef); # "ed1\ned2\ned3" );
+ok( $omim_entry->created(), undef); # "cd1\ncd2\ncd3" );
+ok( $omim_entry->contributors, undef); # "cn1\ncn2\ncn3" );
 ok( $omim_entry->additional_references(), "sa" );
-ok( $omim_entry->clinical_symptoms(), "clinical symptoms" );
+ok( ref($omim_entry->clinical_symptoms()), 'HASH' );
 ok( $omim_entry->species()->binomial(), "Homo sapiens" );
 
 
@@ -172,15 +172,17 @@ ok( $omim_entry2->title(), "#100501 second entry" );
 ok( $omim_entry2->alternative_titles_and_symbols(), ";;title1;;\ntitle2;;\ntitle3" );
 ok( $omim_entry2->more_than_two_genes(), 1 );
 ok( $omim_entry2->is_separate(), 0 );
-ok( $omim_entry2->description(), "DESCRIPTION1\nDESCRIPTION2" );
+ok( $omim_entry2->description(), undef); # "DESCRIPTION1\nDESCRIPTION2" );
 ok( $omim_entry2->mapping_method(), "M method 2" );
 ok( $omim_entry2->gene_status(), "C" );
 ok( $omim_entry2->comment(), "comment2" );
-ok( $omim_entry2->edited(), "ed1\ned2\ned3" );
-ok( $omim_entry2->created(), "cd1\ncd2\ncd3" );
-ok( $omim_entry2->contributors(), "cn1\ncn2\ncn3" );
+ok( $omim_entry2->edited(), undef); # "ed1\ned2\ned3" );
+ok( $omim_entry2->created(), undef); # "cd1\ncd2\ncd3" );
+ok( $omim_entry2->contributors(), undef); # "cn1\ncn2\ncn3" );
 ok( $omim_entry2->additional_references(), "sa" );
-ok( $omim_entry2->clinical_symptoms(), "clinical symptoms" );
+
+my $cs = $omim_entry2->clinical_symptoms();
+ok( ref($cs), 'HASH' );
 ok( $omim_entry2->species()->binomial(), "Homo sapiens" );
 
 

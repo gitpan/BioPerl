@@ -1,4 +1,4 @@
-# $Id: fasta.pm,v 1.33.2.3 2003/08/28 16:01:03 jason Exp $
+# $Id: fasta.pm,v 1.41 2003/12/13 20:57:15 jason Exp $
 #
 # BioPerl module for Bio::SearchIO::fasta
 #
@@ -76,6 +76,7 @@ use strict;
 # Object preamble - inherits from Bio::Root::RootI
 
 use Bio::SearchIO;
+use Bio::Factory::ObjectFactory;
 use POSIX;
 
 BEGIN { 
@@ -175,8 +176,10 @@ sub _initialize {
   return unless @args;
   my ($idlength) = $self->_rearrange([qw(IDLENGTH)],@args);
   $self->idlength($idlength || $IDLENGTH);
-  $self->_eventHandler->register_factory('hsp', Bio::Search::HSP::HSPFactory->new(-type => 'Bio::Search::HSP::FastaHSP'));
-
+  $self->_eventHandler->register_factory('hsp', 
+                                         Bio::Factory::ObjectFactory->new(
+                                            -type      => 'Bio::Search::HSP::FastaHSP',
+                                            -interface => 'Bio::Search::HSP::HSPI'));
   return 1;
 }
 
@@ -201,9 +204,12 @@ sub next_result{
    while( defined ($_ = $self->_readline )) {
        next if( ! $self->in_element('hsp')  &&
 		/^\s+$/); # skip empty lines
-       if( /(\S+)\s+searches\s+a\s+((protein\s+or\s+DNA\s+sequence)|(sequence\s+database))/i || /(\S+) compares a/ ||
-	   ( m/^# / && ($_ = $self->_readline) &&
-	     /(\S+)\s+searches\s+a\s+((protein\s+or\s+DNA\s+sequence)|(sequence\s+database))/i || /(\S+) compares a/
+       if( m/(\S+)\s+searches\s+a\s+(protein\s+or\s+DNA\s+)?sequence/oxi || 
+	   /(\S+)\s+compares\s+a/ ||
+	   ( m/^\#\s+/ && 
+	     ($_ = $self->_readline) &&
+	     /(\S+)\s+searches\s+a\s+(protein\s+or\s+DNA\s+)?sequence/oxi ||
+	     /(\S+)\s+compares\s+a/
 	   )
 	 ) {
 	   if( $seentop ) {
@@ -253,7 +259,7 @@ sub next_result{
 		       ($querydef, $querylen, $querytype) = ($1, $2, $3);
 		       last;
 		   }
-	       }
+	       } 
 	       $last = $_;
 	   }
 	   
@@ -277,9 +283,8 @@ sub next_result{
 	   } else {
 	       $self->warn("unable to find and set query length");
 	   }
-
-	   if( $last =~ /^\s*vs\s+(\S+)/ ||	       	       
-	       ($last =~ /^searching\s+(\S+)\s+library/)  ||
+	   if( $last =~ /^\s*vs\s+(\S+)/ || 
+	       ( $last =~ /^searching\s+(\S+)\s+library/ ) ||
 	       (defined $_ && /^\s*vs\s+(\S+)/) ||
 	       (defined ($_ = $self->_readline()) && /^\s*vs\s+(\S+)/)
 	     ) {
@@ -445,7 +450,7 @@ sub next_result{
 			       'Data' => $1});
 	   }
 	   if( / (\S+)\% \s* identity
-                 (?:\s* \( \s* (\S+)\% \s* ungapped \) )?
+                 (?:\s* \(\s*(\S+)\% \s* ungapped \) )?
                  \s* in \s* (\d+) \s+ (?:aa|nt) \s+ overlap \s*
                  \( (\d+) \- (\d+) : (\d+) \- (\d+) \)
                /x ) {
@@ -463,6 +468,7 @@ sub next_result{
 	       $self->element({'Name' => 'Hsp_align-len',
 			       'Data' => $len});
 	       
+	       $self->debug( "query_start = $querystart, query_end = $queryend\n");
 	       $self->element({'Name' => 'Hsp_query-from',
 			       'Data' => $querystart});
 	       $self->element({'Name' => 'Hsp_query-to',
@@ -517,7 +523,9 @@ sub next_result{
 	   # reset it
 	   while(defined($_ = $self->_readline() ) ) { 
 	       last if( /^Function used was/);
-	       if( /(\S+)\s+searches\s+a\s+(protein\s+or\s+DNA\s+sequence)|(sequence\s+database)/ ) { 
+	       if( /(\S+)\s+searches\s+a\s+(protein\s+or\s+DNA\s+)?
+		   sequence/oxi ||
+		   /(\S+)\s+compares\s+a/oi ) {
 		   $self->_pushback($_);
 	       }
 	   }
@@ -525,7 +533,7 @@ sub next_result{
            if (@hit_signifs) {
 	       # process remaining best hits
 	       for my $h (@hit_signifs) {
-		   #  Hsp_score Hsp_evalue Hsp_bit-score
+		   # Hsp_score Hsp_evalue Hsp_bit-score
 		   # Hsp_sw-score Hsp_gaps Hsp_identity Hsp_positive
 		   # Hsp_align-len Hsp_query-from Hsp_query-to
 		   # Hsp_hit-from Hsp_hit-to Hsp_qseq Hsp_midline
@@ -721,14 +729,14 @@ sub next_result{
 	   }
        } elsif( $self->in_element('hsp' ) ) {
 	   
-	   my @data = ( '','','');
+	   my @data = ( [],[],[]);
 	   my $count = 0;
 	   my $len = $self->idlength + 1;
 	   my ($seq1_id);
 	   while( defined($_ ) ) {
 	       chomp;
 	       $self->debug( "$count $_\n");
-
+	       
 	       if( /residues in \d+\s+query\s+sequences/) {
 		   $self->_pushback($_);
 		   last;
@@ -740,15 +748,22 @@ sub next_result{
 		   last;
 	       }
 	       if( $count == 0 ) { 
-		   unless( /^\s+\d+/ || /^\s+$/) {
+		   if( /^(\S+)\s+/ ) {
 		       $self->_pushback($_);
 		       $count = 2;
+		   } elsif( /^\s+\d+/ || /^\s+$/ ) { 
+		       # do nothing, this is really a 0 line
+		   } elsif( length($_) == 0 ) { 
+		       $count = -1;
+		   } else { 
+		       $self->_pushback($_);
+		       $count = 0;
 		   }
 	       } elsif( $count == 1 || $count == 3 ) {
 		   if( /^(\S+)\s+/ ) {
 		       $len = CORE::length($1) if $len < CORE::length($1);
 		       s/\s+$//; # trim trailing spaces,we don't want them 
-		       $data[$count-1] = substr($_,$len);
+		       push @{$data[$count-1]},substr($_,$len);
 		   } elsif( /^\s+(\d+)/ ) {
 		       $count = -1;
 		       $self->_pushback($_);
@@ -760,25 +775,29 @@ sub next_result{
 		   }
 	       } elsif( $count == 2 ) {
 		   if( /^\s+\d+\s+/ ) {
-		       $self->warn("$_\n");
+		       $self->warn("$_\n") if $self->verbose > 0;
+		       # we are on a Subject part of the alignment
+		       # but we THOUGHT we were on the Query
+		       # move that last line to the proper place
+		       push @{$data[2]}, pop @{$data[0]};
 		       $count = 4;
 		   } else {
 		       # toss the first IDLENGTH characters of the line
 		       if( length($_) >= $len ) {
-			   $data[$count-1] = substr($_,$len);
+			   push @{$data[$count-1]}, substr($_,$len);
 		       }
 		   }
 	       } 
 	       last if( $count++ >= 5);
 	       $_ = $self->_readline();	       
 	   }
-	   if( length($data[0]) > 0 || length($data[2]) > 0 ) {
+	   if( @{$data[0]} || @{$data[2]}) {
 	       $self->characters({'Name' => 'Hsp_qseq',
-				  'Data' => $data[0] });
+				  'Data' => join('',@{$data[0]}) });
 	       $self->characters({'Name' => 'Hsp_midline',
-				  'Data' => $data[1]});
+				  'Data' => join('',@{$data[1]}) });
 	       $self->characters({'Name' => 'Hsp_hseq',
-				  'Data' => $data[2]});
+				  'Data' => join('',@{$data[2]}) });
 	   }
        } else {
 	   if( ! $seentop ) {

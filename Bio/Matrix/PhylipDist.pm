@@ -1,5 +1,7 @@
 # BioPerl module for Bio::Matrix::PhylipDist
 #
+# $Id: PhylipDist.pm,v 1.10 2003/08/12 20:25:11 jason Exp $
+#
 # Cared for by Shawn Hoon <shawnh@fugu-sg.org>
 #
 # Copyright Shawn Hoon
@@ -14,11 +16,15 @@ Bio::Matrix::PhylipDist - A Phylip Distance Matrix object
 
 =head1 SYNOPSIS
 
-  use Bio::Matrix::PhylipDist;
-
-  my $dist = Bio::Matrix::PhylipDist->new(-file=>"protdist.out",-program=>"ProtDist");
+  use Bio::Tools::Phylo::Phylip::ProtDist;
+  my $dist = Bio::Tools::Phylo::Phylip::ProtDist->new(
+    -file=>"protdist.out",
+    -program=>"ProtDist");
   #or
-  my $dist = Bio::Matrix::PhylipDist->new(-fh=>$FH,-program=>"ProtDist");
+   my $dist = Bio::Tools::Phylo::Phylip::ProtDist->new(
+    -fh=>"protdist.out",
+    -program=>"ProtDist");
+
 
   #get specific entries
   my $distance_value = $dist->get_entry('ALPHA','BETA');
@@ -71,6 +77,9 @@ or the web:
 
 Email shawnh@fugu-sg.org
 
+=head1 CONTRIBUTORS
+
+Jason Stajich, jason-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -86,11 +95,10 @@ package Bio::Matrix::PhylipDist;
 use strict;
 
 use vars qw(@ISA);
-
+use Bio::Matrix::MatrixI;
 use Bio::Root::Root;
-use Bio::Root::IO;
 
-@ISA = qw(Bio::Root::Root Bio::Root::IO);
+@ISA = qw(Bio::Root::Root Bio::Matrix::MatrixI);
 
 =head2 new
 
@@ -105,58 +113,27 @@ use Bio::Root::IO;
 sub new {
     my ($class,@args) = @_;
     my $self = $class->SUPER::new(@args);
-    my ($matrix,$values, $names,$file, $fh,$program) = $self->_rearrange([qw(MATRIX VALUES NAMES FILE FH PROGRAM)],@args);
+    my ($matrix,$values, $names,
+	$program,$matname,
+	$matid) = $self->_rearrange([qw(MATRIX VALUES 
+					NAMES PROGRAM
+					MATRIX_NAME
+					MATRIX_ID
+					  )],@args);
+    
+    ($matrix && $values && $names) || 
+	$self->throw("Need matrix, values, and names fields all provided!");
 
-    ($matrix && $values && $names) || $file || $fh || $self->throw("Need a file or file handle!");
+    $program && $self->matrix_name($program) if defined $program;
+    
+    $self->_matrix($matrix) if ref($matrix) =~ /HASH/i;
+    $self->_values($values) if ref($values) =~ /ARRAY/i;
+    $self->names($names) if ref($names) =~ /ARRAY/i;
 
-    $program && $self->program($program);
-    $self->_initialize_io(@args);
-
-    $self->_matrix($matrix) if $matrix;
-    $self->_values($values) if $values;
-    $self->names($names) if $names;
-    if(!$matrix && !$values && !$names){
-      $self->_parse();
-    }
+    $self->matrix_name($matname) if defined $matname;
+    $self->matrix_id  ($matid)   if defined $matid;
 
     return $self;
-}
-
-=head2 _parse
-
- Title   : _parse
- Usage   : $matrix->_parse();
- Function: internal method that parses the distance matrix file. 
- Returns : 
- Arguments: 
-
-=cut
-
-sub _parse {
-  my ($self) = @_;
-  my @names;
-  my @values;
-  while (my $entry = $self->_readline){
-    next if ($entry=~/^\s+\d+$/);
-    my ($n,@line) = split( /\s+/,$entry);
-    push @names, $n;
-    push @values, [@line];
-  }
-
-  my %dist;
-  my $i=0;
-  foreach my $name(@names){
-    my $j=0;
-    foreach my $n(@names) {
-      $dist{$name}{$n} = [$i,$j];
-      $j++;
-    }
-    $i++;
-  }
-
-  $self->_matrix(\%dist);
-  $self->names(\@names);
-  $self->_values(\@values);
 }
 
 =head2 get_entry
@@ -175,8 +152,8 @@ sub get_entry {
   my %matrix = %{$self->_matrix};
   my @values = @{$self->_values};
   if(ref $matrix{$row}{$column}){
-    my ($i,$j) = @{$matrix{$row}{$column}};
-    return $values[$i][$j];
+      my ($i,$j) = @{$matrix{$row}{$column}};
+      return $values[$i][$j];
   }
   return;
 
@@ -200,8 +177,8 @@ sub get_row {
     my @values = @{$self->_values};
     my @names = @{$self->names};
     $matrix{$row} || return;
-    my @row = %{$matrix{$row}};
-    my $row_pointer = $row[1]->[0];
+    my ($val) = values %{$matrix{$row}};
+    my $row_pointer = $val->[0];
     my $index = scalar(@names)-1;
     return @{$values[$row_pointer]}[0..$index];
 }
@@ -223,14 +200,14 @@ sub get_column {
     my %matrix = %{$self->_matrix};
     my @values = @{$self->_values};
     my @names = @{$self->names}; 
-    $matrix{$column} || return;
-    my @column = %{$matrix{$column}};
-    my $row_pointer = $column[1]->[0];
-    my @return;
-    for(my $i=0; $i < scalar(@names); $i++){
-      push @return, $values[$i][$row_pointer];
+    $matrix{$column} || return ();
+    my ($val) = values %{$matrix{$column}};
+    my $row_pointer = $val->[0];
+    my @ret;
+    for(my $i=0; $i < scalar(@names); $i++) {
+	push @ret, $values[$i][$row_pointer];
     }
-    return @return;
+    return @ret;
 } 
 
 =head2 get_diagonal
@@ -254,7 +231,7 @@ sub get_diagonal {
   }
   return @return;
 }
-    
+
 =head2 print_matrix
 
  Title   : print_matrix
@@ -274,6 +251,7 @@ sub print_matrix {
   $str.= (" "x 4). scalar(@names)."\n";
   foreach my $name (@names){
     my $newname = $name. (" " x (15-length($name)));
+    if( length($name) >= 15 ) { $newname .= " " }
     $str.=$newname;
     my $count = 0;
     foreach my $n (@names){
@@ -324,7 +302,7 @@ sub _matrix {
 sub names {
   my ($self,$val) = @_;
   if($val){
-    $self->{"_names"} = $val;
+    $self->{'_names'} = $val;
   }
   return $self->{'_names'};
 }
@@ -341,11 +319,8 @@ sub names {
 =cut
 
 sub program {
-  my ($self,$val) = @_;
-  if($val){
-    $self->{'_program'} = $val;
-  }
-  return $self->{'_program'};
+  my ($self) = shift;
+  return $self->matrix_name(@_);
 }
 
 =head2 _values
@@ -366,12 +341,173 @@ sub _values {
   }
   return $self->{'_values'};
 }
-  
+
+
+=head1 L<Bio::Matrix::MatrixI> implementation
+
+
+=head2 matrix_id
+
+ Title   : matrix_id
+ Usage   : my $id = $matrix->matrix_id
+ Function: Get/Set the matrix ID
+ Returns : scalar value
+ Args    : [optional] new id value to store
+
+
+=cut
+
+sub matrix_id{
+   my $self = shift;
+   return $self->{'_matid'} = shift if @_;
+   return $self->{'_matid'};
+
+   
+}
+
+=head2 matrix_name
+
+ Title   : matrix_name
+ Usage   : my $name = $matrix->matrix_name();
+ Function: Get/Set the matrix name
+ Returns : scalar value
+ Args    : [optional] new matrix name value
+
+
+=cut
+
+sub matrix_name{
+   my $self = shift;
+   return $self->{'_matname'} = shift if @_;
+   return $self->{'_matname'};
+}
+
+=head2 column_header
+
+ Title   : column_header
+ Usage   : my $name = $matrix->column_header(0)
+ Function: Gets the column header for a particular column number
+ Returns : string
+ Args    : integer
+
+
+=cut
+
+sub column_header{
+    my ($self,$num) = @_;
+    my @coln = $self->column_names;
+    return $coln[$num];
+}
+
+
+=head2 row_header
+
+ Title   : row_header
+ Usage   : my $name = $matrix->row_header(0)
+ Function: Gets the row header for a particular row number
+ Returns : string
+ Args    : integer
+
+
+=cut
+
+sub row_header{
+    my ($self,$num) = @_;
+    my @rown = $self->row_names;
+   return $rown[$num];
+}
+=head2 column_num_for_name
+
+ Title   : column_num_for_name
+ Usage   : my $num = $matrix->column_num_for_name($name)
+ Function: Gets the column number for a particular column name
+ Returns : integer
+ Args    : string
+
+
+=cut
+
+sub column_num_for_name{
+   my ($self,$name) = @_;
+   my $ct = 0;
+   foreach my $n ( $self->column_names ) {
+       return $ct if $n eq $name;
+       $ct++;
+   }
+   return undef;
+}
+
+=head2 row_num_for_name
+
+ Title   : row_num_for_name
+ Usage   : my $num = $matrix->row_num_for_name($name)
+ Function: Gets the row number for a particular row name
+ Returns : integer
+ Args    : string
+
+
+=cut
+
+sub row_num_for_name{
+   my ($self,$name) = @_;
+   my $ct = 0;
+   foreach my $n ( $self->row_names ) {
+       return $ct if $n eq $name;
+       $ct++;
+   }
+}
+
+=head2 num_rows
+
+ Title   : num_rows
+ Usage   : my $rowcount = $matrix->num_rows;
+ Function: Get the number of rows
+ Returns : integer
+ Args    : none
+
+
+=cut
+
+sub num_rows{ return scalar @{shift->names} }
+
+=head2 num_columns
+
+ Title   : num_columns
+ Usage   : my $colcount = $matrix->num_columns
+ Function: Get the number of columns
+ Returns : integer
+ Args    : none
+
+
+=cut
+
+sub num_columns{
+   return scalar @{shift->names};
+}
+
+=head2 row_names
+
+ Title   : row_names
+ Usage   : my @rows = $matrix->row_names
+ Function: The names of all the rows
+ Returns : array in array context, arrayref in scalar context
+ Args    : none
+
+
+=cut
+
+sub row_names{ return @{shift->names} }
+
+=head2 column_names
+
+ Title   : column_names
+ Usage   : my @columns = $matrix->column_names
+ Function: The names of all the columns
+ Returns : array in array context, arrayref in scalar context
+ Args    : none
+
+
+=cut
+
+sub column_names{ return @{shift->names} }  
 1;
-
-
-    
-    
-    
-
-

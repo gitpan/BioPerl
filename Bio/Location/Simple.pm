@@ -1,4 +1,4 @@
-# $Id: Simple.pm,v 1.31 2002/10/22 07:38:35 lapp Exp $
+# $Id: Simple.pm,v 1.35 2003/12/18 13:15:20 jason Exp $
 #
 # BioPerl module for Bio::Location::Simple
 # Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
@@ -71,9 +71,7 @@ package Bio::Location::Simple;
 use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
 use Bio::Location::Atomic;
-
 
 @ISA = qw( Bio::Location::Atomic );
 
@@ -316,24 +314,34 @@ sub to_FTstring {
 
     my $str;
     if( $self->start == $self->end ) {
-	return $self->start;
+	$str =  $self->start;
+    } else {
+        $str = $self->start . $RANGEDECODE{$self->location_type} . $self->end;
     }
-    $str = $self->start . $RANGEDECODE{$self->location_type} . $self->end;
     if($self->is_remote() && $self->seq_id()) {
 	$str = $self->seq_id() . ":" . $str;
     }
-    if( $self->strand == -1 ) {
+    if( defined $self->strand &&
+	$self->strand == -1 ) {
 	$str = "complement(".$str.")";
     }
     return $str;
 }
 
+# comments, not function added by jason 
 #
-# not tested
-#
+# trunc is untested, and as of now unannounced method for truncating a
+# location.  This is to eventually be part of the procedure to
+# truncate a sequence with annotatioin and properly remap the location
+# of all the features contained within the truncated segment.
+
+# presumably this might do things a little differently for the case 
+# where the truncation splits the location in half
+# 
+# in short- you probably don't want to use  this method.
+
 sub trunc {
   my ($self,$start,$end,$relative_ori) = @_;
-
   my $newstart  = $self->start - $start+1;
   my $newend    = $self->end   - $start+1;
   my $newstrand = $relative_ori * $self->strand;

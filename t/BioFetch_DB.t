@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: BioFetch_DB.t,v 1.7 2002/06/15 14:29:20 jason Exp $
+# $Id: BioFetch_DB.t,v 1.9 2003/10/25 14:52:22 heikki Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -39,7 +39,7 @@ BEGIN {
 
 END { 
     foreach ( $Test::ntest..$NUMTESTS) {
-	skip('unable to run all of the Biblio_biofetch tests',1);
+	skip('unable to run all of the Biblio/Biofetch tests - probably no network',1);
     }
 }
 
@@ -67,7 +67,8 @@ ok defined($db = new Bio::DB::BioFetch(-verbose => $verbose));
 eval {
     # get a RefSeq entry
     ok $db->db('refseq');
-    ok $seq = $db->get_Seq_by_acc('NM_006732'); # RefSeq VERSION
+    $seq = $db->get_Seq_by_acc('NM_006732'); # RefSeq VERSION
+    $seq ? ok 1 : exit;
     ok $seq->accession_number;
 
     # EMBL
@@ -89,7 +90,7 @@ eval {
     ok($seq->division, 'YEAST');
     $db2->request_format('fasta');
     ok(defined($seq = $db2->get_Seq_by_acc('P43780')));
-    ok( $seq->length, 103); 
+    ok($seq->length,103); 
 
 };
 
@@ -111,7 +112,7 @@ eval {
 				 -format => 'fasta',
 				 -verbose => $verbose
 				);
-    ok( defined($seqio = $db->get_Stream_by_batch(['J00522 AF303112 J02231'])));
+    ok( defined($seqio = $db->get_Stream_by_id('J00522 AF303112 J02231')));
     ok($seqio->next_seq->length, 408);
     ok($seqio->next_seq->length, 1611);
     ok($seqio->next_seq->length, 200);

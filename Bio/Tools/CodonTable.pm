@@ -1,4 +1,4 @@
-# $Id: CodonTable.pm,v 1.23 2002/10/22 07:38:45 lapp Exp $
+# $Id: CodonTable.pm,v 1.25 2003/10/25 14:34:47 heikki Exp $
 #
 # bioperl module for Bio::Tools::CodonTable
 #
@@ -16,9 +16,9 @@ Bio::Tools::CodonTable - Bioperl codon table object
 
 =head1 SYNOPSIS
 
-  This is a read-only class for all known codon tables.  The IDs are
-  the ones used by nucleotide sequence databases.  All common IUPAC
-  ambiguity codes for DNA, RNA and animo acids are recognized.
+  # This is a read-only class for all known codon tables.  The IDs are
+  # the ones used by nucleotide sequence databases.  All common IUPAC
+  # ambiguity codes for DNA, RNA and animo acids are recognized.
 
   # to use
   use Bio::Tools::CodonTable;
@@ -46,9 +46,9 @@ Bio::Tools::CodonTable - Bioperl codon table object
   @codons = $myCodonTable->revtranslate('cYS', 'rna');
 
   #boolean tests
-   print "Is a start\n"       if $myCodonTable->is_start_codon('ATG');
-   print "Is a termianator\n" if $myCodonTable->is_ter_codon('tar');
-   print "Is a unknown\n"     if $myCodonTable->is_unknown_codon('JTG');
+  print "Is a start\n"       if $myCodonTable->is_start_codon('ATG');
+  print "Is a termianator\n" if $myCodonTable->is_ter_codon('tar');
+  print "Is a unknown\n"     if $myCodonTable->is_unknown_codon('JTG');
 
 =head1 DESCRIPTION
 
@@ -651,5 +651,36 @@ sub _unambiquous_codons{
     }
     return @codons;
 }
+
+=head2 add_table
+
+ Title   : add_table
+ Usage   : $newid = $ct->add_table($name, $table, $starts)
+ Function: Add a custom Codon Table into the object.
+           Know what you are doing, only the length of
+           the argument strings is checked!
+ Returns : the id of the new codon table
+ Args    : name, a string, optional (can be empty)
+           table, a string of 64 characters
+           startcodons, a string of 64 characters, defaults to standard
+
+=cut
+
+sub add_table {
+    my ($self, $name, $table, $starts) = @_;
+
+    $name ||= 'Custom'. scalar @NAMES + 1;
+    $starts ||= $STARTS[0]; 
+    $self->throw('Suspect input!')
+        unless length($table) == 64 and length($starts) == 64;
+
+    push @NAMES, $name;
+    push @TABLES, $table;
+    push @STARTS, $starts;
+
+    return scalar @NAMES;
+
+}
+
 
 1;

@@ -1,7 +1,7 @@
 package Bio::Root::Root;
 use strict;
 
-# $Id: Root.pm,v 1.30 2002/12/16 09:44:28 birney Exp $
+# $Id: Root.pm,v 1.34 2003/06/04 08:36:42 heikki Exp $
 
 =head1 NAME
 
@@ -29,22 +29,9 @@ Bio::Root::Root - Hash-based implementation of Bio::Root::RootI
   # Alternatively, using the new typed exception syntax in the throw() call:
 
     $obj->throw( -class => 'Bio::Root::BadParameter',
-                 -text  => "Can't open file $file",
+                 -text  => "Can not open file $file",
                  -value  => $file);
 
-  # Exceptions can be used in an eval{} block as shown above or within
-  # a try{} block if you have installed the Error.pm module.
-  # Here's a brief example. For more, see Bio::Root::Exception
-
-  use Error qw(:try);
-
-    try {
-    $obj->throw(  # arguments as above );
-    }
-    catch Bio::Root::FileOpenException with {
-        my $err = shift;
-        print "Handling exception $err\n";
-   };
 
 =head1 DESCRIPTION
 
@@ -147,7 +134,7 @@ methods. Internal methods are usually preceded with a _
 
 #'
 
-use vars qw(@ISA $DEBUG $ID $Revision $VERSION $VERBOSITY $ERRORLOADED);
+use vars qw(@ISA $DEBUG $ID $Revision $VERBOSITY $ERRORLOADED);
 use strict;
 use Bio::Root::RootI;
 use Bio::Root::IO;
@@ -157,8 +144,7 @@ use Bio::Root::IO;
 BEGIN { 
 
     $ID        = 'Bio::Root::Root';
-    $VERSION   = 1.0;
-    $Revision  = '$Id: Root.pm,v 1.30 2002/12/16 09:44:28 birney Exp $ ';
+    $Revision  = '$Id: Root.pm,v 1.34 2003/06/04 08:36:42 heikki Exp $ ';
     $DEBUG     = 0;
     $VERBOSITY = 0;
     $ERRORLOADED = 0;
@@ -209,7 +195,7 @@ sub new {
     return $self;
 }
 
-		     
+
 =head2 verbose
 
  Title   : verbose
@@ -370,7 +356,8 @@ sub throw{
 sub debug{
    my ($self,@msgs) = @_;
    
-   if( $self->verbose > 0 ) { 
+   if( defined $self->verbose &&
+       $self->verbose > 0 ) { 
        print STDERR join("", @msgs);
    }   
 }

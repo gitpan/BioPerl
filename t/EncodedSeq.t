@@ -1,7 +1,7 @@
 
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: EncodedSeq.t,v 1.3 2002/10/08 10:10:06 birney Exp $
+## $Id: EncodedSeq.t,v 1.4 2003/11/18 16:32:27 amackey Exp $
 use strict;
 use constant NUMTESTS => 37;
 
@@ -66,18 +66,18 @@ ok $seq = new Bio::Seq::EncodedSeq(
 			     );
 ok $seq->encoding('CCGGG'), 'CCGGGCCCC';
 ok $seq->seq, 'atcg---ta';
-ok $seq->column_from_residue_number(14), 8;
+ok $seq->column_from_residue_number(14), 2;
 ok $seq->encoding('3C2GCG'), 'CCCGGCGCC';
 ok $seq->seq, 'at-c--gta';
 ok $seq->no_gaps, 2;
-ok $seq->location_from_column(2)->to_FTstring, 11;
+ok $seq->location_from_column(2)->to_FTstring, 14;
 ok $seq->location_from_column(5)->to_FTstring, "12^13";
 ok $seq->encoding("B", Bio::Location::Simple->new(-start => 10, -end => 11,
 						  -location_type => 'IN-BETWEEN')), 'B';
-ok $seq->seq, 'a-t-c--gta';
-ok $seq->encoding, 'CCCGGCGCBC';
+ok $seq->seq, 'at-c--gt-a';
+ok $seq->encoding, 'CBCCGGCGCC';
 ok $seq->cds(-nogaps => 1)->seq, 'tacgat';
 ok $seq->translate->seq, 'YD';
 ok $seq = $seq->trunc(4,10); # kinda testing LocatableSeq's new trunc() here as well.
-ok $seq->seq, '-c--gta';
-ok $seq->encoding, 'CCCGGCG';
+ok $seq->seq, 'c--gt-a';
+ok $seq->encoding, 'CBCCGGC';

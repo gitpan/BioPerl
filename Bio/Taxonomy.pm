@@ -1,8 +1,8 @@
-# $Id: Taxonomy.pm,v 1.1 2002/11/19 00:36:47 kortsch Exp $
+# $Id: Taxonomy.pm,v 1.5 2003/11/18 06:56:31 juguang Exp $
 #
 # BioPerl module for Bio::Taxonomy
 #
-# Cared for by Dan Kortschak
+# Cared for by Juguang Xiao
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -10,20 +10,110 @@
 
 =head1 NAME
 
-Bio::Taxonomy - Conversion used bt the Taxonomy classes
+Bio::Taxonomy - representing Taxonomy.
 
 =head1 SYNOPSIS
 
-    use Bio::Taxonomy;
+  use Bio::Taxonomy;
+
+  # CREATION: You can either create an instance by assigning it, 
+  # or fetch it through factory.
+
+  # Create the nodes first. See Bio::Taxonomy::Node for details.
+  my $node_species_sapiens = Bio::Taxonomy::Node->new(
+      -object_id => 9606, # or -ncbi_taxid. Requird tag
+      -names => {
+          'scientific' => ['sapiens'],
+          'common_name' => ['human']
+      },
+      -rank => 'species'  # Required tag
+  );
+  my $node_genus_Homo = Bio::Taxonomy::Node->new(
+      -object_id => 9605,
+      -names => { 'scientific' => ['Homo'] },
+      -rank => 'genus'
+  );
+  my $node_class_Mammalia = Bio::Taxonomy::Node->new(
+      -object_id => 40674,
+      -names => {
+          'scientific' => ['Mammalia'],
+          'common' => ['mammals']
+      },
+      -rank => 'class'
+  );
+  my $taxonomy = Bio::Taxonomy->new;
+  $taxonomy->add_node($node_class_Mammalia);
+  $taxonomy->add_node($node_species_sapiens);
+  $taxonomy->add_node($node_genus_Homo);
+
+  # OR you can fetch it through a factory implementing
+  # Bio::Taxonomy::FactoryI
+  my $factory;
+
+  my $taxonomy = $factory->fetch_by_ncbi_taxid(40674);
+
+  # USAGE
+
+  # In this case, binomial returns a defined value.
+  my $binomial = $taxonomy->binomial;
+
+  # 'common_names' refers to the lowest-rank node's common names, in
+  # array.
+  my @common_names = $taxonomy->common_names;
+
+  # 'get_node', will return undef if the rank is no defined in
+  # taxonomy object.  It will throw error if the rank string is not
+  # defined, say 'species lah'.
+  my $node = $taxonomy->get_node('class');
+  my @nodes = $taxonomy->get_all_nodes;
+
+  # Also, you can search for parent and children nodes, if taxonomy
+  # comes with factory.
+
+  my $parent_taxonomy = $taxonomy->get_parent
 
 =head1 DESCRIPTION
 
-Provides methods for converting classifications into taxonomic
-structures.
+Bio::Taxonomy object represents any rank-level in taxonomy system,
+rather than Bio::Species which is able to represent only
+species-level.
+
+There are two ways to create Taxonomy object, e.g.
+1) instantiate an object and assign all nodes on your own code; and
+2) fetch an object by factory.
+
+=head2 Creation by instantiation
+
+The abstraction of Taxonomy is actually a hash in data structure
+term. The keys of the hash are the rank names, such as 'genus' and
+'species', and the values are the instances of Bio::Taxonomy::Node.
+
+=head2 Creation by Factory fetching
+
+NCBI Taxonomy system is well accepted as the standard. The Taxonomy
+Factories in bioperl access this system, through HTTP to NCBI Entrez,
+dump file, and advanced biosql database.
+
+Bio::Taxonomy::FactoryI defines all methods that all implementations
+must obey.
+
+$factory-E<gt>fetch is a general method to fetch Taxonomy by either
+NCBI taxid or any types of names.
+
+$factory-E<gt>fetch_parent($taxonomy), returns a Taxonomy that is
+one-step higher rank of the taxonomy specified as argument.
+
+$factory-E<gt>fetch_children($taxonomy), reports an array of Taxonomy
+those are one-step lower rank of the taxonomy specified as the
+argument.
+
+=head2 Usage of Taxonomy object
+
+##
 
 =head1 CONTACT
 
-Dan Kortschak email B<kortschak@rsbs.anu.edu.au>
+Juguang Xiao, juguang@tll.org.sg
 
 =head1 APPENDIX
 
@@ -40,7 +130,7 @@ package Bio::Taxonomy;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::Object
+# Object preamble - inherits from Bio::Root::Root Object
 use Bio::Root::Root;
 
 @ISA = qw(Bio::Root::Root);
@@ -67,7 +157,7 @@ sub new {
    $self->{'_method'}='none';
    $self->{'_ranks'}=[];
    $self->{'_rank_hash'}={};
-
+    $self->{_hierarchy} = {}; # used to store the nodes, with ranks as keys.
    my ($method,$ranks,$order) = $self->_rearrange([qw(METHOD RANKS ORDER)], @args);
 
    if ($method) {
@@ -85,34 +175,15 @@ sub new {
       # I don't expect that these will actually be used except as a way
       # to find what ranks there are in taxonomic use 
       $self->ranks(('root',
-                    'superkingdom',
-                    'kingdom',
-                    'superphylum',
-                    'phylum',
-                    'subphylum',
-                    'superclass',
-                    'class',
-                    'subclass',
-                    'infraclass',
-                    'superorder',
-                    'order',
-                    'suborder',
-                    'parvorder',
-                    'infraorder',
-                    'superfamily',
-                    'family',
-                    'subfamily',
-                    'tribe',
-                    'subtribe',
-                    'genus',
-                    'subgenus',
-                    'species group',
-                    'species subgroup',
-                    'species',
-                    'subspecies',
-                    'varietas',
-                    'forma',
-                    'no rank'));
+        'superkingdom', 'kingdom',
+        'superphylum', 'phylum', 'subphylum',
+        'superclass', 'class', 'subclass', 'infraclass',
+        'superorder', 'order', 'suborder', 'parvorder', 'infraorder',
+        'superfamily', 'family', 'subfamily',
+        'tribe', 'subtribe',
+        'genus', 'subgenus',
+        'species group', 'species subgroup', 'species', 'subspecies',
+        'varietas', 'forma', 'no rank'));
    }
 
    return $self;
@@ -244,18 +315,100 @@ sub ranks {
    # currently this makes no uniqueness sanity check (this should be done)
    # I am think that adding a way of converting multiple 'no rank' ranks 
    # to unique 'no rank #' ranks so that the level of a 'no rank' is 
-   # abstracted way from the user - I'm not sure of the vlaue of this
+   # abstracted way from the user - I'm not sure of the value of this
 
-   if (defined @value) {
+   if (@value) {
       $self->{'_ranks'}=\@value;
    }
 
    for (my $i=0; $i <= @{$self->{'_ranks'}}-1; $i++) {
       $self->{'_rank_hash'}{$self->{'_ranks'}[$i]}=$i unless $self->{'_ranks'}[$i] eq 'no rank';
    }
-      
+
    return @{$self->{'_ranks'}};
 }
 
+=head2 add_node
+
+  Title:    add_node
+  Usage:    $obj->add_node($node[, $node2, ...]);
+  Function: add one or more Bio::Taxonomy::Node objects
+  Returns:  None
+  Args:     any number of Bio::Taxonomy::Node(s)
+
+=cut
+
+sub add_node {
+    my ($self, @nodes) = @_;
+    foreach(@nodes){
+        $self->throw("A Bio::Taxonomy::Node object needed")
+            unless($_->isa('Bio::Taxonomy::Node'));
+        my ($node, $rank) = ($_, $_->rank);
+        if(exists $self->{_hierarchy}->{$rank}){
+#            $self->throw("$rank has been defined");
+#            print STDERR "RANK:$rank\n";
+#            return;
+        }
+        $self->{_hierarchy}->{$rank} = $node;
+    }
+}
+
+=head2 binomial
+
+  Title   : binomial
+  Usage   : my $val = $obj->binomial;
+  Function: returns the binomial name if this taxonomy reachs species level
+  Returns : the binomial name
+            OR undef if taxonmy does not reach species level
+  Args    : [No arguments]
+
+=cut
+
+sub binomial {
+    my $self = shift;
+    return $self->get_node('species')->scientific_name;
+    my $genus = $self->get_node('genus');
+    my $species = $self->get_node('species');
+    return ($species && $genus) ? "$species $genus" : undef;
+}
+
+=head2 get_node 
+
+  Title   : get_node
+  Usage   : $node = $taxonomy->get_node('species');
+  Function: get a Bio::Taxonomy::Node object according to rank name
+  Returns : a Bio::Taxonomy::Node object or undef if null
+  Args    : a vaild rank name
+
+=cut 
+
+sub get_node {
+    my ($self, $rank) = @_;
+    unless(grep /$rank/, keys %{$self->{_hierarchy}}){
+        $self->throw("'$rank' is not in the rank list");
+    }
+    return (exists $self->{_hierarchy}->{$rank})?
+        $self->{_hierarchy}->{$rank} : undef;
+}
+
+=head2 classification
+
+  Title   : classification
+  Usage   : @names = $taxonomy->classification;
+  Function: get the classification names of one taxonomy
+  Returns : array of names
+  Args    : [No arguments]
+
+=cut
+
+sub classification {
+    my $self = shift;
+    my %rank_hash = %{$self->{_rank_hash}};
+    my %hierarchy = %{$self->{_hierarchy}};
+    my @ordered_nodes = sort {
+        ($rank_hash{$a} <=> $rank_hash{$b})
+    } keys %hierarchy;
+    return map {$hierarchy{$_}->scientific_name} @ordered_nodes;
+}
 
 1;

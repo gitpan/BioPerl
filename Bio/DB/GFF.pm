@@ -1,4 +1,4 @@
-# $Id: GFF.pm,v 1.71.2.2 2003/09/12 13:29:32 lstein Exp $
+# $Id: GFF.pm,v 1.102 2003/12/22 17:04:59 smckay Exp $
 
 =head1 NAME
 
@@ -464,10 +464,9 @@ use Bio::DB::GFF::Aggregator;
 use Bio::DasI;
 use Bio::Root::Root;
 
-use vars qw(@ISA $VERSION);
+use vars qw(@ISA);
 @ISA = qw(Bio::Root::Root Bio::DasI);
 
-$VERSION = '1.2003';
 my %valid_range_types = (overlaps     => 1,
 			 contains     => 1,
 			 contained_in => 1);
@@ -491,6 +490,12 @@ These are the arguments:
  -aggregator   Array reference to a list of aggregators
                to apply to the database.  If none provided,
 	       defaults to ['processed_transcript','alignment'].
+
+  -preferred_groups  When interpreteting the 9th column of a GFF2 file,
+                 the indicated group names will have preference over
+                 other attributes, even if they do not come first in
+                 the list of attributes.  This can be a scalar value
+                 or an array reference.
 
   <other>      Any other named argument pairs are passed to
                the adaptor for processing.
@@ -526,6 +531,14 @@ this way:
 
 See L<Bio::DB::GFF::Aggregator> for more details.
 
+The B<-preferred_groups> argument is used to change the default
+processing of the 9th column of GFF version 2 files.  By default, the
+first tag/value pair is used to establish the group class and name.
+If you pass -preferred_groups a scalar, the parser will look for a tag
+of the indicated type and use it as the group even if it is not first
+in the file.  If you pass this argument a list of group classes as an
+array ref, then the list will establish the precedence for searching.
+
 The commonly used 'dbi::mysql' adaptor recognizes the following
 adaptor-specific arguments:
 
@@ -541,6 +554,7 @@ adaptor-specific arguments:
   -pass          the password for authentication
 
   -refclass      landmark Class; defaults to "Sequence"
+
 
 The commonly used 'dbi::mysqlopt' adaptor also recogizes the following
 arguments.
@@ -560,17 +574,18 @@ arguments.
 
 sub new {
   my $package   = shift;
-  my ($adaptor,$aggregators,$args,$refclass);
+  my ($adaptor,$aggregators,$args,$refclass,$preferred_groups);
 
   if (@_ == 1) {  # special case, default to dbi::mysqlopt
     $adaptor = 'dbi::mysqlopt';
     $args = {DSN => shift};
   } else {
-    ($adaptor,$aggregators,$refclass,$args) = rearrange([
-							 [qw(ADAPTOR FACTORY)],
-							 [qw(AGGREGATOR AGGREGATORS)],
-							 'REFCLASS',
-							],@_);
+    ($adaptor,$aggregators,$refclass,$preferred_groups,$args) = rearrange([
+									   [qw(ADAPTOR FACTORY)],
+									   [qw(AGGREGATOR AGGREGATORS)],
+									   'REFCLASS',
+									   'PREFERRED_GROUPS'
+									  ],@_);
   }
 
   $adaptor    ||= 'dbi::mysqlopt';
@@ -578,8 +593,14 @@ sub new {
   eval "require $class" unless $class->can('new');
   $package->throw("Unable to load $adaptor adaptor: $@") if $@;
 
+  # this hack saves the memory adaptor, which loads the GFF file in new()
+  $args->{PREFERRED_GROUPS} = $preferred_groups if defined $preferred_groups;
+
   my $self = $class->new($args);
-  $self->default_class($refclass) if defined $refclass;
+
+  # handle preferred groups
+  $self->preferred_groups($preferred_groups) if defined $preferred_groups;
+  $self->default_class($refclass || 'Sequence');
 
   # handle the aggregators.
   # aggregators are responsible for creating complex multi-part features
@@ -1614,8 +1635,8 @@ old method name is also recognized.
 sub load_gff {
   my $self              = shift;
   my $file_or_directory = shift || '.';
-  return $self->do_load_gff($file_or_directory) if ref($file_or_directory) &&
-                                                   tied *$file_or_directory;
+  return $self->do_load_gff($file_or_directory) if ref($file_or_directory) 
+                                                   && tied *$file_or_directory;
 
   my $tied_stdin = tied(*STDIN);
   open SAVEIN,"<&STDIN" unless $tied_stdin;
@@ -1675,8 +1696,8 @@ web server can be loaded with an expression like this:
 sub load_fasta {
   my $self              = shift;
   my $file_or_directory = shift || '.';
-  return $self->load_sequence($file_or_directory) if ref($file_or_directory) &&
-                                                     tied *$file_or_directory;
+  return $self->load_sequence($file_or_directory) if ref($file_or_directory)
+                                                     && tied *$file_or_directory;
 
   my $tied = tied(*STDIN);
   open SAVEIN,"<&STDIN" unless $tied;
@@ -1892,7 +1913,12 @@ attribute=E<gt>value pairs.  This lets you do:
 
   %attributes = $db->attributes($id);
 
-Normally, attributes() will be called by the feature:
+If no arguments are provided, attributes() will return the list of
+all attribute names:
+
+  @attribute_names = $db->attributes();
+
+Normally, however, attributes() will be called by the feature:
 
   @notes = $feature->attributes('Note');
 
@@ -1906,7 +1932,7 @@ containing the values.
 sub attributes {
   my $self = shift;
   my ($id,$tag) = @_;
-  my @result = $self->do_attributes($id,$tag) or return;
+  my @result = $self->do_attributes(@_) or return;
   return @result if wantarray;
 
   # what to do in an array context
@@ -2036,6 +2062,28 @@ Use aggregators() or add_aggregator() to add some back.
 =cut
 
 sub clear_aggregators { shift->{aggregators} = [] }
+
+=head2 preferred_groups
+
+ Title   : preferred_groups
+ Usage   : $db->preferred_groups([$group_name_or_arrayref])
+ Function: get/set list of groups for altering GFF2 parsing
+ Returns : a list of classes
+ Args    : new list (scalar or array ref)
+ Status  : public
+
+=cut
+
+sub preferred_groups {
+  my $self = shift;
+  my $d    = $self->{preferred_groups};
+  if (@_) {
+    my @v = map {ref($_) eq 'ARRAY' ? @$_ : $_} @_;
+    $self->{preferred_groups} = \@v;
+  }
+  return unless $d;
+  return @$d;
+}
 
 =head1 Methods for use by Subclasses
 
@@ -2271,7 +2319,8 @@ sub insert_sequence {
 # This is the default class for reference points.  Defaults to Sequence.
 sub default_class {
    my $self = shift;
-   my $d = exists($self->{default_class}) ? $self->{default_class} : 'Sequence';
+   return 'Sequence' unless ref $self;
+   my $d = $self->{default_class};
    $self->{default_class} = shift if @_;
    $d;
 }
@@ -3191,11 +3240,15 @@ This is an internal method called by split_group().
 
 =cut
 
+# this has gotten quite nasty due to transition from GFF2 to GFF2.5
+# (artemis) to GFF3.
+
 sub _split_gff2_group {
   my $self = shift;
   my @groups = @_;
+  my $target_found;
 
-  my ($gclass,$gname,$tstart,$tstop,@attributes);
+  my ($gclass,$gname,$tstart,$tstop,@attributes,@notes);
 
   for (@groups) {
 
@@ -3206,34 +3259,75 @@ sub _split_gff2_group {
     }
     $value =~ s/\\t/\t/g;
     $value =~ s/\\r/\r/g;
+    $value =~ s/\s+$//;
 
     # Any additional groups become part of the attributes hash
     # For historical reasons, the tag "Note" is treated as an
     # attribute, even if it is the only group.
     $tag ||= '';
-    if ($tag eq 'Note' or ($gclass && $gname)) {
-      push @attributes,[$tag => $value];
+    if ($tag eq 'tstart' && $target_found) {
+      $tstart = $value;
     }
 
-    # if the tag eq 'Target' then the class name is embedded in the ID
-    # (the GFF format is obviously screwed up here)
-    elsif ($tag eq 'Target' && /([^:\"\s]+):([^\"\s]+)/) {
+    elsif ($tag eq 'tend' && $target_found) {
+      $tstop = $value;
+    }
+
+    elsif (ucfirst $tag eq 'Note') {
+      push @notes, [$tag => $value];
+    }
+
+    elsif ($tag eq 'Target' && /([^:\"\s]+):([^\"\s]+)/) { # major disagreement in implementors of GFF2 here
+      $target_found++;
       ($gclass,$gname) = ($1,$2);
       ($tstart,$tstop) = / (\d+) (\d+)/;
     }
 
     elsif (!$value) {
-      push @attributes,[Note => $tag];  # e.g. "Confirmed_by_EST"
+      push @notes, [Note => $tag];  # e.g. "Confirmed_by_EST"
     }
 
-    # otherwise, the tag and value correspond to the
-    # group class and name
     else {
-      ($gclass,$gname) = ($tag,$value);
+      push @attributes, [$tag => $value];
     }
   }
 
-  return ($gclass,$gname,$tstart,$tstop,\@attributes);
+  # group assignment
+  if ( @attributes && !($gclass && $gname)) {
+    last if $gclass && $gname;    
+    for my $att ( @attributes ) {
+      my ($k, $v) = @$att;
+      # give acedb-style GFF first crack at it
+      if ( $k =~ /Sequence|Transcript/ && !$gclass) {
+        ($gclass, $gname) = ($k, $v);
+      }
+
+      # otherwise look for the preferred groups
+      elsif (ref($self)) {
+        for ($self->preferred_groups) {
+	  if (uc $k eq uc $_) {
+	    ($gclass, $gname) = ($k, $v);
+	    last;
+          }
+        }
+      }
+    }
+
+    # use the first tag/value if no group is assigned
+    unless ($gclass && $gname) {
+      my $grp = shift @attributes;
+      ($gclass, $gname) = @$grp;
+    }
+  }
+
+  my @atts;
+  for ( @attributes ) {
+    next if $_->[0] eq $gclass && $_->[1] eq $gname;
+    push @atts, $_;
+  }
+  push @atts, @notes;  
+
+  return ($gclass,$gname,$tstart,$tstop,\@atts);
 }
 
 =head2 _split_gff3_group
@@ -3245,27 +3339,37 @@ This is called internally from split_group().
 sub _split_gff3_group {
   my $self   = shift;
   my @groups = @_;
+  my $dc     = $self->default_class;
   my ($gclass,$gname,$tstart,$tstop,@attributes);
 
   for my $group (@groups) {
     my ($tag,$value) = split /=/,$group;
     $tag             = unescape($tag);
     my @values       = map {unescape($_)} split /,/,$value;
-    if ($tag eq 'Parent') {
-      $gclass = 'Sequence';
-      $gname  = shift @values;
-    }
-    elsif ($tag eq 'ID') {
-      $gclass = 'Sequence';
-      $gname  = shift @values;
+
+    # GFF2 traditionally did not distinguish between a feature's name
+    # and the group it belonged to.  This code is a transition between
+    # gff2 and the new parent/ID dichotomy in gff3.
+    if ($tag eq 'Parent' or $tag eq 'ID') {
+      ($gname,$gclass) = _gff3_name_munging(shift(@values),$dc);
     }
     elsif ($tag eq 'Target') {
-      $gclass = 'Sequence';
       ($gname,$tstart,$tstop) = split /\s+/,shift @values;
+      ($gname,$gclass) = _gff3_name_munging($gname,$dc);
     }
     push @attributes,[$tag=>$_] foreach @values;
   }
   return ($gclass,$gname,$tstart,$tstop,\@attributes);
+}
+
+# accomodation for wormbase style of class:name naming
+sub _gff3_name_munging {
+  my ($name,$default_class) = @_;
+  if ($name =~ /^(\w+):(.+)/) {
+    return ($2,$1);
+  } else {
+    return ($name,$default_class);
+  }
 }
 
 =head2 _delete_features(), _delete_groups(),_delete()

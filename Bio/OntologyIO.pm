@@ -1,4 +1,4 @@
-# $Id: OntologyIO.pm,v 1.3.2.1 2003/03/13 02:09:19 lapp Exp $
+# $Id: OntologyIO.pm,v 1.7 2003/11/20 06:34:11 allenday Exp $
 #
 # BioPerl module for Bio::OntologyIO
 #
@@ -32,7 +32,8 @@ Bio::OntologyIO - Parser factory for Ontology formats
 
     use Bio::OntologyIO;
 
-    my $parser = Bio::OntologyIO->new(-format => "go", ...);
+    my $parser = Bio::OntologyIO->new(-format => "go",
+                                      -file=> $file);
 
     while(my $ont = $parser->next_ontology()) {
          print "read ontology ",$ont->name()," with ",
@@ -105,6 +106,7 @@ my %format_driver_map = (
 			 "go"       => "goflat",
 			 "so"       => "soflat",
 			 "interpro" => "InterProParser",
+			 "evoc"     => "simplehierarchy",
 			 );
 
 =head2 new
@@ -148,7 +150,6 @@ my %format_driver_map = (
 sub new {
     my ($caller,@args) = @_;
     my $class = ref($caller) || $caller;
-    
     # or do we want to call SUPER on an object if $caller is an
     # object?
     if( $class =~ /Bio::OntologyIO::(\S+)/ ) {
@@ -156,7 +157,6 @@ sub new {
 	$self->_initialize(@args);
 	return $self;
     } else { 
-
 	my %param = @args;
 	@param{ map { lc $_ } keys %param } = values %param; # lowercase keys
 	my $format = $class->_map_format($param{'-format'});
@@ -165,6 +165,7 @@ sub new {
 	return undef unless( $class->_load_format_module($format) );
 	return "Bio::OntologyIO::$format"->new(@args);
     }
+
 }
 
 sub _initialize {
@@ -174,7 +175,6 @@ sub _initialize {
     my ($eng,$fact,$ontname) =
 	$self->_rearrange([qw(TERM_FACTORY)
 			   ], @args);
-    
     # term object factory
     $self->term_factory($fact) if $fact;
 
@@ -283,6 +283,16 @@ sub _map_format {
 	$self->throw("unable to guess ontology format, specify -format");
     }
     return $mod;
+}
+
+sub unescape {
+  my( $self, $ref ) = @_;
+  $ref =~ s/&lt\\;/\</g;
+  $ref =~ s/&gt\\;/\>/g;
+  $ref =~ s/&pct\\;/\%/g;
+  $ref =~ s/\\n/\n/g;
+  $ref =~ s/\\t/\t/g;
+  return $ref;
 }
 
 1;

@@ -1,4 +1,4 @@
-# $Id: FeaturePair.pm,v 1.17 2002/10/08 08:38:31 lapp Exp $
+# $Id: FeaturePair.pm,v 1.21 2003/08/10 17:13:43 jason Exp $
 #
 # BioPerl module for Bio::SeqFeature::FeaturePair
 #
@@ -87,26 +87,80 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::SeqFeature::FeaturePair;
-use vars qw(@ISA);
+use vars qw(@ISA $AUTOLOAD);
 use strict;
 
 use Bio::SeqFeatureI;
 use Bio::SeqFeature::Generic;
+use Bio::Factory::ObjectFactory;
 
 @ISA = qw(Bio::SeqFeature::Generic);
 
+=head2 new
+
+ Title   : new
+ Usage   :
+ Function: Constructor for this module. Accepts the following parameters:
+
+             -feature1   Bio::SeqFeatureI-compliant object
+             -feature2   Bio::SeqFeatureI-compliant object
+             -feature_factory  Bio::Factory::ObjectFactoryI compliant
+                         object to be used when feature1 and/or feature2
+                         are accessed without explicitly set before. This
+                         is mostly useful for derived classes who want to
+                         set their preferred class for feature objects.
+
+ Example :
+ Returns : 
+ Args    : see above
+
+
+=cut
+
 sub new {
     my ($class, @args) = @_;
-    my $self = $class->SUPER::new(@args);
-    
-    my ($feature1,$feature2) = 
+
+    #
+    # We've got a certain problem here that somewhat relates to chicken and
+    # eggs. The problem is, we override a lot of SeqFeatureI methods here
+    # to delegate them to either feature1 or feature2. If we pass along
+    # those attributes right away, we need feature1 or feature2 or the feature
+    # factory in place, or there is no way around the dreaded default, which
+    # is ugly too (as it necessitates subsequent copying if you wanted a
+    # different feature object class).
+    #
+    # So I decided to go with the lesser of two evils here: we need to assume
+    # here that we can set all attributes through set_attributes(), which we
+    # assume is no different from setting them through the constructor. This
+    # gives us a window to set the feature objects and the factory, such that
+    # any derived class doesn't have to worry about this any more.
+    #
+    # I'm happy to hear a better solution, but I think this one isn't so bad.
+    #
+    my $self = $class->SUPER::new();
+    my ($feature1,$feature2,$featfact) = 
 	$self->_rearrange([qw(FEATURE1
 			      FEATURE2
+			      FEATURE_FACTORY
 			      )],@args);
     
+    $self->_register_for_cleanup(\&cleanup_fp);
+    # initialize the feature object factory if not provided
+    if(! $featfact) {
+	$featfact = Bio::Factory::ObjectFactory->new(
+				   -type => "Bio::SeqFeature::Generic",
+				   -interface => "Bio::SeqFeatureI");
+    }
+    $self->feature_factory($featfact);
     # Store the features in the object
     $feature1 && $self->feature1($feature1);
     $feature2 && $self->feature2($feature2);
+    
+    # OK. Now we're setup to store all the attributes, and they'll go right
+    # away into the right objects.
+    $self->set_attributes(@args);
+
+    # done - we hope
     return $self;
 }
 
@@ -125,7 +179,9 @@ sub new {
 sub feature1 {
     my ($self,$arg) = @_;    
     if ( defined($arg) || !defined $self->{'feature1'} ) {
-	$arg = new Bio::SeqFeature::Generic() unless( defined $arg);
+	$self->throw("internal error: feature factory not set!") 
+	    unless $self->feature_factory;
+	$arg = $self->feature_factory->create_object() unless( defined $arg);
 	$self->throw("Argument [$arg] must be a Bio::SeqFeatureI") 
 	    unless (ref($arg) && $arg->isa("Bio::SeqFeatureI"));
 	$self->{'feature1'} = $arg;
@@ -149,7 +205,9 @@ sub feature2 {
     my ($self,$arg) = @_;
 
     if ( defined($arg) || ! defined $self->{'feature2'}) {
-	$arg = new Bio::SeqFeature::Generic unless( defined $arg);
+	$self->throw("internal error: feature factory not set!") 
+	    unless $self->feature_factory;
+	$arg = $self->feature_factory->create_object() unless( defined $arg);
 	$self->throw("Argument [$arg] must be a Bio::SeqFeatureI") 
 	    unless (ref($arg) && $arg->isa("Bio::SeqFeatureI"));
 	$self->{'feature2'} = $arg;
@@ -169,8 +227,7 @@ sub feature2 {
 =cut
 
 sub start {
-    my ($self,$value) = @_;    
-    return $self->feature1->start($value);
+    return shift->feature1->start(@_);
 }
 
 =head2 end
@@ -186,8 +243,7 @@ sub start {
 =cut
 
 sub end{
-    my ($self,$value) = @_;    
-    return $self->feature1->end($value);    
+    return shift->feature1->end(@_);    
 }
 
 =head2 strand
@@ -203,8 +259,7 @@ sub end{
 =cut
 
 sub strand{
-    my ($self,$arg) = @_;
-    return $self->feature1->strand($arg);    
+    return shift->feature1->strand(@_);    
 }
 
 =head2 location
@@ -219,8 +274,7 @@ sub strand{
 =cut
 
 sub location {
-    my ($self,$value) = @_;    
-    return $self->feature1->location($value);
+    return shift->feature1->location(@_);
 }
 
 =head2 score
@@ -236,8 +290,7 @@ sub location {
 =cut
 
 sub score {
-    my ($self,$arg) = @_;
-    return $self->feature1->score($arg);    
+    return shift->feature1->score(@_);    
 }
 
 =head2 frame
@@ -253,8 +306,7 @@ sub score {
 =cut
 
 sub frame {
-    my ($self,$arg) = @_;
-    return $self->feature1->frame($arg);    
+    return shift->feature1->frame(@_);    
 }
 
 =head2 primary_tag
@@ -269,8 +321,7 @@ sub frame {
 =cut
 
 sub primary_tag{
-    my ($self,$arg) = @_;
-    return $self->feature1->primary_tag($arg);    
+    return shift->feature1->primary_tag(@_);    
 }
 
 =head2 source_tag
@@ -287,8 +338,7 @@ sub primary_tag{
 =cut
 
 sub source_tag{
-    my ($self,$arg) = @_;
-    return $self->feature1->source_tag($arg);    
+    return shift->feature1->source_tag(@_);    
 }
 
 =head2 seqname
@@ -309,9 +359,8 @@ sub source_tag{
 
 =cut
 
-sub seqname{
-    my ($self,$arg) = @_;
-    return $self->feature1->seq_id($arg);    
+sub seq_id{
+    return shift->feature1->seq_id(@_);    
 }
 
 =head2 hseqname
@@ -326,9 +375,8 @@ sub seqname{
 
 =cut
 
-sub hseqname {
-    my ($self,$arg) = @_;
-    return $self->feature2->seq_id($arg);
+sub hseq_id {
+    return shift->feature2->seq_id(@_);
 }
 
 
@@ -344,8 +392,7 @@ sub hseqname {
 =cut
 
 sub hstart {
-    my ($self,$value) = @_;
-    return $self->feature2->start($value);    
+    return shift->feature2->start(@_);    
 }
 
 =head2 hend
@@ -361,8 +408,7 @@ sub hstart {
 =cut
 
 sub hend{
-    my ($self,$value) = @_;
-    return $self->feature2->end($value);    
+    return shift->feature2->end(@_);    
 }
 
 
@@ -379,8 +425,7 @@ sub hend{
 =cut
 
 sub hstrand{
-    my ($self,$arg) = @_;
-    return $self->feature2->strand($arg);
+    return shift->feature2->strand(@_);
 }
 
 =head2 hscore
@@ -396,8 +441,7 @@ sub hstrand{
 =cut
 
 sub hscore {
-    my ($self,$arg) = @_;
-    return $self->feature2->score($arg);    
+    return shift->feature2->score(@_);    
 }
 
 =head2 hframe
@@ -413,8 +457,7 @@ sub hscore {
 =cut
 
 sub hframe {
-    my ($self,$arg) = @_;
-    return $self->feature2->frame($arg);    
+    return shift->feature2->frame(@_);    
 }
 
 =head2 hprimary_tag
@@ -429,8 +472,7 @@ sub hframe {
 =cut
 
 sub hprimary_tag{
-    my ($self,$arg) = @_;
-    return $self->feature2->primary_tag($arg);    
+    return shift->feature2->primary_tag(@_);    
 }
 
 =head2 hsource_tag
@@ -447,8 +489,7 @@ sub hprimary_tag{
 =cut
 
 sub hsource_tag{
-    my ($self,$arg) = @_;
-    return $self->feature2->source_tag($arg);
+    return shift->feature2->source_tag(@_);
 }
 
 =head2 invert
@@ -472,4 +513,49 @@ sub invert {
     return undef;
 }
 
+=head2 feature_factory
+
+ Title   : feature_factory
+ Usage   : $obj->feature_factory($newval)
+ Function: Get/set the feature object factory for this feature pair.
+
+           The feature object factory will be used to create a feature
+           object if feature1() or feature2() is called in get mode
+           without having been set before.
+
+           The default is an instance of Bio::Factory::ObjectFactory
+           and hence allows the type to be changed dynamically at any
+           time.
+
+ Example : 
+ Returns : The feature object factory in use (a 
+           Bio::Factory::ObjectFactoryI compliant object)
+ Args    : on set, a Bio::Factory::ObjectFactoryI compliant object
+
+
+=cut
+
+sub feature_factory{
+    my $self = shift;
+
+    return $self->{'feature_factory'} = shift if @_;
+    return $self->{'feature_factory'};
+}
+
+#################################################################
+# aliases for backwards compatibility                           #
+#################################################################
+
+# seqname() is already aliased in Generic.pm, and we overwrite seq_id
+
+sub hseqname {
+    my $self = shift;
+    $self->warn("SeqFeatureI::seqname() is deprecated. Please use seq_id() instead.");
+    return $self->hseq_id(@_);
+}
+
+sub cleanup_fp {
+    my $self = shift;
+    $self->{'feature1'} = $self->{'feature2'} = undef;
+}
 1;

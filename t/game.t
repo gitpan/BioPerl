@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: game.t,v 1.17 2002/06/07 21:20:34 jason Exp $
+## $Id: game.t,v 1.19 2003/12/16 16:58:51 smckay Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -20,7 +20,7 @@ BEGIN {
     }
     use Test;
     use vars qw($TESTCOUNT);
-    $TESTCOUNT = 23;
+    $TESTCOUNT = 25;
     plan tests => $TESTCOUNT;
     
     $error  = 0;
@@ -53,53 +53,67 @@ if( $error == 1 ) {
 END{ 
     unlink('testgameout.game')
 }
-use Bio::Seq;
 use Bio::SeqIO;
-use Bio::SeqIO::MultiFile;
 use Bio::Root::IO;
 my $verbose = $DEBUG ? 1 : -1;
 my $str = Bio::SeqIO->new('-file'=> Bio::Root::IO->catfile("t","data","test.game"), 
 			  '-format' => 'game',
 			  '-verbose' => $verbose);
 ok ($str);
-my $seq = $str->next_primary_seq();
+my $seq = $str->next_seq();
 ok($seq);
 
-ok ($seq->display_id(), 'AE003417' );
-ok ($seq->id(), 'AE003417' );
-ok ($seq->alphabet, 'dna');
-ok ($seq->desc, 'E003417|Drosophila melanogaster genomic scaffold 142000013386054 section 1 of 35, complete sequence.|AE003417.1 GI:7290018');
-my $str2 = Bio::SeqIO->new(-file=> Bio::Root::IO->catfile("t","data","test.game"), 
-			   '-format' => 'game',
-			   '-verbose' => $verbose,
-			   );
-ok ($str2);
-
-$seq = $str2->next_seq();
-ok $seq;
-my @features = ( [qw(exon FBan0003038 fCG3038:1 2565 2154 -1)],
-		 [qw(exon FBan0003038 fCG3038:2 2077 1181 -1)] );
-foreach my $f ( $seq->all_SeqFeatures() ) {
-    last unless @features;
-    my $index = 0;
-    ok($f->primary_tag, $features[0]->[$index++]);
-    ok(($f->each_tag_value('annotation_id'))[0], $features[0]->[$index++]);
-    ok(($f->each_tag_value('id'))[0],$features[0]->[$index++]);
-    ok($f->end,    $features[0]->[$index++]);
-    ok($f->start,  $features[0]->[$index++]);
-    ok($f->strand, $features[0]->[$index++]);
-    shift @features;
+# exercise game parsing
+$str = new Bio::SeqIO(
+    -format =>'game',
+    -file => Bio::Root::IO->catfile ( qw(t data test.game))
+		      );
+$seq = $str->next_seq;
+ok(defined $seq);
+ok(defined $seq->seq);
+ok($seq->alphabet, 'dna');
+ok($seq->display_id, 'L16622');
+ok($seq->length, 28735);
+ok($seq->species->binomial, 'Caenorhabditis elegans');
+my @feats = $seq->get_SeqFeatures;
+ok(scalar(@feats), 10);
+my $source = grep { $_->primary_tag eq 'source' } @feats;
+ok($source);
+my @genes = grep { $_->primary_tag eq 'gene' } @feats;
+ok(scalar(@genes), 3);
+ok($genes[0]->has_tag('gene'));
+my $gname;
+if ( $genes[0]->has_tag('gene') ) {
+    ($gname) = $genes[0]->get_tag_values('gene');
 }
+ok($gname, 'C02D5.3');
+ok($genes[0]->strand, 1);
+my $cds   = grep { $_->primary_tag eq 'CDS' } @feats;
+my $mRNA  = grep { $_->primary_tag eq 'mRNA' } @feats;
+ok($cds, 3);
+ok($mRNA, 3);
 
-$str2 = Bio::SeqIO->new('-format'  => 'game', 
-			'-file'    => '>testgameout.game', 
-			'-verbose' => $verbose);
-$str2->write_seq($seq);
+# make sure we can read waht we write
+# test XML-writing
+my $testfile = "testgameout.game";
+my $out = new Bio::SeqIO(-format => 'game', -file => ">$testfile");
+$out->write_seq($seq);
+$out->close();
 
-ok ( $seq->id, 'AE003417');
+$str = new Bio::SeqIO(-format =>'game', -file => $testfile);
+$seq = $str->next_seq;
+ok(defined $seq);
+ok(defined $seq->seq);
+ok($seq->alphabet, 'dna');
+ok($seq->display_id, 'L16622');
+ok($seq->length, 28735);
+ok($seq->species->binomial, 'Caenorhabditis elegans');
 
-my @feats = $seq->all_SeqFeatures();
-
-ok @feats, 5;
-ok( $feats[0]->primary_tag, 'exon');
+my $genes = grep { $_->primary_tag eq 'gene' } @feats;
+$cds   = grep { $_->primary_tag eq 'CDS' } @feats;
+$mRNA  = grep { $_->primary_tag eq 'mRNA' } @feats;
+ok($genes, 3);
+ok($cds, 3);
+ok($mRNA, 3);
+unlink $testfile;
 

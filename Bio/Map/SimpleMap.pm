@@ -1,4 +1,4 @@
-# $Id: SimpleMap.pm,v 1.8 2002/10/22 07:45:16 lapp Exp $
+# $Id: SimpleMap.pm,v 1.9 2003/05/15 08:13:55 heikki Exp $
 #
 # BioPerl module for Bio::Map::SimpleMap
 #
@@ -99,6 +99,7 @@ BEGIN { $MAPCOUNT = 1; }
                        (arrayref of Bio::Map::MappableI objects) [optional]
 
            -uid     => Unique Id
+
 =cut
 
 sub new {

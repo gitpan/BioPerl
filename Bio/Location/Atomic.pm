@@ -1,4 +1,4 @@
-# $Id: Atomic.pm,v 1.6 2002/12/01 00:05:20 jason Exp $
+# $Id: Atomic.pm,v 1.10 2003/12/18 13:15:20 jason Exp $
 #
 # BioPerl module for Bio::Location::Atomic
 # Cared for by Jason Stajich <jason@bioperl.org>
@@ -69,13 +69,24 @@ use strict;
 use Bio::Root::Root;
 use Bio::LocationI;
 
-
 @ISA = qw(Bio::Root::Root Bio::LocationI);
 
 sub new { 
     my ($class, @args) = @_;
     my $self = {};
-
+    # This is for the case when we've done something like this
+    # get a 2 features from somewhere (like Bio::Tools::GFF)
+    # Do
+    # my $location = $f1->location->union($f2->location);
+    # We get an error without the following code which 
+    # explictly loads the Bio::Location::Simple class
+    eval {
+	($class) = ref($class) if ref($class);
+	Bio::Root::Root->_load_module($class);
+      };
+    if ( $@ ) {
+	Bio::Root::RootI->throw("$class cannot be found\nException $@");
+      }
     bless $self,$class;
 
     my ($v,$start,$end,$strand,$seqid) = $self->_rearrange([qw(VERBOSE
@@ -151,21 +162,23 @@ sub end {
 =cut
 
 sub strand {
-  my ($self, $value) = @_;
+  my $self = shift;
 
-  if ( defined $value ) {
-       if ( $value eq '+' ) { $value = 1; }
-       elsif ( $value eq '-' ) { $value = -1; }
-       elsif ( $value eq '.' ) { $value = 0; }
-       elsif ( $value != -1 && $value != 1 && $value != 0 ) {
-	   $self->throw("$value is not a valid strand info");
+  if ( @_ ) {
+       my $value = shift;
+       if ( defined($value) ) {
+	   if ( $value eq '+' ) { $value = 1; }
+	   elsif ( $value eq '-' ) { $value = -1; }
+	   elsif ( $value eq '.' ) { $value = 0; }
+	   elsif ( $value != -1 && $value != 1 && $value != 0 ) {
+	       $self->throw("$value is not a valid strand info");
+	   }
+           $self->{'_strand'} = $value;
        }
-       $self->{'_strand'} = $value
-   }
-  # let's go ahead and force to '0' if
-  # we are requesting the strand without it
-  # having been set previously
-   return $self->{'_strand'} || 0;
+  }
+  # do not pretend the strand has been set if in fact it wasn't
+  return $self->{'_strand'};
+  #return $self->{'_strand'} || 0;
 }
 
 =head2 length
@@ -374,6 +387,17 @@ sub to_FTstring {
     return $str;
 }
 
+# comments, not function added by jason 
+#
+# trunc is untested, and as of now unannounced method for truncating a
+# location.  This is to eventually be part of the procedure to
+# truncate a sequence with annotatioin and properly remap the location
+# of all the features contained within the truncated segment.
+
+# presumably this might do things a little differently for the case 
+# where the truncation splits the location in half
+# 
+# in short- you probably don't want to use  this method.
 
 sub trunc {
   my ($self,$start,$end,$relative_ori) = @_;

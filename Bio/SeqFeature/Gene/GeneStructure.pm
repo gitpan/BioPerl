@@ -1,4 +1,4 @@
-# $Id: GeneStructure.pm,v 1.14 2002/10/22 07:38:41 lapp Exp $
+# $Id: GeneStructure.pm,v 1.17 2003/08/10 16:28:28 jason Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::GeneStructure
 #
@@ -17,7 +17,7 @@ Bio::SeqFeature::Gene::GeneStructure - A feature representing an arbitrarily
 
 =head1 SYNOPSIS
 
-See documentation of methods.
+  # See documentation of methods.
 
 =head1 DESCRIPTION
 
@@ -77,6 +77,7 @@ use Bio::SeqFeature::Gene::GeneStructureI;
 sub new {
     my ($caller, @args) = @_;
     my $self = $caller->SUPER::new(@args);
+    $self->_register_for_cleanup(\&gene_cleanup);
     my ($primary) =
 	$self->_rearrange([qw(PRIMARY
 			      )],@args);
@@ -101,10 +102,7 @@ sub new {
 =cut
 
 sub transcripts {
-    my ($self) = @_;
-
-    return () unless exists($self->{'_transcripts'});
-    return @{$self->{'_transcripts'}};
+    return @{shift->{'_transcripts'} || []};
 }
 
 =head2 add_transcript
@@ -145,8 +143,12 @@ sub add_transcript {
 
 sub flush_transcripts {
     my ($self) = @_;
-
+    
     if(exists($self->{'_transcripts'})) {
+	foreach my $t ( grep {defined} @{$self->{'_transcripts'} || []} ) {
+	    $t->parent(undef); # remove bkwds pointers
+	    $t = undef;
+	}
 	delete($self->{'_transcripts'});
     }
 }
@@ -390,11 +392,12 @@ sub flush_sub_SeqFeature {
    }
 }
 
+sub gene_cleanup {
+    my $self = shift;
+    $self->flush_transcripts();
+}
+
 1;
-
-
-
-
 
 
 

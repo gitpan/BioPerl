@@ -50,7 +50,7 @@ unless( $plain  ) {
 
 =head1 NAME
 
-taxid4species - Simple script which returns the NCBI Taxanomic id for a requested species
+taxid4species: Simple script which returns the NCBI Taxanomic id for a requested species
 
 =head1 DESCRIPTION
 

@@ -1,4 +1,4 @@
-# $Id: BiblioI.pm,v 1.5 2002/10/22 07:45:13 lapp Exp $
+# $Id: BiblioI.pm,v 1.6 2003/06/04 08:36:37 heikki Exp $
 #
 # BioPerl module for Bio::DB::BiblioI
 #
@@ -80,15 +80,14 @@ message. You need to call them on a Bio::Biblio object.
 # Let the code begin...
 
 package Bio::DB::BiblioI;
-use vars qw(@ISA $VERSION $Revision);
+use vars qw(@ISA $Revision);
 use strict;
 use Bio::Root::RootI;
 
 @ISA = qw(Bio::Root::RootI);
 
-BEGIN { 
-    $VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id: BiblioI.pm,v 1.5 2002/10/22 07:45:13 lapp Exp $;
+BEGIN {
+    $Revision = q$Id: BiblioI.pm,v 1.6 2003/06/04 08:36:37 heikki Exp $;
 }
 
 # -----------------------------------------------------------------------------

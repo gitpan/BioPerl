@@ -1,10 +1,10 @@
 package Bio::Graphics::Glyph::graded_segments;
-#$Id: graded_segments.pm,v 1.12.2.1 2003/07/05 00:32:04 lstein Exp $
+#$Id: graded_segments.pm,v 1.17 2003/10/23 02:30:49 lstein Exp $
 
 use strict;
-use Bio::Graphics::Glyph::segments;
+use Bio::Graphics::Glyph::minmax;
 use vars '@ISA';
-@ISA = 'Bio::Graphics::Glyph::segments';
+@ISA = 'Bio::Graphics::Glyph::minmax';
 
 # override draw method to calculate the min and max values for the components
 sub draw {
@@ -17,17 +17,7 @@ sub draw {
   @parts    = $self if !@parts && $self->level == 0;
   return $self->SUPER::draw(@_) unless @parts;
 
-  # figure out the colors
-  my $max_score = $self->option('max_score');
-  my $min_score = $self->option('min_score');
-  unless (defined $max_score && defined $min_score) {
-    for my $part (@parts) {
-      my $s = eval { $part->feature->score };
-      next unless defined $s;
-      $max_score = $s if !defined $max_score or $s > $max_score;
-      $min_score = $s if !defined $min_score or $s < $min_score;
-    }
-  }
+  my ($min_score,$max_score) = $self->minmax(\@parts);
 
   return $self->SUPER::draw(@_)
     unless defined($max_score) && defined($min_score)
@@ -99,11 +89,12 @@ sub keyglyph {
 # component draws a shaded box
 sub bgcolor { 
   my $self = shift;
-  return $self->{partcolor} || $self->SUPER::bgcolor;
+  return defined $self->{partcolor} ? $self->{partcolor} : $self->SUPER::bgcolor;
 }
-sub fgcolor { 
+sub fgcolor {
   my $self = shift;
-  return $self->{partcolor} || $self->SUPER::fgcolor;
+  return $self->SUPER::fgcolor unless $self->option('vary_fg');
+  return defined $self->{partcolor} ? $self->{partcolor} : $self->SUPER::fgcolor;
 }
 
 1;
@@ -153,20 +144,27 @@ L<Bio::Graphics::Glyph> for a full explanation.
 
   -description  Whether to draw a description  0 (false)
 
+  -hilite       Highlight color                undef (no color)
+
 In addition, the alignment glyph recognizes the following
 glyph-specific options:
 
-  Option      Description                  Default
-  ------      -----------                  -------
+  Option      Description                   Default
+  ------      -----------                   -------
 
-  -max_score  Maximum value of the	   Calculated
+  -max_score  Maximum value of the	    Calculated
               feature's "score" attribute
 
-  -min_score  Minimum value of the         Calculated
+  -min_score  Minimum value of the          Calculated
               feature's "score" attribute
+
+  -vary_fg    Vary the foreground color as  0 (false)
+              well as the background
 
 If max_score and min_score are not specified, then the glyph will
-calculate the local maximum and minimum scores at run time.
+calculate the local maximum and minimum scores at run time.  Since
+many scoring functions are exponential you may wish to take the log of
+your scores before passing them to this glyph.
 
 
 =head1 BUGS

@@ -7,7 +7,7 @@
 use strict;
 use ExtUtils::MakeMaker;
 use Bio::Root::IO;
-use constant TEST_COUNT => 120;
+use constant TEST_COUNT => 133;
 use constant FASTA_FILES => Bio::Root::IO->catfile('t','data','dbfa');
 use constant GFF_FILE    => Bio::Root::IO->catfile('t','data',
 						   'biodbgff','test.gff');
@@ -110,6 +110,7 @@ ok($t[0] eq $t);
 my $seg = $db->segment('Contig1');
 @t = $seg->features(-attributes=>{'Gene'=>'abc-1'});
 ok(@t>0);
+ok($seg->feature_count, 17);
 @t = $seg->features(-attributes=>{'Gene'=>'xyz-2',Note=>'Terribly interesting'});
   ok(@t==1);
 
@@ -379,6 +380,35 @@ ok(scalar @f,1);
 ok($f[0]->length,35000-32000+1);
 ok(scalar $f[0]->CDS,3);
 ok(scalar $f[0]->UTR,2);
+
+# test deletions
+# segment delete() method
+my $clone = $db->segment(Clone=>'M7.3');
+my $overlapping_feature_count = $clone->features(-range_type =>'overlaps');
+my $contained_feature_count   = $clone->features(-range_type =>'contains');
+ok(scalar $clone->delete(-range_type=>'contains'),$contained_feature_count);
+ok(scalar $clone->features,$overlapping_feature_count - $contained_feature_count);
+
+# database delete() method
+ok($db->delete(-type=>['mRNA:confirmed','transposon:tc1']),3);
+ok($db->delete(-type=>'UTR',-ref=>'Contig29'),undef);
+ok($db->delete(-type=>'CDS',-ref=>'AL12345.2',-class=>'Clone'),3);
+ok($db->delete_features(1,2,3),3);
+
+$result = eval {
+  ok($db->delete_groups(1,2,3,4,5),5);
+  my @features = $db->get_feature_by_name(Sequence => 'Contig2');
+  ok($db->delete_groups(@features),1);
+  1;
+};
+if (!$result && $@ =~ /not implemented/i) {
+  skip("delete_groups() not implemented by this adaptor",1);
+  skip("delete_groups() not implemented by this adaptor",1);
+}
+ok(!defined eval{$db->delete()});
+ok($db->delete(-force=>1));
+ok(scalar $db->features,0);
+ok(!$db->segment('Contig1'));
 
 END {
   unlink FASTA_FILES."/directory.index";

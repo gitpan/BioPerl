@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: SearchIO.t,v 1.61.2.5 2003/09/15 16:19:00 jason Exp $
+## $Id: SearchIO.t,v 1.78 2003/12/19 18:10:06 heikki Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -20,8 +20,8 @@ BEGIN {
 	use lib 't';
     }
     use vars qw($NTESTS);
-    $NTESTS = 792;
-    $LASTXMLTEST = 54;
+    $NTESTS = 1145;
+    $LASTXMLTEST = 63;
     $error = 0;
 
     use Test;
@@ -42,6 +42,7 @@ if( $error == 1 ) {
     exit(0);
 }
 
+
 use Bio::SearchIO;
 use Bio::Root::IO;
 use Bio::SearchIO::Writer::HitTableWriter;
@@ -53,7 +54,8 @@ END {
 }
 
 ok(1);
-my ($searchio, $result,$hit,$hsp);
+my ($searchio, $result,$iter,$hit,$hsp);
+
 if( ! $SKIPXML ) {
     # test with RPSBLAST data first 
     $searchio = new Bio::SearchIO ('-tempfile' => 1,
@@ -129,6 +131,21 @@ if( ! $SKIPXML ) {
     $hit = $result->next_hit;
     ok(! $hit);
 
+    $searchio = new Bio::SearchIO(-format => 'blastxml', 
+				  -file => Bio::Root::IO->catfile('t','data','mus.bls.xml'));
+
+    $result = $searchio->next_result;
+
+    ok($result->database_name,'Hs15_up1000');
+    ok($result->query_name,'NM_011441_up_1000_chr1_4505586_r');
+    ok($result->query_description,'chr1:4505586-4506585');
+    ok($result->query_accession,'NM_011441_up_1000_chr1_4505586_r');
+    ok($result->query_length,'1000');
+    $hit = $result->next_hit;
+    ok($hit->name,'NM_001938_up_1000_chr1_93161154_f');
+    ok($hit->description,'chr1:93161154-93162153');
+    ok($hit->accession,'3153');
+    ok($hit->length,'1000');
 }
 $searchio = new Bio::SearchIO ('-format' => 'blast',
 				  '-file'   => Bio::Root::IO->catfile('t','data','ecolitst.bls'));
@@ -143,9 +160,13 @@ ok($result->algorithm, 'BLASTP');
 ok($result->algorithm_version, qr/^2\.1\.3/);
 ok($result->query_name, qr/gi|1786183|gb|AAC73113.1| (AE000111) aspartokinase I,\s+homoserine dehydrogenase I [Escherichia coli]/);
 ok($result->query_length, 820);
-ok($result->get_statistic('kappa')== 0.041);
-ok($result->get_statistic('lambda'), 0.267);
-ok($result->get_statistic('entropy') == 0.14);
+ok($result->get_statistic('kappa'), '0.135');
+ok($result->get_statistic('kappa_gapped'), '0.0410');
+ok($result->get_statistic('lambda'), '0.319');
+ok($result->get_statistic('lambda_gapped'), '0.267');
+ok($result->get_statistic('entropy'), '0.383');
+ok($result->get_statistic('entropy_gapped'), '0.140');
+
 ok($result->get_statistic('dbletters'), 1358990);
 ok($result->get_statistic('dbentries'), 4289);
 ok($result->get_statistic('effective_hsplength'), 47);
@@ -153,9 +174,11 @@ ok($result->get_statistic('effectivespace'), 894675611);
 ok($result->get_parameter('matrix'), 'BLOSUM62');
 ok($result->get_parameter('gapopen'), 11);
 ok($result->get_parameter('gapext'), 1);
-ok($result->get_statistic('S2'), '92 (40.0 bits)');
+ok($result->get_statistic('S2'), '92');
+ok($result->get_statistic('S2_bits'), '40.0');
 ok($result->get_parameter('expect'), '1.0e-03');
 ok($result->get_statistic('num_extensions'), '82424');
+
 
 my @valid = ( [ 'gb|AAC73113.1|', 820, 'AAC73113', '0', 1567],
 	      [ 'gb|AAC76922.1|', 810, 'AAC76922', '1e-91', 332],
@@ -212,6 +235,17 @@ ok($result->get_statistic('entropy'), 0.384);
 ok($result->get_statistic('dbletters'), 1358990);
 ok($result->get_statistic('dbentries'), 4289);
 ok($result->get_parameter('matrix'), 'BLOSUM62');
+ok($result->get_statistic('Frame+0_lambda_used'), '0.319');
+ok($result->get_statistic('Frame+0_kappa_used'), '0.136');
+ok($result->get_statistic('Frame+0_entropy_used'), '0.384');
+
+ok($result->get_statistic('Frame+0_lambda_computed'), '0.319');
+ok($result->get_statistic('Frame+0_kappa_computed'), '0.136');
+ok($result->get_statistic('Frame+0_entropy_computed'), '0.384');
+
+ok($result->get_statistic('Frame+0_lambda_gapped'), '0.244');
+ok($result->get_statistic('Frame+0_kappa_gapped'), '0.0300');
+ok($result->get_statistic('Frame+0_entropy_gapped'), '0.180');
 
 @valid = ( [ 'gb|AAC73113.1|', 820, 'AAC73113', '0', 4141],
 	   [ 'gb|AAC76922.1|', 810, 'AAC76922', '3.1e-86', 844],
@@ -266,6 +300,15 @@ ok($result->get_statistic('entropy'), 0.401);
 ok($result->get_statistic('dbletters'), 4662239);
 ok($result->get_statistic('dbentries'), 400);
 ok($result->get_statistic('T'), 13);
+ok($result->get_statistic('X1'), 16);
+ok($result->get_statistic('X1_bits'), 7.3);
+ok($result->get_statistic('X2'), 0);
+ok($result->get_statistic('X2_bits'), '0.0');
+ok($result->get_statistic('S1'), 41);
+ok($result->get_statistic('S1_bits'), 21.7);
+ok($result->get_statistic('S2'), 53);
+ok($result->get_statistic('S2_bits'), 27.2);
+
 ok($result->get_statistic('decayconst'), 0.1);
 
 ok($result->get_parameter('matrix'), 'BLOSUM62');
@@ -598,10 +641,14 @@ ok($result->get_statistic('kappa'), 0.711);
 ok($result->get_statistic('entropy'),1.31 );
 ok($result->get_statistic('T'), 0);
 ok($result->get_statistic('A'), 30);
-ok($result->get_statistic('X1'), "6 (11.9 bits)");
-ok($result->get_statistic('X2'), "15 (29.7 bits)");
-ok($result->get_statistic('S1'), "12 (24.3 bits)");
-ok($result->get_statistic('S2'), "17 (34.2 bits)");
+ok($result->get_statistic('X1'), '6');
+ok($result->get_statistic('X1_bits'), 11.9);
+ok($result->get_statistic('X2'), 15);
+ok($result->get_statistic('X2_bits'), 29.7);
+ok($result->get_statistic('S1'), 12);
+ok($result->get_statistic('S1_bits'), 24.3);
+ok($result->get_statistic('S2'), 17);
+ok($result->get_statistic('S2_bits'), 34.2);
 
 ok($result->get_statistic('dbentries'), 1083200);
 
@@ -666,7 +713,7 @@ ok($result->algorithm, 'BLASTX');
 ok($result->algorithm_version, qr/^2\.0MP\-WashU/);
 ok($result->query_name, 'gi|142864|gb|M10040.1|BACDNAE');
 ok($result->query_description, 'B.subtilis dnaE gene encoding DNA primase, complete cds');
-ok($result->query_accession, 'BACDNAE');
+ok($result->query_accession, 'M10040.1');
 ok($result->query_length, 2001);
 ok($result->get_parameter('matrix'), 'blosum62');
 
@@ -793,7 +840,7 @@ ok($result->algorithm, 'TBLASTX');
 ok($result->algorithm_version, qr/^2\.0MP\-WashU/);
 ok($result->query_name, 'gi|142864|gb|M10040.1|BACDNAE');
 ok($result->query_description, 'B.subtilis dnaE gene encoding DNA primase, complete cds');
-ok($result->query_accession, 'BACDNAE');
+ok($result->query_accession, 'M10040.1');
 ok($result->query_length, 2001);
 ok($result->get_parameter('matrix'), 'blosum62');
 
@@ -900,6 +947,7 @@ ok($result->algorithm_version, '2.2.1 [Apr-13-2001]');
 ok($result->database_name, 'pir');
 ok($result->database_entries, 274514);
 ok($result->database_letters, 93460074);
+
 $hit = $result->next_hit;
 ok($hit->name, 'PIR2:S44629');
 ok($hit->length, 628);
@@ -928,9 +976,7 @@ ok($hsp->hit_string, 'CSAEFDFIQYSTIEKLCGTLLIPLALISLVTFVFNFVKNT-NLLWRNSEEIG----EN
 ok($hsp->homology_string, 'C+AEFDF++  T  +   T                 + +   +L +    +     ++GE++Y+ +QL   T +  LIMRLKLF+TP++C++A+L  + +L G   +   +   A+V VI A +  +G  N++ Q');
 
 
-# TODO: Flesh this test out!
-$searchio = new Bio::SearchIO ('-format' => 'psiblast',
-			       '-stats'  => 1,
+$searchio = new Bio::SearchIO ('-format' => 'blast',
 			       '-file'   => Bio::Root::IO->catfile('t','data','HUMBETGLOA.tblastx'));
 
 $result = $searchio->next_result;
@@ -956,7 +1002,7 @@ my $writer = Bio::SearchIO::Writer::HitTableWriter->new(
                                                   )]  );
 
 my $out = new Bio::SearchIO(-writer => $writer,
-			    -file   => ">searchio.out");
+			 -file   => ">searchio.out");
 $out->write_result($result, 1);
 ok(-e 'searchio.out');
 my $writerhtml = new Bio::SearchIO::Writer::HTMLResultWriter();
@@ -968,56 +1014,37 @@ ok(-e "searchio.html");
 unlink 'searchio.out';
 unlink 'searchio.html';
 
-$searchio = new Bio::SearchIO ('-format' => 'blast',
-			       '-file'   => Bio::Root::IO->catfile('t','data','HUMBETGLOA.tblastx'));
-
-$result = $searchio->next_result;
-
-ok($result);
-$hit = $result->next_hit;
-ok($hit->accession, 'AE000479');
-$hsp = $hit->next_hsp;
-ok($hsp->get_aln->isa('Bio::Align::AlignI'));
-$writer = Bio::SearchIO::Writer::HitTableWriter->new( 
-                                  -columns => [qw(
-                                                  query_name
-                                                  query_length
-                                                  hit_name
-                                                  hit_length
-						  bits
-						  score
-                                                  frac_identical_query
-                                                  expect
-                                                  )]  );
-
-$out = new Bio::SearchIO(-writer => $writer,
-			    -file   => ">searchio.out");
-$out->write_result($result, 1);
-ok(-e 'searchio.out');
-$writerhtml = new Bio::SearchIO::Writer::HTMLResultWriter();
-$outhtml = new Bio::SearchIO(-writer => $writerhtml,
-				-file   => ">searchio.html");
-$outhtml->write_result($result, 1);
-ok(-e "searchio.html");
-
 #test all the database accession number formats
 $searchio = new Bio::SearchIO(-format => 'blast',
 				 -file   => 't/data/testdbaccnums.out');
 $result = $searchio->next_result;
 
-@valid = (['pir||T14789','T14789','T14789','CAB53709','AAH01726'],['gb|NP_065733.1|CYT19', 'NP_065733','CYT19'],
-['emb|XP_053690.4|Cyt19','XP_053690'],['dbj|NP_056277.2|DKFZP586L0724','NP_056277'],
-['prf||XP_064862.2','XP_064862'],['pdb|BAB13968.1|1','BAB13968'],
-['sp|Q16478|GLK5_HUMAN','Q16478'],['pat|US|NP_002079.2','NP_002079'],
-['bbs|NP_079463.2|','NP_079463'],['gnl|db1|NP_002444.1','NP_002444'],
-['ref|XP_051877.1|','XP_051877'],['lcl|AAH16829.1|','AAH16829'],
-['gi|1|gb|NP_065733.1|CYT19','NP_065733'],['gi|2|emb|XP_053690.4|Cyt19','XP_053690'],
-['gi|3|dbj|NP_056277.2|DKFZP586L0724','NP_056277'],['gi|4|pir||T14789','T14789'],
-['gi|5|prf||XP_064862.2','XP_064862'],['gi|6|pdb|BAB13968.1|1','BAB13968'],
-['gi|7|sp|Q16478|GLK5_HUMAN','Q16478'],['gi|8|pat|US|NP_002079.2','NP_002079'],
-['gi|9|bbs|NP_079463.2|','NP_079463'],['gi|10|gnl|db1|NP_002444.1','NP_002444'],
-['gi|11|ref|XP_051877.1|','XP_051877'],['gi|12|lcl|AAH16829.1|','AAH16829'],
-['MY_test_ID','MY_test_ID']);
+@valid = ( ['pir||T14789','T14789','T14789','CAB53709','AAH01726'],
+	   ['gb|NP_065733.1|CYT19', 'NP_065733','CYT19'],
+	   ['emb|XP_053690.4|Cyt19','XP_053690'],
+	   ['dbj|NP_056277.2|DKFZP586L0724','NP_056277'],
+	   ['prf||XP_064862.2','XP_064862'],
+	   ['pdb|BAB13968.1|1','BAB13968'],
+	   ['sp|Q16478|GLK5_HUMAN','Q16478'],
+	   ['pat|US|NP_002079.2','NP_002079'],
+	   ['bbs|NP_079463.2|','NP_079463'],
+	   ['gnl|db1|NP_002444.1','NP_002444'],
+	   ['ref|XP_051877.1|','XP_051877'],
+	   ['lcl|AAH16829.1|','AAH16829'],
+	   ['gi|1|gb|NP_065733.1|CYT19','NP_065733'],
+	   ['gi|2|emb|XP_053690.4|Cyt19','XP_053690'],
+	   ['gi|3|dbj|NP_056277.2|DKFZP586L0724','NP_056277'],
+	   ['gi|4|pir||T14789','T14789'],
+	   ['gi|5|prf||XP_064862.2','XP_064862'],
+	   ['gi|6|pdb|BAB13968.1|1','BAB13968'],
+	   ['gi|7|sp|Q16478|GLK5_HUMAN','Q16478'],
+	   ['gi|8|pat|US|NP_002079.2','NP_002079'],
+	   ['gi|9|bbs|NP_079463.2|','NP_079463'],
+	   ['gi|10|gnl|db1|NP_002444.1','NP_002444'],
+	   ['gi|11|ref|XP_051877.1|','XP_051877'],
+	   ['gi|12|lcl|AAH16829.1|','AAH16829'],
+	   ['MY_test_ID','MY_test_ID']
+	   );
 
 $hit = $result->next_hit;
 my $d = shift @valid;
@@ -1084,6 +1111,429 @@ while( my $hit = $r->next_hit ) {
     ok($hsp->hit->end, shift @$d);
     ok($hsp->hit->strand, shift @$d);       
 }
+		 
+
+# parse the another megablast format
+
+$infile =  Bio::Root::IO->catfile(qw(t data 503384.MEGABLAST.0));
+
+# this is megablast output type 0 
+$in = new Bio::SearchIO(-file          => $infile,
+			-report_format => 0,
+			-format        => 'megablast'); 
+$r = $in->next_result;
+@dcompare = ( 
+	      ['Contig634', 7620, 7941, 1, 1, 321, -1],
+	      ['Contig1853', 6406, 6620, 1, 1691, 1905, 1],  
+	      ['Contig3700', 8723,9434, 1, 4083, 4794, -1],
+	      ['Contig3997', 1282, 1704, 1, 1546, 1968,-1 ],
+	      );
+
+ok($r->query_name, '503384');
+
+while( my $hit = $r->next_hit ) {
+    my $d = shift @dcompare;
+    ok($hit->name, shift @$d);
+    my $hsp = $hit->next_hsp;
+    ok($hsp->query->start, shift @$d);
+    ok($hsp->query->end, shift @$d);
+    ok($hsp->query->strand, shift @$d);
+    ok($hsp->hit->start, shift @$d);
+    ok($hsp->hit->end, shift @$d);
+    ok($hsp->hit->strand, shift @$d);
+}
+		 
+
+
+# Let's test RPS-BLAST
+
+my $parser = new Bio::SearchIO(-format => 'blast',
+			       -file   => Bio::Root::IO->catfile(qw(t data ecoli_domains.rpsblast)));
+
+$r = $parser->next_result;
+ok($r->query_name, 'gi|1786183|gb|AAC73113.1|');
+ok($r->num_hits, 7);
+$hit = $r->next_hit;
+ok($hit->name, 'gnl|CDD|3919');
+ok($hit->significance, 0.064);
+ok($hit->raw_score, 28);
+$hsp = $hit->next_hsp;
+ok($hsp->query->start, 599);
+ok($hsp->query->end,655);
+ok($hsp->hit->start,23);
+ok($hsp->hit->end,76);
+
+
+# Test PSI-BLAST parsing
+
+$searchio = new Bio::SearchIO ('-format' => 'blast',
+			       '-file'   => Bio::Root::IO->catfile('t','data','psiblastreport.out'));
+
+$result = $searchio->next_result;
+
+ok($result->database_name, '/home/peter/blast/data/swissprot.pr');
+ok($result->database_entries, 88780);
+ok($result->database_letters, 31984247);
+
+ok($result->algorithm, 'BLASTP');
+ok($result->algorithm_version, qr/^2\.0\.14/);
+ok($result->query_name, 'CYS1_DICDI');
+ok($result->query_length, 343);
+ok($result->get_statistic('kappa') == 0.0491);
+ok($result->get_statistic('lambda') == 0.270);
+ok($result->get_statistic('entropy') == 0.230);
+ok($result->get_statistic('dbletters'), 31984247);
+ok($result->get_statistic('dbentries'), 88780);
+ok($result->get_statistic('effective_hsplength'), 49);
+ok($result->get_statistic('effectivespace'), 8124403938);
+ok($result->get_parameter('matrix'), 'BLOSUM62');
+ok($result->get_parameter('gapopen'), 11);
+ok($result->get_parameter('gapext'), 1);
+
+my @valid_hit_data = ( [ 'sp|P04988|CYS1_DICDI', 343, 'P04988', '0', 721],
+		       [ 'sp|P43295|A494_ARATH', 313, 'P43295', '1e-75', 281],
+		       [ 'sp|P25804|CYSP_PEA', 363, 'P25804', '1e-74', 278]);
+my @valid_iter_data = ( [ 127, 127, 0, 109, 18, 0, 0, 0, 0],
+			[ 157, 40, 117, 2, 38, 0, 109, 3, 5]);
+my $iter_count = 0;
+while( $iter = $result->next_iteration ) {
+    $iter_count++;
+    my $di = shift @valid_iter_data;
+    ok($iter->number, $iter_count);
+
+    ok($iter->num_hits, shift @$di);
+    ok($iter->num_hits_new, shift @$di);
+    ok($iter->num_hits_old, shift @$di);
+    ok(scalar($iter->newhits_below_threshold), shift @$di);
+    ok(scalar($iter->newhits_not_below_threshold), shift @$di);
+    ok(scalar($iter->newhits_unclassified), shift @$di);
+    ok(scalar($iter->oldhits_below_threshold), shift @$di);
+    ok(scalar($iter->oldhits_newly_below_threshold), shift @$di);
+    ok(scalar($iter->oldhits_not_below_threshold), shift @$di);
+
+    my $hit_count = 0;
+    if ($iter_count == 1) {
+	while( $hit = $result->next_hit ) {
+	    my $d = shift @valid_hit_data;
+
+	    ok($hit->name, shift @$d);
+	    ok($hit->length, shift @$d);
+	    ok($hit->accession, shift @$d);
+	    ok(sprintf("%g",$hit->significance), sprintf("%g",shift @$d) );
+	    ok($hit->bits, shift @$d );
+
+	    if( $hit_count == 1 ) {
+		while( my $hsp = $hit->next_hsp ){
+		    ok($hsp->query->start, 32);
+		    ok($hsp->query->end, 340);
+		    ok($hsp->hit->start, 3);
+		    ok($hsp->hit->end, 307);
+		    ok($hsp->length('hsp'), 316);
+		    ok($hsp->start('hit'), $hsp->hit->start);
+		    ok($hsp->end('query'), $hsp->query->end);
+		    ok($hsp->strand('sbjct'), $hsp->subject->strand);# alias for hit
+		    ok($hsp->evalue == 1e-75);
+		    ok($hsp->score, 712);
+		    ok($hsp->bits, 281);
+		    ok(sprintf("%.1f",$hsp->percent_identity), 46.5);
+		    ok(sprintf("%.4f",$hsp->frac_identical('query')), 0.4757);
+		    ok(sprintf("%.3f",$hsp->frac_identical('hit')), 0.482);
+		    ok($hsp->gaps, 18);
+		}
+	    }
+	    last if( $hit_count++ > @valid_hit_data );
+	}
+    }
+}
+
+# Test filtering
+
+$searchio = new Bio::SearchIO ( '-format' => 'blast', 
+                                '-file'   => Bio::Root::IO->catfile('t','data','ecolitst.bls'),
+                                '-signif' => 1e-100);
+
+@valid = qw(gb|AAC73113.1|);
+$r = $searchio->next_result;
+
+while( my $hit = $r->next_hit ) {
+    ok($hit->name, shift @valid);
+}
+
+$searchio = new Bio::SearchIO ( '-format' => 'blast', 
+                                '-file'   => Bio::Root::IO->catfile('t','data','ecolitst.bls'),
+                                '-score' => 100);
+
+@valid = qw(gb|AAC73113.1| gb|AAC76922.1| gb|AAC76994.1|);
+$r = $searchio->next_result;
+
+while( my $hit = $r->next_hit ) {
+    ok($hit->name, shift @valid);
+}
+
+$searchio = new Bio::SearchIO ( '-format' => 'blast', 
+                                '-file'   => Bio::Root::IO->catfile('t','data','ecolitst.bls'),
+                                '-bits' => 200);
+
+@valid = qw(gb|AAC73113.1| gb|AAC76922.1|);
+$r = $searchio->next_result;
+
+while( my $hit = $r->next_hit ) {
+    ok($hit->name, shift @valid);
+}
+
+
+my $filt_func = sub{ my $hit=shift; 
+                     $hit->frac_identical('query') >= 0.31
+                     };
+
+$searchio = new Bio::SearchIO ( '-format' => 'blast', 
+                                '-file'   => Bio::Root::IO->catfile('t','data','ecolitst.bls'),
+                                '-hit_filter' => $filt_func);
+
+@valid = qw(gb|AAC73113.1| gb|AAC76994.1|);
+$r = $searchio->next_result;
+
+while( my $hit = $r->next_hit ) {
+    ok($hit->name, shift @valid);
+}
+
+
+
+
+# bl2seq parsing testing
+
+# this is blastp bl2seq
+$searchio = new Bio::SearchIO(-format => 'blast',
+			      -file   => Bio::Root::IO->catfile(qw(t data
+								   bl2seq.out)));
+$result = $searchio->next_result;
+ok($result);
+ok($result->query_name, '');
+ok($result->algorithm, 'BLASTP');
+$hit = $result->next_hit;
+ok($hit->name, 'ALEU_HORVU');
+ok($hit->length, 362);
+$hsp = $hit->next_hsp;
+ok($hsp->score, 481);
+ok($hsp->bits, 191);
+ok(int $hsp->percent_identity, 34);
+ok($hsp->evalue, '2e-53');
+ok(int($hsp->frac_conserved*$hsp->length), 167);
+ok($hsp->query->start, 28);
+ok($hsp->query->end, 343);
+ok($hsp->hit->start, 60);
+ok($hsp->hit->end,360);
+ok($hsp->gaps, 27);
+
+# this is blastn bl2seq 
+$searchio = new Bio::SearchIO(-format => 'blast',
+			      -file   => Bio::Root::IO->catfile
+			      (qw(t data bl2seq.blastn.rev)));
+$result = $searchio->next_result;
+ok($result);
+ok($result->query_name, '');
+ok($result->algorithm, 'BLASTN');
+ok($result->query_length, 180);
+$hit = $result->next_hit;
+ok($hit->length, 179);
+ok($hit->name, 'human');
+$hsp = $hit->next_hsp;
+ok($hsp->score, 27);
+ok($hsp->bits, '54.0');
+ok(int $hsp->percent_identity, 88);
+ok($hsp->evalue, '2e-12');
+ok(int($hsp->frac_conserved*$hsp->length), 83);
+ok($hsp->query->start, 94);
+ok($hsp->query->end, 180);
+ok($hsp->query->strand, 1);
+ok($hsp->hit->strand, -1);
+ok($hsp->hit->start, 1);
+ok($hsp->hit->end,94);
+ok($hsp->gaps, 7);
+
+# this is blastn bl2seq 
+$searchio = new Bio::SearchIO(-format => 'blast',
+			      -file   => Bio::Root::IO->catfile
+			      (qw(t data bl2seq.blastn)));
+$result = $searchio->next_result;
+ok($result);
+ok($result->query_name, '');
+ok($result->query_length, 180);
+ok($result->algorithm, 'BLASTN');
+$hit = $result->next_hit;
+ok($hit->name, 'human');
+ok($hit->length, 179);
+$hsp = $hit->next_hsp;
+ok($hsp->score, 27);
+ok($hsp->bits, '54.0');
+ok(int $hsp->percent_identity, 88);
+ok($hsp->evalue, '2e-12');
+ok(int($hsp->frac_conserved*$hsp->length), 83);
+ok($hsp->query->start, 94);
+ok($hsp->query->end, 180);
+ok($hsp->query->strand, 1);
+ok($hsp->hit->strand, 1);
+ok($hsp->hit->start, 86);
+ok($hsp->hit->end,179);
+ok($hsp->gaps, 7);
+
+# this is blastp bl2seq
+$searchio = new Bio::SearchIO(-format => 'blast',
+			      -file   => Bio::Root::IO->catfile
+			      (qw(t data bl2seq.bug940.out)));
+$result = $searchio->next_result;
+ok($result);
+ok($result->query_name, 'zinc');
+ok($result->algorithm, 'BLASTP');
+ok($result->query_description, 'finger protein 135 (clone pHZ-17) [Homo sapiens]. neo_id RS.ctg14243-000000.6.0');
+ok($result->query_length, 469);
+$hit = $result->next_hit;
+ok($hit->name, 'gi|4507985|');
+ok($hit->description,'zinc finger protein 135 (clone pHZ-17) [Homo sapiens]. neo_id RS.ctg14243-000000.6.0');
+ok($hit->length, 469);
+$hsp = $hit->next_hsp;
+ok($hsp->score, 1626);
+ok($hsp->bits, 637);
+ok(int $hsp->percent_identity, 66);
+ok($hsp->evalue, '0.0');
+ok(int($hsp->frac_conserved*$hsp->length), 330);
+ok($hsp->query->start, 121);
+ok($hsp->query->end, 469);
+ok($hsp->hit->start, 1);
+ok($hsp->hit->end,469);
+ok($hsp->gaps, 120);
+ok($hit->next_hsp); # there is more than one HSP here, 
+                    # make sure it is parsed at least
+
+# cannot distinguish between blastx and tblastn reports
+# so we're only testing a blastx report for now
+
+# this is blastx bl2seq
+$searchio = new Bio::SearchIO(-format => 'blast',
+			      -file   => Bio::Root::IO->catfile
+			      (qw(t data bl2seq.blastx.out)));
+$result = $searchio->next_result;
+ok($result);
+ok($result->query_name, 'AE000111.1');
+ok($result->query_description, 'Escherichia coli K-12 MG1655 section 1 of 400 of the complete genome');
+ok($result->algorithm, 'BLASTX');
+ok($result->query_length, 720);
+$hit = $result->next_hit;
+ok($hit->name, 'AK1H_ECOLI');
+ok($hit->description,'P00561 Bifunctional aspartokinase/homoserine dehydrogenase I (AKI-HDI) [Includes: Aspartokinase I ; Homoserine dehydrogenase I ]');
+ok($hit->length, 820);
+$hsp = $hit->next_hsp;
+ok($hsp->score, 634);
+ok($hsp->bits, 248);
+ok(int $hsp->percent_identity, 100);
+ok($hsp->evalue, '2e-70');
+ok(int($hsp->frac_conserved*$hsp->length), 128);
+ok($hsp->query->start, 1);
+ok($hsp->query->end, 384);
+ok($hsp->hit->start, 1);
+ok($hsp->hit->end,128);
+ok($hsp->gaps, 0);
+ok($hsp->query->frame,0);
+ok($hsp->hit->frame,0);
+ok($hsp->query->strand,-1);
+ok($hsp->hit->strand,0);
+
+# this is tblastx bl2seq (self against self)
+$searchio = new Bio::SearchIO(-format => 'blast',
+			      -file   => Bio::Root::IO->catfile
+			      (qw(t data bl2seq.tblastx.out)));
+$result = $searchio->next_result;
+ok($result);
+ok($result->query_name, 'Escherichia');
+ok($result->algorithm, 'TBLASTX');
+ok($result->query_description, 'coli K-12 MG1655 section 1 of 400 of the complete genome');
+ok($result->query_length, 720);
+$hit = $result->next_hit;
+ok($hit->name, 'gi|1786181|gb|AE000111.1|AE000111');
+
+ok($hit->description,'Escherichia coli K-12 MG1655 section 1 of 400 of the complete genome');
+ok($hit->length, 720);
+$hsp = $hit->next_hsp;
+ok($hsp->score, 1118);
+ok($hsp->bits, 515);
+ok(int $hsp->percent_identity, 95);
+ok($hsp->evalue, '1e-151');
+ok(int($hsp->frac_conserved*$hsp->length), 229);
+ok($hsp->query->start, 1);
+ok($hsp->query->end, 720);
+ok($hsp->hit->start, 1);
+ok($hsp->hit->end,720);
+ok($hsp->gaps, 0);
+ok($hsp->query->frame,0);
+ok($hsp->hit->frame,0);
+ok($hsp->query->strand,1);
+ok($hsp->hit->strand,1);
+
+# test blasttable output
+my @eqset = qw( 
+		
+		c200-vs-yeast.BLASTN.m9);
+$searchio = new Bio::SearchIO(-file => Bio::Root::IO->catfile
+			      (qw(t data c200-vs-yeast.BLASTN)),
+			      -format => 'blast');
+$result = $searchio->next_result;
+ok($result);
+my %ref = &result2hash($result);
+ok( scalar keys %ref, 67);
+$searchio = new Bio::SearchIO(-file => Bio::Root::IO->catfile
+			      (qw(t data c200-vs-yeast.BLASTN.m8)),
+			      -program_name => 'BLASTN',
+			      -format => 'blasttable');
+$result = $searchio->next_result;
+my %tester = &result2hash($result);
+foreach my $key ( sort keys %ref ) {
+    ok($tester{$key}, $ref{$key},$key);
+}      
+
+
+
+
+# Test Blast parsing with B=0 (WU-BLAST)
+$searchio = new Bio::SearchIO(-file   => Bio::Root::IO->catfile
+			      (qw(t data no_hsps.blastp)),
+			      -format => 'blast');
+$result = $searchio->next_result;
+ok($result->query_name, 'mgri:MG00189.3');
+$hit = $result->next_hit;
+ok($hit->name, 'mgri:MG00189.3');
+ok($hit->description, 'hypothetical protein 6892 8867 +');
+ok($hit->score, 3098);
+ok($hit->significance, '0.');
+
+$hit = $result->next_hit;
+ok($hit->name, 'fgram:FG01141.1');
+ok($hit->description, 'hypothetical protein 47007 48803 -');
+ok($hit->score, 2182);
+ok($hit->significance, '4.2e-226');
+ok($result->num_hits, 415);
+# Let's now test if _guess_format is doing its job correctly
+my %pair = ( 'filename.blast'  => 'blast',
+	     'filename.bls'    => 'blast',
+	     'f.blx'           => 'blast',
+	     'f.tblx'          => 'blast',
+	     'fast.bls'        => 'blast',
+	     'f.fasta'         => 'fasta',
+	     'f.fa'            => 'fasta',
+	     'f.fx'            => 'fasta',
+	     'f.fy'            => 'fasta',
+	     'f.ssearch'       => 'fasta',
+	     'f.SSEARCH.m9'    => 'fasta',
+	     'f.m9'            => 'fasta',
+	     'f.psearch'       => 'fasta',
+	     'f.osearch'       => 'fasta',
+	     'f.exon'          => 'exonerate',
+	     'f.exonerate'     => 'exonerate',
+	     'f.blastxml'      => 'blastxml',
+	     'f.xml'           => 'blastxml');
+while( my ($file,$expformat) = each %pair ) {
+    ok(Bio::SearchIO->_guess_format($file),$expformat, "$expformat for $file");
+}
+
 
 # Test Wes Barris's reported bug when parsing blastcl3 output which
 # has integer overflow
@@ -1098,3 +1548,85 @@ ok($result->database_letters(), '-24016349');
 # reports, the correct value is
 ok($result->get_statistic('dbletters'),'192913178');
 ok($result->get_statistic('dbentries'),'1867771');
+
+
+# some utilities
+# a utility function for comparing result objects
+sub result2hash {
+    my ($result) = @_;
+    my %hash;
+    $hash{'query_name'} = $result->query_name;
+    my $hitcount = 1;
+    my $hspcount = 1;
+    foreach my $hit ( $result->hits ) {
+	$hash{"hit$hitcount\_name"}   =  $hit->name;
+	# only going to test order of magnitude
+	# too hard as these don't always match
+#	$hash{"hit$hitcount\_signif"} =  
+#	    ( sprintf("%.0e",$hit->significance) =~ /e\-?(\d+)/ );
+	$hash{"hit$hitcount\_bits"}   =  sprintf("%d",$hit->bits);
+
+	foreach my $hsp ( $hit->hsps ) {
+	    $hash{"hsp$hspcount\_bits"}   = sprintf("%d",$hsp->bits);
+	    # only going to test order of magnitude
+ 	    # too hard as these don't always match
+#	    $hash{"hsp$hspcount\_evalue"} =  
+#		( sprintf("%.0e",$hsp->evalue) =~ /e\-?(\d+)/ );
+	    $hash{"hsp$hspcount\_qs"}     = $hsp->query->start;
+	    $hash{"hsp$hspcount\_qe"}     = $hsp->query->end;
+	    $hash{"hsp$hspcount\_qstr"}   = $hsp->query->strand;
+	    $hash{"hsp$hspcount\_hs"}     = $hsp->hit->start;
+	    $hash{"hsp$hspcount\_he"}     = $hsp->hit->end;
+	    $hash{"hsp$hspcount\_hstr"}   = $hsp->hit->strand;
+
+	    #$hash{"hsp$hspcount\_pid"}     = sprintf("%d",$hsp->percent_identity);
+	    #$hash{"hsp$hspcount\_fid"}     = sprintf("%.2f",$hsp->frac_identical);
+	    $hash{"hsp$hspcount\_gaps"}    = $hsp->gaps('total');
+	    $hspcount++;
+	}
+	$hitcount++;
+    }
+    return %hash;
+}
+
+
+__END__
+
+Useful for debugging:
+
+    if ($iter_count == 3) {
+	print "NEWHITS:\n";
+	foreach ($iter->newhits) {
+	    print "  " . $_->name . "\n";
+	}
+	print "\nOLDHITS:\n";
+	foreach ($iter->oldhits) {
+	    print "  " . $_->name . "\n";
+	}
+	print "\nNEWHITS BELOW:\n";
+	foreach ($iter->newhits_below_threshold) {
+	    print "  " . $_->name . "\n";
+	}
+	print "\nNEWHITS NOT BELOW:\n";
+	foreach ($iter->newhits_not_below_threshold) {
+	    print "  " . $_->name . "\n";
+	}
+	print "\nNEWHITS UNCLASSIFIED:\n";
+	foreach ($iter->newhits_unclassified) {
+	    print "  " . $_->name . "\n";
+	}
+	print "\nOLDHITS BELOW:\n";
+	foreach ($iter->oldhits_below_threshold) {
+	    print "  " . $_->name . "\n";
+	}
+	print "\nOLDHITS NEWLY BELOW:\n";
+	foreach ($iter->oldhits_newly_below_threshold) {
+	    print "  " . $_->name . "\n";
+	}
+	print "\nOLDHITS NOT BELOW:\n";
+	foreach ($iter->oldhits_not_below_threshold) {
+	    print "  " . $_->name . "\n";
+	}
+    }
+
+

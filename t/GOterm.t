@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: GOterm.t,v 1.4.2.2 2003/05/27 22:00:52 lapp Exp $
+## $Id: GOterm.t,v 1.8 2003/05/27 22:13:41 lapp Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'

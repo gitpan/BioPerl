@@ -1,4 +1,4 @@
-# $Id: GOterm.pm,v 1.12.2.4 2003/07/03 00:41:40 lapp Exp $
+# $Id: GOterm.pm,v 1.17 2003/07/02 22:50:58 lapp Exp $
 #
 # BioPerl module for Bio::Ontology::GOterm
 #

@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.14 2002/11/04 09:07:45 heikki Exp $
+# $Id: IO.pm,v 1.16 2003/06/04 08:36:44 heikki Exp $
 #
 # BioPerl module for Bio::Variation::IO
 #
@@ -26,7 +26,7 @@ Bio::Variation::IO - Handler for sequence variation IO Formats
 	$out->write($seq);
     }
 
-or
+  # or
 
     use Bio::Variation::IO;
 
@@ -229,7 +229,6 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Variation::IO;
-my $VERSION=1.0;
 
 use strict;
 use vars '@ISA';

@@ -1,4 +1,4 @@
-# $Id: Biblio.pm,v 1.7 2002/10/22 07:45:09 lapp Exp $
+# $Id: Biblio.pm,v 1.9 2003/06/04 08:36:35 heikki Exp $
 #
 # BioPerl module Bio::Biblio
 #
@@ -24,20 +24,14 @@ Bio::Biblio - A Bibliographic Query Service module
       print $collection->get_next;
   }
 
-Here are some one-liners:
+  #The new() method can get parameters, for example:
 
-  perl -MBio::Biblio -e 'print new Bio::Biblio->get_by_id ("94033980")' 
-  perl -MBio::Biblio \
-       -e 'print join ("\n", @{ new Bio::Biblio->find ("brazma")->get_all_ids })' 
-  perl -MBio::Biblio \
-       -e 'print new Bio::Biblio->find ("Java")->find ("perl")->get_count'
-
-The C<new> method can get parameters, for example:
-
-  my $biblio = Bio::Biblio 
+  $biblio = Bio::Biblio
     (-access          => 'soap',
      -location        => 'http://industry.ebi.ac.uk/soap/openBQS',
      -destroy_on_exit => '0');
+
+  # See below for some one-liners
 
 =head1 DESCRIPTION
 
@@ -63,6 +57,15 @@ and their values. It allows to introspect bibliographic repositories
 and to find what citation resource types (such as journal and book
 articles, patents or technical reports) are provided, and what
 attributes they have, eventually what attribute values are allowed.
+
+Here are some one-liners:
+
+  perl -MBio::Biblio -e 'print new Bio::Biblio->get_by_id ("94033980")'
+  perl -MBio::Biblio \
+       -e 'print join ("\n", @{ new Bio::Biblio->find ("brazma")->get_all_ids })'
+  perl -MBio::Biblio \
+       -e 'print new Bio::Biblio->find ("Java")->find ("perl")->get_count'
+
 
 =head1 OVERVIEW OF CLASSES AND PACKAGES
 
@@ -183,7 +186,7 @@ with an underscore _.
 
 
 package Bio::Biblio;
-use vars qw(@ISA $VERSION $Revision);
+use vars qw(@ISA $Revision);
 use strict;
 
 use Bio::Root::Root;
@@ -192,9 +195,8 @@ use Bio::DB::BiblioI;
 @ISA = qw(Bio::Root::Root Bio::DB::BiblioI);
 
 
-BEGIN { 
-    $VERSION = do { my @r = (q$Revision: 1.7 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id: Biblio.pm,v 1.7 2002/10/22 07:45:09 lapp Exp $;
+BEGIN {
+    $Revision = q$Id: Biblio.pm,v 1.9 2003/06/04 08:36:35 heikki Exp $;
 }
 
 # -----------------------------------------------------------------------------

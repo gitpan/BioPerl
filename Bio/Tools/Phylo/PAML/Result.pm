@@ -1,4 +1,4 @@
-# Result.pm,v 1.3 2002/06/20 18:50:39 amackey Exp
+# $Id: Result.pm,v 1.10 2003/10/02 21:10:02 jason Exp $ 
 #
 # BioPerl module for Bio::Tools::Phylo::PAML::Result
 #
@@ -16,11 +16,23 @@ Bio::Tools::Phylo::PAML::Result - A PAML result set object
 
 =head1 SYNOPSIS
 
-Give standard usage here
+  # see Bio::Tools::Phylo::PAML for example usage
+  use Bio::Tools::Phylo::PAML;
+  my $parser = new Bio::Tools::Phylo::PAML
+    (-file => "./results/mlc", -dir => "./results/");
+
+  # get the first/next result; a Bio::Tools::Phylo::PAML::Result object,
+  # which isa Bio::SeqAnalysisResultI object.
+  my $result = $parser->next_result();
+
+  my @seqs       = $result->get_seqs;
+  my @MLmatrix   = $result->get_MLmatrix; # get MaxLikelihood Matrix
+  my @NGmatrix   = $result->get_NGmatrix; # get Nei-Gojoburi Matrix
+  my @basfreq    = $result->get_codon_pos_basefreq;
 
 =head1 DESCRIPTION
 
-Describe the object here
+This is a container object for PAML Results.
 
 =head1 FEEDBACK
 
@@ -68,9 +80,9 @@ package Bio::Tools::Phylo::PAML::Result;
 use vars qw(@ISA);
 use strict;
 
-
 use Bio::Root::Root;
 use Bio::AnalysisResultI;
+
 @ISA = qw(Bio::Root::Root Bio::AnalysisResultI);
 
 =head2 new
@@ -79,22 +91,38 @@ use Bio::AnalysisResultI;
  Usage   : my $obj = new Bio::Tools::Phylo::PAML::Result(%data);
  Function: Builds a new Bio::Tools::Phylo::PAML::Result object
  Returns : Bio::Tools::Phylo::PAML::Result
- Args    : -trees => array reference of L<Bio::Tree::TreeI> objects
-           -MLmatrix => ML matrix
-           .... MORE ARGUMENTS LISTED HERE BY AARON AND JASON 
-
+ Args    : -trees     => array reference of L<Bio::Tree::TreeI> objects
+           -MLmatrix  => ML matrix
+           -seqs      => array reference of L<Bio::PrimarySeqI> objects
+           -codonpos  => array reference of codon positions 
+           -codonfreq => array reference of codon frequencies
+           -version   => version string
+           -model     => model string
+           -patterns  => hashref with the fields '-patterns', '-ns', '-ls'
+           -stats     => array ref of misc stats   (optional)
+           -aafreq    => Hashref of AA frequencies (only for AAML)
+           -aadistmat => Bio::Matrix::PhylipDist   (only for AAML)
+           -aamldistmat => Bio::Matrix::PhylipDist   (only for pairwise AAML)
+           -NSSitesresult => arrayref of PAML::ModelResult 
 =cut
 
 sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
-
   my ($trees,$mlmat,$seqs,$ngmatrix,
-      $codonpos,$codonfreq,$version) = $self->_rearrange([qw(TREES MLMATRIX 
-						    SEQS NGMATRIX
-						    CODONPOS CODONFREQ
-						    VERSION)], @args);
+      $codonpos,$codonfreq,$version,
+      $model,$patterns, $stats,
+      $aafreq, $aadistmat, 
+      $aamldistmat,
+      $NSSitesresults ) = $self->_rearrange([qw(TREES MLMATRIX 
+						SEQS NGMATRIX
+						CODONPOS CODONFREQ
+						VERSION MODEL PATTERNS
+						STATS AAFREQ AADISTMAT
+						AAMLDISTMAT 
+						NSSITESRESULTS)], 
+				       @args);
   $self->reset_seqs;
   if( $trees ) {
       if(ref($trees) !~ /ARRAY/i ) { 
@@ -130,10 +158,12 @@ sub new {
 	  $self->set_NGmatrix($ngmatrix);
       }
   } 
-  
   if( $codonfreq ) {
-      
-  
+      if( ref($codonfreq) =~ /ARRAY/i ) {
+	  $self->set_CodonFreqs($codonfreq);
+      } else { 
+	  $self->warn("Must have provided a valid array reference to initialize codonfreq");
+      }
   }
 
   if( $codonpos ) {
@@ -144,8 +174,45 @@ sub new {
       }
   }
 
-  $self->version($version) if defined $version;
+  $self->version($version)   if defined $version;
+  $self->model($model)       if defined $model;
+  if( defined $patterns ) {
+      if( ref($patterns) =~ /HASH/i ) {
+	  $self->patterns($patterns);
+      } else {
+	  $self->warn("Must have provided a valid array reference to initialize patterns");
+      }
+  }
 
+  $self->{'_aafreqs'} = {};
+  if( $aafreq ) {
+      if( ref($aafreq) =~ /HASH/i ) {
+	  $self->set_AAFreqs($aafreq);
+      } else { 
+	  $self->warn("Must have provided a valid hash reference to initialize aafreq");
+      }
+  }
+  if( $stats ) {
+      if( ref($stats) =~ /HASH/i ) {
+	  while( my ($stat,$val) = each %$stats) {
+	      $self->add_stat($stat,$val);
+	  }
+      } else { 
+	  $self->warn("Must have provided a valid hash reference initialize stats");
+      }
+  }
+  $self->set_AADistMatrix($aadistmat) if defined $aadistmat;
+  $self->set_AAMLDistMatrix($aamldistmat) if defined $aamldistmat;
+
+  if( defined $NSSitesresults ) {
+      if( ref($NSSitesresults) !~ /ARRAY/i ) {
+	  $self->warn("expected an arrayref for -NSSitesresults");
+      } else { 
+	  foreach my $m ( @$NSSitesresults ) {
+	      $self->add_NSSite_result($m);
+	  }
+      }
+  }
   return $self;
 }
 
@@ -162,6 +229,22 @@ sub new {
 sub next_tree{
    my ($self,@args) = @_;
    return $self->{'_trees'}->[$self->{'_treeiterator'}++] || undef;
+}
+
+=head2 get_trees
+
+ Title   : get_trees
+ Usage   : my @trees = $result->get_trees;
+ Function: Get all the parsed trees as an array
+ Returns : Array of trees
+ Args    : none
+
+
+=cut
+
+sub get_trees{
+   my ($self) = @_;
+   return @{$self->{'_trees'} || []};
 }
 
 =head2 rewind_tree
@@ -392,5 +475,289 @@ sub version{
    $self->{'_version'} = shift if @_;
    return $self->{'_version'};
 }
+
+=head2 model
+
+ Title   : model
+ Usage   : $obj->model($newval)
+ Function: Get/Set model
+ Returns : value of model 
+ Args    : on set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub model{
+    my $self = shift;
+
+    return $self->{'_model'} = shift if @_;
+    return $self->{'_model'};
+}
+
+
+=head2 patterns
+
+ Title   : patterns
+ Usage   : $obj->patterns($newval)
+ Function: Get/Set Patterns hash
+ Returns : Hashref of pattern data
+ Args    : [optional] Hashref of patterns
+         : The hashref is typically
+         : { -patterns => \@arrayref
+         :   -ns       => $ns
+         :   -ls       => $ls
+         : }
+
+=cut
+
+sub patterns{
+    my $self = shift;
+    return $self->{'_patterns'} = shift if @_;
+    return $self->{'_patterns'};
+}
+
+=head2 set_AAFreqs
+
+ Title   : set_AAFreqs
+ Usage   : $result->set_AAFreqs(\%aafreqs);
+ Function: Get/Set AA freqs
+ Returns : none
+ Args    : Hashref, keys are the sequence names, each points to a hashref
+           which in turn has keys which are the amino acids
+
+
+=cut
+
+sub set_AAFreqs{
+   my ($self,$aafreqs) = @_;
+   
+   if( $aafreqs && ref($aafreqs) =~ /HASH/i ) {
+       foreach my $seqname ( keys %{$aafreqs} ) {
+	   $self->{'_aafreqs'}->{$seqname} = $aafreqs->{$seqname};
+       }
+   }
+}
+
+=head2 get_AAFreqs
+
+ Title   : get_AAFreqs
+ Usage   : my %all_aa_freqs = $result->get_AAFreqs() 
+            OR
+           my %seq_aa_freqs = $result->get_AAFreqs($seqname) 
+ Function: Get the AA freqs, either for every sequence or just 
+           for a specific sequence
+           The average aa freqs for the entire set are also available
+           for the sequence named 'Average'
+ Returns : Hashref
+ Args    : (optional) sequence name to retrieve aa freqs for
+
+
+=cut
+
+sub get_AAFreqs{
+   my ($self,$seqname) = @_;
+   if( $seqname ) {
+       return $self->{'_aafreqs'}->{$seqname} || {};
+   } else { 
+       return $self->{'_aafreqs'};
+   }
+}
+
+=head2 add_stat
+
+ Title   : add_stat
+ Usage   : $result->add_stat($stat,$value);
+ Function: Add some misc stat valuess (key/value pairs)
+ Returns : none
+ Args    : $stat  stat name
+           $value stat value
+
+
+=cut
+
+sub add_stat{
+   my ($self,$stat,$value) = @_;
+   return if( ! defined $stat || !defined $value );
+   $self->{'_stats'}->{$stat} = $value;
+   return;
+}
+
+=head2 get_stat
+
+ Title   : get_stat
+ Usage   : my $value = $result->get_stat($name);
+ Function: Get the value for a stat of a given name
+ Returns : scalar value
+ Args    : name of the stat
+
+
+=cut
+
+sub get_stat{
+   my ($self,$statname) = @_;
+   return $self->{'_stats'}->{$statname};
+}
+
+=head2 get_stat_names
+
+ Title   : get_stat_names
+ Usage   : my @names = $result->get_stat_names;
+ Function: Get the stat names stored for the result
+ Returns : array of names
+ Args    : none
+
+
+=cut
+
+sub get_stat_names{
+   my ($self) = @_;
+   return keys %{$self->{'_stats'} || {}};
+}
+
+=head2 get_AADistMatrix
+
+ Title   : get_AADistMatrix
+ Usage   : my $mat = $obj->get_AADistMatrix()
+ Function: Get AADistance Matrix
+ Returns : value of AADistMatrix (Bio::Matrix::PhylipDist)
+ Args    : none
+
+
+=cut
+
+sub get_AADistMatrix{
+    my $self = shift;
+    return $self->{'_AADistMatix'};
+}
+
+=head2 set_AADistMatrix
+
+ Title   : set_AADistMatrix
+ Usage   : $obj->set_AADistMatrix($mat);
+ Function: Set the AADistrance Matrix (Bio::Matrix::PhylipDist)
+ Returns : none
+ Args    : AADistrance Matrix (Bio::Matrix::PhylipDist)
+
+
+=cut
+
+sub set_AADistMatrix{
+   my ($self,$d) = @_;
+   if( ! $d || 
+       ! ref($d) ||
+       ! $d->isa('Bio::Matrix::PhylipDist') ) {
+       $self->warn("Must provide a valid Bio::Matrix::MatrixI for set_AADistMatrix");
+   }
+   $self->{'_AADistMatix'} = $d;
+   return undef;
+}
+
+=head2 get_AAMLDistMatrix
+
+ Title   : get_AAMLDistMatrix
+ Usage   : my $mat = $obj->get_AAMLDistMatrix()
+ Function: Get AAMLDistance Matrix
+ Returns : value of AAMLDistMatrix (Bio::Matrix::PhylipDist)
+ Args    : none
+
+
+=cut
+
+sub get_AAMLDistMatrix{
+    my $self = shift;
+    return $self->{'_AAMLDistMatix'};
+}
+
+=head2 set_AAMLDistMatrix
+
+ Title   : set_AAMLDistMatrix
+ Usage   : $obj->set_AAMLDistMatrix($mat);
+ Function: Set the AA ML Distrance Matrix (Bio::Matrix::PhylipDist)
+ Returns : none 
+ Args    : AAMLDistrance Matrix (Bio::Matrix::PhylipDist)
+
+
+=cut
+
+sub set_AAMLDistMatrix{
+   my ($self,$d) = @_;
+   if( ! $d || 
+       ! ref($d) ||
+       ! $d->isa('Bio::Matrix::PhylipDist') ) {
+       $self->warn("Must provide a valid Bio::Matrix::MatrixI for set_AAMLDistMatrix");
+   }
+   $self->{'_AAMLDistMatix'} = $d;
+   return undef;
+}
+
+=head2 add_NSSite_result
+
+ Title   : add_NSSite_result
+ Usage   : $result->add_NSSite_result($model)
+ Function: Add a NSsite result (PAML::ModelResult)
+ Returns : none
+ Args    : Bio::Tools::Phylo::PAML::ModelResult
+
+
+=cut
+
+sub add_NSSite_result{
+   my ($self,$model) = @_;
+   if( defined $model ) {
+       push @{$self->{'_nssiteresult'}}, $model;
+   }
+   return scalar @{$self->{'_nssiteresult'}};
+}
+
+=head2 get_NSSite_results
+
+ Title   : get_NSSite_results
+ Usage   : my @results = @{$self->get_NSSite_results};
+ Function: Get the reference to the array of NSSite_results
+ Returns : Array of PAML::ModelResult results
+ Args    : none
+
+
+=cut
+
+sub get_NSSite_results{
+   my ($self) = @_;
+   return @{$self->{'_nssiteresult'}};
+}
+
+=head2 set_CodonFreqs
+
+ Title   : set_CodonFreqs
+ Usage   : $obj->set_CodonFreqs($newval)
+ Function: Get/Set the Codon Frequence table
+ Returns : value of set_CodonFreqs (a scalar)
+ Args    : on set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub set_CodonFreqs{
+    my $self = shift;
+
+    return $self->{'_codonfreqs'} = shift if @_;
+    return $self->{'_codonfreqs'};
+}
+
+=head2 get_CodonFreqs
+
+ Title   : get_CodonFreqs
+ Usage   : my @codon_freqs = $result->get_CodonFreqs() 
+ Function: Get the Codon freqs
+ Returns : Array
+ Args    : none
+
+
+=cut
+
+sub get_CodonFreqs{
+   my ($self) = @_;
+   return @{$self->{'_codonfreqs'} || []};
+}
+
 
 1;

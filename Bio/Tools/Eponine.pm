@@ -1,4 +1,4 @@
-# $Id: Eponine.pm,v 1.7 2002/10/22 07:38:45 lapp Exp $
+# $Id: Eponine.pm,v 1.8 2003/05/17 19:03:57 heikki Exp $
 #
 # BioPerl module for Bio::Tools::Eponine
 #
@@ -16,12 +16,12 @@ Bio::Tools::Eponine - Results of one Eponine run
 
 =head1 SYNOPSIS
 
- use Bio::Tools::Run::Eponine;
+ use Bio::Tools::Eponine;
  use strict;
     my $seq = "/data/seq.fa";
     my $threshold  = "0.999";
-    my @params = ( '-seq' => $seq,
-                 '-threshold' => $threshold);
+    my @params = ( -seq => $seq,
+                   -threshold => $threshold);
 
    my $factory = Bio::Tools::Run::Eponine->new(@params);
      # run eponine against fasta 

@@ -1,4 +1,4 @@
-# $Id: msf.pm,v 1.16 2002/11/26 16:34:39 jason Exp $
+# $Id: msf.pm,v 1.17 2003/05/28 20:34:05 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::msf
 
@@ -107,6 +107,8 @@ sub next_aln {
 	       $self->throw("$name exists as an alignment line but not in the header. Not confident of what is going on!");
 	   }
 	   $str =~ s/\s//g;
+	   $str =~ s/\~/\-/g;
+	   
 	   $hash{$name} .= $str;
        };
    }

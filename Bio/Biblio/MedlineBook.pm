@@ -1,4 +1,4 @@
-# $Id: MedlineBook.pm,v 1.3 2002/10/22 07:45:11 lapp Exp $
+# $Id: MedlineBook.pm,v 1.5 2003/05/30 15:33:00 jason Exp $
 #
 # BioPerl module for Bio::Biblio::MedlineBook
 #
@@ -17,7 +17,7 @@ Bio::Biblio::MedlineBook - Representation of a MEDLINE book
                   (-editor => new Bio::Biblio::Person
 		                     (-lastname => 'Loukides'),
 		   -isbn  => '0-596-00068-5');
- --- OR ---
+  #--- OR ---
 
     $obj = new Bio::Biblio::MedlineBook;
     $obj->isbn ('0-596-00068-5');
@@ -36,7 +36,7 @@ The main raison d'etre of this class is to be associated with MEDLINE book artic
 
 =head1 SEE ALSO
 
-=over
+=over 4
 
 =item *
 

@@ -1,4 +1,4 @@
-# $Id: soflat.pm,v 1.1.2.3 2003/05/27 22:00:52 lapp Exp $
+# $Id: soflat.pm,v 1.2 2003/05/24 23:05:35 lapp Exp $
 #
 # BioPerl module for Bio::OntologyIO::soflat
 #

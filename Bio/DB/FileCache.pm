@@ -1,3 +1,5 @@
+# $Id: FileCache.pm,v 1.8 2003/03/25 14:41:52 heikki Exp $
+#
 # POD documentation - main docs before the code
 #
 #
@@ -102,15 +104,18 @@ can be retrieved using file_name().
 
 =cut
 
+#'
 sub new {
     my ($class,@args) = @_;
 
     my $self = Bio::Root::Root->new();
     bless $self,$class;
 
-    my ($seqdb,$file_name,$keep) = $self->_rearrange([qw(SEQDB FILE KEEP)],@args);
+    my ($seqdb,$file_name,$keep) = $self->_rearrange([qw(SEQDB FILE 
+							 KEEP)],@args);
 
-    if( !defined $seqdb || !ref $seqdb || !$seqdb->isa('Bio::DB::RandomAccessI') ) {
+    if( !defined $seqdb || !ref $seqdb || 
+	! $seqdb->isa('Bio::DB::RandomAccessI') ) {
        $self->throw("Must be a randomaccess database not a [$seqdb]");
     }
 
@@ -234,6 +239,7 @@ file, it probably isn't safe to change this value.
 
 =cut
 
+#'
 sub keep {
   my $self = shift;
   my $d = $self->{keep};

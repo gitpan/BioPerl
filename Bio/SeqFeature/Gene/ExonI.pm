@@ -1,4 +1,4 @@
-# $Id: ExonI.pm,v 1.6 2002/10/22 07:38:41 lapp Exp $
+# $Id: ExonI.pm,v 1.7 2003/04/21 15:00:46 jason Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::ExonI
 #
@@ -65,8 +65,6 @@ Internal methods are usually preceded with a _
 package Bio::SeqFeature::Gene::ExonI;
 use vars qw(@ISA);
 use strict;
-
-use Carp;
 use Bio::SeqFeatureI;
 
 @ISA = qw(Bio::SeqFeatureI);

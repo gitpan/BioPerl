@@ -1,4 +1,4 @@
-# $Id: Exon.pm,v 1.8 2002/10/22 07:38:41 lapp Exp $
+# $Id: Exon.pm,v 1.10 2003/06/02 18:06:13 heikki Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::Exon
 #
@@ -24,11 +24,13 @@ Bio::SeqFeature::Gene::Exon - a feature representing an exon
 
 =head1 DESCRIPTION
 
-This module implements a feature representing an exon by implementing the
-Bio::SeqFeature::Gene::ExonI interface. 
+This module implements a feature representing an exon by implementing
+the Bio::SeqFeature::Gene::ExonI interface. By default an Exon is
+coding. Supply -is_coding =E<gt> 0 to the constructor or call
+$exon-E<gt>is_coding(0) otherwise.
 
-Apart from that, this class also implements Bio::SeqFeatureI by inheriting
-off Bio::SeqFeature::Generic.
+Apart from that, this class also implements Bio::SeqFeatureI by
+inheriting off Bio::SeqFeature::Generic.
 
 =head1 FEEDBACK
 
@@ -39,8 +41,8 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bio.perl.org/MailList.html      - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -85,11 +87,11 @@ my @valid_exon_types = ('initial', 'internal', 'terminal');
 sub new {
     my ($caller, @args) = @_;
     my $self = $caller->SUPER::new(@args);
-    my ($primary) =
-	$self->_rearrange([qw(PRIMARY)],@args);
 
-    $primary = 'exon' unless $primary;
-    $self->primary_tag($primary); # this will also set is_coding()
+    my ($is_coding) =
+	$self->_rearrange([qw(IS_CODING)],@args);
+    $self->primary_tag('exon') unless $self->primary_tag();
+    $self->is_coding(defined($is_coding) ? $is_coding : 1);
     $self->strand(0) if(! defined($self->strand()));
     return $self;
 }

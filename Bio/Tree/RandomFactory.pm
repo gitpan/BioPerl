@@ -1,4 +1,4 @@
-# $Id: RandomFactory.pm,v 1.8 2002/12/24 17:52:03 jason Exp $
+# $Id: RandomFactory.pm,v 1.16 2003/12/15 11:50:39 heikki Exp $
 #
 # BioPerl module for Bio::Tree::RandomFactory
 #
@@ -17,17 +17,30 @@ Bio::Tree::RandomFactory - TreeFactory for generating Random Trees
 =head1 SYNOPSIS
 
   use Bio::Tree::RandomFactory
-  my $factory = new Bio::Tree::RandomFactory( -samples => \@taxonnames,
+  my @taxonnames;
+  my $factory = new Bio::Tree::RandomFactory( -taxa => \@taxonnames,
   					      -maxcount => 10);
 
   # or for anonymous samples
 
-  my $factory = new Bio::Tree::RandomFactory( -sample_size => 6, 
-					      -maxcount = 50);
+  my $factory = new Bio::Tree::RandomFactory( -num_taxa => 6,
+					      -maxcount => 50);
+
+
+  my $tree = $factory->next_tree;
 
 =head1 DESCRIPTION
 
 Builds a random tree every time next_tree is called or up to -maxcount times.
+
+This module was originally written for Coalescent simulations see
+L<Bio::PopGen::Simulation::Coalescent>.  I've left the next_tree
+method intact although it is not generating random trees in the
+phylogenetic sense.  I would be happy for someone to provide
+alternative implementations which can be used here.  As written it
+will generate random topologies but the branch lengths are built from
+assumptions in the coalescent and are not appropriate for phylogenetic
+analyses.
 
 This algorithm is based on the make_tree algorithm from Richard Hudson 1990.
 
@@ -36,6 +49,7 @@ Hudson, R. R. 1990. Gene genealogies and the coalescent
        surveys in evolutionary biology. Vol. 7. Oxford University
        Press, New York
 
+Sanderson, M ... 
 
 =head1 FEEDBACK
 
@@ -56,14 +70,14 @@ the web:
 
   http://bugzilla.bioperl.org/
 
-
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
+Email jason-AT-bioperl.org
 
 =head1 CONTRIBUTORS
 
 Matthew Hahn, E<lt>matthew.hahn@duke.eduE<gt>
+Mike Sanderson 
 
 =head1 APPENDIX
 
@@ -77,17 +91,20 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Tree::RandomFactory;
-use vars qw(@ISA $PRECISION_DIGITS);
+use vars qw(@ISA $PRECISION_DIGITS $DefaultNodeType %Defaults);
 use strict;
 
-BEGIN { 
-    $PRECISION_DIGITS = 3; # Precision for the branchlength
-}
+$PRECISION_DIGITS = 3; # Precision for the branchlength
+$DefaultNodeType = 'Bio::Tree::Node';
+%Defaults = ('YuleRate'          => 1.0, # as set by Sanderson in Rates
+	     'Speciation'        => 1.0, #
+	     'DefaultTreeMethod' => 'yule',
+	     );
 
 use Bio::Factory::TreeFactoryI;
 use Bio::Root::Root;
-use Bio::TreeIO::TreeEventBuilder;
-use Bio::Tree::AlleleNode;
+use Bio::Tools::RandomDistFunctions;
+use Bio::Tree::Tree;
 
 @ISA = qw(Bio::Root::Root Bio::Factory::TreeFactoryI );
 
@@ -98,8 +115,18 @@ use Bio::Tree::AlleleNode;
 						      -maxcount=> $N);
  Function: Initializes a Bio::Tree::RandomFactory object
  Returns : Bio::Tree::RandomFactory
- Args    :
+ Args    : -nodetype => Type of Nodes to create [default Bio::Tree::Node]
+           -maxcount => [optional] Maximum num trees to create
+           -randtype => Type of random trees so far support
+               - yule/backward_yule/BY [default]
+               - forward_yule/FY
+               - birthdeath_forward/BDF
+               - birthdeath_backwards/BDB
 
+
+          ONE of the following must be specified
+           -taxa     => $arrayref of taxa names
+           -num_taxa => integer indicating number of taxa in the tree
 
 =cut
 
@@ -107,32 +134,38 @@ sub new{
    my ($class,@args) = @_;
    my $self = $class->SUPER::new(@args);
    
-   $self->{'_eventbuilder'} = new Bio::TreeIO::TreeEventBuilder();
    $self->{'_treecounter'} = 0;
    $self->{'_maxcount'} = 0;
-   my ($maxcount, $samps,$samplesize ) = $self->_rearrange([qw(MAXCOUNT
-							       SAMPLES
-							       SAMPLE_SIZE)],
-							   @args);
-   my @samples;
-   
-   if( ! defined $samps ) { 
-       if( ! defined $samplesize || $samplesize <= 0 ) { 
-	   $self->throw("Must specify a valid samplesize if parameter -SAMPLE is not specified");
+   my ($nodetype,$randtype,
+       $maxcount, $samps,$samplesize,
+       $taxa, $num_taxa) = $self->_rearrange([qw(NODETYPE
+						 RANDTYPE
+						 MAXCOUNT
+						 SAMPLES
+						 SAMPLE_SIZE
+						 TAXA
+						 NUM_TAXA)],
+					     @args);
+   my @taxa;
+   $nodetype ||= $DefaultNodeType;
+   $self->nodetype($nodetype);
+   $taxa = $samps if defined $samps && ! defined $taxa;
+   $num_taxa = $samplesize if $samplesize && ! $num_taxa;
+   if( ! defined $taxa ) { 
+       if( ! defined $num_taxa || $num_taxa <= 0 ) { 
+	   $self->throw("Must specify a valid num_taxa if parameter -TAXA is not specified");
        }
-       foreach ( 1..$samplesize ) { push @samples, "Samp$_"; }      
+       foreach ( 1..$num_taxa ) { push @taxa, "Taxon$_"; }      
    } else { 
-       if( ref($samps) =~ /ARRAY/i ) { 
-	   $self->throw("Must specify a valid ARRAY reference to the parameter -SAMPLES, did you forget a leading '\\'?");
+       if( ref($taxa) !~ /ARRAY/i ) { 
+	   $self->throw("Must specify a valid ARRAY reference to the parameter -TAXA, did you forget a leading '\\'? for $taxa");
        }
-       @samples = @$samps;
+       @taxa = @$taxa;
    }
    
-   $self->samples(\@samples);
-   $self->sample_size(scalar @samples);
-   if( defined $maxcount ) { 
-       $self->maxcount($maxcount);
-   }
+   $self->taxa(\@taxa);
+   defined $maxcount && $self->maxcount($maxcount);   
+   $self->{'_count'} = 0;
    return $self;
 }
 
@@ -150,144 +183,50 @@ sub new{
 
 =cut
 
+
 sub next_tree{
-   my ($self) = @_;
-   # If maxcount is set to something non-zero then next tree will
-   # continue to return valid trees until maxcount is reached
-   # otherwise will always return trees 
-   return undef if( $self->maxcount &&
-		    $self->{'_treecounter'}++ >= $self->maxcount );
-   my $size = $self->sample_size;
+   my ($self,%options) = @_;
+   return if $self->maxcount && 
+       $self->{'_count'}++ >= $self->maxcount;
+   my $rand_type = $options{'randtype'} || $self->random_tree_method;
+   my $nodetype = $self->nodetype;
+   my $treearray;
+
+   if( $rand_type =~ /(birthdeath_forward|birth|BDF)/i ) {
+
+   } elsif ( $rand_type =~ /(birthdeath_backward|BDB)/i ) {
+       $treearray = $self->rand_birthdeath_backwards_tree;       
+   } elsif( $rand_type =~ /(BY|backwards_yule)/i || 
+	    $rand_type =~ /^yule/i ) {
+       my $speciation = $options{'speciation'}; # can be undef
+       $treearray = $self->rand_yule_c_tree($speciation);       
+   } else { 
+       $self->warn("unrecognized random type $rand_type");
+   }
    
-   my $in;
-   my @tree = ();
-   my @list = ();
-   
-   for($in=0;$in < 2*$size -1; $in++ ) { 
-       push @tree, { 'nodenum' => "Node$in" };
-   }
-   # in C we would have 2 arrays
-   # an array of nodes (tree)
-   # and array of pointers to these nodes (list)
-   # and we just shuffle the list items to do the 
-   # tree topology generation
-   # instead in perl, we will have a list of hashes (nodes) called @tree
-   # and a list of integers representing the indexes in tree called @list
-
-   for($in=0;$in < $size;$in++)  {
-       $tree[$in]->{'time'} = 0;
-       $tree[$in]->{'desc1'} = undef;
-       $tree[$in]->{'desc2'} = undef;
-       push @list, $in;
-   }
-
-   my $t=0;
-   # generate times for the nodes
-   for($in = $size; $in > 1; $in-- ) {
-	$t+= -2.0 * log(1 - $self->random(1)) / ( $in * ($in-1) );    
-	$tree[2 * $size - $in]->{'time'} =$t;
-    }
-   # topology generation
-   for ($in = $size; $in > 1; $in-- ) {
-       my $pick = int $self->random($in);    
-       my $nodeindex = $list[$pick];       
-       my $swap = 2 * $size - $in;       
-       $tree[$swap]->{'desc1'} = $nodeindex;	
-       $list[$pick] = $list[$in-1];       
-       $pick = int rand($in - 1);    
-       $nodeindex = $list[$pick];
-       $tree[$swap]->{'desc2'} = $nodeindex;	
-       $list[$pick] = $swap;
-   }
-   # Let's convert the hashes into nodes
-
    my @nodes = ();   
-   foreach my $n ( @tree ) { 
+   foreach my $n ( @$treearray ) { 
+       for my $k ( qw(desc1 desc2) ) {
+	   next unless defined $n->{$k};
+	   push @{$n->{'descendents'}}, $nodes[$n->{$k}];
+       }
        push @nodes, 
-	   new Bio::Tree::AlleleNode(-id => $n->{'nodenum'},
-				     -branch_length => $n->{'time'});
+       $nodetype->new(-id            => $n->{'nodenum'},
+		      -branch_length => $n->{'time'},
+		      -descendents   => $n->{'descendents'},
+		      );
    }
-   my $ct = 0;
-   foreach my $node ( @nodes ) { 
-       my $n = $tree[$ct++];
-       if( defined $n->{'desc1'} ) {
-	   $node->add_Descendent($nodes[$n->{'desc1'}]);
-       }
-       if( defined $n->{'desc2'} ) { 
-	   $node->add_Descendent($nodes[$n->{'desc2'}]);
-       }
-   }   
-   my $T = new Bio::Tree::Tree(-root => pop @nodes );
+   my $T = Bio::Tree::Tree->new(-root => pop @nodes );
    return $T;
 }
 
-=head2 add_Mutations
-
- Title   : add_Mutations
- Usage   : $factory->add_Mutations($tree, $mutcount);
- Function: Adds mutations to a tree via a random process weighted by 
-           branch length (it is a poisson distribution 
-			  as part of a coalescent process) 
- Returns : none
- Args    : $tree - Bio::Tree::TreeI 
-           $nummut - number of mutations
-
-
-=cut
-
-sub add_Mutations{
-   my ($self,$tree, $nummut) = @_;
-   my @branches;
-   my @lens;
-   my $branchlen = 0;
-   my $last = 0;
-   my @nodes = $tree->get_nodes();
-   my $precision = 10**$PRECISION_DIGITS;
-   my $i = 0;
-
-   # Jason's somewhat simplistics way of doing a poission
-   # distribution for a fixed number of mutations
-   # build an array and put the node number in a slot
-   # representing the branch to put a mutation on
-   # but weight the number of slots per branch by the 
-   # length of the branch ( ancestor's time - node time)
-   
-   foreach my $node ( @nodes ) {
-       if( $node->ancestor ) { 
-	   my $len = int ( ($node->ancestor->branch_length - 
-			    $node->branch_length) * $precision);
-	   if ( $len > 0 ) {
-	       for( my $j =0;$j < $len;$j++) {
-		   push @branches, $i;
-	       }
-	       $last += $len;
-	   }
-	   $branchlen += $len;
-       }
-       if( ! $node->isa('Bio::Tree::AlleleNode') ) {
-	   bless $node, 'Bio::Tree::AlleleNode'; # rebless it to the right node
-       } 
-       $node->purge_markers;
-       $i++;
-   }
-   # sanity check
-    die("branch len is $branchlen arraylen is $last")
-        unless ( $branchlen == $last );
-   
-   for( my $j = 0; $j < $nummut; $j++)  {
-       my $index = int(rand($branchlen));
-       my $branch = $branches[$index];
-       $nodes[$branch]->add_alleles("Mutation$j", [1]);
-   }
-}
 
 =head2 maxcount
 
  Title   : maxcount
  Usage   : $obj->maxcount($newval)
  Function: 
- Example : 
- Returns : value of maxcount
+ Returns : Maxcount value
  Args    : newvalue (optional)
 
 
@@ -297,96 +236,75 @@ sub maxcount{
    my ($self,$value) = @_;
    if( defined $value) {
        if( $value =~ /^(\d+)/ ) { 
-	   $self->{'maxcount'} = $1;
+	   $self->{'_maxcount'} = $1;
        } else { 
 	   $self->warn("Must specify a valid Positive integer to maxcount");
-	   $self->{'maxcount'} = 0;
+	   $self->{'_maxcount'} = 0;
        }
   }
    return $self->{'_maxcount'};
 }
 
-=head2 samples
 
- Title   : samples
- Usage   : $obj->samples($newval)
- Function: 
- Example : 
- Returns : value of samples
- Args    : newvalue (optional)
+=head2 reset_tree_count
 
-
-=cut
-
-sub samples{
-   my ($self,$value) = @_;
-   if( defined $value) {
-       if( ref($value) !~ /ARRAY/i ) { 
-	   $self->warn("Must specify a valid array ref to the method 'samples'");
-	   $value = [];
-       } 
-      $self->{'samples'} = $value;
-    }
-    return $self->{'samples'};
-
-}
-
-=head2 sample_size
-
- Title   : sample_size
- Usage   : $obj->sample_size($newval)
- Function: 
- Example : 
- Returns : value of sample_size
- Args    : newvalue (optional)
-
-
-=cut
-
-sub sample_size{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'sample_size'} = $value;
-    }
-    return $self->{'sample_size'};
-
-}
-
-=head2 attach_EventHandler
-
- Title   : attach_EventHandler
- Usage   : $parser->attatch_EventHandler($handler)
- Function: Adds an event handler to listen for events
+ Title   : reset_tree_count
+ Usage   : $factory->reset_tree_count;
+ Function: Reset the tree counter
  Returns : none
- Args    : Bio::Event::EventHandlerI
-
-=cut
-
-sub attach_EventHandler{
-    my ($self,$handler) = @_;
-    return if( ! $handler );
-    if( ! $handler->isa('Bio::Event::EventHandlerI') ) {
-	$self->warn("Ignoring request to attatch handler ".ref($handler). ' because it is not a Bio::Event::EventHandlerI');
-    }
-    $self->{'_handler'} = $handler;
-    return;
-}
-
-=head2 _eventHandler
-
- Title   : _eventHandler
- Usage   : private
- Function: Get the EventHandler
- Returns : Bio::Event::EventHandlerI
  Args    : none
 
 
 =cut
 
-sub _eventHandler{
-   my ($self) = @_;
-   return $self->{'_handler'};
+sub reset_count{
+    shift->{'_count'} = 0;
 }
+
+=head2 taxa
+
+ Title   : taxa
+ Usage   : $obj->taxa($newval)
+ Function: Set the leaf node names
+ Returns : value of taxa
+ Args    : Arrayref of Taxon names
+
+
+=cut
+
+sub taxa {
+    my ($self,$value) = @_;
+    if( defined $value) {
+	if( ref($value) !~ /ARRAY/i ) { 
+	    $self->warn("Must specify a valid array ref to the method 'taxa'");
+	    $value = [];
+	} 
+	$self->{'_taxa'} = $value;
+	$self->{'_num_taxa'} = scalar @$value;
+    }
+    return $self->{'_taxa'};
+
+}
+
+=head2 num_taxa
+
+ Title   : num_taxa
+ Usage   : $obj->num_taxa($newval)
+ Function: Get the number of Taxa
+ Returns : value of num_taxa
+ Args    : none
+
+
+=cut
+
+sub num_taxa {
+    my ($self) = @_;
+    return  $self->{'_num_taxa'};
+}
+
+# alias old methods
+*num_samples = \&num_taxa;
+*samples = \&taxa;
 
 =head2 random
 
@@ -405,5 +323,214 @@ sub random{
    my ($self,$max) = @_;
    return rand($max);
 }
+
+
+=head2 random_tree_method
+
+ Title   : random_tree_method
+ Usage   : $obj->random_tree_method($newval)
+ Function: 
+ Example : 
+ Returns : value of random_tree_method (a scalar)
+ Args    : on set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub random_tree_method{
+    my $self = shift;
+
+    return $self->{'random_tree_method'} = shift if @_;
+    return $self->{'random_tree_method'} || $Defaults{'DefaultTreeMethod'};
+}
+
+=head2 nodetype
+
+ Title   : nodetype
+ Usage   : $obj->nodetype($newval)
+ Function: 
+ Example : 
+ Returns : value of nodetype (a scalar)
+ Args    : on set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub nodetype{
+   my ($self,$value) = @_;
+   if( defined $value) {
+       eval "require $value";
+       if( $@ ) { $self->throw("$@: Unrecognized Node type for ".ref($self). 
+			       "'$value'");}
+       
+       my $a = bless {},$value;
+       unless( $a->isa('Bio::Tree::NodeI')  ) {
+	   $self->throw("Must provide a valid Bio::Tree::NodeI or child class to SeqFactory Not $value");
+       }
+      $self->{'nodetype'} = $value;
+    }
+    return $self->{'nodetype'};
+}
+
+
+# The assignment of times are based on Mike Sanderson's r8s code
+# The topology assignment code is based on Richard Hudson's
+# make_trees
+
+
+sub rand_yule_c_tree {
+    my ($self,$speciation) = @_;
+    $speciation ||= $Defaults{'Speciation'};
+    my $n_taxa = $self->num_taxa;
+    my $taxa = $self->taxa || [];
+    my $nodetype = $self->nodetype;
+  
+    my $randfuncs = Bio::Tools::RandomDistFunctions->new();
+    my $rate = $Defaults{'YuleRate'};
+    my (@tree,@list,@times,$i,$in);
+    my $max = 2 * $n_taxa - 1;
+    for($in=0;$in < $max; $in++ ) { 
+	push @tree, { 'nodenum' => "Node$in" };
+    }
+    # setup leaf nodes
+    for($in=0;$in < $n_taxa;$in++)  {
+	$tree[$in]->{'time'} = 0;
+	$tree[$in]->{'desc1'} = undef;
+	$tree[$in]->{'desc2'} = undef;
+	if( my $r = $taxa->[$in] ) { 
+	    $tree[$in]->{'nodenum'} = $r;
+	}
+	push @list, $in;
+    }
+    
+    for( $i = 0; $i < $n_taxa - 1; $i++ ) {
+	# draw random interval times
+	push @times, $randfuncs->rand_birth_distribution($speciation);
+    }
+    # sort smallest to largest
+    @times = sort {$a <=> $b} @times;
+     # topology generation
+    for ($in = $n_taxa; $in > 1; $in-- ) {
+	my $time = shift @times;
+	
+	my $pick = int $self->random($in);    
+	my $nodeindex = $list[$pick];
+	$tree[$list[$pick]]->{'time'} = $time;
+	my $swap = 2 * $n_taxa - $in;
+	$tree[$swap]->{'desc1'} = $nodeindex;	
+	$list[$pick] = $list[$in-1];       
+	
+	$pick = int rand($in - 1);    
+	$nodeindex = $list[$pick];
+	$tree[$list[$pick]]->{'time'} = $time;
+	$tree[$swap]->{'desc2'} = $nodeindex;	
+	$list[$pick] = $swap;	
+    }
+    $tree[-1]->{'time'} = shift @times;
+    return \@tree;
+}
+
+
+
+sub rand_birthdeath_backwards_tree {
+    my ($self) = @_;
+    my $n_taxa = $self->num_taxa;
+    my $taxa = $self->taxa || [];
+  
+    my $randfuncs = Bio::Tools::RandomDistFunctions->new();
+    my $rate = $Defaults{'YuleRate'};
+    my (@tree,@list,@times,$i,$in);
+    my $max = 2 * $n_taxa - 1;
+    for($in=0;$in < $max; $in++ ) { 
+	push @tree, { 'nodenum' => "Node$in" };
+    }
+    # setup leaf nodes
+    for($in=0;$in < $n_taxa;$in++)  {
+	$tree[$in]->{'time'} = 0;
+	$tree[$in]->{'desc1'} = undef;
+	$tree[$in]->{'desc2'} = undef;
+	if( my $r = $taxa->[$in] ) { 
+	    # deal with pre-labeled nodes
+	    $tree[$in]->{'nodenum'} = $r;
+	}
+	push @list, $in;
+    }
+    my ($time) = (0);
+
+     # topology generation
+    for ($in = $n_taxa; $in > 1; $in-- ) {
+	my $pick = int $self->random($in);    
+	my $nodeindex = $list[$pick];
+	my $swap = 2 * $n_taxa - $in;
+	$time += $randfuncs->rand_geometric_distribution($n_taxa * $rate);;
+	$tree[$list[$pick]]->{'time'} = $time;
+	$tree[$swap]->{'desc1'} = $nodeindex;	
+	$list[$pick] = $list[$in-1];       
+	
+	$pick = int rand($in - 1);    
+	$nodeindex = $list[$pick];
+	$tree[$list[$pick]]->{'time'} = $time;
+	$tree[$swap]->{'desc2'} = $nodeindex;	
+	$list[$pick] = $swap;	
+    }
+    my $root = $tree[-1];
+    $time += $randfuncs->rand_geometric_distribution($n_taxa * $rate);;
+    $root->{'time'} = $time;
+
+    # Normalize times by the root node...
+    for my $node ( @tree ) {
+	$node->{'time'} /= $root->{'time'};
+    }
+    return \@tree;
+}
+
+
+# The assignment of times are based on Mike Sanderson's r8s code
+# The topology assignment code is based on Richard Hudson's
+# make_trees
+
+sub rand_birth_death_tree {
+# Still need to finish
+#     my ($self,$spec_rate,$extinct_rate,$char_rate) = @_;
+#     my $n_taxa =  $self->num_taxa;
+#     my $dt = 0.1 / $n_taxa;
+#     my @tree;
+#     my $max = 3 * $n_taxa - 1;
+#     # setup leaf nodes
+    
+#     for($in=0;$in < $size;$in++)  {
+# 	push @tree, { 'nodenum' => $taxa->[$in] || "Node$in",
+# 		      'time'    => 0,
+# 		      'desc1'   => undef,
+# 		      'desc2'   => undef, 
+# 		  };
+#     }
+#     my $time = $dt;
+#     my $idx = 0;
+#     while( $n_taxa > 1 ) { 	
+# 	if ( event($dt * $spec_rate, $n_taxa) ) {
+# 	    my $pick = int $self->random($n_taxa);
+# 	    my $pick2 = int $self->random($n_taxa);
+# 	    while( $pick2 == $pick ) {
+# 		$pick2 = int $self->random($n_taxa);
+# 	    }
+	    # to finish....
+	    
+# 	    $tree[$swap]->{'desc1'} = $nodeindex;		    
+# 	}
+#     }
+
+	    
+
+# 	$list[$pick] = $list[$in-1];       
+	
+# 	$pick = int rand($in - 1);    
+# 	$nodeindex = $list[$pick];
+# 	$tree[$swap]->{'desc2'} = $nodeindex;	
+# 	$list[$pick] = $swap;	
+# 	$tree[$swap]->{'time'} = $times[$ix++];
+#     }
+}
+
 
 1;

@@ -1,4 +1,4 @@
-# $Id: JournalArticle.pm,v 1.7 2002/10/22 07:45:11 lapp Exp $
+# $Id: JournalArticle.pm,v 1.9 2003/05/30 15:33:00 jason Exp $
 #
 # BioPerl module for Bio::Biblio::JournalArticle
 #
@@ -13,9 +13,9 @@ Bio::Biblio::JournalArticle - Representation of a journal article
 
 =head1 SYNOPSIS
 
-    $obj = new Bio::Biblio::JournalArticle (-title = 'Come to grief',
+    $obj = new Bio::Biblio::JournalArticle (-title => 'Come to grief',
 					    -journal => new Bio::Biblio::Journal);
- --- OR ---
+  #--- OR ---
 
     $obj = new Bio::Biblio::JournalArticle;
     $obj->title ('Come to grief');
@@ -39,7 +39,7 @@ The following attributes are specific to this class
 
 =head1 SEE ALSO
 
-=over
+=over 4
 
 =item *
 

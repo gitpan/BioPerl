@@ -7,7 +7,7 @@ package Bio::Graphics::Glyph::heterogeneous_segments;
 # -waba_weak   => 'red'
 # -waba_coding => 'green' 
 
-# $Id: heterogeneous_segments.pm,v 1.5 2002/12/23 01:33:41 lstein Exp $
+# $Id: heterogeneous_segments.pm,v 1.6 2003/09/17 17:11:30 lstein Exp $
 
 use strict;
 use Bio::Graphics::Glyph::graded_segments;
@@ -124,6 +124,8 @@ L<Bio::Graphics::Glyph> for a full explanation.
   -label        Whether to draw a label	       0 (false)
 
   -description  Whether to draw a description  0 (false)
+
+  -hilite       Highlight color                undef (no color)
 
 =head1 BUGS
 

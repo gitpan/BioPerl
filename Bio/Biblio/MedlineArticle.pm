@@ -1,4 +1,4 @@
-# $Id: MedlineArticle.pm,v 1.5 2002/10/22 07:45:11 lapp Exp $
+# $Id: MedlineArticle.pm,v 1.7 2003/05/30 15:33:00 jason Exp $
 #
 # BioPerl module for Bio::Biblio::MedlineArticle
 #
@@ -13,24 +13,26 @@ Bio::Biblio::MedlineArticle - Representation of a MEDLINE article
 
 =head1 SYNOPSIS
 
-  $obj = new Bio::Biblio::MedlineArticle (-mesh_headings => ...);
+  $obj = new Bio::Biblio::MedlineArticle (-mesh_headings =>
+                                            #array ref of hashes
+                                         );
 
   # how are Mesh terms stored:
   use Data::Dumper;
   print Data::Dumper->Dump ( [$obj->mesh_headings], ['MeshHeadings']);
 
-  It produces (something like) this:
-  'MeshHeadings' => [
-	 { 'descriptorName' => 'Adult' },
-         { 'descriptorName' => 'Cardiovascular Diseases',
-           'subHeadings'    => [ { 'subHeading' => 'etiology' },
-			         { 'majorTopic' => 'Y',
-			           'subHeading' => 'mortality' } ] },
-	 { 'descriptorName' => 'Child Development',
-	   'subHeadings'    => [ { 'majorTopic' => 'Y',
-				   'subHeading' => 'physiology' } ] },
-	 { 'descriptorName' => 'Human' },
-	]
+  #It produces (something like) this:
+  #'MeshHeadings' => [
+  #       { 'descriptorName' => 'Adult' },
+  #       { 'descriptorName' => 'Cardiovascular Diseases',
+  #         'subHeadings'    => [ { 'subHeading' => 'etiology' },
+  #                               { 'majorTopic' => 'Y',
+  #                                 'subHeading' => 'mortality' } ] },
+  #       { 'descriptorName' => 'Child Development',
+  #         'subHeadings'    => [ { 'majorTopic' => 'Y',
+  #                                 'subHeading' => 'physiology' } ] },
+  #       { 'descriptorName' => 'Human' },
+  #      ]
 
 =head1 DESCRIPTION
 
@@ -78,7 +80,7 @@ The following attributes are specific to this class
 
 =head1 SEE ALSO
 
-=over
+=over 4
 
 =item *
 

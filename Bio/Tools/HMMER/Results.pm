@@ -1,4 +1,4 @@
-# $Id: Results.pm,v 1.22.2.1 2003/01/07 13:58:01 jason Exp $
+# $Id: Results.pm,v 1.23 2003/01/07 03:01:38 jason Exp $
 #
 # Perl Module for HMMResults
 #

@@ -1,5 +1,5 @@
 package Bio::Graphics::Glyph::segments;
-#$Id: segments.pm,v 1.21.2.1 2003/07/05 00:32:04 lstein Exp $
+#$Id: segments.pm,v 1.31 2003/11/15 20:21:08 lstein Exp $
 
 use strict;
 use Bio::Location::Simple;
@@ -116,8 +116,14 @@ sub draw_dna {
 
   my @segs;
 
+  if ($strand < 0) {
+    $dna     = $self->reversec($dna);
+    $genomic = $self->reversec($genomic);
+    $strand  = 1;
+  }
   my $complement      = $strand < 0;
 
+  # oh dear, undoing what we just did!
   if ($self->{flip}) {
     $dna     = $self->reversec($dna);
     $genomic = $self->reversec($genomic);
@@ -126,7 +132,12 @@ sub draw_dna {
 
   warn "strand = $strand, complement = $complement" if DEBUG;
 
-  if ($genomic && length($genomic) != length($dna) && eval { require Bio::Graphics::Browser::Realign}) {
+  warn "feature = $feature: length(dna) = ",length($dna)," length(genomic) = ",length($genomic), 
+    " target = ",$feature->target->start,'..',$feature->target->end if DEBUG;
+
+  my $realign = !defined($self->option('realign')) || $self->option('realign');
+
+  if ($realign && eval { require Bio::Graphics::Browser::Realign}) {
     warn "$genomic\n$dna\n" if DEBUG;
     warn "strand = $strand" if DEBUG;
     @segs = Bio::Graphics::Browser::Realign::align_segs($genomic,$dna);
@@ -147,8 +158,11 @@ sub draw_dna {
   my $pink = $self->factory->translate_color('lightpink');
   my $panel_end = $self->panel->right;
 
-  my $start  = $self->map_no_trunc($self->feature->start- $start_offset);
-  my $end    = $self->map_no_trunc($self->feature->end  - $start_offset);
+  my $start       = $self->map_no_trunc($self->feature->start- $start_offset);
+  my $end         = $self->map_no_trunc($self->feature->end  - $start_offset);
+  my $true_target = $self->option('true_target');
+  my $show_complement  = $true_target && $feature->strand < 0;
+
 
   my ($last,$tlast);
   for my $seg (@segs) {
@@ -170,14 +184,14 @@ sub draw_dna {
 
       warn "pixels_per_base = $pixels_per_base, pixels_per_target=$pixels_per_target\n" if DEBUG;
       my $offset = $self->{flip} ?  $end + ($last-1)*$pixels_per_base : $start + $last*$pixels_per_base;
-      
+
       for (my $i=0; $i<@fill_in; $i++) {
 
 	my $x = $self->{flip} ? int($offset + ($i+1)*$pixels_per_target + 0.5)
                               : int($offset + ($i+1)*$pixels_per_target + 0.5);
 
 	$self->filled_box($gd,$x,$y1+3,$x+$fontwidth,$y1+$lineheight-3,$pink,$pink) unless $gaps;
-	$gd->char($font,$x,$y1,$complement? $complement{$fill_in[$i]} : $fill_in[$i],$color); 
+	$gd->char($font,$x,$y1,$show_complement ? $complement{$fill_in[$i]} : $fill_in[$i],$color);
       }
     }
 
@@ -191,7 +205,7 @@ sub draw_dna {
       if ($genomic[$i] && lc($bases[$i]) ne lc($complement ? $complement{$genomic[@genomic - $i - 1]} : $genomic[$i])) {
 	$self->filled_box($gd,$x,$y1+3,$x+$fontwidth,$y1+$lineheight-3,$pink,$pink);
       }
-      $gd->char($font,$x,$y1,$complement ? $complement{$bases[$i]} || $bases[$i] : $bases[$i],$color);
+      $gd->char($font,$x,$y1,$show_complement ? $complement{$bases[$i]} || $bases[$i] : $bases[$i],$color);
     }
     $last  = $seg->[1];
     $tlast = $seg->[3];
@@ -211,9 +225,9 @@ sub _subseq {
   my @subseq  = $self->SUPER::_subseq($feature);
   return @subseq if @subseq;
   if ($self->level == 0 && !@subseq && !eval{$feature->compound}) {
-    my($start,$end) = ($feature->start,$feature->end);
-    ($start,$end) = ($end,$start) if $start > $end; # to keep Bio::Location::Simple from bitching
-    #    return Bio::Location::Simple->new(-start=>$start,-end=>$end);
+    # my($start,$end) = ($feature->start,$feature->end);
+    # ($start,$end) = ($end,$start) if $start > $end; # to keep Bio::Location::Simple from bitching
+    # return Bio::Location::Simple->new(-start=>$start,-end=>$end);
     return $self->feature;
   } else {
     return;
@@ -272,6 +286,10 @@ L<Bio::Graphics::Glyph> for a full explanation.
   -strand_arrow Whether to indicate            0 (false)
                  strandedness
 
+  -hilite       Highlight color                undef (no color)
+
+In addition, the following glyph-specific options are recognized:
+
   -draw_dna     If true, draw the dna residues 0 (false)
                  when magnification level
                  allows.
@@ -279,15 +297,22 @@ L<Bio::Graphics::Glyph> for a full explanation.
   -draw_target  If true, draw the dna residues 0 (false)
                  of the TARGET sequence when
                  magnification level allows.
-                 SEE NOTE.
+                 See "Displaying Alignments".
 
   -ragged_start When combined with -draw_target, 0 (false)
                  draw a few bases beyond the end
-                 of the alignment.  SEE NOTE.
+                 of the alignment. See "Displaying Alignments".
 
   -show_mismatch When combined with -draw_target, 0 (false)
                  highlights mismatched bases in
-                 pink.  SEE NOTE.
+                 pink.  See "Displaying Alignments".
+
+  -true_target   Show the true sequence of the    0 (false)
+                 matched DNA, even if the match
+                 is on the minus strand. See "Displaying Alignments".
+
+  -realign       Attempt to realign sequences at  1 (true)
+                 high mag to account for indels. See "Displaying Alignments".
 
 The -draw_target and -ragged_start options only work with seqfeatures
 that implement the hit() method (Bio::SeqFeature::SimilarityPair).
@@ -296,6 +321,45 @@ cloning sites at the beginning of ESTs and cDNAs.  Currently there is
 no way of activating ragged ends.  The length of the ragged starts is
 hard-coded at 25 bp, and the color of mismatches is hard-coded as
 light pink.
+
+At high magnifications, minus strand matches will automatically be
+shown as their reverse complement (so that the match has the same
+sequence as the plus strand of the source dna).  If you prefer to see
+the actual sequence of the target as it appears on the minus strand,
+then set -true_target to true.
+
+=head2 Displaying Alignments
+
+When the B<-draw_target> option is true, this glyph can be used to
+display nucleotide alignments such as BLAST, FASTA or BLAT
+similarities.  At high magnification, this glyph will attempt to show
+how the sequence of the source (query) DNA matches the sequence of the
+target (the hit).  For this to work, the feature must implement the
+hit() method, and both the source and the target DNA must be
+available.  If you pass the glyph a series of
+Bio::SeqFeature::SimilarityPair objects, then these criteria will be
+satisified.
+
+Without additional help, this glyph cannot display gapped alignments
+correctly.  To display gapped alignments, you can use the
+Bio::Graphics::Brower::Realign module, which is part of the Generic
+Genome Browser package (http://www.gmod.org).  If you wish to install
+the Realign module and not the rest of the package, here is the
+recipe:
+
+  cd Generic-Genome-Browser-1.XX
+  perl Makefile.PL DO_XS=1
+  make
+  make install_site
+
+If possible, build the gbrowse package with the DO_XS=1 option.  This
+compiles a C-based DP algorithm that both gbrowse and gbrowse_details
+will use if they can.  If DO_XS is not set, then the scripts will use
+a Perl-based version of the algorithm that is 10-100 times slower.
+
+The display of alignments can be tweaked using the -ragged_start,
+-show_mismatch, -true_target and -realign options.  See the options
+section for further details.
 
 =head1 BUGS
 

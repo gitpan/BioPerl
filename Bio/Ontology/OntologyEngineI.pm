@@ -1,4 +1,4 @@
-# $Id: OntologyEngineI.pm,v 1.2.2.3 2003/03/27 10:07:56 lapp Exp $
+# $Id: OntologyEngineI.pm,v 1.11 2003/06/22 05:28:45 allenday Exp $
 #
 # BioPerl module for OntologyEngineI
 #
@@ -125,6 +125,38 @@ sub add_term{
 =cut
 
 sub add_relationship{
+    shift->throw_not_implemented();
+}
+
+=head2 add_relationship_type
+
+ Title   : add_relationship_type
+ Usage   : add_relationship_type(scalar,OntologyI ontology)
+ Function: Adds a relationshiptype object to the ontology engine.
+ Example :
+ Returns : 1 on success, undef on failure
+ Args    : The name(scalar) of the relationshiptype, and the OntologyI it is to be added to.
+
+
+=cut
+
+sub add_relationship_type{
+    shift->throw_not_implemented();
+}
+
+=head2 get_relationship_type
+
+ Title   : get_relationship_type
+ Usage   : get_relationship_type(scalar): RelationshipTypeI
+ Function: Get a relationshiptype object from the ontology engine.
+ Example :
+ Returns : A RelationshipTypeI object.
+ Args    : The name (scalar) of the RelationshipTypeI object desired.
+
+
+=cut
+
+sub get_relationship_type{
     shift->throw_not_implemented();
 }
 
@@ -408,6 +440,62 @@ sub find_terms{
 		($_->name() eq $params{-name}));
     } $self->get_all_terms();
     return @terms;
+}
+
+=head1 Experimental API method proposals
+
+ Ontologies are a very new domain in bioperl, and we aren't sure yet
+ what we will want to do on and with ontologies in which
+ situation. The methods from here on downwards are solely API
+ descriptions to solicit comment and feedback; the chance of any of
+ those being actually implemented already is very slim.
+
+ Disclaimer: As long as an API method stays in this section, it is
+ subject to change, possibly even radical change or complete
+ deletion. If it's not implemented yet (most likely it isn't),
+ implement yourself at your own risk.
+
+ So far for the disclaimer. The reason the API description is here,
+ however, is to solicit feedback. Please feel encouraged to share your
+ opinion, regardless of what it is (a notable difference of this API
+ method to others is that there is actually no working code behind it
+ - so the defense line is non-existent for practical purposes).
+
+=cut
+
+=head2 common_ancestor_path
+
+ Title   : common_ancestor_path
+ Usage   :
+ Function: Get the paths from two terms A and B to term C, such that
+           there is no other term D to which A and B would have a shorter
+           path, provided there is a term C to which both A and B are
+           connected by a path.
+
+           Note that the path to the common ancestor between A and A
+           exists, has distance zero, and predicate "identity".
+
+           The search for the common ancestor C can be further
+           constrained by supplying a predicate term. If supplied, the
+           predicates of the two paths (A,C) and (B,C) must have a
+           common ancestor identical to the predicate, or that has a
+           path to the predicate.
+
+ Example :
+ Returns : The path of the first term to the common ancestor in scalar
+           context, and both paths in list context. Paths are
+           Bio::Ontology::PathI compliant objects.
+ Args    : The two terms (Bio::Ontology::TermI objects), and optionally
+           a constraining common predicate (Bio::Ontology::TermI object).
+           The latter may also be given as a scalar, in which case it
+           is treated as a boolean that, if TRUE, means that the two paths
+           must have identical predicates in order to be returned.
+
+
+=cut
+
+sub common_ancestor_path{
+    return shift->throw_not_implemented();
 }
 
 1;

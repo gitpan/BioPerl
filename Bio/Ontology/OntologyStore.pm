@@ -1,4 +1,4 @@
-# $Id: OntologyStore.pm,v 1.1.2.2 2003/03/27 10:07:56 lapp Exp $
+# $Id: OntologyStore.pm,v 1.1 2003/02/28 05:15:42 lapp Exp $
 #
 # BioPerl module for Bio::Ontology::OntologyStore
 #

@@ -1,4 +1,4 @@
-# $Id: DNAMutation.pm,v 1.11 2002/10/22 07:38:49 lapp Exp $
+# $Id: DNAMutation.pm,v 1.12 2003/06/04 08:36:44 heikki Exp $
 #
 # BioPerl module for Bio::Variation::DNAMutation
 #
@@ -91,7 +91,6 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Variation::DNAMutation;
-my $VERSION=1.0;
 use vars qw(@ISA);
 use strict;
 

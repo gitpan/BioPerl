@@ -1,4 +1,4 @@
-# $Id: TextResultWriter.pm,v 1.5.2.5 2003/09/15 16:19:24 jason Exp $
+# $Id: TextResultWriter.pm,v 1.13 2003/11/25 17:52:36 jason Exp $
 #
 # BioPerl module for Bio::SearchIO::Writer::TextResultWriter
 #
@@ -12,7 +12,8 @@
 
 =head1 NAME
 
-Bio::SearchIO::Writer::TextResultWriter - Object to implement writing a Bio::Search::ResultI in Text.
+Bio::SearchIO::Writer::TextResultWriter - Object to implement writing
+a Bio::Search::ResultI in Text.
 
 =head1 SYNOPSIS
 
@@ -31,14 +32,15 @@ Bio::SearchIO::Writer::TextResultWriter - Object to implement writing a Bio::Sea
 This object implements the SearchWriterI interface which will produce
 a set of Text for a specific Bio::Search::Report::ReportI interface.
 
-You can also provide the argument -filters => \%hash to filter the at
+You can also provide the argument -filters =E<gt> \%hash to filter the at
 the hsp, hit, or result level.  %hash is an associative array which
 contains any or all of the keys (HSP, HIT, RESULT).  The values
 pointed to by these keys would be references to a subroutine which
 expects to be passed an object - one of Bio::Search::HSP::HSPI,
 Bio::Search::Hit::HitI, and Bio::Search::Result::ResultI respectively.
 Each function needs to return a boolean value as to whether or not the
-passed element should be included in the output report - true if it is to be included, false if it to be omitted.
+passed element should be included in the output report - true if it is
+to be included, false if it to be omitted.
 
 For example to filter on sequences in the database which are too short
 for your criteria you would do the following.
@@ -74,7 +76,7 @@ this module will work fine but you won't have the Query line wrapped.
 You will see a warning about this when you first instantiate a
 TextResultWriter - to avoid these warnings from showing up, simply set
 the verbosity upon initialization to -1 like this: my $writer = new
-Bio::SearchIO::Writer::TextResultWriter(-verbose => -1);
+Bio::SearchIO::Writer::TextResultWriter(-verbose =E<gt> -1);
 
 =head1 FEEDBACK
 
@@ -141,8 +143,10 @@ use POSIX;
  Returns : Bio::SearchIO::Writer::TextResultWriter
  Args    : -filters => hashref with any or all of the keys (HSP HIT RESULT)
            which have values pointing to a subroutine reference
-           which will expect to get a 
-
+           which will expect to get a Hit,HSP, Result object respectively
+           -no_wublastlinks => boolean. Do not display WU-BLAST lines even if 
+                               they are parsed out
+                               Links = (1) 
 
 =cut
 
@@ -150,7 +154,9 @@ sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
-  my ($filters) = $self->_rearrange([qw(FILTERS)],@args);
+  my ($filters,$nowublastlinks) = $self->_rearrange([qw(FILTERS 
+							NO_WUBLASTLINKS)],
+						    @args);
   if( defined $filters ) {
       if( !ref($filters) =~ /HASH/i ) { 
 	  $self->warn("Did not provide a hashref for the FILTERS option, ignoring.");
@@ -160,6 +166,7 @@ sub new {
 	  }
       }
   }
+  $self->no_wublastlinks(! $nowublastlinks);
   unless( $TextWrapLoaded ) {
       $self->warn("Could not load Text::Wrap - the Query Description will not be line wrapped\n");
   } else { 
@@ -188,6 +195,7 @@ sub to_string {
     my ($self,$result,$num) = @_; 
     $num ||= 0;
     return unless defined $result;
+    my $links = $self->no_wublastlinks;
     my ($resultfilter,$hitfilter, $hspfilter) = ( $self->filter('RESULT'),
 						  $self->filter('HIT'),
 						  $self->filter('HSP') );
@@ -265,152 +273,158 @@ Sequences producing significant alignments:                      (bits)    value
 			defined $hit->raw_score ? $hit->raw_score : ' ',
 			defined $hit->significance ? $hit->significance : '?');
 	my @hsps = $hit->hsps;
-	
-	$hspstr .= sprintf(">%s %s\n%9sLength = %d\n\n",
-			   $hit->name, 
-			   defined $hit->description ? $hit->description : '', 
-			   '', # empty is for the %9s in the str formatting 
-			   $hit->length);
-	
-	foreach my $hsp ( @hsps ) { 
-	    next if( defined $hspfilter && ! &{$hspfilter}($hsp) );
-	    $hspstr .= sprintf(" Score = %4s bits (%s), Expect = %s",
-			       $hsp->bits, $hsp->score, $hsp->evalue);
-	    if( $hsp->pvalue ) {
-		$hspstr .= ", P = ".$hsp->pvalue;
-	    }
-	    $hspstr .= "\n";
-	    $hspstr .= sprintf(" Identities = %d/%d (%d%%)",
-			         ( $hsp->frac_identical('total') * 
-				   $hsp->length('total')),
-			       $hsp->length('total'),
-			       POSIX::floor($hsp->frac_identical('total') 
-					    * 100));
+	if( @hsps ) { 
+	    $hspstr .= sprintf(">%s %s\n%9sLength = %d\n\n",
+			       $hit->name, 
+			       defined $hit->description ? $hit->description : '', 
+			       '', # empty is for the %9s in the str formatting 
+			       $hit->length);
 
-	    if( $type eq 'PROTEIN' ) {
-		$hspstr .= sprintf(", Positives = %d/%d (%d%%)",
-				   ( $hsp->frac_conserved('total') * 
+	    foreach my $hsp ( @hsps ) { 
+		next if( defined $hspfilter && ! &{$hspfilter}($hsp) );
+		$hspstr .= sprintf(" Score = %4s bits (%s), Expect = %s",
+				   $hsp->bits, $hsp->score, $hsp->evalue);
+		if( $hsp->pvalue ) {
+		    $hspstr .= ", P = ".$hsp->pvalue;
+		}
+		$hspstr .= "\n";
+		$hspstr .= sprintf(" Identities = %d/%d (%d%%)",
+				   ( $hsp->frac_identical('total') * 
 				     $hsp->length('total')),
 				   $hsp->length('total'),
-				   POSIX::floor($hsp->frac_conserved('total') * 100));
+				   POSIX::floor($hsp->frac_identical('total') 
+						* 100));
 		
-	    }
-	    if( $hsp->gaps ) {
-		$hspstr .= sprintf(", Gaps = %d/%d (%d%%)",
-				   $hsp->gaps('total'),
-				   $hsp->length('total'),
-				   POSIX::floor(100 * $hsp->gaps('total') / 
-					       $hsp->length('total')));
+		if( $type eq 'PROTEIN' ) {
+		    $hspstr .= sprintf(", Positives = %d/%d (%d%%)",
+				       ( $hsp->frac_conserved('total') * 
+					 $hsp->length('total')),
+				       $hsp->length('total'),
+				       POSIX::floor($hsp->frac_conserved('total') * 100));
+
+		}
+		if( $hsp->gaps ) {
+		    $hspstr .= sprintf(", Gaps = %d/%d (%d%%)",
+				       $hsp->gaps('total'),
+				       $hsp->length('total'),
+				       POSIX::floor(100 * $hsp->gaps('total') / 
+						    $hsp->length('total')));
+		}
+		$hspstr .= "\n";
+		my ($hframe,$qframe)   = ( $hsp->hit->frame, 
+					   $hsp->query->frame);
+		my ($hstrand,$qstrand) = ($hsp->hit->strand,$hsp->query->strand);
+		# so TBLASTX will have Query/Hit frames
+		#    BLASTX  will have Query frame
+		#    TBLASTN will have Hit frame
+		if( $hstrand || $qstrand ) {
+		    $hspstr .= " Frame = ";
+		    my ($signq, $signh);
+		    unless( $hstrand ) {
+			$hframe = undef;
+			# if strand is null or 0 then it is protein
+			# and this no frame
+		    } else { 
+			$signh = $hstrand < 0 ? '-' : '+';
+		    }
+		    unless( $qstrand  ) {
+			$qframe = undef;
+			# if strand is null or 0 then it is protein
+		    } else { 
+			$signq =$qstrand < 0 ? '-' : '+';
+		    }
+		    # remember bioperl stores frames as 0,1,2 (GFF way)
+		    # BLAST reports reports as 1,2,3 so
+		    # we have to add 1 to the frame values
+		    if( defined $hframe && ! defined $qframe) {  
+			$hspstr .= "$signh".($hframe+1);
+		    } elsif( defined $qframe && ! defined $hframe) {  
+			$hspstr .= "$signq".($qframe+1);
+		    } else { 
+			$hspstr .= sprintf(" %s%d / %s%d",
+					   $signq,$qframe+1,
+					   $signh, $hframe+1);
+		    }
+		}
+		
+		if( $links && 
+		    $hsp->can('links') && defined(my $lnks = $hsp->links) ) {
+		    $hspstr .= sprintf(" Links = %s\n",$lnks);
+		}
+		$hspstr .= "\n\n";
+
+		my @hspvals = ( {'name'  => 'Query:',
+				 'seq'   => $hsp->query_string,
+				 'start' => ( $hstrand >= 0 ? 
+					      $hsp->query->start : 
+					      $hsp->query->end),
+					      'end'   => ($qstrand >= 0 ? 
+							  $hsp->query->end : 
+							  $hsp->query->start),
+							  'index' => 0,
+							  'direction' => $qstrand || 1
+						      },
+				{ 'name' => ' 'x6, # this might need to adjust for long coordinates??
+				  'seq'  => $hsp->homology_string,
+				  'start' => undef,
+				  'end'   => undef,
+				  'index' => 0,
+				  'direction' => 1
+				  },
+				{ 'name'  => 'Sbjct:',
+				  'seq'   => $hsp->hit_string,
+				  'start' => ($hstrand >= 0 ? 
+					      $hsp->hit->start : $hsp->hit->end),
+				      'end'   => ($hstrand >= 0 ? 
+						  $hsp->hit->end : $hsp->hit->start),
+				      'index' => 0,
+				      'direction' => $hstrand || 1
+				  }
+				);	    
+
+
+		# let's set the expected length (in chars) of the starting number
+		# in an alignment block so we can have things line up
+		# Just going to try and set to the largest
+
+		my ($numwidth) = sort { $b <=> $a }(length($hspvals[0]->{'start'}),
+						    length($hspvals[0]->{'end'}),
+						    length($hspvals[2]->{'start'}),
+						    length($hspvals[2]->{'end'}));
+		my $count = 0;
+		while ( $count <= $hsp->length('total') ) {
+		    foreach my $v ( @hspvals ) {
+			my $piece = substr($v->{'seq'}, $v->{'index'} +$count,
+					   $AlignmentLineWidth);
+			my $cp = $piece;
+			my $plen = scalar ( $cp =~ tr/\-//);
+			my ($start,$end) = ('','');
+			if( defined $v->{'start'} ) { 
+			    $start = $v->{'start'};
+			    # since strand can be + or - use the direction
+			    # to signify which whether to add or substract from end
+			    my $d = $v->{'direction'} * ( $AlignmentLineWidth - $plen )*
+				$baselens{$v->{'name'}};
+			    if( length($piece) < $AlignmentLineWidth ) {
+				$d = (length($piece) - $plen) * $v->{'direction'} * 
+				    $baselens{$v->{'name'}};
+			    }
+			    $end   = $v->{'start'} + $d - $v->{'direction'};
+			    $v->{'start'} += $d;
+			}
+			$hspstr .= sprintf("%s %-".$numwidth."s %s %s\n",
+					   $v->{'name'},
+					   $start,
+					   $piece,
+					   $end
+					   );
+		    }
+		    $count += $AlignmentLineWidth;
+		    $hspstr .= "\n";
+		}
 	    }
 	    $hspstr .= "\n";
-	    my ($hframe,$qframe)   = ( $hsp->hit->frame, 
-				       $hsp->query->frame);
-	    my ($hstrand,$qstrand) = ($hsp->hit->strand,$hsp->query->strand);
-	    # so TBLASTX will have Query/Hit frames
-	    #    BLASTX  will have Query frame
-	    #    TBLASTN will have Hit frame
-	    if( $hstrand || $qstrand ) {
-		$hspstr .= " Frame = ";
-		my ($signq, $signh);
-		unless( $hstrand ) {
-		    $hframe = undef;
-		    # if strand is null or 0 then it is protein
-		    # and this no frame
-		} else { 
-		    $signh = $hstrand < 0 ? '-' : '+';
-		}
-		unless( $qstrand  ) {
-		    $qframe = undef;
-		    # if strand is null or 0 then it is protein
-		} else { 
-		    $signq =$qstrand < 0 ? '-' : '+';
-		}
-		# remember bioperl stores frames as 0,1,2 (GFF way)
-		# BLAST reports reports as 1,2,3 so
-		# we have to add 1 to the frame values
-		if( defined $hframe && ! defined $qframe) {  
-		    $hspstr .= "$signh".($hframe+1);
-		} elsif( defined $qframe && ! defined $hframe) {  
-		    $hspstr .= "$signq".($qframe+1);
-		} else { 
-		    $hspstr .= sprintf(" %s%d / %s%d",
-				       $signq,$qframe+1,
-				       $signh, $hframe+1);
-		}
-	    }
-	    $hspstr .= "\n\n";
-	    
-	    my @hspvals = ( {'name'  => 'Query:',
-			     'seq'   => $hsp->query_string,
-			     'start' => ( $hstrand >= 0 ? 
-					  $hsp->query->start : 
-					  $hsp->query->end),
-			     'end'   => ($qstrand >= 0 ? 
-					 $hsp->query->end : 
-					 $hsp->query->start),
-			     'index' => 0,
-			     'direction' => $qstrand || 1
-			     },
-			    { 'name' => ' 'x6, # this might need to adjust for long coordinates??
-			      'seq'  => $hsp->homology_string,
-			      'start' => undef,
-			      'end'   => undef,
-			      'index' => 0,
-			      'direction' => 1
-			      },
-			    { 'name'  => 'Sbjct:',
-			      'seq'   => $hsp->hit_string,
-			      'start' => ($hstrand >= 0 ? 
-					  $hsp->hit->start : $hsp->hit->end),
-			      'end'   => ($hstrand >= 0 ? 
-					  $hsp->hit->end : $hsp->hit->start),
-			      'index' => 0,
-			      'direction' => $hstrand || 1
-			      }
-			    );	    
-	    
-	    
-	    # let's set the expected length (in chars) of the starting number
-	    # in an alignment block so we can have things line up
-	    # Just going to try and set to the largest
-	    
-	    my ($numwidth) = sort { $b <=> $a }(length($hspvals[0]->{'start'}),
-						length($hspvals[0]->{'end'}),
-						length($hspvals[2]->{'start'}),
-						length($hspvals[2]->{'end'}));
-	    my $count = 0;
-	    while ( $count <= $hsp->length('total') ) {
-		foreach my $v ( @hspvals ) {
-		    my $piece = substr($v->{'seq'}, $v->{'index'} +$count,
-				       $AlignmentLineWidth);
-		    my $cp = $piece;
-		    my $plen = scalar ( $cp =~ tr/\-//);
-		    my ($start,$end) = ('','');
-		    if( defined $v->{'start'} ) { 
-			$start = $v->{'start'};
-			# since strand can be + or - use the direction
-			# to signify which whether to add or substract from end
-			my $d = $v->{'direction'} * ( $AlignmentLineWidth - $plen )*
-			    $baselens{$v->{'name'}};
-			if( length($piece) < $AlignmentLineWidth ) {
-			    $d = (length($piece) - $plen) * $v->{'direction'} * 
-				$baselens{$v->{'name'}};
-			}
-			$end   = $v->{'start'} + $d - $v->{'direction'};
-			$v->{'start'} += $d;
-		    }
-		    $hspstr .= sprintf("%s %-".$numwidth."s %s %s\n",
-				       $v->{'name'},
-				       $start,
-				       $piece,
-				       $end
-				       );
-		}
-		$count += $AlignmentLineWidth;
-		$hspstr .= "\n";
-	    }
 	}
-	$hspstr .= "\n";
     }
     $str .= "\n\n".$hspstr;
     
@@ -760,6 +774,26 @@ L<Bio::SearchIO::SearchWriterI> inherited methods.
 
 
 =cut
+
+=head2 no_wublastlinks
+
+ Title   : no_wublastlinks
+ Usage   : $obj->no_wublastlinks($newval)
+ Function: Get/Set boolean value regarding whether or not to display
+           Link = (1) 
+           type output in the report output (WU-BLAST only)
+ Returns : boolean
+ Args    : on set, new boolean value (a scalar or undef, optional)
+
+
+=cut
+
+sub no_wublastlinks{
+    my $self = shift;
+
+    return $self->{'no_wublastlinks'} = shift if @_;
+    return $self->{'no_wublastlinks'};
+}
 
 
 1;

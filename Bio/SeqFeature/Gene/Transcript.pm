@@ -1,4 +1,4 @@
-# $Id: Transcript.pm,v 1.25 2002/12/29 09:37:51 lapp Exp $
+# $Id: Transcript.pm,v 1.32 2003/08/10 17:13:43 jason Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::Transcript
 #
@@ -16,7 +16,7 @@ Bio::SeqFeature::Gene::Transcript - A feature representing a transcript
 
 =head1 SYNOPSIS
 
-See documentation of methods.
+  # See documentation of methods.
 
 =head1 DESCRIPTION
 
@@ -74,6 +74,7 @@ use Bio::PrimarySeq;
 sub new {
     my ($caller, @args) = @_;
     my $self = $caller->SUPER::new(@args);
+    $self->_register_for_cleanup(\&transcript_destroy);
     my ($primary) = $self->_rearrange([qw(PRIMARY)],@args);
 
     $primary = 'transcript' unless $primary;
@@ -220,11 +221,11 @@ sub exons_ordered {
 =cut
 
 sub add_exon {
-    my ($self, $fea) = @_;
+    my ($self, $fea, $type) = @_;
     if(! $fea->isa('Bio::SeqFeature::Gene::ExonI') ) {
 	$self->throw("$fea does not implement Bio::SeqFeature::Gene::ExonI");
     }
-    $self->_add($fea,'Bio::SeqFeature::Gene::Exon');
+    $self->_add($fea,'Bio::SeqFeature::Gene::Exon', $type);
 }
 
 =head2 flush_exons
@@ -300,27 +301,13 @@ sub introns {
         @exons = map { $_->[0] } sort { $b->[1] <=> $a->[1] } map { [ $_, $_->start()] } @exons;
     }
     # loop over all intervening gaps
-    for(my $i = 0; $i < $#exons; $i++) {
-	my ($start, $end);
-	my $intron;
-
-	if(defined($exons[$i]->strand()) &&
-	   (($exons[$i]->strand() * $strand) < 0)) {
-	    $self->throw("Transcript mixes plus and minus strand exons. ".
-			 "Computing introns makes no sense then.");
-	}
-	$start = $exons[$i+$rev_order]->end() + 1;     # $i or $i+1
-	$end = $exons[$i+1-$rev_order]->start() - 1;   # $i+1 or $i
-	$intron = Bio::SeqFeature::Gene::Intron->new(
-						     '-start'   => $start,
-						     '-end'     => $end,
-						     '-strand'  => $strand,
-						     '-primary' => 'intron',
-						     '-source'  => ref($self));
-	my $seq = $self->entire_seq();
-	$intron->attach_seq($seq) if $seq;
-	$intron->seq_id($self->seq_id());
-	push(@introns, $intron);
+    while ((my $exonA = shift (@exons)) &&(my $exonB = shift(@exons))){
+       my $intron = Bio::SeqFeature::Gene::Intron->new(-primary=>'intron');
+       $intron->upstream_Exon($exonA);
+       $intron->downstream_Exon($exonB);
+       $intron->attach_seq($self->entire_seq) if $self->entire_seq;
+       unshift(@exons,$exonB);
+       push @introns,$intron;
     }
     return @introns;
 }
@@ -667,9 +654,8 @@ sub _make_cds {
 
 
 sub features {
-    my ($self) = shift;
-    $self->{'_features'} = [] unless defined $self->{'_features'};
-    return @{$self->{'_features'}};
+    my $self = shift;    
+    return grep { defined } @{$self->{'_features'} || []};
 }
 
 =head2 features_ordered
@@ -686,14 +672,14 @@ sub features {
 
 sub features_ordered{
    my ($self) = @_;
-   return $self->_stranded_sort(@{$self->{'_features'}});
+   return $self->_stranded_sort(@{$self->{'_features'} || []});
 }
 
 
 sub get_unordered_feature_type{
     my ($self, $type, $pri)=@_;
     my @list;
-    foreach ($self->features) {
+    foreach ( $self->features) {
 	if ($_->isa($type)) {
 	    if ($pri && $_->primary_tag !~ /$pri/i) {
 		next;
@@ -717,7 +703,8 @@ sub _flush {
      my @list=$self->features;
      my @cut;
      for (reverse (0..$#list)) {
-         if ($list[$_]->isa($type)) {
+         if (defined $list[$_] &&
+	     $list[$_]->isa($type)) {
              if ($pri && $list[$_]->primary_tag !~ /$pri/i) {
                  next;
              }
@@ -730,7 +717,7 @@ sub _flush {
 }
 
 sub _add {
-    my ($self, $fea, $type)=@_;
+    my ($self, $fea, $type, $pri)=@_;
     require Bio::SeqFeature::Gene::Promoter;
     require Bio::SeqFeature::Gene::UTR;
     require Bio::SeqFeature::Gene::Exon;
@@ -740,8 +727,8 @@ sub _add {
     if(! $fea->isa('Bio::SeqFeatureI') ) {
 	$self->throw("$fea does not implement Bio::SeqFeatureI");
     }
-    if(! $fea->isa($type) ) {
-	$fea=$self->_new_of_type($fea,$type);
+    if(! $fea->isa($type) || $pri) {
+	$fea=$self->_new_of_type($fea,$type,$pri);
     }
     if (! $self->strand) {
 	$self->strand($fea->strand);
@@ -794,6 +781,16 @@ sub _new_of_type {
     bless $fea,$type;
     $fea->primary_tag($primary);
     return $fea;
+}
+
+sub transcript_destroy {
+    my $self = shift;    
+    # We're going to be really explicit to insure memory leaks 
+    # don't occur
+    foreach my $f ( $self->features ) {
+	$f = undef;
+    }
+    $self->parent(undef);
 }
 
 1;

@@ -1,4 +1,4 @@
-# $Id: TreeI.pm,v 1.11.2.1 2003/09/14 20:21:10 jason Exp $
+# $Id: TreeI.pm,v 1.13 2003/07/27 18:52:03 jason Exp $
 #
 # BioPerl module for Bio::Tree::TreeI
 #

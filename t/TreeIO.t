@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: TreeIO.t,v 1.14.2.1 2003/09/14 19:00:35 jason Exp $
+## $Id: TreeIO.t,v 1.21 2003/12/11 22:51:09 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -18,7 +18,7 @@ BEGIN {
     }
 
     use Test;
-    plan tests => 17; 
+    plan tests => 41; 
 
 #    eval { require XML::Parser::PerlSAX; };
 #    if( $@ ) {
@@ -151,6 +151,19 @@ $treeio = new Bio::TreeIO(-verbose => $verbose,
 			  -file   => Bio::Root::IO->catfile('t','data', 
 							    'test.nhx'));
 
+if( eval "require SVG::Graph; 1;" ) {
+  my $treeout3 = new Bio::TreeIO(-format => 'svggraph');
+  ok($treeout3);
+  if( $verbose > 0 ){
+    $treeout3->write_tree($tree);
+    ok(1);
+  } else {
+    skip("skipping SVG::Graph output, verbosity flag too low",1);
+  }
+} else {
+    skip("skipping SVG::Graph output, SVG::Graph not installed",2);
+}
+
 ok($treeio);
 $tree = $treeio->next_tree;
 
@@ -163,6 +176,67 @@ my $adhy = $tree->find_node('ADHY');
 ok($adhy->branch_length, 0.1);
 ok(($adhy->get_tag_values('S'))[0], 'nematode');
 ok(($adhy->get_tag_values('E'))[0], '1.1.1.1');
+
+# try lintree parsing
+$treeio = new Bio::TreeIO(-format => 'lintree',
+			      -file   => Bio::Root::IO->catfile
+			      (qw(t data crab.njb)));
+$tree = $treeio->next_tree;
+
+ok(ref($tree) && $tree->isa('Bio::Tree::TreeI'));
+
+@nodes = $tree->get_nodes;
+
+my @leaves = $tree->get_leaf_nodes;
+ok(@leaves, 13);
+ok(@nodes, 24);
+my ($node) = $tree->find_node(-id => '18');
+ok($node);
+ok($node->id, '18');
+ok($node->branch_length, '0.030579');
+ok($node->bootstrap, 998);
+
+$treeio = new Bio::TreeIO(-format => 'lintree',
+			   -file   => Bio::Root::IO->catfile
+			   (qw(t data crab.nj)));
+
+$tree = $treeio->next_tree;
+
+ok(ref($tree) && $tree->isa('Bio::Tree::TreeI'));
+
+@nodes = $tree->get_nodes;
+@leaves = $tree->get_leaf_nodes;
+ok(@leaves, 13);
+ok(@nodes, 24);
+($node) = $tree->find_node('18');
+ok($node->id, '18');
+ok($node->branch_length, '0.028117');
+
+($node) = $tree->find_node(-id => 'C-vittat');
+ok($node->id, 'C-vittat');
+ok($node->branch_length, '0.087619');
+ok($node->ancestor->id, '14');
+$treeio = new Bio::TreeIO(-format => 'lintree',
+			      -file   => Bio::Root::IO->catfile
+			      (qw(t data crab.dat.cn)));
+$tree = $treeio->next_tree;
+
+ok(ref($tree) && $tree->isa('Bio::Tree::TreeI'));
+
+@nodes = $tree->get_nodes;
+@leaves = $tree->get_leaf_nodes;
+ok(@leaves, 13, scalar @leaves);
+
+ok(@nodes, 24, scalar @leaves);
+($node) = $tree->find_node('18');
+ok($node->id, '18');
+
+ok($node->branch_length, '0.029044');
+
+($node) = $tree->find_node(-id => 'C-vittat');
+ok($node->id, 'C-vittat');
+ok($node->branch_length, '0.097855');
+ok($node->ancestor->id, '14');
 
 __DATA__
 (((A:1,B:1):1,(C:1,D:1):1):1,((E:1,F:1):1,(G:1,H:1):1):1);

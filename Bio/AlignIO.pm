@@ -1,4 +1,4 @@
-# $Id: AlignIO.pm,v 1.28 2002/10/22 07:38:23 lapp Exp $
+# $Id: AlignIO.pm,v 1.34 2003/12/10 22:43:25 heikki Exp $
 #
 # BioPerl module for Bio::AlignIO
 #
@@ -35,7 +35,7 @@ Bio::AlignIO - Handler for AlignIO Formats
         $out->write_aln($aln);
     }
 
-or
+ #or
 
     use Bio::AlignIO;
 
@@ -168,21 +168,22 @@ semantics.
 
 Specify the format of the file.  Supported formats include:
 
-   fasta       FASTA format
-   selex       selex (hmmer) format
-   stockholm   stockholm format
-   prodom      prodom (protein domain) format
-   clustalw    clustalw (.aln) format
-   msf         msf (GCG) format
-   mase        mase (seaview) format
    bl2seq      Bl2seq Blast output
+   clustalw    clustalw (.aln) format
+   emboss      EMBOSS water and needle format
+   fasta       FASTA format
+   maf         Multiple Alignment Format
+   mase        mase (seaview) format
+   mega        MEGA format
+   meme        MEME format
+   msf         msf (GCG) format
    nexus       Swofford et al NEXUS format
    pfam        Pfam sequence alignment format
    phylip      Felsenstein's PHYLIP format
-   emboss      EMBOSS water and needle format
-   mega        MEGA format
-   meme        MEME format
+   prodom      prodom (protein domain) format
    psi         PSI-BLAST format
+   selex       selex (hmmer) format
+   stockholm   stockholm format
 
 Currently only those formats which were implemented in L<Bio::SimpleAlign>
 have been incorporated in AlignIO.pm.  Specifically, mase, stockholm
@@ -298,6 +299,7 @@ use Bio::Seq;
 use Bio::LocatableSeq;
 use Bio::SimpleAlign;
 use Bio::Root::IO;
+use Bio::Tools::GuessSeqFormat;
 @ISA = qw(Bio::Root::Root Bio::Root::IO);
 
 =head2 new
@@ -317,7 +319,7 @@ use Bio::Root::IO;
 sub new {
     my ($caller,@args) = @_;
     my $class = ref($caller) || $caller;
-    
+
     # or do we want to call SUPER on an object if $caller is an
     # object?
     if( $class =~ /Bio::AlignIO::(\S+)/ ) {
@@ -329,11 +331,19 @@ sub new {
 	my %param = @args;
 	@param{ map { lc $_ } keys %param } = values %param; # lowercase keys
 	my $format = $param{'-format'} || 
-	    $class->_guess_format( $param{-file} || $ARGV[0] ) ||
-		'fasta';
+	    $class->_guess_format( $param{-file} || $ARGV[0] );
+        unless ($format) {
+            if ($param{-file}) {
+                $format = Bio::Tools::GuessSeqFormat->new(-file => $param{-file}||$ARGV[0] )->guess;
+            }
+            elsif ($param{-fh}) {
+                $format = Bio::Tools::GuessSeqFormat->new(-fh => $param{-fh}||$ARGV[0] )->guess;
+            }
+        }
 	$format = "\L$format";	# normalize capitalization to lower case
+        $class->throw("Unknown format given or could not determine it [$format]")
+            unless $format;
 
-	# normalize capitalization
 	return undef unless( $class->_load_format_module($format) );
 	return "Bio::AlignIO::$format"->new(@args);
     }
@@ -467,6 +477,7 @@ sub _guess_format {
    my $class = shift;
    return unless $_ = shift;
    return 'fasta'   if /\.(fasta|fast|seq|fa|fsa|nt|aa)$/i;
+   return 'maf'     if /\.maf/i;
    return 'msf'     if /\.(msf|pileup|gcg)$/i;
    return 'pfam'    if /\.(pfam|pfm)$/i;
    return 'selex'   if /\.(selex|slx|selx|slex|sx)$/i;

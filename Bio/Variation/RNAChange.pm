@@ -1,4 +1,4 @@
-# $Id: RNAChange.pm,v 1.10 2002/10/22 07:38:49 lapp Exp $
+# $Id: RNAChange.pm,v 1.11 2003/06/04 08:36:44 heikki Exp $
 #
 # BioPerl module for Bio::Variation::RNAChange
 #
@@ -107,7 +107,7 @@ use vars qw(@ISA);
 use strict;
 
 # Object preamble - inheritance
-my $VERSION=1.0;
+
 use Bio::Variation::VariantI;
 use Bio::Tools::CodonTable;
 

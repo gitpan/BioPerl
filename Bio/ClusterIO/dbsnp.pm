@@ -1,4 +1,4 @@
-# $Id: dbsnp.pm,v 1.7.2.1 2003/08/21 21:07:06 allenday Exp $
+# $Id: dbsnp.pm,v 1.9 2003/08/12 01:26:42 allenday Exp $
 # BioPerl module for Bio::ClusterIO::dbsnp
 #
 # Copyright Allen Day <allenday@ucla.edu>, Stan Nelson <snelson@ucla.edu>

@@ -259,6 +259,11 @@ sub new {
 
     $absstrand ||= '+';
 
+    if ($absstart > $absstop) { # AAARGH!  DATA FORMAT ERROR!  FIX.
+	($absstart,$absstop) = ($absstop,$absstart);
+	$absstrand = $absstrand eq '+' ? '-' : '+';
+    }
+
     # an explicit length overrides start and stop
     if (defined $offset) {
       warn "new(): bad idea to call new() with both a start and an offset"
@@ -587,6 +592,8 @@ The named parameter form gives you control over a few options:
 
   -attributes a hashref containing a set of attributes to match
 
+  -range_type One of 'overlapping', 'contains', or 'contained_in'
+
   -iterator  Whether to return an iterator across the features.
 
   -binsize   A true value will create a set of artificial features whose
@@ -624,6 +631,45 @@ sub features {
   my @args = $self->_process_feature_args(@_);
   return $self->factory->overlapping_features(@args);
 }
+
+
+=head2 get_SeqFeatures
+
+ Title   : get_SeqFeatures
+ Usage   :
+ Function: returns the top level sequence features
+ Returns : L<Bio::SeqFeatureI> objects
+ Args    : none
+
+Alias for features().  Provided for Bio::SeqI compatibility.
+
+=cut
+
+=head2 get_all_SeqFeatures
+
+ Title   : get_all_SeqFeatures
+ Usage   :
+ Function: returns all the sequence features
+ Returns : L<Bio::SeqFeatureI> objects
+ Args    :
+
+Alias for features().  Provided for Bio::SeqI compatibility.
+
+=cut
+
+=head2 sub_SeqFeatures
+
+ Title   : sub_SeqFeatures
+ Usage   :
+ Function:
+ Example :
+ Returns :
+ Args    :
+
+Alias for features().  Provided for Bio::SeqI compatibility.
+
+=cut
+
 
 =head2 top_SeqFeatures
 
@@ -664,7 +710,28 @@ Alias for features().  Provided for Bio::SeqI compatibility.
 
 =cut
 
-*top_SeqFeatures = *all_SeqFeatures = \&features;
+*get_all_SeqFeature = *get_SeqFeatures = *top_SeqFeatures = *all_SeqFeatures = \&features;
+
+=head2 feature_count
+
+ Title   : feature_count
+ Usage   : $seq->feature_count()
+ Function: Return the number of SeqFeatures attached to a sequence
+ Returns : integer representing the number of SeqFeatures
+ Args    : none
+
+This method comes through extension of Bio::FeatureHolderI. See
+L<Bio::FeatureHolderI> for more information.
+
+=cut
+
+sub feature_count { 
+    my $self = shift;
+    my $ct = 0;
+    my %type_counts = $self->types(-enumerate=>1);
+    map { $ct += $_ } values %type_counts;
+    $ct;
+}
 
 =head2 get_feature_stream
 
@@ -686,7 +753,7 @@ This is the same as features(), but returns a stream.  Use like this:
 
 sub get_feature_stream {
   my $self = shift;
-  my @args = $_[0] =~ /^-/ ? (@_,-iterator=>1) : (-types=>\@_,-iterator=>1);
+  my @args = defined($_[0]) && $_[0] =~ /^-/ ? (@_,-iterator=>1) : (-types=>\@_,-iterator=>1);
   $self->features(@args);
 }
 
@@ -773,6 +840,59 @@ sub contained_in {
   local $self->{whole} = 0;
   my @args = $self->_process_feature_args(@_);
   return $self->factory->contained_in(@args);
+}
+
+=head2 delete
+
+ Title   : delete
+ Usage   : $db->delete(@args)
+ Function: delete features
+ Returns : count of features deleted -- if available
+ Args    : numerous, see below
+ Status  : public
+
+This method deletes all features that overlap the specified region or
+are of a particular type.  If no arguments are provided and the -force
+argument is true, then deletes ALL features.
+
+Arguments:
+
+ -type,-types  Either a single scalar type to be deleted, or an
+               reference to an array of types.
+
+ -range_type   Control the range type of the deletion.  One of "overlaps" (default)
+               "contains" or "contained_in"
+
+Examples:
+
+  $segment->delete(-type=>['intron','repeat:repeatMasker']);  # remove all introns & repeats
+  $segment->delete(-type=>['intron','repeat:repeatMasker']
+		   -range_type => 'contains');                # remove all introns & repeats
+                                                              # strictly contained in segment
+
+IMPORTANT NOTE: This method only deletes features.  It does *NOT*
+delete the names of groups that contain the deleted features.  Group
+IDs will be reused if you later load a feature with the same group
+name as one that was previously deleted.
+
+NOTE ON FEATURE COUNTS: The DBI-based versions of this call return the
+result code from the SQL DELETE operation.  Some dbd drivers return the
+count of rows deleted, while others return 0E0.  Caveat emptor.
+
+=cut
+
+# return all features completely contained within this segment
+sub delete {
+  my $self = shift;
+  my ($type,$range_type) =
+    rearrange([[qw(TYPE TYPES)],'RANGE_TYPE'],@_);
+  my $types = $self->factory->parse_types($type);  # parse out list of types
+  $range_type ||= 'overlaps';
+  return $self->factory->_delete({
+                                  segments   => [$self],
+                                  types      => $types,
+                                  range_type => $range_type
+                                  });
 }
 
 =head2 _process_feature_args
@@ -956,7 +1076,7 @@ sub rel2abs {
  Usage   : @rel_coords = $s-abs2rel(@abs_coords)
  Function: convert absolute coordinates into relative coordinates
  Returns : a list of relative coordinates
- Args    : a list of absolutee coordinates
+ Args    : a list of absolute coordinates
  Status  : Public
 
 This function takes a list of positions in absolute coordinates

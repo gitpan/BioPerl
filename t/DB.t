@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: DB.t,v 1.36.2.1 2003/06/28 22:20:18 jason Exp $
+# $Id: DB.t,v 1.42 2003/11/13 12:57:06 heikki Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -26,11 +26,15 @@ BEGIN {
 
     $NUMTESTS = 78;
     plan tests => $NUMTESTS;
-    eval { require IO::String };
+    
+    eval { require IO::String; 
+	   require LWP::UserAgent;
+	   require HTTP::Request::Common;
+       };
     if( $@ ) {
-	print STDERR "IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping tests.\n";
+	print STDERR "IO::String or LWP::UserAgent or HTTP::Request not installed. This means the Bio::DB::* modules are not usable. Skipping tests.\n";
 	for( 1..$NUMTESTS ) {
-	    skip("IO::String not installed",1);
+	    skip("IO::String, LWP::UserAgent,or HTTP::Request not installed",1);
 	}
        $error = 1; 
     }
@@ -38,12 +42,15 @@ BEGIN {
 
 END { 
     foreach ( $Test::ntest..$NUMTESTS) {
-	skip('unable to run all of the DB tests',1);
+	skip('Unable to run all of the DB tests',1);
     }
 }
+
+
 if( $error ==  1 ) {
     exit(0);
 }
+
 
 require Bio::DB::GenBank;
 require Bio::DB::GenPept;
@@ -62,11 +69,10 @@ my $verbose = 0;
 
 my ($gb,$seq,$seqio,$query);
 # get a single seq
-
-
 eval {
     ok defined ( $gb = new Bio::DB::GenBank('-verbose'=>$verbose,'-delay'=>0) );
-    ok( defined ($seq = $gb->get_Seq_by_id('MUSIGHBA1')));
+    $seq = $gb->get_Seq_by_id('MUSIGHBA1');
+    $seq ? ok 1 : exit 0;
     ok( $seq->length, 408); 
     ok( defined ($seq = $gb->get_Seq_by_acc('AF303112')));
     ok($seq->length, 1611);
@@ -82,8 +88,8 @@ if ($@) {
     foreach ( $Test::ntest..$NUMTESTS ) { skip('no network access',1); }
     exit(0);
 }
-
 $seq = $seqio = undef;
+
 eval {
     ok( defined($seqio = $gb->get_Stream_by_id([ qw(J00522 AF303112 
 							 2981014)])));
@@ -98,6 +104,7 @@ if ($@) {
     exit(0);
 }
 $seq = $seqio = undef;
+
 eval { 
     ok defined($gb = new Bio::DB::GenPept('-verbose'=>$verbose,'-delay'=>0)); 
     ok( defined($seq = $gb->get_Seq_by_id('195055')));
@@ -249,9 +256,9 @@ eval {
 					  '-delay'  => 0,
 					 ));
   ok defined ($seqio = $gb->get_Stream_by_query($query));
-  ok($seqio->next_seq->length,13747);
   ok($seqio->next_seq->length,3766);
   ok($seqio->next_seq->length,3857);
+  ok($seqio->next_seq->length,508);
 };
 
 if ($@) {
@@ -262,8 +269,8 @@ if ($@) {
 	skip('could not connect to Genbank',1); 
     }
   }
-
 $seq = $seqio = undef;
+
 # test query facility
 eval {
   ok defined ( $query = Bio::DB::Query::GenBank->new('-verbose' => $verbose,
@@ -282,7 +289,7 @@ eval {
   ok($seqio->next_seq->length, 408);
   ok($seqio->next_seq->length, 1611);
   ok($seqio->next_seq->length, 1156);
-  $seqio->close();
+  $seqio->close(); # the key to preventing errors during make test, no idea why
 };
 
 if ($@) {
@@ -294,3 +301,4 @@ if ($@) {
     }
 }
 $seq = $seqio = undef;
+print STDERR "\n";

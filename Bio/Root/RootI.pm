@@ -1,4 +1,4 @@
-# $Id: RootI.pm,v 1.61 2002/12/16 09:44:28 birney Exp $
+# $Id: RootI.pm,v 1.66 2003/08/10 16:27:32 jason Exp $
 #
 # BioPerl module for Bio::Root::RootI
 #
@@ -101,14 +101,15 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Root::RootI;
 
-use vars qw($DEBUG $ID $Revision $VERSION $VERBOSITY);
+use vars qw($DEBUG $ID $Revision $VERBOSITY);
 use strict;
 use Carp 'confess','carp';
 
+use Bio::Root::Version;
+
 BEGIN { 
     $ID        = 'Bio::Root::RootI';
-    $VERSION   = 1.0;
-    $Revision  = '$Id: RootI.pm,v 1.61 2002/12/16 09:44:28 birney Exp $ ';
+    $Revision  = '$Id: RootI.pm,v 1.66 2003/08/10 16:27:32 jason Exp $ ';
     $DEBUG     = 0;
     $VERBOSITY = 0;
 }
@@ -179,9 +180,9 @@ sub warn{
 	$verbose = 0;
     }
 
-    if( $verbose == 2 ) {
+    if( $verbose >= 2 ) {
 	$self->throw($string);
-    } elsif( $verbose == -1 ) {
+    } elsif( $verbose <= -1 ) {
 	return;
     } elsif( $verbose == 1 ) {
 	my $out = "\n-------------------- WARNING ---------------------\n".
@@ -266,8 +267,8 @@ sub stack_trace{
    my ($self) = @_;
 
    my $i = 0;
-   my @out;
-   my $prev;
+   my @out = ();
+   my $prev = [];
    while( my @call = caller($i++)) {
        # major annoyance that caller puts caller context as
        # function name. Hence some monkeying around...
@@ -450,7 +451,7 @@ sub _register_for_cleanup {
  Title   : _unregister_for_cleanup
  Usage   : -- internal --
  Function: Remove a method that has previously been registered to be called
-           at DESTROY time.  If called with a methoda method to be called at DESTROY time.
+           at DESTROY time.  If called with a method to be called at DESTROY time.
            Has no effect if the code reference has not previously been registered.
  Returns : nothing
  Args    : a code reference

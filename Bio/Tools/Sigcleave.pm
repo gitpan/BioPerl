@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Tools::Sigcleave
 # AUTHOR  : Chris Dagdigian, dag@sonsorol.org
 # CREATED : Jan 28 1999
-# REVISION: $Id: Sigcleave.pm,v 1.17 2002/10/22 07:45:22 lapp Exp $
+# REVISION: $Id: Sigcleave.pm,v 1.18 2003/06/04 08:36:43 heikki Exp $
 #
 # Copyright (c) 1997-9 bioperl, Chris Dagdigian and others. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
@@ -146,7 +146,7 @@ Heikki Lehvaslaiho, heikki@ebi.ac.uk
 
 =head1 VERSION
 
-Bio::Tools::Sigcleave.pm, $Id: Sigcleave.pm,v 1.17 2002/10/22 07:45:22 lapp Exp $
+Bio::Tools::Sigcleave.pm, $Id: Sigcleave.pm,v 1.18 2003/06/04 08:36:43 heikki Exp $
 
 =head1 COPYRIGHT
 
@@ -189,10 +189,8 @@ use Bio::PrimarySeq;
 
 @ISA = qw(Bio::Root::Root);
 use strict;
-use vars qw ($ID $VERSION %WeightTable_euc  %WeightTable_pro );
+use vars qw ($ID %WeightTable_euc  %WeightTable_pro );
 $ID  = 'Bio::Tools::Sigcleave';
-$VERSION = 0.02;
-
 
   %WeightTable_euc = (
 #Sample: 161 aligned sequences

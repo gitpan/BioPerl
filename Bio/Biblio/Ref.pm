@@ -1,4 +1,4 @@
-# $Id: Ref.pm,v 1.5 2002/10/22 07:45:11 lapp Exp $
+# $Id: Ref.pm,v 1.7 2003/05/30 15:33:00 jason Exp $
 #
 # BioPerl module for Bio::Biblio::Ref
 #
@@ -15,7 +15,7 @@ Bio::Biblio::Ref - Representation of a bibliographic reference
 
     $obj = new Bio::Biblio::Ref (-type  => 'Letter',
 				 -title => 'Onegin to Tatiana');
- --- OR ---
+  #--- OR ---
 
     $obj = new Bio::Biblio::Ref;
     $obj->type ('Letter');
@@ -63,7 +63,7 @@ and they are inherited by all citation types.
 
 =head1 SEE ALSO
 
-=over
+=over 4
 
 =item *
 

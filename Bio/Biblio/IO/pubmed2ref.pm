@@ -1,4 +1,4 @@
-# $Id: pubmed2ref.pm,v 1.2 2002/10/22 07:45:13 lapp Exp $
+# $Id: pubmed2ref.pm,v 1.3 2003/06/04 08:36:36 heikki Exp $
 #
 # BioPerl module Bio::Biblio::IO::pubmed2ref.pm
 #
@@ -68,15 +68,13 @@ with an underscore _.
 package Bio::Biblio::IO::pubmed2ref;
 
 use strict;
-use vars qw(@ISA $VERSION $Revision);
+use vars qw(@ISA $Revision);
 
 use Bio::Biblio::IO::medline2ref;
 @ISA = qw(Bio::Biblio::IO::medline2ref);
 
-BEGIN { 
-    # set the version for version checking
-    $VERSION = do { my @r = (q$Revision: 1.2 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id: pubmed2ref.pm,v 1.2 2002/10/22 07:45:13 lapp Exp $;
+BEGIN {
+    $Revision = q$Id: pubmed2ref.pm,v 1.3 2003/06/04 08:36:36 heikki Exp $;
 }
 
 # ---------------------------------------------------------------------

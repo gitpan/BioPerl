@@ -1,4 +1,4 @@
-# $Id: SimpleGOEngine.pm,v 1.3.2.6 2003/06/30 05:04:06 lapp Exp $
+# $Id: SimpleGOEngine.pm,v 1.24 2003/10/23 01:52:42 allenday Exp $
 #
 # BioPerl module for Bio::Ontology::SimpleGOEngine
 #
@@ -100,6 +100,7 @@ use Bio::Root::Root;
 use Bio::Ontology::RelationshipType;
 use Bio::Ontology::RelationshipFactory;
 use Bio::Ontology::OntologyEngineI;
+use Data::Dumper;
 
 use constant TRUE     => 1;
 use constant FALSE    => 0;
@@ -245,7 +246,7 @@ sub add_term {
  Returns : true or false
  Args    : Bio::Ontology::TermI
            or
-           erm identifier (e.g. "GO:0012345")
+           Term identifier (e.g. "GO:0012345")
 
 
 =cut
@@ -263,6 +264,46 @@ sub has_term {
 } # has_term
 
 
+=head2 add_relationship_type
+
+ Title   : add_relationship_type
+ Usage   : $engine->add_relationship_type( $type_name, $ont );
+ Function: Adds a new relationship type to the engine.  User get_relationship_type($type_name) to retrieve.
+ Returns : true if successfully added, false otherwise
+ Args    : relationship type name to add (scalar)
+
+
+=cut
+
+sub add_relationship_type{
+   my ($self,@args) = @_;
+
+   if(scalar(@_) == 3){
+	 my $type_name = $args[0];
+	 my $ont = $args[1];
+	 $self->{ "_extra_relationship_types" }{$type_name} = Bio::Ontology::RelationshipType->get_instance($type_name,$ont);
+#warn Dumper($self->{"_extra_relationship_types"}{$type_name});
+	 return 1;
+   }
+   return 0;
+}
+
+
+=head2 get_relationship_type
+
+ Title   : get_relationship_type
+ Usage   : $engine->get_relationship_type( $type_name );
+ Function: Gets a Bio::Ontology::RelationshipI object corresponding to $type_name
+ Returns : a Bio::Ontology::RelationshipI object
+ Args    :
+
+
+=cut
+
+sub get_relationship_type{
+   my ($self,$type_name) = @_;
+   return $self->{ "_extra_relationship_types" }{$type_name};
+}
 
 =head2 add_relationship
 
@@ -403,6 +444,10 @@ sub get_predicate_terms {
 
     my @a = ( $self->is_a_relationship(),
               $self->part_of_relationship() );
+
+	foreach my $termname (keys %{$self->{ "_extra_relationship_types" }}){
+	  push @a, $self->{ "_extra_relationship_types" }{ $termname };
+	}
 
     return @a;
 } # get_predicate_terms
@@ -750,28 +795,36 @@ sub graph {
 # Gets the id out of a term or id string
 sub _get_id {
     my ( $self, $term ) = @_;
+    my $id = $term;
 
     if(ref($term)) {
-	return $term->GO_id() if $term->isa("Bio::Ontology::GOterm");
-	# if not a GOterm, use standard API
+	# use TermI standard API
 	$self->throw("Object doesn't implement Bio::Ontology::TermI. ".
 		     "Bummer.")
 	    unless $term->isa("Bio::Ontology::TermI");
-	$term = $term->identifier();
+	$id = $term->identifier();
+	# if there is no ID, we need to fake one from ontology name and name
+	# in order to achieve uniqueness
+	if(!$id) {
+	    $id = $term->ontology->name() if $term->ontology();
+	    $id = $id ? $id.'|' : '';
+	    $id .= $term->name();
+	}
     }
-    # don't fuss if it looks remotely standard
-    return $term if $term =~ /^[A-Z]{1,8}:\d{3,}$/;
+    # don't fuss if it looks remotely standard, and we trust GO terms
+    return $id
+#	if $term->isa("Bio::Ontology::GOterm")||($id =~ /^[A-Z_]{1,8}:\d{1,}$/);
+	if $term->isa("Bio::Ontology::GOterm")||($id =~ /^\w+:\w+$/);
     # prefix with something if only numbers
-    if($term =~ /^\d+$/) {
-	$self->warn(ref($self).": identifier [$term] is only numbers - ".
+    if($id =~ /^\d+$/) {
+	$self->warn(ref($self).": identifier [$id] is only numbers - ".
 		    "prefixing with 'GO:'");
-	return "GO:" . $term;
-    }
+	return "GO:" . $id;
+    } 
     # we shouldn't have gotten here if it's at least a remotely decent ID
-    $self->warn(ref($self).
-		": Are you sure '$term' is a valid identifier? ".
-		"If you see problems, this may be the cause.");
-    return $term;
+    $self->throw(ref($self).": non-standard identifier '$id'\n")
+	unless $id =~ /\|/;
+    return $id;
 } # _get_id
 
 
@@ -834,7 +887,7 @@ sub _get_descendant_terms_helper {
     }
 
     foreach my $child_term ( @child_terms ) {
-        my $child_term_id = $child_term->identifier();
+        my $child_term_id = $self->_get_id($child_term->identifier());
         $ids_ref->{ $child_term_id } = 0;
         $self->_get_descendant_terms_helper( $child_term_id, $ids_ref, $types_ref );
     }
@@ -853,7 +906,7 @@ sub _get_ancestor_terms_helper {
     }
 
     foreach my $parent_term ( @parent_terms ) {
-        my $parent_term_id = $parent_term->identifier();
+        my $parent_term_id = $self->_get_id($parent_term->identifier());
         $ids_ref->{ $parent_term_id } = 0;
         $self->_get_ancestor_terms_helper( $parent_term_id, $ids_ref, $types_ref );
     }

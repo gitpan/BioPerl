@@ -1,6 +1,6 @@
 package Bio::Graphics::Glyph::processed_transcript;
 
-# $Id: processed_transcript.pm,v 1.3.2.1 2003/07/05 00:32:04 lstein Exp $
+# $Id: processed_transcript.pm,v 1.4 2003/09/17 17:11:30 lstein Exp $
 
 use strict;
 use Bio::Graphics::Glyph::transcript2;
@@ -112,6 +112,8 @@ L<Bio::Graphics::Glyph> for a full explanation.
 
   -strand_arrow Whether to indicate            undef (false)
                  strandedness
+
+  -hilite       Highlight color                undef (no color)
 
 In addition, the alignment glyph recognizes the following
 glyph-specific options:

@@ -110,8 +110,8 @@ Bio::Graphics in a cookbook fashion.
 Bio::Graphics is dependent on GD, a Perl module for generating
 bitmapped graphics written by the author.  GD in turn is dependent on
 libgd, a C library written by Thomas Boutell, formerly also of Cold
-Spring Harbor Laboratory.  To use Bio::Graphics, you must have both
-these software libraries installed.
+Spring Harbor Laboratory (www.boutell.com/gd). To use Bio::Graphics, 
+you must have both these software libraries installed.
 </para>
 
 <para>
@@ -137,17 +137,6 @@ version of the libgd C library.
 </para>
 
 <para>
-If the program prints out a version number, you are in luck.
-Otherwise, if you get a "Can't locate GD.pm" error, you'll have to
-install the module.  For users of ActiveState Perl this is very easy.
-Just start up the PPM program and issue the command "install GD".  For
-users of other versions of Perl, you should go to www.cpan.org,
-download a recent version of the GD module, unpack it, and follow the
-installation directions.
-
-</para>
-
-<para>
 You may need to upgrade to a recent version of the libgd C library.
 At the time this was written, there were two versions of libgd.  libgd
 version 1.8.4 is the stable version, and corresponds to GD version
@@ -167,7 +156,10 @@ available from CPAN.
 
 <section id="gettingStarted">
 <title>Getting Started</title>
-
+<para>
+All the code examples and BLAST input files we'll use are available in
+the doc/howto/examples/graphics directory in the BioPerl package. 
+</para>
 <para>
 Our first example will be rendering a table of BLAST hits on a
 sequence that is exactly 1000 residues long. For now, we're ignoring
@@ -201,7 +193,7 @@ Our first attempt to parse and render this file looks like this:
 
 <para>
 <example id="code1">
-<title>Rendering the simple blast hit file (render1.pl)</title>
+<title>Rendering the simple blast hit file (render_blast1.pl)</title>
 <programlisting>
   0  #!/usr/bin/perl
 
@@ -269,12 +261,12 @@ contents of which are printed to standard output.  We can now view the
 result by piping it to our favorite image display program.
 </para>
 
-<para>
-IMPORTANT NOTE: If you are on a Windows platform, you need to put
+<important>
+If you are on a Windows platform, you need to put
 STDOUT into binary mode so that the PNG file does not go through
 Window's carriage return/linefeed transformations.  Before the
 final print statement, put the statement "binmode(STDOUT)".
-</para>
+</important>
 
 <para>
 This advice also applies to certain versions of RedHat, which ship
@@ -285,12 +277,12 @@ with a patched (and possibly broken) version of Perl.
 <figure>
 <title>Rendering BLAST hits</title>
 <programlisting>
-% render1.pl data1.txt | display -
+% render_blast1.pl data1.txt | display -
 </programlisting>
 
 <mediaobject>
 <imageobject>
-<imagedata fileref="../figs/graphics/fig1.png" format="PNG">
+<imagedata fileref="../figs/graphics/fig1.png" format="PNG"></imagedata>
 </imageobject>
 </mediaobject>
 </figure>
@@ -369,7 +361,7 @@ There are several changes to look at.  The first is minor.  We'd like
 to put a boundary around the left and right edges of the image so that
 the features don't bump up against the margin, so we specify a 10
 pixel leeway with the <parameter>-pad_left</parameter> and
-<parameter>-pad_right</parameter> arguments in line 5.
+<parameter>-pad_right</parameter> arguments in lines 8 and 9.
 </para>
 
 <para>
@@ -420,18 +412,18 @@ When we run the modified script, we get this image.
 <title>The improved image</title>
 <mediaobject>
 <imageobject>
-<imagedata fileref="../figs/graphics/fig2.png" format="PNG">
+<imagedata fileref="../figs/graphics/fig2.png" format="PNG"></imagedata>
 </imageobject>
 </mediaobject>
 </figure>
 </para>
 
-<para>
-IMPORTANT NOTE: Remember that if you are on a Windows platform, you need to put
+<important>
+Remember that if you are on a Windows platform, you need to put
 STDOUT into binary mode so that the PNG file does not go through
 Window's carriage return/linefeed transformations.  Before the
 final print statement, write binmode(STDOUT).
-</para>
+</important>
 
 </section>
 
@@ -526,8 +518,8 @@ method, and incorporate that into the description string.
     <tip>
 <para>
 The ability to use a code reference as a configuration option isn't
-unique to <parameter>-description</parameter>.  In fact, you can use a code reference for any
-of the options passed to add_track().
+unique to <parameter>-description</parameter>.  In fact, you can use a 
+code reference for any of the options passed to add_track().
 </para>
     </tip>
 
@@ -543,7 +535,7 @@ effect of these changes.
 <title>The image with descriptions and sorted hits</title>
 <mediaobject>
 <imageobject>
-<imagedata fileref="../figs/graphics/fig3.png" format="PNG">
+<imagedata fileref="../figs/graphics/fig3.png" format="PNG"></imagedata>
 </imageobject>
 </mediaobject>
 </figure>
@@ -577,10 +569,10 @@ Code example 4 shows the new utility.
   4  use Bio::Graphics;
   5  use Bio::SearchIO;
 
-  6  my $file = shift or die "Usage: render4.pl &lt;blast file&gt;\n";
+  6  my $file = shift or die "Usage: render_blast4.pl &lt;blast file&gt;\n";
 
   7  my $searchio = Bio::SearchIO-&gt;new(-file   =&gt; $file,
-  8                                    -format =&gt; 'blast') or die "parse failed";
+  8                                       -format =&gt; 'blast') or die "parse failed";
 
 
   9  my $result = $searchio-&gt;next_result() or die "no result";
@@ -636,7 +628,7 @@ Code example 4 shows the new utility.
 </para>
 
 <para>
-In lines 6-7 we read the name of the file that contains the BLAST
+In lines 6-8 we read the name of the file that contains the BLAST
 results from the command line, and pass it to
 <function>Bio::SearchIO-&gt;new()</function>, returning a
 <classname>Bio::SearchIO</classname> object.  We read a single result
@@ -697,7 +689,7 @@ Figure 4 shows the output from a sample BLAST hit file.
 <title>Output from the BLAST parsing and rendering script</title>
 <mediaobject>
 <imageobject>
-<imagedata fileref="../figs/graphics/fig4.png" format="PNG">
+<imagedata fileref="../figs/graphics/fig4.png" format="PNG"></imagedata>
 </imageobject>
 </mediaobject>
 </figure>
@@ -708,12 +700,12 @@ The next section will demonstrate how to parse and display feature
 tables from GenBank and EMBL.
 </para>
 
-<para>
-IMPORTANT NOTE: Remember that if you are on a Windows platform, you need to put
+<important>
+Remember that if you are on a Windows platform, you need to put
 STDOUT into binary mode so that the PNG file does not go through
 Window's carriage return/linefeed transformations.  Before the
 final print statement, write binmode(STDOUT).
-</para>
+</important>
 
 </section>
 
@@ -816,7 +808,7 @@ The way this script works is simple.  After the library load preamble,
 the script reads the name of the GenBank or EMBL file from the command
 line (line 8).  It passes the filename to
 <classname>Bio::SeqIO</classname>'s <function>new()</function> method,
-and reads the first sequence object from it (lines 9-10).  If anything
+and reads the first sequence object from it (lines 9-11).  If anything
 goes wrong, the script dies with an error message.
 </para>
 
@@ -853,7 +845,7 @@ the track immediately.
 <para>
 We are now ready to create a track for each feature type.  In order to
 distinguish the tracks by color, we initialize an array of 9 color
-names and simply cycle through them (lines 38-54).  For each feature
+names and simply cycle through them (lines 39-54).  For each feature
 tag, we retrieve the corresponding list of features from
 <varname>%sorted_features</varname> (line 42) and create a track for
 it using the "generic" glyph and the next color in the list (lines
@@ -880,7 +872,7 @@ Figure 5 shows an example of the output of this script.
 <title>The embl2picture.pl script</title>
 <mediaobject>
 <imageobject>
-<imagedata fileref="../figs/graphics/fig5.png" format="PNG">
+<imagedata fileref="../figs/graphics/fig5.png" format="PNG"></imagedata>
 </imageobject>
 </mediaobject>
 </figure>
@@ -1136,7 +1128,7 @@ Figure 6 shows an example of the output of this script.
 <title>The embl2picture.pl script</title>
 <mediaobject>
 <imageobject>
-<imagedata fileref="../figs/graphics/fig6.png" format="PNG">
+<imagedata fileref="../figs/graphics/fig6.png" format="PNG"></imagedata>
 </imageobject>
 </mediaobject>
 </figure>
@@ -1187,8 +1179,9 @@ Finally, if you find yourself constantly tweaking the graphic options,
 you might be interested in
 <classname>Bio::Graphics::FeatureFile</classname>, a utility module
 for interpreting and rendering a simple tab-delimited format for
-sequence features.  feature_draw.pl is a Perl script built on top of
-this module, which you can find in the Bioperl distribution.
+sequence features.  feature_draw.PLS is a Perl script built on top of
+this module, which you can find in the scripts/graphics directory in
+the Bioperl distribution.
 </para>
 
 </section>

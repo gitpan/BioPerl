@@ -1,4 +1,4 @@
-# $Id: Utilities.pm,v 1.8 2002/11/11 18:39:19 jason Exp $
+# $Id: Utilities.pm,v 1.9 2003/06/04 08:36:36 heikki Exp $
 #
 # BioPerl module for Bio::Align::Utilities
 #
@@ -12,7 +12,8 @@
 
 =head1 NAME
 
-Bio::Align::Utilities - A collection of utilities regarding converting and manipulating alignment objects
+Bio::Align::Utilities - A collection of utilities regarding converting
+and manipulating alignment objects
 
 =head1 SYNOPSIS
 
@@ -76,6 +77,7 @@ package Bio::Align::Utilities;
 use vars qw(@ISA @EXPORT @EXPORT_OK);
 use strict;
 use Carp;
+use Bio::Root::Version;
 require Exporter;
 
 @ISA = qw(Exporter);

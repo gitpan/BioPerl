@@ -1,4 +1,4 @@
-# $Id: Range.pm,v 1.17 2002/10/22 07:38:24 lapp Exp $
+# $Id: Range.pm,v 1.18 2003/05/17 19:03:52 heikki Exp $
 #
 # BioPerl module for Bio::Range
 #
@@ -20,8 +20,8 @@ Bio::Range - Pure perl RangeI implementation
   $range = new Bio::Range(-start=>10, -end=>30, -strand=>+1);
   $r2 = new Bio::Range(-start=>15, -end=>200, -strand=>+1);
 
-  print join(', ', $range->union($r2), "\n";
-  print join(', ', $range->intersection($r2), "\n";
+  print join(', ', $range->union($r2)), "\n";
+  print join(', ', $range->intersection($r2)), "\n";
 
   print $range->overlaps($r2), "\n";
   print $range->contains($r2), "\n";

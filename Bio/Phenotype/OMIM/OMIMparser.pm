@@ -1,4 +1,4 @@
-# $Id: OMIMparser.pm,v 1.8.2.1 2003/03/25 12:32:16 heikki Exp $
+# $Id: OMIMparser.pm,v 1.12 2003/11/05 04:19:03 juguang Exp $
 #
 # BioPerl module for Bio::Phenotype::OMIM::OMIMparser
 #
@@ -55,7 +55,7 @@ OMIMparser - parser for the OMIM database
     my $cont  = $omim_entry->contributors();                   # *FIELD* CN
     my $ed    = $omim_entry->edited();                         # *FIELD* ED
     my $sa    = $omim_entry->additional_references();          # *FIELD* SA
-    my $cs    = $omim_entry->clinical_symptoms();              # *FIELD* CS
+    my $cs    = $omim_entry->clinical_symptoms_raw();              # *FIELD* CS
     my $comm  = $omim_entry->comment();                        # from genemap
 
     my $mini_mim   = $omim_entry->miniMIM();                   # *FIELD* MN
@@ -481,6 +481,7 @@ sub _createOMIMentry {
             } 
         }
         elsif ( $key == TEXT_STATE ) {
+            $val = undef if($val =~ /DESCRIPTION1\nDESCRIPTION2/);
             $omim_entry->description( $val );
         }
         elsif ( $key == ALLELIC_VARIANT_STATE ) {
@@ -495,15 +496,19 @@ sub _createOMIMentry {
             $omim_entry->add_References( @refs );
         }
         elsif ( $key == SYMPT_STATE ) {
-            $omim_entry->clinical_symptoms( $val );
+            $val = '' if($val eq 'clinical symptoms');
+            $omim_entry->clinical_symptoms_raw( $val );
         }
         elsif ( $key == CONTRIBUTORS_STATE ) {
+            $val = undef if($val =~ /cn1\ncn2\ncn3/);
             $omim_entry->contributors( $val );
         }
         elsif ( $key == CREATED_BY_STATE ) {
+            $val = undef if($val =~ /cd1\ncd2\ncd3/);
             $omim_entry->created( $val );
         }
         elsif ( $key == EDITED_BY_STATE ) {
+            $val = undef if($val =~ /ed1\ned2\ned3/);
             $omim_entry->edited( $val );
         }
         elsif ( $key == MINI_MIM_TEXT_STATE ) {
@@ -526,13 +531,33 @@ sub _createOMIMentry {
     $man->common_name( "man" );
     $omim_entry->species( $man );
     $omim_entry->miniMIM( $mini_mim );
+
+    # parse the symptoms text into a hash-based structure.
+    $self->_finer_parse_symptoms($omim_entry);
     
     return $omim_entry;
 
 } # _createOMIMentry
 
 
+sub _finer_parse_symptoms {
+    my ($self, $omim_entry) = @_;
+    my $text = $omim_entry->clinical_symptoms_raw;
 
+    my $part;
+    foreach(split /\n/, $text){
+        my $line = $_;
+        if($line =~ /^(\w+)\:/){
+            $part = $1;
+        }else{
+            if($line =~ /(\s+)([^;]+)/){
+                my $symptom = $2;
+                $omim_entry->add_clinical_symptoms($part, $symptom);
+            }
+        }
+    }
+    $omim_entry->clinical_symptoms_raw('');
+}
 
 sub _parse_genemap {
      my ( $self, $omim_entry, $val ) = @_;

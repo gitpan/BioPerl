@@ -1,4 +1,4 @@
-# $Id: BPlite.pm,v 1.36.2.2 2003/02/20 00:39:03 jason Exp $
+# $Id: BPlite.pm,v 1.40 2003/10/28 13:48:22 jason Exp $
 ##############################################################################
 # Bioperl module Bio::Tools::BPlite
 ##############################################################################
@@ -158,7 +158,7 @@ Univeristy, St. Louis, MO.
 
 =head1 CONTRIBUTORS
 
-Jason Stajich, jason@bioperl.org
+Jason Stajich, jason@cgt.mc.duke.edu
 
 =head1 COPYRIGHT
 
@@ -368,8 +368,8 @@ sub _parseHeader {
 
   $self->{'REPORT_DONE'} = 0;  # reset this bit for a new report
   while(defined($_ = $self->_readline() ) ) {
-      s/\(\s*\)//;
-      if ($_ =~ /^Query=(?:\s+([^\(]+))?/) {
+      s/\(\s*\)//;      
+      if ($_ =~ /^Query=(?:\s+(.+))?/s) {
 	  $header_flag = 1;	# valid header element found
 	  my $query = $1;
 	  while( defined($_ = $self->_readline() ) ) {
@@ -384,6 +384,7 @@ sub _parseHeader {
 	      $query .= $_;
 	  }
 	  $query =~ s/\s+/ /g;
+	  $query =~ s/\s+$//;
 	  $query =~ s/^>//;
 
 	  my $length = 0;

@@ -1,5 +1,5 @@
 # -*-Perl-*- mode (to keep my emacs happy)
-# $Id: SeqBuilder.t,v 1.1 2002/10/10 01:57:51 lapp Exp $
+# $Id: SeqBuilder.t,v 1.2 2003/02/18 03:37:58 lapp Exp $
 
 use strict;
 use vars qw($DEBUG $TESTCOUNT);
@@ -59,7 +59,10 @@ $numseqs = 0;
 
 while($seq = $seqio->next_seq()) {
     ok ($seq->accession_number, $loci[$numseqs++]);
-    ok (scalar($seq->annotation->get_Annotations()), 0);
+    ok (scalar(grep { ! ($_->tagname eq "keyword" ||
+			 $_->tagname eq "date_changed" ||
+			 $_->tagname eq "secondary_accession"); }
+	       $seq->annotation->get_Annotations()), 0);
     if($numseqs <= 3) {
 	ok (scalar($seq->top_SeqFeatures), 0);
     } else {

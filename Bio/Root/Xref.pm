@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Xref.pm
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 8 May 1997
-# REVISION: $Id: Xref.pm,v 1.9 2002/10/22 07:38:37 lapp Exp $
+# REVISION: $Id: Xref.pm,v 1.10 2003/06/04 08:36:42 heikki Exp $
 # STATUS  : Pre-Alpha 
 #
 # WARNING: This is considered an experimental module.
@@ -20,9 +20,8 @@ use Bio::Root::Vector ();
 
 @Bio::Root::Xref::ISA = qw( Bio::Root::Vector Bio::Root::Object );
 
-use vars qw($ID $VERSION);
+use vars qw($ID);
 $ID = 'Bio::Root::Xref';
-$VERSION = 0.01;
 
 ## POD Documentation:
 

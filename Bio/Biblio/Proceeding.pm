@@ -1,4 +1,4 @@
-# $Id: Proceeding.pm,v 1.6 2002/10/22 07:45:11 lapp Exp $
+# $Id: Proceeding.pm,v 1.8 2003/05/30 15:33:00 jason Exp $
 #
 # BioPerl module for Bio::Biblio::Proceeding
 #
@@ -15,7 +15,7 @@ Bio::Biblio::Proceeding - Representation of a conference proceeding
 
     $obj = new Bio::Biblio::Proceeding (-title => 'JavaONE');
 
- --- OR ---
+  #--- OR ---
 
     $obj = new Bio::Biblio::Proceeding;
     $obj->title ('JavaONE');
@@ -33,7 +33,7 @@ There are no specific attributes in this class
 
 =head1 SEE ALSO
 
-=over
+=over 4
 
 =item *
 

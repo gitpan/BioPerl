@@ -4,7 +4,7 @@
 #           many different modules and scripts.
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 3 Sep 1996
-# REVISION: $Id: Global.pm,v 1.8 2002/01/11 08:05:31 sac Exp $
+# REVISION: $Id: Global.pm,v 1.9 2003/06/04 08:36:42 heikki Exp $
 #
 # INSTALLATION:
 #   This module is included with the central Bioperl distribution:
@@ -72,7 +72,7 @@ BEGIN {
 
     $CGI = 1 if $ENV{REMOTE_ADDR} || $ENV{REMOTE_HOST};
 }
-
+use Bio::Root::Version;
 use Exporter ();
 use vars qw($BASE_YEAR @DAYS @MONTHS);
 

@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: Exception.pm,v 1.14 2002/06/29 00:42:17 sac Exp $
+# $Id: Exception.pm,v 1.15 2003/06/04 08:36:42 heikki Exp $
 #
 # BioPerl module Bio::Root::Exception
 #
@@ -186,6 +186,7 @@ This software is provided "as is" without warranty of any kind.
 # Define some generic exceptions.'
 
 package Bio::Root::Exception;
+use Bio::Root::Version;
 
 use strict;
 

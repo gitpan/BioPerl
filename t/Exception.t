@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Exception.t,v 1.4 2002/10/13 13:44:49 jason Exp $
+## $Id: Exception.t,v 1.5 2003/03/07 21:11:09 sac Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -9,7 +9,7 @@ my $error;
 
 use strict;
 use lib '.';
-use lib './scripts/exceptions';
+use lib './examples/root/lib';
 
 BEGIN {     
     # to handle systems with no installed Test module

@@ -1,4 +1,4 @@
-# $Id: OntologyI.pm,v 1.2.2.4 2003/03/27 10:07:56 lapp Exp $
+# $Id: OntologyI.pm,v 1.6 2003/03/27 08:59:29 lapp Exp $
 #
 # BioPerl module for Bio::Ontology::OntologyI
 #
@@ -95,9 +95,9 @@ use Bio::Ontology::OntologyEngineI;
  Title   : name
  Usage   : $obj->name($newval)
  Function: Get/set the name of this ontology.
- Example :
+ Example : 
  Returns : value of name (a scalar)
- Args    :
+ Args    : 
 
 
 =cut
@@ -119,9 +119,9 @@ sub name{
            follow the rules for namespaces, which ontologies serve as
            for terms.
 
- Example :
+ Example : 
  Returns : value of authority (a scalar)
- Args    :
+ Args    : 
 
 
 =cut
@@ -143,9 +143,9 @@ sub authority{
            particular application's run time, i.e., it may be a memory
            location.
 
- Example :
+ Example : 
  Returns : value of identifier (a scalar)
- Args    :
+ Args    : 
 
 
 =cut
@@ -159,9 +159,9 @@ sub identifier{
  Title   : definition
  Usage   : $def = $obj->definition()
  Function: Get a descriptive definition for this ontology.
- Example :
+ Example : 
  Returns : value of definition (a scalar)
- Args    :
+ Args    : 
 
 
 =cut

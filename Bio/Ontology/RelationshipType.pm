@@ -1,4 +1,4 @@
-# $Id: RelationshipType.pm,v 1.5.2.5 2003/09/08 12:16:19 heikki Exp $
+# $Id: RelationshipType.pm,v 1.11 2003/06/20 18:31:44 allenday Exp $
 #
 # BioPerl module for Bio::Ontology::RelationshipType  
 #
@@ -133,12 +133,16 @@ sub get_instance {
 	return $reltype;
     }
     # valid relationship type?
-    if ( ! (($name eq IS_A) || ($name eq PART_OF) ||
-	    ($name eq CONTAINS) || ( $name eq FOUND_IN ))) {
-        my $msg = "Found unknown type of relationship: [" . $name . "]\n";
-        $msg .= "Known types are: [" . IS_A . "], [" . PART_OF . "], [" . CONTAINS . "], [" . FOUND_IN . "]";
-        $class->throw( $msg );
-    }
+
+#
+#see the cell ontology.  this code is too strict, even for dag-edit files. -allen
+#
+#    if ( ! (($name eq IS_A) || ($name eq PART_OF) ||
+#	    ($name eq CONTAINS) || ( $name eq FOUND_IN ))) {
+#        my $msg = "Found unknown type of relationship: [" . $name . "]\n";
+#        $msg .= "Known types are: [" . IS_A . "], [" . PART_OF . "], [" . CONTAINS . "], [" . FOUND_IN . "]";
+#        $class->throw( $msg );
+#    }
     # if we get here we need to create the rel.type
     $reltype = $class->new(-name     => $name,
 			   -ontology => $ont);
@@ -358,9 +362,6 @@ sub is_obsolete {
 } # is_obsolete
 
 
-
-
-
 =head2 comment
 
  Title   : comment
@@ -384,10 +385,10 @@ sub comment {
     return $ret;
 } # comment
 
-=head1 Private methods
+=head1 Private methods 
 
-May be overridden in a derived class, but should
-never be called from outside.
+May be overridden in a derived class, but should never be called from
+outside.
 
 =cut
 

@@ -1,6 +1,6 @@
 
 #
-# $Id: SwissPfam.pm,v 1.15 2002/10/22 07:38:33 lapp Exp $
+# $Id: SwissPfam.pm,v 1.17 2003/06/04 08:36:40 heikki Exp $
 #
 # BioPerl module for Bio::Index::SwissPfam
 #
@@ -53,6 +53,10 @@ moment. Once we have something better (ie, an object!), will use
 that. Heavily snaffled from James Gilbert's Fasta system. Note: for
 best results 'use strict'.
 
+Details on configuration and additional example code are available in the
+biodatabases.pod file.
+
+
 =head1 FEED_BACK
 
 =head2 Mailing Lists
@@ -89,7 +93,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::Index::SwissPfam;
 
-use vars qw($VERSION @ISA);
+use vars qw(@ISA);
 use strict;
 
 use Bio::Index::Abstract;
@@ -97,17 +101,8 @@ use Bio::Seq;
 
 @ISA = qw(Bio::Index::Abstract);
 
-#
-# Suggested fix by Michael G Schwern <schwern@pobox.com> to
-# get around a clash with CPAN shell...
-#
-
-BEGIN {
-    $VERSION = 0.1;
-}
-
 sub _version {
-    return $VERSION;
+    return 0.1;
 }
 
 =head2 _index_file

@@ -4,7 +4,7 @@
 #           BLAST reports.
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : March 1996
-# REVISION: $Id: Blast.pm,v 1.30 2002/11/04 09:12:50 heikki Exp $
+# REVISION: $Id: Blast.pm,v 1.31 2003/06/04 08:36:43 heikki Exp $
 # STATUS  : Alpha
 #
 # For the latest version and documentation, visit:
@@ -29,17 +29,16 @@ use Bio::Root::Utilities  qw(:obj);
 require 5.002;
 
 use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS
-            $ID $VERSION $Blast @Blast_programs $Revision $Newline);
+            $ID $Blast @Blast_programs $Revision $Newline);
 
 @ISA        = qw( Bio::Tools::SeqAnal Exporter);
 @EXPORT     = qw();
-@EXPORT_OK  = qw($VERSION $Blast);
+@EXPORT_OK  = qw($Blast);
 %EXPORT_TAGS = ( obj => [qw($Blast)],
 		 std => [qw($Blast)]);
 
 $ID = 'Bio::Tools::Blast';
-$VERSION  = 0.09; 
-$Revision = '$Id: Blast.pm,v 1.30 2002/11/04 09:12:50 heikki Exp $';  #'
+$Revision = '$Id: Blast.pm,v 1.31 2003/06/04 08:36:43 heikki Exp $';  #'
 
 ## Static Blast object.
 $Blast = {};

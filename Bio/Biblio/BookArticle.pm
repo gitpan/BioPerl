@@ -1,4 +1,4 @@
-# $Id: BookArticle.pm,v 1.6 2002/10/22 07:45:11 lapp Exp $
+# $Id: BookArticle.pm,v 1.8 2003/05/30 15:33:00 jason Exp $
 #
 # BioPerl module for Bio::Biblio::BookArticle
 #
@@ -15,7 +15,7 @@ Bio::Biblio::BookArticle - Representation of a book article
 
     $obj = new Bio::Biblio::BookArticle (-identifier => '123abc',
 					 -book => new Bio::Biblio::Book);
- --- OR ---
+  #--- OR ---
 
     $obj = new Bio::Biblio::BookArticle;
     $obj->book (new Bio::Biblio::Book);
@@ -36,7 +36,7 @@ The following attributes are specific to this class
 
 =head1 SEE ALSO
 
-=over
+=over 4
 
 =item *
 

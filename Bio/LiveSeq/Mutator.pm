@@ -1,4 +1,4 @@
-# $Id: Mutator.pm,v 1.26 2002/10/22 07:38:34 lapp Exp $
+# $Id: Mutator.pm,v 1.27 2003/06/04 08:36:40 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::Mutator
 #
@@ -79,7 +79,7 @@ package Bio::LiveSeq::Mutator;
 use vars qw(@ISA);
 use strict;
 
-use vars qw($VERSION @ISA);
+use vars qw(@ISA);
 use Bio::Variation::SeqDiff;
 use Bio::Variation::DNAMutation;
 use Bio::Variation::RNAChange;

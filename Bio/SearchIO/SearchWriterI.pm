@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: SearchWriterI.pm,v 1.7 2002/12/01 00:05:01 jason Exp $
+# $Id: SearchWriterI.pm,v 1.8 2003/04/13 17:38:54 jason Exp $
 #
 # BioPerl module Bio::SearchIO::SearchWriterI
 #
@@ -68,6 +68,19 @@ sub to_string {
     $self->throw_not_implemented;
 }
 
+=head2 start_report
+
+ Title   : start_report
+ Usage   : $self->start_report()
+ Function: The method to call when starting a report. You can override it
+           to make a custom header
+ Returns : string
+ Args    : none
+
+=cut
+
+sub start_report { return '' }
+
 =head2 end_report
 
  Title   : end_report
@@ -82,10 +95,7 @@ sub to_string {
 
 =cut
 
-sub end_report { 
-    my $self = shift;
-    return '';
-}
+sub end_report {  return '' }
 
 =head2 filter
 

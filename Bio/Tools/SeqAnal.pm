@@ -3,7 +3,7 @@
 # PURPOSE : To provide a base class for different sequence analysis tools.
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 27 Mar 1998
-# REVISION: $Id: SeqAnal.pm,v 1.12 2002/10/22 07:38:46 lapp Exp $
+# REVISION: $Id: SeqAnal.pm,v 1.13 2003/06/04 08:36:43 heikki Exp $
 # STATUS  : Alpha
 #
 # For documentation, run this module through pod2html
@@ -16,11 +16,10 @@ use Bio::Root::Object ();
 use Bio::Root::Global qw(:std);
 
 use strict;
-use vars qw($ID $VERSION @ISA);
+use vars qw($ID @ISA);
 
 @ISA        = qw( Bio::Root::Object );
 $ID = 'Bio::Tools::SeqAnal';
-$VERSION  = 0.011;
 
 
 ## POD Documentation:

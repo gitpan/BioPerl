@@ -9,7 +9,7 @@ use lib "$ENV{HOME}/projects/bioperl-live";
 use Bio::Graphics;
 use Bio::SearchIO;
 
-my $file = shift or die "Usage: render4.pl <blast file>\n";
+my $file = shift or die "Usage: render_blast4.pl <blast file>\n";
 
 my $searchio = Bio::SearchIO->new(-file   => $file,
 				  -format => 'blast') or die "parse failed";
@@ -24,7 +24,7 @@ my $panel = Bio::Graphics::Panel->new(-length    => $result->query_length,
 				     );
 
 my $full_length = Bio::SeqFeature::Generic->new(-start=>1,-end=>$result->query_length,
-						-seq_id=>$result->query_name);
+						-display_name=>$result->query_name);
 $panel->add_track($full_length,
 		  -glyph   => 'arrow',
 		  -tick    => 2,
@@ -50,7 +50,7 @@ my $track = $panel->add_track(-glyph       => 'graded_segments',
 while( my $hit = $result->next_hit ) {
   next unless $hit->significance < 1E-20;
   my $feature = Bio::SeqFeature::Generic->new(-score   => $hit->raw_score,
-					      -seq_id   => $hit->name,
+					      -display_name   => $hit->name,
 					      -tag     => {
 							   description => $hit->description
 							  },

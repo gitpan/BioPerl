@@ -1,5 +1,5 @@
 #
-# $Id: XEMBLService.pm,v 1.3 2002/10/22 07:38:29 lapp Exp $
+# $Id: XEMBLService.pm,v 1.4 2003/06/04 08:36:37 heikki Exp $
 #
 # BioPerl module for Bio::DB::XEMBLService
 #
@@ -72,7 +72,7 @@ my %methods = (
     ],
   },
 );
-
+use Bio::Root::Version;
 use SOAP::Lite;
 use Exporter;
 use Carp ();

@@ -1,4 +1,4 @@
-# $Id: Organisation.pm,v 1.7 2002/10/22 07:45:11 lapp Exp $
+# $Id: Organisation.pm,v 1.9 2003/05/30 15:33:00 jason Exp $
 #
 # BioPerl module for Bio::Biblio::Organisation
 #
@@ -15,7 +15,7 @@ Bio::Biblio::Organisation - Representation of an organisation
 
     $obj = new Bio::Biblio::Organisation (-name => 'O\'Reilly');
 
- --- OR ---
+  #--- OR ---
 
     $obj = new Bio::Biblio::Organisation;
     $obj->name ('O\'Reilly');
@@ -33,7 +33,7 @@ The following attributes are specific to this class
 
 =head1 SEE ALSO
 
-=over
+=over 4
 
 =item *
 

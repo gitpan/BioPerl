@@ -1,4 +1,4 @@
-# $Id: AlignI.pm,v 1.7 2002/10/22 07:45:10 lapp Exp $
+# $Id: AlignI.pm,v 1.8 2003/05/15 08:13:54 heikki Exp $
 #
 # BioPerl module for Bio::Align::AlignI
 #
@@ -295,7 +295,7 @@ sub select_noncont {
     my ($self) = @_;
     $self->throw_not_implemented();
 }
-    
+
 =head2 slice
 
  Title     : slice
@@ -694,7 +694,7 @@ sub average_percentage_identity{
     my ($self) = @_;
     $self->throw_not_implemented();
 }
-    
+
 =head1 Alignment positions
 
 Methods to map a sequence position into an alignment column and back.

@@ -1,4 +1,4 @@
-# $Id: MedlineJournal.pm,v 1.3 2002/10/22 07:45:11 lapp Exp $
+# $Id: MedlineJournal.pm,v 1.5 2003/05/30 15:33:00 jason Exp $
 #
 # BioPerl module for Bio::Biblio::MedlineJournal
 #
@@ -15,7 +15,7 @@ Bio::Biblio::MedlineJournal - Representation of a MEDLINE journal
 
     $obj = new Bio::Biblio::MedlineJournal
                (-medline_ta => 'J Vasc Interv Radiol');
- --- OR ---
+  #--- OR ---
 
     $obj = new Bio::Biblio::MedlineJournal;
     $obj->medline_ta ('J Vasc Interv Radiol');
@@ -39,7 +39,7 @@ The following attributes are specific to this class
 
 =head1 SEE ALSO
 
-=over
+=over 4
 
 =item *
 

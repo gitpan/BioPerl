@@ -1,4 +1,4 @@
-# $Id: SimpleOntologyEngine.pm,v 1.3.2.5 2003/07/03 00:41:40 lapp Exp $
+# $Id: SimpleOntologyEngine.pm,v 1.9 2003/07/02 22:50:58 lapp Exp $
 #
 # BioPerl module for SimpleOntologyEngine
 #

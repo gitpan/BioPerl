@@ -1,5 +1,5 @@
 #
-# $Id: embl.pm,v 1.4 2002/10/22 07:38:31 lapp Exp $
+# $Id: embl.pm,v 1.7 2003/02/20 02:45:14 lstein Exp $
 #
 # BioPerl module for Bio::DB::Flat::BDB
 #
@@ -61,25 +61,18 @@ use vars '@ISA';
 
 @ISA = qw(Bio::DB::Flat::BDB);
 
-sub parse_one_record {
-  my $self  = shift;
-  my $fh    = shift;
-  my $parser =
-    $self->{embl_cached_parsers}{fileno($fh)} ||= Bio::SeqIO->new(-fh=>$fh,-format=>$self->default_file_format);
-  my $seq = $parser->next_seq;
-  my $ids = $self->seq_to_ids($seq);
-  return $ids;
-}
-
 sub seq_to_ids {
   my $self = shift;
   my $seq  = shift;
 
   my $display_id = $seq->display_id;
   my $accession  = $seq->accession_number;
+  my $version    = $seq->seq_version;
+
   my %ids;
   $ids{ID}       = $display_id;
   $ids{ACC}      = $accession   if defined $accession;
+  $ids{VERSION}  = $version     if defined $version;
   return \%ids;
 }
 
@@ -88,7 +81,7 @@ sub default_primary_namespace {
 }
 
 sub default_secondary_namespaces {
-  return qw(ACC);
+  return qw(ACC VERSION);
 }
 
 sub default_file_format { "embl" }

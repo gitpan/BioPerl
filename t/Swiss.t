@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Swiss.t,v 1.2 2002/02/18 22:25:37 jason Exp $
+## $Id: Swiss.t,v 1.3 2003/11/28 09:55:17 heikki Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -41,7 +41,7 @@ my $seqio =
   new Bio::SeqIO( -verbose => $verbose,
                   -format => 'swiss',
                   -file   => Bio::Root::IO->catfile('t','data', 
-                                                    'swiss_unk.dat'));
+                                                    'test.swiss'));
 
 ok($seqio);
 my $seq = $seqio->next_seq;
@@ -49,7 +49,7 @@ my @gns = $seq->annotation->get_Annotations('gene_name');
 $seqio =
   new Bio::SeqIO( -verbose => $verbose,
                   -format => 'swiss',
-                  -file   => Bio::Root::IO->catfile('>swiss_unk.dat'));
+                  -file   => Bio::Root::IO->catfile('>test.swiss'));
 
 $seqio->write_seq($seq);
 
@@ -57,7 +57,7 @@ $seqio->write_seq($seq);
 $seqio =
   new Bio::SeqIO( -verbose => $verbose,
                   -format => 'swiss',
-                  -file   => Bio::Root::IO->catfile('swiss_unk.dat'));
+                  -file   => Bio::Root::IO->catfile('test.swiss'));
 
 $seq = $seqio->next_seq;
 ok($seq->species);

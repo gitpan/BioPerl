@@ -562,6 +562,7 @@ An alias for refseq() but only allows reading.
 =cut
 
 sub seq_id { shift->refseq }
+*seqname = \&seq_id;
 
 =head2 truncated
 
@@ -773,6 +774,8 @@ sub alphabet{
 =cut
 
 sub desc { shift->asString }
+
+*description = \&desc;
 
 =head2 species
 

@@ -1,4 +1,4 @@
-# $Id: Contig.pm,v 1.1 2002/11/04 11:50:11 heikki Exp $
+# $Id: Contig.pm,v 1.3 2003/06/04 08:36:36 heikki Exp $
 #
 # BioPerl module for Bio::Assembly::Contig
 #   Mostly based on Bio::SimpleAlign by Ewan Birney
@@ -207,7 +207,7 @@ methods. Internal methods are usually preceded with a _
 package Bio::Assembly::Contig;
 
 use strict;
-use vars qw(@ISA $VERSION);
+use vars qw(@ISA);
 
 use Bio::Root::Root;
 use Bio::Align::AlignI;
@@ -1351,7 +1351,7 @@ sub select_noncont {
     my ($self) = @_;
     $self->throw_not_implemented();
 }
-    
+
 =head2 slice
 
  Title     : slice

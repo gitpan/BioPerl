@@ -2,14 +2,15 @@
 ## Bioperl Test Harness Script for Modules
 ##
 # CVS Version
-# $Id: SeqFeature.t,v 1.26 2002/07/02 09:42:23 heikki Exp $
+# $Id: SeqFeature.t,v 1.33 2003/10/25 14:52:22 heikki Exp $
 
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
 use strict;
-
+use vars qw($NUMTESTS);
+my $skipdbtests ;
 BEGIN { 
     # to handle systems with no installed Test module
     # we include the t dir (where a copy of Test.pm is located)
@@ -19,8 +20,28 @@ BEGIN {
 	use lib 't';
     }
     use Test;
+    $NUMTESTS = 74;
+    plan tests => $NUMTESTS;
 
-    plan tests => 62;
+    eval { 
+	require IO::String; 
+	require LWP::UserAgent;
+	require HTTP::Request::Common;
+	require Bio::DB::GenBank;
+       };
+    if( $@ ) {
+	print STDERR "skipping DB tests...\n";
+	$skipdbtests = 1;
+    } else {
+	$skipdbtests = 0;
+    }
+
+}
+
+END {
+    foreach ( $Test::ntest..$NUMTESTS) {
+	skip('Skipping tests which need the Bio::DB::GenBank module',1);
+    }
 }
 
 use Bio::Seq;
@@ -44,6 +65,8 @@ ok(1);
 # predeclare variables for strict
 my ($feat,$str,$feat2,$pair,$comp_obj1,$comp_obj2,@sft); 
 
+
+my $verbose = 0;
 
 $feat = new Bio::SeqFeature::Generic ( -start => 40,
 				       -end => 80,
@@ -281,5 +304,54 @@ $geneseq->add_SeqFeature($gene);
 
 my ($t) = $gene->transcripts(); # get 1st transcript
 ok(defined $t); 
-ok($t->mrna->length, 1595);
+ok($t->mrna->length, 1693);
 ok($gene->utrs, 2);
+
+
+
+# Test for bug when Locations are not created explicitly
+
+my $feat1 = new Bio::SeqFeature::Generic(-start => 1,
+					 -end   => 15,
+					 -strand=> 1);
+
+$feat2 = new Bio::SeqFeature::Generic(-start => 10,
+					 -end   => 25,
+					 -strand=> 1);
+
+my $overlap = $feat1->location->union($feat2->location);
+ok($overlap->start, 1);
+ok($overlap->end,   25);
+
+my $intersect = $feat1->location->intersection($feat2->location);
+ok($intersect->start, 10);
+ok($intersect->end,   15);
+
+
+# now let's test spliced_seq
+
+ok  $seqio = new Bio::SeqIO(-file => Bio::Root::IO->catfile(qw(t data AY095303S1.gbk)),
+                            -format  => 'genbank');
+
+ok $geneseq = $seqio->next_seq();
+my ($CDS) = grep { $_->primary_tag eq 'CDS' } $geneseq->get_SeqFeatures;
+my $db = new Bio::DB::GenBank();
+$CDS->verbose(-1);
+my $cdsseq = $CDS->spliced_seq($db);
+exit;
+ok($cdsseq->subseq(1,60, 'ATGCAGCCATACGCTTCCGTGAGCGGGCGATGTCTATC'.
+                   'TAGACCAGATGCATTGCATGTGATACCGTTTGGGCGAC'));
+ok($cdsseq->translate->subseq(1,100), 'MQPYASVSGRCLSRPDALHVIPFGRP'.
+   'LQAIAGRRFVRCFAKGGQPGDKKKLNVTDKLRLGNTPPTLDVLKAPRPTDAPSAIDDAPSTSGLGLGGGVASPR');
+
+ok  $seqio = new Bio::SeqIO(-file => Bio::Root::IO->catfile(qw(t data AF032047.gbk)),
+                            -format  => 'genbank');
+ok $geneseq = $seqio->next_seq();
+($CDS) = grep { $_->primary_tag eq 'CDS' } $geneseq->get_SeqFeatures;
+
+$cdsseq = $CDS->spliced_seq($db);
+ok($cdsseq->subseq(1,60, 'ATGGCTCGCTTCGTGGTGGTAGCCCTGCTCGCGCTACTCTCTCTG'.
+                   'TCTGGCCTGGAGGCTATCCAGCATG'));
+ok($cdsseq->translate->seq, 'MARFVVVALLALLSLSGLEAIQHAPKIQVYSRHPAENGKPNFL'.
+   'NCYVSGFHPSDIEVDLLKNGKKIEKVEHSDLSFSKDWSFYLLYYTEFTPNEKDEYACRVSHVTFPTPKTVKWDRTM*');
+

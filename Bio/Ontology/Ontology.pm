@@ -1,4 +1,4 @@
-# $Id: Ontology.pm,v 1.2.2.4 2003/03/27 10:07:56 lapp Exp $
+# $Id: Ontology.pm,v 1.8 2003/06/20 18:31:44 allenday Exp $
 #
 # BioPerl module for Bio::Ontology::Ontology
 #
@@ -284,7 +284,7 @@ sub close{
  Usage   : $engine = $obj->engine()
  Function: Get/set the ontology engine to which all the query methods
            delegate.
- Example :
+ Example : 
  Returns : an object implementing L<Bio::Ontology::OntologyEngineI>
  Args    : on set, new value (an object implementing
            L<Bio::Ontology::OntologyEngineI>, or  undef)
@@ -411,6 +411,9 @@ sub get_relationships{
 
 sub get_predicate_terms{
     my $self = shift;
+
+	my @preds = $self->engine->get_predicate_terms;
+
     return grep { $_->ontology->name eq $self->name;
 	      } $self->engine->get_predicate_terms(@_);
 }

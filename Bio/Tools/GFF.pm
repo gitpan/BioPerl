@@ -1,4 +1,4 @@
-# $Id: GFF.pm,v 1.26 2002/11/24 21:35:40 jason Exp $
+# $Id: GFF.pm,v 1.34 2003/12/19 15:26:26 scain Exp $
 #
 # BioPerl module for Bio::Tools::GFF
 #
@@ -46,6 +46,12 @@ program and the output that program produces.
 That is, if you can get your analysis program spit out GFF, here is
 your result parser.
 
+=head1 NOTE
+
+While Bio::Tools::GFF supports GFF3, it does not deal with sequence data,
+which is valid in GFF3. If you want to use Bio::Tools::GFF with GFF3 that
+has sequence data, the sequence must be removed before analysis.
+
 =head1 FEEDBACK
 
 =head2 Mailing Lists
@@ -70,6 +76,10 @@ or the web:
 
 Email mrp@sanger.ac.uk
 
+=head1 CONTRIBUTORS 
+
+Jason Stajich, jason-at-biperl-dot-org
+
 =head1 APPENDIX
 
 The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
@@ -80,11 +90,12 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::Tools::GFF;
 
-use vars qw(@ISA);
+use vars qw(@ISA $HAS_HTML_ENTITIES);
 use strict;
 
 use Bio::Root::IO;
 use Bio::SeqAnalysisParserI;
+use Bio::LocatableSeq;
 use Bio::SeqFeature::Generic;
 
 @ISA = qw(Bio::Root::Root Bio::SeqAnalysisParserI Bio::Root::IO);
@@ -110,14 +121,100 @@ sub new {
 
   # initialize IO
   $self->_initialize_io(@args);
-    
+  
+  $self->_parse_header();
+
   $gff_version ||= 2;
-  if(($gff_version != 1) && ($gff_version != 2)) {
-    $self->throw("Can't build a GFF object with the unknown version ".
-		 $gff_version);
+  
+  if( ! $self->gff_version($gff_version) )  {
+      $self->throw("Can't build a GFF object with the unknown version ".
+		   $gff_version);
   }
-  $self->gff_version($gff_version);
+  $self->{'_first'} = 1;
   return $self;
+}
+
+=head2 _parse_header
+
+ Title   : _parse_header
+ Usage   : $gffio->_parse_header()
+ Function: used to turn parse GFF header lines.  currently
+           produces Bio::LocatableSeq objects from ##sequence-region
+           lines
+ Example :
+ Returns : 1 on success
+ Args    : none
+
+
+=cut
+
+sub _parse_header{
+   my ($self,@args) = @_;
+
+   my @unhandled;
+   while(my $line = $self->_readline()){
+ 	 my $handled = 0;
+
+	 if($line =~ /^\#\#sequence-region\s+(\S+)\s+(\S+)\s+(\S+)\s*/){
+	   my($seqid,$start,$end) = ($1,$2,$3);
+	   push @{ $self->{'segments'} }, Bio::LocatableSeq->new(
+															 -id    => unescape($seqid),
+															 -start => $start,
+															 -end   => $end,
+															);
+	   $handled = 1;
+	 } elsif($line =~ /^(\#\#feature-ontology)/) {
+	   #to be implemented
+	   $self->warn("$1 header tag parsing unimplemented");
+	 } elsif($line =~ /^(\#\#attribute-ontology)/) {
+	   #to be implemented
+	   $self->warn("$1 header tag parsing unimplemented");
+	 } elsif($line =~ /^(\#\#source-ontology)/) {
+	   #to be implemented
+	   $self->warn("$1 header tag parsing unimplemented");
+	 } elsif($line =~ /^(\#\#\#)/) {
+	   #to be implemented
+	   $self->warn("$1 header tag parsing unimplemented");
+	 } elsif($line =~ /^(\#\#FASTA)/) {
+	   #to be implemented
+	   $self->warn("$1 header tag parsing unimplemented");
+	 }
+
+ 	 if(!$handled){
+	   push @unhandled, $line
+ 	 }
+
+	 #looks like the header is over!
+	 last unless $line =~ /^\#/;
+   }
+
+   foreach my $line (@unhandled){
+	 $self->_pushback($line);
+   }
+
+   return 1;
+}
+
+
+=head2 next_segment
+
+ Title   : next_segment
+ Usage   : my $seq = $gffio->next_segment;
+ Function: Returns a Bio::LocatableSeq object corresponding to a 
+           GFF "##sequence-region" header line.
+ Example :
+ Returns : A Bio::LocatableSeq object, or undef if
+           there are no more sequences.
+ Args    : none
+
+
+=cut
+
+sub next_segment{
+   my ($self,@args) = @_;
+
+   return shift @{ $self->{'segments'} } if defined $self->{'segments'};
+   return undef;
 }
 
 =head2 next_feature
@@ -141,9 +238,9 @@ sub next_feature {
     # be graceful about empty lines or comments, and make sure we return undef
     # if the input's consumed
     while(($gff_string = $self->_readline()) && defined($gff_string)) {	
-	next if($gff_string =~ /^\#/ || $gff_string =~ /^\s*$/ ||
-		$gff_string =~ /^\/\//);
-	last;
+	  next if($gff_string =~ /^\#/ || $gff_string =~ /^\s*$/ ||
+			  $gff_string =~ /^\/\//);
+	  last;
     }
     return undef unless $gff_string;
 
@@ -174,9 +271,11 @@ sub from_gff_string {
     my ($self, $feat, $gff_string) = @_;
 
     if($self->gff_version() == 1)  {
-	$self->_from_gff1_string($feat, $gff_string);
+	return $self->_from_gff1_string($feat, $gff_string);
+    } elsif( $self->gff_version() == 3 ) {
+	return $self->_from_gff3_string($feat, $gff_string);
     } else {
-	$self->_from_gff2_string($feat, $gff_string);
+	return $self->_from_gff2_string($feat, $gff_string);
     }
 }
 
@@ -195,7 +294,8 @@ sub from_gff_string {
 sub _from_gff1_string {
    my ($gff, $feat, $string) = @_;
    chomp $string;
-   my ($seqname, $source, $primary, $start, $end, $score, $strand, $frame, @group) = split(/\t/, $string);
+   my ($seqname, $source, $primary, $start, $end, $score, 
+       $strand, $frame, @group) = split(/\t/, $string);
 
    if ( !defined $frame ) {
        $feat->throw("[$string] does not look like GFF to me");
@@ -242,11 +342,17 @@ sub _from_gff1_string {
 sub _from_gff2_string {
    my ($gff, $feat, $string) = @_;
    chomp($string);
-   # according to the Sanger website, GFF2 should be single-tab separated elements, and the
-   # free-text at the end should contain text-translated tab symbols but no "real" tabs,
-   # so splitting on \t is safe, and $attribs gets the entire attributes field to be parsed later
-   my ($seqname, $source, $primary, $start, $end, $score, $strand, $frame, @attribs) = split(/\t+/, $string);
-   my $attribs = join '', @attribs;  # just in case the rule against tab characters has been broken
+
+   # according to the Sanger website, GFF2 should be single-tab
+   # separated elements, and the free-text at the end should contain
+   # text-translated tab symbols but no "real" tabs, so splitting on
+   # \t is safe, and $attribs gets the entire attributes field to be
+   # parsed later
+
+   my ($seqname, $source, $primary, $start, 
+       $end, $score, $strand, $frame, @attribs) = split(/\t+/, $string);
+   my $attribs = join '', @attribs;  # just in case the rule 
+                                     # against tab characters has been broken
    if ( !defined $frame ) {
        $feat->throw("[$string] does not look like GFF2 to me");
    }
@@ -257,7 +363,7 @@ sub _from_gff2_string {
    $feat->end($end);
    $feat->frame($frame);
    if ( $score eq '.' ) {
-       #$feat->score(undef);
+       # $feat->score(undef);
    } else {
        $feat->score($score);
    }
@@ -282,7 +388,7 @@ sub _from_gff2_string {
    # NOTE: changed to foreach loop which is more efficient in perl
    # --jasons
 
-   foreach my $a ( split //, $attribs ) { 
+   for my $a ( split //, $attribs ) { 
        # flag up on entering quoted text, down on leaving it
        if( $a eq '"') { $flag = ( $flag == 0 ) ? 1:0 }
        elsif( $a eq ';' && $flag ) { $a = "INSERT_SEMICOLON_HERE"}
@@ -331,6 +437,52 @@ sub _from_gff2_string {
    }
 }
 
+
+sub _from_gff3_string {
+    my ($gff, $feat, $string) = @_;
+    chomp($string);
+
+    # according to the nascent GFF3 spec, it should be space
+    # separated elements, spaces anywhere else should be escaped.
+
+    my ($seqname, $source, $primary, $start, $end, 
+	$score, $strand, $frame, $groups) = split(/\s+/, $string);
+    
+    if ( ! defined $frame ) {
+	$feat->throw("[$string] does not look like GFF3 to me");
+    }
+    $feat->seq_id($seqname);
+    $feat->source_tag($source);
+    $feat->primary_tag($primary);
+    $feat->start($start);
+    $feat->end($end);
+    $feat->frame($frame);
+    if ( $score eq '.' ) {
+	#$feat->score(undef);
+    } else {
+	$feat->score($score);
+    }
+    if ( $strand eq '-' ) { $feat->strand(-1); }
+    if ( $strand eq '+' ) { $feat->strand(1); }
+    if ( $strand eq '.' ) { $feat->strand(0); }
+    my @groups = split(/\s*;\s*/, $groups);
+
+    for my $group (@groups) {
+	my ($tag,$value) = split /=/,$group;
+	$tag             = unescape($tag);
+	my @values       = map {unescape($_)} split /,/,$value;
+	for my $v ( @values ) {  $feat->add_tag_value($tag,$v); }
+    }
+}
+
+# taken from Bio::DB::GFF
+sub unescape {
+  my $v = shift;
+  $v =~ tr/+/ /;
+  $v =~ s/%([0-9a-fA-F]{2})/chr hex($1)/ge;
+  return $v;
+}
+
 =head2 write_feature
 
  Title   : write_feature
@@ -344,6 +496,11 @@ sub _from_gff2_string {
 
 sub write_feature {
     my ($self, @features) = @_;
+    return unless @features;
+    if( $self->{'_first'} && $self->gff_version() == 3 ) {
+	$self->_print("##gff-version 3\n");
+    }
+    $self->{'_first'} = 0;
     foreach my $feature ( @features ) {
 	$self->_print($self->gff_string($feature)."\n");
     }
@@ -369,6 +526,8 @@ sub gff_string{
 
     if($self->gff_version() == 1) {
 	return $self->_gff1_string($feature);
+    } elsif( $self->gff_version() == 3 ) {
+	return $self->_gff3_string($feature);
     } else {
 	return $self->_gff2_string($feature);
     }
@@ -497,38 +656,160 @@ sub _gff2_string{
 
    # MW
 
-   my $valuestr;
+   
    my @all_tags = $feat->all_tags;
+   my @group;
    if (@all_tags) {  # only play this game if it is worth playing...
-       $str .= "\t"; # my interpretation of the GFF2
-                     # specification suggests the need 
-                     # for this additional TAB character...??
        foreach my $tag ( @all_tags ) {
-	   my $valuestr; # a string which will hold one or more values 
-	                 # for this tag, with quoted free text and 
-	                 # space-separated individual values.
+	   my @v;
 	   foreach my $value ( $feat->each_tag_value($tag) ) {
 	       if ($value =~ /[^A-Za-z0-9_]/){
 		   $value =~ s/\t/\\t/g; # substitute tab and newline 
 		                         # characters
 		   $value =~ s/\n/\\n/g; # to their UNIX equivalents
-		   $value = '"' . $value . '" '} # if the value contains 
+		   $value = '"' . $value . '" ';
+	       }                                 # if the value contains 
 	                                         # anything other than valid 
 	                                         # tag/value characters, then 
 	                                         # quote it
-	       $value = "\"\"" unless defined $value; 
+	       $value = '\""' unless defined $value; 
                                               # if it is completely empty, 
 	                                      # then just make empty double 
 	                                      # quotes
-	       $valuestr .=  $value . " "; # with a trailing space in case 
-	                                   # there are multiple values
-	       # for this tag (allowed in GFF2 and .ace format)		
+	       push @v, $value;
+	       # for this tag (allowed in GFF2 and .ace format)
 	   }
-	   $str .= "$tag $valuestr ; ";	# semicolon delimited with no '=' sign
+	   push @group, "$tag ".join(" ", @v);
        }
-       chop $str; chop $str  # remove the trailing semicolon and space
-       }
+   }
+   $str .= "\t" . join(' ; ', @group);
+   # Add Target information for Feature Pairs
+   if( ! $feat->has_tag('Target') && # This is a bad hack IMHO
+       ! $feat->has_tag('Group') &&
+       $feat->isa('Bio::SeqFeature::FeaturePair') ) {
+       $str .= sprintf("\tTarget %s %d %d", $feat->feature2->seq_id,
+		       ( $feat->feature2->strand < 0 ? 
+			 ( $feat->feature2->end,
+			   $feat->feature2->start) :
+			 ( $feat->feature2->start,
+			   $feat->feature2->end) 
+			 ));
+   }
    return $str;
+}
+
+=head2 _gff3_string
+
+ Title   : _gff3_string
+ Usage   : $gffstr = $gffio->_gff3_string
+ Function: 
+ Example :
+ Returns : A GFF3-formatted string representation of the SeqFeature
+ Args    : A Bio::SeqFeatureI implementing object to be GFF2-stringified
+
+=cut
+
+sub _gff3_string {
+    my ($gff, $feat) = @_;
+    my ($score,$frame,$name,$strand);
+
+    if( $feat->can('score') ) {
+	$score = $feat->score();
+    }
+    $score = '.' unless defined $score;
+
+    if( $feat->can('frame') ) {
+	$frame = $feat->frame();
+    }
+    $frame = '.' unless defined $frame;
+
+    $strand = $feat->strand();
+
+    if(! $strand) {
+	$strand = ".";
+    } elsif( $strand == 1 ) {
+	$strand = '+';
+    } elsif ( $feat->strand == -1 ) {
+	$strand = '-';
+    }
+
+    if( $feat->can('seqname') ) {
+	$name = $feat->seq_id();
+	$name ||= 'SEQ';
+    } else {
+	$name = 'SEQ';
+    }
+    my @groups,
+    my @all_tags = $feat->all_tags;
+    for my $tag ( @all_tags ) {
+	my $valuestr; # a string which will hold one or more values 
+	# for this tag, with quoted free text and 
+	# space-separated individual values.
+	my @v;
+	for my $value ( $feat->each_tag_value($tag) ) {	    
+	    $value =~ tr/ /+/;
+	    if ($value =~ /[^a-zA-Z0-9\,\;\=\.:\%\^\*\$\@\!\+\_\?\-]/) {
+		$value =~ s/\t/\\t/g; # substitute tab and newline 
+		# characters
+		$value =~ s/\n/\\n/g; # to their UNIX equivalents
+		$value = '"' . $value . '"';
+	    }
+	    if( defined $value ) { 
+		$value =~ s/([\t\n\=;,])/sprintf("%%%X",ord($1))/ge;
+	    } else {
+		# if it is completely empty, 
+		# then just make empty double 
+		# quotes
+		$value = "\"\"";
+	    } 	    
+	    push @v, $value;
+	}
+	push @groups, "$tag=".join(",",@v);
+    }
+    # Add Target information for Feature Pairs
+    if( ! $feat->has_tag('Target') && 
+	! $feat->has_tag('Group') &&
+	$feat->isa('Bio::SeqFeature::FeaturePair') ) {
+	push @groups, sprintf("Target=%s:%d..%d", 
+			      $feat->feature2->seq_id,
+			      ( $feat->feature2->strand < 0 ? 
+				( $feat->feature2->end,
+				  $feat->feature2->start) :
+				( $feat->feature2->start,
+				      $feat->feature2->end) 
+				));
+    }
+
+    my $gff_string = "";
+    if ($feat->location->isa("Bio::Location::SplitLocationI")) {
+        my @locs = $feat->location->each_Location;
+        foreach my $loc (@locs) {
+            $gff_string .= join("\t",
+                $name,
+                $feat->source_tag(),
+                $feat->primary_tag(),
+                $loc->start(),
+                $loc->end(),
+                $score,
+                $strand,
+                $frame,
+                join(';', @groups)) . "\n";
+        }
+        chop $gff_string;
+        return $gff_string;
+    } else {
+        $gff_string = join("\t",
+		$name,
+		$feat->source_tag(),
+		$feat->primary_tag(),
+		$feat->start(),
+		$feat->end(),
+		$score,
+		$strand,
+		$frame, 
+		join(';', @groups));
+    }
+    return $gff_string;
 }
 
 =head2 gff_version
@@ -544,7 +825,7 @@ sub _gff2_string{
 
 sub gff_version {
   my ($self, $value) = @_;
-  if(defined $value && (($value == 1) || ($value == 2))) {
+  if(defined $value && grep {$value == $_ } ( 1, 2, 3)) {
     $self->{'GFF_VERSION'} = $value;
   }
   return $self->{'GFF_VERSION'};

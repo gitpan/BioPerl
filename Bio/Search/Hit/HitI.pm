@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: HitI.pm,v 1.17 2002/11/13 11:16:37 sac Exp $
+# $Id: HitI.pm,v 1.20 2003/08/09 21:48:11 jason Exp $
 #
 # BioPerl module Bio::Search::Hit::HitI
 #
@@ -18,11 +18,17 @@ Bio::Search::Hit::HitI - Interface for a hit in a similarity search result
 
 =head1 SYNOPSIS
 
-Bio::Search::Hit::HitI objects should not be instantiated since this
-module defines a pure interface.
+# Bio::Search::Hit::HitI objects should not be instantiated since this
+# module defines a pure interface.
 
-Given an object that implements the Bio::Search::Hit::HitI  interface,
-you can do the following things with it:
+# Given an object that implements the Bio::Search::Hit::HitI  interface,
+# you can do the following things with it:
+
+    # Get a HitI object from a SearchIO stream:
+    use Bio::SeachIO;
+    my $searchio = new Bio::SearchIO(-format => 'blast', -file => 'result.bls');
+    my $result = $searchio->next_result;
+    my $hit    = $result->next_hit;
 
     $hit_name = $hit->name();
 
@@ -108,6 +114,8 @@ use strict;
  Returns : a scalar string
  Args    : none
 
+The B<name> of a hit is unique within a Result or within an Iteration.
+
 =cut
 
 sub name {
@@ -129,6 +137,7 @@ sub description {
     my ($self,@args) = @_;
     $self->throw_not_implemented;
 }
+
 
 =head2 accession
 
@@ -211,6 +220,14 @@ sub raw_score {
     $_[0]->throw_not_implemented;
 }
 
+=head2 score
+
+Equivalent to L<raw_score()|raw_score>
+
+=cut
+
+sub score { shift->raw_score(@_); }
+
 =head2 significance
 
  Title   : significance
@@ -253,7 +270,7 @@ sub bits {
  Usage    : while( $hsp = $obj->next_hsp()) { ... }
  Function : Returns the next available High Scoring Pair
  Example  : 
- Returns  : Bio::Search::HSP::HSPI object or null if finished
+ Returns  : L<Bio::Search::HSP::HSPI> object or null if finished
  Args     : none
 
 =cut
@@ -271,7 +288,7 @@ sub next_hsp {
            : Get the numbers of HSPs for the current hit.
  Example   : @hsps = $hit_object->hsps();
            : $num  = $hit_object->hsps();  # alternatively, use num_hsps()
- Returns   : Array context : list of Bio::Search::HSP::BlastHSP.pm objects.
+ Returns   : Array context : list of L<Bio::Search::HSP::BlastHSP> objects.
            : Scalar context: integer (number of HSPs).
            :                 (Equivalent to num_hsps()).
  Argument  : n/a. Relies on wantarray
@@ -332,7 +349,7 @@ sub num_hsps {
            :             consolidating long lists. Default = no collapse.
  Throws    : n/a.
 
-See Also   : L<Bio::Search::HSP::BlastHSP::seq_inds()|Bio::Search::HSP::BlastHSP>
+See Also   : L<Bio::Search::HSP::HSPI::seq_inds()|Bio::Search::HSP::HSPI>
 
 =cut
 
@@ -349,14 +366,14 @@ sub seq_inds {
 
     my (@inds, $hsp);    
     foreach $hsp ($self->hsps) {
-	# This will merge data for all HSPs together.
-	push @inds, $hsp->seq_inds($seqType, $class);
+        # This will merge data for all HSPs together.
+        push @inds, $hsp->seq_inds($seqType, $class);
     }
     
     # Need to remove duplicates and sort the merged positions.
     if(@inds) {
-	my %tmp = map { $_, 1 } @inds;
-	@inds = sort {$a <=> $b} keys %tmp;
+        my %tmp = map { $_, 1 } @inds;
+        @inds = sort {$a <=> $b} keys %tmp;
     }
 
     $collapse ?  &Bio::Search::BlastUtils::collapse_nums(@inds) : @inds; 
@@ -366,7 +383,7 @@ sub seq_inds {
 
  Title   : rewind
  Usage   : $hit->rewind;
- Function: Allow one to reset the HSP iteration to the beginning
+ Function: Allow one to reset the HSP iterator to the beginning
            if possible
  Returns : none
  Args    : none
@@ -377,54 +394,6 @@ sub rewind{
    my ($self) = @_;
    $self->throw_not_implemented();
 }
-
-
-=head2 iteration
-
- Usage     : $hit->iteration( );
- Purpose   : Gets the iteration number in which the Hit was found.
- Example   : $iteration_num = $sbjct->iteration();
- Returns   : Integer greater than or equal to 1
-             Non-PSI-BLAST reports will report iteration as 1, but this number
-             is only meaningful for PSI-BLAST reports.
- Argument  : none
- Throws    : none
-
-See Also   : L<found_again()|found_again>
-
-=cut
-
-#----------------
-sub iteration { shift->throw_not_implemented }
-#----------------
-
-=head2 found_again
-
- Usage     : $hit->found_again;
- Purpose   : Gets a boolean indicator whether or not the hit has
-             been found in a previous iteration.
-             This is only applicable to PSI-BLAST reports.
-
- 	     This method indicates if the hit was reported in the 
- 	     "Sequences used in model and found again" section of the
- 	     PSI-BLAST report or if it was reported in the
- 	     "Sequences not found previously or not previously below threshold"
- 	     section of the PSI-BLAST report. Only for hits in iteration > 1.
-
- Example   : if( $sbjct->found_again()) { ... };
- Returns   : Boolean (1 or 0) for PSI-BLAST report iterations greater than 1.
-             Returns undef for PSI-BLAST report iteration 1 and non PSI_BLAST
-             reports.
- Argument  : none
- Throws    : none
-
-See Also   : L<found_again()|found_again>
-
-=cut
-
-#----------------
-sub found_again { shift->throw_not_implemented }
-#----------------
 
 
 =head2 overlap
@@ -439,7 +408,7 @@ sub found_again { shift->throw_not_implemented }
  Status    : Experimental
  Comments  : Any two HSPs whose sequences overlap by less than or equal
            : to the overlap() number of resides will be considered separate HSPs
-           : and will not get tiled by Bio::Search::BlastUtils::_adjust_contigs().
+           : and will not get tiled by L<Bio::Search::BlastUtils::_adjust_contigs()>.
 
 See Also   : L<Bio::Search::BlastUtils::_adjust_contigs()|Bio::Search::BlastUtils>, L<BUGS | BUGS>
 
@@ -511,7 +480,7 @@ sub p { shift->throw_not_implemented() }
  Example   : $hspObj  = $hit_object->hsp;  # same as 'best'
            : $hspObj  = $hit_object->hsp('best');
            : $hspObj  = $hit_object->hsp('worst');
- Returns   : Object reference for a Bio::Search::HSP::BlastHSP.pm object.
+ Returns   : Object reference for a L<Bio::Search::HSP::HSPI> object.
  Argument  : String (or no argument).
            :   No argument (default) = highest scoring HSP (same as 'best').
            :   'best' or 'first' = highest scoring HSP.
@@ -641,7 +610,7 @@ sub tiled_hsps { shift->throw_not_implemented }
            : dedicated method such as $hit->hsps_on_both_strands(). Similarly
            : for frame. This could be provided if there is interest.
 
-See Also   : B<Bio::Search::HSP::BlastHSP::strand>()
+See Also   : L<Bio::Search::HSP::HSPI::strand>()
 
 =cut
 
@@ -677,7 +646,7 @@ sub frame { shift->throw_not_implemented }
  Purpose   : Get the total number of identical or conserved matches 
            : (or both) across all HSPs.
            : (Note: 'conservative' matches are indicated as 'positives' 
-	   :         in BLAST reports.)
+           :         in BLAST reports.)
  Example   : ($id,$cons) = $hit_object->matches(); # no argument
            : $id = $hit_object->matches('id');
            : $cons = $hit_object->matches('cons'); 
@@ -703,6 +672,12 @@ See Also   : L<Bio::Search::HSP::GenericHSP::matches()|Bio::Search::HSP::Generic
 =cut
 
 sub matches { shift->throw_not_implemented }
+
+
+# aliasing for Steve's method names
+sub hit_description { shift->description(@_) }
+# aliasing for Steve's method names
+sub hit_length { shift->length(@_) }
 
 1;
 

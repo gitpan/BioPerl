@@ -1,4 +1,4 @@
-# $Id: flat.pm,v 1.12 2002/10/22 07:38:50 lapp Exp $
+# $Id: flat.pm,v 1.13 2003/06/04 08:36:44 heikki Exp $
 # BioPerl module for Bio::Variation::IO::flat
 #
 # Cared for by Heikki Lehvaslaiho <Heikki@ebi.ac.uk>
@@ -70,7 +70,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Variation::IO::flat;
-my $VERSION=1.0;
+
 use vars qw(@ISA);
 use strict;
 

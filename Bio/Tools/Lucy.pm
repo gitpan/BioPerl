@@ -1,4 +1,4 @@
-# $Id: Lucy.pm,v 1.6 2002/10/22 07:38:46 lapp Exp $ 
+# $Id: Lucy.pm,v 1.7 2003/06/04 08:36:43 heikki Exp $ 
 #
 # BioPerl module for Bio::Tools::Lucy
 #
@@ -156,7 +156,7 @@ and should not be called directly.
 
 package Bio::Tools::Lucy;
 
-use vars qw($VERSION $AUTOLOAD @ISA @ATTR %OK_FIELD);
+use vars qw($AUTOLOAD @ISA @ATTR %OK_FIELD);
 use strict;
 use Bio::PrimarySeq;
 use Bio::Root::Root;
@@ -167,7 +167,6 @@ use Bio::Root::IO;
 foreach my $attr (@ATTR) {
     $OK_FIELD{$attr}++
 }
-$VERSION = "0.01";
 
 sub AUTOLOAD {
     my $self = shift;

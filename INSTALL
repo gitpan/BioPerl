@@ -1,4 +1,4 @@
-# $Id: INSTALL,v 1.16.2.1 2003/09/15 16:27:54 jason Exp $
+# $Id: INSTALL,v 1.28 2003/12/13 15:51:19 jason Exp $
 
 Bioperl Install Directions
 
@@ -21,8 +21,8 @@ o System requirements
    shell and all necessary modules will be installed.
 
  - Bioperl on ActiveState for Windows - An ActiveState PPM distribution
-   is available for bioperl.  Issue the following commands in your PPM
-   shell to install Bioperl.
+   is available for bioperl v. 1.0.  Issue the following commands in
+   your PPM shell to install Bioperl (ActiveState Perl v. 5.6*).
 
      PPM>repository add Bioperl http://bioperl.org/DIST/
 
@@ -73,7 +73,9 @@ o System requirements
    variables set.  If you do not have a local copy of the specific
    executeable you do not need to set these variables.  Additionally
    the modules will attempt to locate the specific applications in
-   your runtime PATH variable.  
+   your runtime PATH variable. You may also need to set an environment
+   variable to tell BioPerl about your network configuration if your
+   site uses a firewall.
 
    Setting environment variables on unix means adding a line like the
    following to your shell initialization:
@@ -101,6 +103,12 @@ o System requirements
    o TCOFFEEDIR - points to the directory where the t_coffee
                   executable is located.
 		 
+   o HTTP_PROXY - If you access the internet via a proxy server then you 
+                  can tell the Bioperl modules which require network access
+                  about this by using the HTTP_PROXY environment variable.  
+                  The value set includes the proxy address and the port 
+                  used (eg http://wwwcache.example.com:8080).
+
 
  * Note that most modules will work with earlier versions of Perl. 
    The only ones that will not are Bio::SimpleAlign.pm and 
@@ -151,6 +159,7 @@ o System requirements
 
  To install the Compiled extension for pSW you will need to read the
  next section of the manual.
+
  
  INSTALLING THE OPTIONAL COMPILED EXTENSIONS (bioperl-ext package)
 
@@ -187,6 +196,17 @@ o System requirements
  will work cleanly now.
 
 
+ INSTALLING BIOPERL SCRIPTS
+
+ Bioperl comes with a set of production-quality scripts that are kept
+ in the scripts/ directory. You can install these scripts if you'd like,
+ simply follow the instructions on 'make install'. The installation
+ directory is specified by the INSTALLSCRIPT variable in the Makefile,
+ the default location is /usr/bin. Installation will copy the scripts
+ to the specified directory, change the 'PLS' suffix to 'pl', and
+ prepend 'bp_' to all the script names if they aren't so named already.
+
+
  INSTALLING BIOPERL IN A PERSONAL OR PRIVATE MODULE AREA
 
  If you lack permission to install perl modules into the
@@ -202,25 +222,33 @@ o System requirements
 
  Example:
 
-   perl Makefile.PL  PREFIX=/home/dag/My_Local_Perl_Modules
+   perl Makefile.PL  LIB=/home/users/dag/My_Local_Perl_Modules
    make
    make test
    make install
 
- This will cause perl to install the bioperl modules in:
- /home/dag/My_Perl_Modules/lib/perl5/site_perl/
+ This tells perl to install bioperl in the desired place, e.g.:
+ 
+  /home/users/dag/My_Perl_Modules/Bio/Seq.pm
 
- And the bioperl man pages will go in:
- /home/dag/My_Perl_Modules/lib/perl5/man/
+ Then in your Bioperl script you would write:
 
- To specify a directory besides lib/perl5/site_perl, 
- or if there are still permission problems, include
- an INSTALLSITELIB directive along with the PREFIX:
+  use lib "/home/users/dag/My_Local_Perl_Modules";
+  use Bio::Seq;
 
-   perl Makefile.PL  PREFIX=/home/dag/perl INSTALLSITELIB=/home/dag/perl/lib
+ The man pages will probably be installed in $LIB/man. For more
+ information on these sorts of custom installs see the documentation
+ for ExtUtils::MakeMaker.
 
  See below for how to use modules that are not installed in the
  standard Perl5 location.
+
+ You can also use CPAN, as discussed below, to install accessory modules
+ in your local directory. First enter the CPAN shell, 
+ then set the arguments for the command "perl Makefile.PL":
+
+ >perl -e shell -MCPAN
+ cpan>o conf makepl_arg LIB=/home/users/dag/My_Local_Perl_Modules
 
 
  THE HARD WAY :)
@@ -268,7 +296,15 @@ o System requirements
 
     <...insert whizzy perl code here...>
 
-THE TEST SYSTEM
+ Or, you can set the environmental variable PERL5LIB:
+
+    # csh or tcsh
+    setenv PERL5LIB /home/users/dag/My_Local_Perl_Modules/
+    # bash
+    export PERL5LIB=/home/users/dag/My_Local_Perl_Modules/
+
+
+ THE TEST SYSTEM
 
  The Bioperl test system is located in the t/ directory and is
  automatically run whenever you execute the 'make test' command.
@@ -290,107 +326,131 @@ THE TEST SYSTEM
  detects that the network is not present and thus should skip, not
  fail, any tests that require a network connection.
 
-DEPENDENCIES AND Bundle::BioPerl
 
-The following packages are used by Bioperl.  Not all are required for
-Bioperl to operate properly, however, some functionality will be
-missing without them.  You can easily install all of these, except
-srsperl.pm, using the Bundle::BioPerl CPAN bundle. A command-line
-example:
+ DEPENDENCIES AND Bundle::BioPerl
+
+ The following packages are used by Bioperl.  Not all are required for
+ Bioperl to operate properly, however, some functionality will be
+ missing without them.  You can easily install all of these, except
+ srsperl.pm, using the Bundle::BioPerl CPAN bundle. A command-line
+ example:
 
   >perl -e shell -MCPAN
   cpan>install Bundle::BioPerl
   <...installation details...>
   cpan>quit
 
-or more simply:
+ or more simply:
 
   >perl -MCPAN -e "install Bundle::BioPerl"
 
+ The DBD::mysql, DB_File and XML::Parser modules require other
+ applications or databases: MySQL, Berkeley DB, and expat respectively.
 
-Module			 Where it is Used
-------------------------------------------------------------------
-HTTP::Request::Common    GenBank+GenPept sequence retrieval, 
-			 remote http Blast jobs.
-			 Bio::DB::*,Bio::Tools::Run::RemoteBlast
+ Module			 Where it is Used
+ ------------------------------------------------------------------
+ HTTP::Request::Common    GenBank+GenPept sequence retrieval, 
+	 		  remote http Blast jobs
+		 	  Bio::DB::*
+			  Bio::Tools::Run::RemoteBlast
 
-LWP::UserAgent           GenBank+GenPept sequence retrieval, 
-			 remote http Blast jobs
-			 Bio::DB::*,Bio::Tools::Run::RemoteBlast
+ LWP::UserAgent           GenBank+GenPept sequence retrieval, 
+	 		  remote http Blast jobs
+			  Bio::DB::*
+			  Bio::Tools::Run::RemoteBlast
 
-Ace come from AcePerl    Access to ACeDB databases
-			 Bio::DB::Ace
+ AcePerl	          Access to ACeDB databases
+			  Bio::DB::Ace
+			  Available at http://stein.cshl.org
+			 
+ IO::String               IO handle to read or write to a string
+			  Bio::SeqIO
+			  Bio::Variation::*
+			  Bio::DB::*
+			  Bio::Index::Blast
+			  Bio::Tools::*
+			  Bio::Biblio::IO
+			  Bio::Structure::IO
 
-IO::Scalar		 IO handle to read or write to a scalar/remote 
-			 http Blast jobs
-			 Bio::Tools::Blast::Run::Remote,
+ XML::Parser              Parsing of XML documents
+			  Bio::SeqIO::game
+			  Bio::Variation::* 
+			  Bio::SearchIO::blastxml
+			  Bio::Biblio::IO::medlinexml
+			  Requires expat from
+			  http://sourceforge.net/projects/expat/
+			 			 
+ XML::Writer              Parsing + writing of XML documents
+			  Bio::SeqIO::game
+			  Bio::Variation::*
 
-IO::String               IO handle to read or write to a string.
-			 GenBank+GenPept sequence retrieval, 
-			 Variation code,
-			 Bio::DB::*,Bio::Variation::*,
-			 Bio::Index::Blast
+ XML::Parser::PerlSAX     Parsing of XML documents
+			  Bio::SeqIO::game
+			  Bio::Variation::*
+			  Bio::SearchIO::blastxml
+			  Bio::Biblio::IO::medlinexml
 
-XML::Parser              Parsing of XML documents
-			 Bio::Variation code, GAME parser, SearchIO
-			 Bio::SeqIO::game,Bio::Variation::*, 
-			 Bio::SearchIO::blastxml
-			 Bio::Biblio::IO::medlinexml
+ XML::Twig        	  Parsing of XML documents
+			  Bio::Variation::IO::xml
 
-XML::Writer              Parsing + writing of XML documents
-			 Bio::Variation code, GAME parser
-			 Bio::SeqIO::game,Bio::Variation::*
+ File::Temp               Temporary File creation
+			  Bio::DB::FileCache
+			  Bio::DB::XEMBL
 
-XML::Parser::PerlSAX     Parsing of XML documents
-			 Bio::Variation code, GAME parser, SearchIO
-			 Bio::SeqIO::game,Bio::Variation::*,
-			 Bio::SearchIO::blastxml
-			 Bio::Biblio::IO::medlinexml
+ SOAP::Lite               SOAP protocol, XEMBL Services
+			  Bio::Biblio::*
+			  Bio::DB::XEMBLService
 
-XML::Twig        	 Parsing of XML documents
-			 Module Bio::Variation::IO::xml
+ HTML::Parser             HTML parsing of GDB page
+			  Bio::DB::GDB
 
-File::Temp               Temporary File creation
-			 Bio::DB::WebDBSeqI, Bio::Seq::LargePrimarySeq
-			 All analysis running
+ DBD::mysql               Mysql API for loading and querying of Mysql-based 
+			  GFF feature and BioSQL databases
+			  Bio::DB::GFF
+			  bioperl-db external package
+			  bioperl-pipeline external package
+			  Mysql DB free from www.mysql.org
 
-SOAP::Lite               SOAP protocol
-			 XEMBL Services, 
-			 Bibliographic queries in Biblio::
-			 Bio::DB::XEMBLService
+ GD			  GD graphical drawing library
+			  Bio::Graphics
+                          Requires GD library from www.boutell.com/gd
 
-HTML::Parser             HTML parsing of GDB page
-			 Bio::DB::GDB
+ srsperl		  Sequence Retrieval System (SRS) 
+			  alternative way of retrieving 
+			  sequences
+			  Bio::LiveSeq::IO::SRS.pm
+			  See README in Bio/LiveSeq/IO
 
-DBD::mysql               Mysql driver
-			 loading and querying of Mysql-based 
-			 GFF feature databases
-			 Bio::DB::GFF
+ Storable		  Persistent object storage & retrieval 
+			  Bio::DB::FileCache
 
-GD			 GD graphical drawing library
-			 Bio::Graphics
-                         Requires GD library from www.boutell.com/gd
+ Text::Shellwords         Text parser
+                          Bio::Graphics::FeatureFile
 
-srsperl.pm		 Sequence Retrieval System (SRS) 
-			 alternative way of retrieving 
-			 sequences
-			 Bio::LiveSeq::IO::SRS.pm
-			 See README in Bio/LiveSeq/IO
+ XML::DOM		  XML parser
+			  Bio::SeqIO::bsml.pm
 
-Storable		 Persistent object storage & retrieval 
-			 Bio::DB::FileCache
+ DB_File                  Perl access to Berkeley DB
+                          Bio::DB::Flat
+			  Bio::DB::Fasta,
+			  Bio::SeqFeature::Collection,
+			  Bio::Index::*
+                          Requires Berkeley DB, from Linux RPM
+			  or from www.sleepycat.com
 
-Parse::RecDescent        Parsing of Unigene files
+ Graph::Directed          generic graph data and algorithms
+                          Bio::Ontology::SimpleOntologyEngine
 
-Text::Shellwords         Text parser
-                         Bio::Graphics::FeatureFile.pm
+ Data::Stag::ITextWriter  Structured Tags datastructures
+			  Bio::SeqIO::chadoitext
 
-XML::DOM		 XML parser
-			 Bio::SeqIO::bsml.pm
+ Data::Stag::SxprWriter   Structured Tags datastructures
+			  Bio::SeqIO::chadosxpr
 
-DB_File                  Perl access to Berkeley DB
-                         Bio::DB::Flat
-                         Bio::SeqFeature::Collection
-
-Text::Wrap               (Very optional)
+ Data::Stag::XMLWriter    Structured Tags datastructures
+			  Bio::SeqIO::chadoxml
+ Text::Wrap               (Very optional)
                           Bio::SearchIO::Writer::TextResultWriter
+ HTML::Entities           (only if you want to run webanalysis modules)
+			  Bio::Tools::Analysis::DNA::*
+			  Bio::Tools::Analysis::Protein::*

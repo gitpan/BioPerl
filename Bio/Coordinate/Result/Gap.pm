@@ -1,4 +1,4 @@
-# $Id: Gap.pm,v 1.2.2.1 2003/02/20 05:11:45 heikki Exp $
+# $Id: Gap.pm,v 1.4 2003/07/03 08:09:58 lapp Exp $
 #
 # BioPerl module for Bio::Coordinate::Result::Gap
 #
@@ -13,7 +13,7 @@
 
 =head1 NAME
 
-Bio::Coordinate::Result::Gap - An other name for Bio::Location::Simple
+Bio::Coordinate::Result::Gap - Another name for Bio::Location::Simple
 
 =head1 SYNOPSIS
 

@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Seq.t,v 1.26 2002/10/02 01:04:42 lapp Exp $
+## $Id: Seq.t,v 1.28 2003/06/09 09:07:29 heikki Exp $
 
 use strict;
 
@@ -14,7 +14,7 @@ BEGIN {
     }
     use Test;
 
-    plan tests => 50;
+    plan tests => 53;
 }
 
 use Bio::Seq;
@@ -25,10 +25,15 @@ use Bio::Annotation::SimpleValue;
 
 ok(1);
 
-my $seq = Bio::Seq->new(-seq=>'ACTGTGGCGTCAACT',
+ok my $seq = Bio::Seq->new(-seq=>'ACTGTGGCGTCAACT',
                         -desc=>'Sample Bio::Seq object',
-			-alphabet => 'dna' );
-ok $seq;
+			-alphabet => 'dna',
+                        -is_circular => 1
+                       );
+
+ok $seq->is_circular;
+ok not $seq->is_circular(0);
+ok not $seq->is_circular;
 
 my $trunc = $seq->trunc(1,4);
 ok $trunc->length,  4, 'truncated sequence was not of length 4';
@@ -167,7 +172,7 @@ my $richseq = Bio::Seq::RichSeq->new( -seq => 'atgtggtaataa',
 				      -id => 'id1',
 				      -dates => [ '2001/1/1' ],
 				      -pid => '887821',
-				      -keywords => 'JUNK1 JUNK2',
+				      -keywords => 'JUNK1;JUNK2',
 				      -division => 'Fungi',
 				      -secondary_accessions => 'AC1152' );
 				 
@@ -181,6 +186,6 @@ ok ($richseq->alphabet, 'rna');
 ok ($richseq->molecule, 'mRNA');
 ok ($richseq->pid, 887821);
 ok ($richseq->division, 'Fungi');
-ok ($richseq->keywords, 'JUNK1 JUNK2');
+ok ($richseq->keywords, 'JUNK1; JUNK2');
 $richseq->seq_version('2');
 ok ($richseq->seq_version, 2);

@@ -1,4 +1,4 @@
-# $Id: MedlineBookArticle.pm,v 1.3 2002/10/22 07:45:11 lapp Exp $
+# $Id: MedlineBookArticle.pm,v 1.5 2003/05/30 15:33:00 jason Exp $
 #
 # BioPerl module for Bio::Biblio::MedlineBookArticle
 #
@@ -16,7 +16,7 @@ Bio::Biblio::MedlineBookArticle - Representation of a MEDLINE book article
     $obj = new Bio::Biblio::MedlineBookArticle
                   (-title => 'Getting started'.
 		   -book => new Bio::Biblio::MedlineBook);
- --- OR ---
+  #--- OR ---
 
     $obj = new Bio::Biblio::MedlineBookArticle;
     $obj->title ('Getting started');
@@ -36,7 +36,7 @@ The following attributes are specific to this class
 
 =head1 SEE ALSO
 
-=over
+=over 4
 
 =item *
 

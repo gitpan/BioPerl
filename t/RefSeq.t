@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: RefSeq.t,v 1.8 2002/08/07 17:47:48 lapp Exp $
+# $Id: RefSeq.t,v 1.10 2003/12/18 10:35:24 heikki Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -33,9 +33,9 @@ BEGIN {
     }
 }
 
-END {     
+END {
     for ( $Test::ntest..$NUMTESTS ) {
-	skip("Unable to RefSeq test - probably no network connection.",1);
+        skip("Skipping tests which require remote servers - set env variable BIOPERLDEBUG to test",1);
     }
 }
 
@@ -74,8 +74,9 @@ eval {
 };
 ok $@;
 
+exit unless $DEBUG;
 eval {
-    ok $seq = $db->get_Seq_by_acc('NM_006732');
+    ok($seq = $db->get_Seq_by_acc('NM_006732'));
     ok($seq && $seq->length eq 3775);
     ok $seq2 = $db2->get_Seq_by_acc('NM_006732');
     ok($seq2 && $seq2->length eq 3775);

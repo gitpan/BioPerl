@@ -1,4 +1,4 @@
-# $Id: Collection.pm,v 1.11.2.1 2003/02/20 05:11:45 heikki Exp $
+# $Id: Collection.pm,v 1.18 2003/12/19 03:02:11 jason Exp $
 #
 # bioperl module for Bio::Coordinate::Collection
 #
@@ -28,7 +28,7 @@ Bio::Coordinate::Collection - Noncontinuous match between two coordinate sets
   $pos = Bio::Location::Simple->new (-start => 5, -end => 9 );
   $res = $collection->map($pos);
   $res->match->start == 1;
-  $res->match-> == 5;
+  $res->match->end == 5;
 
   # if mapping is many to one (*>1) or many-to-many (*>*)
   # you have to give seq_id not get unrelevant entries
@@ -149,12 +149,12 @@ sub add_mapper {
 
   $self->throw("Is not a Bio::Coordinate::MapperI but a [$self]")
       unless defined $value && $value->isa('Bio::Coordinate::MapperI');
-
+  
   # test pair range lengths
   $self->warn("Coodinates in pair [". $value . ":" .
-	      $value->in->seq_id . "/". $value->in->seq_id .
+	      $value->in->seq_id . "/". $value->out->seq_id .
 	      "] are not right.")
-		  unless $value->test;
+      unless $value->test;
 
   $self->_is_sorted(0);
   push(@{$self->{'_mappers'}},$value);
@@ -201,6 +201,24 @@ sub each_mapper{
    return @{$self->{'_mappers'}};
 }
 
+=head2 mapper_count
+
+ Title   : mapper_count
+ Usage   : my $count = $collection->mapper_count;
+ Function: Get the count of the number of mappers stored 
+           in this collection
+ Example :
+ Returns : integer
+ Args    : none
+
+
+=cut
+
+sub mapper_count{
+   my $self = shift;
+   return scalar @{$self->{'_mappers'} || []};
+}
+
 
 =head2 swap
 
@@ -243,7 +261,7 @@ sub test {
 
    foreach my $mapper ($self->each_mapper) {
        $self->warn("Coodinates in pair [". $mapper . ":" .
-		   $mapper->in->seq_id . "/". $mapper->in->seq_id .
+		   $mapper->in->seq_id . "/". $mapper->out->seq_id .
 		   "] are not right.") && ($res = 0)
 	   unless $mapper->test;
    }

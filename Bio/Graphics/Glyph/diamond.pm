@@ -31,13 +31,21 @@ sub draw_component {
     return $self->SUPER::draw_component($gd,@_);
   }
 
-  $gd->line($x1,$ymid,$xmid,$y1,$fg);
-  $gd->line($xmid,$y1,$x2,$ymid,$fg);
-  $gd->line($x2,$ymid,$xmid,$y2,$fg);
-  $gd->line($xmid,$y2,$x1,$ymid,$fg);
+  my $poly_pkg = $self->polygon_package;
+  my $polygon   = $poly_pkg->new();
+  $polygon->addPt($x1,$ymid);
+  $polygon->addPt($xmid,$y1);
+  $polygon->addPt($x2,$ymid);
+  $polygon->addPt($xmid,$y2);
 
+  # Have to draw TWO polygons for fills in order to get an outline
+  # because filledPolygon in GD croaks with extra parameters (and
+  # doesn't support drawing of stroke anyways).
   if (my $c = $self->bgcolor) {
-    $gd->fillToBorder($xmid,$ymid,$fg,$c);
+      $gd->filledPolygon($polygon,$c);
+      $gd->polygon($polygon,$fg);
+  } else {
+    $gd->polygon($polygon,$fg);
   }
 }
 
@@ -90,6 +98,8 @@ L<Bio::Graphics::Glyph> for a full explanation.
 
   -description  Whether to draw a description  0 (false)
 
+  -hilite       Highlight color                undef (no color)
+
 =head1 BUGS
 
 If the feature is wider than a point, then the label and description
@@ -130,7 +140,7 @@ L<GD>
 
 =head1 AUTHOR
 
-Lincoln Stein E<lt>lstein@cshl.orgE<gt>
+Lincoln Stein E<lt>lstein@cshl.orgE<gt>, Todd Harris E<lt>harris@cshl.orgE<gt>
 
 Copyright (c) 2001 Cold Spring Harbor Laboratory
 

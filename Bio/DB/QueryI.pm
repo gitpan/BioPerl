@@ -1,4 +1,4 @@
-# $Id: QueryI.pm,v 1.1 2002/11/20 08:39:03 lstein Exp $
+# $Id: QueryI.pm,v 1.2 2003/06/04 08:36:37 heikki Exp $
 #
 # BioPerl module for Bio::DB::QueryI.pm
 #
@@ -85,10 +85,9 @@ package Bio::DB::QueryI;
 use strict;
 use Bio::Root::RootI;
 
-use vars qw(@ISA $VERSION);
+use vars qw(@ISA);
 
 @ISA = qw(Bio::Root::RootI);
-$VERSION = '0.1';
 
 =head2 new
 

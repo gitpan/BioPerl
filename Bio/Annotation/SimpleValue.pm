@@ -1,4 +1,4 @@
-# $Id: SimpleValue.pm,v 1.9.2.1 2003/03/10 22:04:56 lapp Exp $
+# $Id: SimpleValue.pm,v 1.10 2003/03/10 21:53:56 lapp Exp $
 #
 # BioPerl module for Bio::Annotation::SimpleValue
 #

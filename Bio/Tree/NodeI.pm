@@ -1,4 +1,4 @@
-# $Id: NodeI.pm,v 1.19.2.2 2003/09/14 19:00:35 jason Exp $
+# $Id: NodeI.pm,v 1.26 2003/09/25 16:07:44 jason Exp $
 #
 # BioPerl module for Bio::Tree::NodeI
 #
@@ -226,11 +226,9 @@ sub descendent_count{
 
 sub to_string{
    my ($self) = @_;
-   return sprintf("%s%s%s",
-		  defined $self->id ? $self->id : '',
-		  defined $self->branch_length ? ':' . $self->branch_length : ' ',
-		  $self->is_Leaf() ? '(leaf)' : ''
-		 );
+   return join('',defined $self->id ? $self->id : '',
+		  defined $self->branch_length ? ':' . $self->branch_length 
+		  : ' ')
 }
 
 =head2 height

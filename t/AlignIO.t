@@ -1,14 +1,15 @@
 # This is -*-Perl-*- code
-# $Id: AlignIO.t,v 1.28.2.2 2003/03/14 09:34:58 heikki Exp $
+# $Id: AlignIO.t,v 1.40 2003/11/25 18:59:42 jason Exp $
 use strict;
 
+my $DEBUG = $ENV{'BIOPERLDEBUG'} || 0;
 BEGIN { 
     eval { require Test; };
     if( $@ ) { 
 	use lib 't';
     }
     use Test;
-    plan tests => 67;
+    plan tests => 75;
 }
 
 use Bio::SimpleAlign;
@@ -19,17 +20,15 @@ ok (1);
 
 END {
     unlink(Bio::Root::IO->catfile("t","data","testout2.pfam"),
-	 Bio::Root::IO->catfile("t","data","testout.selex"),
-	 Bio::Root::IO->catfile("t","data","testout.pfam"),
-	 Bio::Root::IO->catfile("t","data","testout.msf"),
-	 Bio::Root::IO->catfile("t","data","testout.fasta"), 
-	 Bio::Root::IO->catfile("t","data","testout.clustal"),
-	 Bio::Root::IO->catfile("t","data","testout.phylip"),
-	 Bio::Root::IO->catfile("t","data","testout.nexus"),
-	 Bio::Root::IO->catfile("t","data","testout.mega"),
+	   Bio::Root::IO->catfile("t","data","testout.selex"),
+	   Bio::Root::IO->catfile("t","data","testout.pfam"),
+	   Bio::Root::IO->catfile("t","data","testout.msf"),
+	   Bio::Root::IO->catfile("t","data","testout.fasta"), 
+	   Bio::Root::IO->catfile("t","data","testout.clustal"),
+	   Bio::Root::IO->catfile("t","data","testout.phylip"),
+	   Bio::Root::IO->catfile("t","data","testout.nexus"),
+	   Bio::Root::IO->catfile("t","data","testout.mega"),
 	   );
-
-
 }
 my ($str,$aln,$strout,$status);
 
@@ -56,6 +55,12 @@ $strout = Bio::AlignIO->new('-file' => ">".Bio::Root::IO->catfile("t","data","te
 $status = $strout->write_aln($aln);
 ok $status, 1, " failed pfam output test";
 
+# MAF
+$str = Bio::AlignIO->new('-file' => Bio::Root::IO->catfile("t","data","humor.maf"));
+$aln = $str->next_aln();
+ok $aln->get_seq_by_pos(1)->get_nse, 
+    'NM_006987/0-5000', " failed maf input test";
+
 # MSF
 $str = Bio::AlignIO->new('-file' => Bio::Root::IO->catfile("t","data","testaln.msf"));
 $aln = $str->next_aln();
@@ -72,6 +77,14 @@ $str = Bio::AlignIO->new('-file' => Bio::Root::IO->catfile("t","data","testaln.f
 			   '-format' => 'fasta');
 $aln = $str->next_aln();
 ok $aln->get_seq_by_pos(1)->get_nse, 'AK1H_ECOLI/114-431', " failed fasta input test ";
+ok ($aln->get_seq_by_pos(1)->description, 'DESCRIPTION HERE', 
+    " failed fasta input test for description");
+ok ($aln->get_seq_by_pos(11)->display_id, 'AK_YEAST',
+    " failed fasta input test for id");
+
+ok ($aln->get_seq_by_pos(11)->description, 'A COMMENT FOR YEAST', 
+    " failed fasta input test for description");
+
 $strout = Bio::AlignIO->new('-file' => ">".Bio::Root::IO->catfile("t","data","testout.fasta"), 
 			      '-format' => 'fasta');
 $status = $strout->write_aln($aln);
@@ -110,6 +123,9 @@ $str = Bio::AlignIO->new('-file'=> Bio::Root::IO->catfile("t","data","testout.cl
 			   '-format' => 'clustalw');
 $aln = $str->next_aln($aln);
 ok $aln->get_seq_by_pos(1)->get_nse, 'P04777/1-33', "  failed clustalw (.aln) input test";
+my $io = Bio::AlignIO->new(-file => Bio::Root::IO->catfile("t","data","testaln.aln") );
+$aln = $io->next_aln();
+ok $aln->consensus_string, 'MNEGEHQIKLDELFEKLLRARKIFKNKDVLRHSWEPKDLPHRHEQIEALAQILVPVLRGETMKIIFCGHHACELGEDRGTKGFVIDELKDVDEDRNGKVDVIEINCEHMDTHYRVLPNIAKLFDDCTGIGVPMHGGPTDEVTAKLKQVIDMKERFVIIVLDEIDKLVKKSGDEVLYSLTRINTELKRAKVSVIGISNDLKFKEYLDPRVLSSLSEEEVVFPPYDANQLRDILTQRAEEAFYPGVLDEGVIPLCAALAAREHGDARKALDLLRVAGEIAEREGASKVTEKHVWKAQEKIEQDMMEEVIKTLPLQSKVLLYAIVLLDENGDLPANTGDVYAVYRELCEYIDLEPLTQRRISDLINELDMLGIINAKVVSKGRYGRTKEIRLMVTSYKIRNVLRYDYSIQPLLTISLKSEQRRLI', " failed clustalw consensus_string test";
 
 # FASTA
 my $in = Bio::AlignIO->newFh('-file'  => Bio::Root::IO->catfile("t","data","testaln.fasta"), 
@@ -142,6 +158,14 @@ $strout = Bio::AlignIO->new('-file'  => ">".Bio::Root::IO->catfile("t","data","t
 			      '-format' => 'phylip');
 $status = $strout->write_aln($aln);
 ok $status, 1, "  failed phylip output test";
+
+# METAFASTA
+
+$io = Bio::AlignIO->new(-file => Bio::Root::IO->catfile("t","data","testaln.metafasta"));
+$aln = $io->next_aln;
+ok $aln->consensus_string,'CDEFHIJKLMNOPQRSTUVWXYZhydrophobicIOIOIJOIIOOIOOOOUIIXstructuralABAEEIEIJEIIEOAEEAAUIAX', " failed consensus_string on metafasta";
+ok $aln->percentage_identity,'100', " failed percentage_identity using metafasta";
+ok $aln->symbol_chars,'39'," failed symbol_chars() using metafasta";
 
 # NEXUS
 $str = Bio::AlignIO->new('-file' => Bio::Root::IO->catfile("t","data","testaln.nexus"),
@@ -195,7 +219,7 @@ ok($aln->get_seq_by_pos(2)->get_nse,'ALEU_HORVU/61-360');
 
 # EMBOSS water 2.2.x sparse needle
 
-$str = new Bio::AlignIO(-verbose => 1,
+$str = new Bio::AlignIO(-verbose => $DEBUG,
 			'-format' => 'emboss',
 			'-file'   => Bio::Root::IO->catfile("t", "data", 'sparsealn.needle'));
 $aln = $str->next_aln();

@@ -1,4 +1,4 @@
-# $Id: WebResource.pm,v 1.6 2002/10/22 07:45:11 lapp Exp $
+# $Id: WebResource.pm,v 1.8 2003/05/30 15:33:00 jason Exp $
 #
 # BioPerl module for Bio::Biblio::WebResource
 #
@@ -16,7 +16,7 @@ Bio::Biblio::WebResource - Representation of a web resource
     $obj = new Bio::Biblio::WebResource
                   (-url  => 'http://resources/best.html',
 		   -estimated_size => 45000);
- --- OR ---
+  # --- OR ---
 
     $obj = new Bio::Biblio::WebResource;
     $obj->cost ('0.3 EURO');
@@ -38,7 +38,7 @@ The following attributes are specific to this class
 
 =head1 SEE ALSO
 
-=over
+=over 4
 
 =item *
 

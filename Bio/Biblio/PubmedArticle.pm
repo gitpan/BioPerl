@@ -1,4 +1,4 @@
-# $Id: PubmedArticle.pm,v 1.3 2002/10/22 07:45:11 lapp Exp $
+# $Id: PubmedArticle.pm,v 1.5 2003/05/30 15:33:00 jason Exp $
 #
 # BioPerl module for Bio::Biblio::PubmedArticle
 #
@@ -20,7 +20,7 @@ Bio::Biblio::PubmedArticle - Representation of a PUBMED article
 			 { 'pub_status' => 'medline',
 			   'date' => '2002-1-5T10:1:00Z' } ],
                    -pubmed_status => 'ppublish');
- --- OR ---
+  #--- OR ---
 
     $obj = new Bio::Biblio::PubmedArticle;
     $obj->pubmed_status ('ppublish');
@@ -44,7 +44,7 @@ The following attributes are specific to this class
 
 =head1 SEE ALSO
 
-=over
+=over 4
 
 =item *
 

@@ -1,4 +1,4 @@
-# $Id: IUPAC.pm,v 1.19 2002/11/30 15:39:53 jason Exp $
+# $Id: IUPAC.pm,v 1.20 2003/03/06 11:02:21 bosborne Exp $
 #
 # BioPerl module for IUPAC
 #
@@ -191,7 +191,7 @@ use Bio::Root::Root;
  Function: returns a new seq stream (akin to SeqIO)
  Returns : a Bio::Tools::IUPAC stream object that will produce unique
            Seq objects on demand.
- Args    : an ambiguously coded Seq.pm object that has a specified 'type'
+ Args    : an ambiguously coded Seq.pm object that has a specified 'alphabet'
 
 
 =cut
@@ -216,7 +216,7 @@ sub new {
     } elsif ($self->{'_SeqObj'}->alphabet() =~ m/^protein$/i ) { 
         # amino acid seq object
 	$self->{'_alpha'} = [ map { $IUP{uc($_)} } 
-			      split('', $self->{'_SeqObj'}->seq()) ];
+			       split('', $self->{'_SeqObj'}->seq()) ];
     } else { # unknown type: we could make a guess, but let's not.
 	$self->throw("You must specify the 'type' of sequence provided to IUPAC");
     }

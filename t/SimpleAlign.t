@@ -1,8 +1,8 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: SimpleAlign.t,v 1.31 2002/12/09 13:28:02 shawnh Exp $
+## $Id: SimpleAlign.t,v 1.32 2003/03/10 06:57:00 shawnh Exp $
 use strict;
-use constant NUMTESTS => 59;
+use constant NUMTESTS => 60;
 
 BEGIN {
     eval { require Test; };
@@ -185,3 +185,7 @@ $a->add_seq($s3);
 ok $a->get_seq_by_pos(2)->id,"BBB";
 ok $a->sort_alphabetically;
 ok $a->get_seq_by_pos(2)->id,"ABB";
+
+$b = $a->remove_gaps();
+
+ok $b->consensus_string, "aaaattt";

@@ -3,7 +3,7 @@
 # PURPOSE : To encapsulate commonly used URLs for web key websites in bioinformatics.
 # AUTHOR  : Steve Chervitz
 # CREATED : 27 Aug 1996 
-# REVISION: $Id: WWW.pm,v 1.12 2002/10/22 07:38:46 lapp Exp $
+# REVISION: $Id: WWW.pm,v 1.14 2003/06/04 08:36:43 heikki Exp $
 #
 # For documentation, run this module through pod2html 
 # (preferably from Perl v5.004 or better).
@@ -16,11 +16,11 @@
 #
 #-----------------------------------------------------------------------------
 
-package	 Bio::Tools::WWW;
+package Bio::Tools::WWW;
 use strict;  
 use Bio::Root::Root;
 use Exporter      ();
-use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS $ID $VERSION $BioWWW $Revision 
+use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS $ID  $BioWWW $Revision 
 	    $AUTHORITY);
 $AUTHORITY = 'nobody@localhost';
 @ISA         = qw( Bio::Root::Root Exporter);
@@ -29,8 +29,7 @@ $AUTHORITY = 'nobody@localhost';
 		 std => [qw($BioWWW)]);
 
 $ID = 'Bio::Tools::WWW';
-$VERSION = 0.014;
-$Revision = '$Id: WWW.pm,v 1.12 2002/10/22 07:38:46 lapp Exp $'; #'
+$Revision = '$Id: WWW.pm,v 1.14 2003/06/04 08:36:43 heikki Exp $'; #'
 
 ## Static object.
 $BioWWW = {};
@@ -1002,7 +1001,7 @@ __END__
 ########################################################################
 ##                            END OF CLASS                             
 ########################################################################
- 
+
 =head1 FOR DEVELOPERS ONLY
 
 =head2 Data Members

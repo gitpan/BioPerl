@@ -1,4 +1,4 @@
-# $Id: Phenotype.pm,v 1.5 2002/12/12 18:27:01 czmasek Exp $
+# $Id: Phenotype.pm,v 1.7 2003/11/05 04:14:19 juguang Exp $
 #
 # BioPerl module for Bio::Phenotype::Phenotype
 #
@@ -128,7 +128,8 @@ use Bio::Map::CytoPosition;
 use Bio::Range;
 
 
-@ISA = qw( Bio::Phenotype::PhenotypeI );
+@ISA = qw( Bio::Root::Root
+           Bio::Phenotype::PhenotypeI );
 
 
 
@@ -245,18 +246,10 @@ sub name {
 =cut
 
 sub description {
-    my ( $self, $value ) = @_;
-
-    if ( defined $value ) {
-        $self->{ "_description" } = $value;
-    }
-
+    my $self = shift;
+    return $self->{ "_description" } = shift if(@_);
     return $self->{ "_description" };
-
-} # description
-
-
-
+}
 
 =head2 species
 
@@ -282,9 +275,6 @@ sub species {
 
 } # species
 
-
-
-
 =head2 comment
 
  Title   : comment
@@ -298,17 +288,10 @@ sub species {
 =cut
 
 sub comment {
-    my ( $self, $value ) = @_;
-
-    if ( defined $value ) {
-        $self->{ "_comment" } = $value;
-    }
-
+    my $self = shift;
+    return $self->{ "_comment" } = shift if(@_);
     return $self->{ "_comment" };
-
 } # comment
-
-
 
 
 =head2 each_gene_symbol

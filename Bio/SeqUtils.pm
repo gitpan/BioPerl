@@ -1,4 +1,4 @@
-# $Id: SeqUtils.pm,v 1.11.2.1 2003/08/11 20:11:17 jason Exp $
+# $Id: SeqUtils.pm,v 1.18 2003/11/19 14:22:01 heikki Exp $
 #
 # BioPerl module for Bio::SeqUtils
 #
@@ -29,6 +29,13 @@ Bio::SeqUtils - Additional methods for PrimarySeq objects
     # translate a sequence in all six frames
     @seqs = Bio::SeqUtils->translate_6frames($seq);
 
+    # inplace editing of the sequence
+    Bio::SeqUtils->mutate($seq,
+                          Bio::LiveSeq::Mutation->new(-seq => 'c',
+                                                      -pos => 3
+                                                     ));
+
+
 =head1 DESCRIPTION
 
 This class is a holder of methods that work on Bio::PrimarySeqI-
@@ -49,6 +56,8 @@ sequences coded in three letter IUPAC amino acid codes.
 The next two methods, translate_3frames() and translate_6frames(), wrap
 around the standard translate method to give back an array of three
 forward or all six frame translations.
+
+The last method mutates the sequence string.
 
 =head1 FEEDBACK
 
@@ -94,6 +103,7 @@ package Bio::SeqUtils;
 use vars qw(@ISA %ONECODE %THREECODE);
 use strict;
 use Carp;
+use Bio::Root::Root;
 
 @ISA = qw(Bio::Root::Root);
 # new inherited from RootI
@@ -226,7 +236,7 @@ sub seq3in {
 
 sub translate_3frames {
     my ($self, $seq, @args ) = @_;
-    
+
     $self->throw('Object [$seq] '. 'of class ['. ref($seq).  ']  can not be translated.')
 	unless $seq->can('translate');
 
@@ -258,10 +268,9 @@ sub translate_3frames {
 
 sub translate_6frames {
     my ($self, $seq, @args ) = @_;
-    
+
     my @seqs = $self->translate_3frames($seq, @args);
-    $seq->seq($seq->revcom->seq);
-    my @seqs2 = $self->translate_3frames($seq, @args);
+    my @seqs2 = $self->translate_3frames($seq->revcom, @args);
     foreach my $seq2 (@seqs2) {
 	my ($tmp) = $seq2->id;
 	$tmp =~ s/F$/R/g;
@@ -317,4 +326,48 @@ sub valid_aa{
    }
 }
 
+=head2 mutate
+
+ Title   : mutate
+ Usage   : Bio::SeqUtils->mutate($seq,$mutation1, $mutation2);
+ Function: 
+
+           Inplace editing of the sequence.
+
+           The second argument can be a Bio::LiveSeq::Mutation object
+           or an array of them. The mutations are applied sequentially
+           checking only that their position is within the current
+           sequence.  Insertions are inserted before the given
+           position.
+
+ Returns : boolean
+ Args    : sequence object
+           mutation, a Bio::LiveSeq::Mutation object, or an array of them
+
+See L<Bio::LiveSeq::Mutation>.
+
+=cut
+
+sub mutate {
+    my ($self, $seq, @mutations ) = @_;
+
+    $self->throw('Object [$seq] '. 'of class ['. ref($seq).
+                 '] should be a Bio::PrimarySeqI ')
+	unless $seq->isa('Bio::PrimarySeqI');
+    $self->throw('Object [$mutations[0]] '. 'of class ['. ref($mutations[0]).
+                 '] should be a Bio::LiveSeq::Mutation')
+	unless $mutations[0]->isa('Bio::LiveSeq::Mutation');
+
+    foreach my $mutation (@mutations) {
+        $self->throw('Attempting to mutate sequence beyond its length')
+            unless $mutation->pos - 1 <= $seq->length;
+
+        my $string = $seq->seq;
+        substr $string, $mutation->pos - 1, $mutation->len, $mutation->seq;
+        $seq->seq($string);
+    }
+    1;
+}
+
 1;
+

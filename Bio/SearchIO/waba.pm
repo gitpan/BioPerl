@@ -1,4 +1,4 @@
-# $Id: waba.pm,v 1.8 2002/12/11 22:12:32 jason Exp $
+# $Id: waba.pm,v 1.11 2003/05/15 22:53:11 lapp Exp $
 #
 # BioPerl module for Bio::SearchIO::waba
 #
@@ -82,6 +82,8 @@ use strict;
 # Object preamble - inherits from Bio::Root::Root
 
 use Bio::SearchIO;
+use Bio::Search::Result::ResultFactory;
+use Bio::Search::HSP::HSPFactory;
 
 use POSIX;
 
@@ -165,18 +167,21 @@ sub next_result{
 		      (\d+(\.\d+)?)\%\s+     # get the percentage
 		      of\s+(\d+)\s+  # get the length of the alignment
 		      (\S+)\s+           # this is the query database
-		      (\S+):(\d+)\-(\d+) # The accession:start-end for query
+		      (\S+):(\-?\d+)\-(\-?\d+) # The accession:start-end for query
 		      \s+([\-\+])        # query strand
 		      \s+(\S+)\.         # hit db
-		      (\S+):(\d+)\-(\d+) # The accession:start-end for hit
+		      (\S+):(\-?\d+)\-(\-?\d+) # The accession:start-end for hit
 		      \s+([\-\+])\s*$    # hit strand
 		      /ox );
 	    
 	    # Curses.  Jim's code is 0 based, the following is to readjust
+	    if( $hstart < 0 ) { $hstart *= -1}
+	    if( $hend   < 0 ) { $hend   *= -1}
+	    if( $qstart < 0 ) { $qstart *= -1}
+	    if( $qend   < 0 ) { $qend   *= -1}
 	    $hstart++; $hend++; $qstart++; $qend++;
-	    
 	    if( ! defined $alnlen ) {
-		$self->warn("Unable to parse the rest of the WABA alignment info for: $_");
+		$self->warn("Unable to parse the rest of the WABA alignment info for: '$_'");
 		last;
 	    }
 	    $self->{'_reporttype'} = 'WABA'; # hardcoded - only 

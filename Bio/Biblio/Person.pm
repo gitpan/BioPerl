@@ -1,4 +1,4 @@
-# $Id: Person.pm,v 1.8 2002/10/22 07:45:11 lapp Exp $
+# $Id: Person.pm,v 1.10 2003/05/30 15:33:00 jason Exp $
 #
 # BioPerl module for Bio::Biblio::Person
 #
@@ -15,7 +15,7 @@ Bio::Biblio::Person - Representation of a person
 
     $obj = new Bio::Biblio::Person (-lastname => 'Capek',
 				    -firstname => 'Karel');
- --- OR ---
+  #--- OR ---
 
     $obj = new Bio::Biblio::Person;
     $obj->firstname ('Karel');
@@ -42,7 +42,7 @@ The following attributes are specific to this class
 
 =head1 SEE ALSO
 
-=over
+=over 4
 
 =item *
 

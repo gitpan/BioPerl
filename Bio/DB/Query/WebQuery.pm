@@ -1,4 +1,4 @@
-# $Id: WebQuery.pm,v 1.5 2002/12/05 13:46:32 heikki Exp $
+# $Id: WebQuery.pm,v 1.10 2003/11/25 19:38:19 heikki Exp $
 #
 # BioPerl module for Bio::DB::WebQuery.pm
 #
@@ -17,8 +17,11 @@ Bio::DB::Query::WebQuery - Helper class for web-based sequence queryies
 
 =head1 SYNOPSIS
 
-Do not use this class directly.  See Bio::DB::QueryI and one of the
-implementor classes (such as Bio::DB::GenBankQuery) for information.
+  # Do not use this class directly.  See Bio::DB::QueryI and one of
+  # the implementor classes (such as Bio::DB::GenBankQuery) for
+  # information.
+
+See L<Bio::DB::QueryI>, L<Bio::DB::GenBankQuery>
 
 
 =head1 DESCRIPTION
@@ -74,10 +77,9 @@ use HTTP::Request::Common;
 use Bio::Root::Root;
 use Bio::DB::QueryI;
 
-use vars qw(@ISA $VERSION);
+use vars qw(@ISA);
 
 @ISA = qw(Bio::Root::Root Bio::DB::QueryI);
-$VERSION = '0.1';
 
 =head2 new
 
@@ -112,8 +114,8 @@ sub new {
   $query && $self->query($query);
   $verbose && $self->verbose($verbose);
 
-  my $ua = new LWP::UserAgent;
-  $ua->agent(ref($self) ."/$VERSION");
+  my $ua = new LWP::UserAgent(env_proxy => 1);
+  $ua->agent(ref($self) ."/".($Bio::DB::Query::WebQuery::VERSION || '0.1'));
   $self->ua($ua);
   $self->{'_authentication'} = [];
   $self;
@@ -201,7 +203,7 @@ sub ids     {
     return $d ? @$d : ();
   } else {
     $self->_fetch_ids;
-    return @{$self->{'_ids'}};
+    return @{$self->{'_ids'} || []};
   }
 }
 

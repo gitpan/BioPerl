@@ -1,4 +1,4 @@
-# $Id: CytoMap.pm,v 1.2 2002/10/22 07:45:15 lapp Exp $
+# $Id: CytoMap.pm,v 1.3 2003/05/15 08:13:55 heikki Exp $
 #
 # BioPerl module for Bio::Map::CytoMap
 #
@@ -103,6 +103,7 @@ methods have been modified to refelect the needs of cytogenetic maps.
                        (arrayref of Bio::Map::MappableI objects) [optional]
 
            -uid     => Unique Id
+
 =cut
 
 sub new {

@@ -1,4 +1,4 @@
-# $Id: Est2Genome.pm,v 1.11 2002/12/05 13:46:36 heikki Exp $
+# $Id: Est2Genome.pm,v 1.13 2003/05/13 06:37:51 shawnh Exp $
 #
 # BioPerl module for Bio::Tools::Est2Genome
 #
@@ -89,6 +89,7 @@ use strict;
 use Bio::Root::Root;
 use Bio::Tools::AnalysisResult;
 use Bio::SeqFeature::Gene::Exon;
+use Bio::SeqFeature::Gene::Transcript;
 use Bio::SeqFeature::Gene::Intron;
 use Bio::SeqFeature::Gene::GeneStructure;
 use Bio::SeqFeature::SimilarityPair;
@@ -160,13 +161,15 @@ sub analysis_method {
            attribute of $exon->query() and
            $exon->est_hit().
  Returns : An array (or array reference) of Bio::SeqFeature::SimilarityPair and Bio::SeqFeature::Generic objects
- Args    : none
-
+           or Bio::SeqFeature::Gene::GeneStructure
+ Args    : flag(1/0) indicating to return Bio::SeqFeature::Gene::GeneStructure or Bio::SeqFeature::SimilarityPair
+           defaults to 0
 
 =cut
 
 sub parse_next_gene {
-   my ($self) = @_;
+   my ($self,$return_gene) = @_;
+   return $self->_parse_gene_struct if $return_gene;
    my $seensegment = 0;
    my @features;
    my ($qstrand,$hstrand) = (1,1);
@@ -179,7 +182,7 @@ sub parse_next_gene {
 	   }
 	   $hstrand = -1 if $1 eq 'reversed';
 	   $qstrand = -1 if $4 eq 'REVERSED GENE';
-	   $self->debug( "1=$1, 2=$2, 4=$4\n");
+	   #$self->debug( "1=$1, 2=$2, 4=$4\n");
        }
        elsif( /^Exon/ ) {
 	   my ($name,$len,$score,$qstart,$qend,$qseqname,
@@ -235,6 +238,99 @@ sub parse_next_gene {
    }
    return undef unless( @features );
    return wantarray ? @features : \@features;
+}
+
+sub _parse_gene_struct {
+   my ($self) = @_;
+   my $seensegment = 0;
+   my @features;
+   my ($qstrand,$hstrand) = (1,1);
+   my $lasthseqname;
+   my $gene = new Bio::SeqFeature::Gene::GeneStructure(-source => $self->analysis_method);
+   my $transcript = new Bio::SeqFeature::Gene::Transcript(-source => $self->analysis_method);
+   my @suppf;
+   my @exon;
+   while( defined($_ = $self->_readline) ) {
+       if( /Note Best alignment is between (reversed|forward) est and (reversed|forward) genome, (but|and) splice\s+sites imply\s+(forward gene|REVERSED GENE)/) {
+	      if( $seensegment ) {
+	       $self->_pushback($_);
+	       return $gene;
+	      }
+    	   $hstrand = -1 if $1 eq 'reversed';
+    	   $qstrand = -1 if $4 eq 'REVERSED GENE';
+       }
+       elsif( /^Exon/ ) {
+    	   my ($name,$len,$score,$qstart,$qend,$qseqname,$hstart,$hend, $hseqname) = split;
+    	   $lasthseqname = $hseqname;
+    	   my $exon = new Bio::SeqFeature::Gene::Exon(-primary => $name,
+						       -source  => $self->analysis_method,
+						       -seq_id => $qseqname, # FIXME WHEN WE REDO THE GENERIC NAME CHANGE
+						       -start   => $qstart,
+						       -end     => $qend,
+						       -strand  => $qstrand,
+						       -score   => $score,
+						       -tag => {
+                            #'Location' => "$hstart..$hend",
+           							   'Sequence' => "$hseqname",
+							              }
+						       );
+          $transcript->seq_id($qseqname) unless $transcript->seq_id;
+          $exon->add_tag_value('phase',0);
+          push @exon, $exon;
+              
+       } elsif( /^([\-\+\?])(Intron)/) {
+         next; #intron auto matically built from exons..hope thats ok..
+       } elsif( /^Span/ ) {
+       } elsif( /^Segment/ ) {
+    	    my ($name,$len,$score,$qstart,$qend,$qseqname,$hstart,$hend, $hseqname) = split;
+	         my $query = new Bio::SeqFeature::Similarity(-primary => $name,
+						       -source  => $self->analysis_method,
+						       -seq_id => $qseqname, # FIXME WHEN WE REDO THE GENERIC NAME CHANGE
+						       -start   => $qstart,
+						       -end     => $qend,
+						       -strand  => $qstrand,
+						       -score   => $score,
+						       -tag => {
+#							   'Location' => "$hstart..$hend",
+							   'Sequence' => "$hseqname",
+							   }
+						     );
+      	   my $hit = new Bio::SeqFeature::Similarity(-primary => 'exon_hit',
+                                           						     -source  => $self->analysis_method,
+                                          						     -seq_id => $hseqname,
+                                          						     -start   => $hstart,
+                                          						     -end     => $hend,
+                                          						     -strand  => $hstrand,
+                                          						     -score   => $score,
+                                          						     -tag => {
+                                                            #	'Location' => "$qstart..$qend",
+                                               							 'Sequence' => "$qseqname",
+						                                                }
+						     );
+        	   my $support =  new Bio::SeqFeature::SimilarityPair (-query => $query,
+                                                              		-hit   => $hit,
+                                                              		-source => $self->analysis_method);
+             push @suppf, $support;
+       } elsif( /^\s+$/ ) { # do nothing
+       } else {
+      	   $self->warn( "unknown line $_\n");
+       }
+   }
+   return undef unless $#exon >=0;
+   foreach my $e(@exon){
+    my @add;
+    foreach my $sf(@suppf){
+      if($sf->overlaps($e)){
+          push @add,$sf;
+      }
+    }
+    $e->add_tag_value('supporting_feature',@add);
+    $transcript->add_exon($e);
+  }
+  
+   $gene->add_transcript($transcript);
+   $gene->seq_id($transcript->seq_id);
+   return $gene;
 }
 
 =head2 next_feature

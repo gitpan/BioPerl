@@ -1,4 +1,4 @@
-# $Id: TreeIO.pm,v 1.11 2002/11/05 17:26:04 heikki Exp $
+# $Id: TreeIO.pm,v 1.15 2003/12/22 16:27:11 jason Exp $
 #
 # BioPerl module for Bio::TreeIO
 #
@@ -55,11 +55,9 @@ email or the web:
 
 Email jason@bioperl.org
 
-Describe contact details here
-
 =head1 CONTRIBUTORS
 
-Additional contributors names and emails here
+Allen Day E<lt>allenday@ucla.eduE<gt>
 
 =head1 APPENDIX
 
@@ -93,8 +91,15 @@ use Bio::Factory::TreeFactoryI;
  Usage   : my $obj = new Bio::TreeIO();
  Function: Builds a new Bio::TreeIO object 
  Returns : Bio::TreeIO
- Args    :
+ Args    : a hash.  useful keys:
+   -format : Specify the format of the file.  Supported formats:
 
+     newick             Newick tree format
+     nexus              Nexus tree format
+     nhx                NHX tree format
+     svggraph           SVG graphical representation of tree
+     tabtree            ASCII text representation of tree
+     lintree            lintree output format
 
 =cut
 
@@ -198,7 +203,8 @@ sub _initialize {
     
     # initialize the IO part
     $self->_initialize_io(@args);
-    $self->attach_EventHandler(new Bio::TreeIO::TreeEventBuilder(-verbose => $self->verbose(), @args));
+    $self->attach_EventHandler(Bio::TreeIO::TreeEventBuilder->new
+			       (-verbose => $self->verbose(), @args));
 }
 
 =head2 _load_format_module
@@ -250,6 +256,8 @@ sub _guess_format {
    return 'newick'   if /\.(dnd|newick|nh)$/i;
    return 'nhx'   if /\.(nhx)$/i;
    return 'phyloxml' if /\.(xml)$/i;
+   return 'svggraph' if /\.svg$/i;
+   return 'lintree'  if( /\.(lin|lintree)$/i );
 }
 
 sub DESTROY {

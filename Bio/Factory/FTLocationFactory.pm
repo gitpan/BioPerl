@@ -1,4 +1,4 @@
-# $Id: FTLocationFactory.pm,v 1.9.2.4 2003/09/14 19:15:39 jason Exp $
+# $Id: FTLocationFactory.pm,v 1.12 2003/09/14 19:19:23 jason Exp $
 #
 # BioPerl module for Bio::Factory::FTLocationFactory
 #
@@ -144,7 +144,7 @@ sub from_string{
 	    #
 	    # Note: The following code will /not/ work with nested
 	    # joins (you want to have grammar-based parsing for that).
-	    $loc = Bio::Location::Split->new(-verbose => $self->verbose,
+	    $loc = Bio::Location::Split->new(-verbose   => $self->verbose,
 					     -splittype => $op);
 	    foreach my $substr (split(/,/, $oparg)) {
 		$loc->add_sub_Location($self->from_string($substr, 1));
@@ -205,8 +205,7 @@ sub _parse_location {
 	    $end = $3;
 	    $loctype = $2;
 	    $locclass = "Bio::Location::Fuzzy"
-		unless (abs($end - $start) <= 1) && ($loctype eq "^");
-	    
+		unless (abs($end-$start) <= 1) && ($loctype eq "^");
 	} else {
 	    $end = $start;
 	}
@@ -217,10 +216,8 @@ sub _parse_location {
 
     # instantiate location and initialize
     $loc = $locclass->new(-verbose => $self->verbose,
-			  -start   => $start, 
-			  -end     => $end, 
-			  -strand  => 1,
-			  -location_type => $loctype);
+			  -start => $start, -end  => $end, 
+			  -strand => 1, -location_type => $loctype);
     # set remote ID if remote location
     if($seqid) {
 	$loc->is_remote(1);

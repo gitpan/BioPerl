@@ -1,10 +1,11 @@
 package Bio::Graphics::Glyph;
-use GD;
+#use GD;
 
 use strict;
 use Carp 'croak';
 use constant BUMP_SPACING => 2; # vertical distance between bumped glyphs
-
+use Bio::Root::Version;
+use Bio::Root::Root;
 
 my %LAYOUT_COUNT;
 
@@ -27,7 +28,7 @@ sub new {
   my $class = shift;
   my %arg = @_;
 
-  my $feature = $arg{-feature} or die "No feature";
+  my $feature = $arg{-feature} or die "No feature $class";
   my $factory = $arg{-factory} || $class->default_factory;
   my $level   = $arg{-level} || 0;
   my $flip    = $arg{-flip};
@@ -72,19 +73,6 @@ sub new {
   }
 
   $self->{point} = $arg{-point} ? $self->height : undef;
-  #Handle glyphs that don't actually fill their space, but merely mark a point.
-  #They need to have their collision bounds altered.  We will (for now)
-  #hard code them to be in the center of their feature.
-# note: this didn't actually seem to work properly, all features were aligned on
-# their right edges.  It works to do it in individual point-like glyphs such as triangle.
-#  if($self->option('point')){
-#    my ($left,$right) = $factory->map_pt($self->start,$self->stop);
-#    my $center = int(($left+$right)/2 + 0.5);
-
-#    $self->{width} = $self->height;
-#    $self->{left}  = $center - ($self->{width});
-#    $self->{right} = $center + ($self->{width});
-#  }
 
   return $self;
 }
@@ -103,24 +91,30 @@ sub scale   { shift->factory->scale }
 sub start   {
   my $self = shift;
   return $self->{start} if exists $self->{start};
-  $self->{start} = $self->{flip} ? $self->panel->end + 1 - $self->{feature}->end : $self->{feature}->start;
-
-  # handle the case of features whose endpoints are undef
-  # (this happens with wormbase clones where one or more clone end is not defined)
-  # in this case, we set the start to one minus the beginning of the panel
-  $self->{start} = $self->panel->offset - 1 unless defined $self->{start};
+  if ($self->{flip}) {
+    $self->{start} = defined $self->{feature}->end
+                     ? $self->panel->end + 1 - $self->{feature}->end 
+                     : 0;
+  } else {
+    $self->{start} = defined $self->{feature}->start
+                     ? $self->{feature}->start
+		     : $self->panel->offset - 1
+  }
 
   return $self->{start};
 }
 sub stop    {
   my $self = shift;
   return $self->{stop} if exists $self->{stop};
-  $self->{stop} = $self->{flip} ?  $self->panel->end + 1 - $self->{feature}->start : $self->{feature}->end;
-
-  # handle the case of features whose endpoints are undef
-  # (this happens with wormbase clones where one or more clone end is not defined)
-  # in this case, we set the start to one plus the end of the panel
-  $self->{stop} = $self->panel->offset + $self->panel->length + 1 unless defined $self->{stop};
+  if ($self->{flip}) {
+    $self->{stop} = defined $self->{feature}->start 
+      ? $self->panel->end + 1 - $self->{feature}->start 
+      : $self->panel->offset - 1;
+  } else {
+    $self->{stop} = defined $self->{feature}->end
+      ?  $self->{feature}->end
+      : $self->panel->offset+$self->panel->length+1;
+  }
 
   return $self->{stop}
 }
@@ -161,6 +155,7 @@ sub add_group {
 					 -type => 'group'
 					);
   $self->add_feature($f);
+  $f;
 }
 
 sub top {
@@ -269,11 +264,13 @@ sub boxes {
   for my $part ($self->parts) {
     if (eval{$part->feature->primary_tag} eq 'group' or
 	($part->level == 0 && $self->option('box_subparts'))) {
-      push @result,$part->boxes($left+$self->left+$self->pad_left,$top+$self->top+$self->pad_top);
+      push @result,$part->boxes($left+$self->left+$self->pad_left,$top+$self->top+$self->pad_top,$self);
     } else {
       my ($x1,$y1,$x2,$y2) = $part->box;
-      push @result,[$part->feature,$x1,$top+$self->top+$self->pad_top+$y1,
-		                   $x2,$top+$self->top+$self->pad_top+$y2];
+      push @result,[$part->feature,
+		    $x1,$top+$self->top+$self->pad_top+$y1,
+		    $x2,$top+$self->top+$self->pad_top+$y2,
+		    $self];
     }
   }
   return wantarray ? @result : \@result;
@@ -325,6 +322,14 @@ sub option {
   my $factory = $self->factory;
   return unless $factory;
   $factory->option($self,$option_name,@{$self}{qw(partno total_parts)});
+}
+
+# get an option that might be a code reference
+sub code_option {
+  my $self = shift;
+  my $option_name = shift;
+  my $factory = $self->factory or return;
+  $factory->get_option($option_name);
 }
 
 # set an option globally
@@ -386,22 +391,31 @@ sub bgcolor {
   $index = 'white' unless defined $index;
   $self->factory->translate_color($index);
 }
+
 sub font {
   my $self = shift;
   my $font = $self->option('font');
-  unless (UNIVERSAL::isa($font,'GD::Font')) {
+
+  my $img_class = $self->image_class;
+  # Bring in the appropriate image package...yuck...
+  eval "use $img_class; 1" or die $@;
+
+  unless (UNIVERSAL::isa($font,$img_class . '::Font')) {
     my $ref    = {
-		  gdTinyFont  => gdTinyFont,
-		  gdSmallFont => gdSmallFont,
-		  gdMediumBoldFont => gdMediumBoldFont,
-		  gdLargeFont => gdLargeFont,
-		  gdGiantFont => gdGiantFont};
+		  gdTinyFont       => gdTinyFont(),
+		  gdSmallFont      => gdSmallFont(),
+		  gdMediumBoldFont => gdMediumBoldFont(),
+    		  gdLargeFont      => gdLargeFont(),
+    		  gdGiantFont      => gdGiantFont(),
+    		 };
+
     my $gdfont = $ref->{$font} || $font;
     $self->configure(font=>$gdfont);
     return $gdfont;
   }
   return $font;
 }
+
 sub fontcolor {
   my $self = shift;
   my $fontcolor = $self->color('fontcolor');
@@ -422,16 +436,20 @@ sub connector_color {
   $self->color('connector_color') || $self->fgcolor;
 }
 
-sub layout_sort {
+sub image_class { shift->{factory}->{panel}->{image_class}; }
+sub polygon_package { shift->{factory}->{panel}->{polygon_package}; }
 
+sub layout_sort {
     my $self = shift;
     my $sortfunc;
 
-    my $opt = $self->option("sort_order");
+    my $opt = $self->code_option("sort_order");
+
     if (!$opt) {
-       $sortfunc = eval 'sub { $a->left <=> $b->left }';
+       $sortfunc = sub { $a->left <=> $b->left };
     } elsif (ref $opt eq 'CODE') {
-       $sortfunc = $opt;
+      Bio::Root::Root->throw('sort_order subroutines must use the $$ prototype') unless prototype($opt) eq '$$';
+      $sortfunc = $opt;
     } elsif ($opt =~ /^sub\s+\{/o) {
        $sortfunc = eval $opt;
     } else {
@@ -440,7 +458,7 @@ sub layout_sort {
        $sortfunc = 'sub { ';
        my $sawleft = 0;
 
-       # not sure I can make this schwartzian transfored
+       # not sure I can make this schwartzian transformed
        for my $sortby (@sortbys) {
 	 if ($sortby eq "left" || $sortby eq "default") {
 	   $sortfunc .= '($a->left <=> $b->left) || ';
@@ -609,6 +627,7 @@ sub draw {
   @{$self}{qw(partno total_parts)} = ($partno,$total_parts);
 
   my $connector =  $self->connector;
+
   if (my @parts = $self->parts) {
 
     # invoke sorter if use wants to sort always and we haven't already sorted
@@ -633,7 +652,7 @@ sub draw {
   else {  # no part
     $self->draw_connectors($gd,$left,$top)
       if $connector && $connector ne 'none' && $self->{level} == 0;
-    $self->draw_component($gd,$left,$top);
+    $self->draw_component($gd,$left,$top) unless eval{$self->feature->compound};
   }
 }
 
@@ -660,8 +679,31 @@ sub draw_connectors {
     $self->_connector($gd,$dx,$dy,$x1,$xt,$x1,$xb,$xl,$xt,$xr,$xb)      if $x1 < $xl;
     my ($xl2,$xt2,$xr2,$xb2) = $parts[-1]->bounds;
     $self->_connector($gd,$dx,$dy,$parts[-1]->bounds,$x2,$xt2,$x2,$xb2) if $x2 > $xr;
+  } else {
+    my ($x1,$y1,$x2,$y2) = $self->bounds($dx,$dy);
+    $self->draw_connector($gd,$y1,$y2,$x1,$y1,$y2,$x2);
   }
 
+}
+
+# return true if this feature should be highlited
+sub hilite_color {
+  my $self         = shift;
+  return     if $self->level; # only highlite top level glyphs
+  my $index   = $self->option('hilite') or return;
+  $self->factory->translate_color($index);
+}
+
+sub draw_highlight {
+  my $self              = shift;
+  my ($gd,$left,$top)   = @_;
+  my $color  = $self->hilite_color or return;
+  my @bounds = $self->bounds;
+  $gd->filledRectangle($bounds[0]+$left - 3,
+		       $bounds[1]+$top  - 3,
+		       $bounds[2]+$left + 3,
+		       $bounds[3]+$top  + 3,
+		       $color);
 }
 
 sub _connector {
@@ -752,9 +794,8 @@ sub draw_dashed_connector {
 
   my $center1  = ($top1 + $bottom1)/2;
   my $center2  = ($top2 + $bottom2)/2;
-
-  $gd->setStyle($color,$color,gdTransparent,gdTransparent,);
-  $gd->line($left,$center1,$right,$center2,gdStyled);
+  $gd->setStyle($color,$color,gdTransparent(),gdTransparent());
+  $gd->line($left,$center1,$right,$center2,gdStyled());
 }
 
 sub draw_quill_connector {
@@ -828,10 +869,10 @@ sub filled_oval {
   my $linewidth = $self->linewidth;
 
   $fg = $self->set_pen($linewidth) if $linewidth > 1;
-  $gd->arc($cx,$cy,$x2-$x1,$y2-$y1,0,360,$fg);
+  $gd->filledEllipse($cx,$cy,$x2-$x1,$y2-$y1,$bg);
 
-  # and fill it
-  $gd->fill($cx,$cy,$bg);
+  # Draw the edge around the ellipse
+  $gd->ellipse($cx,$cy,$x2-$x1,$y2-$y1,$fg);
 }
 
 sub oval {
@@ -845,7 +886,7 @@ sub oval {
   my $linewidth = $self->linewidth;
 
   $fg = $self->set_pen($linewidth) if $linewidth > 1;
-  $gd->arc($cx,$cy,$x2-$x1,$y2-$y1,0,360,$fg);
+  $gd->ellipse($cx,$cy,$x2-$x1,$y2-$y1,$fg);
 }
 
 sub filled_arrow {
@@ -866,24 +907,24 @@ sub filled_arrow {
 	  or ($indent <= 0)
 	    or ($x2 - $x1 < 3);
 
-  my $fg = $self->fgcolor;
+  my $fg   = $self->fgcolor;
+  my $pkg  = $self->polygon_package;
+  my $poly = $pkg->new();
   if ($orientation >= 0) {
-    $gd->line($x1,$y1,$x2-$indent,$y1,$fg);
-    $gd->line($x2-$indent,$y1,$x2,($y2+$y1)/2,$fg);
-    $gd->line($x2,($y2+$y1)/2,$x2-$indent,$y2,$fg);
-    $gd->line($x2-$indent,$y2,$x1,$y2,$fg);
-    $gd->line($x1,$y2,$x1,$y1,$fg);
-    my $left = $self->panel->left > $x1 ? $self->panel->left : $x1;
-    $gd->fillToBorder($left+1,($y1+$y2)/2,$fg,$self->bgcolor);
+    $poly->addPt($x1,$y1);
+    $poly->addPt($x2-$indent,$y1);
+    $poly->addPt($x2,($y2+$y1)/2);
+    $poly->addPt($x2-$indent,$y2);
+    $poly->addPt($x1,$y2);
   } else {
-    $gd->line($x1,($y2+$y1)/2,$x1+$indent,$y1,$fg);
-    $gd->line($x1+$indent,$y1,$x2,$y1,$fg);
-    $gd->line($x2,$y2,$x1+$indent,$y2,$fg);
-    $gd->line($x1+$indent,$y2,$x1,($y1+$y2)/2,$fg);
-    $gd->line($x2,$y1,$x2,$y2,$fg);
-    my $right = $self->panel->right < $x2 ? $self->panel->right : $x2;
-    $gd->fillToBorder($right-1,($y1+$y2)/2,$fg,$self->bgcolor);
+    $poly->addPt($x2,$y1);
+    $poly->addPt($x2,$y2);
+    $poly->addPt($x1+$indent,$y2);
+    $poly->addPt($x1,($y2+$y1)/2);
+    $poly->addPt($x1+$indent,$y1);
   }
+  $gd->filledPolygon($poly,$self->bgcolor);
+  $gd->polygon($poly,$fg);
 }
 
 sub linewidth {
@@ -931,7 +972,7 @@ sub draw_component {
 sub subseq {
   my $self    = shift;
   my $feature = shift;
-  return $self->_subseq($feature) unless ref $self;
+  return $self->_subseq($feature) unless ref $self;  # protect against class invocation
   return @{$self->{cached_subseq}{$feature}} if $self->{cached_subseq}{$feature};
   my @ss = $self->_subseq($feature);
   $self->{cached_subseq}{$feature} = \@ss;
@@ -990,6 +1031,14 @@ sub all_callbacks {
 
 sub default_factory {
   croak "no default factory implemented";
+}
+
+sub finished {
+  my $self = shift;
+  delete $self->{factory};
+  foreach (@{$self->{parts}}) {
+    $_->finished;
+  }
 }
 
 1;
@@ -1077,6 +1126,12 @@ Ace::Graphics::Panel-E<gt>add_track().
 
 This is similar to add_feature(), but the list of features is treated
 as a group and can be configured as a set.
+
+=item $glyph-E<gt>finished
+
+When you are finished with a glyph, you can call its finished() method
+in order to break cycles that would otherwise cause memory leaks.
+finished() is typically only used by the Panel object.
 
 =back
 
@@ -1246,7 +1301,6 @@ Calculate the right side of the glyph.
 Optionally offset the glyph by the indicated amount and draw it onto
 the GD::Image object.
 
-
 =item $glyph-E<gt>draw_label($gd,$left,$top)
 
 Draw the label for the glyph onto the provided GD::Image object,
@@ -1315,6 +1369,8 @@ glyph pages for more options.
 
   -bump_limit   Maximum number of levels to bump undef (unlimited)
 
+  -hilite       Highlight color                undef (no color)
+
 For glyphs that consist of multiple segments, the B<-connector> option
 controls what's drawn between the segments.  The default is undef (no
 connector).  Options include:
@@ -1354,7 +1410,7 @@ which strand it is on, usually by drawing an arrowhead.  Not all
 glyphs will respond to this request.  For historical reasons,
 B<-stranded> is a synonym for this option.
 
-By default, features are drawn with a layout based only on the
+B<sort_order>: By default, features are drawn with a layout based only on the
 position of the feature, assuring a maximal "packing" of the glyphs
 when bumped.  In some cases, however, it makes sense to display the
 glyphs sorted by score or some other comparison, e.g. such that more
@@ -1367,34 +1423,50 @@ features to be sorted from lowest to highest score (or vice versa).
 sorted by their position in the sequence.  "longer" (or "shorter")
 will cause the longest (or shortest) features to be sorted first, and
 "strand" will cause the features to be sorted by strand: "+1"
-(forward) then "0" (unknown, or NA) then "-1" (reverse).  Lastly,
-"name" will sort features alphabetically by their display_name()
-attribute.
+(forward) then "0" (unknown, or NA) then "-1" (reverse).
 
 In all cases, the "left" position will be used to break any ties.  To
 break ties using another field, options may be strung together using a
 "|" character; e.g. "strand|low_score|right" would cause the features
 to be sorted first by strand, then score (lowest to highest), then by
-"right" position in the sequence.  Finally, a subroutine coderef can
-be provided, which should expect to receive two feature objects (via
-the special sort variables $a and $b), and should return -1, 0 or 1
-(see Perl's sort() function for more information); this subroutine
-will be used without further modification for sorting.  For example,
-to sort a set of database search hits by bits (stored in the features'
+"right" position in the sequence.
+
+Finally, a subroutine coderef with a $$ prototype can be provided.  It
+will receive two B<glyph> as arguments and should return -1, 0 or 1
+(see Perl's sort() function for more information).  For example, to
+sort a set of database search hits by bits (stored in the features'
 "score" fields), scaled by the log of the alignment length (with
-"left" position breaking any ties):
+"start" position breaking any ties):
 
-  sort_order = sub { ( $b->score/log($b->length)
-                                      <=>
-                       $a->score/log($a->length) )
-                                      ||
-                     ( $a->start <=> $b->start )
-                   }
+  sort_order = sub ($$) {
+    my ($glyph1,$glyph2) = @_;
+    my $a = $glyph1->feature;
+    my $b = $glyph2->feature;
+    ( $b->score/log($b->length)
+          <=>
+      $a->score/log($a->length) )
+          ||
+    ( $a->start <=> $b->start )
+  }
 
-The -always_sort option, if true, will sort features even if bumping
+It is important to remember to use the $$ prototype as shown in the
+example.  Otherwise Bio::Graphics will quit with an exception. The
+arguments are subclasses of Bio::Graphics::Glyph, not the features
+themselves.  While glyphs implement some, but not all, of the feature
+methods, to be safe call the two glyphs' feature() methods in order to
+convert them into the actual features.
+
+The '-always_sort' option, if true, will sort features even if bumping
 is turned off.  This is useful if you would like overlapping features
 to stack in a particular order.  Features towards the end of the list
 will overlay those towards the beginning of the sort order.
+
+The B<-hilite> option draws a colored box behind each feature using the
+indicated color. Typically you will pass it a code ref that returns a
+color name.  For example:
+
+  -hilite => sub { my $name = shift->display_name; 
+                   return 'yellow' if $name =~ /XYZ/ }
 
 =head1 SUBCLASSING Bio::Graphics::Glyph
 
@@ -1439,6 +1511,21 @@ then call $gd-E<gt>line() twice to generate the criss-cross.
 For more complex draw() methods, see Bio::Graphics::Glyph::transcript
 and Bio::Graphics::Glyph::segments.
 
+Please avoid using a specific image class (via "use GD" for example)
+within your glyph package. Instead, rely on the image package passed
+to the draw() method. This approach allows for future expansion of
+supported image classes without requiring glyph redesign. If you need
+access to the specific image classes such as Polygon, Image, or Font,
+generate them like such:
+
+ sub draw {
+  my $self = shift;
+  my $image_class = shift;
+
+  my $polygon_package = $self->polygon_package->new()
+  ...
+  }
+
 =head1 BUGS
 
 Please report them.
@@ -1460,6 +1547,7 @@ L<Bio::Graphics::Glyph::toomany>,
 L<Bio::Graphics::Glyph::transcript>,
 L<Bio::Graphics::Glyph::transcript2>,
 L<Bio::Graphics::Glyph::wormbase_transcript>
+L<Bio::Graphics::Glyph::xyplot>
 
 =head1 AUTHOR
 

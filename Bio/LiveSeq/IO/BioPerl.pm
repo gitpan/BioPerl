@@ -1,4 +1,4 @@
-# $Id: BioPerl.pm,v 1.15 2001/12/14 16:40:15 heikki Exp $
+# $Id: BioPerl.pm,v 1.18 2003/06/13 14:20:41 jason Exp $
 #
 # bioperl module for Bio::LiveSeq::IO::BioPerl
 #
@@ -21,7 +21,7 @@ Bio::LiveSeq::IO::BioPerl - Loader for LiveSeq from EMBL entries with BioPerl
   my $id="HSANDREC";
 
   my $loader=Bio::LiveSeq::IO::BioPerl->load(-db=>"$db", -file=>"$file");
-                        or
+  #                      or
   my $loader=Bio::LiveSeq::IO::BioPerl->load(-db=>"$db", -id=>"$id");
 
   my @translationobjects=$loader->entry2liveseq();
@@ -30,16 +30,16 @@ Bio::LiveSeq::IO::BioPerl - Loader for LiveSeq from EMBL entries with BioPerl
   my $gene=$loader->gene2liveseq(-gene_name => "$genename",
                                     -getswissprotinfo => 0);
 
-  NOTE1: The only -db now supported is EMBL. Hence it defaults to EMBL.
-  NOTE2: -file requires a filename (and path if necessary) containing an
-               EMBL entry
-         -id will use Bio::DB::EMBL.pm to fetch the sequence from the web,
-               (bioperl wraparound to [w]getz from SRS)
-  NOTE3: To retrieve the swissprot (if possible) attached to the embl entry
-               (to get protein domains at dna level), only Bio::DB::EMBL.pm
-               is supported under BioPerl. Refer to Bio::LiveSeq::IO::SRS
-               otherwise.
-  NOTE4: NOTE3 is not implemented yet for bioperl, working on it
+  #NOTE1: The only -db now supported is EMBL. Hence it defaults to EMBL.
+  #NOTE2: -file requires a filename (and path if necessary) containing an
+  #             EMBL entry
+  #       -id will use Bio::DB::EMBL.pm to fetch the sequence from the web,
+  #             (bioperl wraparound to [w]getz from SRS)
+  #NOTE3: To retrieve the swissprot (if possible) attached to the embl entry
+  #             (to get protein domains at dna level), only Bio::DB::EMBL.pm
+  #             is supported under BioPerl. Refer to Bio::LiveSeq::IO::SRS
+  #             otherwise.
+  #NOTE4: NOTE3 is not implemented yet for bioperl, working on it
 
 
 =head1 DESCRIPTION
@@ -80,18 +80,6 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::IO::BioPerl;
-$VERSION=2.42;
-
-# Version history:
-# Thu Apr  6 00:25:46 BST 2000 v 1.0 begun
-# Thu Apr  6 03:40:04 BST 2000 v 1.25 added Division
-# Thu Apr  6 03:40:36 BST 2000 v 2.0 working
-# Thu Apr 20 02:17:28 BST 2000 v 2.1 mRNA added to valid_feature_names
-# Tue Jul  4 14:07:52 BST 2000 v 2.11 note&number added in val_qual_names
-# Fri Sep 15 15:41:02 BST 2000 v 2.22 novelaasequence2gene now works without SRS
-# Mon Jan 29 17:40:06 EST 2001 v 2.3 made it work with the new split_location of BioPerl 0.7
-# Tue Apr 10 17:00:18 BST 2001 v 2.41 started work on support of DB::EMBL.pm
-# Tue Apr 10 17:22:26 BST 2001 v 2.42 -id should work now
 
 # TODO->TOCHECK
 # each_secondary_access not working
@@ -102,14 +90,17 @@ $VERSION=2.42;
 
 use strict;
 use Carp qw(cluck croak carp);
-use vars qw($VERSION @ISA);
+use vars qw(@ISA $DBEMBLLOADED);
 use Bio::SeqIO; # for -file entry loading
 
 # Note, the following requires HTTP::Request. If the modules are not installed
 # uncomment the following and use only -filename and don't request swissprotinfo
-use Bio::DB::EMBL; # for -id entry loading
+eval { 
+    require Bio::DB::EMBL; # for -id entry loading
+    $DBEMBLLOADED = 1;
+};
 
-use Bio::LiveSeq::IO::Loader 2.0;
+use Bio::LiveSeq::IO::Loader;
 
 @ISA=qw(Bio::LiveSeq::IO::Loader);
 
@@ -177,8 +168,15 @@ sub load {
       my $stream = Bio::SeqIO->new('-file' => $filename, '-format' => 'EMBL');
       $seqobj = $stream->next_seq();
     } else { # i.e. if -id
-      my $embl = new Bio::DB::EMBL;
-      $seqobj = $embl->get_Seq_by_id($id); # EMBL ID or ACC
+	
+	if( $DBEMBLLOADED ) {
+	    my $embl = new Bio::DB::EMBL;
+	    $seqobj = $embl->get_Seq_by_id($id); # EMBL ID or ACC
+	} else { 
+	    my $root = new Bio::Root::Root();
+	    $root->warn("Must have HTTP::Request::Common installed, cannot run load without the -filename option specified, see docs for Bio::LiveSeq::IO::BioPerl");
+	    return undef;
+	}
     }
 
     $hashref=&embl2hash($seqobj,\@embl_valid_feature_names,\@embl_valid_qual_names);

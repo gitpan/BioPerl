@@ -1,4 +1,4 @@
-# $Id: PubmedBookArticle.pm,v 1.3 2002/10/22 07:45:11 lapp Exp $
+# $Id: PubmedBookArticle.pm,v 1.5 2003/05/30 15:33:00 jason Exp $
 #
 # BioPerl module for Bio::Biblio::PubmedBookArticle
 #
@@ -18,7 +18,7 @@ Bio::Biblio::PubmedBookArticle - Representation of a PUBMED book article
 		   -book => new Bio::Biblio::MedlineBook);
     # note that there is no specialised class PubmedBook
 
- --- OR ---
+  #--- OR ---
 
     $obj = new Bio::Biblio::PubmedBookArticle;
     $obj->title ('Still getting started');
@@ -36,7 +36,7 @@ There are no specific attributes in this class
 
 =head1 SEE ALSO
 
-=over
+=over 4
 
 =item *
 

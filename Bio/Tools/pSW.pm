@@ -1,4 +1,4 @@
-## $Id: pSW.pm,v 1.21 2002/10/22 07:45:22 lapp Exp $
+## $Id: pSW.pm,v 1.22 2003/05/15 08:13:56 heikki Exp $
 
 #
 # BioPerl module for Bio::Tools::pSW
@@ -295,7 +295,7 @@ sub pairwise_alignment{
 }
 
 =head2 align_and_show
- 
+
  Title   : align_and_show
  Usage   : $factory->align_and_show($seq1,$seq2,STDOUT)
 

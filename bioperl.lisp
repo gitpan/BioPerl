@@ -1,5 +1,5 @@
 ;;
-;; $Id: bioperl.lisp,v 1.25 2002/11/30 15:43:04 jason Exp $
+;; $Id: bioperl.lisp,v 1.28 2003/03/06 03:41:24 lapp Exp $
 ;;
 ;; Perl mode set up
 
@@ -19,7 +19,7 @@
 (defun bioperl-object-start (perl-object-name perl-caretaker-name caretaker-email)
   "Places standard bioperl object notation headers and footers"
   (interactive "sName of Object: \nsName of caretaker: \nsEmail: ")
-  (insert "# $Id: bioperl.lisp,v 1.25 2002/11/30 15:43:04 jason Exp $\n#\n# BioPerl module for " perl-object-name "\n#\n# Cared for by " perl-caretaker-name " <" caretaker-email ">\n#\n# Copyright " perl-caretaker-name "\n#\n# You may distribute this module under the same terms as perl itself\n\n")
+  (insert "# $Id: bioperl.lisp,v 1.28 2003/03/06 03:41:24 lapp Exp $\n#\n# BioPerl module for " perl-object-name "\n#\n# Cared for by " perl-caretaker-name " <" caretaker-email ">\n#\n# Copyright " perl-caretaker-name "\n#\n# You may distribute this module under the same terms as perl itself\n\n")
   (insert "# POD documentation - main docs before the code\n\n")
   (insert "=head1 NAME\n\n" perl-object-name " - DESCRIPTION of Object\n\n")
   (insert "=head1 SYNOPSIS\n\nGive standard usage here\n\n")
@@ -27,8 +27,8 @@
   (insert "=head1 FEEDBACK\n\n=head2 Mailing Lists\n\n")
   (insert "User feedback is an integral part of the evolution of this and other\nBioperl modules. Send your comments and suggestions preferably to\nthe Bioperl mailing list.  Your participation is much appreciated.\n\n")
   (insert "  bioperl-l@bioperl.org              - General discussion\n  http://bioperl.org/MailList.shtml  - About the mailing lists\n\n")
-  (insert "=head2 Reporting Bugs\n\nReport bugs to the Bioperl bug tracking system to help us keep track\nof the bugs and their resolution. Bug reports can be submitted via\nemail or the web:\n\n")
-  (insert "  bioperl-bugs@bioperl.org\n  http://bugzilla.bioperl.org/\n\n")
+  (insert "=head2 Reporting Bugs\n\nReport bugs to the Bioperl bug tracking system to help us keep track\nof the bugs and their resolution. Bug reports can be submitted via\nthe web:\n\n")
+  (insert "  http://bugzilla.bioperl.org/\n\n")
   (insert "=head1 AUTHOR - " perl-caretaker-name "\n\nEmail " caretaker-email "\n\nDescribe contact details here\n\n")
   (insert "=head1 CONTRIBUTORS\n\nAdditional contributors names and emails here\n\n")
   (insert "=head1 APPENDIX\n\nThe rest of the documentation details each of the object methods.\nInternal methods are usually preceded with a _\n\n=cut\n\n")
@@ -51,7 +51,7 @@
 						 caretaker-email)
   "Places standard bioperl object notation headers and footers"
   (interactive "sName of Object: \nsName of caretaker: \nsEmail: ")
-  (insert "# $Id: bioperl.lisp,v 1.25 2002/11/30 15:43:04 jason Exp $\n#\n# BioPerl module for " perl-object-name "\n#\n# Cared for by " perl-caretaker-name " <" caretaker-email ">\n#\n# Copyright " perl-caretaker-name "\n#\n# You may distribute this module under the same terms as perl itself\n\n")
+  (insert "# $Id $\n#\n# BioPerl module for " perl-object-name "\n#\n# Cared for by " perl-caretaker-name " <" caretaker-email ">\n#\n# Copyright " perl-caretaker-name "\n#\n# You may distribute this module under the same terms as perl itself\n\n")
   (insert "# POD documentation - main docs before the code\n\n")
   (insert "=head1 NAME\n\n" perl-object-name " - DESCRIPTION of Interface\n\n")
   (insert "=head1 SYNOPSIS\n\nGive standard usage here\n\n")
@@ -60,14 +60,14 @@
   (insert "User feedback is an integral part of the evolution of this and other\nBioperl modules. Send your comments and suggestions preferably to\nthe Bioperl mailing list.  Your participation is much appreciated.\n\n")
   (insert "  bioperl-l@bioperl.org              - General discussion\n  http://bioperl.org/MailList.shtml  - About the mailing lists\n\n")
   (insert "=head2 Reporting Bugs\n\nReport bugs to the Bioperl bug tracking system to help us keep track\nof the bugs and their resolution. Bug reports can be submitted via\nemail or the web:\n\n")
-  (insert "  bioperl-bugs@bioperl.org\n  http://bioperl.org/bioperl-bugs/\n\n")
+  (insert "  http://bugzilla.bioperl.org/\n\n")
   (insert "=head1 AUTHOR - " perl-caretaker-name "\n\nEmail " caretaker-email "\n\nDescribe contact details here\n\n")
   (insert "=head1 CONTRIBUTORS\n\nAdditional contributors names and emails here\n\n")
   (insert "=head1 APPENDIX\n\nThe rest of the documentation details each of the object methods.\nInternal methods are usually preceded with a _\n\n=cut\n\n")
   (insert "\n# Let the code begin...\n\n")
   (insert "\npackage " perl-object-name ";\n")
   (insert "use vars qw(@ISA);\n")
-  (insert "use strict;\nuse Carp;\nuse Bio::Root::RootI;\n\n")
+  (insert "use strict;\n\nuse Bio::Root::RootI;\n\n")
   (insert "@ISA = qw( Bio::Root::RootI );")
   (insert "\n\n1;")
   )
@@ -90,6 +90,16 @@
   (insert "sub " field-name "{\n    my $self = shift;\n\n    return $self->{'" field-name "'} = shift if @_;\n    return $self->{'" field-name "'};")
   (insert "\n}\n"))
 
+(defun bioperl-array-getset (field-name class-name)
+  "puts in a bioperl method for array get/add/remove methods complete with pod boiler-plate"
+  (interactive "sarray base object: \nstype of element: ")
+  (insert "=head2 get_" field-name "s\n\n Title   : get_" field-name "s\n Usage   : @arr = get_" field-name "s()\n Function: Get the list of " field-name "(s) for this object.\n Example :\n Returns : An array of " class-name " objects\n Args    :\n\n\n=cut\n\n")
+  (insert "sub get_" field-name "s{\n    my $self = shift;\n\n    return @{$self->{'_" field-name "s'}} if exists($self->{'_" field-name "s'});\n    return ();\n}\n\n")
+  (insert "=head2 add_" field-name "\n\n Title   : add_" field-name "\n Usage   :\n Function: Add one or more " field-name "(s) to this object.\n Example :\n Returns : \n Args    : One or more " class-name " objects.\n\n\n=cut\n\n")
+  (insert "sub add_" field-name "{\n    my $self = shift;\n\n    $self->{'_" field-name "s'} = [] unless exists($self->{'_" field-name "s'});\n    push(@{$self->{'_" field-name "s'}}, @_);\n}\n\n")
+  (insert "=head2 remove_" field-name "s\n\n Title   : remove_" field-name "s\n Usage   :\n Function: Remove all " field-name "s for this class.\n Example :\n Returns : The list of previous " field-name "s as an array of\n           " class-name " objects.\n Args    :\n\n\n=cut\n\n")
+  (insert "sub remove_" field-name "s{\n    my $self = shift;\n\n    my @arr = $self->get_" field-name "s();\n    $self->{'_" field-name "s'} = [];\n    return @arr;\n}\n\n"))
+
 
 (defun bioperl-abstract-method (method-name)
   "puts in a bioperl abstract method for interface classes"
@@ -109,7 +119,9 @@
 	 (define-key perl-mode-map "\C-c\C-b" 'bioperl-object-start)
 	 (define-key perl-mode-map "\C-c\C-i" 'bioperl-interface-start)
 	 (define-key perl-mode-map "\C-c\C-v" 'bioperl-getset)
+	 (define-key perl-mode-map "\C-c\C-r" 'bioperl-arrray-getset)
 	 (define-key perl-mode-map "\C-c\C-b" 'bioperl-method)
+	 (define-key perl-mode-map "\C-c\C-a\C-m" 'bioperl-abstract-method)
 	 (define-key perl-mode-map "\C-c\C-z" 'compile)
 	 (define-key perl-mode-map [menu-bar] (make-sparse-keymap))
 	 (define-key perl-mode-map [menu-bar p]
@@ -120,9 +132,10 @@
 	   '("bioperl object template" . bioperl-object-start))
 	 (define-key perl-mode-map [menu-bar p bioperl-interface-start]
 	   '("bioperl interface template" . bioperl-interface-start))
-
 	 (define-key perl-mode-map [menu-bar p bioperl-getset]
 	   '("bioperl field func" . bioperl-getset))
+	 (define-key perl-mode-map [menu-bar p bioperl-array-getset]
+	   '("bioperl array get/add/remove" . bioperl-array-getset))
 	 (define-key perl-mode-map [menu-bar p bioperl-method]
 	   '("bioperl method" . bioperl-method))
 	 ))

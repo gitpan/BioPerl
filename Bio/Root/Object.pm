@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Object.pm
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 23 July 1996
-# REVISION: $Id: Object.pm,v 1.23 2002/10/22 07:38:37 lapp Exp $
+# REVISION: $Id: Object.pm,v 1.25 2003/06/04 08:36:42 heikki Exp $
 # STATUS  : Alpha
 #            
 # For documentation, run this module through pod2html 
@@ -29,10 +29,10 @@ use Exporter ();
 #*AUTOLOAD = \&AutoLoader::AUTOLOAD;
 
 use vars qw(@EXPORT_OK %EXPORT_TAGS);
-@EXPORT_OK = qw($VERSION &find_object &stack_trace &containment &_rearrange);  
+@EXPORT_OK = qw(&find_object &stack_trace &containment &_rearrange);  
 %EXPORT_TAGS = ( std => [qw(&stack_trace &containment)] );
 
-use vars qw($ID $VERSION %Objects_created $Revision @ISA);
+use vars qw($ID %Objects_created $Revision @ISA);
 
 @ISA = qw(Bio::Root::Root);
 
@@ -41,8 +41,7 @@ use vars qw($ID $VERSION %Objects_created $Revision @ISA);
 # See _initialize() for details.
 
 $ID       = 'Bio::Root::Object';
-$VERSION  = 0.041;
-$Revision = '$Id: Object.pm,v 1.23 2002/10/22 07:38:37 lapp Exp $';  #'
+$Revision = '$Id: Object.pm,v 1.25 2003/06/04 08:36:42 heikki Exp $';  #'
 
 ### POD Documentation:
 
@@ -52,7 +51,7 @@ Bio::Root::Object - A core Perl 5 object.
 
 =head1 SYNOPSIS
 
-Use this module as the root of your inheritance tree.
+  # Use this module as the root of your inheritance tree.
 
 =head2 Object Creation
 

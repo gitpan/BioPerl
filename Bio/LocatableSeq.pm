@@ -1,4 +1,4 @@
-# $Id: LocatableSeq.pm,v 1.22.2.1 2003/03/31 11:49:51 heikki Exp $
+# $Id: LocatableSeq.pm,v 1.31 2003/11/21 15:48:00 heikki Exp $
 #
 # BioPerl module for Bio::LocatableSeq
 #
@@ -125,9 +125,10 @@ sub start{
    if( @_ ) {
       my $value = shift;
       $self->{'start'} = $value;
-    }
-    return $self->{'start'};
-
+  }
+   return $self->{'start'} if defined $self->{'start'};
+   return 1                if $self->seq;
+   return;
 }
 
 =head2 end
@@ -145,21 +146,25 @@ sub end {
    if( @_ ) {
       my $value = shift;
       my $string = $self->seq;
-      if ($string and $self->start) {
-	  my $s2 = $string;
-	  $string =~ s/[.-]+//g;
-	  my $len = CORE::length $string;
-	  my $new_end = $self->start + $len - 1 ;
+      if ($self->seq) {
+          my $len = $self->_ungapped_len;
 	  my $id = $self->id;
-	  $self->warn("In sequence $id residue count gives value $len.
-Overriding value [$value] with value $new_end for Bio::LocatableSeq::end().")
-	      and $value = $new_end if $new_end != $value and $self->verbose > 0;
+	  $self->warn("In sequence $id residue count gives end value $len.
+Overriding value [$value] with value $len for Bio::LocatableSeq::end().")
+	      and $value = $len if $len != $value and $self->verbose > 0;
       }
 
       $self->{'end'} = $value;
     }
-    return $self->{'end'};
 
+   return $self->{'end'} || $self->_ungapped_len;
+}
+
+sub _ungapped_len {
+    my $self = shift;
+    my $string = $self->seq || '';
+    $string =~ s/[.-]+//g;
+    $self->seq ? (return $self->start + CORE::length($string) - 1 ) : undef;
 }
 
 =head2 strand
@@ -198,9 +203,9 @@ sub get_nse{
    $char1 ||= "/";
    $char2 ||= "-";
 
-   $self->throw("Attribute id not set") unless $self->id();
-   $self->throw("Attribute start not set") unless $self->start();
-   $self->throw("Attribute end not set") unless $self->end();
+   $self->throw("Attribute id not set") unless defined($self->id());
+   $self->throw("Attribute start not set") unless defined($self->start());
+   $self->throw("Attribute end not set") unless defined($self->end());
 
    return $self->id() . $char1 . $self->start . $char2 . $self->end ;
 
@@ -282,7 +287,15 @@ sub column_from_residue_number {
 	my @residues = split //, $self->seq;
 	my $count = $self->start();
 	my $i;
-	for ($i=0; $i < @residues; $i++) {
+	my ($start,$end,$inc,$test);
+        my $strand = $self->strand || 0;
+	# the following bit of "magic" allows the main loop logic to be the
+	# same regardless of the strand of the sequence
+	($start,$end,$inc,$test)= ($strand == -1)?
+            (scalar(@residues-1),0,-1,sub{$i >= $end}) :
+                (0,scalar(@residues-1),1,sub{$i <= $end});
+
+	for ($i=$start; $test->(); $i+= $inc) {
 	    if ($residues[$i] ne '.' and $residues[$i] ne '-') {
 		$count == $resnumber and last;
 		$count++;
@@ -302,22 +315,21 @@ sub column_from_residue_number {
 =head2 location_from_column
 
  Title   : location_from_column
- Usage   : $loc = $ali->location_from_column( $seq_number, $column_number)
+ Usage   : $loc = $ali->location_from_column($column_number)
  Function:
 
-           This function gives the residue number in the sequence with
-           the given name for a given position in the alignment
-           (i.e. column number) of the given. Gaps complicate this
-           process and force the output to be a L<Bio::Range> where
-           values can be undefined. For example, for the alignment
+           This function gives the residue number for a given position
+           in the alignment (i.e. column number) of the given. Gaps
+           complicate this process and force the output to be a
+           L<Bio::Range> where values can be undefined. For example,
+           for the sequence:
 
-  	     Seq1/91-97 AC..DEF.G.
-  	     Seq2/1-9   .CYHDEFKGK
+  	     Seq/91-97 .AC..DEF.G.
 
-           location_from_column( Seq1/91-97, 3 ) position 93
-           location_from_column( Seq1/91-97, 2 ) position 92^93
-           location_from_column( Seq1/91-97, 10) position 97^98
-           location_from_column( Seq2/1-9, 1 )   position undef
+           location_from_column( 3 ) position 93
+           location_from_column( 2 ) position 92^93
+           location_from_column(10 ) position 97^98
+           location_from_column( 1 ) position undef
 
            An exact position returns a Bio::Location::Simple object
            where where location_type() returns 'EXACT', if a position
@@ -343,7 +355,7 @@ sub location_from_column {
 
     $self->throw("Column number has to be a positive integer, not [$column]")
 	unless $column =~ /^\d+$/ and $column > 0;
-    $self->throw("Column number [column] is larger than".
+    $self->throw("Column number [$column] is larger than".
 		 " sequence length [". $self->length. "]")
 	unless $column <= $self->length;
 
@@ -353,18 +365,26 @@ sub location_from_column {
     my $pos = CORE::length $s;
 
     my $start = $self->start || 0 ;
+    my $strand = $self->strand() || 1;
+    my $relative_pos = ($strand == -1)
+        ? ($self->end - $pos + 1)
+            : ($pos + $start - 1);
     if ($self->subseq($column, $column) =~ /[a-zA-Z]/ ) {
 	$loc = new Bio::Location::Simple
-	    (-start => $pos + $start - 1,
-	     -end => $pos + $start - 1,
-	     -strand => 1
+	    (-start => $relative_pos,
+	     -end => $relative_pos,
+	     -strand => 1,
 	     );
     }
     elsif ($pos == 0 and $self->start == 1) {
     } else {
+      my ($start,$end) = ($relative_pos, $relative_pos + $strand);
+      if ($strand == -1) {
+	($start,$end) = ($end,$start);
+      }
 	$loc = new Bio::Location::Simple
-	    (-start => $pos + $start - 1,
-	     -end => $pos +1 + $start - 1,
+	    (-start => $start,
+	     -end => $end,
 	     -strand => 1,
 	     -location_type => 'IN-BETWEEN'
 	     );
@@ -412,19 +432,16 @@ sub revcom {
 =cut
 
 sub trunc {
-
     my ($self, $start, $end) = @_;
     my $new = $self->SUPER::trunc($start, $end);
+    $new->strand($self->strand);
+
+    # end will be automatically calculated
+    $start = $end if $self->strand == -1;
 
     $start = $self->location_from_column($start);
-    $start ? ($start = $start->start) : ($start = 1);
-
-    $end = $self->location_from_column($end);
-    $end = $end->start if $end;
-
-    $new->strand($self->strand);
+    $start ? ($start = $start->end) : ($start = 1);
     $new->start($start) if $start;
-    $new->end($end) if $end;
 
     return $new;
 }

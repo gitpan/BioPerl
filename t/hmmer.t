@@ -1,7 +1,7 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: hmmer.t,v 1.16 2002/10/08 08:38:35 lapp Exp $
+# $Id: hmmer.t,v 1.17 2003/12/15 17:36:11 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -16,7 +16,7 @@ BEGIN {
 	use lib 't';
     }
     use Test;
-    plan test => 134;
+    plan test => 136;
 }
 
 use Bio::SearchIO;
@@ -86,6 +86,7 @@ while( my $result = $searchio->next_result ) {
     ok($result->algorithm_version, '2.0');
     ok($result->hmm_name, 'HMM [SEED]');
     ok($result->sequence_file, 'HMM.dbtemp.29591');
+    ok($result->database_name, 'HMM.dbtemp.29591');
     ok($result->query_name, 'SEED');
     ok($result->query_description, '');
     ok($result->num_hits(), 1215);
@@ -149,6 +150,7 @@ while( my $result = $searchio->next_result ) {
     ok($result->algorithm, 'HMMSEARCH');
     ok($result->algorithm_version, '2.2g');
     ok($result->hmm_name, 'Peptidase_C1.hmm [Peptidase_C1]');
+    ok($result->database_name, 'cysprot1b.fa');
     ok($result->sequence_file, 'cysprot1b.fa');
     ok($result->query_name, 'Peptidase_C1');
     ok($result->query_accession, 'PF00112');

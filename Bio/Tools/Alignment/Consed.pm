@@ -99,7 +99,7 @@ methods. Internal methods are usually preceded with a _
 package Bio::Tools::Alignment::Consed;
 
 use strict;
-use vars qw($VERSION @ISA $Contigs %DEFAULTS);
+use vars qw(@ISA $Contigs %DEFAULTS);
 use FileHandle;
 use Dumpvalue qw(dumpValue);
 use Bio::Tools::Alignment::Trim;
@@ -108,7 +108,6 @@ use Bio::Root::IO;
 
 @ISA = qw(Bio::Root::Root Bio::Root::IO);
 
-$VERSION = '0.60';
 
 BEGIN {
     %DEFAULTS = ( 'f_designator' => 'f',
@@ -993,14 +992,14 @@ sub set_singlets {
 }				# end sub set_singlets
 
 =head2 get_singlets()
-    
+
  Title   : get_singlets()
  Usage   : $o_consed->get_singlets();
  Function: Return the keynames of the singlets.
  Returns : An array containing the keynames of all 
            Bio::Tools::Alignment::Consed sequences in the class "singlet".
  Args    : None.
- Notes   :         
+ Notes   : 
 
 =cut
 

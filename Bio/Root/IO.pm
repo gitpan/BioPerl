@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.37.2.3 2003/06/28 21:57:04 jason Exp $
+# $Id: IO.pm,v 1.50 2003/11/21 03:03:38 lstein Exp $
 #
 # BioPerl module for Bio::Root::IO
 #
@@ -432,7 +432,7 @@ sub _print {
 sub _readline {
     my $self = shift;
     my %param =@_;
-    my $fh = $self->_fh || \*ARGV;
+    my $fh = $self->_fh or return;
     my $line;
 
     # if the buffer been filled by _pushback then return the buffer
@@ -519,7 +519,7 @@ sub flush {
     $self->{'_filehandle'}->flush();
   }
 }
-  
+
 =head2 noclose
 
  Title   : noclose
@@ -551,8 +551,8 @@ sub _io_cleanup {
     if( exists($self->{'_rootio_tempfiles'}) &&
 	ref($self->{'_rootio_tempfiles'}) =~ /array/i) { 
 	if( $v > 0 ) {
-	    print STDERR "going to remove files ", 
-	    join(",",  @{$self->{'_rootio_tempfiles'}}), "\n";
+	    warn( "going to remove files ", 
+		  join(",",  @{$self->{'_rootio_tempfiles'}}), "\n");
 	}
 	unlink  (@{$self->{'_rootio_tempfiles'}} );
     }
@@ -562,8 +562,8 @@ sub _io_cleanup {
 	ref($self->{'_rootio_tempdirs'}) =~ /array/i) {	
 
 	if( $v > 0 ) {
-	    print STDERR "going to remove dirs ", 
-	    join(",",  @{$self->{'_rootio_tempdirs'}}), "\n";
+	    warn( "going to remove dirs ", 
+		  join(",",  @{$self->{'_rootio_tempdirs'}}), "\n");
 	}
 	$self->rmtree( $self->{'_rootio_tempdirs'});
     }
@@ -809,11 +809,11 @@ sub catfile {
 sub rmtree {
     my($self,$roots, $verbose, $safe) = @_;
     if( $FILEPATHLOADED ) { 
-	return File::Path::rmtree ($roots, $verbose, $safe); 
-    }				
-    
+	return File::Path::rmtree ($roots, $verbose, $safe);
+    }
+
     my $force_writeable = ($^O eq 'os2' || $^O eq 'dos' || $^O eq 'MSWin32'
-		       || $^O eq 'amigaos');
+		       || $^O eq 'amigaos' || $^O eq 'cygwin');
     my $Is_VMS = $^O eq 'VMS';
 
     my(@files);
@@ -885,7 +885,7 @@ sub rmtree {
 	    chmod 0666, $root
 	      or $self->warn( "Can't make file $root writeable: $!")
 		if $force_writeable;
-	    print "unlink $root\n" if $verbose;
+	    warn "unlink $root\n" if $verbose;
 	    # delete all versions under VMS
 	    for (;;) {
 		unless (unlink $root) {

@@ -1,4 +1,4 @@
-# $Id: Generic.pm,v 1.74.2.1 2003/09/09 20:12:37 lstein Exp $
+# $Id: Generic.pm,v 1.85 2003/10/23 02:30:49 lstein Exp $
 #
 # BioPerl module for Bio::SeqFeature::Generic
 #
@@ -17,13 +17,14 @@ Bio::SeqFeature::Generic - Generic SeqFeature
 =head1 SYNOPSIS
 
    $feat = new Bio::SeqFeature::Generic ( -start => 10, -end => 100,
-				-strand => -1, -primary => 'repeat',
-				-source_tag => 'repeatmasker',
-				-score  => 1000,
-				-tag    => {
-				    new => 1,
-				    author => 'someone',
-				    sillytag => 'this is silly!' } );
+                                -strand => -1, -primary => 'repeat',
+                                -source_tag   => 'repeatmasker',
+				-display_name => 'alu family',
+                                -score  => 1000,
+                                -tag    => {
+                                    new => 1,
+                                    author => 'someone',
+                                    sillytag => 'this is silly!' } );
 
    $feat = new Bio::SeqFeature::Generic ( -gff_string => $string );
    # if you want explicitly GFF1
@@ -146,10 +147,9 @@ use Bio::Tools::GFF;
 sub new {
     my ( $caller, @args) = @_;   
     my ($self) = $caller->SUPER::new(@args); 
-
+    $self->_register_for_cleanup(\&cleanup_generic);
     $self->{'_parse_h'}       = {};
     $self->{'_gsf_tag_hash'}  = {};
-#    tie %{$self->{'_gsf_tag_hash'}}, "Tie::IxHash";
 
     # bulk-set attributes
     $self->set_attributes(@args);
@@ -170,70 +170,70 @@ sub new {
            to new(). Currently recognized are:
 
                   -start          start position
- 	 	  -end            end position
- 	 	  -strand         strand
- 	 	  -primary        primary tag
- 	 	  -source         source tag
- 	 	  -frame          frame
- 	 	  -score          score value
- 	 	  -tag            a reference to a tag/value hash
- 	 	  -gff_string     GFF v.2 string to initialize from
- 	 	  -gff1_string    GFF v.1 string to initialize from
- 	 	  -seq_id         the display name of the sequence
- 	 	  -annotation     the AnnotationCollectionI object
- 	 	  -location       the LocationI object
+                    -end            end position
+                    -strand         strand
+                    -primary        primary tag
+                    -source         source tag
+                    -frame          frame
+                    -score          score value
+                    -tag            a reference to a tag/value hash
+                    -gff_string     GFF v.2 string to initialize from
+                    -gff1_string    GFF v.1 string to initialize from
+                    -seq_id         the display name of the sequence
+                    -annotation     the AnnotationCollectionI object
+                    -location       the LocationI object
 
 =cut
 
 sub set_attributes {
     my ($self,@args) = @_;
     my ($start, $end, $strand, $primary_tag, $source_tag, $primary, $source, $frame, 
-	$score, $tag, $gff_string, $gff1_string,
-	$seqname, $seqid, $annot, $location,$display_name) =
-	    $self->_rearrange([qw(START
-				  END
-				  STRAND
-				  PRIMARY_TAG
-				  SOURCE_TAG
-				  PRIMARY
-				  SOURCE
-				  FRAME
-				  SCORE
-				  TAG
-				  GFF_STRING
-				  GFF1_STRING
-				  SEQNAME
-				  SEQ_ID
-				  ANNOTATION
-				  LOCATION
-				  DISPLAY_NAME
-				  )], @args);
+        $score, $tag, $gff_string, $gff1_string,
+        $seqname, $seqid, $annot, $location,$display_name) =
+            $self->_rearrange([qw(START
+                                  END
+                                  STRAND
+                                  PRIMARY_TAG
+                                  SOURCE_TAG
+                                  PRIMARY
+                                  SOURCE
+                                  FRAME
+                                  SCORE
+                                  TAG
+                                  GFF_STRING
+                                  GFF1_STRING
+                                  SEQNAME
+                                  SEQ_ID
+                                  ANNOTATION
+                                  LOCATION
+                                  DISPLAY_NAME
+                                  )], @args);
     $location    && $self->location($location);
     $gff_string  && $self->_from_gff_string($gff_string);
     $gff1_string  && do {
-	$self->gff_format(Bio::Tools::GFF->new('-gff_version' => 1));
-	$self->_from_gff_stream($gff1_string);
+        $self->gff_format(Bio::Tools::GFF->new('-gff_version' => 1));
+        $self->_from_gff_stream($gff1_string);
     };
-    $primary_tag           && $self->primary_tag($primary_tag);
-    $source_tag            && $self->source_tag($source_tag);
-    $primary               && $self->primary_tag($primary);
-    $source                && $self->source_tag($source);
-    defined $start         && $self->start($start);
-    defined $end           && $self->end($end);
-    defined $strand        && $self->strand($strand);
-    defined $frame         && $self->frame($frame);
-    $score                 && $self->score($score);
-    $annot                 && $self->annotation($annot);
-    defined $display_name  && $self->display_name($display_name);
+    $primary_tag    && $self->primary_tag($primary_tag);
+    $source_tag     && $self->source_tag($source_tag);
+    $primary        && $self->primary_tag($primary);
+    $source         && $self->source_tag($source);
+    defined $start  && $self->start($start);
+    defined $end    && $self->end($end);
+    defined $strand && $self->strand($strand);
+    defined $frame  && $self->frame($frame);
+    defined $display_name   && $self->display_name($display_name);
+    defined $score          && $self->score($score);
+    $annot          && $self->annotation($annot);
     if($seqname) {
-	$self->warn("-seqname is deprecated. Please use -seq_id instead.");
-	$seqid = $seqname unless $seqid;
+        $self->warn("-seqname is deprecated. Please use -seq_id instead.");
+        $seqid = $seqname unless $seqid;
     }
     $seqid          && $self->seq_id($seqid);
     $tag            && do {
-	foreach my $t ( keys %$tag ) {
-	    $self->add_tag_value($t,$tag->{$t});
-	}
+        foreach my $t ( keys %$tag ) {
+            $self->add_tag_value($t,$tag->{$t});
+        }
     };
 }
 
@@ -264,7 +264,7 @@ sub direct_new {
  Title   : location
  Usage   : my $location = $seqfeature->location()
  Function: returns a location object suitable for identifying location 
-	   of feature on sequence or parent feature  
+           of feature on sequence or parent feature  
  Returns : Bio::LocationI object
  Args    : [optional] Bio::LocationI object to set the value to.
 
@@ -276,8 +276,8 @@ sub location {
 
     if (defined($value)) {
         unless (ref($value) and $value->isa('Bio::LocationI')) {
-	    $self->throw("object $value pretends to be a location but ".
-			 "does not implement Bio::LocationI");
+            $self->throw("object $value pretends to be a location but ".
+                         "does not implement Bio::LocationI");
         }
         $self->{'_location'} = $value;
     }
@@ -326,17 +326,17 @@ sub end {
 =head2 length
 
  Title   : length
- Usage   :
- Function:
- Example :
- Returns :
- Args    :
+ Usage   : my $len = $feature->length
+ Function: Get the feature length computed as 
+           $feat->end - $feat->start + 1
+ Returns : integer
+ Args    : none
 
 
 =cut
 
 sub length {
-   my ($self) = @_;
+   my $self = shift;
    return $self->end - $self->start() + 1;
 }
 
@@ -353,8 +353,8 @@ sub length {
 =cut
 
 sub strand {
-   my ($self,$value) = @_;
-   return $self->location->strand($value);
+   my $self = shift;
+   return $self->location->strand(@_);
 }
 
 =head2 score
@@ -370,15 +370,18 @@ sub strand {
 =cut
 
 sub score {
-  my ($self,$value) = @_;
+  my $self = shift;
 
-  if (defined($value)) {
-       if ( $value !~ /^[+-]?\d+\.?\d*(e-\d+)?/ ) {
-	   $self->throw("'$value' is not a valid score");
-       }
-       $self->{'_gsf_score'} = $value;
+  if (@_) {
+      my $value = shift;
+      if ( defined $value && $value &&
+	   $value !~ /^[+-]?\d+\.?\d*(e-\d+)?/ and $value != 0) {
+	  $self->throw(-class=>'Bio::Root::BadParameter',
+		       -text=>"'$value' is not a valid score",
+		       -value=>$value);
+      }
+      return $self->{'_gsf_score'} = $value;
   }
-
   return $self->{'_gsf_score'};
 }
 
@@ -395,14 +398,16 @@ sub score {
 =cut
 
 sub frame {
-  my ($self,$value) = @_;
+  my $self = shift;
 
-  if ( defined $value ) {
-       if ( $value !~ /^[0-2.]$/ ) {
-	   $self->throw("'$value' is not a valid frame");
-       }
-       if( $value eq '.' ) { $value = '.'; } 
-       $self->{'_gsf_frame'} = $value;
+  if ( @_ ) {
+      my $value = shift;
+      if ( defined $value && 
+	   $value !~ /^[0-2.]$/ ) {
+	  $self->throw("'$value' is not a valid frame");
+      }
+      if( defined $value && $value eq '.' ) { $value = '.' } 
+      return $self->{'_gsf_frame'} = $value;
   }
   return $self->{'_gsf_frame'};
 }
@@ -421,11 +426,9 @@ sub frame {
 =cut
 
 sub primary_tag {
-   my ($self,$value) = @_;
-   if ( defined $value ) {
-       $self->{'_primary_tag'} = $value;
-   }
-   return $self->{'_primary_tag'};
+    my $self = shift;
+    return $self->{'_primary_tag'} = shift if @_;
+    return $self->{'_primary_tag'};
 }
 
 =head2 source_tag
@@ -442,12 +445,9 @@ sub primary_tag {
 =cut
 
 sub source_tag {
-   my ($self,$value) = @_;
-
-   if( defined $value ) {
-       $self->{'_source_tag'} = $value;
-   }
-   return $self->{'_source_tag'};
+    my $self = shift;
+    return $self->{'_source_tag'} = shift if @_;
+    return $self->{'_source_tag'};
 }
 
 =head2 has_tag
@@ -472,15 +472,16 @@ sub has_tag {
  Title   : add_tag_value
  Usage   : $self->add_tag_value('note',"this is a note");
  Returns : TRUE on success
- Args    : tag (string) and value (any scalar)
+ Args    : tag (string) and one or more values (any scalar(s))
 
 
 =cut
 
 sub add_tag_value {
-    my ($self, $tag, $value) = @_;    
+    my $self = shift;
+    my $tag = shift;
     $self->{'_gsf_tag_hash'}->{$tag} ||= [];
-    push(@{$self->{'_gsf_tag_hash'}->{$tag}},$value);
+    push(@{$self->{'_gsf_tag_hash'}->{$tag}},@_);
 }
 
 
@@ -515,12 +516,16 @@ sub get_tag_values {
  Returns : An array of tag names
  Args    : none
 
+# added a sort so that tags will be returned in a predictable order
+# I still think we should be able to specify a sort function
+# to the object at some point
+# -js
 
 =cut
 
 sub get_all_tags {
    my ($self, @args) = @_;   
-   return keys %{ $self->{'_gsf_tag_hash'}};
+   return sort keys %{ $self->{'_gsf_tag_hash'}};
 }
 
 =head2 remove_tag
@@ -572,7 +577,6 @@ sub attach_seq {
    foreach ( $self->sub_SeqFeature() ) {
        $_->attach_seq($seq);
    }
-
    return 1;
 }
 
@@ -606,7 +610,8 @@ sub seq {
    my $seq = $self->{'_gsf_seq'}->trunc($self->start(), $self->end());
 
 
-   if ( $self->strand == -1 ) {
+   if ( defined $self->strand &&
+	$self->strand == -1 ) {
 
        # ok. this does not work well (?)
        #print STDERR "Before revcom", $seq->str, "\n";
@@ -631,9 +636,7 @@ sub seq {
 =cut
 
 sub entire_seq {
-   my ($self) = @_;
-
-   return $self->{'_gsf_seq'};
+   return shift->{'_gsf_seq'};
 }
 
 
@@ -656,10 +659,8 @@ sub entire_seq {
 =cut
 
 sub seq_id {
-    my ($obj,$value) = @_;
-    if ( defined $value ) {
-	$obj->{'_gsf_seq_id'} = $value;
-    }
+    my $obj = shift;
+    return $obj->{'_gsf_seq_id'} = shift if @_;
     return $obj->{'_gsf_seq_id'};
 }
 
@@ -676,7 +677,6 @@ sub seq_id {
 
 sub display_name{
     my $self = shift;
-
     return $self->{'display_name'} = shift if @_;
     return $self->{'display_name'};
 }
@@ -731,13 +731,7 @@ feature holder are essentially sub-features.
 =cut
 
 sub get_SeqFeatures {
-    my ($self) = @_;
-
-    if ($self->{'_gsf_sub_array'}) {
-        return @{$self->{'_gsf_sub_array'}};
-    } else {
-        return;
-    }
+    return @{ shift->{'_gsf_sub_array'} || []};    
 }
 
 =head2 add_SeqFeature
@@ -771,7 +765,7 @@ sub add_SeqFeature{
         $self->_expand_region($feat);
     } else {
         if ( !$self->contains($feat) ) {
-	    $self->throw("$feat is not contained within parent feature, and expansion is not valid");
+            $self->throw("$feat is not contained within parent feature, and expansion is not valid");
         }
     }
 
@@ -800,7 +794,7 @@ sub add_SeqFeature{
 sub remove_SeqFeatures {
    my ($self) = @_;
 
-   my @subfeats = @{$self->{'_gsf_sub_array'}};
+   my @subfeats = @{$self->{'_gsf_sub_array'} || []};
    $self->{'_gsf_sub_array'} = []; # zap the array implicitly.
    return @subfeats;
 }
@@ -833,14 +827,14 @@ sub gff_format {
     my ($self, $gffio) = @_;
 
     if(defined($gffio)) {
-	if(ref($self)) {
-	    $self->{'_gffio'} = $gffio;
-	} else {
-	    $Bio::SeqFeatureI::static_gff_formatter = $gffio;
-	}
+        if(ref($self)) {
+            $self->{'_gffio'} = $gffio;
+        } else {
+            $Bio::SeqFeatureI::static_gff_formatter = $gffio;
+        }
     }
     return (ref($self) && exists($self->{'_gffio'}) ?
-	    $self->{'_gffio'} : $self->_static_gff_formatter);
+            $self->{'_gffio'} : $self->_static_gff_formatter);
 }
 
 =head2 gff_string
@@ -892,13 +886,11 @@ sub slurp_gff_file {
    Bio::Root::Root->warn("deprecated method slurp_gff_file() called in Bio::SeqFeature::Generic. Use Bio::Tools::GFF instead.");
   
    while(<$f>) {
-
        my $sf = Bio::SeqFeature::Generic->new('-gff_string' => $_);
        push(@out, $sf);
    }
 
    return @out;
-
 }
 
 =head2 _from_gff_string
@@ -943,18 +935,19 @@ sub _from_gff_string {
 sub _expand_region {
     my ($self, $feat) = @_;
     if(! $feat->isa('Bio::SeqFeatureI')) {
-	$self->warn("$feat does not implement Bio::SeqFeatureI");
+        $self->warn("$feat does not implement Bio::SeqFeatureI");
     }
     # if this doesn't have start/end set - forget it!
     if((! defined($self->start())) && (! defined $self->end())) {
-	$self->start($feat->start());
-	$self->end($feat->end());
-	$self->strand($feat->strand) unless defined($self->strand());
+        $self->start($feat->start());
+        $self->end($feat->end());
+#        $self->strand($feat->strand) unless defined($self->strand());
+        $self->strand($feat->strand) unless $self->strand();
     } else {
-	my $range = $self->union($feat);
-	$self->start($range->start);
-	$self->end($range->end);
-	$self->strand($range->strand);
+        my $range = $self->union($feat);
+        $self->start($range->start);
+        $self->end($range->end);
+        $self->strand($range->strand);
     }
 }
 
@@ -972,7 +965,6 @@ sub _expand_region {
 
 sub _parse {
    my ($self) = @_;
-
    return $self->{'_parse_h'};
 }
 
@@ -982,20 +974,21 @@ sub _parse {
  Usage   : 
  Function: For internal use only. Convenience method for those tags that
            may only have a single value.
- Returns : 
- Args    : 
+ Returns : The first value under the given tag as a scalar (string)
+ Args    : The tag as a string. Optionally, the value on set.
 
 
 =cut
 
 sub _tag_value {
-    my ($self, $tag, $value) = @_;
+    my $self = shift;
+    my $tag = shift;
 
-    if(defined($value) || (! $self->has_tag($tag))) {
-	$self->remove_tag($tag) if($self->has_tag($tag));
-	$self->add_tag_value($tag, $value);
+    if(@_ || (! $self->has_tag($tag))) {
+        $self->remove_tag($tag) if($self->has_tag($tag));
+        $self->add_tag_value($tag, @_);
     }
-    return ($self->each_tag_value($tag))[0];
+    return ($self->get_tag_values($tag))[0];
 }
 
 #######################################################################
@@ -1028,4 +1021,14 @@ sub all_tags { return shift->get_all_tags(@_); }
 *flush_sub_SeqFeature = \&remove_SeqFeatures;
 
 
+sub cleanup_generic {
+    my $self = shift;
+    foreach my $f ( @{$self->{'_gsf_sub_array'} || []} ) {
+	$f = undef;
+    }
+    $self->{'_gsf_seq'} = undef;
+    foreach my $t ( keys %{$self->{'_gsf_tag_hash'} || {}} ) {
+	$self->{'_gsf_tag_hash'}->{$t} = undef;
+    }
+}
 1;

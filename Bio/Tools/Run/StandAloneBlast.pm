@@ -1,4 +1,4 @@
-# $Id: StandAloneBlast.pm,v 1.23.2.3 2003/03/29 20:18:51 jason Exp $
+# $Id: StandAloneBlast.pm,v 1.36 2003/10/28 22:11:50 jason Exp $
 #
 # BioPerl module for Bio::Tools::StandAloneBlast
 #
@@ -13,38 +13,46 @@
 =head1 NAME
 
 Bio::Tools::Run::StandAloneBlast - Object for the local execution of the
-NCBI Blast program suite (blastall, blastpgp, bl2seq)
+NCBI Blast program suite (blastall, blastpgp, bl2seq). There is experimental
+support for WU-Blast.
 
 =head1 SYNOPSIS
 
-Local-blast "factory object" creation and blast-parameter initialization:
+ # Local-blast "factory object" creation and blast-parameter
+ # initialization:
 
  @params = ('database' => 'swissprot','outfile' => 'blast1.out', 
 	    '_READMETHOD' => 'Blast');
 
  $factory = Bio::Tools::Run::StandAloneBlast->new(@params);
 
-Blast a sequence against a database:
+ # Blast a sequence against a database:
 
  $str = Bio::SeqIO->new(-file=>'t/amino.fa' , '-format' => 'Fasta' );
  $input = $str->next_seq();
  $input2 = $str->next_seq();
  $blast_report = $factory->blastall($input);
 
-Run an iterated Blast (psiblast) of a sequence against a database:
+ # Run an iterated Blast (psiblast) of a sequence against a database:
 
  $factory->j(3);    # 'j' is blast parameter for # of iterations
  $factory->outfile('psiblast1.out');
  $factory = Bio::Tools::Run::StandAloneBlast->new(@params);
  $blast_report = $factory->blastpgp($input);
 
-Use blast to align 2 sequences against each other:
+ # Use blast to align 2 sequences against each other:
 
  $factory = Bio::Tools::Run::StandAloneBlast->new('outfile' => 'bl2seq.out');
  $factory->bl2seq($input, $input2);
 
-Various additional options and input formats are available.  See the
-DESCRIPTION section for details.
+  #experimental support for WU-Blast 2.0
+  my $factory= Bio::Tools::Run::StandAloneBlast->new('program'=>"wublastp",
+                                                     'database'=>"swissprot",
+                                                     'E'=>1e-20); 
+  my $blast_report = $factory->wublast($seq);
+
+ # Various additional options and input formats are available.  See
+ # the DESCRIPTION section for details.
 
 =head1 DESCRIPTION
 
@@ -228,9 +236,10 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Tools::Run::StandAloneBlast;
 
-use vars qw($AUTOLOAD @ISA $PROGRAMDIR  $DATADIR 
-	    @BLASTALL_PARAMS @BLASTPGP_PARAMS 
-	    @BL2SEQ_PARAMS @OTHER_PARAMS %OK_FIELD
+use vars qw($AUTOLOAD @ISA $PROGRAMDIR  $DATADIR $BLASTTYPE
+	    @BLASTALL_PARAMS @BLASTPGP_PARAMS @WUBLAST_PARAMS @WUBLAST_SWITCH
+	    @BL2SEQ_PARAMS @OTHER_PARAMS %OK_FIELD 
+	    $DEFAULTREADMETHOD
 	    );
 use strict;
 use Bio::Root::Root;
@@ -250,7 +259,22 @@ BEGIN {
      @BLASTPGP_PARAMS = qw(d i A f e m o y P F G E X N g S H a I h c
 			   j J Z O M v b C R W z K L Y p k T Q B l U);
      @BL2SEQ_PARAMS = qw(i j p g o d a G E X W M q r F e S T m);
-
+     $DEFAULTREADMETHOD = 'BLAST';
+     $BLASTTYPE = 'ncbi';
+     @WUBLAST_PARAMS = qw( E S E2 S2 W T X M Y Z L K H V  B
+                          matrix Q R filter wordmask filter maskextra 
+                          hitdist wink ctxfactor gapE gapS gapE2 gapS2 gapW gapX olf golf 
+                          olmax golmax gapdecayrate topcomboN topcomboE sumstatsmethod 
+                          hspsepqmax hspsepsmax gapsepqmax gapsepsmax altscore hspmax gspmax 
+                          qoffset nwstart nwlen qrecmin qrecmax 
+                          dbrecmin dbrecmax vdbdescmax dbchunks sort_by_pvalue 
+                          cpus putenv getenv progress o database input);
+    @WUBLAST_SWITCH = qw(kap sump poissonp lcfilter lcmask echofilter stats nogap gapall pingpong 
+                         nosegs postsw span2 span1 span prune consistency 
+                         links ucdb gi noseqs qtype qres sort_by_pvalue sort_by_count 
+                         sort_by_highscore sort_by_totalscore sort_by_subjectlength
+                         mmio nonnegok novalidctxok shortqueryok notes warnings errors endputenv 
+                         getenv endgetenv abortonerror abortonfatal); 
 
 # Non BLAST parameters start with underscore to differentiate them
 # from BLAST parameters
@@ -262,7 +286,7 @@ BEGIN {
 
 # Authorize attribute fields
      foreach my $attr (@BLASTALL_PARAMS,  @BLASTPGP_PARAMS, 
-		       @BL2SEQ_PARAMS, @OTHER_PARAMS )
+		       @BL2SEQ_PARAMS, @OTHER_PARAMS ,@WUBLAST_PARAMS, @WUBLAST_SWITCH )
      { $OK_FIELD{$attr}++; }
 
 # You will need to enable Blast to find the Blast program. This can be done
@@ -272,7 +296,7 @@ BEGIN {
 #  2. include a definition of an environmental variable BLASTDIR in every script that will
 #     use StandAloneBlast.pm.
 #	BEGIN {$ENV{BLASTDIR} = '/home/peter/blast/'; }
-     $PROGRAMDIR = $ENV{'BLASTDIR'} || '';
+     $PROGRAMDIR = $BLASTTYPE eq 'ncbi' ? $ENV{'BLASTDIR'}: $ENV{'WUBLASTIDR'};
      
 # If local BLAST databases are not stored in the standard
 # /data directory, the variable BLASTDATADIR will need to be set explicitly 
@@ -329,6 +353,20 @@ program with the option "-" as in blastall -
   -S  Query strands to search against database (blastn only).  3 is both, 1 is top, 2 is bottom [Integer]
     default = 3
 
+=head2 WU-Blast
+
+  -p Program Name [String] 
+        Input should be one of "wublastp", "wublastn", "wublastx", 
+        "wutblastn", or "wutblastx".
+  -d  Database [String] default = nr
+        The database specified must first be formatted with xdformat.
+  -i  Query File [File In]   Set by StandAloneBlast.pm from script.
+    default = stdin. The query should be in FASTA format.  If multiple FASTA entries are in the input
+        file, all queries will be searched.
+  -E  Expectation value (E) [Real] default = 10.0
+  -o  BLAST report Output File [File Out]  Optional,
+	default = ./blastreport.out ; set by StandAloneBlast.pm		
+
 =cut
 
 sub new {
@@ -339,15 +377,24 @@ sub new {
     # to facilitiate tempfile cleanup
     my ($tfh,$tempfile) = $self->io->tempfile();
     close($tfh); # we don't want the filehandle, just a temporary name
-    $self->outfile($tempfile);
-    $self->_READMETHOD('Blast');
+    $self->o($tempfile) unless $self->o;
+    $self->_READMETHOD($DEFAULTREADMETHOD);
     while (@args)  {
-	my $attr =   shift @args;
-	my $value =  shift @args;
-	next if( $attr eq '-verbose');
-	# the workaround to deal with initializing
-	$attr = 'p' if $attr =~ /^\s*program\s*$/;
-	$self->$attr($value);
+	    my $attr =   shift @args;
+    	my $value =  shift @args;
+    	next if( $attr eq '-verbose');
+    	# the workaround to deal with initializing
+      if($attr =~/^\s*program\s*$|^p$/){
+        if($value =~/^wu*/){
+          $BLASTTYPE="wublast";
+        }
+      	$attr = 'p';
+      }
+      if($attr =~/outfile/){
+        $attr = 'o';
+      }
+    
+    	$self->$attr($value);
     }
     return $self;
 }
@@ -356,7 +403,7 @@ sub AUTOLOAD {
     my $self = shift;
     my $attr = $AUTOLOAD;
     $attr =~ s/.*:://;    
-    my $attr_letter = substr($attr, 0, 1) ; 
+    my $attr_letter = $BLASTTYPE eq 'ncbi' ? substr($attr, 0, 1) : $attr;
 
     # actual key is first letter of $attr unless first attribute
     # letter is underscore (as in _READMETHOD), the $attr is a BLAST
@@ -384,7 +431,7 @@ sub AUTOLOAD {
 
 sub executable {
    my ($self, $exename, $exe,$warn) = @_;
-   $exename = 'blastall' unless defined $exename;
+   $exename = 'blastall' unless (defined $exename || $BLASTTYPE ne'ncbi');
 
    if( defined $exe && -x $exe ) {
      $self->{'_pathtoexe'}->{$exename} = $exe;
@@ -490,6 +537,38 @@ sub blastall {
 					     $input1, $input2);
 }
 
+=head2  wublast
+
+ Title   : wublast
+ Usage   :  $blast_report = $factory->wublast('t/testquery.fa');
+	or
+	       $input = Bio::Seq->new(-id=>"test query",
+				      -seq=>"ACTACCCTTTAAATCAGTGGGGG");
+	       $blast_report = $factory->wublast($input);
+	or 
+	      $seq_array_ref = \@seq_array;  # where @seq_array is an array of Bio::Seq objects
+	      $blast_report = $factory->wublast(\@seq_array);
+ Returns :  Reference to a Blast object 
+ Args    : Name of a file or Bio::Seq object or an array of 
+           Bio::Seq object containing the query sequence(s). 
+           Throws an exception if argument is not either a string 
+           (eg a filename) or a reference to a Bio::Seq object 
+           (or to an array of Seq objects).  If argument is string, 
+           throws exception if file corresponding to string name can 
+           not be found.
+
+=cut
+
+sub wublast {
+  my ($self,$input1) = @_;
+  $self->io->_io_cleanup();
+  my $executable = 'wublast';
+  my $infilename1 = $self->_setinput($executable, $input1);
+  if (! $infilename1) {$self->throw(" $input1 ($infilename1) not Bio::Seq object or array of Bio::Seq objects or file name!");}
+  $self->input($infilename1);	# set file name of sequence to be blasted to inputfilename1 (-i param of blastall)
+  my $blast_report = &_generic_local_wublast($self, $executable, $input1);
+}
+
 =head2  blastpgp
 
  Title   : blastpgp
@@ -577,7 +656,6 @@ sub bl2seq {
     $self->j($infilename2);	# set file name of first sequence to 
                                 # be aligned to inputfilename2 
                                 # (-j param of bl2seq)
-
     my $blast_report = &_generic_local_blast($self, $executable);    
 }
 #################################################
@@ -602,6 +680,27 @@ sub _generic_local_blast {
     my $blast_report = &_runblast($self, $executable, $param_string);
 }
 
+
+=head2  _generic_local_wublast
+
+ Title   : _generic_local_wublast
+ Usage   :  internal function not called directly
+ Returns :  Blast object
+ Args    :   Reference to calling object and name of BLAST executable 
+
+=cut
+
+sub _generic_local_wublast {
+    my $self = shift;
+    my $executable = shift;
+
+    # Create parameter string to pass to Blast program
+    my $param_string = $self->_setparams($executable);
+    $param_string = " ".$self->database." ".$self->input." ".$param_string;
+
+    # run Blast
+    my $blast_report = &_runwublast($self, $executable, $param_string);
+}
 
 =head2  _runblast
 
@@ -642,31 +741,60 @@ sub _runblast {
 # BPpsilite).  Otherwise either the Blast parser or the BPlite
 # parsers can be selected.
 
-    if ($executable =~ /bl2seq/i)  {
-        if( $self->verbose > 0 ) {
-	 open(OUT, $outfile) || $self->throw("cannot open $outfile");
-	 while(<OUT>) { $self->debug($_)}
-	 close(OUT);
-        }
-# Added program info so BPbl2seq can compute strand info
-	$blast_obj = Bio::Tools::BPbl2seq->new(-file => $outfile,
-                                               -REPORT_TYPE => $self->p );
-#	$blast_obj = Bio::Tools::BPbl2seq->new(-file => $outfile);
-    }
-    elsif ($executable =~ /blastpgp/i && defined $self->j() && 
-	   $self->j() > 1)  {
-	print "using psilite parser\n";
-	$blast_obj = Bio::Tools::BPpsilite->new(-file => $outfile);
-    }
-    elsif ($self->_READMETHOD =~ /^Blast/i )  {
+    if ($self->_READMETHOD =~ /^(Blast|SearchIO)/i )  {
 	$blast_obj = Bio::SearchIO->new(-file=>$outfile,
-					-format => 'blast'   )  ;
-    }
-    elsif ($self->_READMETHOD =~ /^BPlite/i )  {
-	$blast_obj = Bio::Tools::BPlite->new(-file=>$outfile);
+					-format => 'blast' )  ;
+    } elsif( $self->_READMETHOD =~ /BPlite/i ) {
+	if ($executable =~ /bl2seq/i)  {
+	    # Added program info so BPbl2seq can compute strand info
+	    $blast_obj = Bio::Tools::BPbl2seq->new(-file => $outfile,
+						   -REPORT_TYPE => $self->p );
+	} elsif ($executable =~ /blastpgp/i && defined $self->j() && 
+		 $self->j() > 1)  {
+	    $self->debug( "using psilite parser\n");
+	    $blast_obj = Bio::Tools::BPpsilite->new(-file => $outfile);
+	} elsif( $executable =~ /blastall/i ) { 
+	    $blast_obj = Bio::Tools::BPlite->new(-file=>$outfile);
+	} else { 
+	    $self->warn("Unrecognized executable $executable");
+	}
     } else {
-	$self->warn("Unrecognized readmethod ".$self->_READMETHOD. " or executable $executable\n");
+	$self->warn("Unrecognized readmethod ".$self->_READMETHOD);
     }
+
+    return $blast_obj;
+}
+
+=head2  _runwublast
+
+ Title   :  _runwublast
+ Usage   :  Internal function, not to be called directly	
+ Function:   makes actual system call to WU-Blast program
+ Example :
+ Returns : Report Blast object
+ Args    : Reference to calling object, name of BLAST executable, 
+           and parameter string for executable 
+
+=cut
+
+sub _runwublast {
+    my ($self,$executable,$param_string) = @_;
+    my ($blast_obj,$exe);
+    if( ! ($exe = $self->executable($self->p))){
+    	$self->warn("cannot find path to $executable");
+	return undef;    
+    }
+    my $commandstring = $exe.  " ".$param_string;
+   
+    # next line for debugging
+    $self->debug( "$commandstring \n");
+
+    my $status = system($commandstring);
+
+    $self->throw("$executable call crashed: $? $commandstring\n")  unless ($status==0) ;
+    my $outfile = $self->o() ;	# get outputfilename
+	  $blast_obj = Bio::SearchIO->new(-file=>$outfile,
+		                          			-format => 'blast') ;
     return $blast_obj;
 }
 
@@ -696,9 +824,11 @@ sub _setinput {
 #  $input may be an array of BioSeq objects...
       if (ref($input1) =~ /ARRAY/i ) {
 	  ($fh,$infilename1) = $self->io->tempfile();
-	  $temp =  Bio::SeqIO->new(-fh=> $fh, '-format' => 'Fasta');
+	  $temp =  Bio::SeqIO->new(-fh=> $fh, 
+				   '-format' => 'fasta');
 	  foreach $seq (@$input1) {
 	      unless ($seq->isa("Bio::PrimarySeqI")) {return 0;}
+	      $seq->display_id($seq->display_id);
 	      $temp->write_seq($seq);
 	  }
 	  close $fh;
@@ -716,11 +846,10 @@ sub _setinput {
 	  my $seq_string =  $input1->seq();
 	  $seq_string =~ s/\W+//g; # get rid of spaces in sequence
 	  $input1->seq($seq_string);
-	  $temp =  Bio::SeqIO->new(-fh=> $fh, '-format' => 'Fasta');
+	  $temp =  Bio::SeqIO->new(-fh=> $fh, '-format' => 'fasta');
 	  $temp->write_seq($input1);
 	  close $fh;
 	  undef $fh;
-#		$temp->write_seq($input1);
 	  last SWITCH;
       }
       $infilename1 = 0;		# Set error flag if you get here
@@ -737,7 +866,7 @@ sub _setinput {
 	  $temp =  Bio::SeqIO->new(-fh=> $fh, '-format' => 'Fasta');
 	  $temp->write_seq($input2);
 	  close $fh;
-	  undef $fh;
+	  undef $fh;	  
 	  last SWITCH2;
       }
 # Option for using psiblast's pre-alignment "jumpstart" feature
@@ -796,26 +925,44 @@ sub _setparams {
 
     if ($executable eq 'blastall') {@execparams = @BLASTALL_PARAMS; }
     if ($executable eq 'blastpgp') {@execparams = @BLASTPGP_PARAMS; }
-    if ($executable eq 'bl2seq') {@execparams = @BL2SEQ_PARAMS; }
+    if ($executable eq 'bl2seq')   {@execparams = @BL2SEQ_PARAMS; }
+    if($executable eq 'wublast')   {@execparams = @WUBLAST_PARAMS; }
 
     my $param_string = "";
     for $attr ( @execparams ) {
-	$value = $self->$attr();
-	next unless (defined $value);
-# Need to prepend datadirectory to database name
+	    $value = $self->$attr();
+    	next unless (defined $value);
+      # Need to prepend datadirectory to database name
+      if($executable eq 'wublast'){
+        next if $attr =~ /database|^d$/;
+        next if $attr =~ /input|^i$/;
+        $attr = 'o' if ($attr =~/outfile/);
+      }
+
 	if ($attr  eq 'd' && ($executable ne 'bl2seq')) { 
 # This is added so that you can specify a DB with a full path
 	  if (! (-e $value.".nin" || -e $value.".pin")){ 
-	    $value = File::Spec->catdir($DATADIR,$value);
-	  }
+      my @dbs = split(/ /, $value);
+      for (my $i = 0; $i < scalar(@dbs); $i++) {
+        $dbs[$i] = File::Spec->catdir($DATADIR, $dbs[$i]);
+      }
+      $value = '"'.join(" ", @dbs).'"';
+    }
 	}
 # put params in format expected by Blast
 	$attr  = '-'. $attr ;       
 	$param_string .= " $attr  $value ";
     }
 
-# if ($self->quiet()) { $param_string .= '  >/dev/null';}
-
+    if ($self->quiet()) { $param_string .= '  2>/dev/null';}
+    if($executable eq 'wublast'){
+	foreach my $attr(@WUBLAST_SWITCH){
+	    my $value = $self->$attr();
+	    next unless (defined $value);
+	    my $attr_key = ' -'.(lc $attr);
+	    $param_string .=$attr_key;
+	}
+    }
     return $param_string;
 }
 
@@ -892,14 +1039,6 @@ sub _setparams {
 
 
 =cut
-
-sub DESTROY {
-    my $self= shift;
-    unless ( $self->save_tempfiles ) {
-	$self->cleanup();
-    }
-    $self->SUPER::DESTROY();
-}
 
 1;
 __END__

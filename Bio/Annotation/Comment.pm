@@ -1,4 +1,4 @@
-# $Id: Comment.pm,v 1.8 2002/09/25 18:11:33 lapp Exp $
+# $Id: Comment.pm,v 1.9 2003/12/22 08:50:00 juguang Exp $
 #
 # BioPerl module for Bio::Annotation::Comment
 #
@@ -44,6 +44,7 @@ methods. Internal methods are usually preceded with a _
 package Bio::Annotation::Comment;
 use vars qw(@ISA);
 use strict;
+# use overload '""' => \&as_text;
 
 use Bio::Root::Root;
 use Bio::AnnotationI;

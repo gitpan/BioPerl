@@ -1,4 +1,4 @@
-# $Id: Book.pm,v 1.7 2002/10/22 07:45:11 lapp Exp $
+# $Id: Book.pm,v 1.9 2003/05/30 15:33:00 jason Exp $
 #
 # BioPerl module for Bio::Biblio::Book
 #
@@ -17,7 +17,7 @@ Bio::Biblio::Book - Representation of a book
 				  -editor => new Bio::Biblio::Person
 				                (-lastname => 'Loukides'),
 				  -isbn  => '0-596-00068-5');
- --- OR ---
+  #--- OR ---
 
     $obj = new Bio::Biblio::Book;
     $obj->isbn ('0-596-00068-5');
@@ -42,7 +42,7 @@ The following attributes are specific to this class
 
 =head1 SEE ALSO
 
-=over
+=over 4
 
 =item *
 

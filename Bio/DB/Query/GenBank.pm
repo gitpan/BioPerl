@@ -1,4 +1,4 @@
-# $Id: GenBank.pm,v 1.4.2.1 2003/09/09 21:28:52 lstein Exp $
+# $Id: GenBank.pm,v 1.9 2003/09/09 21:29:00 lstein Exp $
 #
 # BioPerl module for Bio::DB::Query::GenBank.pm
 #
@@ -29,7 +29,7 @@ Bio::DB::Query::GenBank - Build a GenBank Entrez Query
    my $gb = new Bio::DB::GenBank;
    my $stream = $gb->get_Stream_by_query($query);
    while (my $seq = $stream->next_seq) {
-      ...
+      # do something with the sequence object
    }
 
    # initialize the list yourself
@@ -92,10 +92,9 @@ use constant ESEARCH             => 'http://www.ncbi.nih.gov/entrez/eutils/esear
 use constant DEFAULT_DB          => 'protein';
 use constant MAXENTRY            => 100;
 
-use vars qw(@ISA @ATTRIBUTES $VERSION);
+use vars qw(@ISA @ATTRIBUTES);
 
 @ISA     = 'Bio::DB::Query::WebQuery';
-$VERSION = '0.2';
 
 BEGIN {
   @ATTRIBUTES = qw(db reldate mindate maxdate datetype);
@@ -143,8 +142,8 @@ numbers, Accession.version numbers and locus names.
 sub new {
   my $class = shift;
   my $self  = $class->SUPER::new(@_);
-  my ($db,$reldate,$mindate,$maxdate,$datetype,$ids)
-    = $self->_rearrange([qw(DB RELDATE MINDATE MAXDATE DATETYPE IDS)],@_);
+  my ($query,$db,$reldate,$mindate,$maxdate,$datetype,$ids)
+    = $self->_rearrange([qw(QUERY DB RELDATE MINDATE MAXDATE DATETYPE IDS)],@_);
   $self->db($db || DEFAULT_DB);
   $reldate  && $self->reldate($reldate);
   $mindate  && $self->mindate($mindate);

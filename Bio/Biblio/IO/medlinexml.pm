@@ -1,4 +1,4 @@
-# $Id: medlinexml.pm,v 1.5 2002/10/22 07:45:13 lapp Exp $
+# $Id: medlinexml.pm,v 1.6 2003/06/04 08:36:36 heikki Exp $
 #
 # BioPerl module Bio::Biblio::IO::medlinexml.pm
 #
@@ -75,7 +75,7 @@ with an underscore _.
 
 
 package Bio::Biblio::IO::medlinexml;
-use vars qw(@ISA $VERSION $Revision);
+use vars qw(@ISA $Revision);
 use vars qw(@Citations $Callback $Convert @ObjectStack @PCDataStack);
 use vars qw(%PCDATA_NAMES %SIMPLE_TREATMENT %POP_DATA_AND_PEEK_OBJ %POP_OBJ_AND_PEEK_OBJ);
 use vars qw(%POP_AND_ADD_ELEMENT %POP_AND_ADD_DATA_ELEMENT);
@@ -87,10 +87,8 @@ use XML::Parser;
 
 @ISA = qw(Bio::Biblio::IO);
 
-BEGIN { 
-    # set the version for version checking
-    $VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id: medlinexml.pm,v 1.5 2002/10/22 07:45:13 lapp Exp $;
+BEGIN {
+    $Revision = q$Id: medlinexml.pm,v 1.6 2003/06/04 08:36:36 heikki Exp $;
 }
 
 # -----------------------------------------------------------------------------

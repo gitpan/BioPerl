@@ -1,5 +1,5 @@
-#!/usr/bin/perl -w
-# $Id: bp_mrtrans.PLS,v 1.1.2.1 2003/03/25 12:32:17 heikki Exp $
+#!perl
+# $Id: bp_mrtrans.PLS,v 1.4 2003/03/26 13:55:08 heikki Exp $
 use strict;
 
 # Author:      Jason Stajich <jason@bioperl.org>
@@ -57,8 +57,8 @@ my ($help,$usage);
 
 $usage = "usage: bp_mrtrans.pl -i prot_alignment -if align_format -o out_dna_align -of output_format -s cDNA_seqdb -sf cDNA_seqdb\n".
 "defaults: -if clustalw
-           -of phylip
-           -sf fasta\n";
+          -of phylip
+          -sf fasta\n";
 
 GetOptions(
 	   'if|iformat:s'  => \$iformat,
@@ -71,7 +71,6 @@ GetOptions(
 				   exit(0)
 				   },
 	   );
-
 
 $input ||= shift;
 $seqdb ||= shift;

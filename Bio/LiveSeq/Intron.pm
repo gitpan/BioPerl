@@ -1,4 +1,4 @@
-# $Id: Intron.pm,v 1.7 2001/06/18 08:27:53 heikki Exp $
+# $Id: Intron.pm,v 1.8 2003/06/04 08:36:40 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::Intron
 #
@@ -44,14 +44,10 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::Intron;
-$VERSION=1.0;
-
-# Version history:
-# Mon Mar 20 22:26:13 GMT 2000 v 1.0 begun
 
 use strict;
-use vars qw($VERSION @ISA);
-use Bio::LiveSeq::Range 1.2; # uses Range, inherits from it
+use vars qw(@ISA);
+use Bio::LiveSeq::Range; # uses Range, inherits from it
 @ISA=qw(Bio::LiveSeq::Range);
 
 =head2 new

@@ -1,4 +1,4 @@
-# $Id: EMBL.pm,v 1.21.2.1 2003/03/19 16:23:08 heikki Exp $
+# $Id: EMBL.pm,v 1.25 2003/06/04 08:36:40 heikki Exp $
 #
 # BioPerl module for Bio::Index::EMBL
 #
@@ -40,7 +40,7 @@ Bio::Index::EMBL - Interface for indexing (multiple) EMBL/Swissprot
     }
 
     # alternatively
-
+    my ($id, $acc);
     my $seq1 = $inx->get_Seq_by_id($id);
     my $seq2 = $inx->get_Seq_by_acc($acc);
 
@@ -50,6 +50,10 @@ Inherits functions for managing dbm files from Bio::Index::Abstract.pm,
 and provides the basic funtionallity for indexing EMBL files, and
 retrieving the sequence from them. Heavily snaffled from James Gilbert's
 Fasta system. Note: for best results 'use strict'.
+
+Details on configuration and additional example code are available in the
+biodatabases.pod file.
+
 
 =head1 FEED_BACK
 
@@ -89,7 +93,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::Index::EMBL;
 
-use vars qw($VERSION @ISA);
+use vars qw(@ISA);
 use strict;
 
 use Bio::Index::AbstractSeq;
@@ -101,17 +105,9 @@ sub _type_stamp {
     return '__EMBL_FLAT__'; # What kind of index are we?
 }
 
-#
-# Suggested fix by Michael G Schwern <schwern@pobox.com> to
-# get around a clash with CPAN shell...
-#
-
-BEGIN {
-    $VERSION = 0.1;
-}
 
 sub _version {
-    return $VERSION;
+    return 0.1;
 }
 
 =head2 _index_file

@@ -60,6 +60,10 @@ Arguments are as follows:
   -primary_id  an alias for -name
   -display_id  an alias for -name
   -display_name an alias for -name  (do you get the idea the API has changed?)
+  -url         a URL to link to when rendered with Bio::Graphics
+  -configurator an object (like a Bio::Graphics::FeatureFile) that knows how 
+               to configure the graphical representation of the object based
+               on its type.
   -attributes  a hashref of tag value attributes, in which the key is the tag
                and the value is an array reference of values
   -factory     a reference to a feature factory, used for compatibility with
@@ -80,6 +84,10 @@ Ace::Sequence, which has a slightly different API from SeqFeatureI:
 
 =over 4
 
+=item url()
+
+Get/set the URL that the graphical rendering of this feature will link to.
+
 =item add_segment(@segments)
 
 Add one or more segments (a subfeature).  Segments can either be
@@ -89,6 +97,14 @@ to new().  The feature endpoints are automatically adjusted.
 =item segments()
 
 An alias for sub_SeqFeature().
+
+=item get_SeqFeatures()
+
+Alias for sub_SeqFeature()
+
+=item get_all_SeqFeatures()
+
+Alias for sub_SeqFeature()
 
 =item merged_segments()
 
@@ -105,6 +121,12 @@ An alias for seqname().
 =item exons()
 
 An alias for sub_SeqFeature() (you don't want to know why!)
+
+=item configurator()
+
+Get/set the configurator that knows how to adjust the graphical
+representation of this feature based on its type.  Currently the only
+configurator that will work is Bio::Graphics::FeatureFile.
 
 =back
 
@@ -127,6 +149,35 @@ use vars '@ISA';
 *method      = \&type;
 *source      = \&source_tag;
 
+# implement Bio::SeqI and FeatureHolderI interface
+
+sub primary_seq { return $_[0] }
+sub annotation { 
+    my ($obj,$value) = @_;
+    if( defined $value ) {
+	$obj->throw("object of class ".ref($value)." does not implement ".
+		    "Bio::AnnotationCollectionI. Too bad.")
+	    unless $value->isa("Bio::AnnotationCollectionI");
+	$obj->{'_annotation'} = $value;
+    } elsif( ! defined $obj->{'_annotation'}) {
+	$obj->{'_annotation'} = new Bio::Annotation::Collection;
+    }
+    return $obj->{'_annotation'};
+}
+sub species {
+    my ($self, $species) = @_;
+    if ($species) {
+        $self->{'species'} = $species;
+    } else {
+        return $self->{'species'};
+    }
+}
+
+*get_all_SeqFeatures = *get_SeqFeatures = \&segments;
+sub feature_count { return scalar @{shift->{segments} || []} }
+
+
+
 sub target { return; }
 sub hit    { return; }
 
@@ -147,7 +198,13 @@ sub new {
   my $self = bless {},$class;
 
   $arg{-strand} ||= 0;
-  $self->{strand}  = $arg{-strand} ? ($arg{-strand} >= 0 ? +1 : -1) : 0;
+  if ($arg{-strand} =~ /^[\+\-\.]$/){
+	$arg{-strand} = "+" && $self->{strand} ='1';
+	$arg{-strand} = "-" && $self->{strand} = '-1';
+	$arg{-strand} = "." && $self->{strand} = '0';
+  } else {
+	  $self->{strand}  = $arg{-strand} ? ($arg{-strand} >= 0 ? +1 : -1) : 0;
+  }
   $self->{name}    = $arg{-name}   || $arg{-seqname} || $arg{-display_id} 
     || $arg{-display_name} || $arg{-id} || $arg{-primary_id};
   $self->{type}    = $arg{-type}   || 'feature';
@@ -157,13 +214,9 @@ sub new {
   $self->{start}   = $arg{-start};
   $self->{stop}    = $arg{-end} || $arg{-stop};
   $self->{ref}     = $arg{-ref};
-  $self->{class}   = $arg{-class} if exists $arg{-class};
-  $self->{url}     = $arg{-url}   if exists $arg{-url};
-  $self->{seq}     = $arg{-seq}   if exists $arg{-seq};
-  $self->{phase}   = $arg{-phase} if exists $arg{-phase};
-  $self->{desc}    = $arg{-desc}  if exists $arg{-desc};
-  $self->{attrib}  = $arg{-attributes} if exists $arg{-attributes};
-  $self->{factory} = $arg{-factory} if exists $arg{-factory};
+  for my $option (qw(class url seq phase desc attributes factory configurator)) {
+    $self->{$option} = $arg{"-$option"} if exists $arg{"-$option"};
+  }
 
   # fix start, stop
   if (defined $self->{stop} && defined $self->{start}
@@ -183,6 +236,9 @@ sub add_segment {
   my $self        = shift;
   my $type = $self->{subtype} || $self->{type};
   $self->{segments} ||= [];
+  my $ref   = $self->seq_id;
+  my $name  = $self->name;
+  my $class = $self->class;
 
   my @segments = @{$self->{segments}};
 
@@ -194,13 +250,15 @@ sub add_segment {
 
       if ($start > $stop) {
 	($start,$stop) = ($stop,$start);
-#	$strand *= -1;
 	$strand = -1;
       }
       push @segments,$self->new(-start  => $start,
 				-stop   => $stop,
 				-strand => $strand,
-				-type   => $type);
+				-ref    => $ref,
+				-type   => $type,
+			        -name   => $name,
+			        -class  => $class);
     } else {
       push @segments,$seg;
     }
@@ -268,6 +326,7 @@ sub seq {
   return $dna;
 }
 *dna = \&seq;
+
 
 =head2 factory
 
@@ -450,22 +509,45 @@ sub class {
 }
 
 sub gff_string {
-  my $self = shift;
+  my $self    = shift;
+  my $recurse = shift;
+
   my $name  = $self->name;
   my $class = $self->class;
   my $group = "$class $name" if $name;
+  my $strand = ('-','.','+')[$self->strand+1];
   my $string;
-  $string .= join("\t",$self->ref,$self->source||'.',$self->method||'.',
-                       $self->start,$self->stop,
-                       $self->score||'.',$self->strand||'.',$self->phase||'.',
-                       $group);
+  $string .= join("\t",$self->ref||'.',$self->source||'.',$self->method||'.',
+                       $self->start||'.',$self->stop||'.',
+                       $self->score||'.',$strand||'.',$self->phase||'.',
+                       $group||'');
   $string .= "\n";
-  foreach ($self->sub_SeqFeature) {
-    # add missing data if we need it
-    $_->ref($self->ref)     unless defined $_->ref;
-    $_->name($self->name);
-    $_->class($self->class);
-    $string .= $_->gff_string;
+  if ($recurse) {
+    foreach ($self->sub_SeqFeature) {
+      $string .= $_->gff_string($recurse);
+    }
+  }
+  $string;
+}
+
+sub gff3_string {
+  my $self              = shift;
+  my ($recurse,$parent) = @_;
+
+  my $name  = $self->name;
+  my $class = $self->class;
+  my $group = $self->format_attributes($parent);
+  my $strand = ('-','.','+')[$self->strand+1];
+  my $string;
+  $string .= join("\t",$self->ref||'.',$self->source||'.',$self->method||'.',
+                       $self->start||'.',$self->stop||'.',
+                       $self->score||'.',$strand||'.',$self->phase||'.',
+                       $group||'');
+  $string .= "\n";
+  if ($recurse) {
+    foreach ($self->sub_SeqFeature) {
+      $string .= $_->gff3_string(1,$self->name);
+    }
   }
   $string;
 }
@@ -508,6 +590,7 @@ sub url {
 # make a link
 sub make_link {
   my $self = shift;
+
   if (my $url = $self->url) {
     return $url;
   }
@@ -521,16 +604,37 @@ sub make_link {
   }
 }
 
+sub escape {
+  my $toencode = shift;
+  $toencode    =~ s/([^a-zA-Z0-9_. :?^*\(\)\[\]@!-])/uc sprintf("%%%02x",ord($1))/eg;
+  $toencode    =~ tr/ /+/;
+  $toencode;
+}
+
 sub all_tags {
   my $self = shift;
-  return keys %{$self->{attrib}};
+  return keys %{$self->{attributes}};
 }
 sub each_tag_value {
   my $self = shift;
   my $tag  = shift;
-  my $value = $self->{attrib}{$tag} or return;
-  return CORE::ref $value ? @{$self->{attrib}{$tag}}
-                          : $self->{attrib}{$tag};
+  my $value = $self->{attributes}{$tag} or return;
+  return CORE::ref $value ? @{$self->{attributes}{$tag}}
+                          : $self->{attributes}{$tag};
+}
+
+sub format_attributes {
+  my $self   = shift;
+  my $parent = shift;
+  my @tags = $self->all_tags;
+  my @result;
+  for my $t (@tags) {
+    my @values = $self->each_tag_value($t);
+    push @result,join '=',escape($t),escape($_) foreach @values;
+  }
+  push @result,"ID=".escape($self->name) if defined $self->name;
+  push @result,"Parent=".escape($parent) if defined $parent;
+  return join ';',@result;
 }
 
 sub DESTROY { }

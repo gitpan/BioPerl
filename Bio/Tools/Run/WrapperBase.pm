@@ -1,4 +1,4 @@
-# $Id: WrapperBase.pm,v 1.7.2.2 2003/03/11 10:52:26 jason Exp $
+# $Id: WrapperBase.pm,v 1.12 2003/03/28 22:42:54 jason Exp $
 #
 # BioPerl module for Bio::Tools::Run::WrapperBase
 #
@@ -108,7 +108,7 @@ sub run {
 
  Title   : error_string
  Usage   : $obj->error_string($newval)
- Function: Where the output from the last analysus run is stored.
+ Function: Where the output from the last analysis run is stored.
  Returns : value of error_string
  Args    : newvalue (optional)
 
@@ -129,7 +129,7 @@ sub error_string{
  Title   : no_param_checks
  Usage   : $obj->no_param_checks($newval)
  Function: Boolean flag as to whether or not we should
-           trust the sanity checks for parameter values  
+           trust the sanity checks for parameter values
  Returns : value of no_param_checks
  Args    : newvalue (optional)
 
@@ -213,7 +213,7 @@ sub tempdir{
 
  Title   : cleanup
  Usage   : $wrapper->cleanup();
- Function: Will cleanup the tempdir directory after a PAML run
+ Function: Will cleanup the tempdir directory
  Returns : none
  Args    : none
 
@@ -348,6 +348,14 @@ sub program_dir {
 sub program_name {
     my ($self) = @_;
     $self->throw_not_implemented();
+}
+
+sub DESTROY {
+    my $self= shift;
+    unless ( $self->save_tempfiles ) {
+	$self->cleanup();
+    }
+    $self->SUPER::DESTROY();
 }
 
 

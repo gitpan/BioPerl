@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: RootI.t,v 1.6 2002/11/18 22:40:05 jason Exp $
+## $Id: RootI.t,v 1.7 2003/12/09 20:40:00 heikki Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -74,9 +74,9 @@ my $verbobj = new Bio::Root::Root(-verbose=>1,-strict=>1);
 ok $verbobj->verbose(), 1;
 
 $Bio::Root::Root::DEBUG = 1;
-require Bio::SeqIO;
-my $seqio = new Bio::SeqIO;
-ok($seqio->verbose, 1);
+require Bio::Seq;
+my $seq = new Bio::Seq;
+ok($seq->verbose, 1);
 
 # test for bug #1343
 my @vals = Bio::Root::RootI->_rearrange([qw(apples pears)], 

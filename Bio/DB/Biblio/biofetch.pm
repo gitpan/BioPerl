@@ -1,4 +1,4 @@
-# $Id: biofetch.pm,v 1.5 2002/10/22 07:45:14 lapp Exp $
+# $Id: biofetch.pm,v 1.6 2003/06/04 08:36:37 heikki Exp $
 #
 # BioPerl module Bio::DB::Biblio::biofetch.pm
 #
@@ -92,7 +92,7 @@ with an underscore _.
 
 
 package Bio::DB::Biblio::biofetch;
-use vars qw(@ISA $VERSION %HOSTS  %FORMATMAP  $DEFAULTFORMAT 
+use vars qw(@ISA %HOSTS  %FORMATMAP  $DEFAULTFORMAT 
 	    $Revision $DEFAULT_SERVICE $DEFAULT_NAMESPACE);
 use strict;
 
@@ -104,9 +104,7 @@ use Bio::Biblio::IO;
 
 BEGIN {
 
-    # set the version for version checking
-    $VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id: biofetch.pm,v 1.5 2002/10/22 07:45:14 lapp Exp $;
+    $Revision = q$Id: biofetch.pm,v 1.6 2003/06/04 08:36:37 heikki Exp $;
 
     # you can add your own here theoretically.
     %HOSTS = (

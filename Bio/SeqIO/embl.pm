@@ -1,4 +1,4 @@
-# $Id: embl.pm,v 1.57.2.6 2003/09/14 19:06:51 jason Exp $
+# $Id: embl.pm,v 1.69 2003/12/22 18:33:15 heikki Exp $
 #
 # BioPerl module for Bio::SeqIO::EMBL
 #
@@ -110,7 +110,7 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::SeqIO::embl;
-use vars qw(@ISA);
+use vars qw(@ISA %FTQUAL_NO_QUOTE);
 use strict;
 use Bio::SeqIO::FTHelper;
 use Bio::SeqFeature::Generic;
@@ -122,6 +122,24 @@ use Bio::Annotation::Reference;
 use Bio::Annotation::DBLink;
 
 @ISA = qw(Bio::SeqIO);
+
+%FTQUAL_NO_QUOTE=(
+  'anticodon'=>1,
+  'citation'=>1,
+  'codon'=>1,
+  'codon_start'=>1,
+  'cons_splice'=>1,
+  'direction'=>1,
+  'evidence'=>1,
+  'label'=>1,
+  'mod_base'=> 1,
+  'number'=> 1,
+  'rpt_type'=> 1,
+  'rpt_unit'=> 1,
+  'transl_except'=> 1,
+  'transl_table'=> 1,
+  'usedin'=> 1,
+);
 
 sub _initialize {
   my($self,@args) = @_;
@@ -235,12 +253,13 @@ sub next_seq {
        #date (NOTE: takes last date line)
        if( /^DT\s+(.+)$/ ) {
 	   my $date = $1;
-	   push @{$params{'-dates'}}, $date;
+	   push @{$params{'-dates'}},$date;
        }
        
        #keywords
-       if( /^KW\s+(.*)\S*$/ ) {
+       if( /^KW   (.*)\S*$/ ) {
 	   my @kw = split(/\s*\;\s*/,$1);
+	   
 	   push @{$params{'-keywords'}}, @kw;
        }
 
@@ -414,6 +433,10 @@ sub write_seq {
 	if( $self->_id_generation_func ) {
 	    $temp_line = &{$self->_id_generation_func}($seq);
 	} else {
+
+            $self->warn("No whitespace allowed in EMBL display id [". $seq->display_id. "]")
+                if $seq->display_id =~ /\s/;
+
 	    $temp_line = sprintf("%-11sstandard; $mol; $div; %d BP.", $seq->id(), $len);
 	} 
 
@@ -427,7 +450,7 @@ sub write_seq {
 	    } elsif( $seq->isa('Bio::Seq::RichSeqI') && 
 		     defined($seq->accession_number) ) {
 		$acc = $seq->accession_number;
-		$acc = join(";", $acc, $seq->get_secondary_accessions);
+		$acc = join("; ", $acc, $seq->get_secondary_accessions);
 	    } elsif ( $seq->can('accession_number') ) {
 		$acc = $seq->accession_number;
 	    }
@@ -445,7 +468,8 @@ sub write_seq {
 		$sv = &{$func}($seq);
 	    } elsif($seq->isa('Bio::Seq::RichSeqI') && 
 		    defined($seq->seq_version)) {
-		$sv = "$acc.". $seq->seq_version();
+                my ($prim_acc) = $acc =~ /([^;]+)/;
+		$sv = "$prim_acc.". $seq->seq_version();
 	    }	
 	    if (defined $sv) {
 		$self->_print( "SV   $sv\n",
@@ -474,18 +498,12 @@ sub write_seq {
 	    my( $kw );
 	    if( my $func = $self->_kw_generation_func ) {
 		$kw = &{$func}($seq);
-	    } elsif( $seq->can('keywords') ) {		
+	    } elsif( $seq->can('keywords') ) {
 		$kw = $seq->keywords;
-		if( ref($kw) =~ /ARRAY/i ) {
-		    $kw = join("; ", @$kw);
-		}
-		$kw .= '.' if( defined $kw && $kw !~ /\.$/ );
 	    }
 	    if (defined $kw) {
-		$self->_write_line_EMBL_regex("KW   ", "KW   ", 
-					      $kw, '\s+|$', 80); #'
+		$self->_write_line_EMBL_regex("KW   ", "KW   ", $kw, '\s+|$', 80); #'
 		$self->_print( "XX\n");
-		
 	    }
 	}
 
@@ -679,8 +697,7 @@ sub write_seq {
 =cut
 
 sub _print_EMBL_FTHelper {
-   my ($self,$fth,$always_quote) = @_;
-   $always_quote ||= 0;
+   my ($self,$fth) = @_;
    
    if( ! ref $fth || ! $fth->isa('Bio::SeqIO::FTHelper') ) {
        $fth->warn("$fth is not a FTHelper class. Attempting to print, but there could be tears!");
@@ -709,18 +726,18 @@ sub _print_EMBL_FTHelper {
 					     "FT                   ",
 					     "/$tag",'.|$',80); #'
 	   }
-           elsif( $always_quote == 1 || $value !~ /^\d+$/ ) {
-              my $pat = $value =~ /\s/ ? '\s|$' : '.|$';
+           # there are almost 3x more quoted qualifier values and they
+           # are more common too so we take quoted ones first
+           elsif (!$FTQUAL_NO_QUOTE{$tag}) {
+              my $pat = $value =~ /\s/ ? '\s|\-|$' : '.|\-|$';
 	      $self->_write_line_EMBL_regex("FT                   ",
 					    "FT                   ",
 					    "/$tag=\"$value\"",$pat,80);
-           }
-           else {
+           } else {
               $self->_write_line_EMBL_regex("FT                   ",
 					    "FT                   ",
 					    "/$tag=$value",'.|$',80); #'
            }
-	  # $self->_print( "FT                   /", $tag, "=\"", $value, "\"\n");
        }
    }
 }
@@ -811,14 +828,15 @@ sub _read_EMBL_Species {
     my $org;
 
     $_ = $$buffer;
-    my( $sub_species, $species, $genus, $common, @class );
+    my( $sub_species, $species, $genus, $common, @class, $ns_name );
     while (defined( $_ ||= $self->_readline )) {
-        
-        if (/^OS\s+(\S+)(?:\s+([^\(]\S*))?(?:\s+([^\(]\S*))?(?:\s+\((.*)\))?/) {
-            $genus   = $1;
-	    $species = $2 || 'sp.';
-	    $sub_species = $3 if $3;
-            $common      = $4 if $4;
+
+        if (/^OS\s+((\S+)(?:\s+([^\(]\S*))?(?:\s+([^\(]\S*))?(?:\s+\((.*)\))?)/) {
+            $ns_name = $1;
+            $genus   = $2;
+	    $species = $3 || 'sp.';
+	    $sub_species = $4 if $4;
+            $common      = $5 if $5;
         }
         elsif (s/^OC\s+//) {
 	    # only split on ';' or '.' so that 
@@ -834,27 +852,32 @@ sub _read_EMBL_Species {
         else {
             last;
         }
-        
+
         $_ = undef; # Empty $_ to trigger read of next line
     }
-    
+
     $$buffer = $_;
-    
+
     # Don't make a species object if it is "Unknown" or "None"
     return if $genus =~ /^(Unknown|None)$/i;
 
     # Bio::Species array needs array in Species -> Kingdom direction
-    if ($class[$#class] eq $genus) {
+    if ($class[0] eq 'Viruses') {
+        push( @class, $ns_name );
+    }
+    elsif ($class[$#class] eq $genus) {
         push( @class, $species );
     } else {
         push( @class, $genus, $species );
     }
     @class = reverse @class;
-    
+
     my $make = Bio::Species->new();
     $make->classification( \@class, "FORCE" );  # no name validation please
     $make->common_name( $common      ) if $common;
-    $make->sub_species( $sub_species ) if $sub_species;
+    unless ($class[-1] eq 'Viruses') {
+        $make->sub_species( $sub_species ) if $sub_species;
+    }
     $make->organelle  ( $org         ) if $org;
     return $make;
 }
@@ -1088,6 +1111,14 @@ sub _write_line_EMBL_regex {
     #print STDOUT "Going to print with $line!\n";
 
     $length || die "Programming error - called write_line_EMBL_regex without length.";
+
+#    if( length $pre1 != length $pre2 ) {
+#      $self->throw(<<END);
+#Programming error - called write_line_EMBL_regex with different length pre1 and pre2 tags!
+#pre1 = $pre1
+#pre2 = $pre2
+#END
+#    }
 
     my $subl = $length - (length $pre1) -1 ;
 

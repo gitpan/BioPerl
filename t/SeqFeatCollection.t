@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: SeqFeatCollection.t,v 1.6 2002/10/24 14:24:08 jason Exp $
+# $Id: SeqFeatCollection.t,v 1.8 2003/02/26 15:59:26 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -22,7 +22,7 @@ BEGIN {
     }
     use Test;
 
-    $NUMTESTS = 428;
+    $NUMTESTS = 432;
     plan tests => $NUMTESTS;
 
     eval { require DB_File; };
@@ -156,8 +156,22 @@ foreach my $f ( @features ) {
     ok( $col->feature_count, --$count);
 }
 ok($col->feature_count, 0);
+my $filename = 'featcol.idx';
+my $newcollection = new Bio::SeqFeature::Collection(-verbose => $verbose,
+						    -keep    => 1,
+						    -file    => $filename);
+$newcollection->add_features(\@feat);
+ok($newcollection->feature_count, 54);
+undef $newcollection;
+ok(-e $filename);
+$newcollection = new Bio::SeqFeature::Collection(-verbose => $verbose,
+						 -file    => $filename);
+ok($newcollection->feature_count, 54);
+undef $newcollection;
+ok( ! -e $filename);
 if( $verbose ) {
-    my @fts =  sort { $a->start <=> $b->start}  grep { $r->overlaps($_,'ignore') } @features;
+    my @fts =  sort { $a->start <=> $b->start}  
+    grep { $r->overlaps($_,'ignore') } @features;
     
     if( $verbose ) {
 	foreach my $f ( @fts ) {
@@ -180,6 +194,8 @@ if( $verbose ) {
 	print $f->primary_tag, "    ", $f->location->to_FTstring(), "\n";
     }
 }
+
+
 
 sub fy_shuffle { 
     my $array = shift;

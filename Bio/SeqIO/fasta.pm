@@ -1,4 +1,4 @@
-# $Id: fasta.pm,v 1.41.2.4 2003/09/18 02:43:16 jason Exp $
+# $Id: fasta.pm,v 1.47 2003/12/22 18:33:15 heikki Exp $
 # BioPerl module for Bio::SeqIO::fasta
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
@@ -24,17 +24,6 @@ Do not use this module directly.  Use it via the Bio::SeqIO class.
 
 This object can transform Bio::Seq objects to and from fasta flat
 file databases.
-
-A method L<preferred_id_type()> can be used to specify the type of ID
-we would like to parse from the fasta line.  By default 'display' is
-used, which means it parses everything from the '>' to the first space
-and makes that the 'display_id' for the sequence.
-
-Can be one of:
- - accession 
- - accession.version 
- - display
- - primary
 
 =head1 FEEDBACK
 
@@ -200,6 +189,10 @@ sub write_seq {
 	       $top .= "." . $seq->version();
 	   }
        } elsif($id_type =~ /^displ/i ) {
+
+           $self->warn("No whitespace allowed in FASTA ID [". $seq->display_id. "]")
+               if $seq->display_id =~ /\s/;
+
 	   $top = $seq->display_id();
        } elsif($id_type =~ /^pri/i ) {
 	   $top = $seq->primary_id();

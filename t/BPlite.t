@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: BPlite.t,v 1.21 2002/10/08 08:38:35 lapp Exp $
+## $Id: BPlite.t,v 1.22 2003/10/28 13:48:22 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -41,7 +41,7 @@ ok defined $sbjct;
 my $hsp = $sbjct->nextHSP;
 ok defined $hsp;
 
-ok $report->query, "gi|1401126 (504 letters) ";
+ok $report->query, "gi|1401126 (504 letters)";
 ok $report->database, 'Non-redundant GenBank+EMBL+DDBJ+PDB sequences';
 ok $sbjct->name, 'gb|U49928|HSU49928 Homo sapiens TAK1 binding protein (TAB1) mRNA, complete cds. ';
 ok $hsp->bits, 1009;

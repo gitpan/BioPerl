@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: OMIMentry.t,v 1.1 2002/09/10 06:50:18 czmasek Exp $
+## $Id: OMIMentry.t,v 1.2 2003/11/04 02:47:23 juguang Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -57,8 +57,8 @@ ok( $obj->gene_status( "I" ) );
 ok( $obj->gene_status(), "I" );
 
 
-ok( $obj->clinical_symptoms( "Patients with ..." ) );
-ok( $obj->clinical_symptoms(), "Patients with ..." );
+ok( $obj->clinical_symptoms_raw( "Patients with ..." ) );
+ok( $obj->clinical_symptoms_raw(), "Patients with ..." );
 
 
 ok( $obj->created( "Victor A. McKusick: 6/4/1986" ) );

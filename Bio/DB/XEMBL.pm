@@ -1,5 +1,5 @@
 #
-# $Id: XEMBL.pm,v 1.3 2002/10/22 07:38:29 lapp Exp $
+# $Id: XEMBL.pm,v 1.6 2003/05/17 19:03:53 heikki Exp $
 #
 # BioPerl module for Bio::DB::XEMBL
 #
@@ -33,7 +33,7 @@ Bio::DB::XEMBL - Database object interface for XEMBL entry retrieval
   # in not getting what what want
   eval {
       $seq = $embl->get_Seq_by_version('J02231.1'); # XEMBL VERSION
-  }
+  };
   print "cloneid is ", $seq->id, "\n" unless $@;
 
   my $seqio = $embl->get_Stream_by_batch(['U83300','U83301','U83302']);
@@ -82,18 +82,23 @@ methods. Internal methods are usually preceded with a _
 package Bio::DB::XEMBL;
 use strict;
 use Bio::DB::RandomAccessI;
-use Bio::DB::XEMBLService 'getNucSeq';
+use SOAP::Lite;
 # bsml parser appears broken...
 use Bio::SeqIO::bsml;
 use File::Temp 'tempfile';
 use vars qw(@ISA $MODVERSION);
 
 @ISA = qw(Bio::DB::RandomAccessI);
-$MODVERSION = '0.1';
+$MODVERSION = '0.2';
+
+use constant DEFAULT_ENDPOINT => 'http://www.ebi.ac.uk:80/cgi-bin/xembl/XEMBL-SOAP.pl';
 
 sub new {
     my ($class, @args ) = @_;
     my $self = $class->SUPER::new(@args);
+    my $endpoint = $self->_rearrange([qw(ENDPOINT)]);
+    $endpoint ||= DEFAULT_ENDPOINT;
+    $self->endpoint($endpoint);
     return $self;
 }
 
@@ -134,9 +139,17 @@ sub get_Stream_by_batch {
   $self->throw("expected an array ref, but got $ids")
     unless ref($ids) eq 'ARRAY';
   my @args = @$ids;
-  my $result = getNucSeq(SOAP::Data->name(format=>'bsml'),
-			 SOAP::Data->name(ids=>"@args"))
-    or $self->throw('id does not exist');
+
+  my $endpoint = $self->endpoint;
+  my $som = SOAP::Lite
+    ->uri('http://www.ebi.ac.uk/XEMBL')
+    ->proxy($endpoint)
+    ->getNucSeq(SOAP::Data->name(format=>'bsml'),
+		SOAP::Data->name(ids=>"@args"));
+  if ($som->fault) {
+    $self->throw($som->faultstring);
+  }
+  my $result = $som->result;
   my($fh,$filename) = tempfile(File::Spec->tmpdir . '/bsmlXXXXXX',SUFFIX=>'.bsml');
   print $fh $result;
   close $fh;
@@ -180,5 +193,48 @@ sub get_Seq_by_version{
    return $self->get_Seq_by_id(@args);
 }
 
+=head2 endpoint
+
+ Title   : endpoint
+ Usage   : $endpoint = $db->endpoint([$endpoint])
+ Function: Gets/sets endpoint for SOAP connection
+ Returns : old endpoint
+ Args    : new endpoint(optional)
+
+=cut
+
+sub endpoint {
+  my $self = shift;
+  my $d = $self->{endpoint};
+  $self->{endpoint} = shift if @_;
+  $d;
+}
+
+=head2 new_from_registry
+
+ Title   : new_from_registry
+ Usage   : $db = Bio::DB::XEMBL->new_from_registry(%config)
+ Function: creates a new Bio::DB::XEMBL object in a Bio::DB::Registry-
+           compatible fashion
+ Returns : new Bio::DB::XEMBL
+ Args    : provided by the registry, see below
+ Status  : Public
+
+The following registry-configuration tags are recognized:
+
+  location     Endpoint for the XEMBL service.  Currently the only
+               known valid endpoint is 
+               http://www.ebi.ac.uk:80/cgi-bin/xembl/XEMBL-SOAP.pl
+
+NOTE: Since this info is supposed to be coming from WSDL, the location
+is currently ignored.
+
+=cut
+
+sub new_from_registry {
+    my ($self,%config) =  @_;
+    my $location = $config{'location'} or $self->throw('Location must be specified.');
+    my $index    = $self->new(-endpoint => $location);
+}
 
 1;

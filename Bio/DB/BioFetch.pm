@@ -1,4 +1,4 @@
-# $Id: BioFetch.pm,v 1.13.2.1 2003/06/25 13:44:18 heikki Exp $
+# $Id: BioFetch.pm,v 1.22 2003/12/11 10:55:46 heikki Exp $
 #
 # BioPerl module for Bio::DB::BioFetch
 #
@@ -26,7 +26,7 @@ Bio::DB::BioFetch - Database object interface to BioFetch retrieval
 
  $bf = new Bio::DB::BioFetch;
 
- $seq = $sp->get_Seq_by_id('BUM');  # EMBL or SWALL ID
+ $seq = $bf->get_Seq_by_id('BUM');  # EMBL or SWALL ID
 
  # change formats, storage procedures
  $bf = new Bio::DB::BioFetch(-format        => 'fasta',
@@ -92,10 +92,9 @@ methods. Internal methods are usually preceded with a _
 =cut
 
 # Let the code begin...
-use vars qw(@ISA $VERSION %FORMATMAP );
+use vars qw(@ISA %FORMATMAP );
 use Bio::Root::Root;
 @ISA = qw(Bio::DB::WebDBSeqI Bio::Root::Root);
-$VERSION = '1.0';
 
 # warning: names used here must map into Bio::SeqIO::* space
 use constant DEFAULT_LOCATION => 'http://www.ebi.ac.uk/cgi-bin/dbfetch';
@@ -320,7 +319,7 @@ sub get_request {
     ($format, $tmp) = $self->request_format($format);
 
     my $base = $self->url_base_address;
-    my $uid = join('+', ref $uids ? @$uids : $uids);
+    my $uid = join('+',ref $uids ? @$uids : $uids);
     $self->debug("\n$base$format_string&id=$uid\n");
     return POST($base,
 		[ db     => $namespace,
@@ -506,7 +505,7 @@ sub _check_id {
     # Asking for a RefSeq from EMBL/GenBank
 
     if ($id =~ /N._/ &&  $self->db ne 'refseq') {
-	$self->warn("[$id] is not a normal sequence database but a RefSeq entry.".
+	$self->warn("[$id] is not a normal sequence entry but a RefSeq entry.".
 		   " Redirecting the request.\n")
 	    if $self->verbose >= 0;
 	$self->db('RefSeq');

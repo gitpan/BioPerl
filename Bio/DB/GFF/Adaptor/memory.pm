@@ -8,7 +8,7 @@ Bio::DB::GFF::Adaptor::dbi::mysql -- Database adaptor for a specific mysql schem
 
   use Bio::DB::GFF;
   my $db = Bio::DB::GFF->new(-adaptor=> 'memory',
-                             -file   => 'my_features.gff',
+                             -gff    => 'my_features.gff',
                              -fasta  => 'my_dna.fa'
                             );
 
@@ -29,7 +29,7 @@ Three named arguments are recommended:
    -adaptor         Set to "memory" to create an instance of this class.
    -gff             Read the indicated file or directory of .gff file.
    -fasta           Read the indicated file or directory of fasta files.
-   -dsn             Indicates a directory containing .gff and .fa files
+   -dir             Indicates a directory containing .gff and .fa files
 
 If you use the -dsn option and the indicated directory is writable by
 the current process, then this library will create a FASTA file index
@@ -59,7 +59,7 @@ it under the same terms as Perl itself.
 =cut
 
 use strict;
-# $Id: memory.pm,v 1.7.2.1 2003/07/05 00:52:31 lstein Exp $
+# $Id: memory.pm,v 1.21 2003/12/17 18:25:42 scain Exp $
 # AUTHOR: Shulamit Avraham
 # This module needs to be cleaned up and documented
 
@@ -85,14 +85,16 @@ use constant MAX_SEGMENT => 100_000_000;  # the largest a segment can get
 
 sub new {
   my $class = shift ;
-  my ($file,$fasta,$dbdir) = rearrange([
-					[qw(GFF FILE DIRECTORY)],
-					'FASTA',
-					[qw(DSN DB DIR)],
-				],@_);
+  my ($file,$fasta,$dbdir,$preferred_groups) = rearrange([
+							  [qw(GFF FILE)],
+							  'FASTA',
+							  [qw(DSN DB DIR DIRECTORY)],
+							  'PREFERRED_GROUPS',
+							 ],@_);
 
   # fill in object
   my $self = bless{ data => [] },$class;
+  $self->preferred_groups($preferred_groups) if defined $preferred_groups;
   $file  ||= $dbdir;
   $fasta ||= $dbdir;
   $self->load_gff($file)             if $file;
@@ -107,9 +109,9 @@ sub load_or_store_fasta {
       or
       (-d $fasta && -w $fasta)) {
     require Bio::DB::Fasta;
-    my $dna_db = Bio::DB::Fasta->new($fasta)
-      or $self->throw("Couldn't create a new Bio::DB::Fasta index from $fasta");
-    $self->dna_db($dna_db);
+    my $dna_db = eval {Bio::DB::Fasta->new($fasta)} 
+      or warn "No sequence available. Use -gff instead of -dir if you wish to load features without sequence.\n";
+    $dna_db && $self->dna_db($dna_db);
   } else {
     $self->load_fasta($fasta);
   }
@@ -199,7 +201,7 @@ sub get_abscoords {
       my $feature_attributes = $feature->{attributes};
       my $attributes = {Alias => $name};
       if (!_matching_attributes($feature_attributes,$attributes)){
-         next;
+	next;
       }
     }
     push @{$refs{$feature->{ref}}},$feature;
@@ -219,11 +221,6 @@ sub get_abscoords {
   my ($ref) = keys %refs;
   my @found = @{$refs{$ref}};
   my ($strand,$start,$stop);
-  foreach (@found) {
-    $strand ||= $_->{strand};
-    $strand = '+' if $strand && $strand eq '.'; 
-    $start  = $_->{start} if !defined($start) || $start > $_->{start};
-    $stop   = $_->{stop}  if !defined($stop)  || $stop  < $_->{stop};
 
   my @found_segments;
   foreach my $ref (keys %refs) {
@@ -269,6 +266,43 @@ sub search_notes {
     last if @results >= $limit;
   }
   @results;
+}
+
+sub _delete_features {
+  my $self        = shift;
+  my @feature_ids = sort {$b<=>$a} @_;
+  my $removed = 0;
+  foreach (@feature_ids) {
+    next unless $_ >= 0 && $_ < @{$self->{data}};
+    $removed += defined splice(@{$self->{data}},$_,1);
+  }
+  $removed;
+}
+
+sub _delete {
+  my $self = shift;
+    my $delete_spec = shift;
+  my $ranges      = $delete_spec->{segments} || [];
+  my $types       = $delete_spec->{types}    || [];
+  my $force       = $delete_spec->{force};
+  my $range_type  = $delete_spec->{range_type};
+
+  my $deleted = 0;
+  if (@$ranges) {
+    my @args = @$types ? (-type=>$types) : ();
+    push @args,(-range_type => $range_type);
+    my %ids_to_remove = map {$_->id => 1} map {$_->features(@args)} @$ranges;
+    $deleted = $self->delete_features(keys %ids_to_remove);
+  } elsif (@$types) {
+    my %ids_to_remove = map {$_->id => 1} $self->features(-type=>$types);
+    $deleted = $self->delete_features(keys %ids_to_remove);
+  } else {
+    $self->throw("This operation would delete all feature data and -force not specified")
+      unless $force;
+    $deleted = @{$self->{data}};
+    @{$self->{data}} = ();
+  }
+  $deleted;
 }
 
 # attributes -
@@ -396,7 +430,7 @@ sub _feature_by_name {
   my $regexp;
 
   if ($name =~ /[*?]/) {  # uh oh regexp time
-    $name =~ quotemeta($name);
+    $name = quotemeta($name);
     $name =~ s/\\\*/.*/g;
     $name =~ s/\\\?/.?/g;
     $regexp++;
@@ -701,5 +735,3 @@ sub get_feature_by_group_id{ 1; }
 
 1;
 
-}
-1;

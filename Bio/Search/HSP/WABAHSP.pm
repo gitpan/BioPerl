@@ -1,4 +1,4 @@
-# $Id: WABAHSP.pm,v 1.5 2002/10/22 07:45:17 lapp Exp $
+# $Id: WABAHSP.pm,v 1.6 2003/04/11 19:31:33 jason Exp $
 #
 # BioPerl module for Bio::Search::HSP::WABAHSP
 #
@@ -145,7 +145,7 @@ sub hmmstate_string{
    return $self->{'_hmmstate_string'};
 }
 
-=head2 homolgy_string
+=head2 homology_string
 
  Title   : homolgy_string
  Usage   : my $homology_str = $hsp->homology_string();
@@ -157,7 +157,7 @@ sub hmmstate_string{
 
 =cut
 
-sub homolgy_string{
+sub homology_string{
    my ($self) = @_;
    return '';
 }

@@ -1,4 +1,4 @@
-# $Id: SNP.pm,v 1.9 2002/10/22 07:38:49 lapp Exp $
+# $Id: SNP.pm,v 1.12 2003/06/04 08:36:44 heikki Exp $
 # bioperl module for Bio::Variation::SNP
 #
 # Copyright Allen Day <allenday@ucla.edu>, Stan Nelson <snelson@ucla.edu>
@@ -52,10 +52,9 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Variation::SNP;
-my $VERSION=1.0;
 
 use strict;
-use vars qw($VERSION @ISA $AUTOLOAD);
+use vars qw( @ISA $AUTOLOAD);
 use Bio::Root::Root;
 use Bio::Variation::SeqDiff;
 use Bio::Variation::Allele;
@@ -96,10 +95,9 @@ use Bio::Variation::Allele;
  protein
  functional_class
 
-
 =cut
 
-
+#'
 my %OK_AUTOLOAD = (
 		id			=> '',
 		type			=> '',
@@ -186,8 +184,10 @@ sub subsnp {
 
  Title   : add_subsnp
  Usage   : $subsnp = $snp->add_subsnp()
- Function: pushes the previous value returned by subsnp() onto a stack, accessible with each_subsnp().
-           sets return value of subsnp() to a new Bio::Variation::SNP object, and returns that object.
+ Function: pushes the previous value returned by subsnp() onto a stack,
+           accessible with each_subsnp().
+           Sets return value of subsnp() to a new Bio::Variation::SNP
+           object, and returns that object.
  Returns : Bio::Varitiation::SNP
  Args    : NONE
 
@@ -195,7 +195,8 @@ sub subsnp {
 
 sub add_subsnp {
 	my $self = shift;
-	$self->throw("add_subsnp(): cannot add sunSNP to subSNP, only refSNP") if $self->is_subsnp;
+	$self->throw("add_subsnp(): cannot add subSNP to subSNP, only to refSNP")
+            if $self->is_subsnp;
 
 	my $subsnp = Bio::Variation::SNP->new;
 	push @{$self->{subsnps}}, $subsnp;
@@ -215,7 +216,8 @@ sub add_subsnp {
 
 sub each_subsnp {
 	my $self = shift;
-	$self->throw("each_subsnp(): cannot be called on a subSNP") if $self->is_subsnp;
+	$self->throw("each_subsnp(): cannot be called on a subSNP")
+            if $self->is_subsnp;
 	return @{$self->{subsnps}};
 }
 

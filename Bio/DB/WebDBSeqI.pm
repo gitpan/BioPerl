@@ -1,4 +1,4 @@
-# $Id: WebDBSeqI.pm,v 1.30.2.1 2003/06/12 09:29:38 heikki Exp $
+# $Id: WebDBSeqI.pm,v 1.37 2003/11/25 19:38:19 heikki Exp $
 #
 # BioPerl module for Bio::DB::WebDBSeqI
 #
@@ -93,7 +93,7 @@ use Bio::Root::Root;
 @ISA = qw(Bio::DB::RandomAccessI);
 
 BEGIN {
-    $MODVERSION = '0.8';
+    $MODVERSION = $Bio::Root::Version::VERSION;
     %RETRIEVAL_TYPES = ( 'io_string' => 1,
 			 'tempfile'  => 1,
 			 'pipeline'  => 1,
@@ -122,10 +122,12 @@ sub new {
     # even though this will be immedietly overwritten by most sub classes
     $format = $self->default_format unless ( defined $format && 
 					     $format ne '' );
-
+    
     $self->request_format($format);
-    my $ua = new LWP::UserAgent;
-    $ua->agent(ref($self) ."/$MODVERSION");
+    my $ua = new LWP::UserAgent(env_proxy => 1);
+    my $nm = ref($self);
+    $nm =~ s/::/_/g;
+    $ua->agent("bioperl-$nm/$MODVERSION");
     $self->ua($ua);  
     $self->{'_authentication'} = [];
     return $self;
@@ -149,10 +151,16 @@ sub get_Seq_by_id {
     my ($self,$seqid) = @_;
     $self->_sleep;
     my $seqio = $self->get_Stream_by_id([$seqid]);
-    $self->throw("id does not exist") if( !defined $seqio ) ;
+    unless( defined $seqio ) {
+	$self->warn("id ($seqid) does not exist");
+	return undef;
+    }
     my @seqs;
     while( my $seq = $seqio->next_seq() ) { push @seqs, $seq; }
-    $self->throw("id does not exist") unless @seqs;
+    unless( @seqs ) {
+	$self->warn("id ($seqid) does not exist");
+	return undef;
+    }
     if( wantarray ) { return @seqs } else { return shift @seqs }
 }
 
@@ -171,10 +179,16 @@ sub get_Seq_by_acc {
    my ($self,$seqid) = @_;
    $self->_sleep;
    my $seqio = $self->get_Stream_by_acc($seqid);
-   $self->throw("acc does not exist") if( ! defined $seqio );
+   if( ! defined $seqio ) { 
+       $self->warn("acc ($seqid) does not exist");
+       return undef;
+   }
    my @seqs;
    while( my $seq = $seqio->next_seq() ) { push @seqs, $seq; }
-   $self->throw("acc does not exist") unless @seqs;
+   unless( @seqs ) {
+       $self->warn("acc ($seqid) does not exist");
+       return undef;
+   }
    if( wantarray ) { return @seqs } else { return shift @seqs }
 }
 
@@ -194,10 +208,16 @@ sub get_Seq_by_gi {
    my ($self,$seqid) = @_;
     $self->_sleep;
    my $seqio = $self->get_Stream_by_gi($seqid);
-   $self->throw("gi does not exist") if( !defined $seqio );
+   unless( defined $seqio ) {
+       $self->warn("gi ($seqid) does not exist");
+       return undef;
+   }
    my @seqs;
    while( my $seq = $seqio->next_seq() ) { push @seqs, $seq; }
-   $self->throw("gi does not exist") unless @seqs;
+   unless( @seqs ) {
+       $self->warn("gi ($seqid) does not exist");
+       return undef;
+   }
    if( wantarray ) { return @seqs } else { return shift @seqs }
 }
 
@@ -216,10 +236,16 @@ sub get_Seq_by_version {
    my ($self,$seqid) = @_;
     $self->_sleep;
    my $seqio = $self->get_Stream_by_version($seqid);
-   $self->throw("accession.version does not exist") if( !defined $seqio );
+   unless( defined $seqio ) {
+       $self->warn("accession.version ($seqid) does not exist");
+       return undef;
+   }
    my @seqs;
    while( my $seq = $seqio->next_seq() ) { push @seqs, $seq; }
-   $self->throw("accession.version does not exist") unless @seqs;
+   unless( @seqs ) {
+       $self->warn("accession.version ($seqid) does not exist");
+       return undef;
+   }
    if( wantarray ) { return @seqs } else { return shift @seqs }
 }
 
@@ -401,12 +427,12 @@ sub get_seq_stream {
   my ($rformat, $ioformat) = $self->request_format();
   my $seen = 0;
   foreach my $key ( keys %qualifiers ) {
-    if( $key =~ /format/i ) {
+      if( $key =~ /format/i ) {
       $rformat = $qualifiers{$key};
       $seen = 1;
     }
   }
-  $qualifiers{'-format'} = $rformat if( !$seen);
+  $qualifiers{'-format'} = $rformat if( ! $seen);
   ($rformat, $ioformat) = $self->request_format($rformat);
 
   my $request = $self->get_request(%qualifiers);
@@ -437,8 +463,8 @@ sub get_seq_stream {
       }
       else {
 	  return Bio::SeqIO->new('-verbose' => $self->verbose,
-			       '-format'  => $ioformat,
-			       '-fh'      => \*STREAM);
+				 '-format'  => $ioformat,
+				 '-fh'      => \*STREAM);
       }
     }
     else {
@@ -462,7 +488,6 @@ sub get_seq_stream {
       open(ERR, "<$tmpfile");
       while(<ERR>) { $self->debug($_);}
     }
-
     return Bio::SeqIO->new('-verbose' => $self->verbose,
 			   '-format' => $ioformat,
 			   '-file'   => $tmpfile);

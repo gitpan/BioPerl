@@ -25,16 +25,17 @@ sub draw {
 
   my $gd = shift;
   my ($left,$top) = @_;
+
   my ($x1,$y1,$x2,$y2) = $self->calculate_boundaries(@_);
 
   my $height = $self->height;
 
   my $half = $self->insertion_width/2;
-
   my $fill = $self->bgcolor;
+  my $border = $self->fgcolor;
 
-  my $poly = GD::Polygon->new;
-
+  my $poly_pkg = $self->polygon_package;
+  my $poly     = $poly_pkg->new();
   if ($self->feature->strand > 0) { #plus strand
       $poly->addPt($x1 - $half, $y1);
       $poly->addPt($x1 + ($half), $y1);
@@ -44,8 +45,8 @@ sub draw {
       $poly->addPt($x1 - $half, $y2);
       $poly->addPt($x1 + ($half), $y2);
   }
-  $gd->filledPolygon($poly, $fill);
-  $gd->polygon($poly, $fill);
+  $gd->filledPolygon($poly,$fill);
+  $gd->polygon($poly,$border);
 
   # add a label if requested
   $self->draw_label($gd,$left,$top)       if $self->option('label');

@@ -1,4 +1,4 @@
-# $Id: Sbjct.pm,v 1.23.2.1 2003/02/20 00:39:03 jason Exp $
+# $Id: Sbjct.pm,v 1.26 2003/05/17 19:03:58 heikki Exp $
 ###############################################################################
 # Bio::Tools::BPlite::Sbjct
 ###############################################################################
@@ -7,6 +7,8 @@
 # see http://sapiens.wustl.edu/~ikorf
 #
 # You may distribute this module under the same terms as perl itself
+
+
 #
 # BioPerl module for Bio::Tools::BPlite::Sbjct
 #
@@ -24,15 +26,16 @@ Bio::Tools::BPlite::Sbjct - A Blast Subject (database search Hit)
 
 =head1 SYNOPSIS
 
- use Bio::Tools::BPlite
- my $report = new Bio::Tools::BPlite(-fh=>\*STDIN);
- while(my $sbjct = $report->nextSbjct) {
-     $sbjct->name;    # access to the hit name
-     "$sbjct";        # overloaded to return name
-     $sbjct->nextHSP; # gets the next HSP from the sbjct
-     while(my $hsp = $sbjct->nextHSP) {
-	 # canonical form is again a while loop
-     }
+  use Bio::Tools::BPlite;
+  my $report = new Bio::Tools::BPlite(-fh=>\*STDIN);
+  while(my $sbjct = $report->nextSbjct) {
+      $sbjct->name;    # access to the hit name
+      "$sbjct";        # overloaded to return name
+      $sbjct->nextHSP; # gets the next HSP from the sbjct
+      while (my $hsp = $sbjct->nextHSP) {
+ 	 # canonical form is again a while loop
+      }
+  }
 
 =head1 DESCRIPTION
 
@@ -77,7 +80,7 @@ Email: schattner@alum.mit.edu
 
 =head1 CONTRIBUTORS
 
-Jason Stajich, jason@bioperl.org
+Jason Stajich, jason@cgt.mc.duke.edu
 
 =head1 APPENDIX
 

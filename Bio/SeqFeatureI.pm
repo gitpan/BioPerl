@@ -1,4 +1,4 @@
-# $Id: SeqFeatureI.pm,v 1.43.2.5 2003/08/28 19:29:34 jason Exp $
+# $Id: SeqFeatureI.pm,v 1.51 2003/11/24 23:42:08 cjm Exp $
 #
 # BioPerl module for Bio::SeqFeatureI
 #
@@ -16,9 +16,9 @@ Bio::SeqFeatureI - Abstract interface of a Sequence Feature
 
 =head1 SYNOPSIS
 
-    # get a seqfeature somehow, eg,
+    # get a seqfeature somehow, eg, from a Sequence with Features attached
 
-    foreach $feat ( $seq->top_SeqFeatures() ) {
+    foreach $feat ( $seq->get_SeqFeatures() ) {
             print "Feature from ", $feat->start, "to ", 
 	          $feat->end, " Primary tag  ", $feat->primary_tag, 
 	          ", produced by ", $feat->source_tag(), "\n";
@@ -28,10 +28,14 @@ Bio::SeqFeatureI - Abstract interface of a Sequence Feature
             } else {
                 print "Feature on strand ", $feat->strand,"\n"; # -1,1
             }
+            print "feature location is ",$feat->start, "..",
+                  $feat->end, " on strand ", $feat->strand, "\n";
+            print "easy utility to print locations in GenBank/EMBL way ",
+                  $feat->location->to_FTstring(), "\n";
 
-            foreach $tag ( $feat->all_tags() ) {
-		print "Feature has tag ", $tag, "with values, ",
-		      join(' ',$feat->each_tag_value($tag)), "\n";
+            foreach $tag ( $feat->get_all_tags() ) {
+		print "Feature has tag ", $tag, " with values, ",
+		      join(' ',$feat->get_tag_values($tag)), "\n";
             }
 	    print "new feature\n" if $feat->has_tag('new');
 	    # features can have sub features
@@ -42,7 +46,7 @@ Bio::SeqFeatureI - Abstract interface of a Sequence Feature
 
 This interface is the functions one can expect for any Sequence
 Feature, whatever its implementation or whether it is a more complex
-type (eg, a Gene). This object doesn\'t actually provide any
+type (eg, a Gene). This object does not actually provide any
 implemention, it just provides the definitions of what methods one can
 call. See Bio::SeqFeature::Generic for a good standard implementation
 of this object
@@ -53,8 +57,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                     - General discussion
-  http://bio.perl.org/MailList.html         - About the mailing lists
+  bioperl-l@bioperl.org          - General discussion
+  http://bio.perl.org/MailList.html             - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -85,7 +89,6 @@ BEGIN {
     if( $@ ) { $HasInMemory = 0 }
     else { $HasInMemory = 1 }
 }
-
 use Bio::RangeI;
 use Bio::Seq;
 
@@ -191,14 +194,45 @@ sub has_tag{
  Usage   : @values = $self->get_tag_values('some_tag')
  Function: 
  Returns : An array comprising the values of the specified tag.
- Args    :
+ Args    : a string
 
+throws an exception if there is no such tag
 
 =cut
 
 sub get_tag_values {
     shift->throw_not_implemented();
 }
+
+=head2 get_tagset_values
+
+ Title   : get_tagset_values
+ Usage   : @values = $self->get_tagset_values(qw(label transcript_id product))
+ Function: 
+ Returns : An array comprising the values of the specified tags, in order of tags
+ Args    : An array of strings
+
+does NOT throw an exception if none of the tags are not present
+
+this method is useful for getting a human-readable label for a
+SeqFeatureI; not all tags can be assumed to be present, so a list of
+possible tags in preferential order is provided
+
+=cut
+
+# interface + abstract method
+sub get_tagset_values {
+    my ($self, @args) = @_;
+    my @vals = ();
+    foreach my $arg (@args) {
+        if ($self->has_tag($arg)) {
+            push(@vals, $self->get_tag_values($arg));
+        }
+    }
+    return @vals;
+}
+
+
 
 =head2 get_all_tags
 
@@ -223,20 +257,19 @@ sub get_all_tags{
            Bio::Seq object is for the *entire* sequence: ie
            from 1 to 10000
 
-           Note that it is not guaranteed that if you obtain a feature
-           from an object in bioperl, it will have a sequence
-           attached. Also, implementors of this interface can choose
-           to provide an empty implementation of this method. I.e.,
-           there is also no guarantee that if you do attach a
-           sequence, seq() or entire_seq() will not return undef.
+           Note that it is not guaranteed that if you obtain a feature from
+           an object in bioperl, it will have a sequence attached. Also,
+           implementors of this interface can choose to provide an empty
+           implementation of this method. I.e., there is also no guarantee 
+           that if you do attach a sequence, seq() or entire_seq() will not
+           return undef.
 
-           The reason that this method is here on the interface is to
-           enable you to call it on every SeqFeatureI compliant
-           object, and that it will be implemented in a useful way and
-           set to a useful value for the great majority of use
-           cases. Implementors who choose to ignore the call are
-           encouraged to specifically state this in their
-           documentation.
+           The reason that this method is here on the interface is to enable
+           you to call it on every SeqFeatureI compliant object, and
+           that it will be implemented in a useful way and set to a useful 
+           value for the great majority of use cases. Implementors who choose
+           to ignore the call are encouraged to specifically state this in
+           their documentation.
 
  Example :
  Returns : TRUE on success
@@ -406,27 +439,24 @@ but can be validly overwritten by subclasses
             $seq = $feature_with_remote_locations->spliced_seq($db_for_seqs)
 
   Function: Provides a sequence of the feature which is the most
-            semantically "relevant" feature for this sequence. A
-            default implementation is provided which for simple cases
-            returns just the sequence, but for split cases, loops over
-            the split location to return the sequence. In the case of
-            split locations with remote locations, eg
+            semantically "relevant" feature for this sequence. A default
+            implementation is provided which for simple cases returns just
+            the sequence, but for split cases, loops over the split location
+            to return the sequence. In the case of split locations with
+            remote locations, eg
 
             join(AB000123:5567-5589,80..1144)
 
-            in the case when a database object is passed in, it will
-            attempt to retrieve the sequence from the database object,
-            and "Do the right thing", however if no database object is
-            provided, it will generate the correct number of N's (DNA)
-            or X's (protein, though this is unlikely).
+            in the case when a database object is passed in, it will attempt
+            to retrieve the sequence from the database object, and "Do the right thing",
+            however if no database object is provided, it will generate the correct
+            number of N's (DNA) or X's (protein, though this is unlikely).
 
-            This function is deliberately "magical" attempting to
-            second guess what a user wants as "the" sequence for this
-            feature
+            This function is deliberately "magical" attempting to second guess
+            what a user wants as "the" sequence for this feature
 
-            Implementing classes are free to override this method with
-            their own magic if they have a better idea what the user
-            wants
+            Implementing classes are free to override this method with their
+            own magic if they have a better idea what the user wants
 
   Args    : [optional] A Bio::DB::RandomAccessI compliant object
   Returns : A Bio::Seq
@@ -434,9 +464,8 @@ but can be validly overwritten by subclasses
 =cut
 
 sub spliced_seq {
-    my $self = shift;
-    my $db = shift;
-
+    my ($self,$db) = @_;
+   
     if( ! $self->location->isa("Bio::Location::SplitLocationI") ) {
 	return $self->seq(); # nice and easy!
     }
@@ -452,27 +481,22 @@ sub spliced_seq {
     # so we are really sorting features 5' -> 3' on their strand
     # i.e. rev strand features will be sorted largest to smallest
     # as this how revcom CDSes seem to be annotated in genbank.
-    # Might need to eventually allow this to be programable?
+    # Might need to eventually allow this to be programable?    
     # (can I mention how much fun this is NOT! --jason)
-
-    my ($mixed,$mixedloc,$fstrand) = (0);
-
-    if( defined $db && 
-	ref($db) &&  !$db->isa('Bio::DB::RandomAccessI') ) {
+    
+    my ($mixed,$mixedloc, $fstrand) = (0);
+    if( $db && ref($db) && ! $db->isa('Bio::DB::RandomAccessI') ) {
 	$self->warn("Must pass in a valid Bio::DB::RandomAccessI object for access to remote locations for spliced_seq");
 	$db = undef;
-    } elsif( defined $db && 
-	     $HasInMemory && ! $db->isa('Bio::DB::InMemoryCache') ) {
+    } elsif( defined $db && $HasInMemory && 
+	     ! $db->isa('Bio::DB::InMemoryCache') ) {
 	$db = new Bio::DB::InMemoryCache(-seqdb => $db);
     }
-    
     if( $self->isa('Bio::Das::SegmentI') &&
 	! $self->absolute ) { 
-	$self->warn("Calling spliced_seq with a Bio::Das::SegmentI ".
-                    "which does have absolute set to 1 -- be warned ".
-                    "you may not be getting things on the correct strand");
+	$self->warn("Calling spliced_seq with a Bio::Das::SegmentI which does have absolute set to 1 -- be warned you may not be getting things on the correct strand");
     }
-
+    
     my @locs = map { $_->[0] }
     # sort so that most negative is first basically to order
     # the features on the opposite strand 5'->3' on their strand
@@ -485,18 +509,16 @@ sub spliced_seq {
 	if( defined $_->seq_id ) {
 	    $mixedloc = 1 if( $_->seq_id ne $seqid );
 	}
-	[ $_, $_->start* ($_->strand || 1)];
+	[ $_, $_->start* ($_->strand || 1)];	    
     } $self->location->each_Location; 
-
+   
     if ( $mixed ) { 
-	$self->warn("Mixed strand locations, spliced seq using the input ".
-                    "order rather than trying to sort");
+	$self->warn("Mixed strand locations, spliced seq using the input order rather than trying to sort");    
 	@locs = $self->location->each_Location; 
     } elsif( $mixedloc ) {
 	# we'll use the prescribed location order
 	@locs = $self->location->each_Location; 
     }
-
 
     foreach my $loc ( @locs  ) {
 	if( ! $loc->isa("Bio::Location::Atomic") ) {
@@ -507,6 +529,7 @@ sub spliced_seq {
 	    $self->warn("feature strand is different from location strand!");
 	}
 	# deal with remote sequences
+
 	if( defined $loc->seq_id && 
 	    $loc->seq_id ne $seqid ) {
 	    if( defined $db ) {
@@ -532,7 +555,7 @@ sub spliced_seq {
 	}
 	
 	if( $self->isa('Bio::Das::SegmentI') ) {
-	    my ($s,$e) = ($loc->start,$loc->end);
+	    my ($s,$e) = ($loc->start,$loc->end);	    
 	    $seqstr .= $called_seq->subseq($s,$e)->seq();
 	} else { 
 	    # This is dumb subseq should work on locations...
@@ -544,8 +567,8 @@ sub spliced_seq {
 	}
     }
     my $out = Bio::Seq->new( -id => $self->entire_seq->display_id . "_spliced_feat",
-				      -seq => $seqstr);
-
+			     -seq => $seqstr);
+    
     return $out;
 }
 
@@ -627,4 +650,21 @@ sub location {
 }
 
 
+=head2 primary_id
+
+ Title   : primary_id
+ Usage   : $obj->primary_id($newval)
+ Function: 
+ Example : 
+ Returns : value of primary_id (a scalar)
+ Args    : on set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub primary_id{
+    my $self = shift;
+    return $self->{'primary_id'} = shift if @_;
+    return $self->{'primary_id'};
+}
 1;

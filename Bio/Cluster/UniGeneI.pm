@@ -1,4 +1,4 @@
-# $Id: UniGeneI.pm,v 1.9 2002/10/25 22:49:03 lapp Exp $
+# $Id: UniGeneI.pm,v 1.10 2003/06/04 08:36:37 heikki Exp $
 #
 # BioPerl module for Bio::Cluster::UniGeneI.pm
 #
@@ -73,12 +73,11 @@ methods. Internal methods are usually preceded with a "_".
 
 
 package Bio::Cluster::UniGeneI;
-use vars qw(@ISA $VERSION);
+use vars qw(@ISA);
 use strict;
 
 use Bio::ClusterI;
 
-$VERSION = '1.0';
 @ISA = qw(Bio::ClusterI);
 
 

@@ -3,7 +3,7 @@
 # PURPOSE : Provides general-purpose utilities of potential interest to any Perl script.
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : Feb 1996
-# REVISION: $Id: Utilities.pm,v 1.21 2002/10/22 07:38:37 lapp Exp $
+# REVISION: $Id: Utilities.pm,v 1.22 2003/06/04 08:36:42 heikki Exp $
 # STATUS  : Alpha
 #
 # This module manages file compression and uncompression using gzip or
@@ -51,10 +51,9 @@ use vars qw( @ISA @EXPORT_OK %EXPORT_TAGS );
 %EXPORT_TAGS = ( obj => [qw($Util)],
 		 std => [qw($Util)],);
 
-use vars qw($ID $VERSION $Util $GNU_PATH $DEFAULT_NEWLINE);
+use vars qw($ID $Util $GNU_PATH $DEFAULT_NEWLINE);
 
 $ID        = 'Bio::Root::Utilities';
-$VERSION   = 0.05;
 
 # $GNU_PATH points to the directory containing the gzip and gunzip 
 # executables. It may be required for executing gzip/gunzip 

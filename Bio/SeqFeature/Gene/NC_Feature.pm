@@ -1,4 +1,4 @@
-# $Id: NC_Feature.pm,v 1.5 2002/10/22 07:45:20 lapp Exp $
+# $Id: NC_Feature.pm,v 1.8 2003/05/15 08:30:30 lapp Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::NC_Feature.pm
 #
@@ -71,16 +71,24 @@ use strict;
 use Bio::SeqFeature::Generic;
 
 @ISA = qw(Bio::SeqFeature::Generic);
-sub new {
-  my($class,@args) = @_;
 
-  my $self = $class->SUPER::new(@args);
+sub new {
+    my($class,@args) = @_;
+    
+    my $self = $class->SUPER::new(@args);
+
+    my ($is_coding) =
+	$self->_rearrange([qw(IS_CODING)],@args);
+    # default is non-coding
+    $self->is_coding(defined($is_coding) ? $is_coding : 0);
+
+    return $self;
 }
 
 
 
 =head2 is_coding
-    
+
  Title   : is_coding
  Usage   : if ($feature->is_coding()) {
                      #do something
@@ -89,12 +97,13 @@ sub new {
  Returns : FALSE
  Args    : none
 
-
 =cut
 
-sub is_coding {
-   my ($self,@args) = @_;
-   return;
+sub is_coding{
+    my $self = shift;
+
+    return $self->{'is_coding'} = shift if @_;
+    return $self->{'is_coding'};
 }
 
 =head2 cds

@@ -1,6 +1,6 @@
 #-*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: CoordinateMapper.t,v 1.10.2.1 2003/02/20 05:11:45 heikki Exp $
+## $Id: CoordinateMapper.t,v 1.13 2003/10/16 16:34:19 heikki Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -103,7 +103,7 @@ ok $res->each_gap, 1;
 
 ok $res->gap->isa('Bio::Coordinate::Result::Gap');
 ok $res->gap->isa('Bio::LocationI');
-ok $res->gap->strand, 0; # no guessing of strand
+ok $res->gap->strand, 1;
 ok $res->gap->start, 5;
 ok $res->gap->length, $pos->length;
 ok $res->gap->seq_id, 'propeptide';

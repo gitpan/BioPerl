@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: BlastHSP.pm,v 1.20 2002/12/24 15:45:33 jason Exp $
+# $Id: BlastHSP.pm,v 1.24 2003/11/25 17:53:15 jason Exp $
 #
 # BioPerl module Bio::Search::HSP::BlastHSP
 #
@@ -18,16 +18,7 @@ Bio::Search::HSP::BlastHSP - Bioperl BLAST High-Scoring Pair object
 
 =head1 SYNOPSIS
 
-The construction of BlastHSP objects is performed by
-Bio::Factory::BlastHitFactory in a process that is
-orchestrated by the Blast parser (B<Bio::SearchIO::psiblast>).
-The resulting BlastHSPs are then accessed via
-B<Bio::Search::Hit::BlastHit>). Therefore, you do not need to
-use B<Bio::Search::HSP::BlastHSP>) directly. If you need to construct
-BlastHSPs directly, see the new() function for details.
-
-For B<Bio::SearchIO> BLAST parsing usage examples, see the
-B<examples/search-blast> directory of the Bioperl distribution.
+See L<Bio::Search::Hit::BlastHit>.
 
 =head1 DESCRIPTION
 
@@ -39,6 +30,17 @@ alignment with score information.
 BlastHSP objects are accessed via B<Bio::Search::Hit::BlastHit>
 objects after parsing a BLAST report using the B<Bio::SearchIO>
 system.
+
+The construction of BlastHSP objects is performed by
+Bio::Factory::BlastHitFactory in a process that is
+orchestrated by the Blast parser (B<Bio::SearchIO::psiblast>).
+The resulting BlastHSPs are then accessed via
+B<Bio::Search::Hit::BlastHit>). Therefore, you do not need to
+use B<Bio::Search::HSP::BlastHSP>) directly. If you need to construct
+BlastHSPs directly, see the new() function for details.
+
+For B<Bio::SearchIO> BLAST parsing usage examples, see the
+B<examples/search-blast> directory of the Bioperl distribution.
 
 =head2 Start and End coordinates
 
@@ -159,7 +161,7 @@ use vars qw( @ISA $GAP_SYMBOL $Revision %STRAND_SYMBOL );
 use overload 
     '""' => \&to_string;
 
-$Revision = '$Id: BlastHSP.pm,v 1.20 2002/12/24 15:45:33 jason Exp $';  #'
+$Revision = '$Id: BlastHSP.pm,v 1.24 2003/11/25 17:53:15 jason Exp $';  #'
 
 @ISA = qw(Bio::SeqFeature::SimilarityPair Bio::Search::HSP::HSPI);
 
@@ -170,8 +172,8 @@ $GAP_SYMBOL    = '-';          # Need a more general way to handle gap symbols.
 =head2 new
 
  Usage     : $hsp = Bio::Search::HSP::BlastHSP->new( %named_params );
-           : Bio::Search::HSP::BlastHSP.pm objects are constructed 
-           : automatically by Bio::SearchIO::BlastHitFactory.pm, 
+           : Bio::Search::HSP::BlastHSP objects are constructed 
+           : automatically by Bio::SearchIO::BlastHitFactory, 
            : so there is no need for direct instantiation.
  Purpose   : Constructs a new BlastHSP object and Initializes key variables 
            : for the HSP.
@@ -212,12 +214,12 @@ sub new {
 
     ($self->{'_prog'}, $self->{'_rank'}, $raw_data,
      $qname, $hname) = 
-      $self->_rearrange([qw( PROGRAM
-			     RANK
-			     RAW_DATA
-			     QUERY_NAME
-			     HIT_NAME
-			   )], @args );
+	 $self->_rearrange([qw( PROGRAM
+				RANK
+				RAW_DATA
+				QUERY_NAME
+				HIT_NAME
+				)], @args );
     
     # _set_data() does a fair amount of parsing. 
     # This will likely change (see comment above.)
@@ -270,8 +272,8 @@ sub new {
 sub _id_str {
     my $self = shift;
     if( not defined $self->{'_id_str'}) {
-        my $qname = $self->query->seqname;
-        my $hname = $self->hit->seqname;
+        my $qname = $self->query->seq_id;
+        my $hname = $self->hit->seq_id;
         $self->{'_id_str'} = "QUERY=\"$qname\" HIT=\"$hname\"";
     }
     return $self->{'_id_str'};
@@ -397,14 +399,17 @@ sub length {
 #-----------
 ## Developer note: when using the built-in length function within
 ##                 this module, call it as CORE::length().
-    my( $self, $seqType ) = @_;
+    my( $self, $seqType,$data ) = @_;
     $seqType  ||= 'total';
     $seqType = 'sbjct' if $seqType eq 'hit';
 
     $seqType ne 'total' and $self->_set_seq_data() unless $self->{'_set_seq_data'};
-
+    
     ## Sensitive to member name format.
     $seqType = "_\L$seqType\E";
+    if( defined $data  ) { 
+	$self->{$seqType.'Length'} = $data;
+    }
     $self->{$seqType.'Length'};
 }
 
@@ -954,7 +959,7 @@ sub _set_seq {
 
     if( !(scalar(@sequence) and scalar(@ranges))) {
         my $id_str = $self->_id_str;
-	$self->throw("Can't set sequence: missing data. Possibly unrecognized Blast format. ($id_str)");
+	$self->throw("Can't set sequence: missing data. Possibly unrecognized Blast format. ($id_str) $seqType");
    }
  
     # Sensitive to member name changes.
@@ -1433,11 +1438,6 @@ See Also   : B<_set_seq()>, B<_set_match_stats()>
 sub strand {
 #-----------
     my( $self, $seqType ) = @_;
-
-    # Hack to deal with the fact that SimilarityPair calls strand()
-    # which will lead to an error because parsing hasn't yet occurred.
-    # See SimilarityPair::new().
-    return if $self->{'_initializing'};
 
     $seqType  ||= (wantarray ? 'list' : 'query');
     $seqType = 'sbjct' if $seqType eq 'hit';

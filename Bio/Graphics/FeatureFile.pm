@@ -1,6 +1,6 @@
 package Bio::Graphics::FeatureFile;
 
-# $Id: FeatureFile.pm,v 1.20.2.2 2003/08/29 19:30:10 lstein Exp $
+# $Id: FeatureFile.pm,v 1.41 2003/12/13 17:17:50 lstein Exp $
 # This package parses and renders a simple tab-delimited format for features.
 # It is simpler than GFF, but still has a lot of expressive power.
 # See __END__ for the file format
@@ -118,6 +118,7 @@ use strict;
 use Bio::Graphics::Feature;
 use Bio::DB::GFF::Util::Rearrange;
 use Carp;
+use Bio::DB::GFF;
 use IO::File;
 use Text::Shellwords;
 
@@ -366,7 +367,7 @@ sub parse_file {
   $self->init_parse;
   while (<$fh>) {
     chomp;
-    $self->parse_line($_);
+    $self->parse_line($_) || last;
   }
   $self->finish_parse;
 }
@@ -388,7 +389,18 @@ sub parse_line {
 
   s/\015//g;  # get rid of carriage returns left over by MS-DOS/Windows systems
 
-  return if /^\s*[\#]/;
+  # capture GFF header
+  if (/^\#\#gff-version\s+(\d+)/) {
+    $self->{gff_version} = $1;
+    require Bio::DB::GFF;
+    return 1;
+  }
+
+  # skip on blank lines and comments
+  return 1 if /^\s*[\#]/;
+
+  # abort if we see a >FASTA line
+  return 0 if /^>/;
 
   if (/^\s+(.+)/ && $self->{current_tag}) { # continuation line
     my $value = $1;
@@ -397,7 +409,7 @@ sub parse_line {
     # respect newlines in code subs
     $self->{config}{$cc}{$self->{current_tag}} .= "\n"
       if $self->{config}{$cc}{$self->{current_tag}}=~ /^sub\s*\{/;
-    return;
+    return 1;
   }
 
   if (/^\s*\[([^\]]+)\]/) {  # beginning of a configuration section
@@ -405,7 +417,7 @@ sub parse_line {
     my $cc = $label =~ /^(general|default)$/i ? 'general' : $label;  # normalize
     push @{$self->{types}},$cc unless $cc eq 'general';
     $self->{current_config} = $cc;
-    return;
+    return 1;
   }
 
   if (/^([\w: -]+?)\s*=\s*(.*)/) {   # key value pair within a configuration section
@@ -414,13 +426,13 @@ sub parse_line {
     my $value = defined $2 ? $2 : '';
     $self->{config}{$cc}{$tag} = $value;
     $self->{current_tag} = $tag;
-    return;
+    return 1;
   }
 
 
   if (/^$/) { # empty line
     undef $self->{current_tag};
-    return;
+    return 1;
   }
 
   # parse data lines
@@ -440,24 +452,30 @@ sub parse_line {
     $self->{group}         = Bio::Graphics::Feature->new(-name => $name,
 							 -type => 'group');
     $self->{grouptype}     = $type;
-    return;
+    return 1;
   }
 
-  my($ref,$type,$name,$strand,$bounds,$description,$url);
+  my($ref,$type,$name,$strand,$bounds,$description,$url,$score,%attributes);
 
   if (@tokens >= 8) { # conventional GFF file
-    my ($r,$source,$method,$start,$stop,$score,$s,$phase,@rest) = @tokens;
+    my ($r,$source,$method,$start,$stop,$scor,$s,$phase,@rest) = @tokens;
     my $group = join ' ',@rest;
-    $type   = join(':',$method,$source);
+    $type   = defined $source && $source ne '.' ? join(':',$method,$source) : $method;
     $bounds = join '..',$start,$stop;
     $strand = $s;
     if ($group) {
       my ($notes,@notes);
-      (undef,$self->{groupname},undef,undef,$notes) = split_group($group);
+      (undef,$name,undef,undef,$notes) = $self->split_group($group);
       foreach (@$notes) {
-	if (m!^(http|ftp)://!) { $url = $_ } else { push @notes,$_ }
+	my ($key,$value) = @$_;
+	if ($value =~ m!^(http|ftp)://!) { 
+	  $url = $_ 
+	} elsif ($key=~/note/i) { 
+	  push @notes,$value;
+	}
       }
       $description = join '; ',@notes if @notes;
+      $score       = $scor if defined $scor && $scor ne '.';
     }
     $name ||= $self->{group}->display_id if $self->{group};
     $ref = $r;
@@ -491,15 +509,13 @@ sub parse_line {
 
   if ($self->{coordinate_mapper} && $ref) {
     ($ref,@parts) = $self->{coordinate_mapper}->($ref,@parts);
-    return unless $ref;
+    return 1 unless $ref;
   }
 
   $type = '' unless defined $type;
   $name = '' unless defined $name;
 
   # attribute handling
-  my %attributes;
-  my $score;
   if (defined $description && $description =~ /\w+=\w+/) { # attribute line
     my @attributes = split /;\s*/,$description;
     foreach (@attributes) {
@@ -523,29 +539,21 @@ sub parse_line {
   # either create a new feature or add a segment to it
   if (my $feature = $self->{seenit}{$type,$name}) {
 
-    # create a new first part
+    # create a new segment to hold the parts
     if (!$feature->segments) {
-      $feature->add_segment(Bio::Graphics::Feature->new(-type   => $feature->type,
-							-strand => $feature->strand,
-							-start  => $feature->start,
-							-end    => $feature->end));
+      my $new_segment  = bless {%$feature},ref $feature;
+      $feature->add_segment($new_segment);
     }
-    $feature->add_segment(@parts);
+    # add the segments
+    $feature->add_segment(map {
+      _make_feature($name,$type,$strand,$description,$ref,\%attributes,$url,$score,[$_])
+    }  @parts);
   }
 
   else {
-    my @coordinates = @parts > 1 ? (-segments => \@parts) : (-start=>$parts[0][0],-end=>$parts[0][1]);
-    $feature = $self->{seenit}{$type,$name} =
-      Bio::Graphics::Feature->new(-name       => $name,
-				  -type       => $type,
-				  $strand ? (-strand   => make_strand($strand)) : (),
-				  defined $score ? (-score=>$score) : (),
-				  -desc       => $description,
-				  -ref        => $ref,
-				  -attributes => \%attributes,
-				  defined($url) ? (-url      => $url) : (),
-				  @coordinates,
-				 );
+    $feature = $self->{seenit}{$type,$name} = _make_feature($name,$type,$strand,
+							    $description,$ref,
+							    \%attributes,$url,$score,\@parts);
     $feature->configurator($self) if $self->smart_features;
     if ($self->{group}) {
       $self->{group}->add_segment($feature);
@@ -553,6 +561,8 @@ sub parse_line {
       push @{$self->{features}{$type}},$feature;  # for speed; should use add_feature() instead
     }
   }
+
+  return 1;
 }
 
 sub _unescape {
@@ -561,6 +571,22 @@ sub _unescape {
     s/%([0-9a-fA-F]{2})/chr hex($1)/g;
   }
   @_;
+}
+
+sub _make_feature {
+  my ($name,$type,$strand,$description,$ref,$attributes,$url,$score,$parts) = @_;
+  my @coordinates = @$parts > 1 ? (-segments => $parts) : (-start=>$parts->[0][0],-end=>$parts->[0][1]);
+  Bio::Graphics::Feature->new(-name       => $name,
+			      -type       => $type,
+			      -subtype    => "${type}_part",
+			      $strand ? (-strand   => make_strand($strand)) : (),
+			      -desc       => $description,
+			      -ref        => $ref,
+			      -attributes => $attributes,
+			      defined $url   ? (-url  => $url) : (),
+			      defined $score ? (-score=>$score) : (),
+			      @coordinates,
+			     );
 }
 
 =over 4
@@ -647,12 +673,12 @@ sub set {
 }
 
 # break circular references
-sub destroy {
+sub finished {
   my $self = shift;
   delete $self->{features};
 }
 
-sub DESTROY { shift->destroy(@_) }
+sub DESTROY { shift->finished(@_) }
 
 =over 4
 
@@ -779,7 +805,11 @@ sub style {
   my $type = shift;
 
   my $config  = $self->{config}  or return;
-  my $hashref = $config->{$type} or return;
+  my $hashref = $config->{$type};
+  unless ($hashref) {
+    $type =~ s/:.+$//;
+    $hashref = $config->{$type} or return;
+  }
 
   return map {("-$_" => $hashref->{$_})} keys %$hashref;
 }
@@ -843,7 +873,6 @@ sub types {
   return keys %{$features};
 }
 
-
 =over 4
 
 =item $features = $features-E<gt>features($type)
@@ -883,7 +912,7 @@ Two APIs:
 # return features
 sub features {
   my $self = shift;
-  my ($types,$iterator,@rest) = $_[0]=~/^-/ ? rearrange([['TYPE','TYPES']],@_) : (\@_);
+  my ($types,$iterator,@rest) = defined($_[0] && $_[0]=~/^-/) ? rearrange([['TYPE','TYPES']],@_) : (\@_);
   $types = [$types] if $types && !ref($types);
   my @types = ($types && @$types) ? @$types : $self->types;
   my @features = map {@{$self->{features}{$_}}} @types;
@@ -996,16 +1025,18 @@ sub init_parse {
   my $s = shift;
 
   $s->{seenit} = {}; 
-  $s->{max}      = $s->{min} = undef;
-  $s->{types}    = [];
-  $s->{features} = {};
-  $s->{config}   = {}
+  $s->{max}         = $s->{min} = undef;
+  $s->{types}       = [];
+  $s->{features}    = {};
+  $s->{config}      = {};
+  $s->{gff_version} = 0;
 }
 
 sub finish_parse {
   my $s = shift;
   $s->evaluate_coderefs if $s->safe;
   $s->{seenit} = {};
+  delete $s->{gff_version};
 }
 
 sub evaluate_coderefs {
@@ -1035,48 +1066,8 @@ sub base2package {
 }
 
 sub split_group {
-  my $group = shift;
-
-  $group =~ s/\\;/$;/g;  # protect embedded semicolons in the group
-  $group =~ s/( \"[^\"]*);([^\"]*\")/$1$;$2/g;
-  my @groups = split(/\s*;\s*/,$group);
-  foreach (@groups) { s/$;/;/g }
-
-  my ($gclass,$gname,$tstart,$tstop,@notes);
-
-  foreach (@groups) {
-
-    my ($tag,$value) = /^(\S+)\s*(.*)/;
-    $value =~ s/\\t/\t/g;
-    $value =~ s/\\r/\r/g;
-    $value =~ s/^"//;
-    $value =~ s/"$//;
-
-    # if the tag is "Note", then we add this to the
-    # notes array
-   if ($tag eq 'Note') {  # just a note, not a group!
-     push @notes,$value;
-   }
-
-    # if the tag eq 'Target' then the class name is embedded in the ID
-    # (the GFF format is obviously screwed up here)
-    elsif ($tag eq 'Target' && $value =~ /([^:\"]+):([^\"]+)/) {
-      ($gclass,$gname) = ($1,$2);
-      ($tstart,$tstop) = /(\d+) (\d+)/;
-    }
-
-    elsif (!$value) {
-      push @notes,$tag;  # e.g. "Confirmed_by_EST"
-    }
-
-    # otherwise, the tag and value correspond to the
-    # group class and name
-    else {
-      ($gclass,$gname) = ($tag,$value);
-    }
-  }
-
-  return ($gclass,$gname,$tstart,$tstop,\@notes);
+  my $self = shift;
+  return Bio::DB::GFF->split_group(shift, $self->{gff_version} > 2);
 }
 
 # create a panel if needed
@@ -1203,6 +1194,7 @@ sub link_pattern {
       : $1 eq 'segstart'     ? $panel->start
       : $1 eq 'segend'       ? $panel->end
       : $1 eq 'description'  ? eval {join '',$feature->notes} || ''
+      : $1 eq 'id'           ? $feature->feature_id
       : $1
 	       )
        /exg;

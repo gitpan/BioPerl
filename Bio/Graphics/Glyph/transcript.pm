@@ -1,5 +1,5 @@
 package Bio::Graphics::Glyph::transcript;
-# $Id: transcript.pm,v 1.12.2.1 2003/07/05 00:32:04 lstein Exp $
+# $Id: transcript.pm,v 1.16 2003/09/17 17:11:30 lstein Exp $
 
 use strict;
 use Bio::Graphics::Glyph::segments;
@@ -130,6 +130,8 @@ L<Bio::Graphics::Glyph> for a full explanation.
   -label        Whether to draw a label	       0 (false)
 
   -description  Whether to draw a description  0 (false)
+
+  -hilite       Highlight color                undef (no color)
 
 In addition, the alignment glyph recognizes the following
 glyph-specific options:

@@ -3,10 +3,9 @@ package Bio::Graphics::Panel;
 use strict;
 use Bio::Graphics::Glyph::Factory;
 use Bio::Graphics::Feature;
-use GD;;
 
-
-use constant KEYLABELFONT => gdMediumBoldFont;
+# KEYLABELFONT must be treated as string until image_class is established
+use constant KEYLABELFONT => 'gdMediumBoldFont';
 use constant KEYSPACING   => 5; # extra space between key columns
 use constant KEYPADTOP    => 5;  # extra padding before the key starts
 use constant KEYCOLOR     => 'wheat';
@@ -40,7 +39,9 @@ sub new {
   my $flip         = $options{-flip}       || 0;
   my $empty_track_style   = $options{-empty_tracks} || 'key';
   my $truecolor    = $options{-truecolor}  || 0;
-
+  my $image_class  = $options{-image_class} || 'GD';
+  $options{-stop}||= $options{-end};  # damn damn damn
+  
   if (my $seg = $options{-segment}) {
     $offset = eval {$seg->start-1} || 0;
     $length = $seg->length;
@@ -72,7 +73,10 @@ sub new {
 		all_callbacks => $allcallbacks,
 		truecolor     => $truecolor,
 		flip          => $flip,
-		empty_track_style    => $empty_track_style,
+		empty_track_style  => $empty_track_style,
+		image_class  => $image_class,
+		image_package => $image_class . '::Image',     # Accessors
+		polygon_package => $image_class . '::Polygon',
 	       },$class;
 }
 
@@ -335,8 +339,10 @@ sub _add_track {
   return $track;
 }
 
+
 sub height {
   my $self = shift;
+  $self->setup_fonts;
   my $spacing           = $self->spacing;
   my $key_height        = $self->format_key;
   my $empty_track_style = $self->empty_track_style;
@@ -361,6 +367,18 @@ sub height {
   return $height + $key_height + $self->pad_top + $self->pad_bottom;
 }
 
+sub setup_fonts {
+  my $self = shift;
+  return if ref $self->{key_font};
+
+  my $image_class = $self->image_class;
+  eval "use $image_class; 1" or die $@;
+
+  my $keyfont = $self->{key_font};
+  my $font_obj = $image_class->$keyfont;
+  $self->{key_font} = $font_obj;
+}
+
 sub gd {
   my $self        = shift;
   my $existing_gd = shift;
@@ -369,12 +387,25 @@ sub gd {
 
   return $self->{gd} if $self->{gd};
 
+  $self->setup_fonts;
+
+  unless ($existing_gd) {
+    # Encapsulating this eval within a BEGIN block
+    # adds nothing since $image_class is undefined at compile time.
+    # gd exported functions should all use ();
+    # BEGIN {
+    my $image_class = $self->image_class;
+    eval "use $image_class; 1" or die $@;
+    # }
+  }
+
   my $width  = $self->width;
   my $height = $self->height;
 
-  my $gd = $existing_gd || GD::Image->new($width,$height,
-					  ($self->{truecolor} && GD::Image->can('isTrueColor') ? 1 : ())
-					 );
+  my $pkg = $self->image_package;
+  my $gd  = $existing_gd || $pkg->new($width,$height,
+				      ($self->{truecolor} && $pkg->can('isTrueColor') ? 1 : ())
+				     );
 
   my %translation_table;
   for my $name ('white','black',keys %COLORS) {
@@ -445,14 +476,22 @@ sub gd {
 
 
   $self->draw_bottom_key($gd,$pl,$offset) if $self->{key_style} eq 'bottom';
-
   return $self->{gd} = $gd;
 }
+
+
+# Package accessors
+# GD (and GD::SVG)'s new() resides in GD::Image
+sub image_class     { return shift->{image_class}; }
+sub image_package   { return shift->{image_package}; }
+sub polygon_package { return shift->{polygon_package}; }
 
 sub boxes {
   my $self = shift;
   my @boxes;
   my $offset = 0;
+
+  $self->setup_fonts;
 
   my $pl = $self->pad_left;
   my $pt = $self->pad_top;
@@ -491,7 +530,10 @@ sub draw_between_key {
   my $x =   $self->{key_align} eq 'center' ? $self->width - (CORE::length($key) * $self->{key_font}->width)/2
           : $self->{key_align} eq 'right'  ? $self->width - CORE::length($key)
           : $self->pad_left;
-  $gd->string($self->{key_font},$x,$offset,$key,1);
+
+  # Key color hard-coded. Should be configurable for the control freaks.
+  my $color = $self->translate_color('black');
+  $gd->string($self->{key_font},$x,$offset,$key,$color);
   return $self->{key_font}->height;
 }
 
@@ -502,7 +544,8 @@ sub draw_side_key {
   my $key = $track->option('key') or return;
   my $pos = $side eq 'left' ? $self->pad_left - $self->{key_font}->width * CORE::length($key)-3
                             : $self->width - $self->pad_right+3;
-  $gd->string($self->{key_font},$pos,$offset,$key,1);
+  my $color = $self->translate_color('black');
+  $gd->string($self->{key_font},$pos,$offset,$key,$color);
 }
 
 # draw the keys -- bottom
@@ -513,7 +556,8 @@ sub draw_bottom_key {
 
   my $color = $self->translate_color($self->{key_color});
   $gd->filledRectangle($left,$top,$self->width - $self->pad_right,$self->height-$self->pad_bottom,$color);
-  $gd->string($self->{key_font},$left,KEYPADTOP+$top,"KEY:",1);
+  my $text_color = $self->translate_color('black');
+  $gd->string($self->{key_font},$left,KEYPADTOP+$top,"KEY:",$text_color);
   $top += $self->{key_font}->height + KEYPADTOP;
 
   $_->draw($gd,$left,$top) foreach @$key_glyphs;
@@ -622,8 +666,8 @@ sub draw_empty {
   my $right = $self->width-$self->pad_right;
   my $color = $self->translate_color(MISSING_TRACK_COLOR);
   if ($style eq 'dashed') {
-    $gd->setStyle($color,$color,gdTransparent,gdTransparent);
-    $gd->line($left,$offset,$right,$offset,gdStyled);
+    $gd->setStyle($color,$color,gdTransparent(),gdTransparent());
+    $gd->line($left,$offset,$right,$offset,gdStyled());
   } else {
     $gd->line($left,$offset,$right,$offset,$color);
   }
@@ -661,8 +705,9 @@ sub ticks {
   my $self = shift;
   my ($length,$minwidth) = @_;
 
+  my $img = $self->image_class;
   $length   = $self->{length}       unless defined $length;
-  $minwidth = gdSmallFont->width*7  unless defined $minwidth;
+  $minwidth = $img->gdSmallFont->width*7  unless defined $minwidth;
 
   my ($major,$minor);
 
@@ -737,19 +782,26 @@ sub set_pen {
   my $self = shift;
   my ($linewidth,$color) = @_;
   return $self->{pens}{$linewidth,$color} if $self->{pens}{$linewidth,$color};
-
-  my $pen = $self->{pens}{$linewidth} = GD::Image->new($linewidth,$linewidth);
+  my $gd = $self->{gd};
+  my $pkg = $self->image_package;
+  my $pen = $self->{pens}{$linewidth} = $pkg->new($linewidth,$linewidth);
   my @rgb = $self->rgb($color);
   my $bg = $pen->colorAllocate(255,255,255);
   my $fg = $pen->colorAllocate(@rgb);
   $pen->fill(0,0,$fg);
-  $self->{gd}->setBrush($pen);
-  return gdBrushed;
+  #  $self->{gd}->setBrush($pen);
+  $gd->setBrush($pen);
+  return gdBrushed();
 }
 
 sub png {
   my $gd = shift->gd;
   $gd->png;
+}
+
+sub svg {
+  my $gd = shift->gd;
+  $gd->svg;
 }
 
 sub read_colors {
@@ -775,6 +827,12 @@ sub color_names {
     my $class = shift;
     $class->read_colors unless %COLORS;
     return wantarray ? keys %COLORS : [keys %COLORS];
+}
+
+sub finished {
+  for my $track (@{shift->{tracks}}) {
+    $track->finished();
+  }
 }
 
 1;
@@ -1037,6 +1095,8 @@ Bio::Graphics::Panel - Generate GD images of Bio::Seq objects
  }
 
  print $panel->png;
+ $panel->finished;
+
  exit 0;
 
 =head1 DESCRIPTION
@@ -1067,7 +1127,8 @@ You can add a key to the generated image using either of two key
 styles.  One style places the key captions at the top of each track.
 The other style generates a graphical key at the bottom of the image.
 
-Note that this modules depends on GD.
+Note that this module depends on GD. The optional SVG output depends
+on GD::SVG and SVG.
 
 =head1 METHODS
 
@@ -1111,6 +1172,8 @@ a set of tag/value pairs as follows:
 
   -stop       Stop of range, in 1-based              none
 	      coordinates.
+
+  -end        Same as -stop.
 
   -segment    A Bio::SeqI or Das::Segment            none
               object, used to derive sequence
@@ -1180,6 +1243,11 @@ a set of tag/value pairs as follows:
 
   -gridcolor   Color of the grid                     lightcyan
 
+  -image_class To create output in scalable vector
+               graphics (SVG), optionally pass the image
+               class parameter 'GD::SVG'. Defaults to
+               using vanilla GD. See the corresponding
+               image_class() method below for details.
 
 Typically you will pass new() an object that implements the
 Bio::RangeI interface, providing a length() method, from which the
@@ -1199,6 +1267,11 @@ is to iterate over the possible track labels, find the largest one,
 and then to compute its width using the formula:
 
   $width = gdMediumBoldFont->width * length($longest_key) +3;
+
+In order to obtain scalable vector graphics (SVG) output, you should
+pass new() the -image_class=E<gt>'GD::SVG' parameter. This will cause
+Bio::Graphics::Panel to load the optional GD::SVG module. See the gd()
+and svg() methods below for additional information.
 
 =back
 
@@ -1409,6 +1482,13 @@ Typical usage is:
 unshift_track() works like add_track(), except that the new track is
 added to the top of the image rather than the bottom.
 
+=item $track = $panel-E<gt>insert_track($position,$glyph,$features,@options)
+
+This works like add_track(), but the track is inserted into the
+indicated position.  The track will be inserted B<before> the
+indicated position; thus specify a track of 0 to insert the new track
+at the beginning.
+
 =item $gd = $panel-E<gt>gd([$gd])
 
 The gd() method lays out the image and returns a GD::Image object
@@ -1420,10 +1500,51 @@ wish to draw on top of.  If you do so, you should call the width() and
 height() methods first to ensure that the image has sufficient
 dimensions.
 
+If you passed new() the -image_class=E<gt>'GD::SVG' parameter, the gd() method
+returns a GD::SVG::Image object. This object overrides GD::Image
+methods in order to generate SVG output. It behaves exactly as
+described for GD::Image objects with one exception: it implements and
+svg() method instead of the png() or jpeg() methods. Currently there
+is no direct access to underlying SVG calls but this is subject to
+change in the future.
+
 =item $png = $panel-E<gt>png
 
 The png() method returns the image as a PNG-format drawing, without
 the intermediate step of returning a GD::Image object.
+
+=item $svg = $panel-E<gt>svg
+
+The svg() method returns the image in an XML-ified SVG format.
+
+=item $panel-E<gt>finished
+
+Bio::Graphics creates memory cycles.  When you are finished with the
+panel, you should call its finished() method.  Otherwise you will have
+memory leaks.  This is only an issue if you're going to create several
+panels in a single program.
+
+=item $image_class = $panel-E<gt>image_class
+
+The image_class() method returns the current drawing package being
+used, currently one of GD or GD::SVG.  This is primarily used
+internally to ensure that calls to GD's exported methods are called in
+an object-oriented manner to avoid compile time undefined string
+errors.  This is usually not needed for external use.
+
+=item $image_package = $panel-E<gt>image_package
+
+This accessor method, like image_class() above is provided as a
+convenience.  It returns the current image package in use, currently
+one of GD::Image or GD::SVG::Image.  This is not normally used
+externally.
+
+=item $polygon_package = $panel-E<gt>polygon_package
+
+This accessor method, like image_package() above is provided as a
+convenience.  It returns the current polygon package in use, currently
+one of GD::Polygon or GD::SVG::Polygon.  This is not normally used
+externally except in the design of glyphs.
 
 =item $boxes = $panel-E<gt>boxes
 
@@ -1435,13 +1556,14 @@ array ref.  In an list context, the method returns the array directly.
 
 Each member of the list is an anonymous array of the following format:
 
-  [ $feature, $x1, $y1, $x2, $y2 ]
+  [ $feature, $x1, $y1, $x2, $y2, $track ]
 
 The first element is the feature object; either an
 Ace::Sequence::Feature, a Das::Segment::Feature, or another Bioperl
 Bio::SeqFeatureI object.  The coordinates are the topleft and
 bottomright corners of the glyph, including any space allocated for
-labels.
+labels. The track is the Bio::Graphics::Glyph object corresponding
+to the track that the feature is rendered inside.
 
 =item $position = $panel-E<gt>track_position($track)
 
@@ -1631,21 +1753,37 @@ In all cases, the "left" position will be used to break any ties.  To
 break ties using another field, options may be strung together using a
 "|" character; e.g. "strand|low_score|right" would cause the features
 to be sorted first by strand, then score (lowest to highest), then by
-"right" position in the sequence.  Finally, a subroutine coderef can
-be provided, which should expect to receive two feature objects (via
-the special sort variables $a and $b), and should return -1, 0 or 1
-(see Perl's sort() function for more information); this subroutine
-will be used without further modification for sorting.  For example,
-to sort a set of database search hits by bits (stored in the features'
-"score" fields), scaled by the log of the alignment length (with
-"left" position breaking any ties):
+"right" position in the sequence.
 
-  sort_order = sub { ( $b->score/log($b->length)
-                                      <=>
-                       $a->score/log($a->length) )
-                                      ||
-                     ( $a->start <=> $b->start )
-                   }
+Finally, a subroutine coderef with a $$ prototype can be provided.  It
+will receive two B<glyph> as arguments and should return -1, 0 or 1
+(see Perl's sort() function for more information).  For example, to
+sort a set of database search hits by bits (stored in the features'
+"score" fields), scaled by the log of the alignment length (with
+"start" position breaking any ties):
+
+  sort_order = sub ($$) {
+    my ($glyph1,$glyph2) = @_;
+    my $a = $glyph1->feature;
+    my $b = $glyph2->feature;
+    ( $b->score/log($b->length)
+          <=>
+      $a->score/log($a->length) )
+          ||
+    ( $a->start <=> $b->start )
+  }
+
+It is important to remember to use the $$ prototype as shown in the
+example.  Otherwise Bio::Graphics will quit with an exception. The
+arguments are subclasses of Bio::Graphics::Glyph, not the features
+themselves.  While glyphs implement some, but not all, of the feature
+methods, to be safe call the two glyphs' feature() methods in order to
+convert them into the actual features.
+
+The '-always_sort' option, if true, will sort features even if bumping
+is turned off.  This is useful if you would like overlapping features
+to stack in a particular order.  Features towards the end of the list
+will overlay those towards the beginning of the sort order.
 
 B<bump_limit>: When bumping is chosen, colliding features will
 ordinarily move upward or downward without limit.  When many features
@@ -1816,6 +1954,7 @@ L<Bio::SeqI>,
 L<Bio::SeqFeatureI>,
 L<Bio::Das>,
 L<GD>
+L<GD::SVG>
 
 =head1 AUTHOR
 

@@ -1,4 +1,4 @@
-# $Id: VariantI.pm,v 1.12 2002/10/22 07:38:49 lapp Exp $
+# $Id: VariantI.pm,v 1.14 2003/06/04 08:36:44 heikki Exp $
 #
 # BioPerl module for Bio::Variation::VariantI
 #
@@ -98,7 +98,6 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Variation::VariantI;
-$VERSION=1.0;
 use vars qw(@ISA);
 use strict;
 use  Bio::Root::Root;
@@ -192,9 +191,8 @@ sub each_Allele{
 }
 
 
- 
 =head2 isMutation
- 
+
  Title   : isMutation
  Usage   : print join('/', $obj->each_Allele) if not $obj->isMutation;
  Function:

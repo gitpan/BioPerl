@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Vector.pm
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 15 April 1997
-# REVISION: $Id: Vector.pm,v 1.10 2002/10/22 07:38:37 lapp Exp $
+# REVISION: $Id: Vector.pm,v 1.11 2003/06/04 08:36:42 heikki Exp $
 # STATUS  : Alpha
 #
 # WARNING: This is considered an experimental module.
@@ -28,9 +28,8 @@ use Bio::Root::Object ();
 
 # @ISA = qw(Bio::Root::Object);  # Eventually perhaps...
 
-use vars qw($ID $VERSION);
+use vars qw($ID );
 $ID = 'Bio::Root::Vector';
-$VERSION = 0.04;
 
 use strict;
 my @SORT_BY = ('rank','name');

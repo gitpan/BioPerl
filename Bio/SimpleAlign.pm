@@ -1,4 +1,4 @@
-# $Id: SimpleAlign.pm,v 1.65.2.1 2003/07/02 16:00:19 jason Exp $
+# $Id: SimpleAlign.pm,v 1.76 2003/11/14 08:15:12 allenday Exp $
 # BioPerl module for SimpleAlign
 #
 # Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
@@ -28,6 +28,7 @@ Bio::SimpleAlign - Multiple alignments held as a set of sequences
   print $aln->no_residues, "\n";
   print $aln->is_flush, "\n";
   print $aln->no_sequences, "\n";
+  print $aln->score, "\n";
   print $aln->percentage_identity, "\n";
   print $aln->consensus_string(50), "\n";
 
@@ -115,6 +116,7 @@ Ewan Birney, birney@sanger.ac.uk
 
 =head1 CONTRIBUTORS
 
+Allen Day, allenday@ucla.edu,
 Richard Adams, Richard.Adams@ed.ac.uk, 
 David J. Evans, David.Evans@vir.gla.ac.uk, 
 Heikki Lehvaslaiho, heikki@ebi.ac.uk, 
@@ -144,6 +146,9 @@ use strict;
 use Bio::Root::Root;
 use Bio::LocatableSeq;         # uses Seq's as list
 use Bio::Align::AlignI;
+
+use Bio::Seq;
+use Bio::SeqFeature::Generic;
 
 BEGIN {
     # This data should probably be in a more centralized module...
@@ -242,8 +247,8 @@ sub add_seq {
     my $order = shift;
     my ($name,$id,$start,$end);
 
-    if( !ref $seq || ! $seq->isa('Bio::LocatableSeq') ) {
-	$self->throw("Unable to process non locatable sequences [", ref($seq), "]");
+    if( ! ref $seq || ! $seq->isa('Bio::LocatableSeq') ) {
+	$self->throw("Unable to process non locatable sequences [". ref($seq). "]");
     }
 
     $id = $seq->id() ||$seq->display_id || $seq->primary_id;
@@ -262,10 +267,10 @@ sub add_seq {
     $name = sprintf("%s/%d-%d",$id,$start,$end);
 
     if( $self->{'_seq'}->{$name} ) {
-	$self->warn("Replacing one sequence [$name]\n");
+	$self->warn("Replacing one sequence [$name]\n") unless $self->verbose < 0;
     }
     else {
-	#print STDERR "Assigning $name to $order\n";
+	$self->debug( "Assigning $name to $order\n");
 
 	$self->{'_order'}->{$order} = $name;
 
@@ -302,7 +307,7 @@ sub remove_seq {
     my ($name,$id,$start,$end);
 
     $self->throw("Need Bio::Locatable seq argument ")
-	unless ref $seq && $seq->isa('Bio::LocatableSeq');
+	unless ref $seq && $seq->isa( 'Bio::LocatableSeq');
 
     $id = $seq->id();
     $start = $seq->start();
@@ -593,6 +598,94 @@ sub get_seq_by_pos {
     return $self->{'_seq'}->{$nse};
 }
 
+=head2 seq_with_features
+
+ Title   : seq_with_features
+ Usage   : $seq = $aln->seq_with_features(-pos => 1,
+                                          -consensus => 60
+                                          -mask =>
+sub {
+  my $consensus = shift;
+
+  for my $i (1..5){
+    my $n = 'N' x $i;
+    my $q = '\?' x $i;
+    while($consensus =~ /[^?]$q[^?]/){
+      $consensus =~ s/([^?])$q([^?])/$1$n$2/;
+    }
+  }
+
+  return $consensus;
+}
+
+                                         );
+ Function: produces a Bio::Seq object by first splicing gaps from -pos
+           (by means of a splice_by_seq_pos() call), then creating
+           features using non-? chars (by means of a consensus_string()
+           call with stringency -consensus).
+ Returns : a Bio::Seq object
+ Args    : -pos : required. sequence from which to build the Bio::Seq
+             object
+           -consensus : optional, defaults to consensus_string()'s
+             default cutoff value
+           -mask : optional, a coderef to apply to consensus_string()'s
+             output before building features.  this may be useful for
+             closing gaps of 1bp by glossing over them with N, for
+             instance
+
+=cut
+
+sub seq_with_features{
+   my ($self,%arg) = @_;
+
+   #first do the preparatory splice
+   $self->throw("must provide a -pos argument") unless $arg{-pos};
+   $self->splice_by_seq_pos($arg{-pos});
+
+   my $consensus_string = $self->consensus_string($arg{-consensus});
+   $consensus_string = $arg{-mask}->($consensus_string)
+	 if defined($arg{-mask});
+
+   my(@bs,@es);
+
+   push @bs, 1 if $consensus_string =~ /^[^?]/;
+
+   while($consensus_string =~ /\?[^?]/g){
+	 push @bs, pos($consensus_string);
+   }
+   while($consensus_string =~ /[^?]\?/g){
+	 push @es, pos($consensus_string);
+   }
+
+   push @es, length($consensus_string) if $consensus_string =~ /[^?]$/;
+
+   my $seq = Bio::Seq->new();
+
+#   my $rootfeature = Bio::SeqFeature::Generic->new(
+#                                                   -source_tag => 'location',
+#                                                   -start      => $self->get_seq_by_pos($arg{-pos})->start,
+#                                                   -end        => $self->get_seq_by_pos($arg{-pos})->end,
+#                                                  );
+
+#   $seq->add_SeqFeature($rootfeature);
+
+   while(my $b = shift @bs){
+	 my $e = shift @es;
+	 $seq->add_SeqFeature(
+       Bio::SeqFeature::Generic->new(
+#         -start => $b - 1,
+#         -end   => $e - 1,
+         -start => $b - 1 + $self->get_seq_by_pos($arg{-pos})->start,
+         -end   => $e - 1 + $self->get_seq_by_pos($arg{-pos})->start,
+         -source_tag => $self->source || 'MSA',
+       )
+     );
+   }
+
+   return $seq;
+}
+
+
 =head1 Create new alignments
 
 The result of these methods are horizontal or vertical subsets of the
@@ -743,12 +836,14 @@ sub slice {
              Creates an aligment with columns removed corresponding to
              the specified criteria.
  Returns   : a L<Bio::SimpleAlign> object
- Args      : array ref of types, 'match'|'weak'|'strong'|'mismatch'
+ Args      : array ref of types, 'match'|'weak'|'strong'|'mismatch'|'gaps'
 
 =cut
 
 sub remove_columns{
     my ($self,$type) = @_;
+    $type || return $self;
+    my $gap = $self->gap_char if (grep /gaps/, @{$type});
     my %matchchars = ( 'match'  => '\*',
                        'weak'   => '\.',
                        'strong' => ':',
@@ -767,32 +862,77 @@ sub remove_columns{
    my $length = 0;
 
    #do the matching to get the segments to remove
-   while($match_line=~m/[$del_char]/g){
-    my $start = pos($match_line)-1;
-    $match_line=~/\G[$del_char]+/gc;
-    my $end = pos($match_line)-1;
-
-    #have to offset the start and end for subsequent removes
-    $start-=$length;
-    $end  -=$length;
-    $length += ($end-$start+1);
-    push @remove, [$start,$end];
+  if($del_char){
+   while($match_line =~ m/[$del_char]/g ){
+       my $start = pos($match_line)-1;
+       $match_line=~/\G[$del_char]+/gc;
+       my $end = pos($match_line)-1;
+       
+       #have to offset the start and end for subsequent removes
+       $start-=$length;
+       $end  -=$length;
+       $length += ($end-$start+1);
+       push @remove, [$start,$end];
    }
+}
 
   #remove the segments
-  $aln = $self->_remove_col($aln,\@remove);
+  $aln = $#remove >= 0 ? $self->_remove_col($aln,\@remove) : $self;
+
+  $aln = $aln->remove_gaps() if $gap;
 
   return $aln;
 }
 
+
+=head2 remove_gaps
+
+ Title     : remove_gaps
+ Usage     : $aln2 = $aln->remove_gaps('-')
+ Function  :
+             Creates an aligment with gaps removed 
+ Returns   : a L<Bio::SimpleAlign> object
+ Args      : a gap character(optional) if no specified, 
+             taken from $self->gap_char
+
+=cut
+
+sub remove_gaps {
+  my ($self,$gapchar) = @_;
+  my $gap_line = $self->gap_line;
+  my $aln = new $self;
+    
+   my @remove;
+   my $length = 0;
+   my $del_char = $gapchar || $self->gap_char;
+   # Do the matching to get the segments to remove
+   while($gap_line =~ m/[$del_char]/g){
+       my $start = pos($gap_line)-1;
+       $gap_line=~/\G[$del_char]+/gc;
+       my $end = pos($gap_line)-1;
+       
+       #have to offset the start and end for subsequent removes  
+       $start-=$length;
+       $end  -=$length;                                          
+       $length += ($end-$start+1);                               
+       push @remove, [$start,$end];                              
+   }
+
+  #remove the segments                                        
+  $aln = $#remove >= 0 ? $self->_remove_col($aln,\@remove) : $self;
+  return $aln;                                                
+}
+
+
 sub _remove_col {
+
     my ($self,$aln,$remove) = @_;
     my @new;
 
     #splice out the segments and create new seq
     foreach my $seq($self->each_seq){
         my $new_seq = new Bio::LocatableSeq(-id=>$seq->id);
-        my $sequence;
+        my $sequence = $seq->seq;
         foreach my $pair(@{$remove}){
             my $start = $pair->[0];
             my $end   = $pair->[1];
@@ -830,6 +970,43 @@ sub _remove_col {
 These methods affect characters in all sequences without changeing the
 alignment.
 
+=head2 splice_by_seq_pos
+
+ Title   : splice_by_seq_pos
+ Usage   : $status = splice_by_seq_pos(1);
+ Function: splices all aligned sequences where the specified sequence
+           has gaps.
+ Example :
+ Returns : 1 on success
+ Args    : position of sequence to splice by
+
+
+=cut
+
+sub splice_by_seq_pos{
+  my ($self,$pos) = @_;
+
+  my $guide = $self->get_seq_by_pos($pos);
+  my $guide_seq = $guide->seq;
+
+  $guide_seq =~ s/\./\-/g;
+
+  my @gaps = ();
+  $pos = -1;
+  while(($pos = index($guide_seq, '-', $pos)) > -1 ){
+    unshift @gaps, $pos;
+    $pos++;
+  }
+
+  foreach my $seq ($self->each_seq){
+    my @bases = split '', $seq->seq;
+
+    splice(@bases, $_, 1) foreach @gaps;
+    $seq->seq(join('', @bases));
+  }
+
+  1;
+}
 
 =head2 map_chars
 
@@ -1019,6 +1196,44 @@ sub match_line {
 	    }
 	  }
 	$matchline .= $char;
+    }
+    return $matchline;
+}
+
+=head2 gap_line
+
+ Title    : gap_line()
+ Usage    : $align->gap_line()
+ Function : Generates a gap line - much like consensus string
+            except that a line where '-' represents gap  
+ Args     : (optional) gap line characters ('-' by default)
+
+=cut
+
+sub gap_line {
+    my ($self,$gapchar) = @_;
+    $gapchar = $gapchar || $self->gap_char;
+    my @seqchars;
+    my $seqcount = 0;
+    foreach my $seq ( $self->each_seq ) {
+    	push @seqchars, [ split(//, uc ($seq->seq)) ];
+    }
+    my $refseq = shift @seqchars;
+    # let's just march down the columns
+    my $matchline;
+    POS: foreach my $pos ( 0..$self->length ) {
+    	my $refchar = $refseq->[$pos];
+    	next unless $refchar; # skip '' 
+    	my %col = ($refchar => 1);
+    	my $gap= ($refchar eq '-');
+    	foreach my $seq ( @seqchars ) {
+	      $gap= 1 if( $seq->[$pos] eq '-');
+	      $col{$seq->[$pos]}++;
+    	}
+      my @colresidues = sort keys %col;
+      my $char= ".";
+    	if( $gap) { $char =  $gapchar}
+      $matchline .= $char;
     }
     return $matchline;
 }
@@ -1235,6 +1450,22 @@ sub symbol_chars{
 These read only methods describe the MSE in various ways.
 
 
+=head2 score
+
+ Title     : score
+ Usage     : $str = $ali->score()
+ Function  : get/set a score of the alignment
+ Returns   : a score for the alignment
+ Argument  : an optional score to set
+
+=cut
+
+sub score {
+  my $self = shift;
+  $self->{score} = shift if @_;
+  return $self->{score};
+}
+
 =head2 consensus_string
 
  Title     : consensus_string
@@ -1252,15 +1483,12 @@ These read only methods describe the MSE in various ways.
 sub consensus_string {
     my $self = shift;
     my $threshold = shift;
-    my $len;
-    my ($out,$count);
 
-    $out = "";
+    my $out = "";
+    my $len = $self->length - 1;
 
-    $len = $self->length - 1;
-
-    foreach $count ( 0 .. $len ) {
-	$out .= $self->_consensus_aa($count,$threshold);
+    foreach ( 0 .. $len ) {
+	$out .= $self->_consensus_aa($_,$threshold);
     }
     return $out;
 }
@@ -1270,11 +1498,11 @@ sub _consensus_aa {
     my $point = shift;
     my $threshold_percent = shift || -1 ;
     my ($seq,%hash,$count,$letter,$key);
-
+    my $gapchar = $self->gap_char;    
     foreach $seq ( $self->each_seq() ) {
 	$letter = substr($seq->seq,$point,1);
 	$self->throw("--$point-----------") if $letter eq '';
-	($letter =~ /\./) && next;
+	($letter eq $gapchar || $letter =~ /\./) && next;
 	# print "Looking at $letter\n";
 	$hash{$letter}++;
     }
@@ -1816,7 +2044,8 @@ sub set_displayname {
 sub displayname {
     my ($self, $name, $disname) = @_;
 
-    $self->throw("No sequence with name [$name]") unless $self->{'_seq'}->{$name};
+    $self->throw("No sequence with name [$name]")
+        unless defined $self->{'_seq'}->{$name};
 
     if(  $disname and  $name) {
 	$self->{'_dis_name'}->{$name} = $disname;

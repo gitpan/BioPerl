@@ -1,18 +1,12 @@
-# $Id: SeqWords.pm,v 1.7.2.1 2003/03/05 19:06:15 jason Exp $
+# $Id: SeqWords.pm,v 1.11 2003/12/03 20:46:14 bosborne Exp $
 
 #---------------------------------------------------------------------------
 # PACKAGE    : SeqWords.pm
 # PURPOSE    : To count n-mers in any sequence of characters
-# AUTHOR     : Derek Gatherer (D.Gatherer@organon.nhe.akzonobel.nl)
+# AUTHOR     : Derek Gatherer (d.gatherer@vir.gla.ac.uk)
 # SOURCE     : 
 # CREATED    : 21st March 2000
-# MODIFIED   : 
-# DISCLAIMER : I am employed in the pharmaceutical industry but my 
-#	     : employers do not endorse or sponsor this module
-#	     : in any way whatsoever.  The above email address is
-#	     : given purely for the purpose of easy communication
-#            : with the author, and does not imply any connection
-#	     : between my employers and anything written below.
+# MODIFIED   : 11th November 2003 (DG - new method, count_overlap_words)
 # LICENCE    : You may distribute this module under the same terms 
 #	     : as the rest of BioPerl.
 #---------------------------------------------------------------------------
@@ -23,35 +17,39 @@ Bio::Tools::SeqWords - Object holding n-mer statistics for one sequence
 
 =head1 SYNOPSIS
 
-Take a sequence object from eg, an inputstream, and creates an object
-for the purposes of holding n-mer word statistics about that sequence.
-The sequence can be nucleic acid or protein, but the module is
-probably most relevant for DNA.  The words are counted in a
-non-overlapping manner, ie. in the style of a codon table, but with
-any word length.  For overlapping word counts, a sequence can be
-'shifted' to remove the first character and then the count repeated.
-For counts on opposite strand (DNA/RNA), a reverse complement method
-should be performed, and then the count repeated.
+  # Take a sequence object from eg, an inputstream, and creates an
+  # object for the purposes of holding n-mer word statistics about
+  # that sequence. The sequence can be nucleic acid or protein, but
+  # the module is probably most relevant for DNA.
+  #
+  # In count_words, the words are counted in a non-overlapping manner,
+  # ie. in the style of a codon table, but with any word length.
+  #
+  # In count_overlap_words, the words are counted in an overlapping
+  # manner.
+  #
+  # For counts on opposite strand (DNA/RNA), a reverse complement
+  # method should be performed, and then the count repeated.
 
-Creating the SeqWords object, eg:
+  # Creating the SeqWords object, eg:
 
   my $inputstream = Bio::SeqIO->new( -file => "seqfile", 
 	                             -format => 'Fasta');
   my $seqobj = $inputstream->next_seq();
   my $seq_word = Bio::Tools::SeqWords->new(-seq => $seqobj);
 
-or:
+  # or:
 
-  my $seqobj = Bio::PrimarySeq->new(-seq=>'[cut and paste a sequence here]', 
-                                    -alphabet => 'dna', 
+  my $seqobj = Bio::PrimarySeq->new(-seq=>'[cut and paste a sequence here]',
+                                    -alphabet => 'dna',
                                     -id => 'test');
   my $seq_word  =  Bio::Tools::SeqWords->new(-seq => $seqobj);
 
-obtain a hash of word counts, eg:
+  # obtain a hash of word counts, eg:
 
   my $hash_ref = $seq_stats->count_words($word_length);
 
-display hash table, eg:
+  # display hash table, eg:
 
   my %hash = %$hash_ref;
   foreach my $key(sort keys %hash)
@@ -59,7 +57,7 @@ display hash table, eg:
     print "\n$key\t$hash{$key}";
   }
 
-or	
+  # or	
 
   my $hash_ref = Bio::SeqWords->count_words($seqobj,$word_length);
 
@@ -112,13 +110,13 @@ query on the bioperl mailing list.  At least 2 other people provided
 alternative means (equally good but not used in the end) of performing
 the same calculation.  Thanks to all for your assistance.
 
-=head1 CONTRUBITORS
+=head1 CONTRIBUTORS
 
 Jason Stajich, jason-at-bioperl.org
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. 
+The rest of the documentation details each of the object methods.
 Internal methods are usually preceded with a _
 
 =cut
@@ -188,15 +186,61 @@ sub count_words
 	$seqobj = undef;
     }
 
-    if($word_length eq "" || $word_length =~ /[a-z]/i)
-    {
-	$self->throw("SeqWords cannot accept non-numeric characters".
-		     " or a null value in the \$word_length variable\n");
+    if(! defined($seqobj)){
+	      $seqobj =  $self->{'_seqref'};
     }
-    elsif ($word_length <1 || ($word_length - int($word_length)) >0)
-    {
-	$self->throw("SeqWords requires the word length to be a ".
+    
+    if($word_length eq "" || $word_length =~ /[a-z]/i){
+	      $self->throw("SeqWords cannot accept non-numeric characters".
+		     " or a null value in the \$word_length variable\n");
+    }elsif ($word_length <1 || ($word_length - int($word_length)) >0){
+	      $self->throw("SeqWords requires the word length to be a ".
 		     "positive integer\n");
+    }
+
+    my $seqstring = uc $seqobj->seq();
+
+    if($word_length > length($seqstring)){
+	      $self->throw("die in _count, \$word_length is bigger ".
+		    "than sequence length\n");
+    }
+
+    my $type = "non-overlap";
+    my $words = _count($seqobj, $word_length, $type);
+    return $words;   # ref. to a hash
+}
+
+=head2 count_overlap_words
+
+ Title   : count_overlap_words
+ Usage   : $word_count = $word_obj->count_overlap_words($word_length);
+ Function: Counts overlapping words within a string
+	 : any alphabet is used
+ Example : a sequence ACCAACCA, counted at word length 4,
+	 : will give the hash
+	 : {ACCA=>2, CCAA=>1, CAAC=>1, AACC=>1}
+ Returns : Reference to a hash in which keys are words (any length) of the alphabet
+         : used and values are number of occurrences of the word in the sequence.
+ Args    : Word length as scalar
+
+  Throws an exception if word length is not a positive integer
+  or if word length is longer than the sequence.
+
+=cut
+
+sub count_overlap_words
+{
+    my ($self,$seqobj,$word_length) = @_;
+ # check how we were called, and if necessary rearrange arguments
+    if(ref($seqobj)){
+	# call as SeqWords->count_words($seq, $wordlen)
+	      if(! $seqobj->isa("Bio::PrimarySeqI")){
+	          $self->throw("SeqWords works only on PrimarySeqI objects\n");
+	      }
+    }else{
+	# call as $obj->count_words($wordlen)
+	      $word_length = $seqobj;
+	      $seqobj = undef;
     }
 
     if(! defined($seqobj)) {
@@ -204,22 +248,44 @@ sub count_words
     }
     my $seqstring = uc $seqobj->seq();
 
-    if($word_length > length($seqstring))
-    {
-	$self->throw("die in count words, \$word_length is bigger ".
-		     "than sequence length\n");
+    if($word_length > length($seqstring)){
+	      $self->throw("die in _count, \$word_length is bigger ".
+		    "than sequence length\n");
     }
+    
+    my $type = "overlap";
+    my $words = _count($seqobj, $word_length, $type);
+    return $words;   # ref. to a hash
+}
 
+# the actual counting routine
+# used by both count_words and count_overlap_words
+sub _count
+{
+    my ($seqobj, $word_length, $type) = @_;
     my %codon = ();
 
     # now the real business
     # JS - remove DNA assumption
-    while($seqstring =~ /((\w){$word_length})/gim) {
-	$codon{uc($1)}++;
+    
+    my $seqstring = uc $seqobj->seq();
+    if($type eq "non-overlap")
+    {
+      while($seqstring =~ /((\w){$word_length})/gim){
+	        $codon{uc($1)}++;
+      }
+    }elsif($type eq "overlap"){
+      my $seqlen = $seqobj->length();			# measure length
+	    for (my $frame = 1; $frame<=$word_length; $frame++){  # run through frames
+		    my $seqstring = uc($seqobj->subseq($frame,$seqlen));# take the relevant substring
+		    while($seqstring =~ /((\w){$word_length})/gim){
+			     $codon{uc($1)}++;		# keep adding to hash
+		    }
+	    }
+    }else{
+       die "\nSomething badly wrong here. \$type: $type can only be overlap or non-overlap";
     }
     return \%codon;
-
-# and that's it
 }
 
 1;

@@ -1,5 +1,5 @@
 #
-# $Id: Fasta.pm,v 1.20 2002/10/22 07:38:33 lapp Exp $
+# $Id: Fasta.pm,v 1.25 2003/06/04 08:36:40 heikki Exp $
 #
 # BioPerl module for Bio::Index::Fasta
 #
@@ -41,17 +41,24 @@ Bio::Index::Fasta - Interface for indexing (multiple) fasta files
     }
 
     # or, alternatively
-
+    my $id;
     my $seq = $inx->get_Seq_by_id($id); #identical to fetch
 
 =head1 DESCRIPTION
 
 Inherits functions for managing dbm files from Bio::Index::Abstract.pm,
 and provides the basic funtionallity for indexing fasta files, and
-retrieving the sequence from them. Note: for best results 'use strict'.
+retrieving the sequence from them. For best results 'use strict'.
 
 Bio::Index::Fasta supports the Bio::DB::BioSeqI interface, meaning
-it can be used a a Sequence database for other parts of bioperl
+it can be used as a Sequence database for other parts of bioperl
+
+Details on configuration and additional example code are available in the
+biodatabases.pod file, scripts/index/*PLS and in bptutorial.pl.
+
+Note that by default the key for the sequence will be the first continuous
+string after the 'E<gt>' in the fasta header. If you want to use a specific
+substring of the fasta header you must use the id_parser() method.
 
 =head1 FEED_BACK
 
@@ -89,7 +96,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::Index::Fasta;
 
-use vars qw($VERSION @ISA);
+use vars qw(@ISA);
 use strict;
 
 use Bio::Index::AbstractSeq;
@@ -102,12 +109,9 @@ use Bio::Seq;
 # get around a clash with CPAN shell...
 #
 
-BEGIN { 
-    $VERSION = 0.2;
-}
 
 sub _version {
-    return $VERSION;
+    return 0.2;
 }
 
 =head2 _file_format

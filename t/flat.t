@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: flat.t,v 1.6.2.2 2003/06/28 20:47:30 jason Exp $
+# $Id: flat.t,v 1.11 2003/07/09 01:12:11 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -22,7 +22,7 @@ BEGIN {
     }
     use Test;
 
-    $NUMTESTS = 11;
+    $NUMTESTS = 16;
     plan tests => $NUMTESTS;
     eval { 
 	require DB_File; 
@@ -56,16 +56,17 @@ my $verbose = 0;
 use Bio::Root::IO;
 use Cwd;
 my $cd = cwd();
-my $tmpdir = $cd."/t/tmp";
+my $tmpdir = Bio::Root::IO->catfile($cd,qw(t tmp));
 &maketmpdir();
 my $db = Bio::DB::Flat->new(-directory  => $tmpdir,
-                            -index => 'bdb',
-			    -format => 'fasta',
-			    -verbose => 1,
+                            -index      => 'bdb',
+			    -dbname     => 'mydb',
+			    -format     => 'fasta',
+			    -verbose    => $verbose,
                  	    -write_flag => 1
                             );
 ok($db);
-my $dir = $cd."/t/data/AAC12660.fa";
+my $dir = Bio::Root::IO->catfile($cd,qw(t data AAC12660.fa));
 my $result = $db->build_index(glob($dir));
 ok($result);
 
@@ -73,22 +74,19 @@ ok($result);
 my $seq = $db->get_Seq_by_id('AAC12660');
 ok($seq);
 ok($seq->length,504);
-
-$seq = $db->get_Seq_by_acc('AAC12660');
-ok($seq);
-ok($seq->length,504);
-
 undef $db;
 &cleanup();
 &maketmpdir();
 $db = Bio::DB::Flat->new(-directory  => $tmpdir,
-                         -index => 'bdb',
-                         -format => 'embl',
-                         -verbose => 1,
+                         -index      => 'bdb',
+                         -format     => 'embl',
+			 -dbname     => 'myembl',
+                         -verbose    => $verbose,
                          -write_flag => 1
 			 );
 
-$dir= $cd."/t/data/factor7.embl";
+$dir= Bio::Root::IO->catfile($cd,qw(t data factor7.embl));
+
 $result = $db->build_index(glob($dir));
 ok($result);
 $seq = $db->get_Seq_by_id('HSCFVII');
@@ -100,16 +98,61 @@ $seq = $db->get_Seq_by_acc('J02933');
 ok($seq && ref($seq));
 ok($seq->length,12850);
 
+
 undef $db;
 
+&cleanup();
 &maketmpdir();
+
+
+$db = Bio::DB::Flat->new(-directory  => $tmpdir,
+			 -index      => 'binarysearch',
+			 -format     => 'fasta',
+			 -dbname     => 'mybinfa',
+			 -verbose    => $verbose,
+			 -write_flag => 1
+			 );
+
+$dir= Bio::Root::IO->catfile($cd,qw(t data dbfa 1.fa));
+$result = $db->build_index($dir);
+ok($result);
+$seq = $db->get_Seq_by_id('AW057119');
+ok($seq);
+ok($seq->length,808);
+undef $db;
+
+&cleanup();
+&maketmpdir();
+$db = Bio::DB::Flat->new(-directory  => $tmpdir,
+			 -index      => 'binarysearch',
+			 -format     => 'swiss',
+			 -dbname     => 'mybinswiss',
+			 -verbose    => $verbose,
+			 -write_flag => 1
+			 );
+$dir= Bio::Root::IO->catfile($cd,qw(t data swiss.dat));
+$result = $db->build_index($dir);
+
+ok($result);
+$seq = $db->get_Seq_by_id('ACON_CAEEL');
+ok($seq);
+ok($seq->length,788);
+
+$seq = $db->get_Seq_by_id('ACON_CAEEL');
+ok($seq && ref($seq));
+
+undef $db;
+
+
+&cleanup();
 
 sub maketmpdir {
     mkdir ($tmpdir,0777);
 }
-sub cleanup {    
+
+sub cleanup {
     eval { 
-      Bio::Root::IO->rmtree($tmpdir) if( defined $tmpdir && -d $tmpdir);
+	 Bio::Root::IO->rmtree($tmpdir) if( defined $tmpdir && -d $tmpdir);
     };
 } 
 

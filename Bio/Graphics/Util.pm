@@ -1,6 +1,6 @@
 package Bio::Graphics::Util;
 
-# $Id: Util.pm,v 1.2.2.2 2003/07/06 21:53:55 heikki Exp $
+# $Id: Util.pm,v 1.3 2003/06/04 08:36:39 heikki Exp $
 # Non object-oriented utilities used here-and-there in Bio::Graphics modules
 
 use strict;
@@ -8,7 +8,7 @@ require Exporter;
 use vars '@ISA','@EXPORT','@EXPORT_OK';
 @ISA = 'Exporter';
 @EXPORT = 'frame_and_offset';
-
+use Bio::Root::Version;
 
 =over 4
 

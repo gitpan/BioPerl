@@ -1,4 +1,4 @@
-# $Id: Node.pm,v 1.17.2.3 2003/09/14 19:00:35 jason Exp $
+# $Id: Node.pm,v 1.32 2003/12/15 17:10:29 jason Exp $
 #
 # BioPerl module for Bio::Tree::Node
 #
@@ -88,9 +88,10 @@ BEGIN {
  Usage   : my $obj = new Bio::Tree::Node();
  Function: Builds a new Bio::Tree::Node object
  Returns : Bio::Tree::Node
- Args    : -left          => pointer to Left descendent (optional)
-           -right         => pointer to Right descenent (optional)
-	   -branch_length => branch length [integer] (optional)
+ Args    : -descendents   => arrayref of descendents (they will be
+                             updated s.t. their ancestor point is this
+                             node)
+           -branch_length => branch length [integer] (optional)
            -bootstrap     => value   bootstrap value (string)
            -description   => description of node
            -id            => human readable id for node
@@ -102,17 +103,18 @@ sub new {
 
   my $self = $class->SUPER::new(@args);
   my ($children, $branchlen,$id,
-      $bootstrap, $desc,$d) = $self->_rearrange([qw(DESCENDENTS
-						 BRANCH_LENGTH
-						 ID
-						 BOOTSTRAP
-						 DESC
-						 DESCRIPTION
+      $bootstrap, $desc,$d) = $self->_rearrange([qw(
+						    DESCENDENTS
+						    BRANCH_LENGTH
+						    ID
+						    BOOTSTRAP
+						    DESC
+						    DESCRIPTION
 						 )],
 					     @args);
   $self->_register_for_cleanup(\&node_cleanup);
   $self->{'_desc'} = {}; # for descendents
-  if( $d && $desc ) { 
+  if( defined $d && defined $desc ) { 
       $self->warn("can only accept -desc or -description, not both, accepting -description");
       $desc = $d;
   } elsif( defined $d && ! defined $desc ) {
@@ -122,7 +124,6 @@ sub new {
   defined $bootstrap && $self->bootstrap($bootstrap);
   defined $id && $self->id($id);
   defined $branchlen && $self->branch_length($branchlen);
-
   if( defined $children ) {
       if( ref($children) !~ /ARRAY/i ) {
 	  $self->warn("Must specify a valid ARRAY reference to initialize a Node's Descendents");
@@ -151,9 +152,12 @@ sub new {
 
 sub add_Descendent{
    my ($self,$node,$ignoreoverwrite) = @_;
-   return -1 if( ! defined $node ) ;
-   if( ! $node->isa('Bio::Tree::NodeI') ) {
-       $self->warn("Trying to add a Descendent who is not a Bio::Tree::NodeI");
+   return -1 if( ! defined $node );
+   
+   if( ! ref($node) ||
+       ref($node) =~ /HASH/ ||
+       ! $node->isa('Bio::Tree::NodeI') ) {
+       $self->throw("Trying to add a Descendent who is not a Bio::Tree::NodeI");
        return -1;
    }
    # do we care about order?
@@ -198,10 +202,10 @@ sub each_Descendent{
 			 $a->[2] <=> $b->[2] } 
 	       map { [$_, $_->height, $_->internal_id ] } 
 	   values %{$self->{'_desc'}};
-       } else {
+       } else { # creation
 	   return map { $_->[0] }
 	          sort { $a->[1] <=> $b->[1] } 
-	          map { [$_, $_->height ] }
+	          map { [$_, $_->internal_id ] }
 	          values %{$self->{'_desc'}};	   
        }
    }
@@ -512,7 +516,7 @@ sub invalidate_height {
     my ($self) = @_;
     
     $self->{'_height'} = undef;
-    if( $self->ancestor ) {
+    if( defined $self->ancestor ) {
 	$self->ancestor->invalidate_height;
     }
 }

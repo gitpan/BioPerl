@@ -1,4 +1,4 @@
-# $Id: Iteration.pm,v 1.15 2002/06/19 00:27:49 jason Exp $
+# $Id: Iteration.pm,v 1.17 2003/10/28 22:17:21 jason Exp $
 # Bioperl module Bio::Tools::BPlite::Iteration
 #	based closely on the Bio::Tools::BPlite modules
 #	Ian Korf (ikorf@sapiens.wustl.edu, http://sapiens.wustl.edu/~ikorf), 
@@ -21,7 +21,7 @@ of a PSIBLAST report
 
 =head1 SYNOPSIS
 
-   use Bio::Tools:: BPpsilite;
+   use Bio::Tools::BPpsilite;
 
    open FH, "t/psiblastreport.out";
    $report = Bio::Tools::BPpsilite->new(-fh=>\*FH);
@@ -178,46 +178,47 @@ sub  oldhits  {shift->{'OLDHITS'}}
 =cut
 
 sub nextSbjct {
-  my ($self) = @_;
-  $self->_fastForward or return undef;
- 
-  #######################
-  # get all sbjct lines #
-  #######################
-  my $def = $self->_readline();
+    my ($self) = @_;
+    $self->_fastForward or return undef;
 
-  while(defined ($_ = $self->_readline) )  {
-    if    ($_ !~ /\w/)            {next}
-    elsif ($_ =~ /Strand HSP/)    {next} # WU-BLAST non-data
-    elsif ($_ =~ /^\s{0,2}Score/) {$self->_pushback( $_); last}
-    elsif ($_ =~ /^(\d+) .* \d+$/) {   # This is not correct at all
-       $self->_pushback($_);           # 1: HSP does not work for -m 6 flag
-       $def = $1;                      # 2: length/name are incorrect     
-       my $length = undef;	       # 3: Names are repeated many times.
-       my $sbjct = new Bio::Tools::BPlite::Sbjct('-name'=>$def,
-						 '-length'=>$length,
-						 '-parent'=>$self);
-       return $sbjct;
-   } # m-6 
-    elsif ($_ =~ /^Parameters|^\s+Database:|^\s+Posted date:/) {
-	$self->_pushback( $_); 
-	last;
-    } else {$def .= $_}
-}
-  $def =~ s/\s+/ /g;
-  $def =~ s/\s+$//g;
-  $def =~ s/Length = ([\d,]+)$//g;
-  my $length = $1;
-  return 0 unless $def =~ /^>/;
-  $def =~ s/^>//;
-  
-  ####################
-  # the Sbjct object #
-  ####################
-  my $sbjct = new Bio::Tools::BPlite::Sbjct('-name'=>$def,
-					    '-length'=>$length,
-					    '-parent'=>$self);
-  return $sbjct;
+    #######################
+    # get all sbjct lines #
+    #######################
+    my $def = $self->_readline();
+
+    while(defined ($_ = $self->_readline) )  {
+	if    ($_ !~ /\w/)            {next}
+	elsif ($_ =~ /Strand HSP/)    {next} # WU-BLAST non-data
+	elsif ($_ =~ /^\s{0,2}Score/) {$self->_pushback( $_); last}
+	elsif ($_ =~ /^(\d+) .* \d+$/) { # This is not correct at all
+	    $self->_pushback($_); # 1: HSP does not work for -m 6 flag
+	    $def = $1;		  # 2: length/name are incorrect     
+	    my $length = undef;	  # 3: Names are repeated many times.
+	    my $sbjct = new Bio::Tools::BPlite::Sbjct('-name'=>$def,
+						      '-length'=>$length,
+						      '-parent'=>$self);
+	    return $sbjct;
+	}			# m-6 
+	elsif ($_ =~ /^Parameters|^\s+Database:|^\s+Posted date:/) {
+	    $self->_pushback( $_); 
+	    last;
+	} else {$def .= $_}
+    }
+    $def = '' unless defined $def;
+    $def =~ s/\s+/ /g;
+    $def =~ s/\s+$//g;
+    $def =~ s/Length = ([\d,]+)$//g;
+    my $length = $1;
+    return 0 unless $def =~ /^>/;
+    $def =~ s/^>//;
+
+    ####################
+    # the Sbjct object #
+    ####################
+    my $sbjct = new Bio::Tools::BPlite::Sbjct('-name'=>$def,
+					      '-length'=>$length,
+					      '-parent'=>$self);
+    return $sbjct;
 }
 
 

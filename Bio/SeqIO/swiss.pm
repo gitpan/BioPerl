@@ -1,4 +1,4 @@
-# $Id: swiss.pm,v 1.66.2.4 2003/09/13 22:16:43 jason Exp $
+# $Id: swiss.pm,v 1.75 2003/12/22 18:33:15 heikki Exp $
 #
 # BioPerl module for Bio::SeqIO::swiss
 #
@@ -99,8 +99,7 @@ Describe contact details here
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object
-methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -177,9 +176,11 @@ sub next_seq {
    
    # fixed to allow _DIVISION to be optional for bug #946
    # see bug report for more information
-   $line =~ /^ID\s+([^\s_]+)(_([^\s_]+))?\s+([^\s;]+);\s+([^\s;]+);/ 
-     || $self->throw("swissprot stream with no ID. Not swissprot in my book");
-   
+   if( !($line =~ /^ID\s+([^\s_]+)(_([^\s_]+))?\s+([^\s;]+);\s+([^\s;]+);/)
+       && !($line =~ /^ID\s+([^\s_]+)(_([^\s_]+))?/ ) )  {
+       $self->throw("swissprot stream with no ID. Not swissprot in my book");
+   }
+
    if( $3 ) {
        $name = "$1$2";
        $params{'-division'} = $3;
@@ -310,7 +311,6 @@ sub next_seq {
 	   push @{$params{'-keywords'}}, @kw;   
        }
 
-
        # Get next line. Getting here assumes that we indeed need to read the
        # line.
        $buffer = $self->_readline;
@@ -398,6 +398,9 @@ sub write_seq {
 	    $mol = 'XXX';
 	}
 
+        $self->warn("No whitespace allowed in SWISS-PROT display id [". $seq->display_id. "]")
+            if $seq->display_id =~ /\s/;
+
 	my $temp_line;
 	if( $self->_id_generation_func ) {
 	    $temp_line = &{$self->_id_generation_func}($seq);
@@ -411,7 +414,7 @@ sub write_seq {
 	    # Hence, switch to display_id(); _every_ sequence is supposed to have
 	    # this. HL 2000/09/03
 	    $mol =~ s/protein/PRT/;
-	    $temp_line = sprintf ("%10s     STANDARD;      %3s;   %d AA.",
+	    $temp_line = sprintf ("%-10s     STANDARD;      %3s;   %d AA.",
 				  $seq->display_id(), $mol, $len);
 	}
 
@@ -468,16 +471,21 @@ sub write_seq {
 	    my($species, @class) = $spec->classification();
 	    my $genus = $class[0];
 	    my $OS = "$genus $species";
-	    if ($class[$#class] =~ /viruses/i) {
-		# different OS / OC syntax for viruses LP 09/16/2000
-		shift @class;
-	    }
-	    if (my $ssp = $spec->sub_species) {
-		$OS .= " $ssp";
-	    }
-	    foreach (($spec->variant, $spec->common_name)) {
-		$OS .= " ($_)" if $_;
-	    }
+            if ($class[-1] eq 'Viruses') {
+                $OS = $species;
+                $OS .=  " ". $spec->sub_species if $spec->sub_species;
+            } else {
+                if ($class[$#class] =~ /viruses/i) {
+                    # different OS / OC syntax for viruses LP 09/16/2000
+                    shift @class;
+                }
+                if (my $ssp = $spec->sub_species) {
+                    $OS .= " $ssp";
+                }
+                foreach (($spec->variant, $spec->common_name)) {
+                    $OS .= " ($_)" if $_;
+                }
+            }
 	    $self->_print( "OS   $OS.\n");
 	    my $OC = join('; ', reverse(@class)) .'.';
 	    $self->_write_line_swissprot_regex("OC   ","OC   ",$OC,"\; \|\$",80);
@@ -569,13 +577,13 @@ sub write_seq {
 					       $kw, "\\s\+\|\$",80);           
 	}
 
-        #Check if there are seqfeatures before printing the FT line
-        my @feats = $seq->can('top_SeqFeatures') ? $seq->top_SeqFeatures : ();
+        #Check if there is seqfeatures before printing the FT line
+	my @feats = $seq->can('top_SeqFeatures') ? $seq->top_SeqFeatures : ();
 	if ($feats[0]) {
 	    if( defined $self->_post_sort ) {
 
 		# we need to read things into an array. Process. Sort them. Print 'em
-
+		
 		my $post_sort_func = $self->_post_sort();
 		my @fth;
 
@@ -882,7 +890,7 @@ sub _read_swissprot_Species {
     my $org;
 
     $_ = $$buffer;
-    my( $subspecies, $species, $genus, $common, $variant, $ncbi_taxid );
+    my( $subspecies, $species, $genus, $common, $variant, $ncbi_taxid, $ns_name );
     my @class;
     my ($binomial, $descr);
     my $osline = "";
@@ -896,6 +904,8 @@ sub _read_swissprot_Species {
 	    $osline .= $1;
 	    if($osline =~ s/(,|, and|\.)$//) {
 		($binomial, $descr) = $osline =~ /(\S[^\(]+)(.*)/;
+                ($ns_name) = $binomial;
+                $ns_name =~ s/\s+$//; #####
 		($genus, $species, $subspecies) = split(/\s+/, $binomial);
 		$species = "sp." unless $species;
 		while($descr =~ /\(([^\)]+)\)/g) {
@@ -930,7 +940,7 @@ sub _read_swissprot_Species {
 		my @virusnames = split(/\s+/, $binomial);
 		$species = (@virusnames > 1) ? pop(@virusnames) : '';
 		$genus = join(" ", @virusnames);
-		$subspecies = undef;
+		$subspecies = $descr;
 	    }
         }
 	elsif (/^OG\s+(.*)/) {
@@ -954,7 +964,13 @@ sub _read_swissprot_Species {
     # Don't make a species object if it is "Unknown" or "None"
     return if $genus =~ /^(Unknown|None)$/i;
 
-    if ($class[$#class] eq $genus) {
+    if ($class[0] eq 'Viruses') {
+        push( @class, $ns_name );
+    }
+    elsif ($class[0] eq 'Viruses') {
+        push( @class, $ns_name );
+    }
+    elsif ($class[$#class] eq $genus) {
         push( @class, $species );
     } else {
         push( @class, $genus, $species );

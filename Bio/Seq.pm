@@ -1,4 +1,4 @@
-# $Id: Seq.pm,v 1.76.2.2 2003/07/03 20:01:32 jason Exp $
+# $Id: Seq.pm,v 1.81 2003/09/24 13:05:55 bosborne Exp $
 #
 # BioPerl module for Bio::Seq
 #
@@ -110,9 +110,9 @@ L<Bio::SeqFeatureI> for more information.
 
 Ian Korf really helped in the design of the Seq and SeqFeature system.
 
-=head1 EXAMPLES
+=head2 Examples
 
-A simple and fundamental block of code
+A simple and fundamental block of code:
 
   use Bio::SeqIO;
 
@@ -120,7 +120,7 @@ A simple and fundamental block of code
   my $seqobj = $seqIOobj->next_seq;              # get a Seq object
 
 With the Seq object in hand one has access to a powerful set of Bioperl
-methods and Bioperl objects. This next script will take a file of sequences
+methods and related Bioperl objects. This next script will take a file of sequences
 in EMBL format and create a file of the reverse-complemented sequences
 in Fasta format using Seq objects. It also prints out details about the
 exons it finds as sequence features in Genbank Flat File format.
@@ -254,7 +254,7 @@ more information).
   $seqobj->seq();              # string of sequence
   $seqobj->subseq(5,10);       # part of the sequence as a string
   $seqobj->accession_number(); # when there, the accession number
-  $seqobj->moltype();          # one of 'dna','rna',or 'protein'
+  $seqobj->alphabet();         # one of 'dna','rna',or 'protein'
   $seqobj->seq_version()       # when there, the version
   $seqobj->keywords();         # when there, the Keywords line
   $seqobj->length()            # length
@@ -445,7 +445,7 @@ methods. Internal methods are usually preceded with a "_".
 
 
 package Bio::Seq;
-use vars qw(@ISA $VERSION);
+use vars qw(@ISA);
 use strict;
 
 
@@ -460,7 +460,7 @@ use Bio::DescribableI;
 use Bio::AnnotatableI;
 use Bio::FeatureHolderI;
 
-$VERSION = '1.1';
+
 @ISA = qw(Bio::Root::Root Bio::SeqI
 	  Bio::IdentifiableI Bio::DescribableI
 	  Bio::AnnotatableI Bio::FeatureHolderI);
@@ -569,6 +569,7 @@ of course, you are free to use these functions anyway.
 sub seq {
     return shift->primary_seq()->seq(@_);
 }
+
 
 =head2 validate_seq
 
@@ -799,7 +800,20 @@ sub alphabet {
    return $self->primary_seq->alphabet();
 }
 
-sub is_circular { shift->primary_seq->is_circular }
+=head2 is_circular
+
+ Title   : is_circular
+ Usage   : if( $obj->is_circular) { /Do Something/ }
+ Function: Returns true if the molecule is circular
+ Returns : Boolean value
+ Args    : none
+
+=cut
+
+sub is_circular {
+    return shift->primary_seq()->is_circular(@_);
+}
+
 
 =head1 Methods for Bio::IdentifiableI compliance
 

@@ -1,4 +1,4 @@
-# $Id: AAChange.pm,v 1.13 2002/10/22 07:38:49 lapp Exp $
+# $Id: AAChange.pm,v 1.14 2003/06/04 08:36:44 heikki Exp $
 #
 # BioPerl module for Bio::Variation::AAChange
 #
@@ -95,7 +95,7 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Variation::AAChange;
-my $VERSION=1.0;
+
 use vars qw(@ISA $MATRIX);
 use strict;
 

@@ -1,4 +1,4 @@
-# $Id: CytoPosition.pm,v 1.4 2002/10/22 07:38:35 lapp Exp $
+# $Id: CytoPosition.pm,v 1.5 2003/06/04 08:36:41 heikki Exp $
 #
 # BioPerl module for Bio::Map::CytoPosition
 #
@@ -91,12 +91,10 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Map::CytoPosition;
-use vars qw(@ISA $VERSION);
+use vars qw(@ISA);
 
 use strict;
 use integer;
-
-$VERSION=1.0;
 
 # Object preamble - inheritance
 

@@ -1,5 +1,5 @@
 
-# $Id: SeqIO.pm,v 1.59.2.4 2003/09/14 19:16:53 jason Exp $
+# $Id: SeqIO.pm,v 1.73 2003/12/10 22:43:25 heikki Exp $
 #
 # BioPerl module for Bio::SeqIO
 #
@@ -31,8 +31,8 @@ Bio::SeqIO - Handler for SeqIO Formats
 	$out->write_seq($seq);
     }
 
-Now, to actually get at the sequence object, use the standard Bio::Seq
-methods (look at L<Bio::Seq> if you don't know what they are)
+  # Now, to actually get at the sequence object, use the standard Bio::Seq
+  # methods (look at L<Bio::Seq> if you don't know what they are)
 
     use Bio::SeqIO;
 
@@ -43,9 +43,9 @@ methods (look at L<Bio::Seq> if you don't know what they are)
     }
 
 
-The SeqIO system does have a filehandle binding. Most people find this
-a little confusing, but it does mean you write the world's smallest
-reformatter
+  # The SeqIO system does have a filehandle binding. Most people find this
+  # a little confusing, but it does mean you write the world's smallest
+  # reformatter
 
     use Bio::SeqIO;
 
@@ -181,25 +181,27 @@ some HTML tags:
 
 Specify the format of the file.  Supported formats include:
 
-   Fasta       FASTA format
-   EMBL        EMBL format
-   GenBank     GenBank format
-   swiss       Swissprot format
-   PIR         Protein Information Resource format
-   GCG         GCG format
-   raw         Raw format (one sequence per line, no ID)
-   ace         ACeDB sequence format
-   game        GAME XML format
-   phd         phred output
-   qual        Quality values (get a sequence of quality scores)
-   Fastq       Fastq format
-   SCF         SCF tracefile format
+   AB1         ABI tracefile format
    ABI         ABI tracefile format
    ALF         ALF tracefile format
    CTF         CTF tracefile format
-   ZTR         ZTR tracefile format
-   PLN         Staden plain tracefile format
+   EMBL        EMBL format
    EXP         Staden tagged experiment tracefile format
+   Fasta       FASTA format
+   Fastq       Fastq format
+   GCG         GCG format
+   GenBank     GenBank format
+   PIR         Protein Information Resource format
+   PLN         Staden plain tracefile format
+   SCF         SCF tracefile format
+   ZTR         ZTR tracefile format
+   ace         ACeDB sequence format
+   game        GAME XML format
+   locuslink   LocusLink annotation (LL_tmpl format only)
+   phd         phred output
+   qual        Quality values (get a sequence of quality scores)
+   raw         Raw format (one sequence per line, no ID)
+   swiss       Swissprot format
 
 If no format is specified and a filename is given then the module
 will attempt to deduce the format from the filename suffix.  If this
@@ -310,6 +312,7 @@ use Bio::Root::IO;
 use Bio::Factory::SequenceStreamI;
 use Bio::Factory::FTLocationFactory;
 use Bio::Seq::SeqBuilder;
+use Bio::Tools::GuessSeqFormat;
 use Symbol();
 
 @ISA = qw(Bio::Root::Root Bio::Root::IO Bio::Factory::SequenceStreamI);
@@ -347,23 +350,30 @@ my $entry = 0;
 sub new {
     my ($caller,@args) = @_;
     my $class = ref($caller) || $caller;
-    
+
     # or do we want to call SUPER on an object if $caller is an
     # object?
     if( $class =~ /Bio::SeqIO::(\S+)/ ) {
 	my ($self) = $class->SUPER::new(@args);	
 	$self->_initialize(@args);
 	return $self;
-    } else { 
-
+    } else {
+        
 	my %param = @args;
 	@param{ map { lc $_ } keys %param } = values %param; # lowercase keys
-	my $format = $param{'-format'} || 
-	    $class->_guess_format( $param{-file} || $ARGV[0] ) ||
-		'fasta';
+	my $format = $param{'-format'} ||
+	    $class->_guess_format( $param{-file} || $ARGV[0] );
+	
+	if( ! $format ) { 
+	    if ($param{-file}) {
+		$format = Bio::Tools::GuessSeqFormat->new(-file => $param{-file}||$ARGV[0] )->guess;
+	    } elsif ($param{-fh}) {
+		$format = Bio::Tools::GuessSeqFormat->new(-fh => $param{-fh}||$ARGV[0] )->guess;
+	    }
+	}
 	$format = "\L$format";	# normalize capitalization to lower case
-
-	# normalize capitalization
+        $class->throw("Unknown format given or could not determine it [$format]")
+            unless $format;
 	return undef unless( $class->_load_format_module($format) );
 	return "Bio::SeqIO::$format"->new(@args);
     }
@@ -443,15 +453,18 @@ sub _initialize {
  Usage   : $seq = stream->next_seq
  Function: Reads the next sequence object from the stream and returns it.
 
-           Certain driver modules may encounter entries in the stream that
-           are either misformatted or that use syntax not yet understood
-           by the driver. If such an incident is recoverable, e.g., by
-           dismissing a feature of a feature table or some other non-mandatory
-           part of an entry, the driver will issue a warning. In the case
-           of a non-recoverable situation an exception will be thrown.
-           Do not assume that you can resume parsing the same stream after
-           catching the exception. Note that you can always turn recoverable
-           errors into exceptions by calling $stream->verbose(2).
+           Certain driver modules may encounter entries in the stream
+           that are either misformatted or that use syntax not yet
+           understood by the driver. If such an incident is
+           recoverable, e.g., by dismissing a feature of a feature
+           table or some other non-mandatory part of an entry, the
+           driver will issue a warning. In the case of a
+           non-recoverable situation an exception will be thrown.  Do
+           not assume that you can resume parsing the same stream
+           after catching the exception. Note that you can always turn
+           recoverable errors into exceptions by calling
+           $stream->verbose(2).
+
  Returns : a Bio::Seq sequence object
  Args    : none
 
@@ -603,11 +616,11 @@ sub _filehandle {
 sub _guess_format {
    my $class = shift;
    return unless $_ = shift;
-   return 'fasta'   if /\.(fasta|fast|seq|fa|fsa|nt|aa)$/i;
+   return 'fasta'   if /\.(fasta|fast|fas|seq|fa|fsa|nt|aa)$/i;
    return 'genbank' if /\.(gb|gbank|genbank|gbk|gbs)$/i;
    return 'scf'     if /\.scf$/i;
    return 'scf'     if /\.scf$/i;
-   return 'abi'     if /\.abi$/i;
+   return 'abi'     if /\.ab[i1]$/i;
    return 'alf'     if /\.alf$/i;
    return 'ctf'     if /\.ctf$/i;
    return 'ztr'     if /\.ztr$/i;

@@ -392,11 +392,9 @@ use Fcntl;
 use File::Basename qw(basename dirname);
 use Bio::DB::SeqI;
 use Bio::Root::Root;
-use vars qw($VERSION @ISA);
+use vars qw(@ISA);
 
 @ISA = qw(Bio::DB::SeqI Bio::Root::Root);
-
-$VERSION = '1.03';
 
 *seq = *sequence = \&subseq;
 *ids = \&get_all_ids;
@@ -501,7 +499,7 @@ sub _open_index {
   my %offsets;
   my $flags = $write ? O_CREAT|O_RDWR : O_RDONLY;
   my @dbmargs = $self->dbmargs;
-  tie %offsets,'AnyDBM_File',$index,$flags,0644,@dbmargs or $self->throw( "Can't open cache file: $!");
+  tie %offsets,'AnyDBM_File',$index,$flags,0644,@dbmargs or $self->throw( "Can't open cache file $index: $!");
   return \%offsets;
 }
 
@@ -532,7 +530,10 @@ sub index_dir {
   unlink $index if $force_reindex;
 
   # get the modification time of the index
-  my $indextime = (stat($index))[9] || 0;
+  my $indextime   = 0;
+  for my $suffix('','.pag','.dir') {
+    $indextime ||= (stat("${index}${suffix}"))[9];
+  }
 
   # get the most recent modification time of any of the contents
   my $modtime = 0;
@@ -573,6 +574,7 @@ sub index_dir {
 sub get_Seq_by_id {
   my $self = shift;
   my $id   = shift;
+  return unless exists $self->{offsets}{$id};
   return Bio::PrimarySeq::Fasta->new($self,$id);
 }
 
@@ -598,8 +600,8 @@ sub index_file {
   unlink $index if $force_reindex;
 
   # get the modification time of the index
-  my $indextime = (stat($index))[9];
-  my $modtime   = (stat($file))[9];
+  my $indextime = (stat($index))[9] || 0;
+  my $modtime   = (stat($file))[9]  || 0;
 
   my $reindex = $force_reindex || $indextime < $modtime;
   my $offsets = $self->_open_index($index,$reindex) or return;
@@ -670,15 +672,16 @@ sub calculate_offsets {
 
   my $fh = IO::File->new($file) or $self->throw( "Can't open $file: $!");
   warn "indexing $file\n" if $self->{debug};
-  my ($offset,$id,$linelength,$type,$firstline,$count,%offsets);
+  my ($offset,$id,$linelength,$type,$firstline,$count,$termination_length,%offsets);
   while (<$fh>) {		# don't try this at home
+    $termination_length ||= /\r\n$/ ? 2 : 1;  # account for crlf-terminated Windows files
     if (/^>(\S+)/) {
       print STDERR "indexed $count sequences...\n" 
 	if $self->{debug} && (++$count%1000) == 0;
       my $pos = tell($fh);
       if ($id) {
 	my $seqlength    = $pos - $offset - length($_) - 1;
-	$seqlength      -= int($seqlength/$linelength);
+	$seqlength      -= $termination_length * int($seqlength/$linelength);
 	$offsets->{$id}  = $self->_pack($offset,$seqlength,
 					$linelength,$firstline,
 					$type,$base);
@@ -693,20 +696,18 @@ sub calculate_offsets {
   # deal with last entry
   if ($id) {
     my $pos = tell($fh);
-
-#    my $seqlength   = $pos - $offset - length($_) - 1;
-    # $_ is always null should not be part of this calculation
     my $seqlength   = $pos - $offset  - 1;
 
     if ($linelength == 0) { # yet another pesky empty chr_random.fa file
       $seqlength = 0;
     } else {
-      $seqlength -= int($seqlength/$linelength);
+      $seqlength -= $termination_length * int($seqlength/$linelength);
     };
     $offsets->{$id} = $self->_pack($offset,$seqlength,
 				   $linelength,$firstline,
 				   $type,$base);
   }
+  $offsets->{__termination_length} = $termination_length;
   return \%offsets;
 }
 
@@ -828,6 +829,7 @@ sub subseq {
   seek($fh,$filestart,0);
   read($fh,$data,$filestop-$filestart+1);
   $data =~ s/\n//g;
+  $data =~ s/\r//g;
   if ($reversed) {
     $data = reverse $data;
     $data =~ tr/gatcGATC/ctagCTAG/;
@@ -864,7 +866,8 @@ sub caloffset {
   my ($offset,$seqlength,$linelength,$firstline,$type,$file) = $self->_unpack($self->{offsets}{$id});
   $a = 0            if $a < 0;
   $a = $seqlength-1 if $a >= $seqlength;
-  $offset + $linelength * int($a/($linelength-1)) + $a % ($linelength-1);
+  my $tl = $self->{offsets}{__termination_length};
+  $offset + $linelength * int($a/($linelength-$tl)) + $a % ($linelength-$tl);
 }
 
 sub fhcache {
@@ -980,6 +983,11 @@ sub seq {
 
 sub subseq {
   my $self = shift;
+  $self->trunc(@_)->seq();	
+}
+
+sub trunc {
+  my $self = shift;
   my ($start,$stop) = @_;
   $self->throw("Stop cannot be smaller than start")  unless $start <= $stop;
   return $self->{start} <= $self->{stop} ?  $self->new($self->{db},
@@ -990,7 +998,7 @@ sub subseq {
 						       $self->{id},
 						       $self->{start}-($start-1),
 						       $self->{start}-($stop-1)
-						      );
+						      );  
 	
 }
 
@@ -1026,10 +1034,12 @@ sub length {
   return $self->{db}->length($self->{id});
 }
 
-sub desc  { 
+sub description  { 
     my $self = shift;
     return '';
 }
+
+*desc = \&description;
 
 #-------------------------------------------------------------
 # stream-based access to the database
@@ -1053,6 +1063,10 @@ sub new {
 sub next_seq {
   my $self = shift;
   my ($key,$db) = @{$self}{'key','db'};
+  while ($key =~ /^__/) {
+    $key = $db->NEXTKEY($key);
+    return unless defined $key;
+  }
   my $value = $db->get_Seq_by_id($key);
   $self->{key} = $db->NEXTKEY($key);
   $value;

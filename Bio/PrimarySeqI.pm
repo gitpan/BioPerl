@@ -1,4 +1,4 @@
-# $Id: PrimarySeqI.pm,v 1.50.2.3 2003/08/29 15:37:39 birney Exp $
+# $Id: PrimarySeqI.pm,v 1.55 2003/10/25 14:38:39 heikki Exp $
 #
 # BioPerl module for Bio::PrimarySeqI
 #
@@ -371,6 +371,7 @@ are encouraged to override these methods
 sub revcom{
    my ($self) = @_;
 
+
    # check the type is good first.
    my $t = $self->alphabet;
 
@@ -474,6 +475,7 @@ sub trunc{
    return $out;
 }
 
+
 =head2 translate
 
  Title   : translate
@@ -493,6 +495,9 @@ sub trunc{
            Note: if you set $dna_seq_obj->verbose(1) you will get a
            warning if the first codon is not a valid initiator.
 
+           Added way of translating using a custom codon table.  This
+           has to be the final addition to this overloaded interface!
+
 
  Returns : A Bio::PrimarySeqI implementing object
  Args    : character for terminator (optional) defaults to '*'
@@ -500,17 +505,14 @@ sub trunc{
            frame (optional) valid values 0, 1, 2, defaults to 0
            codon table id (optional) defaults to 1
            complete coding sequence expected, defaults to 0 (false)
-           boolean, throw exception if not complete CDS (true) or defaults to
-warning (false)
-           coding sequence expected to be complete at 5', defaults to false
-           coding sequence expected to be complete at 3', defaults to false
+           boolean, throw exception if not complete CDS (true) or defaults to warning (false)
+           codontable, a custom Bio::Tools::CodonTable object, optional
 
 =cut
 
 sub translate {
     my($self) = shift;
-    my($stop, $unknown, $frame, $tableid, $fullCDS, $throw, $complete5,
-$complete3) = @_;
+    my($stop, $unknown, $frame, $tableid, $fullCDS, $throw, $codonTable) = @_;
     my($i, $len, $output) = (0,0,'');
     my($codon)   = "";
     my $aa;
@@ -532,7 +534,12 @@ $complete3) = @_;
 	($frame == 0 or $frame == 1 or $frame == 2);
 
     #warns if ID is invalid
-    my $codonTable = Bio::Tools::CodonTable->new( -id => $tableid);
+    if ($codonTable) {
+        $self->throw("Need a Bio::Tools::CodonTable object, not". $codonTable)
+            unless $codonTable->isa('Bio::Tools::CodonTable');
+    } else {
+        $codonTable = Bio::Tools::CodonTable->new( -id => $tableid);
+    }
 
     my ($seq) = $self->seq();
 
@@ -546,48 +553,32 @@ $complete3) = @_;
     # Use user-input stop/unknown
     $output =~ s/\*/$stop/g;
     $output =~ s/X/$unknown/g;
-
-    # $complete5 and $complete3 indicate completeness of
-    # the coding sequence at the 5' and 3' ends. Complete
-    # if true, default to false. These are in addition to
-    # $fullCDS, for backwards compatibility
-    defined($complete5) or ($complete5 = $fullCDS ? 1 : 0);
-    defined($complete3) or ($complete3 = $fullCDS ? 1 : 0);
-
-    my $id = $self->display_id;
-
-    # only if we are expecting to be complete at the 5' end
-    if($complete5) {
-	# if the initiator codon is not ATG, the amino acid needs to changed into M
-	if(substr($output,0,1) ne 'M') {
-	    if($codonTable->is_start_codon(substr($seq, 0, 3)) ) {
-		$output = 'M' . substr($output, 1);
-	    }
-	    elsif($throw) {
-		$self->throw("Seq [$id]: Not using a valid initiator codon!");
-	    } else {
-		$self->warn("Seq [$id]: Not using a valid initiator codon!");
-	    }
-	}
-    }
-
-    # only if we are expecting to be complete at the 3' end
-    if($complete3) {
+	
+    # only if we are expecting to translate a complete coding region
+    if ($fullCDS) {
+	my $id = $self->display_id;
 	#remove the stop character
-	if(substr($output, -1, 1) eq $stop) {
+	if( substr($output,-1,1) eq $stop ) {
 	    chop $output;
 	} else {
 	    $throw && $self->throw("Seq [$id]: Not using a valid terminator codon!");
 	    $self->warn("Seq [$id]: Not using a valid terminator codon!");
 	}
-    }
-
-    # only if we are expecting to translate a complete coding region
-    if($complete5 and $complete3) {
 	# test if there are terminator characters inside the protein sequence!
-	if($output =~ /\*/) {
+	if ($output =~ /\*/) {
 	    $throw && $self->throw("Seq [$id]: Terminator codon inside CDS!");
 	    $self->warn("Seq [$id]: Terminator codon inside CDS!");
+	}
+	# if the initiator codon is not ATG, the amino acid needs to changed into M
+	if ( substr($output,0,1) ne 'M' ) {
+	    if ($codonTable->is_start_codon(substr($seq, 0, 3)) ) {
+		$output = 'M'. substr($output,1);
+	    }
+	    elsif ($throw) {
+		$self->throw("Seq [$id]: Not using a valid initiator codon!");
+	    } else {
+		$self->warn("Seq [$id]: Not using a valid initiator codon!");
+	    }
 	}
     }
 
@@ -625,7 +616,9 @@ $complete3) = @_;
 =cut
 
 sub  id {
-   return shift->display_id();
+   my ($self)= @_;
+
+   return $self->display_id();
 }
 
 
@@ -642,7 +635,8 @@ sub  id {
 =cut
 
 sub  length {
-   shift->throw_not_implemented();
+   my ($self)= @_;
+   $self->throw_not_implemented();
 }
 
 =head2 desc
@@ -659,8 +653,7 @@ sub  length {
 =cut
 
 sub desc {
-   my ($self,$value) = @_;
-   $self->throw_not_implemented();
+   shift->throw_not_implemented();
 }
 
 
@@ -675,7 +668,7 @@ sub desc {
 =cut
 
 sub is_circular{
-    shift->throw_not_implemented();
+    shift->throw_not_implemented;
 }
 
 =head1 Private functions

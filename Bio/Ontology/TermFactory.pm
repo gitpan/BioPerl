@@ -1,4 +1,4 @@
-# $Id: TermFactory.pm,v 1.1.2.2 2003/03/27 10:07:56 lapp Exp $
+# $Id: TermFactory.pm,v 1.3 2003/03/27 08:54:25 lapp Exp $
 #
 # BioPerl module for Bio::Ontology::TermFactory
 #

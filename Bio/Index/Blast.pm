@@ -1,4 +1,4 @@
-# $Id: Blast.pm,v 1.8.2.1 2003/06/28 21:57:04 jason Exp $
+# $Id: Blast.pm,v 1.11 2003/06/04 08:36:40 heikki Exp $
 #
 # BioPerl module for Bio::Index::Blast
 #
@@ -18,10 +18,12 @@ Bio::Index::Blast - Indexes Blast reports and supports retrieval based on query 
 
     use strict;
     use Bio::Index::Blast;
+    my ($indexfile,$file1, $file2);
     my $index = new Bio::Index::Blast(-filename => $indexfile,
 				      -write_flag => 1);
     $index->make_index($file1, $file2);
 
+    my $id;
     my $data = $index->get_stream($id);
 
     my $bplite_report = $index->fetch_report($id);
@@ -78,22 +80,18 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Index::Blast;
-use vars qw(@ISA $VERSION);
+use vars qw(@ISA );
 use strict;
 
 use Bio::Root::Root;
 use Bio::Index::Abstract;
-use Bio::Tools::BPlite;
+use Bio::SearchIO;
 use IO::String;
 
 @ISA = qw(Bio::Index::Abstract Bio::Root::Root );
 
-BEGIN { 
-    $VERSION = 0.1;
-}
-
 sub _version {
-    return $VERSION;
+    return 0.1;
 }
 
 =head2 new
@@ -134,9 +132,9 @@ sub new {
 
  Title   : fetch_report
  Usage   : my $blastreport = $idx->fetch_report($id);
- Function: Returns a Bio::Tools::BPlite report object 
-           for a specific blast report
- Returns : Bio::Tools::BPlite
+ Function: Returns a Bio::Search::Result::ResultI report object 
+          for a specific blast report
+ Returns : Bio::Search::Result::ResultI
  Args    : valid id
 
 =cut
@@ -144,13 +142,13 @@ sub new {
 sub fetch_report{
     my ($self,$id) = @_;
     my $fh = $self->get_stream($id);
-    my $report = new Bio::Tools::BPlite(-fh      => $fh,
-					-noclose => 1);
-    return $report;
+    my $report = new Bio::SearchIO(-noclose => 1,
+				   -format => 'blast',
+				   -fh     => $fh);
+    return $report->next_result;
 }
 
-
-# shamlessly stolen from Bio::Index::Fasta
+# shamelessly stolen from Bio::Index::Fasta
 
 =head2 id_parser
 
@@ -251,7 +249,7 @@ sub _index_file {
 	    $indexpoint = $lastline;
 	    @data = ();
 	}
-	push @data, $_;
+	push @data, $_ if defined;
 	$lastline = tell(BLAST);
     }
     # handle fencepost problem (end)
@@ -270,10 +268,11 @@ sub _process_report {
     my $id_parser = $self->id_parser;
 
     my $datal = new IO::String($data);
-    my $report = new Bio::Tools::BPlite(-fh      => $datal,
-					-noclose => 1);
-    
-    my $query = $report->query;		
+    my $report = new Bio::SearchIO(-noclose => 1,
+				   -format => 'blast',
+				   -fh     => $datal);
+    my $result = $report->next_result;
+    my $query = $result->query_name;		
     foreach my $id (&$id_parser($query)) {
 	print "id is $id, begin is $begin\n" if( $self->verbose > 0);
 	$self->add_record($id, $i, $begin);

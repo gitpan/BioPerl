@@ -1,4 +1,4 @@
-# $Id: blastxml.pm,v 1.24 2002/10/26 09:32:16 sac Exp $
+# $Id: blastxml.pm,v 1.27 2003/10/30 03:55:01 allenday Exp $
 #
 # BioPerl module for Bio::SearchIO::blastxml
 #
@@ -224,20 +224,36 @@ sub next_result {
 	$tfh = IO::File->new_tmpfile or $self->throw("Unable to open temp file: $!");	
 	$tfh->autoflush(1);
     }
-    my $okaytoprocess;
+    my ($sawxmlheader,$okaytoprocess,$sawdoctype);
     while( defined( $_ = $self->_readline) ) {
 	if( /^RPS-BLAST/i ) {
 	    $self->{'_type'} = 'RPSBLAST';
 	    next;
 	}
-	if( /^<\?xml version/ && ! $firstline) { 
-	    $self->_pushback($_);
-	    last;
+	if( /^<\?xml version/ ) {
+	    if( ! $firstline ) {
+		$self->_pushback($_);
+		last;
+	    }
+	    $sawxmlheader = 1;
+	} 
+	# for the non xml version prefixed in each section
+	if( /DOCTYPE/ ) { #|| /<BlastOutput>/
+	    if(  $sawdoctype ) {
+		if( ! $sawxmlheader ) { 
+		    $self->_pushback("<?xml version=\"1.0\"?>\n");
+		}
+		$self->_pushback($_);
+		last;
+	    }
+	    $sawdoctype = 1;
+	    unless( $sawxmlheader ) {
+		$self->debug( "matched here\n");
+		$self->_pushback("<?xml version=\"1.0\"?>\n");
+		$self->_pushback($_);
+		next;
+	    }
 	}
-	$_ = decode_entities($_);
-#	s/\&apos;/\`/g;	
-#	s/\&gt;/\>/g;
-#	s/\&lt;/\</g;
 	$okaytoprocess = 1;
 	if( defined $tfh ) {
 	    print $tfh $_;
@@ -246,7 +262,6 @@ sub next_result {
 	}
 	$firstline = 0;
     }
-
     return undef unless( $okaytoprocess);
     
     my %parser_args;
@@ -404,8 +419,7 @@ sub end_element{
 sub characters{
    my ($self,$data) = @_;   
    return unless ( defined $data->{'Data'} && $data->{'Data'} !~ /^\s+$/ );
-   
-   $self->{'_last_data'} = $data->{'Data'}; 
+   $self->{'_last_data'} = &decode_entities($data->{'Data'}); 
 }
 
 =head2 use_tempfile

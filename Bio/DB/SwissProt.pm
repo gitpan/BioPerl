@@ -1,5 +1,5 @@
 #
-# $Id: SwissProt.pm,v 1.19 2002/12/01 00:05:19 jason Exp $
+# $Id: SwissProt.pm,v 1.20 2003/05/15 08:13:54 heikki Exp $
 #
 # BioPerl module for Bio::DB::SwissProt
 #
@@ -172,7 +172,7 @@ sub new {
 
 =head2 Routines from Bio::DB::RandomAccessI
 
-=cut 
+=cut
 
 =head2 get_Seq_by_id
 
@@ -320,8 +320,8 @@ sub default_format {
 }
 
 =head2 Bio::DB::SwissProt specific routines
- 
-=cut 
+
+=cut
 
 =head2 servertype
 
@@ -353,7 +353,7 @@ sub servertype {
 
 
 =head2 hostlocation
-    
+
  Title   : hostlocation
  Usage   : my $location = $self->hostlocation() 
           $self->hostlocation($location) 

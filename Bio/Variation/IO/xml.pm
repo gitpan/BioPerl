@@ -1,4 +1,4 @@
-# $Id: xml.pm,v 1.12.2.1 2003/03/01 17:23:43 jason Exp $
+# $Id: xml.pm,v 1.14 2003/06/04 08:36:44 heikki Exp $
 # BioPerl module for Bio::Variation::IO::xml
 #
 # Cared for by Heikki Lehvaslaiho <Heikki@ebi.ac.uk>
@@ -71,7 +71,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Variation::IO::xml;
-my $VERSION=1.1;
+
 use vars qw(@ISA $seqdiff $var $prevdnaobj $prevrnaobj $prevaaobj);
 use strict;
 
@@ -243,12 +243,13 @@ sub next {
 sub write {
     my ($self,@h) = @_;
 
-    if( ! defined $h[0] ) {
+    if( !defined $h[0] ) {
         $self->throw("Attempting to write with no information!");
     }
     my $str;
     my $output = IO::String->new($str);
     my $w = new XML::Writer(OUTPUT => $output, DATA_MODE => 1, DATA_INDENT => 4 );
+
     foreach my $h (@h) {
 	#
 	# seqDiff
@@ -551,6 +552,7 @@ sub write {
 	}
     }
     $w->endTag;
+
 
     $w->end;
     $self->_print($str);

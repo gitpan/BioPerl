@@ -1,5 +1,5 @@
 #
-# $Id: RefSeq.pm,v 1.5 2002/10/22 07:38:29 lapp Exp $
+# $Id: RefSeq.pm,v 1.7 2003/07/27 19:46:44 jason Exp $
 #
 # BioPerl module for Bio::DB::EMBL
 #
@@ -16,6 +16,7 @@
 Bio::DB::RefSeq - Database object interface for RefSeq retrieval
 
 =head1 SYNOPSIS
+
   use Bio::DB::RefSeq;
 
   $db = new Bio::DB::RefSeq;
@@ -137,6 +138,21 @@ sub new {
     $self->{'_default_format'} = $DEFAULTFORMAT;
 
     return $self;
+}
+
+
+sub get_seq_stream {
+   my ($self,%qualifiers) = @_;
+   if( exists $qualifiers{'-uids'} ) {
+       if( ref($qualifiers{'-uids'}) =~ /ARRAY/i ) {
+	   foreach my $u ( @{$qualifiers{'-uids'}} ) {
+	       $u =~ s/^(\S+)\|//;
+	   }
+       } else { 
+	   $qualifiers{'-uids'} =~ s/^(\S+)\|//;
+       }
+   }
+   $self->SUPER::get_seq_stream(%qualifiers);
 }
 
 1;

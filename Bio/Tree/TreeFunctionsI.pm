@@ -1,4 +1,4 @@
-# $Id: TreeFunctionsI.pm,v 1.5.2.3 2003/09/14 20:18:25 jason Exp $
+# $Id: TreeFunctionsI.pm,v 1.14 2003/12/15 17:10:29 jason Exp $
 #
 # BioPerl module for Bio::Tree::TreeFunctionsI
 #
@@ -29,7 +29,8 @@ Bio::Tree::TreeFunctionsI - Decorated Interface implementing basic Tree explorat
 
 =head1 DESCRIPTION
 
-Describe the interface here
+This interface provides a set of implementated Tree functions which
+only use the defined methods in the TreeI or NodeI interface.
 
 =head1 FEEDBACK
 
@@ -288,7 +289,7 @@ sub distance {
 	    }
 	}
 	# include current branch length in next iteration
-	$cumul_dist += $place->branch_length; 
+	$cumul_dist += $place->branch_length || 0; 
 	$place = $place->ancestor;
     }
     $self->warn("Could not find distance!"); # should never execute, 

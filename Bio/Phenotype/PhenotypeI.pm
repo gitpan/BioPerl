@@ -1,4 +1,4 @@
-# $Id: PhenotypeI.pm,v 1.6 2002/12/12 18:27:01 czmasek Exp $
+# $Id: PhenotypeI.pm,v 1.7 2003/05/16 11:32:56 heikki Exp $
 #
 # BioPerl module for Bio::Phenotype::PhenotypeI
 #
@@ -114,19 +114,8 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Phenotype::PhenotypeI;
 use vars qw( @ISA );
-use strict;
-use Bio::Root::Root;
-use Bio::Species;
-use Bio::Variation::VariantI;
-use Bio::Annotation::DBLink;
-use Bio::Annotation::Reference;
-use Bio::Phenotype::Measure;
-use Bio::Phenotype::Correlate;
-use Bio::Map::CytoPosition;
-use Bio::Range;
-
-
-@ISA = qw( Bio::Root::Root );
+use Bio::Root::RootI;
+@ISA = qw( Bio::Root::RootI );
 
 
 

@@ -1,4 +1,4 @@
-# $Id: PrimarySeq.pm,v 1.73.2.1 2003/06/29 00:25:27 jason Exp $
+# $Id: PrimarySeq.pm,v 1.79 2003/07/19 22:20:30 jason Exp $
 #
 # bioperl module for Bio::PrimarySeq
 #
@@ -23,7 +23,7 @@ Bio::PrimarySeq - Bioperl lightweight Sequence Object
   use Bio::SeqIO;
   use Bio::DB::GenBank;
 
-  #make from memory
+  # make from memory
   $seqobj = Bio::PrimarySeq->new ( -seq => 'ATGGGGTGGGCGGTGGGTGGTTTG',
 				   -id  => 'GeneFragment-12',
 				   -accession_number => 'X78121',
@@ -50,28 +50,28 @@ Bio::PrimarySeq - Bioperl lightweight Sequence Object
 
 =head1 DESCRIPTION
 
-PrimarySeq is a lightweight Sequence object, storing little more than
-the sequence, its name, a computer useful unique name. It does not
-contain sequence features or other information.  To have a sequence
-with sequence features you should use the Seq object which uses this
-object - go perldoc Bio::Seq
+PrimarySeq is a lightweight Sequence object, storing the sequence, its
+name, a computer-useful unique name, and other fundamental attributes.
+It does not contain sequence features or other information.  To have a
+sequence with sequence features you should use the Seq object which uses
+this object.
 
-Although newusers will use Bio::PrimarySeq alot, in general you will
+Although new users will use Bio::PrimarySeq a lot, in general you will
 be using it from the Bio::Seq object. For more information on Bio::Seq
-go perldoc Bio::Seq. For interest you might like to known that
+see L<Bio::Seq>. For interest you might like to know that
 Bio::Seq has-a Bio::PrimarySeq and forwards most of the function calls
 to do with sequence to it (the has-a relationship lets us get out of a
 otherwise nasty cyclical reference in Perl which would leak memory).
 
 Sequence objects are defined by the Bio::PrimarySeqI interface, and this
-object is a pure Perl implementation of the interface (if that's
+object is a pure Perl implementation of the interface. If that's
 gibberish to you, don't worry. The take home message is that this
 object is the bioperl default sequence object, but other people can
-use their own objects as sequences if they so wish). If you are
+use their own objects as sequences if they so wish. If you are
 interested in wrapping your own objects as compliant Bioperl sequence
 objects, then you should read the Bio::PrimarySeqI documentation
 
-The documenation of this object is a merge of the Bio::PrimarySeq and
+The documentation of this object is a merge of the Bio::PrimarySeq and
 Bio::PrimarySeqI documentation.  This allows all the methods which you can
 call on sequence objects here.
 
@@ -153,7 +153,8 @@ my %valid_type = map {$_, 1} qw( dna rna protein );
            -primary_id  => primary id (Genbank id)
            -namespace   => the namespace for the accession
            -authority   => the authority for the namespace
-           -desc        => description text
+           -description => description text
+           -desc        => alias for description
            -alphabet    => sequence type (alphabet) (dna|rna|protein)
            -id          => alias for display id
            -is_circular => boolean field for whether or not sequence is circular
@@ -166,7 +167,8 @@ sub new {
     my $self = $class->SUPER::new(@args);
 
     my($seq,$id,$acc,$pid,$ns,$auth,$v,$oid,
-       $desc,$alphabet,$given_id,$is_circular,$direct,$ref_to_seq,$len) =
+       $desc,$description,
+       $alphabet,$given_id,$is_circular,$direct,$ref_to_seq,$len) =
 	$self->_rearrange([qw(SEQ
 			      DISPLAY_ID
 			      ACCESSION_NUMBER
@@ -176,6 +178,7 @@ sub new {
 			      VERSION
 			      OBJECT_ID
 			      DESC
+			      DESCRIPTION
 			      ALPHABET
 			      ID
 			      IS_CIRCULAR
@@ -218,12 +221,13 @@ sub new {
     $acc         && $self->accession_number($acc);
     defined $pid && $self->primary_id($pid);
     $desc        && $self->desc($desc);
+    $description && $self->description($description);
     $is_circular && $self->is_circular($is_circular);
     $ns          && $self->namespace($ns);
     $auth        && $self->authority($auth);
     defined($v)  && $self->version($v);
     defined($oid) && $self->object_id($oid);
-
+    
     return $self;
 }
 
@@ -241,7 +245,7 @@ sub direct_seq_set {
  Function: Returns the sequence as a string of letters. The
            case of the letters is left up to the implementer.
            Suggested cases are upper case for proteins and lower case for
-           DNA sequence (IUPAC standard), but you should not rely on this
+           DNA sequence (IUPAC standard), but you should not rely on this.
  Returns : A scalar
  Args    : Optionally on set the new value (a string). An optional second
            argument presets the alphabet (otherwise it will be guessed).
@@ -266,7 +270,7 @@ sub seq {
 		       "which does not look healthy");
        }
        # if a sequence was already set we make sure that we re-adjust the
-       # mol.type, otherwise we skip guessing if mol.type is already set
+       # alphabet, otherwise we skip guessing if alphabet is already set
        # note: if the new seq is empty or undef, we don't consider that a
        # change (we wouldn't have anything to guess on anyway)
        my $is_changed_seq =
@@ -284,7 +288,7 @@ sub seq {
 	   $obj->_guess_alphabet();
        } # else (seq not changed and alphabet was defined) do nothing
        # if the seq is changed, make sure we unset a possibly set length
-       $obj->length(undef) if $is_changed_seq;
+       $obj->length(undef) if $is_changed_seq || $obj->{'seq'};
    }
    return $obj->{'seq'};
 }
@@ -293,8 +297,8 @@ sub seq {
 
  Title   : validate_seq
  Usage   : if(! $seq->validate_seq($seq_str) ) {
-                print "sequence $seq_str is not valid for an object of type ",
-		      ref($seq), "\n";
+                print "sequence $seq_str is not valid for an object of 
+                alphabet ",$seq->alphabet, "\n";
 	   }
  Function: Validates a given sequence string. A validating sequence string
            must be accepted by seq(). A string that does not validate will
@@ -356,13 +360,14 @@ sub subseq {
        return $seq;
    } elsif(  defined  $start && defined $end ) {
        if( $start > $end ){
-	   $self->throw("in subseq, start [$start] has to be ".
-			"greater than end [$end]");
+	   $self->throw("Bad start,end parameters. Start [$start] has to be ".
+			"less than end [$end]");
        }
-       if( $start <= 0 || $end > $self->length ) {
-	   $self->throw("You have to have start positive\n\tand length less ".
-			"than the total length of sequence [$start:$end] ".
-			"Total ".$self->length."");
+       if( $start <= 0 ) {
+	   $self->throw("Bad start parameter ($start). Start must be positive.");
+       }
+       if( $end > $self->length ) {
+	   $self->throw("Bad end parameter ($end). End must be less than the total length of sequence (total=".$self->length.")");
        }
 
        # remove one from start, and then length is end-start
@@ -527,14 +532,14 @@ sub primary_id {
 
  Title   : alphabet
  Usage   : if( $obj->alphabet eq 'dna' ) { /Do Something/ }
- Function: Returns the type of sequence being one of
+ Function: Returns the alphabet of sequence, one of
            'dna', 'rna' or 'protein'. This is case sensitive.
 
            This is not called <type> because this would cause
            upgrade problems from the 0.5 and earlier Seq objects.
 
  Returns : a string either 'dna','rna','protein'. NB - the object must
-           make a call of the type - if there is no type specified it
+           make a call of the type - if there is no alphabet specified it
            has to guess.
  Args    : none
 
@@ -546,7 +551,7 @@ sub alphabet {
     if (defined $value) {
 	$value = lc $value;
 	unless ( $valid_type{$value} ) {
-	    $obj->throw("Molecular type '$value' is not a valid type (".
+	    $obj->throw("Alphabet '$value' is not a valid alphabet (".
 			join(',', map "'$_'", sort keys %valid_type) .
 			") lowercase");
 	}
@@ -561,7 +566,7 @@ sub alphabet {
  Usage   : $obj->desc($newval)
  Function: Get/set description of the sequence.
 
-           description is an alias for this for compliance with the
+           'description' is an alias for this for compliance with the
            Bio::DescribeableI interface.
 
  Example :
@@ -625,6 +630,7 @@ sub  id {
 
 sub is_circular{
     my $self = shift;
+
     return $self->{'is_circular'} = shift if @_;
     return $self->{'is_circular'};
 }
@@ -637,9 +643,9 @@ sub is_circular{
 
  Title   : object_id
  Usage   : $string    = $obj->object_id()
- Function: a string which represents the stable primary identifier
+ Function: A string which represents the stable primary identifier
            in this namespace of this object. For DNA sequences this
-           is its accession_number, similarly for protein sequences
+           is its accession_number, similarly for protein sequences.
 
            This is aliased to accession_number().
  Returns : A scalar
@@ -655,10 +661,10 @@ sub object_id {
 
  Title   : version
  Usage   : $version    = $obj->version()
- Function: a number which differentiates between versions of
+ Function: A number which differentiates between versions of
            the same object. Higher numbers are considered to be
            later and more relevant, but a single object described
-           the same identifier should represent the same concept
+           the same identifier should represent the same concept.
 
  Returns : A number
 
@@ -677,9 +683,9 @@ sub version{
 
  Title   : authority
  Usage   : $authority    = $obj->authority()
- Function: a string which represents the organisation which
+ Function: A string which represents the organisation which
            granted the namespace, written as the DNS name for  
-           organisation (eg, wormbase.org)
+           organisation (eg, wormbase.org).
 
  Returns : A scalar
 
@@ -699,7 +705,7 @@ sub authority {
  Usage   : $string    = $obj->namespace()
  Function: A string representing the name space this identifier
            is valid in, often the database name or the name
-           describing the collection 
+           describing the collection.
 
  Returns : A scalar
 
@@ -724,11 +730,11 @@ This comprises of display_name and description.
 
  Title   : display_name
  Usage   : $string    = $obj->display_name()
- Function: A string which is what should be displayed to the user
-           the string should have no spaces (ideally, though a cautious
+ Function: A string which is what should be displayed to the user.
+           The string should have no spaces (ideally, though a cautious
            user of this interface would not assumme this) and should be
            less than thirty characters (though again, double checking 
-           this is a good idea)
+           this is a good idea).
 
            This is aliased to display_id().
  Returns : A scalar
@@ -748,7 +754,7 @@ sub display_name {
            should not have any newlines or formatting - just plain
            text. The string should not be greater than 255 characters
            and clients can feel justified at truncating strings at 255
-           characters for the purposes of display
+           characters for the purposes of display.
 
            This is aliased to desc().
  Returns : A scalar
@@ -771,12 +777,12 @@ actually implemented on Bio::PrimarySeqI
  Function: Produces a new Bio::SeqI implementing object which
            is the reversed complement of the sequence. For protein
            sequences this throws an exception of
-           "Sequence is a protein. Cannot revcom"
+           "Sequence is a protein. Cannot revcom".
 
            The id is the same id as the orginal sequence, and the
            accession number is also indentical. If someone wants to
            track that this sequence has be reversed, it needs to
-           define its own extensions
+           define its own extensions.
 
            To do an inplace edit of an object you can go:
 
@@ -798,7 +804,7 @@ actually implemented on Bio::PrimarySeqI
  Function: Provides a truncation of a sequence,
 
  Example :
- Returns : a fresh Bio::SeqI implementing object
+ Returns : A fresh Bio::SeqI implementing object.
  Args    :
 
 

@@ -1,4 +1,4 @@
-# $Id: psi.pm,v 1.6 2002/12/23 19:36:39 jason Exp $
+# $Id: psi.pm,v 1.7 2003/02/17 07:55:28 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::psi
 #
@@ -20,7 +20,7 @@ This module will parse PSI-BLAST output of the format seqid XXXX
 
 =head1 DESCRIPTION
 
-Describe the object here
+This is for parser for a psi-blast blocks.
 
 =head1 FEEDBACK
 

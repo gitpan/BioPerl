@@ -1,4 +1,4 @@
-# $Id: soap.pm,v 1.5 2002/10/22 07:45:14 lapp Exp $
+# $Id: soap.pm,v 1.6 2003/06/04 08:36:37 heikki Exp $
 #
 # BioPerl module Bio::DB::Biblio::soap.pm
 #
@@ -105,7 +105,7 @@ with an underscore _.
 
 
 package Bio::DB::Biblio::soap;
-use vars qw(@ISA $VERSION $Revision $DEFAULT_SERVICE $DEFAULT_NAMESPACE);
+use vars qw(@ISA $Revision $DEFAULT_SERVICE $DEFAULT_NAMESPACE);
 use strict;
 
 use Bio::Biblio;  # TBD: ?? WHY SHOULD I DO THIS ??
@@ -122,10 +122,8 @@ use SOAP::Lite
 
 @ISA = qw(Bio::Biblio);
 
-BEGIN { 
-    # set the version for version checking
-    $VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id: soap.pm,v 1.5 2002/10/22 07:45:14 lapp Exp $;
+BEGIN {
+    $Revision = q$Id: soap.pm,v 1.6 2003/06/04 08:36:37 heikki Exp $;
 
     # where to go...
     $DEFAULT_SERVICE = 'http://industry.ebi.ac.uk/soap/openBQS';

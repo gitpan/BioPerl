@@ -1,4 +1,4 @@
-# $Id: Split.pm,v 1.35 2002/12/28 03:26:32 lapp Exp $
+# $Id: Split.pm,v 1.36 2003/09/13 19:40:17 jason Exp $
 #
 # BioPerl module for Bio::Location::SplitLocation
 # Cared for by Jason Stajich <jason@bioperl.org>
@@ -228,7 +228,7 @@ sub add_sub_Location {
 =head2 splittype
 
   Title   : splittype
-  Usage   : $splittype = $fuzzy->splittype();
+  Usage   : $splittype = $location->splittype();
   Function: get/set the split splittype
   Returns : the splittype of split feature (join, order)
   Args    : splittype to set

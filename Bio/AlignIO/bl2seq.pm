@@ -1,4 +1,4 @@
-# $Id: bl2seq.pm,v 1.13.2.1 2003/06/18 12:19:52 jason Exp $
+# $Id: bl2seq.pm,v 1.16 2003/11/25 18:59:27 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::bl2seq
 
@@ -57,9 +57,6 @@ manipulated using any SimpleAlign.pm methods, eg:
    $str = Bio::AlignIO->new(-file=> 'bl2seq.out','-format' => 'bl2seq');
    $aln = $str->next_aln();
 
-   Pass in -report_type flag when initializing the object to have this
-   pass through to the Bio::Tools::BPbl2seq object.  See that object.
-
 =head1 FEEDBACK
 
 =head2 Mailing Lists
@@ -100,18 +97,18 @@ use strict;
 # Object preamble - inherits from Bio::Root::Object
 
 use Bio::AlignIO;
-use Bio::Tools::BPbl2seq;
+use Bio::SearchIO;
 
 @ISA = qw(Bio::AlignIO);
 
 
-
-sub _initialize {
-    my ($self,@args) = @_;
-    $self->SUPER::_initialize(@args);
-    ($self->{'report_type'}) = $self->_rearrange([qw(REPORT_TYPE)],
-						 @args);
-    return 1;
+sub new { 
+    my ($class) = shift;
+    my $self = $class->SUPER::new(@_);
+    my ($rt) = $self->_rearrange([qw(REPORT_TYPE)],@_);
+    $self->report_type($rt);
+    $self;
+    
 }
 
 =head2 next_aln
@@ -127,46 +124,56 @@ sub _initialize {
 
 sub next_aln {
     my $self = shift;
-    my ($start,$end,$name,$seqname,$seq,$seqchar);
+    my ($start,$end,$name,$seqname,$seq,$seqchar,$strand);
     my $aln =  Bio::SimpleAlign->new(-source => 'bl2seq');
-    $self->{'bl2seqobj'} =
-    	$self->{'bl2seqobj'} || Bio::Tools::BPbl2seq->new(-fh => $self->_fh,
-							  -report_type => $self->{'report_type'});
+    $self->{'bl2seqobj'} = $self->{'bl2seqobj'} || 
+	Bio::SearchIO->new(-fh => $self->_fh,
+			   -format => 'blast');
     my $bl2seqobj = $self->{'bl2seqobj'};
-    my $hsp =   $bl2seqobj->next_feature;
-    $seqchar = $hsp->querySeq;
-    $start = $hsp->query->start;
-    $end = $hsp->query->end;
-    $seqname = 'Query-sequence';    # Query name not present in bl2seq report
+    my $result = $self->{'_result'} || $bl2seqobj->next_result;
+    $self->{'result'} = undef, return unless defined $result;
+    
+    my $hit = $self->{'_hit'} || $result->next_hit;
+    $self->{'_hit'} = undef, return unless defined $hit;
+    
+    my $hsp  = $hit->next_hsp;
+    return $hsp->get_aln;
+# much easier above, eh?
+#     $seqchar = $hsp->query_string;
+#     $start   = $hsp->query->start;
+#     $end     = $hsp->query->end;
+#      # Query name typically not present in bl2seq report
+#     $seqname = $hsp->query->seq_id || 'Query-sequence'; 
+#     $strand  = $hsp->query->strand;
+    
+#     #    unless ($seqchar && $start && $end  && $seqname) {return 0} ;	
+#     unless ($seqchar && $start && $end ) {return 0} ;	
 
-#    unless ($seqchar && $start && $end  && $seqname) {return 0} ;	
-    unless ($seqchar && $start && $end ) {return 0} ;	
+#     $seq = new Bio::LocatableSeq('-seq'   =>$seqchar,
+# 				 '-id'    =>$seqname,
+# 				 '-start' =>$start,
+# 				 '-end'   =>$end,
+# 				 '-strand'=>$strand,
+# 				 );
 
-    $seq = new Bio::LocatableSeq('-seq'=>$seqchar,
-				 '-id'=>$seqname,
-				 '-start'=>$start,
-				 '-end'=>$end,
-				 );
+#     $aln->add_seq($seq);
 
-    $aln->add_seq($seq);
+#     $seqchar  = $hsp->hit_string;
+#     $start    = $hsp->hit->start;
+#     $end      = $hsp->hit->end;
+#     $seqname  = $hsp->hit->seq_id;
+#     $strand   = $hsp->hit->strand;
 
-    $seqchar = $hsp->sbjctSeq;
-    $start = $hsp->hit->start;
-    $end = $hsp->hit->end;
-    $seqname = $bl2seqobj->sbjctName;
+#     unless ($seqchar && $start && $end  && $seqname) {return 0} ;	
 
-    unless ($seqchar && $start && $end  && $seqname) {return 0} ;	
-
-    $seq = new Bio::LocatableSeq('-seq'=>$seqchar,
-				 '-id'=>$seqname,
-				 '-start'=>$start,
-				 '-end'=>$end,
-				 );
-
-    $aln->add_seq($seq);
-
-    return $aln;
-
+#     $seq = new Bio::LocatableSeq('-seq'   =>$seqchar,
+# 				 '-id'    =>$seqname,
+# 				 '-start' =>$start,
+# 				 '-end'   =>$end,
+# 				 '-strand'=>$strand,
+# 				 );
+#     $aln->add_seq($seq);
+#     return $aln;
 }
 	
 
@@ -185,6 +192,23 @@ sub write_aln {
     my ($self,@aln) = @_;
 
     $self->throw("Sorry: writing bl2seq output is not available! /n");
+}
+
+=head2 report_type
+
+ Title   : report_type
+ Usage   : $obj->report_type($newval)
+ Function: Sets the report type (blastn, blastp...)
+ Returns : value of report_type (a scalar)
+ Args    : on set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub report_type{
+    my $self = shift;
+    return $self->{'report_type'} = shift if @_;
+    return $self->{'report_type'};
 }
 
 1;

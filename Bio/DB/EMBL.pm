@@ -1,5 +1,5 @@
 #
-# $Id: EMBL.pm,v 1.12.2.1 2003/06/25 13:44:18 heikki Exp $
+# $Id: EMBL.pm,v 1.15 2003/12/08 16:06:34 bosborne Exp $
 #
 # BioPerl module for Bio::DB::EMBL
 #
@@ -185,6 +185,7 @@ sub get_Stream_by_acc {
   Function: 
   Returns : A Bio::DB::RefSeq reference or throws
   Args    : $id(s), $string
+
 =cut
 
 sub _check_id {
@@ -198,7 +199,7 @@ sub _check_id {
     # Asking for a RefSeq from EMBL/GenBank
 
     if ($ids =~ /N._/) {
-	$self->warn("[$ids] is not a normal sequence database but a RefSeq entry.".
+	$self->warn("[$ids] is not a normal sequence entry but a RefSeq entry.".
 		   " Redirecting the request.\n")
 	    if $self->verbose >= 0;
 	return  new Bio::DB::RefSeq(-verbose => $self->verbose);

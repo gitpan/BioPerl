@@ -1,5 +1,5 @@
 #------------------------------------------------------------------
-# $Id: RestrictionEnzyme.pm,v 1.25.2.1 2003/06/29 00:53:20 jason Exp $
+# $Id: RestrictionEnzyme.pm,v 1.27 2003/06/29 00:53:05 jason Exp $
 #
 # BioPerl module Bio::Tools::RestrictionEnzyme
 #
@@ -170,15 +170,14 @@ use strict;
 use Bio::Root::Root;
 use Exporter;
 
-use vars qw (@ISA @EXPORT_OK %EXPORT_TAGS $ID $version @RE_available $Revision);
+use vars qw (@ISA @EXPORT_OK %EXPORT_TAGS $ID  @RE_available $Revision);
 
 @ISA         = qw(Bio::Root::Root Exporter);
 @EXPORT_OK   = qw(@RE_available);
 %EXPORT_TAGS = ( std => [qw(@RE_available)] );
 
 $ID = 'Bio::Tools::RestrictionEnzyme';
-$version = 0.04;
-$Revision = '$Id: RestrictionEnzyme.pm,v 1.25.2.1 2003/06/29 00:53:20 jason Exp $';  #'
+$Revision = '$Id: RestrictionEnzyme.pm,v 1.27 2003/06/29 00:53:05 jason Exp $';  #'
 
 # Generated from REBASE version 208 (strider format), dated Aug 1 2002
 # using scripts/contributed/rebase2list.pl
@@ -1025,7 +1024,7 @@ sub cut_seq {
     my $seq = uc $self->_expanded_string;
 
     if(!$self->palindromic and $self->name ne 'N') {
-	my $revseq = $self->_expanded_string( $reSeq->revcom->seq );
+	my $revseq = $self->_expanded_string( $reSeq->revcom->seq() );
 	$seq .= '|'.uc($revseq);
     }
     $self->debug(sprintf("$ID: site seq: %s\n\n", $seq));

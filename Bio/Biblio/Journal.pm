@@ -1,4 +1,4 @@
-# $Id: Journal.pm,v 1.6 2002/10/22 07:45:11 lapp Exp $
+# $Id: Journal.pm,v 1.8 2003/05/30 15:33:00 jason Exp $
 #
 # BioPerl module for Bio::Biblio::Journal
 #
@@ -15,7 +15,7 @@ Bio::Biblio::Journal - Representation of a journal
 
     $obj = new Bio::Biblio::Journal (-name => 'The Perl Journal',
 				     -issn  => '1087-903X');
- --- OR ---
+  #--- OR ---
 
     $obj = new Bio::Biblio::Journal;
     $obj->issn ('1087-903X');
@@ -38,7 +38,7 @@ The following attributes are specific to this class
 
 =head1 SEE ALSO
 
-=over
+=over 4
 
 =item *
 

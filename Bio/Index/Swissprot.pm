@@ -1,6 +1,6 @@
 
 #
-# $Id: Swissprot.pm,v 1.11 2002/10/22 07:38:33 lapp Exp $
+# $Id: Swissprot.pm,v 1.14 2003/06/04 08:36:40 heikki Exp $
 #
 # BioPerl module for Bio::Index::Abstract
 #
@@ -23,7 +23,7 @@ Bio::Index::Swissprot - Interface for indexing (multiple) Swissprot
     use strict;
 
     my $Index_File_Name = shift;
-    my $inx = Bio::Index::Swissprot->new('-filename' => $Index_File_Name, 
+    my $inx = Bio::Index::Swissprot->new('-filename' => $Index_File_Name,
 					 '-write_flag' => 'WRITE');
     $inx->make_index(@ARGV);
 
@@ -43,9 +43,9 @@ Bio::Index::Swissprot - Interface for indexing (multiple) Swissprot
     }
 
     # alternatively
-
+    my ($id, $acc);
     my $seq1 = $inx->get_Seq_by_id($id);
-    my $seq2 = $inx->get_Seq_by_acc($acc);   
+    my $seq2 = $inx->get_Seq_by_acc($acc);
 
 =head1 DESCRIPTION
 
@@ -53,6 +53,10 @@ Inherits functions for managing dbm files from Bio::Index::Abstract.pm,
 and provides the basic funtionallity for indexing Swissprot files, and
 retrieving the sequence from them. Heavily snaffled from James Gilbert's
 Fasta system. Note: for best results 'use strict'.
+
+Details on configuration and additional example code are available in the
+biodatabases.pod file.
+
 
 =head1 FEED_BACK
 
@@ -92,7 +96,7 @@ Internal methods are usually preceded with a _
 
 package Bio::Index::Swissprot;
 
-use vars qw($VERSION @ISA);
+use vars qw( @ISA);
 use strict;
 
 use Bio::Index::AbstractSeq;
@@ -104,17 +108,8 @@ sub _type_stamp {
     return '__Swissprot_FLAT__'; # What kind of index are we?
 }
 
-#
-# Suggested fix by Michael G Schwern <schwern@pobox.com> to
-# get around a clash with CPAN shell...
-#
-
-BEGIN {
-    $VERSION = 0.1;
-}
-
 sub _version {
-    return $VERSION;
+    return 0.1;
 }
 
 =head2 _index_file

@@ -697,27 +697,27 @@ sub load_gff_line {
 					       $groupid,
 					       $gff->{tstart},$gff->{tstop});
   if (defined ($dbh->errstr)){
-   # print  $dbh->errstr,"\n" ,%$gff,"\n";
+    print  $dbh->errstr,"\n" ,%$gff,"\n";
     if ($dbh->errstr =~ /ORA-02290: check constraint/){
       print "PHASE=$gff->{phase}"."===","\n";
     }
 
-    #if ($dbh->errstr =~ /ORA-00001: unique constraint/){
-    #  $result = $s->{sth}{delete_existing_fdata}->execute($gff->{ref},
-    #							   $gff->{start},$gff->{stop},$bin,
-    #							   $typeid,
-    #							   $groupid);
-    #
-    #  print "delete row result=$result\n";
-    #  $result = $s->{sth}{insert_fdata}->execute($gff->{ref},
-    #					       $gff->{start},$gff->{stop},$bin,
-    #					       $typeid,
-    #					       $gff->{score},$gff->{strand},$gff->{phase},
-    #					       $groupid,
-    #					       $gff->{tstart},$gff->{tstop}); 
-    #
-    #  print "insert row result=$result\n";
-    #}
+    if ($dbh->errstr =~ /ORA-00001: unique constraint/){
+      $result = $s->{sth}{delete_existing_fdata}->execute($gff->{ref},
+    							   $gff->{start},$gff->{stop},$bin,
+    							   $typeid,
+    							   $groupid);
+    
+      print "delete row result=$result\n";
+      $result = $s->{sth}{insert_fdata}->execute($gff->{ref},
+    					       $gff->{start},$gff->{stop},$bin,
+    					       $typeid,
+    					       $gff->{score},$gff->{strand},$gff->{phase},
+    					       $groupid,
+    					       $gff->{tstart},$gff->{tstop}); 
+    
+      print "insert row result=$result\n";
+    }
   }
   warn $dbh->errstr,"\n" and print "ref=",$gff->{ref}," start=",$gff->{start}," stop=",$gff->{stop}," bin=",$bin," typeid=",$typeid," groupid=",$groupid,"\n" 
     and return unless $result;
@@ -727,6 +727,9 @@ sub load_gff_line {
 
 
   # insert attributes
+
+  #  print STDERR map {"$fid attribute:". $_->[0]."=".$_->[1]."\n"} @{$gff->{attributes}};
+
   foreach (@{$gff->{attributes}}) {
     defined(my $attribute_id = $self->get_table_id('fattribute',$_->[0])) or return;
     $s->{sth}{insert_fattribute_value}->execute($fid,$attribute_id,$_->[1]);

@@ -1,6 +1,6 @@
 ## --Makefile.PL for Bioperl core module distribution--##
 ## ----------------------------------------------------##
-## $Id: Makefile.PL,v 1.50.2.3 2003/09/15 16:39:14 jason Exp $
+## $Id: Makefile.PL,v 1.69 2003/12/15 11:21:47 heikki Exp $
 ##----------------------------------------------------
 
 #
@@ -16,6 +16,7 @@
 %packages = (
 	     'HTTP::Request::Common'    => '0.0/Part of the LWP package/GenBank+GenPept sequence retrieval, remote http Blast jobs/Bio::DB::*,Bio::Tools::Run::RemoteBlast',
 	     'LWP::UserAgent'           => '0.0/Part of the LWP package/GenBank+GenPept sequence retrieval, remote http Blast jobs/Bio::DB::*,Bio::Tools::Run::RemoteBlast',
+	     'HTML::Entities'           => '0.0/To parse POST request URL formas/Remote Analysis POST submissions/Bio::Tools::Run::Analysis::*',
 	     'Ace'                      => '0.0/Aceperl/access of ACeDB database/Bio::DB::Ace',
 	     'IO::Scalar'               => '0.0/IO handle to read or write to a scalar/remote http Blast jobs/Bio::Tools::Blast::Run::Webblast',
 	     'IO::String'               => '0.0/IO handle to read or write to a string/GenBank+GenPept sequence retrieval, Variation code/Bio::DB::*,Bio::Variation::*,Bio::Tools::Blast::Run::Webblast, Bio::Index::Blast',
@@ -29,6 +30,8 @@
 	     'DBD::mysql'               => '0.0/Mysql driver/loading and querying of Mysql-based GFF feature databases/Bio::DB::GFF',
 	     'GD'                       => '1.3/Graphical Drawing Toolkit/Rendering Sequences and Features/Bio::Graphics',
 	     'Text::Shellwords'         => '0.0/Execute shell commands/test scripts/Bio::Graphics',
+	     'SVG'                      => '2.26/Generate optional SVG output/Bio::Graphics',
+	     'GD::SVG'                  => '0.0/Generate optional SVG output/Bio::Graphics',
 	     'Storable'                 => '0.0/Persistent object storage and retrieval/Storing sequence objects in local file cache/Bio::DB::FileCache',
 	     'Graph::Directed'          => '0.0/Generic Graph data stucture and algorithms/Ontology Engine implementation for the GO parser/Bio::Ontology::SimpleOntologyEngine',
 # Bio::Microarray is not in core bioperl yet
@@ -75,30 +78,103 @@ $tline = "show_tests :\n\t\@echo \'type make test_<subtest> to run\'\n\t\@echo '
 
 print STDERR "Generated sub tests. go make show_tests to see available subtests\n";
 
-sub MY::postamble {
-             $tline;
-         }
-
 #
 # Prompt user for BioDBGFF stuff
 #
 
-if(  eval { require DBI } && grep {/mysql/} DBI->available_drivers) {
-  my $proceed = prompt("Do you want to run the BioDBGFF tests (requires a mysql database) y/n",'n');
-  if( $proceed =~ /^[yY]/) {
-    my $cfg = {dbd_driver => 'mysql'};
-    GFFQueryDb($cfg,{'prompt'=>1,'verbose'=>1});
-    if (open T,">t/do_biodbgff.tests") {
-      foreach (keys %$cfg) {
-	print T $_,"\t",$cfg->{$_},"\n";
+sub prompt_for_biodbgff {
+  if(  eval { require DBI } && grep {/mysql/} DBI->available_drivers) {
+    print "\n** Bio::DB::GFF Tests section** \n";
+    my $proceed = prompt("Do you want to run the BioDBGFF tests (requires a mysql, postgres or oracle database) y/n",'n');
+    if( $proceed =~ /^[yY]/) {
+      my $cfg = {dbd_driver => 'mysql'};
+      GFFQueryDb($cfg,{'prompt'=>1,'verbose'=>1});
+      if (open T,">t/do_biodbgff.tests") {
+	foreach (keys %$cfg) {
+	  print T $_,"\t",$cfg->{$_},"\n";
+	}
+	close T;
       }
-      close T;
-    }
-  } else {
-    if( -e "t/do_biodbgff.tests" ) {
-      unlink "t/do_biodbgff.tests";
+    } else {
+      if( -e "t/do_biodbgff.tests" ) {
+	unlink "t/do_biodbgff.tests";
+      }
     }
   }
+}
+
+sub MY::postamble {
+  $tline . "\n\n";
+}
+
+sub get_scripts_to_install {
+  print "\n*** Script Install Section ****\n";
+  print "\nBioperl comes with a number of useful scripts which you may wish to install.\n";
+  my $prompt_mode = prompt("Install [a]ll Bioperl scripts, [n]one, or choose groups [i]nteractively?",'a');
+  return if $prompt_mode =~ /^[nN]/;
+  my @scripts;
+  my $script_dir = './scripts';
+  my $dest_dir    = './scripts_temp';
+  rmtree ($dest_dir) if -e $dest_dir;
+  mkdir($dest_dir) or die "Can't mkdir($dest_dir): $!";
+  opendir(F,$script_dir) or die "Can't opendir $script_dir: $!";
+  while (my $file_or_dir = readdir(F)) {
+    next if $file_or_dir =~ /^\./;
+    next if $file_or_dir eq 'CVS';
+    next unless -d "$script_dir/$file_or_dir";
+    next unless prompt_to_install($script_dir,$file_or_dir,$prompt_mode);
+    my @files = install_contents("$script_dir/$file_or_dir",$dest_dir);
+    push @scripts,@files;
+  }
+  closedir F;
+  return @scripts;
+}
+
+sub prompt_to_install {
+  my $prefix = shift;
+  my $f      = shift;
+  my $prompt_mode = shift;
+  print "\n* Script Directory $f *\n";
+  if (-e "$prefix/$f/TAG" && (my $g = IO::File->new("$prefix/$f/TAG"))) {
+    print while <$g>;
+  }
+  return 1 if $prompt_mode =~ /^[aA]/;  # all
+  my $result = prompt("Install scripts in $f? [y]es [n]o [q]uit",'n');
+  die if $result =~ /^[qQ]/;
+  return $result =~ /^[yY]/;
+}
+
+sub install_contents {
+  my $dir  = shift;
+  my $dest = shift;
+  my $bangline = $Config{startperl};
+
+  my @files;
+  opendir (D,$dir) or die "Can't open $dir: $!\n";
+  while (my $script = readdir(D)) {
+    next unless $script =~ /\.PLS$/;
+    my $in  = IO::File->new("$dir/$script")    or die "Can't open $dir/$script: $!";
+    $script =~ s/\.PLS$/\.pl/;                   # change from .PLS to .pl
+    $script =~ s/^/bp_/ unless $script =~ /^bp/; # add the "bp" prefix
+    print "\tActivating $script....\n";
+    unlink "$dest/$script" if -e "$dest/$script";
+    my $out = IO::File->new(">$dest/$script")  or die "Can't open $dest/$script: $!";
+    my $doneit;
+    while (<$in>) {
+      next if $doneit;
+      if (s/^\#\!\S+/$bangline/) {
+	$doneit++;
+      }
+    } continue {
+      print $out $_;
+    }
+    close $in;
+    close $out;
+    chmod 0555,"$dest/$script" or die "Can't change mode of $script to ",MODE,": $!";
+    push @files,"$dest/$script";
+  }
+  closedir D;
+  return @files;
 }
 
 
@@ -121,13 +197,19 @@ sub GFFQueryDb {
   my $db     = $cfg->{'description'} || $cfg->{'dbd_driver'};
   my $driver = $cfg->{'dbd_driver'};
 
-  my $d = lc $driver;
   my $prompt = $options->{'prompt'};
+
+  $driver  = prompt("Which database driver should I use for testing BioDBGFF (mysql,Pg,Oracle)?",
+		    $driver) if $prompt;
+
+  my $d = lc $driver;
+  $cfg->{'dbd_driver'} = $driver;
 
   my $test_db =  exists($options->{"$d-test-db"}) ?
     $options->{"$d-test-db"} : ($cfg->{'test_db'} || 'test');
+
   $test_db = prompt
-    ("Which database should I use for testing the $db drivers?",
+    ("Which database should I use for testing the $driver driver?",
      $test_db) if $prompt;
 
   my $test_host = exists($options->{"$d-test-host"}) ?
@@ -158,7 +240,11 @@ sub GFFQueryDb {
   if ($test_host eq 'undef'  ||  $test_host eq 'localhost') {
     $test_host = '';
   }
-  my $test_dsn = "DBI:$driver:database=$test_db";
+  if ($d eq 'pg') {
+    $test_dsn = "dbi:$driver:dbname=$test_db"; 
+  } else {
+    $test_dsn = "dbi:$driver:database=$test_db";
+  }
   $cfg->{test_dsn} = $test_dsn;
   if ($test_host) {
     $cfg->{'test_dsn'} .= ";host=$test_host";
@@ -185,11 +271,17 @@ sub GFFQueryDb {
 
 require 5.005;
 use ExtUtils::MakeMaker ;
+use File::Path 'rmtree';
+use IO::File;
+use Config;
+
+my @scripts_to_install = eval {get_scripts_to_install()};
+prompt_for_biodbgff();
+
 
 $do_autoload_finesse = 0;
 $NAME     = 'Bio';
 $DISTNAME = "bioperl";
-$VERSION  = "1.2.3";
 
 if( $do_autoload_finesse == 1 ) {
     fatal("Autoload finessing does not work at the moment!");
@@ -229,29 +321,20 @@ Information:
    core packages.
 
    The installation of these external packages is very simple. You
-   can read more about bioperl external dependencies at
+   can read more about bioperl external dependencies in the INSTALL
+   file or at:
 
-   http://bioperl.org/Core/external.shtml
+   http://bioperl.org/Core/Latest/INSTALL
 
    Enjoy the rest of bioperl, which you can use after going 'make install'
 
 QQ_ERROR_QQ
 }
 
-open(CONF,'>bioperl.conf') or die "couldn't open bioperl.conf";
-
-print CONF<<'!NO!GROK!';
-VERSION		1.2.3
-AUTHORS		file://AUTHORS
-!NO!GROK!
-
-close CONF;
-
-
 WriteMakefile(
     NAME	=> $NAME,
     DISTNAME    => $DISTNAME,
-    VERSION     => $VERSION,
+    VERSION_FROM => "Bio/Root/Version.pm",
     'dist'      => {  COMPRESS     => 'gzip -9f',
                       SUFFIX       => '.gz', 
                       DIST_DEFAULT => 'all tardist',
@@ -262,24 +345,33 @@ WriteMakefile(
     ) : (),
     'realclean' => {  FILES        => join(' ',@BACKUP_FILES) },
     DIR         => [  ], # directories with other Makefile.PL's in them
-    PL_FILES	=> {
-			'bioperl.PL' => 'bioperl.pod',
-			'biodatabases.PL' => 'biodatabases.pod',
-			'biodesign.PL' => 'biodesign.pod',
-			'bioscripts.PL' => 'bioscripts.pod',
-		   },
+    EXE_FILES   => \@scripts_to_install,
+    PL_FILES	=> { 'doc/makedoc.PL' => ['bioscripts.pod','biodatabases.pod','biodesign.pod','bioperl.pod'] },
+    PREREQ_PM   => {
+	'IO::String'       => 0,
+    	'File::Temp'       => 0,
+	'File::Spec'       => 0,
+	'HTML::Entities'   => 0,
+	'DB_File'          => 0,
+	'IO::Scalar'       => 0,
+    },
 );
 
 
 sub MY::manifypods {
-    my $self = shift;
-    #print STDERR "In manifypods moment\n";
-    if( 1 ) {
-        return "\nmanifypods : pure_all\n\t$self->{NOECHO}\$(NOOP)\n"
-      }
-      else {
-        return $self->SUPER::manifypods(@_);
-      }
-    }
+  my $self = shift;
+  #print STDERR "In manifypods moment\n";
+  if( 1 ) {
+    return "\nmanifypods : pure_all\n\t$self->{NOECHO}\$(NOOP)\n"
+  }
+  else {
+    return $self->SUPER::manifypods(@_);
+  }
+}
 
-
+sub MY::clean {
+  package MY;
+  return shift->SUPER::clean(@_) . <<END;
+	-rm -rf scripts_temp
+END
+}

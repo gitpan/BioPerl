@@ -1,4 +1,4 @@
-# $Id: gcg.pm,v 1.21 2002/10/25 16:22:01 jason Exp $
+# $Id: gcg.pm,v 1.23 2003/12/22 18:33:15 heikki Exp $
 #
 # BioPerl module for Bio::SeqIO::gcg
 #
@@ -174,8 +174,11 @@ sub write_seq {
 	$self->throw("Did not provide a valid Bio::PrimarySeqI object") 
 	    unless defined $seq && ref($seq) && $seq->isa('Bio::PrimarySeqI');
 
+        $self->warn("No whitespace allowed in GCG ID [". $seq->display_id. "]")
+            if $seq->display_id =~ /\s/;
+
 	my $str         = $seq->seq;
-	my $comment     = $seq->desc; 
+	my $comment     = $seq->desc || ''; 
 	my $id          = $seq->id;
 	my $type        = ( $seq->alphabet() =~ /[dr]na/i ) ? 'N' : 'P';
 	my $timestamp;

@@ -1,9 +1,13 @@
 #!/usr/bin/perl
-# $Id: bptutorial.pl,v 1.83.2.2 2003/09/08 12:16:18 heikki Exp $
+# $Id: bptutorial.pl,v 1.133 2003/12/16 02:57:24 bosborne Exp $
 
 =head1 NAME
 
-BioPerlTutorial 1.2.2 - a tutorial for bioperl
+BioPerlTutorial - a tutorial for bioperl
+
+=head1 VERSION
+
+1.2.3
 
 =head1 AUTHOR
 
@@ -30,7 +34,7 @@ BioPerlTutorial 1.2.2 - a tutorial for bioperl
    same terms as perl itself.
 
    This document is written in Perl POD (plain old documentation)
-   format.  You can run this file through your favorite pod translator
+   format. You can run this file through your favorite pod translator
    (pod2html, pod2man, pod2text, etc.) if you would like a more
    convenient formatting.
 
@@ -47,83 +51,74 @@ BioPerlTutorial 1.2.2 - a tutorial for bioperl
   I.6 Places to look for additional documentation
 
   II. Brief overview to bioperl's objects
-  II.1 Sequence objects:
-         (Seq, PrimarySeq, LocatableSeq, RelSegment, LiveSeq, 
-          LargeSeq, RichSeq, SeqWithQuality, SeqI)
-  II.2  Location objects (Simple, Split, Fuzzy)
-  II.3  Interface objects and implementation objects
+  II.1 Sequence objects (Seq, PrimarySeq, LocatableSeq, RelSegment, LiveSeq, LargeSeq, RichSeq, SeqWithQuality, SeqI)
+  II.2 Location objects (Simple, Split, Fuzzy)
+  II.3 Interface objects and implementation objects
 
   III. Using bioperl
   III.1 Accessing sequence data from local and remote databases
-     III.1.1 Accessing remote databases (Bio::DB::GenBank, etc)
-     III.1.2 Indexing and accessing local databases 
-             (Bio::Index::*,  bpindex.pl, bpfetch.pl)
+    III.1.1 Accessing remote databases (Bio::DB::GenBank, etc)
+    III.1.2 Indexing and accessing local databases (Bio::Index::*, bp_index.pl, bp_fetch.pl)
   III.2 Transforming formats of database/ file records
-     III.2.1 Transforming sequence files (SeqIO)
-     III.2.2 Transforming alignment files (AlignIO)
+    III.2.1 Transforming sequence files (SeqIO)
+    III.2.2 Transforming alignment files (AlignIO)
   III.3 Manipulating sequences
     III.3.1 Manipulating sequence data with Seq methods (Seq)
-    III.3.2 Obtaining basic sequence statistics- MW, residue & 
-            codon frequencies (SeqStats)
-    III.3.3 Identifying restriction enzyme sites (RestrictionEnzyme)
+    III.3.2 Obtaining basic sequence statistics (SeqStats,SeqWord)
+    III.3.3 Identifying restriction enzyme sites (Bio::Restriction)
     III.3.4 Identifying amino acid cleavage sites (Sigcleave)
     III.3.5 Miscellaneous sequence utilities: OddCodes, SeqPattern
     III.3.6 Converting coordinate systems (Coordinate::Pair, RelSegment)
-  III.4 Searching for "similar" sequences
-     III.4.1 Running BLAST remotely (using RemoteBlast.pm)
-     III.4.2 Parsing BLAST and FASTA reports with Search and SearchIO
-     III.4.3 Parsing BLAST reports with BPlite, BPpsilite, and BPbl2seq
-     III.4.4 Parsing HMM reports (HMMER::Results, SearchIO)
-     III.4.5 Running BLAST locally  (StandAloneBlast)
+  III.4 Searching for similar sequences
+    III.4.1 Running BLAST remotely (using RemoteBlast.pm)
+    III.4.2 Parsing BLAST and FASTA reports with Search and SearchIO
+    III.4.3 Parsing BLAST reports with BPlite, BPpsilite, and BPbl2seq
+    III.4.4 Parsing HMM reports (HMMER::Results, SearchIO)
+    III.4.5 Running BLAST locally (StandAloneBlast)
   III.5 Manipulating sequence alignments (SimpleAlign)
-  III.6 Searching for genes and other structures on genomic DNA
-           (Genscan, Sim4, ESTScan, MZEF, Grail, Genemark, EPCR)
+  III.6 Searching for genes and other structures on genomic DNA (Genscan, Sim4, ESTScan, MZEF, Grail, Genemark, EPCR)
   III.7 Developing machine readable sequence annotations
-     III.7.1 Representing sequence annotations 
-           (Annotation::Collection, SeqFeature, RichSeq)
-     III.7.2 Representing and large and/or changing sequences 
-           (LiveSeq,LargeSeq)
-     III.7.3 Representing related sequences - mutations, polymorphisms etc 
-           (Allele, SeqDiff)
-     III.7.4 Incorpotating quality data in sequence annotation (SeqWithQuality)
-     III.7.5 Sequence XML representations - generation and parsing (SeqIO::game)
-     III.7.6 Representing Sequence Features using GFF (Bio:Tools:GFF )
+    III.7.1 Representing sequence annotations (SeqFeature,RichSeq,Location)
+    III.7.2 Representing sequence annotations (Annotation::Collection)
+    III.7.3 Representing large sequences (LargeSeq)
+    III.7.4 Representing changing sequences (LiveSeq)
+    III.7.5 Representing related sequences - mutations, polymorphisms (Allele, SeqDiff)
+    III.7.6 Incorporating quality data in sequence annotation (SeqWithQuality)
+    III.7.7 Sequence XML representations - generation and parsing (SeqIO::game)
+    III.7.8 Representing Sequence Features using GFF (Bio:Tools:GFF)
   III.8 Manipulating clusters of sequences (Cluster, ClusterIO)
-  III.9 Representing non-sequence data in Bioperl: structures, trees, 
-             maps, graphics and bibliographic text
-     III.9.1 Using 3D structure objects and reading PDB files (StructureI,
-             Structure::IO)
-     III.9.2 Tree objects and phylogenetic trees (Tree::Tree, TreeIO, PAML.pm )
-     III.9.3 Map objects for manipulating genetic maps (Map::MapI, MapIO)
-     III.9.4 Bibliographic objects for querying bibliographic databases (Biblio)
-     III.9.5 Graphics objects for representing sequence objects as 
-             images (Graphics)
+  III.9 Representing non-sequence data in Bioperl: structures, trees, maps, graphics and bibliographic text
+    III.9.1 Using 3D structure objects and reading PDB files (StructureI, Structure::IO)
+    III.9.2 Tree objects and phylogenetic trees (Tree::Tree, TreeIO, PAML.pm )
+    III.9.3 Map objects for manipulating genetic maps (Map::MapI, MapIO)
+    III.9.4 Bibliographic objects for querying bibliographic databases (Biblio)
+    III.9.5 Graphics objects for representing sequence objects as images (Graphics)
   III.10 Bioperl alphabets
-     III.10.1 Extended DNA / RNA alphabet
-     III.10.2 Amino Acid alphabet
+    III.10.1 Extended DNA / RNA alphabet
+    III.10.2 Amino Acid alphabet
 
-  IV.  Auxilliary Bioperl Libraries (Bioperl-run, Bioperl-db, etc.)
-     IV.1 Using the Bioperl Auxilliary Libraries
-     IV.2 Running programs (Bioperl-run and Bioperl-ext)
-         IV.2.1 Sequence manipulation using the Bioperl EMBOSS and PISE interfaces
-         IV.2.2 Aligning 2 sequences with Blast using  bl2seq and AlignIO
-         IV.2.3 Aligning multiple sequences (Clustalw.pm, TCoffee.pm)
-         IV.2.4 Aligning 2 sequences with Smith-Waterman (pSW)
-     IV.3 Bioperl-db
-     IV.4 Other Bioperl auxilliary libraries
+  IV. Auxiliary Bioperl Libraries (Bioperl-run, Bioperl-db, etc.)
+    IV.1 Using the Bioperl Auxiliary Libraries
+    IV.2 Running programs (Bioperl-run and Bioperl-ext)
+      IV.2.1 Sequence manipulation using the Bioperl EMBOSS and PISE interfaces
+      IV.2.2 Aligning 2 sequences with Blast using  bl2seq and AlignIO
+      IV.2.3 Aligning multiple sequences (Clustalw.pm, TCoffee.pm)
+      IV.2.4 Aligning 2 sequences with Smith-Waterman (pSW)
+    IV.3 Bioperl-db and BioSQL
+    IV.4 Other Bioperl auxiliary libraries
 
-  V.  Appendices
-     V.1 Finding out which methods are used by which Bioperl Objects
-     V.2 Tutorial Demo Scripts
+  V. Appendices
+    V.1 Finding out which methods are used by which Bioperl Objects
+    V.2 Tutorial Demo Scripts
 
 =head1 I. Introduction
 
-=head2  I.1 Overview
+=head2 I.1 Overview
 
 Bioperl is a collection of perl modules that facilitate the
 development of perl scripts for bioinformatics applications.  As
 such, it does not include ready to use programs in the sense that many
-commercial packages and free web-based interfaces (eg Entrez, SRS) do.
+commercial packages and free web-based interfaces do (e.g. Entrez, SRS).
 On the other hand, bioperl does provide reusable perl modules that
 facilitate writing perl scripts for sequence manipulation, accessing
 of databases using a range of data formats and execution and parsing
@@ -137,12 +132,12 @@ In order to take advantage of bioperl, the user needs a basic
 understanding of the perl programming language including an
 understanding of how to use perl references, modules, objects and
 methods. If these concepts are unfamiliar the user is referred to any
-of the various introductory / intermediate books on perl. We've liked
+of the various introductory or intermediate books on perl. We've liked
 S. Holzmer's Perl Core Language, Coriolis Technology Press, for
 example.  This tutorial is not intended to teach the fundamentals of
 perl to those with little or no experience in the perl language.  On
 the other hand, advanced knowledge of perl - such as how to write a
-perl object - is not required for successfully using bioperl.
+object-oriented perl module - is not required for successfully using bioperl.
 
 Bioperl is open source software that is still under active
 development.  The advantages of open source software are well known.
@@ -179,10 +174,12 @@ Recommendations on where to go for additional information.
 A runnable script, bptutorial.pl, which demonstrates many of the
 capabilities of Bioperl. Runnable example code can also be found in
 the scripts/ and examples/ directories. Summary descriptions of all
-of these scripts can be found in the file bioscripts.pod.  In
-addition, the POD documentation for many Bioperl modules should contain
+of these scripts can be found in the file bioscripts.pod (or
+http://bioperl.org/Core/Latest/bioscripts.html).  In addition, the POD 
+documentation for many Bioperl modules should contain
 runnable code in the SYNOPSIS section which is meant to illustrate the
-use of a module and its methods.
+use of a module and its methods. You will also find some interesting
+bits of code in the FAQ (http://bioperl.org/Core/Latest/faq.html).
 
 =back
 
@@ -193,10 +190,10 @@ place from which to cut-and-paste code for your scripts (rather than
 using the code snippets in this tutorial). Most of the scripts in the
 tutorial script should work on your machine - and if they don't it would
 probably be a good idea to find out why, before getting too involved
-with bioperl! (Some of the demos require optional modules from the
-bioperl auxilliary libraries and/or external programs.  These demos
-should be skipped if the demos are run and the required auxilliary
-programs are not found.)
+with bioperl! Some of the demos require optional modules from the
+bioperl auxiliary libraries and/or external programs.  These demos
+should be skipped if the demos are run and the required auxiliary
+programs are not found.
 
 =head2 I.2 Quick getting started scripts
 
@@ -216,23 +213,23 @@ it out in fasta format
   write_sequence(">roa1.fasta",'fasta',$seq_object);
 
 Another example is the ability to blast a sequence using the facilities
-as NCBI. (Please be careful not to abuse the compute that NCBI provides
+as NCBI. Please be careful not to abuse the compute that NCBI provides
 and so use this only for individual searches. If you want to do a large
-number of BLAST searches, please download the blast package locally).
+number of BLAST searches, please download the blast package locally.
 
   use Bio::Perl;
 
   # this script will only work with an internet connection
   # on the computer it is run on
 
-  $seq_object = get_sequence('swissprot',"ROA1_HUMAN");
+  $seq = get_sequence('swissprot',"ROA1_HUMAN");
 
   # uses the default database - nr in this case
   $blast_result = blast_sequence($seq);
 
-  write_blast(">roa1.blast",$blast_report);
+  write_blast(">roa1.blast",$blast_result);
 
-Bio::Perl has a number of other "easy to use" functions, including
+Bio::Perl has a number of other easy-to-use functions, including
 
   get_sequence        - gets a sequence from standard, internet accessible
                         databases
@@ -268,7 +265,7 @@ What's required to run bioperl.
 
 =head2 I.3.1 Minimal bioperl installation (Bioperl "core" installation)
 
-For a "minimal" installation of bioperl, you will need to have perl
+For a minimal installation of bioperl, you will need to have perl
 itself installed as well as the bioperl "core modules".  Bioperl has
 been tested primarily using perl 5.005, 5.6, and 5.8.
 The minimal bioperl installation should still work under perl 5.004.
@@ -284,22 +281,22 @@ software objects.  Stepping through a script with an interactive
 debugger is a very helpful way of seeing what is happening in such a
 complex software system - especially when the software is not behaving
 in the way that you expect.  The free graphical debugger ptkdb
-(available as Devel::ptkdb from CPAN) is highly recommended.  The
-standard perl distribution also contains a powerful interactive
-debugger - though with a more cumbersome command-line interface (use
-it like "perl -d <script>"). The Perl tool Data::Dumper used with the 
-syntax:
+is highly recommended - it's available as Devel::ptkdb from CPAN.
+The standard perl distribution also contains a powerful interactive
+debugger with a command-line interface (use it like "perl -d <script>").
+
+The Perl tool Data::Dumper used with the syntax:
 
   use Data::Dumper;
   print Dumper($seqobj);
 
-can also be helpful for obtaining debugging information on perl objects.
+can also be helpful for obtaining debugging information on Bioperl objects.
 
 =head2 I.3.2 Complete installation
 
 Some of the capabilities of bioperl require software beyond that of
 the minimal installation.  This additional software includes perl
-modules from CPAN, package-libraries from bioperl's auxilliary
+modules from CPAN, package-libraries from bioperl's auxiliary
 code-repositories, a bioperl xs-extension, and several standard
 compiled bioinformatics programs.
 
@@ -308,10 +305,10 @@ B<Perl - extensions>
 For a complete listing of external Perl modules required by bioperl
 please see the INSTALL file in the Bioperl package.
 
-B<Bioperl auxilliary repositories>
+B<Bioperl auxiliary repositories>
 
 Some features of bioperl that require modules from bioperl's
-auxilliary code repositories. See section IV and references therein
+auxiliary code repositories. See section IV and references therein
 for further installation instructions for these modules.
 
 B<Bioperl C extensions & external bioinformatics programs>
@@ -331,9 +328,9 @@ ftp://ftp-igbmc.u-strasbg.fr/pub/ClustalW/
 for tcoffee alignments-
 http://igs-server.cnrs-mrs.fr/~cnotred/Projects_home_page/t_coffee_home_page.html
 
-for local blast searching- ftp://ftp.ncbi.nlm.nih.gov/blast/server/current_release/
+for local blast searching- ftp://ftp.ncbi.nih.gov/blast/executables/release/
 
-for EMBOSS applications - http://www.hgmp.mrc.ac.uk/Software/EMBOSS/download.html
+for EMBOSS applications - http://www.emboss.org
 
 =for html <A NAME ="i.3"></A>
 
@@ -358,12 +355,11 @@ Decompress (with gunzip or a similiar utility)
 
 =item *
 
-Remove the file archive (eg with tar -xvf)
+Extract the file archive (e.g. with tar -xvf)
 
 =item *
 
-Create a "makefile" with "perl Makefile.PL" for perl modules or a
-supplied "install" or "configure" program for non-perl programs
+Create a Makefile with "perl Makefile.PL"
 
 =item *
 
@@ -379,7 +375,7 @@ Bundle::BioPerl, eg
   $>perl -MCPAN -e shell
   cpan>install Bundle::BioPerl
   <installation details....>
-  cpan>install B/BI/BIRNEY/bioperl-1.0.1.tar.gz 
+  cpan>install B/BI/BIRNEY/bioperl-1.2.2.tar.gz
   <installation details....>
   cpan>quit
 
@@ -388,7 +384,7 @@ above may not apply. A disadvantage of the "bundle" approach is that
 if there's a problem installing any individual module it may be a bit
 more difficult to isolate.
 
-See the package's INSTALL file for more details.
+See bioperl's INSTALL file for more details.
 
 =back
 
@@ -401,7 +397,7 @@ extra step:
 
 Set the relevant environmental variable (CLUSTALDIR, TCOFFEEDIR or
 BLASTDIR) to the directory holding the executable in your startup
-file - eg in .bashrc or .tcshrc. For running local blasts, it is also
+file - e.g. in .bashrc or .tcshrc. For running local blasts, it is also
 necessary that the name of local-blast database directory is known
 to bioperl.  This will typically happen automatically, but in case
 of difficulty, refer to the documentation in
@@ -414,26 +410,26 @@ is if you are unable to obtain system level writing privileges.  For
 instructions on modifying the installation in this case and for more
 details on the overall installation procedure, see the INSTALL file in
 the bioperl distribution as well as the README files in the external
-programs you want to use (eg bioperl-ext, clustalw, TCoffee,
+programs you want to use (e.g. bioperl-ext, clustalw, TCoffee,
 NCBI-blast).
 
 =head2 I.5 Additional comments for non-unix users
 
 Bioperl has mainly been developed and tested under various unix
-environments (including Linux and MacOS X).  In addition, this tutorial
+environments, including Linux and MacOS X.  In addition, this tutorial
 has been written largely from a Unix perspective.
 
 Mac users may find Steve Cannon's installation notes and suggestions
 for Bioperl on OS X at
 http://www.tc.umn.edu/~cann0010/Bioperl_OSX_install.html helpful. Also
 Todd Richmond has written of his experiences with BioPerl on MacOS 9
-at http://bioperl.org/Core/mac-bioperl.html.
+(http://bioperl.org/Core/mac-bioperl.html).
 
 The bioperl core has also been tested and should work under most
 versions of Microsoft Windows.  For many windows users the perl and
 bioperl distributions from Active State, at http://www.activestate.com
 has been quite helpful.  Other windows users have had success running
-bioperl under Cygwin (http://www.cygwin.com). See the package's 
+bioperl under Cygwin (http://www.cygwin.com). See the package's
 INSTALL.WIN file for more details.
 
 Many bioperl features require the use of CPAN modules, compiled
@@ -443,7 +439,7 @@ script attempts to access these features from a non-unix OS, bioperl
 is designed to simply report that the desired capability is not
 available.  However, since the testing of bioperl in these
 environments has been limited, the script may well crash in a less
-"graceful" manner.
+graceful manner.
 
 =head2 I.6 Places to look for additional documentation
 
@@ -454,8 +450,11 @@ very useful interface for finding one's way within all the module
 documentation can be found at http://doc.bioperl.org/bioperl-live/.
 This interface lists all bioperl modules and descriptions of all
 of their methods. In addition, beginner questions can often be
-answered by looking at the FAQ, INSTALL and README files in the
-top-level directory of the bioperl distribution.
+answered by looking at the FAQ, INSTALL and README files 
+(http://bioperl.org/Core/Latest/faq.html,
+http://bioperl.org/Core/Latest/INSTALL,
+http://bioperl.org/Core/Latest/README )in the top-level directory of 
+the bioperl distribution.
 
 One potential problem in locating the correct documentation is that
 multiple methods in different modules may all share the same name.
@@ -466,14 +465,18 @@ the software described in Appendix L<"V.1">.
 
 For those who prefer more visual descriptions,
 http://bioperl.org/Core/Latest/modules.html also offers links to
-PDF files which contain schematics that describe how many of the bioperl
-objects related to one another.
+PDF files which contain class diagrams that describe how many of the 
+bioperl objects related to one another (Version 1.0 Class Diagrams).
 
 In addition, a bioperl online course is available on the web at
 http://www.pasteur.fr/recherche/unites/sis/formation/bioperl. The
 user is also referred to numerous bioperl scripts in the scripts/
 and examples/ directories (see bioscripts.pod for a description of 
-these scripts).
+these scripts, or http://bioperl.org/Core/Latest/bioscripts.html).
+
+Another source of focussed documentation is the HOWTO files, found
+either in the bioperl doc/howto directory or at http://bioperl.org/HOWTOs/.
+Current topics include OBDA Access, SeqIO, SearchIO, and BioGraphics.
 
 
 =head1 II. Brief introduction to bioperl's objects
@@ -486,7 +489,7 @@ among the bioperl objects is not simple; however, understanding them
 in detail is fortunately not necessary for successfully using the
 package.
 
-Nevertheless, a little familiarity with the bioperl object "bestiary"
+Nevertheless, a little familiarity with the bioperl object bestiary
 can be very helpful even to the casual user of bioperl. For example
 there are (at least) eight different "sequence objects" - Seq,
 PrimarySeq, LocatableSeq, RelSegment, LiveSeq, LargeSeq, SeqI, and
@@ -496,7 +499,15 @@ appropriate one to use in your script.
 
 =for html <A NAME ="ii.1"></A>
 
-=head2 II.1 Sequence objects 
+=head2 II.1 Sequence objects (Seq, PrimarySeq, LocatableSeq, RelSegment, LiveSeq, LargeSeq, RichSeq, SeqWithQuality, SeqI)
+
+This section describes various Bioperl sequence objects. Many people 
+using Bioperl will never know, or need to know, what kind of sequence 
+object they are using. This is because the SeqIO module, section
+section L<"III.2.1">, creates exactly the right type of object when 
+given a file or a filehandle or a string. But if you're curious, or if
+you need to create a sequence object manually for some reason, then
+read on.
 
 Seq is the central sequence object in bioperl.  When in doubt this is
 probably the object that you want to use to describe a DNA, RNA or
@@ -504,8 +515,7 @@ protein sequence in bioperl.  Most common sequence manipulations can
 be performed with Seq.  These capabilities are described in sections
 L<"III.3.1"> and L<"III.7.1">, or in L<Bio::Seq>.
 
-Seq objects can be created explicitly (see section L<"III.2.1"> for an
-example).  However usually Seq objects will be created for you
+Seq objects may be created for you
 automatically when you read in a file containing sequence data using
 the SeqIO object.  This procedure is described in section L<"III.2.1">.
 In addition to storing its identification labels and the sequence itself,
@@ -518,7 +528,7 @@ On the other hand, if you need a script capable of simultaneously
 handling hundreds or thousands sequences at a time, then the
 overhead of adding annotations to each sequence can be significant.
 For such applications, you will want to use the PrimarySeq
-object. PrimarySeq is basically a "stripped down" version of Seq.
+object. PrimarySeq is basically a stripped-down version of Seq.
 It contains just the sequence data itself and a few identifying labels
 (id, accession number, alphabet = dna, rna, or protein), and no features.
 For applications with hundreds or thousands or sequences, using PrimarySeq
@@ -529,26 +539,31 @@ details.
 RichSeq objects store additional annotations beyond those used by
 standard Seq objects.  If you are using sources with very rich
 sequence annotation, you may want to consider using these objects
-which are described in section L<"III.7.1">. SeqWithQuality objects are
-used to manipulate sequences with quality data, like those produced by
-phred.  These objects are described in section L<"III.7.4">,
+which are described in section L<"III.7.1">. RichSeq objects are
+created automatically when Genbank, EMBL, or Swissprot format files
+are read by SeqIO.
+
+SeqWithQuality objects areu sed to manipulate sequences with quality data, 
+like those produced by phred.  These objects are described in section L<"III.7.6">,
 L<Bio::Seq::RichSeqI>, and in L<Bio::Seq::SeqWithQuality>.
 
 What is called a LocatableSeq object for historical reasons
 might be more appropriately called an "AlignedSeq" object.  It is a Seq
-object which is part of a multiple sequence alignment.  It has "start" and
-"end" positions indicating from where in a larger sequence it may have
-been extracted.  It also may have "gap" symbols corresponding to the
+object which is part of a multiple sequence alignment.  It has start and
+end positions indicating from where in a larger sequence it may have
+been extracted.  It also may have gap symbols corresponding to the
 alignment to which it belongs.  It is used by the alignment
 object SimpleAlign and other modules that use SimpleAlign objects
-(eg AlignIO.pm, pSW.pm).  In general you don't have to
-worry about creating LocatableSeq objects because they will be made for
-you automatically when you create an alignment (using pSW, Clustalw,
-Tcoffee or bl2seq) or when you input an alignment data file using AlignIO.
-However if you need to input a sequence alignment by hand (eg to build
-a SimpleAlign object), you will need to input the sequences as
-LocatableSeqs. Other sources of information include L<Bio::LocatableSeq>,
-L<Bio::SimpleAlign>, L<Bio::AlignIO>, and L<Bio::Tools::pSW>.
+(e.g. AlignIO.pm, pSW.pm).
+
+In general you don't have to worry about creating LocatableSeq objects 
+because they will be made for you automatically when you create an 
+alignment (using pSW, Clustalw, Tcoffee, Lagan, or bl2seq) or when you 
+input an alignment data file using AlignIO. However if you need to 
+input a sequence alignment by hand (e.g. to build a SimpleAlign object), 
+you will need to input the sequences as LocatableSeqs. Other sources of 
+information include L<Bio::LocatableSeq>, L<Bio::SimpleAlign>, 
+L<Bio::AlignIO>, and L<Bio::Tools::pSW>.
 
 The RelSegment object is also a type of bioperl Seq object. RelSegment
 objects are useful when you want to be able to manipulate the origin
@@ -561,8 +576,8 @@ documentation L<Bio::DB::GFF::RelSegment> which describes this feature
 in detail.
 
 A LargeSeq object is a special type of Seq object used for
-handling very long sequences (eg E<gt> 100 MB).  If you need to
-manipulate such long sequences see section L<"III.7.2"> which describes
+handling very long sequences (e.g. E<gt> 100 MB).  If you need to
+manipulate such long sequences see section L<"III.7.3"> which describes
 LargeSeq objects, or L<Bio::Seq::LargeSeq>.
 
 A LiveSeq object is another specialized object for storing
@@ -573,7 +588,7 @@ sequenced genomes - locations which can change as higher quality
 sequencing data becomes available.  Although a LiveSeq object is not
 implemented in the same way as a Seq object, LiveSeq does implement
 the SeqI interface (see below). Consequently, most methods available
-for Seq objects will work fine with LiveSeq objects. Section L<"III.7.2">
+for Seq objects will work fine with LiveSeq objects. Section L<"III.7.4">
 and L<Bio::LiveSeq> contain further discussion of LiveSeq objects.
 
 SeqI objects are Seq "interface objects" (see section L<"II.4"> and
@@ -581,35 +596,32 @@ L<Bio::SeqI>). They are used to ensure bioperl's compatibility with
 other software packages. SeqI and other interface objects are not
 likely to be relevant to the casual bioperl user.
 
-Having described these other types of sequence objects, the
-"bottom line" still is that if you store your sequence data in Seq
-objects (which is where they'll be if you read them in with
-SeqIO), you will usually do just fine. ***
-
 =for html <A NAME ="ii.2"></A>
 
 =head2 II.2 Location objects
 
 A Location object is designed to be associated with a Sequence
-Feature object to indicate where on a larger structure (eg a chromosome or
-contig) the feature can be found.  The reason why this simple concept has
-evolved into a collection of rather complicated objects is that:
+Feature object in order to show where the feature is on a longer sequence.
+Location objects can also be standalone objects used to described 
+positions. The reason why these simple concepts have evolved into a 
+collection of rather complicated objects is that:
 
 1) Some objects have multiple locations or sub-locations (e.g. a gene's exons
 may have multiple start and stop locations)
 2) In unfinished genomes, the precise locations of features is not known with
 certainty.
 
-Bioperl's various Location objects address these complications.  In addition
-there are "CoordinatePolicy" objects that allow the user to specify how to
-measure the "length" of a feature if its precise start and end coordinates are
-not know. In most cases, you will not need to worry about these complications
+Bioperl's various Location objects address these complications. In addition
+there are CoordinatePolicy objects that allow the user to specify how to
+measure the length of a feature if its precise start and end coordinates are
+not known. In most cases, you will not need to worry about these complications
 if you are using bioperl to handle simple features with well-defined start
 and stop locations.  However, if you are using bioperl to annotate partially
 or unfinished genomes or to read annotations of such genomes with bioperl,
 understanding the various Location objects will be important.  See the
 documentation of the various modules in the Bio::Locations directory or
-L<Bio::Location::CoordinatePolicyI> for more information.
+L<Bio::Location::CoordinatePolicyI> or section L<"III.7.1"> for more 
+information.
 
 =for html <A NAME ="ii.4"></A>
 
@@ -633,10 +645,11 @@ bioperl programs can communicate with other bioinformatics projects
 and computer languages such as Ensembl and biopython and biojava.
 
 For more discussion of design and development issues please see the
-biodesign.pod file.
+biodesign.pod file in the package or biodesign.html
+(http://bioperl.org/Core/Latest/biodesign.html).
+
 
 =head1 III. Using bioperl
-
 
 Bioperl provides software modules for many of the typical tasks of
 bioinformatics programming.  These include:
@@ -649,7 +662,7 @@ bioinformatics programming.  These include:
 
 =item * Manipulating individual sequences
 
-=item * Searching for "similar" sequences
+=item * Searching for similar sequences
 
 =item * Creating and manipulating sequence alignments
 
@@ -669,11 +682,11 @@ bioperl can manipulate sequences, it needs to have access to sequence
 data.  Now one can directly enter data sequence data into a bioperl
 Seq object, eg:
 
-  $seq = Bio::Seq->new('-seq'              =>'actgtggcgtcaact',
-                       '-desc'             =>'Sample Bio::Seq object',
-                       '-display_id'       =>'something',
-                       '-accession_number' =>'accnum',
-                       '-alphabet'         =>'dna' );
+  $seq = Bio::Seq->new(-seq              => 'actgtggcgtcaact',
+                       -desc             => 'Sample Bio::Seq object',
+                       -display_id       => 'something',
+                       -accession_number => 'accnum',
+                       -alphabet         => 'dna' );
 
 However, in most cases, it is preferable to access sequence data from
 some online data file or database. Note that in common with
@@ -681,30 +694,27 @@ conventional bioinformatics usage we will sometimes call a "database"
 what might be more appropriately referred to as an "indexed flat
 file".
 
-Bioperl supports accessing remote databases as well as developing 
-indices for setting up local databases.  There are two general approaches 
+Bioperl supports accessing remote databases as well as creating 
+indices for accessing local databases.  There are two general approaches 
 to accomplishing this.  If you know what kind of database the sequences 
-is stored in (i.e. flat file, local relational database or a database 
+are stored in (i.e. flat file, local relational database or a database 
 accessed remotely over the internet), you can write a script that specifically 
 accesses data from that kind of database.  This approach is described 
 in sections III.1.1 and III.1.2 for access from remote databases and 
 local indexed flat files respectively. To explicitly access sequence 
 data from a local relational database requires installing and setting 
-up the modules in the bioperl-db library which is outside the scope 
-of this tutorial.
+up the modules in the bioperl-db library and the BioSQL schema, see
+L<"IV.3"> for more information.
 
 The other approach is to use the recently developed OBDA (Open
-Bioinformatics Data Access) Registry system.  Using OBDA, it is
+Bioinformatics Data Access) Registry system.  Using OBDA it is
 possible to import sequence data from a database without your needing
 to know whether the required database is flat-file or relational or
 even whether it is local or accessible only over the net.
 Descriptions of how to set up the necessary registry configuration
 file and access sequence data with the registry in described in
 BIODATABASE_ACCESS in the doc/howto subdirectory and won't be repeated
-here. The OBDA approach is still under development as of this 
-writing (March 2003) so if you run into difficulties you can always 
-use the older database specific access methods described in the next
-two subsections.
+here.
 
 =head2   III.1.1 Accessing remote databases (Bio::DB::GenBank, etc)
 
@@ -756,7 +766,7 @@ as objects or streams (SeqIO objects), or as "tempfiles". See
 L<Bio::DB::BioFetch> for the details.
 
 
-=head2  III.1.2 Indexing and accessing local databases (Bio::Index::*, bpindex.pl, bpfetch.pl, Bio::DB::*)
+=head2  III.1.2 Indexing and accessing local databases (Bio::Index::*, bp_index.pl, bp_fetch.pl, Bio::DB::*)
 
 Alternately, bioperl permits indexing local sequence data files by
 means of the Bio::Index or Bio::DB::Fasta objects.  The following sequence
@@ -790,7 +800,7 @@ retrieve one file, one could write scripts like:
 
 To facilitate the creation and use of more complex or flexible
 indexing systems, the bioperl distribution includes two sample scripts
-in the scripts/index directory, bpindex.PLS and bpfetch.PLS.  These scripts
+in the scripts/index directory, bp_index.PLS and bp_fetch.PLS.  These scripts
 can be used as templates to develop customized local data-file indexing
 systems.
 
@@ -811,17 +821,18 @@ See L<Bio::DB::Fasta> for more information on this fully-featured module.
 Both modules also offer the user the ability to designate a specific string
 within the fasta header as the desired id, such as the gi number within the
 string "gi|4556644|gb|X45555". Consider the following fasta-formatted 
-sequence, "test.fa":
+sequence, in "test.fa":
 
   >gi|523232|emb|AAC12345|sp|D12567 titin fragment
   MHRHHRTGYSAAYGPLKJHGYVHFIMCVVVSWWASDVVTYIPLLLNNSSAGWKRWWWIIFGGE
   GHGHHRTYSALWWPPLKJHGSKHFILCVKVSWLAKKERTYIPKKILLMMGGWWAAWWWI
 
-By default Bio::Index::Fasta and Bio::DB::Fasta will use the first "word" they 
-encounter in the fasta header as the retrieval key, in this case 
-"gi|523232|emb|AAC12345|sp|D12567". What would be more useful as a key would be a 
-single id.  The code below will index the "test.fa" file and create an index file 
-called "test.fa.idx".
+By default Bio::Index::Fasta and Bio::DB::Fasta will use the first "word" 
+they encounter in the fasta header as the retrieval key, in this case 
+"gi|523232|emb|AAC12345|sp|D12567". What would be more useful as a key 
+would be a single id.  The code below will index the "test.fa" file and 
+create an index file called "test.fa.idx" where the keys are the Swissprot,
+or "sp", identifiers.
 
   $ENV{BIOPERL_INDEX_TYPE} = "SDBM_File";
   # look for the index in the current directory
@@ -876,7 +887,7 @@ slightly different, for example:
 
 The core bioperl installation does not support accessing sequences
 and data stored in relational databases. However, this capability is
-available with the auxilliary bioperl-db library. See section L<"IV.3"> for
+available with the auxiliary bioperl-db library. See section L<"IV.3"> for
 more information.
 
 =head2 III.2 Transforming formats of database/ file records
@@ -893,126 +904,145 @@ in a number of formats: Fasta, EMBL, GenBank, Swissprot, PIR, GCG, SCF,
 phd/phred, Ace, fastq, exp, chado, or raw (plain sequence). SeqIO can 
 also parse tracefiles in alf, ztr, abi, ctf, and ctr format Once the 
 sequence data has been read in with SeqIO, it is available to bioperl 
-in the form of Seq objects.  Moreover, the Seq objects can then be 
+in the form of Seq, PrimarySeq, or RichSeq objects, depending on what
+the sequence source is.  Moreover, the sequence objects can then be 
 written to another file (again using SeqIO) in any of the supported 
 data formats making data converters simple to implement, for example:
 
   use Bio::SeqIO;
-  $in  = Bio::SeqIO->new('-file' => "inputfilename",
-                         '-format' => 'Fasta');
-  $out = Bio::SeqIO->new('-file' => ">outputfilename",
-                         '-format' => 'EMBL');
+  $in  = Bio::SeqIO->new(-file => "inputfilename",
+                         -format => 'Fasta');
+  $out = Bio::SeqIO->new(-file => ">outputfilename",
+                         -format => 'EMBL');
   while ( my $seq = $in->next_seq() ) {$out->write_seq($seq); }
 
-In addition, perl "tied filehandle" syntax is available to SeqIO,
+In addition, the perl "tied filehandle" syntax is available to SeqIO,
 allowing you to use the standard E<lt>E<gt> and print operations to read
 and write sequence objects, eg:
 
-  $in  = Bio::SeqIO->newFh('-file' => "inputfilename" ,
-                           '-format' => 'Fasta');
-  $out = Bio::SeqIO->newFh('-format' => 'EMBL');
+  $in  = Bio::SeqIO->newFh(-file => "inputfilename" ,
+                           -format => 'fasta');
+  $out = Bio::SeqIO->newFh(-format => 'embl');
   print $out $_ while <$in>;
 
-If the "-format" argument isn't used then Bioperl will guess the format
-based on the file's suffix in a case-insensitive manner. Here are the
-current interpretations:
+If the "-format" argument isn't used then Bioperl will try to determine 
+the format based on the file's suffix, in a case-insensitive manner. If 
+there's no suffix available then SeqIO will attempt to guess the format 
+based on actual content. Here is the current set of suffixes:
 
-   Format   Suffixes
+   Format     Suffixes                     Comment
 
-   fasta    fasta|fast|seq|fa|fsa|nt|aa
-   genbank  gb|gbank|genbank
-   scf      scf
-   pir      pir
-   embl     embl|ebl|emb|dat
-   raw      txt
-   gcg      gcg
-   ace      ace
-   bsml     bsm|bsml
-   swiss    swiss|sp
-   phd      phd|phred
-   fastq    fastq
-   qual
-   chado
-   abi*
-   alf*
-   ctf*
-   exp*
-   scf*
-   ztr*
-   pln*
+   fasta      fasta|fast|seq|fa|fsa|nt|aa  Fasta
+   genbank    gb|gbank|genbank|gbs|gbk     Genbank
+   scf        scf                          SCF tracefile
+   pir        pir                          PIR
+   embl       embl|ebl|emb|dat             EMBL
+   raw        txt                          plain
+   gcg        gcg                          GCG
+   ace        ace                          ACeDB
+   bsml       bsm|bsml                     BSML XML
+   game                                    GAME XML
+   swiss      swiss|sp                     SwissProt
+   phd        phd|phred                    Phred
+   fastq      fastq                        Fastq
+   Locuslink                               LL_tmpl format
+   qual                                    Phred quality file
+   chado                                   Chado XML
+   exp        exp                          Staden experiment file
+   abi*       abi                          ABI tracefile
+   alf*       alf                          ALF tracefile
+   ctf*       ctf                          CTF tracefile
+   ztr*       ztr                          ZTR tracefile
+   pln*       pln                          Staden plain tracefile
 
-* These formats require the bioperl-ext package
+* These formats require the bioperl-ext package and the io_lib library
+  from the Staden package
 
-For more information see L<Bio::SeqIO> or the SeqIO HOWTO at 
-http://bioperl.org/HOWTOs/html/SeqIO.html.
+For more information see L<Bio::SeqIO> or the SeqIO HOWTO
+(http://bioperl.org/HOWTOs/html/SeqIO.html).
 
 =for html <A NAME ="iii.2.2"></A>
 
 =head2 III.2.2 Transforming alignment files (AlignIO)
 
 Data files storing multiple sequence alignments also appear in varied
-formats.  AlignIO is the bioperl object for data conversion of
-alignment files. AlignIO is patterned on the SeqIO object and shares
-most of SeqIO's features.  AlignIO currently supports input in the
-following formats:
-
-   fasta
-   mase (Seaview)
-   stockholm
-   prodom
-   selex (HMMER))
-   bl2seq
-   clustalw (.aln)
-   msf (GCG)
-   water*
-   phylip (interleaved)
-   stockholm
-   nexus
-   mega
-   meme
-   psi (PSI-BLAST)
-
-*used by EMBOSS, see L<"IV.2.1">
-
-AlignIO supports output in these formats: fasta, mase, selex, clustalw, msf/gcg,
-and phylip (interleaved).  One significant difference between AlignIO and SeqIO
-is that AlignIO handles IO for only a single alignment at a time but
-SeqIO.pm handles IO for multiple sequences in a single stream. Syntax
-for AlignIO is almost identical to that of SeqIO:
+formats.  AlignIO is the bioperl object for conversion of
+alignment files. AlignIO is patterned on the SeqIO object and its commands
+have many of the same names as the commands in SeqIO. Just as in SeqIO the
+AlignIO object can be created with "-file" and "-format" options:
 
   use Bio::AlignIO;
-  $in  = Bio::AlignIO->new('-file' => "inputfilename" ,
-                           '-format' => 'fasta');
-  $out = Bio::AlignIO->new('-file' => ">outputfilename",
-                           '-format' => 'pfam');
+  my $io = Bio::AlignIO->new(-file   => "receptors.aln",
+                             -format => "clustalw" );
+
+If the "-format" argument isn't used then Bioperl will try and determine the 
+format based on the file's suffix, in a case-insensitive manner.  Here is the 
+current set of suffixes:
+
+   Format      Suffixes                     Comment
+
+   bl2seq
+   clustalw    aln
+   emboss*     water|needle
+   fasta       fasta|fast|seq|fa|fsa|nt|aa
+   mase                                     Seaview
+   mega        meg|mega
+   meme        meme
+   metafasta
+   msf         msf|pileup|gcg               GCG
+   nexus       nexus|nex
+   pfam        pfam|pfm
+   phylip      phylip|phlp|phyl|phy|phy|ph  interleaved
+   prodom
+   psi         psi                          PSI-BLAST
+   selex       selex|slx|selx|slex|sx       HMMER
+   stockholm
+
+*water, needle, matcher, stretcher, merger, and supermatcher
+See L<"IV.2.1"> on EMBOSS for more information
+
+Unlike SeqIO AlignIO cannot create output files in every format. AlignIO
+currently supports output in these 6 formats: fasta, mase, selex, clustalw,
+msf/gcg, and phylip (interleaved).
+
+Another significant difference between AlignIO and SeqIO is that AlignIO 
+handles IO for only a single alignment at a time but SeqIO.pm handles IO 
+for multiple sequences in a single stream. Syntax for AlignIO is almost 
+identical to that of SeqIO:
+
+  use Bio::AlignIO;
+  $in  = Bio::AlignIO->new(-file => "inputfilename" ,
+                           -format => 'fasta');
+  $out = Bio::AlignIO->new(-file => ">outputfilename",
+                           -format => 'pfam');
   while ( my $aln = $in->next_aln() ) { $out->write_aln($aln); }
 
-The only difference is that here, the returned object reference, $aln,
-is to a SimpleAlign object rather than a Seq object.
+The only difference is that the returned object reference, $aln,
+is to a SimpleAlign object rather than to a Seq object.
 
 AlignIO also supports the tied filehandle syntax described above for
-SeqIO.  See L<Bio::AlignIO> and section L<"III.5"> for more
-information.
+SeqIO.  See L<Bio::AlignIO>, L<Bio::SimpleAlign>, and section L<"III.5"> 
+on SimpleAlign for more information.
 
 =head2 III.3 Manipulating sequences
 
 Bioperl contains many modules with functions for sequence analysis. And
 if you cannot find the function you want in bioperl you may be able to
 find it in EMBOSS or PISE , which are accessible through the bioperl-run
-auxilliary library (see L<"IV.2.1">). 
+auxiliary library (see L<"IV.2.1">).
 
 =for html <A NAME ="iii.3.1"></A>
 
 =head2 III.3.1  Manipulating sequence data with Seq methods
 
-OK, so we know how to retrieve sequences and access them as Seq
-objects.  Let's see how we can use the Seq objects to manipulate our
+OK, so we know how to retrieve sequences and access them as sequence
+objects.  Let's see how we can use sequence objects to manipulate our
 sequence data and retrieve information.  Seq provides multiple
 methods for performing many common (and some not-so-common) tasks of
 sequence manipulation and data retrieval.  Here are some of the most
 useful:
 
-The following methods return strings
+These methods return strings or may be used to set values:
 
   $seqobj->display_id();       # the human read-able id of the sequence
   $seqobj->seq();              # string of sequence
@@ -1055,20 +1085,23 @@ For a reference annotation, you can use:
 Sequence features will be discussed further in section L<"III.7"> on
 machine-readable sequence annotation. A general description of the
 object can be found in L<Bio::SeqFeature::Generic>, and a description
-of related, top-level "annotation" is found in L<Bio::Annotation::Collection>.
+of related, top-level annotation is found in L<Bio::Annotation::Collection>.
 
 Additional sample code for obtaining sequence features can be found in
-the script gb2features.pl in the subdirectory examples/DB.
+the script gb2features.pl in the subdirectory examples/DB. Finally,
+there's a HOWTO on features and annotations
+(http://bioperl.org/HOWTOs/html/Feature-Annotation.html) and there's a 
+section on features in the FAQ (http://bioperl.org/Core/Latest/faq.html#5).
 
 The following methods returns new sequence objects, but do not transfer
-features across:
+the features from the starting object to the resulting feature:
 
   $seqobj->trunc(5,10);  # truncation from 5 to 10 as new object
   $seqobj->revcom;       # reverse complements sequence
   $seqobj->translate;    # translation of the sequence
 
 Note that some methods return strings, some return arrays and some
-return references to objects.  See L<Bio::Seq> for more information.
+return objects. See L<Bio::Seq> for more information.
 
 Many of these methods are self-explanatory. However, bioperl's flexible
 translation methods warrant further comment. Translation in bioinformatics
@@ -1091,7 +1124,7 @@ sequence object:
 
 However, the translate method can also be passed several optional
 parameters to modify its behavior. For example, the first two
-arguments to "translate" can be used to modify the characters used to
+arguments to translate() can be used to modify the characters used to
 represent stop (default '*') and unknown amino acid ('X'). (These are
 normally best left untouched.)  The third argument determines the
 frame of the translation. The default frame is "0".  To get
@@ -1100,7 +1133,7 @@ translations in the other two forward frames, we would write:
   $translation2 = $my_seq_object->translate(undef,undef,1);
   $translation3 = $my_seq_object->translate(undef,undef,2);
 
-The fourth argument to "translate" makes it possible to use
+The fourth argument to translate() makes it possible to use
 alternative genetic codes. There are currently 16 codon tables
 defined, including tables for 'Vertebrate Mitochondrial', 'Bacterial',
 'Alternative Yeast Nuclear' and 'Ciliate, Dasycladacean and Hexamita
@@ -1108,8 +1141,7 @@ Nuclear' translation. These tables are located in the object
 Bio::Tools::CodonTable which is used by the translate method. For
 example, for mitochondrial translation:
 
-  $human_mitochondrial_translation =
-      $my_seq_object->translate(undef,undef,undef, 2);
+  $human_mitochondrial_translation = $seq_obj->translate(undef,undef,undef,2);
 
 If we want to translate full coding regions (CDS) the way major
 nucleotide databanks EMBL, GenBank and DDBJ do it, the translate
@@ -1127,16 +1159,14 @@ not met, the method, by default, issues a warning. By setting the
 sixth argument to evaluate to "true", one can instead instruct
 the program to die if an improper CDS is found, e.g.
 
-  $protein_object =
-      $cds->translate(undef,undef,undef,undef,1,'die_if_errors');
+  $protein_object = $cds->translate(undef,undef,undef,undef,1,'die_if_errors');
 
 See L<Bio::Tools::CodonTable> for related details.
 
-=head2 III.3.2 Obtaining basic sequence statistics- molecular weights,
-residue & codon frequencies(SeqStats, SeqWord)
+=head2 III.3.2 Obtaining basic sequence statistics (SeqStats,SeqWord)
 
 In addition to the methods directly available in the Seq object,
-bioperl provides various "helper" objects to determine additional
+bioperl provides various helper objects to determine additional
 information about a sequence.  For example, SeqStats object provides
 methods for obtaining the molecular weight of the sequence as well the
 number of occurrences of each of the component residues (bases for a
@@ -1145,52 +1175,79 @@ SeqStats also returns counts of the number of codons used.  For
 example:
 
   use SeqStats;
-  $seq_stats  =  Bio::Tools::SeqStats->new($seqobj);
+  $seq_stats  = Bio::Tools::SeqStats->new($seqobj);
   $weight = $seq_stats->get_mol_wt();
   $monomer_ref = $seq_stats->count_monomers();
   $codon_ref = $seq_stats->count_codons();  # for nucleic acid sequence
 
-Note: sometimes sequences will contain "ambiguous" codes.  For this
+Note: sometimes sequences will contain ambiguous codes.  For this
 reason, get_mol_wt() returns a reference to a two element array
 containing a greatest lower bound and a least upper bound of the
 molecular weight.
 
 The SeqWords object is similar to SeqStats and provides
-methods for calculating frequencies of "words" (eg tetramers or hexamers)
+methods for calculating frequencies of "words" (e.g. tetramers or hexamers)
 within the sequence. See L<Bio::Tools::SeqStats> and L<Bio::Tools::SeqWords>
 for more information.
 
-=head2 III.3.3 Identifying restriction enzyme sites (RestrictionEnzyme)
+=head2 III.3.3 Identifying restriction enzyme sites (Bio::Restriction)
 
 Another common sequence manipulation task for nucleic acid sequences
 is locating restriction enzyme cutting sites.  Bioperl provides the
-RestrictionEnzyme object for this purpose. Bioperl's
-standard RestrictionEnzyme object comes with data for more than 150
-different restriction enzymes. A list of the available enzymes can be
-accessed using the available_list() method. For example to select all
-available enzymes with cutting patterns that are six bases long one
-would write:
+Bio::Restriction::Enzyme, Bio::Restriction::EnzymeCollection, and
+Bio::Restriction::Analysis objects for this purpose. These modules replace the
+older module Bio::Tools::RestrictionEnzyme. A new collection of enzyme
+objects would be defined like this:
 
-  $re = new Bio::Tools::RestrictionEnzyme('-name'=>'EcoRI');
-  @sixcutters = $re->available_list(6);
+   use Bio::Restriction::EnzymeCollection;
+   my $all_collection = Bio::Restriction::EnzymeCollection;
+
+Bioperl's default Restriction::EnzymeCollection object comes with data for 
+more than 500 different Type II restriction enzymes. A list of the available 
+enzyme names can be accessed using the available_list() method, but these 
+are just the names, not the functional objects. You also have access to 
+enzyme subsets. For example to select all available Enzyme objects with 
+recognition sites that are six bases long one could write:
+
+  my $six_cutter_collection = $all_collection->cutters(6);
+  foreach my $enz ($six_cutter_collection){
+     print $enz->name,"\t",$enz->site,"\t",$enz->overhang_seq,"\n";
+     # prints name, recognition site, overhang
+  }
+
+There are other methods that can be used to select sets of enzyme objects,
+such as unique_cutters() and blunt_enzymes(). You can also select a
+Enzyme object by name, like so:
+
+  my $ecori_enzyme = $all_collection->get_enzyme('EcoRI');
 
 Once an appropriate enzyme has been selected, the sites for that
 enzyme on a given nucleic acid sequence can be obtained using the
-cut_seq() method.  The syntax for performing this task is:
+fragments() method.  The syntax for performing this task is:
 
-  $re1 = new Bio::Tools::RestrictionEnzyme(-name=>'EcoRI');
-  # $seqobj is the Seq object for the dna to be cut
-  @fragments =  $re1->cut_seq($seqobj);
+   use Bio::Restriction::Analysis;
+   my $analysis = Bio::Restriction::Analysis->new(-seq => $seq);
+   # where $seq is the Bio::Seq object for the DNA to be cut
+   @fragments =  $analysis->fragments($enzyme);
+   # and @fragments will be an array of strings
 
-Adding an enzyme not in the default list is easily accomplished:
+To get information on isoschizomers, methylation sites, microbe source,
+vendor or availability you will need to create your EnzymeCollection 
+directly from a REBASE file, like this:
 
-  $re2 = new Bio::Tools::RestrictionEnzyme('-NAME' =>'EcoRV--GAT^ATC',
-                                           '-MAKE' =>'custom');
+  use Bio::Restriction::IO;
+  my $re_io = Bio::Restriction::IO->new(-file=>$file,-format=>'withrefm');
+  my $rebase_collection = $re_io->read;
 
-Once the custom enzyme object has been created, cut_seq() can be
-called in the usual manner. See L<Bio::Tools::RestrictionEnzyme> for
-details.
+A REBASE file in the correct format can be found at 
+ftp://ftp.neb.com/pub/rebase, it will have a name like "withrefm.308".
+If need be you can also create new enzymes, like this:
 
+  my $re = new Bio::Restriction::Enzyme(-enzyme=>'BioRI',-seq=>'GG^AATTCC');
+
+For more informatation see L<Bio::Restriction::Enzyme>,
+L<Bio::Restriction::EnzymeCollection>, L<Bio::Restriction::Analysis>, and
+L<Bio::Restriction::IO>.
 
 =head2    III.3.4 Identifying amino acid cleavage sites (Sigcleave)
 
@@ -1201,14 +1258,14 @@ a program (originally part of the EGCG molecular biology package) to
 predict signal sequences, and to identify the cleavage site based on
 the von Heijne algorithm.
 
-The "threshold" setting controls the score reporting.  If no value for
+The threshold setting controls the score reporting.  If no value for
 threshold is passed in by the user, the code defaults to a reporting
 value of 3.5.  SigCleave will only return score/position
 pairs which meet the threshold limit.
 
-There are 2 accessor methods for this object. "signals" will return a
+There are 2 accessor methods for this object. signals() will return a
 perl hash containing the sigcleave scores keyed by amino acid
-position. "pretty_print" returns a formatted string similar to the
+position. pretty_print() returns a formatted string similar to the
 output of the original sigcleave utility.
 
 The syntax for using Sigcleave is as follows:
@@ -1268,7 +1325,7 @@ documentation in L<Bio::Tools::OddCodes> for further details.
 SeqPattern:
 
 The SeqPattern object is used to manipulate sequences
-that include perl "regular expressions".  A key motivation for
+using perl regular expressions.  A key motivation for
 SeqPattern is to have a way of generating a reverse complement of a
 nucleic acid sequence pattern that includes ambiguous bases and/or
 regular expressions.  This capability leads to significant performance
@@ -1279,8 +1336,8 @@ examples in the script seq_pattern.pl in the examples/tools directory.
 
   use Bio::Tools::SeqPattern;
   $pattern     = '(CCCCT)N{1,200}(agggg)N{1,200}(agggg)';
-  $pattern_obj = new Bio::Tools::SeqPattern('-SEQ'  => $pattern,
-                                            '-TYPE' => 'dna');
+  $pattern_obj = new Bio::Tools::SeqPattern(-SEQ  => $pattern,
+                                            -TYPE => 'dna');
   $pattern_obj2 = $pattern_obj->revcom();
   $pattern_obj->revcom(1); # returns expanded rev complement pattern.
 
@@ -1293,21 +1350,22 @@ More detail can be found in L<Bio::Tools::SeqPattern>.
 
 Coordinate system conversion is a common requirement, for example, when 
 one wants to look at the relative positions of sequence features to one 
-another and convert those relative positions to "absolute" coordinates 
+another and convert those relative positions to absolute coordinates 
 along a chromosome or contig.  Although coordinate conversion sounds pretty 
-trivial it can get fairly tricky when one includes the possibilities of switching 
-to coordinates on negative (ie Crick) strands and/or having a coordinate 
-system "terminate" because you have reached the end of a clone or contig.  
-Bioperl has two different approaches to coordinate-system conversion (based 
-on the modules Bio::Coordinate::Pair and Bio::DB::GFF::RelSegment, respectively).
+trivial it can get fairly tricky when one includes the possibilities of 
+switching to coordinates on negative (i.e. Crick) strands and/or having 
+a coordinate system terminate because you have reached the end of a 
+clone or contig. Bioperl has two different approaches to coordinate-system 
+conversion (based on the modules Bio::Coordinate::Pair and 
+Bio::DB::GFF::RelSegment, respectively).
 
 The Coordinate::Pair approach is somewhat more "low level".  With it, you 
 define an input coordinate system and an output coordinate system, where 
 in each case a coordinate system is a triple of a start position, end position 
-and strand.  The "end position" is especially important when dealing with 
+and strand.  The end position is especially important when dealing with 
 unfinished assemblies where the coordinate system ends when one reaches 
 the end of the sequence of a clone or contig.  Once one has defined the 
-two coordinate systems, one defines a "Coordinate::Pair" to map between 
+two coordinate systems, one defines a Coordinate::Pair to map between 
 them.  Then one can map positions between the coordinates systems with 
 code such as this:
 
@@ -1319,52 +1377,53 @@ code such as this:
   (-in => $input_coordinates ,  -out => $output_coordinates   );
   $pos = Bio::Location::Simple->new (-start => 500, -end => 500 );
   $res = $pair->map($pos);
-  $converted_pos  = $res->gap->start;
+  $converted_start = $res->start;
 
-See the documentation for Bio::Coordinate::Pair and Bio::Coordinate::GeneMapper 
+In this example $res is also a Bio::Location object, as you'd expect.
+See the documentation for Bio::Coordinate::Pair and Bio::Coordinate::GeneMapper
 for more details.
 
 The Bio::DB::GFF::RelSegment approach is designed more for handling coordinate 
 transformations of sequence features rather than for transforming arbitrary 
 coordinate systems.  With Bio::DB::GFF::RelSegment you define a coordinate 
 system relative to a specific feature (called the "refseq").  You also have 
-access to the "absolute" coordinate system (typically of the entire chromosome.)  
+access to the absolute coordinate system (typically of the entire chromosome.)  
 You can determine the position of a feature relative to some other feature 
-simply by redefining the relevant reference feature (ie the "refseq") with 
+simply by redefining the relevant reference feature (i.e. the "refseq") with 
 code like this:
 
-  $db = Bio::DB::GFF->new(-dsn => 'dbi:mysql:elegans',
-                        -adaptor =>'dbi:mysqlopt');
+  $db = Bio::DB::GFF->new(-dsn     => 'dbi:mysql:elegans',
+                          -adaptor => 'dbi:mysqlopt');
 
-  $seg = $db->segment('ZK909');
-  $relative_start = $seg->start;  # $relative_start = 1;
+  $segment = $db->segment('ZK909');
+  $relative_start = $segment->start;  # $relative_start = 1;
 
   # Now retrieve the start position of ZK909 relative to feature ZK337
-  $seg->refseq('ZK337');
-  $relative_start = $seg->start;  
+  $segment->refseq('ZK337');
+  $relative_start = $segment->start;
 
   # Now retrieve the start position of ZK909 relative to the entire chromosome
-  $absolute_start =  $seg->abs_start;
+  $absolute_start =  $segment->abs_start;
 
 This approach is convenient because you don't have to keep track of 
-coordinates directly; you just keep track of the name of a feature 
+coordinates directly, you just keep track of the name of a feature 
 which in turn marks the coordinate-system origin.  However, this 
 approach does require that you have stored all the sequence features 
-in GFF format.   Moreover, Bio::DB::GFF::RelSegment has been principally 
+in GFF format. Moreover, Bio::DB::GFF::RelSegment has been principally 
 developed and tested for applications where all the sequence features are 
-stored in a Bioperl-db relational database. However,  if one wants to use 
+stored in a Bioperl-db relational database. However, if one wants to use 
 the Bio:DB::GFF machinery (including its coordinate transformation 
 capabilities) without building a local relational database, this is 
-possible by defining the 'database' as having an adaptor called 'memory'; 
+possible by defining the 'database' as having an adaptor called 'memory',
 e.g. 
 
   $db = Bio::DB::GFF->new( '-adaptor' => 'memory' );
 
 For more details on coordinate transformations and other GFF-related 
-capabilities in Bioperl see  Bio::DB::GFF::RelSegment.pm, Bio::DB::GFF.pm 
+capabilities in Bioperl see L<Bio::DB::GFF::RelSegment>, L<Bio::DB::GFF>,
 and the test file t/BioDBGFF.t.
 
-=head2 III.4 Searching for "similar" sequences
+=head2 III.4 Searching for similar sequences
 
 One of the basic tasks in molecular biology is identifying sequences
 that are, in some way, similar to a sequence of interest.  The Blast
@@ -1380,20 +1439,21 @@ RemoteBlast object.
 
 A skeleton script to run a remote blast might look as follows:
 
-  $remote_blast = Bio::Tools::Run::RemoteBlast->new(
-  	   '-prog' => 'blastp','-data' => 'ecoli','-expect' => '1e-10' );
+  $remote_blast = Bio::Tools::Run::RemoteBlast->new (
+  	   -prog => 'blastp',-data => 'ecoli',-expect => '1e-10' );
   $r = $remote_blast->submit_blast("t/data/ecolitst.fa");
   while (@rids = $remote_blast->each_rid ) {
-      foreach $rid ( @rids ) {$rc = $remote_blast->retrieve_blast($rid);}}
+      foreach $rid ( @rids ) {$rc = $remote_blast->retrieve_blast($rid);}
+  }
 
 You may want to change some parameter of the remote job and this example
 shows how to change the matrix:
 
-$Bio::Tools::Run::RemoteBlast::HEADER{'MATRIX_NAME'} = 'BLOSUM25';
+  $Bio::Tools::Run::RemoteBlast::HEADER{'MATRIX_NAME'} = 'BLOSUM25';
 
 For a description of the many CGI parameters see:
 
-http://www.ncbi.nlm.nih.gov/BLAST/Doc/urlapi.html
+  http://www.ncbi.nlm.nih.gov/BLAST/Doc/urlapi.html
 
 Note that the script has to be broken into two parts. The actual Blast
 submission and the subsequent retrieval of the results. At times when the
@@ -1401,16 +1461,15 @@ NCBI Blast is being heavily used, the interval between when a Blast
 submission is made and when the results are available can be substantial.
 
 The object $rc would contain the blast report that could then be parsed with
-Bio::Tools::BPlite or Bio::SearchIO. The default object is BPlite
-in version 1.0 or earlier and it's SearchIO after version 1.0. The
-object type can be changed using the -readmethod parameter but bear
-in mind that the favored Blast parser is Bio::SearchIO, others won't be
-supported in later versions.
+Bio::Tools::BPlite or Bio::SearchIO. The default object returned is 
+SearchIO after version 1.0. The object type can be changed using the 
+-readmethod parameter but bear in mind that the favored Blast parser is 
+Bio::SearchIO, others won't be supported in later versions.
 
 Note that to make this script actually useful, one should add details
 such as checking return codes from the Blast to see if it succeeded and
 a "sleep" loop to wait between consecutive requests to the NCBI server.
-See example 25 in the demonstration script in the appendix to see some
+See example 22 in the demonstration script in the appendix to see some
 working code you could use, or L<Bio::Tools::Run::RemoteBlast> for
 details.
 
@@ -1430,14 +1489,14 @@ are tedious to sift through.  Bioperl offers several different objects
 - Search.pm/SearchIO.pm, and BPlite.pm (along with its minor
 modifications, BPpsilite and BPbl2seq) for parsing Blast reports.
 Search and SearchIO which are the principal Bioperl interfaces for
-Blast and FAST report parsing are described in this section.  The
+Blast and FASTA report parsing, are described in this section.  The
 older BPlite is described in section L<"III.4.3">. We recommend you
 use SearchIO, it's certain to be supported in future releases.
 
 The Search and SearchIO modules provide a uniform interface for
 parsing sequence-similarity-search reports generated by BLAST (in
-standard and BLAST XML formats), PSI-BLAST, RPS-BLAST and FASTA. The
-SearchIO modules also provide a parser for HMMER reports and in
+standard and BLAST XML formats), PSI-BLAST, RPS-BLAST, bl2seq and FASTA. 
+The SearchIO modules also provide a parser for HMMER reports and in
 the future, it is envisioned that the Search/SearchIO syntax will be
 extended to provide a uniform interface to an even wider range of report
 parsers including parsers for Genscan.
@@ -1448,10 +1507,10 @@ containing the report(s). The method next_result reads the next report
 into a Search object in just the same way that the next_seq method of
 SeqIO reads in the next sequence in a file into a Seq object.
 
-Once a report (i.e. a Search object) has been read in and is available
+Once a report (i.e. a SearchIO object) has been read in and is available
 to the script, the report's overall attributes (e.g. the query) can be
-determined and its individual "hits" can be accessed with the
-next_hit method.  Individual high-scoring-pairs for each hit
+determined and its individual hits can be accessed with the
+next_hit method.  Individual high-scoring segment pairs for each hit
 can then be accessed with the next_hsp method. Except for
 the additional syntax required to enable the reading of multiple
 reports in a single file, the remainder of the Search/SearchIO parsing
@@ -1475,24 +1534,24 @@ Sample code to read a BLAST report might look like this:
   $hsp = $hit->next_hsp;
   $hsp_start = $hsp->query->start;
 
-For more details there is an excellent description of how to use
+For more details there is a good description of how to use
 SearchIO at http://www.bioperl.org/HOWTOs/html/SearchIO.html
-or in the docs/ subdirectory of the distribution. Additional
-documentation can be found in: L<Bio::SearchIO::blast>,
+or in the docs/howto subdirectory of the distribution. Additional
+documentation can be found in L<Bio::SearchIO::blast>,
 L<Bio::SearchIO::psiblast>, L<Bio::SearchIO::blastxml>,
 L<Bio::SearchIO::fasta>, and L<Bio::SearchIO>. There is also sample
-code in the Bio/examples/searchio directory which illustrates how to
-use SearchIO.
+code in the examples/searchio directory which illustrates how to
+use SearchIO. And finally, there's a section with SearchIO questions
+in the FAQ (http://bioperl.org/Core/Latest/faq.html#3).
 
 =for html <A NAME ="iii.4.3"></A>
 
 =head2 III.4.3 Parsing BLAST reports with BPlite, BPpsilite, and BPbl2seq
 
 Bioperl's older BLAST report parsers - BPlite, BPpsilite, BPbl2seq and
-Blast.pm - are expected to be phased out over a period of time. Since a
-considerable amount of legacy Bioperl scripts has been written which
-heavily use these objects, they are likely to remain within Bioperl
-for some time.
+Blast.pm - are no longer supported but since legacy Bioperl scripts have 
+been written which use these objects, they are likely to remain within 
+Bioperl for some time.
 
 Much of the user interface of BPlite is very similar to that of Search.
 However accessing the next hit or HSP uses methods called next_Sbjct and
@@ -1502,15 +1561,15 @@ next_HSP, respectively - in contrast to Search's next_hit and next_hsp.
 BPlite
 
 The syntax for using BPlite is as follows where the method
-for retrieving hits is now called "nextSbjct" (for "subject"), while the
-method for retrieving high-scoring-pairs is called "nextHSP":
+for retrieving hits is now called nextSbjct() (for "subject"), while the
+method for retrieving high-scoring-pairs is called nextHSP():
 
   use Bio::Tools::BPlite;
   $report = new Bio::Tools::BPlite(-fh=>\*STDIN);
   $report->query;
   while(my $sbjct = $report->nextSbjct) {
        $sbjct->name;
-       while (my $hsp = $sbjct->nextHSP) { $hsp->score; }
+       while (my $hsp = $sbjct->nextHSP) { print $hsp->score,"\n"; }
   }
 
 A complete description of the module can be found in L<Bio::Tools::BPlite>.
@@ -1558,7 +1617,7 @@ a second argument as in:
   $hsp = $report->next_feature;
   $answer=$hsp->score;
 
-In addition, since there will only be (at most) one "subject" (hit) in a
+In addition, since there will only be (at most) one subject (hit) in a
 bl2seq report one should use the method $report-E<gt>next_feature,
 rather than $report-E<gt>nextSbjct-E<gt>nextHSP to obtain the next high
 scoring pair. See L<Bio::Tools::BPbl2seq> for more details.
@@ -1568,8 +1627,8 @@ Blast.pm
 The Bio::Tools::Blast parser has been removed from Bioperl as of version
 1.1. Consequently, the BPlite parser (described in the
 section L<"III.4.3">) or the Search/SearchIO parsers (section L<"III.4.2">)
-should be used for BLAST parsing within bioperl (SearchIO is the preferred
-approach and will be formally supported in subsequent releases).
+should be used for BLAST parsing within bioperl. SearchIO is the preferred
+approach and will be formally supported in future releases.
 
 =for html <A NAME ="iii.4.4"></A>
 
@@ -1607,7 +1666,8 @@ hmmpfam results and they may be correct - this is an unintended
 consequence of using the flexible and extensible SearchIO approach. See
 L<Bio::Search::Result::HMMERResult> for more information.
 
-For documentation on the older HMMER parser, look at L<Bio::Tools::HMMER::Results>.
+For documentation on the older, unsupported HMMER parser, look at 
+L<Bio::Tools::HMMER::Results>.
 
 =for html <A NAME ="iii.4.5"></A>
 
@@ -1624,16 +1684,16 @@ programs locally is convenient.
 
 The module Bio::Tools::Run::StandAloneBlast offers the ability to wrap
 local calls to blast from within perl.  All of the currently available
-options of NCBI Blast (eg PSIBLAST, PHIBLAST, bl2seq) are available
+options of NCBI Blast (e.g. PSIBLAST, PHIBLAST, bl2seq) are available
 from within the bioperl StandAloneBlast interface.  Of course, to use
-StandAloneBlast, one needs to have installed locally ncbi-blast as
+StandAloneBlast, one needs to have installed BLAST from NCBI locally as
 well as one or more blast-readable databases.
 
 Basic usage of the StandAloneBlast.pm module is simple.  Initially, a
-local blast "factory object" is created.
+local blast factory object is created.
 
-  @params = ('program'  => 'blastn',
-             'database' => 'ecoli.nt');
+  @params = (program  => 'blastn',
+             database => 'ecoli.nt');
   $factory = Bio::Tools::Run::StandAloneBlast->new(@params);
 
 Any parameters not explicitly set will remain as the BLAST defaults.
@@ -1647,9 +1707,10 @@ object or an array of Seq objects, eg
   $blast_report = $factory->blastall($input);
 
 The returned blast report will be in the form of a bioperl
-parsed-blast object.  The report object may be either a BPlite,
+parsed-blast object.  The report object may be either a SearchIO, BPlite,
 BPpsilite, BPbl2seq or Blast object depending on the type of blast
-search.  The "raw" blast report is also available.
+search - the SearchIO object is returned by default.  The raw blast
+report is also available.
 
 The syntax for running PHIBLAST, PSIBLAST and bl2seq searches via
 StandAloneBlast is also straightforward.  See
@@ -1657,29 +1718,27 @@ L<Bio::Tools::Run::StandAloneBlast> documentation for details. In
 addition, the script standaloneblast.pl in the examples/tools directory
 contains descriptions of various possible applications of the
 StandAloneBlast object. This script shows how the blast report object
-can access a blast parser directly, eg
+can access the SearchIO blast parser directly, e.g.
 
-  while (my $sbjct = $blast_report->next_hit){
+  while (my $hit = $blast_report->next_hit){
      while (my $hsp = $sbjct->next_hsp){
-        print $hsp->score . " " . $hsp->subject->seqname . "\n";
+        print $hsp->score," ",$hit->name,"\n";
      }
   }
 
-See the sections L<"III.4.2"> and L<"III.4.3"> on for more details on
-parsing BLAST reports. Also see the script standaloneblast.pl in the
-examples/tools/ subdirectory for more detailed working examples of code
-using this module.
+See the sections L<"III.4.2"> and L<"III.4.3"> for more details on
+parsing BLAST reports.
 
 =for html <A NAME ="iii.5"></A>
 
-=head2 III.5 Manipulating sequence alignments
+=head2 III.5 Manipulating sequence alignments (SimpleAlign)
 
 Once one has identified a set of similar sequences, one often needs to
 create an alignment of those sequences. Bioperl offers several perl
 objects to facilitate sequence alignment: pSW, Clustalw.pm, TCoffee.pm
 and the bl2seq option of StandAloneBlast. As of release 1.2 of
 bioperl, using these modules (except bl2seq) requires a bioperl
-auxilliary library (bioperl-ext for pSW, bioperl-run for the others)
+auxiliary library (bioperl-ext for pSW, bioperl-run for the others)
 and are therefore described in section IV. Here we describe only the
 module within the bioperl core package for manipulating previously
 created alignments, namely the SimpleAlign module.
@@ -1689,8 +1748,9 @@ another good source of information of ways to create and manipulate
 sequence alignments within bioperl.
 
 SimpleAlign objects are produced by bioperl-run alignment creation objects
-(eg Clustalw.pm, BLAST's bl2seq, and pSW) or they can be read in from
-files of multiple-sequence alignments in various formats using AlignIO.
+(e.g. Clustalw.pm, BLAST's bl2seq, TCoffee.pm, Lagan.pm, or pSW from 
+the bioperl-ext package) or they can be read in from files of 
+multiple-sequence alignments in various formats using AlignIO.
 
 Some of the manipulations possible with SimpleAlign include:
 
@@ -1740,8 +1800,7 @@ L<Bio::SimpleAlign> and L<Bio::LocatableSeq>.
   $seqname = '1433_LYCES';
   $pos = $aln->column_from_residue_number($seqname, 14);
 
-=head2 III.6 Searching for genes and other structures on genomic DNA
-(Genscan, Sim4, Grail, Genemark, ESTScan, MZEF, EPCR)
+=head2 III.6 Searching for genes and other structures on genomic DNA (Genscan, Sim4, Grail, Genemark, ESTScan, MZEF, EPCR)
 
 Automated searching for putative genes, coding sequences,
 sequence-tagged-sites (STS's) and other functional
@@ -1799,7 +1858,8 @@ annotate a genomic sequence might look like this:
   $seq = $seqio->next_seq;
   while( $feat = $parser->next_feature ) {
         # add EPCR annotation to a sequence
-        $seq->add_SeqFeature($feat);}
+        $seq->add_SeqFeature($feat);
+  }
 
 =for html <A NAME ="iii.7"></A>
 
@@ -1808,7 +1868,7 @@ annotate a genomic sequence might look like this:
 Historically, annotations for sequence data have been entered and read
 manually in flat-file or relational databases with relatively little
 concern for machine readability.  More recent projects - such as EBI's
-Ensembl project and the efforts to develop an XML molecular biology
+ENSEMBL project and the efforts to develop an XML molecular biology
 data specification - have begun to address this limitation.  Because
 of its strengths in text processing and regular-expression handling,
 perl is a natural choice for the computer language to be used for this
@@ -1817,61 +1877,58 @@ several of which are described in the following sub-sections.
 
 =for html <A NAME ="iii.7.1"></A>
 
-=head2 III.7.1 Representing sequence annotations (Annotation::Collection,SeqFeature)
+=head2 III.7.1 Representing sequence annotations (SeqFeature,RichSeq,Location)
 
 In Bioperl, most sequence annotations are stored in sequence-feature
-(SeqFeature) objects.  A SeqFeature onject generally has (at least) a
-description (e.g. exon, promoter) and a location specified in as its
-start postion and length an a reference to the "parent" sequence of
-which it is a feature. In addition, A Seq object can also have an
-Annotation object (used to store database links, literature references
-and comments) associated with it.  Creating a new SeqFeature and
+(SeqFeature) objects, where the SeqFeature object is associated with a
+parent Seq object.  A SeqFeature object generally has a
+description (e.g. "exon", "promoter"), a location specifying its
+start and end positions on the parent sequence, and a reference to its 
+parent sequence. In addition, a Seq object can also have an
+Annotation object associated with it, which could be used to store database 
+links, literature references and comments. Creating a new SeqFeature and
 Annotation and associating it with a Seq is accomplished with syntax
 like:
 
-  $feat = new Bio::SeqFeature::Generic('-start'   => 40,
-  				       '-end'     => 80,
-  				       '-strand'  => 1,
-  				       '-primary' => 'exon',
-  				       '-source'  => 'internal' );
-  $seqobj->add_SeqFeature($feat); # Add the SeqFeature to the parent
-  $annotations = $seqobj->annotation(new Bio::Annotation::Collection);
-  $annotations->add_Annotation('disease', $object);
+  $feat = new Bio::SeqFeature::Generic(-start   => 40,
+  				       -end     => 80,
+  				       -strand  => 1,
+  				       -primary => 'exon',
+  				       -source  => 'internal' );
+  $seqobj->add_SeqFeature($feat); # Add the SeqFeature to the Seq object
 
 Once the features and annotations have been associated with the Seq,
 they can be with retrieved, eg:
 
   @topfeatures = $seqobj->top_SeqFeatures(); # just top level, or
   @allfeatures = $seqobj->all_SeqFeatures(); # descend into sub features
-  $disease_annotation = $annotations->get_Annotations('disease'); 
+  $disease_annotation = $annotations->get_Annotations('disease');
 
 The individual components of a SeqFeature can also be set or retrieved
 with methods including:
 
-  # attributes which return numbers
+  # methods which return numbers
   $feat->start          # start position
   $feat->end            # end position
 
   $feat->strand         # 1 means forward, -1 reverse, 0 not relevant
 
-  # attributes which return strings
+  # methods which return strings
   $feat->primary_tag    # the main 'name' of the sequence feature,
                         # eg, 'exon'
-  $feat->source_tag     # where the feature comes from, eg'BLAST'
+  $feat->source_tag     # where the feature comes from, e.g. 'BLAST'
 
-  # attributes which return Bio::PrimarySeq objects
-  $feat->seq            # the sequence between start,end
+  # methods which return Bio::PrimarySeq objects
+  $feat->seq            # the sequence between start and end
   $feat->entire_seq     # the entire sequence
+  $feat->spliced_seq    # the "joined" sequence, when there are
+                        # multiple sub-locations
 
   # other useful methods include
   $feat->overlap($other)  # do SeqFeature $feat and SeqFeature $other overlap?
   $feat->contains($other) # is $other completely within $feat?
   $feat->equals($other)   # do $feat and $other completely agree?
   $feat->sub_SeqFeatures  # create/access an array of subsequence features
-
-See L<Bio::Annotation::Collection> and L<Bio::SeqFeature::Generic> as starting
-points for further exploration, and see the examples/tools/gff2ps.pl
-and examples/tools/gb_to_gff.pl scripts.
 
 It is worth mentioning that one can also retrieve the start and end
 positions of a feature using a Bio::LocationI object:
@@ -1880,21 +1937,21 @@ positions of a feature using a Bio::LocationI object:
   $location->start;           # start position
   $location->end;             # end position
 
-This is useful because one needs a Bio::Location::SplitLocationI object
+This is useful because one can use a Bio::Location::SplitLocationI object
 in order to retrieve the split coordinates inside the Genbank or EMBL join()
 statements (e.g. "CDS    join(51..142,273..495,1346..1474)"):
 
   if ( $feat->location->isa('Bio::Location::SplitLocationI') &&
 	       $feat->primary_tag eq 'CDS' )  {
     foreach $loc ( $feat->location->sub_Location ) {
-      print $loc->start . ".." . $loc->end . "\n";
+      print $loc->start,"..",$loc->end,"\n";
     }
   }
 
 See L<Bio::LocationI> and L<Bio::Location::SplitLocationI> for more
 information.
 
-If more detailed annotation is required than is currently available in Seq
+If more detailed information is required than is currently available in Seq
 objects the RichSeq object may be used. It is applicable in particular to
 database sequences (EMBL, GenBank and Swissprot) with detailed annotations.
 Sample usage might be:
@@ -1906,32 +1963,55 @@ Sample usage might be:
 
 See L<Bio::Seq::RichSeqI> for more details.
 
+=head2 III.7.2 Representing sequence annotations (Annotation::Collection)
 
-=for html <A NAME ="iii.7.2"></A>
+Much of the interesting description of a sequence can be associated with
+sequence features but in sequence objects derived from Genbank or EMBL entries
+there can be useful information in other "annotation" sections, such as the 
+COMMENTS section of a Genbank entry. In order to access this information 
+you'll need to create an Annotation::Collection object. For example:
 
-=head2 III.7.2 Representing and large and/or changing sequences (LiveSeq,LargeSeq)
+  $db = new Bio::DB::GenBank;
+  $seqobj = $db->get_Seq_by_acc("NM_125788");
+  $ann_coll = $seqobj->annotation;
 
-Very large sequences and/or data files with sequences that are frequently being
-updated present special problems to automated sequence-annotation storage and
-retrieval projects.  Bioperl's LargeSeq and LiveSeq objects are designed to
-address these two situations.
+This Collection object is just a container for other specialized objects, and 
+its methods are described in L<Bio::Annotation::Collection>. You can find the 
+desired object within the Collection object by examining the "tagnames":
 
-LargeSeq
+  foreach $ann ($ann_coll->get_Annotations) {
+    print "Comment: ",$ann->as_text if ($ann->tagname eq "comment");
+  }
+
+Other possible tagnames include "date_changed", "keyword", and "reference". 
+Objects with the "reference" tagname are Bio::Annotation::Reference objects 
+and represent scientific articles. See L<Bio::Annotation::Reference> for 
+descriptions of the methods used to access the data in Reference objects.
+There is also a HOWTO on features and annotation 
+(http://bioperl.org/HOWTOs/html/Feature-Annotation.html).
+
+=for html <A NAME ="iii.7.3"></A>
+
+=head2 III.7.3 Representing large sequences (LargeSeq)
+
+Very large sequences present special problems to automated sequence-annotation 
+storage and retrieval projects.  Bioperl's LargeSeq object addresses this
+situation.
 
 A LargeSeq object is a SeqI compliant object that stores a sequence as
 a series of files in a temporary directory (see sect L<"II.1"> or
 L<Bio::SeqI> for a definition of SeqI objects). The aim is to enable
-storing very large sequences (eg, E<gt> 100MBases) without running out
+storing very large sequences (e.g. E<gt> 100 MBases) without running out
 of memory and, at the same time, preserving the familiar bioperl Seq
-object interface. As a result, from the users perspective, using a
+object interface. As a result, from the user's perspective, using a
 LargeSeq object is almost identical to using a Seq object. The
 principal difference is in the format used in the SeqIO calls. Another
 difference is that the user must remember to only read in small chunks
 of the sequence at one time.  These differences are illustrated in the
 following code:
 
-  $seqio = new Bio::SeqIO('-format'=>'largefasta',
-  			  '-file'  =>'t/data/genomic-seq.fasta');
+  $seqio = new Bio::SeqIO(-format => 'largefasta',
+  			  -file   => 't/data/genomic-seq.fasta');
   $pseq = $seqio->next_seq();
   $plength = $pseq->length();
   $last_4 = $pseq->subseq($plength-3,$plength);  # this is OK
@@ -1940,7 +2020,11 @@ following code:
   # probably cause the machine to run out of memory
   # $lots_of_data = $pseq->seq();  # NOT OK for a large LargeSeq object
 
-LiveSeq
+=head2 III.7.4 Representing changing sequences (LiveSeq)
+
+Data files with sequences that are frequently being updated present special
+problems to automated sequence-annotation storage and retrieval projects.
+Bioperl's LiveSeq object is designed to address this situation.
 
 The LiveSeq object addresses the need for a sequence object capable of
 handling sequence data that may be changing over time.  In such a
@@ -1948,7 +2032,7 @@ sequence, the precise locations of features along the sequence may
 change.  LiveSeq deals with this issue by re-implementing the sequence
 object internally as a "double linked chain." Each element of the
 chain is connected to other two elements (the PREVious and the NEXT
-one). There is no absolute position (like in an array), hence if
+one). There is no absolute position like in an array, hence if
 positions are important, they need to be computed (methods are
 provided). Otherwise it's easy to keep track of the elements with
 their "LABELs". There is one LABEL (think of it as a pointer) to each
@@ -1962,18 +2046,17 @@ PrimarySeqI interface (recall PrimarySeq is the subset of Seq without
 annotations or SeqFeatures - see section L<"II.1"> or L<Bio::PrimarySeq>).
 Consequently syntax for using LiveSeq objects is familiar although a
 modified version of SeqIO called Bio::LiveSeq::IO::Bioperl needs to be
-used to actually load the data, eg:
+used to actually load the data, e.g.:
 
-  $loader=Bio::LiveSeq::IO::BioPerl->load('-db'=>"EMBL",
-                                          '-file'=>"t/data/factor7.embl");
-  $gene=$loader->gene2liveseq('-gene_name' => "factor7");
+  $loader = Bio::LiveSeq::IO::BioPerl->load(-db   => "EMBL",
+                                            -file => "t/data/factor7.embl");
+  $gene = $loader->gene2liveseq(-gene_name => "factor7");
   $id = $gene->get_DNA->display_id ;
   $maxstart = $gene->maxtranscript->start;
 
 See L<Bio::LiveSeq::IO::BioPerl> for more details.
 
-=head2 III.7.3 Representing related sequences - mutations,
-polymorphisms etc (Allele, SeqDiff)
+=head2 III.7.5 Representing related sequences - mutations, polymorphisms (Allele, SeqDiff)
 
 A Mutation object allows for a basic description of a sequence change
 in the DNA sequence of a gene. The Mutator object takes in mutations,
@@ -1993,12 +2076,12 @@ mutation are exactly the same in DNA and RNA sequences, we can write:
   use Bio::LiveSeq::Mutator;
   use Bio::LiveSeq::Mutation;
 
-  $loader = Bio::LiveSeq::IO::BioPerl->load('-file' => "$filename");
-  $gene = $loader->gene2liveseq('-gene_name' => $gene_name);
-  $mutation = new Bio::LiveSeq::Mutation ('-seq' =>'G',
-  					  '-pos' => 100 );
-  $mutate = Bio::LiveSeq::Mutator->new('-gene'      => $gene,
-  				       '-numbering' => "coding"  );
+  $loader = Bio::LiveSeq::IO::BioPerl->load(-file => "$filename");
+  $gene = $loader->gene2liveseq(-gene_name => $gene_name);
+  $mutation = new Bio::LiveSeq::Mutation (-seq =>'G',
+  					  -pos => 100 );
+  $mutate = Bio::LiveSeq::Mutator->new(-gene      => $gene,
+  				       -numbering => "coding"  );
   $mutate->add_Mutation($mutation);
   $seqdiff = $mutate->change_gene();
   $DNA_re_changes = $seqdiff->DNAMutation->restriction_changes;
@@ -2011,28 +2094,30 @@ see L<Bio::LiveSeq::Mutator> and L<Bio::LiveSeq::Mutation> as well as
 the original documentation for the "Computational Mutation Expression
 Toolkit" project at http://www.ebi.ac.uk/mutations/toolkit/.
 
-=for html <A NAME ="iii.7.4"></A>
+=for html <A NAME ="iii.7.6"></A>
 
-=head2 III.7.4 Incorporating quality data in sequence annotation (SeqWithQuality)
+=head2 III.7.6 Incorporating quality data in sequence annotation (SeqWithQuality)
 
 SeqWithQuality objects are used to describe sequences with very
 specific annotations - that is, data quality annotations.  Data quality
 information is important for documenting the reliability of base
-"calls" in newly sequenced or otherwise questionable sequence
+calls in newly sequenced or otherwise questionable sequence
 data. The quality data is contained within a Bio::Seq::PrimaryQual object.
 Syntax for using SeqWithQuality objects is as follows:
 
   # first, make a PrimarySeq object
-  $seqobj = Bio::PrimarySeq->new
-	  ( -seq => 'atcgatcg',            -id  => 'GeneFragment-12',
-	    -accession_number => 'X78121', -alphabet => 'dna');
+  $seqobj = Bio::PrimarySeq->new( -seq => 'atcgatcg',
+                                  -id  => 'GeneFragment-12',
+	                          -accession_number => 'X78121',
+                                  -alphabet => 'dna');
   # now make a PrimaryQual object
-  $qualobj = Bio::Seq::PrimaryQual->new
-	 ( -qual => '10 20 30 40 50 50 20 10', -id  => 'GeneFragment-12',
-	   -accession_number => 'X78121',      -alphabet => 'dna');
+  $qualobj = Bio::Seq::PrimaryQual->new(-qual => '10 20 30 40 50 50 20 10',
+                                        -id   => 'GeneFragment-12',
+	                                -accession_number => 'X78121',
+                                        -alphabet => 'dna');
   # now make the SeqWithQuality object
-  $swqobj = Bio::Seq::SeqQithQuality->new
-	  ( -seq  => $seqobj, -qual => $qualobj);
+  $swqobj = Bio::Seq::SeqQithQuality->new(-seq  => $seqobj,
+                                          -qual => $qualobj);
   # Now we access the sequence with quality object
   $swqobj->id(); # the id of the SeqWithQuality object may not match the
                  # id of the sequence or of the quality
@@ -2040,7 +2125,7 @@ Syntax for using SeqWithQuality objects is as follows:
   $swqobj->qual(); # the quality of the SeqWithQuality object
 
 A SeqWithQuality object is created automatically when phred output, a *phd
-file, is read by SeqIO, eg
+file, is read by SeqIO, e.g.
 
   $seqio = Bio::SeqIO->new(-file=>"my.phd",-format=>"phd");
   # or just 'Bio::SeqIO->new(-file=>"my.phd")'
@@ -2050,45 +2135,45 @@ See L<Bio::Seq::SeqWithQuality> for a detailed description of the methods,
 L<Bio::Seq::PrimaryQual>, and L<Bio::SeqIO::phd>.
 
 
-=head2 III.7.5 Sequence XML representations - generation and parsing (SeqIO::game, SeqIO::bsml)
+=head2 III.7.7 Sequence XML representations - generation and parsing (SeqIO::game, SeqIO::bsml)
 
 The previous subsections have described tools for automated sequence
-annotation by the creation of an "object layer" on top of a
-traditional database structure.  XML takes a somewhat different
-approach.  In XML, the data structure is unmodified, but machine
+annotation by the creation of an object layer on top of a
+traditional database structure. XML takes a somewhat different
+approach. In XML, the data structure is unmodified, but machine
 readability is facilitated by using a data-record syntax with special
 flags and controlled vocabulary.
 
 In order to transfer data with XML in biology, one needs an agreed
-upon "vocabulary" of biological terms. Several of these have been
-proposed and bioperl has at least some support for three: "game", BSML
-and AGAVE. 
+upon a vocabulary of biological terms. Several of these have been
+proposed and bioperl has at least some support for three: GAME, BSML
+and AGAVE.
 
 Once a vocabulary is agreed upon, it becomes possible to convert
-sequence XML sequence features can be turned into bioperl Seq
-annotations and SeqFeature objects.  Conversely Seq object features
+sequence XML sequence features can be turned into bioperl
+Annotation and SeqFeature objects.  Conversely Seq object features
 and annotations can be converted to XML so that they become available
-to any other systems.  Typical usage with "game" or "BSML" are shown
+to any other systems.  Typical usage with GAME or BSML are shown
 below. No special syntax is required by the user. Note that some Seq
 annotation will be lost when using XML in this manner since generally
 XML does not support all the annotation information available in Seq
 objects.
 
-  $str = Bio::SeqIO->new('-file'=> 't/data/test.game',
-  			 '-format' => 'game');
+  $str = Bio::SeqIO->new(-file   => 't/data/test.game',
+  			 -format => 'game');
   $seq = $str->next_primary_seq();
   $id = $seq->id;
   @feats = $seq->all_SeqFeatures();
   $first_primary_tag = $feats[0]->primary_tag;
 
-  $str = Bio::SeqIO->new('-file'=> 'bsmlfile.xml',
-  			 '-format' => 'bsml');
+  $str = Bio::SeqIO->new(-file   => 'bsmlfile.xml',
+  			 -format => 'bsml');
   $seq = $str->next_primary_seq();
   $id = $seq->id;
   @feats = $seq->all_SeqFeatures();
   $first_primary_tag = $feats[0]->primary_tag;
 
-=head2  III.7.6 Representing Sequences using GFF (Bio:DB:GFF )
+=head2  III.7.8 Representing Sequences using GFF (Bio:DB:GFF )
 
 Another format for transmitting machine-readable sequence-feature data
 is the Genome Feature Format (GFF).  This file type is well suited to
@@ -2099,20 +2184,19 @@ parser for converting between GFF files and SeqFeature objects.
 Typical syntax looks like:
 
   $gffio = Bio::Tools::GFF->new(-fh => \*STDIN, -gff_version => 2);
-  $feature;
     # loop over the input stream
-  while($feature = $gffio->next_feature()) {
+  while ($feature = $gffio->next_feature()) {
     # do something with feature
   }
   $gffio->close();
 
-Further information can be found at L<Bio::Tools::GFF>. Also see the
+Further information can be found at L<Bio::Tools::GFF>. Also see
 examples/tools/gff2ps.pl, examples/tools/gb_to_gff.pl, and the
 scripts in scripts/Bio-DB-GFF. Note: this module shouldn't be confused 
-with the module Bio::DB::GFF which is for implementing relational 
+with the module Bio::DB::GFF which is for implementing relational
 databases when using bioperl-db.
 
-=head2  III.8 Manipulating clusters of sequences (Cluster, ClusterIO)
+=head2 III.8 Manipulating clusters of sequences (Cluster, ClusterIO)
 
 Sequence alignments are not the only examples in which one might want
 to manipulate a group of sequences together.  Such groups of related 
@@ -2126,14 +2210,13 @@ available only for Unigene clusters.  To read in a Unigene cluster (in
 the NCBI XML format) and then extract individual sequences for the
 cluster for manipulation might look like this:
 
-  $stream  = Bio::ClusterIO->new('-file' => "Hs.data",  '-format' => "unigene");
-  # note: we quote -format to keep older perl's from complaining.
-  while ( my $in = $stream->next_cluster() ) {
-    print $in->unigene_id() . "\n";
-	while ( my $sequence = $in->next_seq() ) {
-	  print $sequence->accession_number() . "\n";
-	}
-   }
+  my $stream = Bio::ClusterIO->new(-file => "Hs.data", -format => "unigene");
+  while ( my $in = $stream->next_cluster ) {
+     print $in->unigene_id() . "\n";
+     while ( my $sequence = $in->next_seq ) {
+        print $sequence->accession_number . "\n";
+     }
+  }
 
 See L<Bio::Cluster::UniGene> for more details.
 
@@ -2144,8 +2227,7 @@ sequences it has also branched out into related fields of study,
 such as protein structure, phylogenetic trees and genetic maps.
 
 
-=head2 III.9.1 Using 3D structure objects and reading PDB files
-(StructureI, Structure::IO)
+=head2 III.9.1 Using 3D structure objects and reading PDB files (StructureI, Structure::IO)
 
 A StructureIO object can be created from one or more 3D structures
 represented in Protein Data Bank, or pdb, format (see
@@ -2159,10 +2241,10 @@ wealth of methods, here are just a few:
 
   $structio = Bio::Structure::IO->new( -file => "1XYZ.pdb");
   $struc = $structio->next_structure; # returns an Entry object
-  $pseq = $struc->seqres;    # returns a PrimarySeq object, thus
-  $pseq->subseq(1,20);              # returns a sequence string
-  @atoms = $struc->get_atoms($res); # Atom objects, given a Residue
-  @xyz = $atom->xyz;                # the 3D coordinates of the atom
+  $pseq = $struc->seqres;             # returns a PrimarySeq object, thus
+  $pseq->subseq(1,20);                # returns a sequence string
+  @atoms = $struc->get_atoms($res);   # Atom objects, given a Residue
+  @xyz = $atom->xyz;                  # the 3D coordinates of the atom
 
 These lines show how one has access to a number of related objects and methods.
 For examples of typical usage of these modules, see the scripts in the
@@ -2171,8 +2253,7 @@ L<Bio::Structure::Entry>, L<Bio::Structure::Model>,
 L<Bio::Structure::Chain>, L<Bio::Structure::Residue>, and
 L<Bio::Structure::Atom> for more information.
 
-=head2  III.9.2 Tree objects and phylogenetic trees (Tree::Tree,
-TreeIO, PAML)
+=head2  III.9.2 Tree objects and phylogenetic trees (Tree::Tree, TreeIO, PAML)
 
 Bioperl Tree objects can store data for all kinds of computer trees
 and are intended especially for phylogenetic trees.  Nodes and
@@ -2180,33 +2261,33 @@ branches of trees can be individually manipulated.  The TreeIO object
 is used for stream I/O of tree objects.  Currently only phylip/newick
 tree format is supported.  Sample code might be:
 
-  $treeio = new Bio::TreeIO( -format => 'newick', -file   => $treefile);
-  $tree = $treeio->next_tree;   # get the tree
-  @nodes = $tree->get_nodes;    # get all the nodes
-  $tree->get_root_node()->each_Descendent();  # get descendents of root node
+  $treeio = new Bio::TreeIO( -format => 'newick', -file => $treefile);
+  $tree = $treeio->next_tree;             # get the tree
+  @nodes = $tree->get_nodes;              # get all the nodes
+  $tree->get_root_node->each_Descendent;  # get descendents of root node
 
 See L<Bio::TreeIO> and L<Bio::Tree::Tree> for details.
 
 Using the Bio::Tools::Phylo::PAML module one can also parse the
 results of the PAML tree-building programs codeml, baseml, basemlg,
-codemlsites and yn00. See L<Bio::Tools::Phylo::PAML> for details.
+codemlsites and yn00. See L<Bio::Tools::Phylo::PAML> or the PAML HOWTO
+(http://bioperl.org/HOWTOs/html/PAML.html) for more information.
 
-=head2 III.9.3 Map objects for manipulating genetic maps (Map::MapI,
-MapIO)
+=head2 III.9.3 Map objects for manipulating genetic maps (Map::MapI, MapIO)
 
 Bioperl map objects can be used to describe any type of biological map
 data including genetic maps, STS maps etc.  Map I/O is performed with
 the MapIO object which works in a similar manner to the SeqIO,
 SearchIO and similar I/O objects described previously. In principle,
 Map I/O with various map data formats can be performed.  However
-currently only "mapmaker" format is supported.  Manipulation of
+currently only mapmaker format is supported.  Manipulation of
 genetic map data with Bioperl Map objects might look like this:
 
-  $mapio = new Bio::MapIO( '-format' => 'mapmaker', '-file' => $mapfile);
+  $mapio = new Bio::MapIO(-format => 'mapmaker', -file => $mapfile);
   $map = $mapio->next_map;  # get a map
   $maptype =  $map->type ;
-  foreach  $marker ( $map->each_element ) {
-    $marker_name =  $marker->name ;  # get the name of each map marker
+  foreach $marker ( $map->each_element ) {
+    $marker_name = $marker->name ;  # get the name of each map marker
   }
 
 See L<Bio::MapIO> and L<Bio::Map::SimpleMap> for more information.
@@ -2215,31 +2296,32 @@ See L<Bio::MapIO> and L<Bio::Map::SimpleMap> for more information.
 
 Bio::Biblio objects are used to query bibliographic databases, such as MEDLINE.
 The associated modules are built to work with OpenBQS-compatible databases
-(see http://industry.ebi.ac.uk/openBQS). A Bio::Biblio object can execute a query
-like:
+(see http://industry.ebi.ac.uk/openBQS). A Bio::Biblio object can execute 
+a query like:
 
   my $collection = $biblio->find ('brazma', 'authors');
   while ( $collection->has_next ) {
       print $collection->get_next;
   }
 
-See L<Bio::Biblio> or the scripts/biblio/biblio.PLS script for details.
+See L<Bio::Biblio>, the scripts/biblio/biblio.PLS script, or the 
+examples/biblio/biblio_examples.pl script for more information.
 
 
 =for html <A NAME ="iii.9.5"></A>
 
 =head2 III.9.5 Graphics objects for representing sequence objects as images (Graphics)
 
-A user may want to represent Seq objects and their SeqFeatures graphically. The
-Bio::Graphics::* modules use Perl's GD.pm module to create a PNG or GIF image
+A user may want to represent sequence objects and their SeqFeatures graphically. 
+The Bio::Graphics::* modules use Perl's GD.pm module to create a PNG or GIF image
 given the SeqFeatures (Section L<"III.7.1">) contained within a Seq object.
 
 These modules contain numerous methods to dictate the sizes, colors,
 labels, and line formats within the image. For information see the
-excellent Graphics-HOWTO at www.bioperl.org/HOWTOs/ or in the docs/howto 
-subdirectory. Additional documentation can be found at L<Bio::Graphics>, 
-L<Bio::Graphics::Panel>, and in the examples/graphics/render_sequence.pl 
-script.
+excellent Graphics-HOWTO (http://bioperl.org/HOWTOs/html/Graphics-HOWTO.html)
+or in the docs/howto subdirectory. Additional documentation can be found in
+L<Bio::Graphics>, L<Bio::Graphics::Panel>, and in the scripts in the
+examples/biographics/ and scripts/graphics directories in the Bioperl package.
 
 =head2 III.10 Bioperl alphabets
 
@@ -2318,29 +2400,29 @@ are also acceptable in a biosequence:
 
 =for html <A NAME ="IV."></A>
 
-=head1 IV.  Auxilliary Bioperl Libraries (Bioperl-run, Bioperl-db, etc.)
+=head1 IV.  Auxiliary Bioperl Libraries (Bioperl-run, Bioperl-db, etc.)
 
 =for html <A NAME ="iv.1"></A>
 
-=head2 IV.1 Using the Bioperl Auxilliary Libraries
+=head2 IV.1 Using the Bioperl Auxiliary Libraries
 
 Beyond the bioperl "core" distribution which you get with the
 "minimal" installation, bioperl contains numerous other modules in
-so-called auxilliary libraries.  These auxilliary libraries include
+so-called auxiliary libraries.  These auxiliary libraries include
 bioperl-run, bioperl-db, bioperl-pipeline, bioperl-microarray and
 bioperl-ext among others.  Generally, modules are placed in an
-auxilliary library if either:
+auxiliary library if either:
 
-=over 4
+=over 2
 
 =item *
 
-the module requires the installation of additional non-standard
+The module requires the installation of additional non-standard
 external programs or modules, or
 
 =item *
 
-the module is perceived to be of interest to only a small percentage
+The module is perceived to be of interest to only a small percentage
 of the bioinformatics community
 
 =back
@@ -2348,31 +2430,23 @@ of the bioinformatics community
 However there are exceptions and it is not always obvious whether a
 given module will be found in the "core" or in an auxiliary library.
 
-At present, modules in the auxilliary packages can be obtained only by
-means of the CVS system. To browse through the auxilliary libraries and
+At present, modules in the auxiliary packages can be obtained only by
+means of the CVS system. To browse through the auxiliary libraries and
 to obtain the download files, go to:
 
 http://cvs.bioperl.org/cgi-bin/viewcvs/viewcvs.cgi/?cvsroot=bioperl
 
-Generally CVS packages are not as well tested as the released core
-library.  Consequently after downloading and running:
+Install much like Bioperl:
 
-  $ perl Makefile.PL
+  >perl Makefile.PL
+
 and
-  $ make
-one should always run:
-  $make test
-before using the packages. Even if "make test" runs successfully. it
-may be safer to _not_ run "make install" and instead to include
-the library with the auxilliary modules (say in
-/home/peter/auxmodules) by adding this line to each of your scripts:
 
-use lib '/home/peter/auxmodules';
+  >make
 
-or by adding a "switch" to your invocation of perl on the command
-line, e,g,:
+Then:
 
-  $perl -I/home/peter/auxmodules myscript.pl
+  >make test
 
 Once the auxiliary library has been installed in this manner, the
 modules can be used in exactly the same manner as if they were in the
@@ -2384,7 +2458,7 @@ bioperl core.
 
 It possible to run various external (to Bioperl) sequence alignment
 and sequence manipulation programs via a perl interface using bioperl.
-However in most cases this requires having the bioperl-run auxilliary
+However in most cases this requires having the bioperl-run auxiliary
 library (some cases may require bioperl-ext). Prior to bioperl release
 1.2, many of these features were available within the bioperl "core"
 release.  However currently some of the required modules have been
@@ -2399,15 +2473,15 @@ EMBOSS (European Molecular Biology Open Source Software) is an extensive
 collection of sequence analysis programs written in the C
 programming language, from http://www.uk.embnet.org/Software/EMBOSS.
 There are a number of algorithms in EMBOSS that are not found in "Bioperl
-proper" (eg. calculating DNA melting temperature, finding repeats,
+proper" (e.g. calculating DNA melting temperature, finding repeats,
 identifying prospective antigenic sites) so if you cannot find
 the function you want in bioperl you might be able to find it in EMBOSS.
 
 EMBOSS programs are usually called from the command line but the
-bioperl-run auxilliary library provides a Perl "wrapper" for EMBOSS
+bioperl-run auxiliary library provides a Perl wrapper for EMBOSS
 function calls so that they can be executed from within a Perl script.
 Of course, the EMBOSS package as well as the bioperl-run must be
-installed for the Bioperl wrapper to function.
+installed in order for the Bioperl wrapper to function.
 
 In the future, it is planned that Bioperl EMBOSS objects will return
 appropriate Bioperl objects to the calling script in addition to
@@ -2435,28 +2509,50 @@ accept a file name as input, eg
 
 Some EMBOSS programs will return strings, others will create files
 that can be read directly using Bio::SeqIO (section L<"III.2.1">), as
-in the example above. It's worth mentioning that as another way to
-align sequences with bioperl one can run the Smith-Waterman algorithm
-in the EMBOSS program 'water'.  This can produce an output file that
-bioperl can read in with the AlignIO system
+in the example above. It's worth mentioning that another way to
+align sequences in bioperl is to run a program from the EMBOSS suite,
+such as 'matcher'. This can produce an output file that bioperl can
+read in using AlignIO:
 
-  use Bio::AlignIO;
-  my $in = new Bio::AlignIO(-format => 'emboss', -file => 'filename');
-  my $aln = $in->next_aln();
+  my $factory = new Bio::Factory::EMBOSS;
+  my $prog = $factory->program('matcher');
 
-The Pise interface is another approach to extending Bioperl's
-sequence manipulation capabilities by using standard bioinformatics
-programs.  To use EMBOSS programs within Bioperl you need to
-have EMBOSS locally installed (in addition to having the auxiliary
-bioperl-run library installed). In contrast, with Pise you only need 
-install bioperl-run, since  you run the actual analysis programs over 
-the internet at the Pise site. Advantages of Pise include not having
-to load additional programs locally and having access to a wider
-library of programs (Pise includes EMBOSS and many other programs as
-well.) Howerver Pise has the disadvantages of needing an internet
-connection, lower performance, decreased security, etc. stemming form
-running programs over the net.  For more information on the Bioperl
-Pise interface see:  http://www-alt.pasteur.fr/~letondal/Pise/.
+  $prog->run({ -sequencea => Bio::Seq->new(-id => "seq1",
+                                           -seq => $seqstr1),
+               -sequenceb => Bio::Seq->new(-id => "seq2",
+                                           -seq => $seqstr2),
+               -aformat      => "pair",
+               -alternatives => 2,
+               -outfile'     => $outfile});
+
+  my $alignio_fmt = "emboss";
+  my $align_io = new Bio::AlignIO(-format => $alignio_fmt,
+                                  -file   => $outfile);
+
+The Pise interface is another way of extending Bioperl's sequence 
+analysis capabilities. To use EMBOSS programs within Bioperl you need to
+have EMBOSS locally installed, as well as  the bioperl-run library. 
+In contrast, with Pise you only need to install bioperl-run, since the 
+actual analysis programs reside at the Pise site. Advantages of Pise 
+include not having to load additional programs locally and having access 
+to an extraordinary variety of programs, including EMBOSS. However Pise has 
+the disadvantages of lower performance and decreased security
+since the data is transmitted over the net. Consider this example:
+
+  my $genscan = Pise::genscan->new(
+  "http://bioweb.pasteur.fr/cgi-bin/seqanal/genscan.pl",'letondal@pasteur.fr',
+                                  seq => $seq,
+                                  parameter_file => "Arabidopsis.smat");
+  my $job = $genscan->run;
+  my $parser = Bio::Tools::Genscan->new(-fh => $job->fh('genscan.out') );
+  while(my $gene = $parser->next_prediction()) {
+     my $prot = $gene->predicted_protein;
+     print $prot->seq, "\n";
+  }
+
+Extremely simple! For more information on the Bioperl Pise interface see
+http://www-alt.pasteur.fr/~letondal/Pise/ or the documentation in the
+bioperl-run package.
 
 =for html <A NAME ="iv.2.2"></A>
 
@@ -2471,15 +2567,15 @@ file format reader as follows:
   $factory = Bio::Tools::Run::StandAloneBlast->new('outfile' => 'bl2seq.out');
   $bl2seq_report = $factory->bl2seq($seq1, $seq2);
   # Use AlignIO.pm to create a SimpleAlign object from the bl2seq report
-  $str = Bio::AlignIO->new('-file '=>'bl2seq.out',
-                           '-format' => 'bl2seq');
+  $str = Bio::AlignIO->new(-file   => 'bl2seq.out',
+                           -format => 'bl2seq');
   $aln = $str->next_aln();
 
 =for html <A NAME ="iv.2.3"></A>
 
 =head2 IV.2.3 Aligning multiple sequences (Clustalw.pm, TCoffee.pm)
 
-For aligning multiple sequences (ie two or more), bioperl offers a
+For aligning multiple sequences (i.e. two or more), bioperl offers a
 perl interface to the bioinformatics-standard clustalw and tcoffee
 programs.  Clustalw has been a leading program in global multiple
 sequence alignment (MSA) for several years.  TCoffee is a relatively
@@ -2500,7 +2596,7 @@ are the names of the modules themselves appearing in the initial "use"
 and constructor statements and the names of the some of the individual
 program options and parameters.
 
-In either case, initially, a "factory object" must be created. The
+In either case, initially, a factory object must be created. The
 factory may be passed most of the parameters or switches of the
 relevant program.  In addition, alignment parameters can be changed
 and/or examined after the factory has been created.  Any parameters
@@ -2543,7 +2639,7 @@ directory.
 
 The Smith-Waterman (SW) algorithm is the standard method for producing
 an optimal local alignment of two sequences.  Bioperl supports the
-computation of SW alignments via the pSW object with the auxilliary
+computation of SW alignments via the pSW object with the auxiliary
 bioperl-ext library. Note that pSW only supports the alignment of
 protein sequences, not nucleotide.
 
@@ -2570,20 +2666,21 @@ directory and the documentation in L<Bio::Tools::pSW>.
 
 =for html <A NAME ="iv.3"></A>
 
-=head2 IV.3 bioperl-db
+=head2 IV.3 bioperl-db and BioSQL
 
-The Bioperl-db package is intended to enable the easy access and
+The bioperl-db package is intended to enable the easy access and
 manipulation of biology relational databases via a perl
-interface. Obviously it requires having adminsitrative access to a
+interface. Obviously it requires having administrative access to a
 relational database.  Currently the bioperl-db interface is
-implemented primarily to support databases in the Mysql format
-(http://www.mysql.com). More details on bioperl-db can be found in the
-bioperl-db CVS directory at
+implemented to support databases in the Mysql, Postgres and Oracle formats.
+More details on bioperl-db can be found in the bioperl-db CVS directory at
 http://cvs.bioperl.org/cgi-bin/viewcvs/viewcvs.cgi/bioperl-db/?cvsroot=bioperl.
-It is worth mentioning that most of the bioperl objects mentioned
-above map directly to tables in the bioperl-db schema. Therefore
-object data such as sequences, their features, and annotations can be
-easily loaded into the databases, as in
+
+The database schema itself is not specified in the bioperl-db package but
+in the BioSQL package, available at http://obda.open-bio.org/. It is worth 
+mentioning that most of the bioperl objects mentioned above map directly to 
+tables in the Biosql schema. Therefore object data such as sequences, their 
+features, and annotations can be easily loaded into the databases, as in
 
   $loader->store($newid,$seqobj)
 
@@ -2596,10 +2693,10 @@ bioperl-db.
 
 =for html <A NAME ="iv.4"></A>
 
-=head2 IV.4 Other Bioperl auxilliary libraries
+=head2 IV.4 Other Bioperl auxiliary libraries
 
-There a several other auxilliary libraries in the bioperl CVS
-repository including bioperl-microarray, bioperl-gui,
+There a several other auxiliary libraries in the bioperl CVS
+repository including bioperl-microarray, bioperl-pedigree, bioperl-gui,
 bioperl-pipeline, bioperl-das-client and bioperl-corba-client. They
 are typically for specialized uses and/or require multiple external
 programs to run and/or are still pretty new and undeveloped. But if
@@ -2610,18 +2707,17 @@ and see if they might be of use to you.
 
 =for html <A NAME ="v.1"></A>
 
-=head2 V.1 Appendix: Finding out which methods are used by which
-Bioperl Objects
+=head2 V.1 Appendix: Finding out which methods are used by which Bioperl Objects
 
 At numerous places in the tutorial, the reader is directed to the
 "documentation included with each of the modules."  As was mentioned in
 the introduction, it is sometimes not easy in perl to determine the
-appropriate documentation to look for, because objects inherit methods
+appropriate documentation because objects inherit methods
 from other objects (and the relevant documentation will be stored in the
 object from which the method was inherited.)
 
-For example, say you wanted to find documentation on the "parse" method
-of the object Genscan.pm.  You would not find this documentation in
+For example, say you wanted to find documentation on the parse() method
+of the module Genscan.pm.  You would not find this documentation in
 the code for Genscan.pm, but rather in the code for AnalysisResult.pm
 from which Genscan.pm inherits the parse method!
 
@@ -2652,7 +2748,7 @@ you will receive the following output:
  next_prediction
 
 From this output, it is clear exactly from which object each method
-of Genscan.pm is taken, and, in particular that "parse" is
+of Genscan.pm is taken, and, in particular that parse() is
 taken from the package Bio::Tools::AnalysisResult.
 
 With this approach you can easily determine the source of any method
@@ -2677,11 +2773,11 @@ example, to run the basic sequence manipulation demo, do:
  > perl -w  bptutorial.pl 1
 
 Some of the later demos require that you have an internet connection
-and/or that you have an auxilliary bioperl library and/or external
+and/or that you have an auxiliary bioperl library and/or external
 cpan module and/or external program installed.  They may also fail if
 you are not running under Linux or Unix.  In all of these cases, the
-script should fail "gracefully" simply saying the demo is being
-skipped.  However if the script "crashes", simply run the other demos
+script should fail gracefully simply saying the demo is being
+skipped.  However if the script crashes, simply run the other demos
 individually (and perhaps send an email to bioperl-l@bioperl.org
 detailing the problem :-).
 
@@ -2693,7 +2789,7 @@ detailing the problem :-).
 # PURPOSE  : Demonstrate various uses of the bioperl package
 # AUTHOR   : Peter Schattner schattner@alum.mit.edu
 # CREATED  : Dec 15 2000
-# REVISION : $Id: bptutorial.pl,v 1.83.2.2 2003/09/08 12:16:18 heikki Exp $
+# REVISION : $Id: bptutorial.pl,v 1.133 2003/12/16 02:57:24 bosborne Exp $
 
 use strict;
 use Bio::SimpleAlign;
@@ -2816,7 +2912,7 @@ $access_remote_db = sub {
     };
 
 if ($@ || !$seq1) {
-    warn "Warning: Couldn't connect to Genbank with Bio::DB::GenBank.pm!\nProbably no network access.\n Skipping method 'access_remote_db'.\n";
+    warn "Warning: Couldn't connect to Genbank with Bio::DB::GenBank.pm!\nProbably no network access.\nSkipping method 'access_remote_db'.\n";
     return 0;
 }
     $seq1_id =  $seq1->display_id();
@@ -2847,7 +2943,7 @@ $index_local_db = sub {
 
 
     # III.2.2 Indexing and accessing local databases
-    # (Bio::Index::*,  bpindex.pl,  bpfetch.pl)
+    # (Bio::Index::*,  bp_index.pl,  bp_fetch.pl)
 
     # first create the index
     $Index_File_Name = 'bptutorial.indx';
@@ -2855,8 +2951,6 @@ $index_local_db = sub {
     eval { use Cwd; $dir = cwd; };
     # CWD not installed, revert to unix behavior, best we can do
     if( $@) { $dir = `pwd`;}
-
-
     $inx1 = Bio::Index::Fasta->new
         ('-FILENAME' => "$dir/$Index_File_Name",
          '-write_flag' => 1);
@@ -2901,7 +2995,7 @@ $fetch_local_db = sub {
       print STDERR "Perhaps you didn't run the index_local_db demo? \n";
       print STDERR "Skipping fetch_local_db example.\n\n";
       return 0;
-    }      
+    }
 
     $indexhash = $inx2->db();
     $keyfound = "";
@@ -2931,8 +3025,6 @@ $sequence_manipulations = sub {
     $infile = $dna_seq_file;
 
     print $outputfh "\nBeginning sequence_manipulations and SeqIO example... \n";
-
-
     # III.3.1 Transforming sequence files (SeqIO)
 
     $in  = Bio::SeqIO->new('-file' => $infile ,
@@ -2995,8 +3087,8 @@ $sequence_manipulations = sub {
 
     print $outputfh "\nBeginning 3-frame and alternate codon translation example... \n";
 
-    my $seq = new Bio::PrimarySeq('-SEQ' => $c,
-                                  '-ID' => 'no.One');
+    my $seq = new Bio::PrimarySeq(-seq => $c,
+                                  -id => 'no.One');
     print $outputfh "$c translated using method defaults   : ",
     $seq->translate->seq, "\n";
 
@@ -3039,9 +3131,9 @@ $seqstats_and_seqwords = sub {
     my ($seqobj, $weight, $monomer_ref, $codon_ref,
         $seq_stats, $words, $hash);
     $seqobj = Bio::Seq->new
-        ('-seq'=>'ACTGTGGCGTCAACTGACTGTGGCGTCAACTGACTGTGGGCGTCAACTGACTGTGGCGTCAACTG',
-         '-alphabet'=>'dna',
-         '-id'=>'test');
+        (-seq =>'ACTGTGGCGTCAACTGACTGTGGCGTCAACTGACTGTGGGCGTCAACTGACTGTGGCGTCAACTG',
+         -alphabet =>'dna',
+         -id =>'test');
 
 
     # III.4.1 Obtaining basic sequence statistics- MW,
@@ -3072,46 +3164,50 @@ $seqstats_and_seqwords = sub {
 #
 
 $restriction_and_sigcleave = sub {
+    require Bio::Restriction::EnzymeCollection;
+    require Bio::Restriction::Analysis;
+    require Bio::Tools::Sigcleave;
 
-    use Bio::Tools::RestrictionEnzyme;
-    use Bio::Tools::Sigcleave;
-
-    my ($re, $re1, $re2, @sixcutters, @fragments1,
-        @fragments2, $seqobj, $dna);
+    my ($re1, $re2, $allcutters, $rarecutters, @fragments1,
+        @fragments2, $analysis, $seqobj, $dna);
     print $outputfh "\nBeginning restriction enzyme example... \n";
 
-    # III.4.4 Identifying restriction enzyme sites (RestrictionEnzyme)
+    # III.4.4 Identifying restriction enzyme sites (Bio::Restriction)
 
     $dna = 'CCTCCGGGGACTGCCGTGCCGGGCGGGAATTCGCCATGGCGACCCTGGAAAAGCTGATATCGAAGGCCTTCGA';
 
     # Build sequence and restriction enzyme objects.
-    $seqobj = new Bio::Seq('-ID'  => 'test_seq',
-                           '-SEQ' =>$dna);
+    $seqobj = new Bio::Seq(-id  => 'test_seq',
+                           -seq => $dna);
 
-    #$re  = new Bio::Tools::RestrictionEnzyme();
-    $re  = new Bio::Tools::RestrictionEnzyme('-name'=>'EcoRI');
-    @sixcutters = $re->available_list(6);
+    # a numer of methods exist to create custom enzyme lists
+    $allcutters  = new Bio::Restriction::EnzymeCollection;
+    $rarecutters = $allcutters->cutters(-start => 6, -end => 8);
 
-    print $outputfh "The following 6-cutters are available\n";
-    print $outputfh join(" ",@sixcutters),"\n";
+    # this analysis object knows only of rare cutters
+    $analysis = Bio::Restriction::Analysis->new(-seq => $seqobj,
+                                                -enzymes => $rarecutters);
+    my @rarecutters = $rarecutters->available_list;
 
-    $re1  = new Bio::Tools::RestrictionEnzyme('-name'=>'EcoRI');
-    @fragments1 =  $re1->cut_seq($seqobj);
-    #$seqobj is the Seq object for the dna to be cut
+    print $outputfh "The following ".  scalar @rarecutters.
+        " rarely cutting enzymes are available\n";
+    print $outputfh join(" ",@rarecutters),"\n";
+
+    $re1 = 'EcoRI';
+    @fragments1 = $analysis->fragments($re1);
+    # $re1 is the enzyme cutting the DNA in $seqobj
 
     print $outputfh "\nThe sequence of " . $seqobj->display_id . " is " .
     $seqobj->seq . "\n";
     print $outputfh "When cutting " . $seqobj->display_id() . " with " .
-    $re1->seq->id . " the initial fragment is\n" . $fragments1[0];
+    $re1 . " the initial fragment out of ". scalar @fragments1. " is\n" . $fragments1[0];
 
-    $re2 = new Bio::Tools::RestrictionEnzyme
-        ('-NAME' =>'EcoRV--GAT^ATC',
-         '-MAKE' =>'custom');
-    @fragments2 =  $re2->cut_seq($seqobj);
+    $re2 = 'EcoRV';
+    @fragments2 = $analysis->fragments($re2);
 
     print $outputfh "\nWhen cutting ", $seqobj->display_id(),
-    " with ", $re2->seq->id;
-    print $outputfh " the second fragment is\n", $fragments2[1], " \n";
+    " with ", $re2;
+    print $outputfh " the second fragment out of ". scalar @fragments2. " is\n", $fragments2[1], " \n";
 
     # III.4.7 Identifying amino acid cleavage sites (Sigcleave)
 
@@ -3159,7 +3255,6 @@ $run_standaloneblast = sub {
       return 0;
     }
     print $outputfh "\nBeginning run_standaloneblast example... \n";
-
     my (@params, $factory, $input, $blast_report, $blast_present,
         $database, $sbjct, $str, $seq1);
 
@@ -3171,7 +3266,7 @@ $run_standaloneblast = sub {
     $factory = Bio::Tools::Run::StandAloneBlast->new(@params);
 
     unless ($factory->executable('blastall')) {
-        warn "blast program not found. Skipping StandAloneBlast example\n";
+        warn "blastall program not found. Skipping StandAloneBlast example\n";
         return 0;
     }
 
@@ -3217,7 +3312,7 @@ $run_remoteblast = sub {
 	  $r = $remote_blast_object->submit_blast( $blast_file);
       };
       if (($r < 0) || $@)  {
-	  warn "\n\n**Warning**: Couldn't connect to NCBI with Bio::Tools::Run::StandAloneBlast.pm!\nProbably no network access.\n Skipping Test\n";
+	  warn "\n\n**Warning**: Couldn't connect to NCBI with Bio::Tools::Run::StandAloneBlast.pm!\nProbably no network access.\nSkipping Test\n";
 	  return 0;
       }
       print $outputfh "submitted Blast job\n";
@@ -3252,19 +3347,15 @@ $run_remoteblast = sub {
 #  searchio_parsing ():
 #
 
-
-
 $searchio_parsing = sub {
 
 my ($searchio, $result,$hit,$hsp);
-
 
 use lib '.';
 use Bio::SearchIO;
 use Bio::Root::IO;
 
 print $outputfh "\nBeginning searchio-parser example... \n";
-
 $searchio = new Bio::SearchIO ('-format' => 'blast',
   '-file' => Bio::Root::IO->catfile('t','data','ecolitst.bls'));
 
@@ -3275,7 +3366,6 @@ print $outputfh "Algorithm is ", $result->algorithm , "\n";
 print $outputfh "Query length used is ", $result->query_length , "\n";
 print $outputfh "Kappa value is ", $result->get_statistic('kappa') , "\n";
 print $outputfh "Name of matrix used is ", $result->get_parameter('matrix') , "\n";
-
 
 $hit = $result->next_hit;
 print $outputfh "First hit name is ", $hit->name , "\n";
@@ -3304,10 +3394,8 @@ $bplite_parsing = sub {
         $matches, $loop);
 
     print $outputfh "\nBeginning bplite, bppsilite, bpbl2seq parsing example... \n";
-
     ($file1, $file2, $file3) = ($bp_parse_file1,
                                 $bp_parse_file2 ,$bp_parse_file3 );
-    #open FH, "t/data/blast.report";
     $report = Bio::Tools::BPlite->new('-file'=>$file1);
     $sbjct = $report->nextSbjct;
 
@@ -3349,7 +3437,6 @@ $hmmer_parsing = sub {
 
     print $outputfh "\nBeginning hmmer_parsing example \n" .
           " (note: this test may be a little slow, please be patient...) \n";
-
     # Parsing HMM reports
     use Bio::SearchIO;
 
@@ -3381,7 +3468,6 @@ $run_clustalw_tcoffee = sub {
 
     # Aligning multiple sequences (Clustalw.pm, TCoffee.pm)
     print $outputfh "\nBeginning run_clustalw example... \n";
-
     eval {require Bio::Tools::Run::Alignment::Clustalw; };
     if ( $@ ) { 
 	print STDERR "Cannot find Bio::Tools::Run::Alignment::Clustalw\n";
@@ -3398,7 +3484,7 @@ $run_clustalw_tcoffee = sub {
 	# where @seq_array is an array of Bio::Seq objects
 	@params = ('ktuple' => 2, 'matrix' => 'BLOSUM', 'quiet' => 1);
 	$factory = Bio::Tools::Run::Alignment::Clustalw->new(@params);
-	unless( $factory->executable ) {
+	unless( !$factory->executable ) {
 	    $ktuple = 3;
 	    $factory->ktuple($ktuple);  # change the parameter before executing
 	    $aln = $factory->align($seq_array_ref);
@@ -3422,7 +3508,7 @@ $run_clustalw_tcoffee = sub {
     }
     @params = ('ktuple' => 2, 'matrix' => 'BLOSUM', 'quiet' => 1);
     $factory = Bio::Tools::Run::Alignment::TCoffee->new(@params);
-    unless( $factory->executable ) {
+    unless( !$factory->executable ) {
 	$ktuple = 3;
         $factory->ktuple($ktuple);  # change the parameter before executing
         $aln = $factory->align($seq_array_ref);
@@ -3447,7 +3533,6 @@ $simplealign = sub {
     my ( $str, $resSlice1, $resSlice2, $resSlice3, $tmpfile);
 
     print $outputfh "\nBeginning simplealign and alignio example... \n";
-
     # III.3.2 Transforming alignment files (AlignIO)
     $infile = $aligned_amino_file;
     #$tmpfile = "test.tmp";
@@ -3509,8 +3594,7 @@ $run_psw_bl2seq = sub {
 	# Aligning 2 sequences with Smith-Waterman (pSW)
 
 	# Get protein sequences from file
-
-	$str = Bio::SeqIO->new('-file'=>Bio::Root::IO->catfile("t","data","amino.fa") ,
+        $str = Bio::SeqIO->new('-file'=>Bio::Root::IO->catfile("t","data","amino.fa") ,
 			       '-format' => 'Fasta', );
 	$seq1 = $str->next_seq();
 	$seq2 = $str->next_seq();
@@ -3549,7 +3633,6 @@ $run_psw_bl2seq = sub {
         warn "\n Blast program not found. Skipping bl2seq example\n\n";
         return 0;
     }
-
     $factory->bl2seq($seq1, $seq2);
 
     # Use AlignIO.pm to create a SimpleAlign object from the bl2seq report
@@ -3576,7 +3659,6 @@ $gene_prediction_parsing = sub {
     use Bio::Tools::Genscan;
 
     print $outputfh "\nBeginning genscan_result_parsing example... \n";
-
     my ($genscan, $gene, @exon_arr, $first_exon);
 
     # III.7 Searching for genes and other structures
@@ -3623,7 +3705,7 @@ $sequence_annotation = sub {
     print $outputfh "\nBeginning sequence_annotation example... \n";
     my ($feat, $feature1, $feature2,$seqobj, @topfeatures, @allfeatures,
         $ann, $in, $infile, $other, $answer);
-    # III.9.1 Representing sequence annotations (SeqFeature)
+    # III.7.1 Representing sequence annotations (SeqFeature)
 
     $infile = $amino_seq_file;
 
@@ -3698,8 +3780,7 @@ $sequence_annotation = sub {
 $largeseqs = sub {
 
     print $outputfh "\nBeginning largeseqs example... \n";
-
-    # III.7.2 Representing and large sequences
+    # III.7.3 Representing large sequences
     my ( $tmpfile, $seqio, $pseq, $plength, $last_4);
 
 
@@ -3726,12 +3807,11 @@ $largeseqs = sub {
 #
 
 $liveseqs = sub {
-    
+
     use Bio::LiveSeq::IO::BioPerl;
     my ($loader, $gene, $id, $maxstart);
 
     print $outputfh "\nBeginning liveseqs example... \n";
-
     # Representing changing sequences (LiveSeq)
 
     $loader=Bio::LiveSeq::IO::BioPerl->load('-db'=>"EMBL",
@@ -3761,7 +3841,6 @@ $run_struct = sub {
     return 0;
   } else {
     print $outputfh "\nBeginning Structure object example... \n";
-
     # testing PDB format
     my $pdb_file = Bio::Root::IO->catfile("t","data","pdb1bpt.ent"); 
     my $structio = Bio::Structure::IO->new(-file  => $pdb_file,
@@ -3789,9 +3868,7 @@ $run_map = sub {
 use Bio::MapIO;
 use Bio::Root::IO;
 
- print $outputfh "\nBeginning MapIO example... \n";
-
-
+print $outputfh "\nBeginning MapIO example... \n";
 my $mapio = new Bio::MapIO(
 			    '-format' => 'mapmaker',
 			    '-file'   => Bio::Root::IO->catfile('t','data', 
@@ -3823,7 +3900,6 @@ use Bio::Root::IO;
 
 print $outputfh "\nBeginning phylogenetic tree example... \n";
 
-
 my $treeio = new Bio::TreeIO( -format => 'newick',
 			    -file   => Bio::Root::IO->catfile('t','data', 
 							       'cysprot1b.newick'));
@@ -3851,16 +3927,15 @@ my @nodes = $tree->get_nodes;
 #
 
 $run_perl = sub {
-
     use Bio::Perl qw( read_sequence 
 		      read_all_sequences 
 		      write_sequence 
 		      new_sequence 
 		      get_sequence );
-    
+
     print $outputfh "\nBeginning example of sequence manipulation without explicit Seq objects... \n";
-    
-# getting a sequence from a database (assummes internet connection)
+
+    # getting a sequence from a database (assummes internet connection)
  
     my $seq_object;
     eval { 
@@ -3872,13 +3947,12 @@ $run_perl = sub {
 
     # sequences are Bio::Seq objects, so the following methods work
     # (for more info see Bio::Seq documentation - try perldoc Bio::Seq)
-    
+
     print $outputfh "Name of sequence retrieved from swissprot is ",$seq_object->display_id,"\n";
     print $outputfh "Sequence acc  is ",$seq_object->accession_number,"\n";
     print $outputfh "First 5 residues are ",$seq_object->subseq(1,5),"\n";
-    
+
   # getting sequence data from disk
-    
     $seq_object = read_sequence($amino_seq_file,'fasta'); 
     print $outputfh "Name of sequence retrieved from disk is ",$seq_object->display_id,"\n";
    return 1;
@@ -3893,7 +3967,7 @@ $demo_variations = sub {
 
     print $outputfh "\nBeginning demo_variations example... \n";
 
-    # III.8.3 Representing related sequences
+    # III.7.5 Representing related sequences
     # - mutations, polymorphisms etc (Allele, SeqDiff,)
 
     use Bio::Variation::SeqDiff;
@@ -3950,7 +4024,6 @@ $demo_xml = sub {
 
     eval { 
 	require XML::Parser;
-	
 	$str = Bio::SeqIO->new('-file'=>
 			       Bio::Root::IO->catfile("t","data","test.game"),
 			       '-format' => 'game'); };
@@ -4004,7 +4077,7 @@ $other_seq_utilities = sub {
     print $outputfh "\nBeginning sequence utilities example... \n";
 
     # III.4.6 Identifying amino acid characteristics
-    # - eg charge, hydrophobicity (OddCodes)
+    # - e.g. charge, hydrophobicity (OddCodes)
     $infile = $amino_seq_file;
     $in  = Bio::SeqIO->new('-file' => $infile ,
                            '-format' => 'Fasta');
@@ -4101,7 +4174,9 @@ $bpinspect1 = sub {
 #    ($object_class = $object) =~ s/::/\//g;  # replace "::" with "/"
 #    $object_class = $object_class . ".pm";
     $object_class = $object . ".pm";
-    eval "require $object_class"; # eval causes replacement of "::" with "/" or "\"
+    eval { require $object_class;};
+    # eval causes replacement of "::" with "/" or "\"
+
     my $method_hash = $object->methods('all');
 
     print $outputfh " \n ***Methods for Object $object ********  \n";
@@ -4159,6 +4234,13 @@ $bpinspect1 = sub {
     if( defined $ARGV[0] && $ARGV[0] == -1 ) {
 	open(OUT, ">bptutorial.out") || die("cannot open outputfile: $!");
 	$outputfh = *OUT;
+    }
+    foreach my $num (@ARGV) {
+       if ( !(-d "t/data") && 
+	       grep /^$num$/,(23,4,1,14,12,13,6,7,8,9,24,25,10,5,15,16,17,20,21) ) {
+	  print $outputfh "Example $num uses files in t/data\nDirectory t/data not found\n";
+	  exit;
+       }
     }
     &run_examples(@ARGV);
 

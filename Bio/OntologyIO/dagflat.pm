@@ -1,4 +1,4 @@
-# $Id: dagflat.pm,v 1.2.2.6 2003/06/30 05:04:06 lapp Exp $
+# $Id: dagflat.pm,v 1.17 2003/11/20 06:34:11 allenday Exp $
 #
 # BioPerl module for Bio::OntologyIO::dagflat
 #
@@ -221,7 +221,7 @@ sub ontology_name{
 
 sub parse {
     my $self = shift;
-    
+
     # setup the default term factory if not done by anyone yet
     $self->term_factory(Bio::Ontology::TermFactory->new(
 					     -type => "Bio::Ontology::Term"))
@@ -312,6 +312,33 @@ sub defs_file {
     return $self->{ "_defs_file_name" };
 } # defs_file
 
+=head2 close
+
+ Title   : close
+ Usage   :
+ Function: Closes this ontology stream and associated file handles.
+
+           Clients should call this method especially when they write
+           ontologies.
+
+           We need to override this here in order to close the file
+           handle for the term definitions file.
+
+ Example :
+ Returns : none
+ Args    : none
+
+
+=cut
+
+sub close{
+    my $self = shift;
+
+    # first call the inherited implementation
+    $self->SUPER::close();
+    # then close the defs file io (if there is one)
+    $self->_defs_io->close() if $self->_defs_io();
+}
 
 =head2 _flat_files
 
@@ -320,7 +347,7 @@ sub defs_file {
  Function: Get the array of ontology flat files that need to be parsed.
 
            Note that this array will decrease in elements over the
-           parsing process. Therefore, it's value outside of this
+           parsing process. Therefore, it\'s value outside of this
            module will be limited. Also, be careful not to alter the
            array unless you know what you are doing.
 
@@ -376,7 +403,6 @@ sub _add_ontology {
 # This simply delegates. See SimpleGOEngine.
 sub _add_term {
     my ( $self, $term, $ont ) = @_;
-
     $term->ontology($ont) if $ont && (! $term->ontology);
     $self->_ont_engine()->add_term( $term );
 } # _add_term 
@@ -424,118 +450,134 @@ sub _has_term {
 
 # This parses the relationships files
 sub _parse_flat_file {
-    my $self = shift;
-    my $ont  = shift;
+  my $self = shift;
+  my $ont  = shift;
     
-    my @stack       = ();
-    my $prev_spaces = -1;
-    my $prev_term   = "";
+  my @stack       = ();
+  my $prev_spaces = -1;
+  my $prev_term   = "";
     
-    while( my $line = $self->_readline() ) {
+  while ( my $line = $self->_readline() ) {
         
-        if ( $line =~ /^!/ ) {
-            next;
-        }
+	if ( $line =~ /^!/ ) {
+	  next;
+	}
         
-        my $current_term   = $self->_get_first_termid( $line );
-        my @isa_parents    = $self->_get_isa_termids( $line );
-        my @partof_parents = $self->_get_partof_termids( $line );
-        my @syns           = $self->_get_synonyms( $line );
-        my @sec_go_ids     = $self->_get_secondary_termids( $line );
-        my @cross_refs     = $self->_get_db_cross_refs( $line );
+	my $current_term   = $self->_get_first_termid( $line );
+	my @isa_parents    = $self->_get_isa_termids( $line );
+	my @partof_parents = $self->_get_partof_termids( $line );
+	my @syns           = $self->_get_synonyms( $line );
+	my @sec_go_ids     = $self->_get_secondary_termids( $line );
+	my @cross_refs     = $self->_get_db_cross_refs( $line );
         
         
-        if ( ! $self->_has_term( $current_term ) ) {
-            my $term =$self->_create_ont_entry($self->_get_name($line,
-								$current_term),
-					       $current_term );
-            $self->_add_term( $term, $ont );
-        }
+	if ( ! $self->_has_term( $current_term ) ) {
+	  my $term =$self->_create_ont_entry($self->_get_name($line,
+														  $current_term),
+										 $current_term );
+	  $self->_add_term( $term, $ont );
+	}
         
-        my $current_term_object = $self->_ont_engine()->get_terms( $current_term );
+	my $current_term_object = $self->_ont_engine()->get_terms( $current_term );
         
-        $current_term_object->add_dblink( @cross_refs );
-        $current_term_object->add_secondary_id( @sec_go_ids );
-        $current_term_object->add_synonym( @syns );
-        unless ( $line =~ /^\$/ ) {
-            $current_term_object->ontology( $ont );
-        }
-        foreach my $parent ( @isa_parents ) {
-            if ( ! $self->_has_term( $parent ) ) {
-                my $term = $self->_create_ont_entry($self->_get_name($line,
-								     $parent),
-						    $parent );
-                $self->_add_term( $term, $ont );
-            }
+	$current_term_object->add_dblink( @cross_refs );
+	$current_term_object->add_secondary_id( @sec_go_ids );
+	$current_term_object->add_synonym( @syns );
+	unless ( $line =~ /^\$/ ) {
+	  $current_term_object->ontology( $ont );
+	}
+	foreach my $parent ( @isa_parents ) {
+	  if ( ! $self->_has_term( $parent ) ) {
+		my $term = $self->_create_ont_entry($self->_get_name($line,
+															 $parent),
+											$parent );
+		$self->_add_term( $term, $ont );
+	  }
             
-            $self->_add_relationship( $parent,
-                                      $current_term,
-                                      $self->_is_a_relationship(),
-				      $ont);
+	  $self->_add_relationship( $parent,
+								$current_term,
+								$self->_is_a_relationship(),
+								$ont);
              
-        }
-        foreach my $parent ( @partof_parents ) {
-            if ( ! $self->_has_term( $parent ) ) {
-                my $term = $self->_create_ont_entry($self->_get_name($line,
-								     $parent),
-						    $parent );
-                $self->_add_term( $term, $ont );
-            }
+	}
+	foreach my $parent ( @partof_parents ) {
+	  if ( ! $self->_has_term( $parent ) ) {
+		my $term = $self->_create_ont_entry($self->_get_name($line,
+															 $parent),
+											$parent );
+		$self->_add_term( $term, $ont );
+	  }
            
-            $self->_add_relationship( $parent,
-                                      $current_term,
-                                      $self->_part_of_relationship(),
-				      $ont);
-        }
+	  $self->_add_relationship( $parent,
+								$current_term,
+								$self->_part_of_relationship(),
+								$ont);
+	}
         
-        my $current_spaces = $self->_count_spaces( $line );
+	my $current_spaces = $self->_count_spaces( $line );
         
-        if ( $current_spaces != $prev_spaces  ) {
+	if ( $current_spaces != $prev_spaces  ) {
        
-            if ( $current_spaces == $prev_spaces + 1 ) {
-                push( @stack, $prev_term ); 
-            }
-            elsif ( $current_spaces < $prev_spaces ) {
-                my $n = $prev_spaces -  $current_spaces;
-                for ( my $i = 0; $i < $n; ++$i ) {
-                    pop( @stack );
-                }
-            }
-            else {
+	  if ( $current_spaces == $prev_spaces + 1 ) {
+		push( @stack, $prev_term ); 
+	  } elsif ( $current_spaces < $prev_spaces ) {
+		my $n = $prev_spaces -  $current_spaces;
+		for ( my $i = 0; $i < $n; ++$i ) {
+		  pop( @stack );
+		}
+	  } else {
 		$self->throw( "format error (file ".$self->file.")" );
-            } 
-        }
-        
-        my $parent = $stack[ @stack - 1 ];
-        
-        # add a relationship if the line isn't the one with the root term
+	  } 
+	}
+
+	my $parent = $stack[ @stack - 1 ];
+
+	# add a relationship if the line isn\'t the one with the root term
 	# of the ontology (which is also the name of the ontology)
-        if ( index($line,'$') != 0 ) {
-	    if ( $line !~ /^\s*[<%]/ ) {
+	if ( index($line,'$') != 0 ) {
+	  #adding @reltype@ syntax
+	  if ( $line !~ /^\s*([<%]|\@\w+?\@)/ ) {
 		$self->throw( "format error (file ".$self->file.")" );
-	    }
-	    my $reltype = ($line =~ /^\s*</) ?
-		$self->_part_of_relationship() :
-		$self->_is_a_relationship();
-            $self->_add_relationship( $parent, $current_term, $reltype,
-				      $ont);
-        }
-        
-        $prev_spaces = $current_spaces;
-        
-        $prev_term = $current_term;
-        
-    } 
-    return $ont;
-} # _parse_relationships_file
+	  }
+
+	  my($relstring) = $line =~ /^\s*([<%]|\@[^\@]+?\@)/;
+
+	  my $reltype;
+
+	  if ($relstring eq '<') {
+		$reltype = $self->_part_of_relationship;
+	  } elsif ($relstring eq '%') {
+		$reltype = $self->_is_a_relationship;
+	  } else {
+		$relstring =~ s/\@//g;
+		if ($self->_ont_engine->get_relationship_type($relstring)) {
+          $reltype = $self->_ont_engine->get_relationship_type($relstring);
+		} else {
+		  $self->_ont_engine->add_relationship_type($relstring, $ont);
+		  $reltype = $self->_ont_engine->get_relationship_type($relstring);
+		}
+	  }
+
+	  #my $reltype = ($line =~ /^\s*</) ?
+	  #$self->_part_of_relationship() :
+	  #$self->_is_a_relationship();
+	  $self->_add_relationship( $parent, $current_term, $reltype, $ont);
+	}
+
+	$prev_spaces = $current_spaces;
+	$prev_term = $current_term;
+  }
+  return $ont;
+}								# _parse_relationships_file
 
 
 
 # Parses the 1st term id number out of line.
 sub _get_first_termid {
     my ( $self, $line ) = @_;
-    
-    if ( $line =~ /;\s*([A-Z]{1,8}:\d{3,})/ ) {
+#    if ( $line =~ /;\s*([A-Z_]{1,8}:\d{3,})/ ) {
+#    if ( $line =~ /;\s*(\w+:\w+)/ ) {
+    if ( $line =~ /;\s*(\w+:\w+)/ ) {
         return $1;
     }
     else {
@@ -555,6 +597,7 @@ sub _get_name {
 	# remove trailing and leading whitespace
         $name =~ s/\s+$//;
         $name =~ s/^\s+//;
+		$name =~ s/\@.+?\@//;
 	# remove leading dollar character; also we default the name of the
 	# ontology to this name if preset to something else
 	if(index($name,'$') == 0) {
@@ -602,7 +645,10 @@ sub _get_db_cross_refs {
         }
         $ref =~ s/\s+$//;
         $ref =~ s/^\s+//;
-        push( @refs, $ref );
+
+        $ref = $self->unescape( $ref );
+
+        push( @refs, $ref ) if defined $ref;
     }
     return @refs;
     
@@ -614,7 +660,8 @@ sub _get_secondary_termids {
     my ( $self, $line ) = @_;
     my @secs = ();
    
-    while ( $line =~ /,\s*([A-Z]{1,8}:\d{3,})/g ) {
+#    while ( $line =~ /,\s*([A-Z]{1,8}:\d{3,})/g ) {
+    while ( $line =~ /,\s*(\w+:\w+)/g ) {
         my $sec = $1;
         push( @secs, $sec );
     }
@@ -629,10 +676,13 @@ sub _get_isa_termids {
     my ( $self, $line ) = @_;
     
     my @ids = ();
-    
-    $line =~ s/[A-Z]{1,8}:\d{3,}//;
-    
-    while ( $line =~ /%[^<^,]*?([A-Z]{1,8}:\d{3,})/g ) {
+
+#    $line =~ s/[A-Z]{1,8}:\d{3,}//;
+    $line =~ s/\w+:\w+//;
+
+#    while ( $line =~ /%[^<^,]*?([A-Z]{1,8}:\d{3,})/g ) {
+    while ( $line =~ /%[^<^,]*?(\w+:\w+)/g ) {
+	  next if $1 =~ /^synonym/;
         push( @ids, $1 );
     }
     return @ids; 
@@ -648,7 +698,9 @@ sub _get_partof_termids {
     
     $line =~ s/[A-Z]{1,8}:\d{3,}//;
     
-    while ( $line =~ /<[^%^,]*?([A-Z]{1,8}:\d{3,})/g ) {
+#    while ( $line =~ /<[^%^,]*?([A-Z]{1,8}:\d{3,})/g ) {
+    while ( $line =~ /<[^%^,]*?(\w+:\w+)/g ) {
+	  next if $1 =~ /^synonym/;
         push( @ids, $1 );
     }
     return @ids; 
@@ -706,14 +758,14 @@ sub _next_term {
             $termid = $1;
         }
         elsif ( $line =~ /^\s*definition:\s*(.+)/ ) {
-            $def = $1;   
+            $def = $self->unescape($1);   
 	    $isobsolete = 1 if index($def,"OBSOLETE") == 0;
         }
         elsif ( $line =~ /^\s*definition_reference:\s*(.+)/ ) {
-            push( @def_refs, $1 );  
+            push( @def_refs, $self->unescape($1) );  
         }
         elsif ( $line =~ /^\s*comment:\s*(.+)/ ) {
-            $comment = $1;  
+            $comment = $self->unescape($1);  
         }
     }
     $self->_done( TRUE ) unless $line; # we'll come back until done

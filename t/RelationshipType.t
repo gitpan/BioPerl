@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: RelationshipType.t,v 1.1.2.2 2003/05/27 22:00:52 lapp Exp $
+## $Id: RelationshipType.t,v 1.3 2003/05/27 22:13:41 lapp Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'

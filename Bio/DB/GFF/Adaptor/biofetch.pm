@@ -1,5 +1,5 @@
 package Bio::DB::GFF::Adaptor::biofetch;
-
+#$Id: biofetch.pm,v 1.17 2003/12/17 21:46:25 scain Exp $
 =head1 NAME
 
 Bio::DB::GFF::Adaptor::biofetch -- Cache BioFetch objects in a Bio::DB::GFF database
@@ -33,6 +33,9 @@ use Bio::DB::BioFetch;
 use Bio::SeqIO;
 
 use vars qw(@ISA %preferred_tags);
+
+# THIS IS WRONG: biofetch should delegate to an underlying
+# database adaptor, and not inherit from one.
 @ISA = qw(Bio::DB::GFF::Adaptor::dbi::mysql);
 
 # priority for choosing names of CDS tags, higher is higher priority
@@ -52,7 +55,14 @@ use vars qw(@ISA %preferred_tags);
  Usage   : $db = Bio::DB::GFF->new(-adaptor=>'biofetch',@args)
  Function: create a new adaptor
  Returns : a Bio::DB::GFF object
- Args    : see below
+ Args    :   -adaptor : required.  Which adaptor to use; biofetch for mysql, biofetch_oracle for Oracle
+             -preferred_tags : optional.  A hash of {classname => weight,...}
+                               used to determine the class and name of the feature
+                               when a choice of possible feature classes is available
+                               (e.g. a feature has both a 'gene' and a 'locus' tag).
+                               Common defaults are provided that work well for eukaryotic
+                               features (but not well for viral/prokaryotic)
+              see below for additional arguments.
  Status  : Public
 
 This is the constructor for the adaptor.  It is called automatically
@@ -70,6 +80,8 @@ all adaptors, the following class-specific arguments are recgonized:
 
   -proxy         [['http','ftp'],'http://proxy:8080']
 
+  -source        source to use for loaded features ('EMBL')
+
 -dsn,-user and -pass indicate the local database to cache results in,
 and as are per Bio::DB::GFF::Adaptor::dbi.  The -proxy argument allows
 you to set the biofetch web proxy, and uses the same syntax described
@@ -81,7 +93,12 @@ argument must be passed as an array reference.
 sub new {
   my $class = shift;
   my $self  = $class->SUPER::new(@_);
-  my ($proxy) = rearrange(['PROXY'],@_);
+  my ($preferred,$proxy,$source) = rearrange(['PREFERRED_TAGS','PROXY','SOURCE'],@_);
+
+  # if the caller sent their own preferences, then use these, otherwise use defaults.
+  $self->_preferred_tags($preferred ? $preferred : \%preferred_tags);
+  $self->_source($source || 'EMBL');
+
   if ($proxy) {
     my @args = ref($proxy) ? @$proxy : eval $proxy;
     $self->{_proxy} = \@args if @args;
@@ -114,7 +131,7 @@ sub segment {
 sub refclass {
   my $self = shift;
   my $refname = shift;
-  'Accession';
+  'Sequence';
 }
 
 sub load_from_embl {
@@ -155,6 +172,7 @@ sub _load_embl {
   my $seq  = shift;
   my $refclass = $self->refclass;
   my $locus    = $seq->id;
+  my $source   = $self->_source;
 
   # begin loading
   $self->setup_load();
@@ -169,8 +187,9 @@ sub _load_embl {
 		       {
 			ref    => $acc,
 			class  => $refclass,
-			source => 'EMBL',
-			method => 'origin',
+			source => $source,
+#			method => 'origin',
+			method => 'region',
 			start  => 1,
 			stop   => $seq->length,
 			score  => undef,
@@ -184,6 +203,7 @@ sub _load_embl {
 		       }
 		      );
   # now load each feature in turn
+  my ($transcript_version,$mRNA_version) = (0,0);
   for my $feat ($seq->all_SeqFeatures) {
     my $attributes = $self->get_attributes($feat);
     my $name       = $self->guess_name($attributes);
@@ -192,41 +212,88 @@ sub _load_embl {
     my @segments = map {[$_->start,$_->end,$_->seq_id]}
       $location->can('sub_Location') ? $location->sub_Location : $location;
 
-    my $type     =  $feat->primary_tag eq 'CDS' ? 'mRNA'  : $feat->primary_tag;
-    my $parttype =  $feat->primary_tag eq 'gene' ? 'exon' : $feat->primary_tag;
+# this changed CDS to coding, but that is the wrong thing to do, since
+# CDS is in SOFA and coding is not
+#    my $type     =   $feat->primary_tag eq 'CDS'   ? 'coding'
+#                   : $feat->primary_tag;
+    my $type=  $feat->primary_tag;
+    next if (lc($type) eq 'contig');
+#    next if (lc($type) eq 'variation');
 
-    if ($feat->primary_tag =~ /^(gene|CDS)$/) {
-      $self->load_gff_line( {
-			     ref    => $acc,
-			     class  => $refclass,
-			     source => 'EMBL',
-			     method => $type,
-			     start  => $location->start,
-			     stop   => $location->end,
-			     score  => $feat->score || undef,
-			     strand => $feat->strand > 0 ? '+' : ($feat->strand < 0 ? '-' : '.'),
-			     phase  => $feat->frame || '.',
-			     gclass => $name->[0],
-			     gname  => $name->[1],
-			     tstart => undef,
-			     tstop  => undef,
-			     attributes  => $attributes,
-			    }
-			  );
-      @$attributes = ();
+    if (lc($type) eq 'variation' and $feat->length == 1) {
+      $type = 'SNP';
+    } elsif (lc($type) eq 'variation' ) {
+      $type = 'chromosome_variation';
     }
 
+    if ($type  eq 'source') {
+      $type = 'region';
+    }
+
+    if ($type =~ /misc.*RNA/i) {
+      $type = 'RNA';
+    }
+
+    if ($type eq 'misc_feature' and $name->[1] =~ /similar/i) {
+      $type = 'computed_feature_by_similarity';
+    } elsif ($type eq 'misc_feature') {
+      warn "skipping a misc_feature\n";
+      next;
+    }
+
+    my $parttype =  $feat->primary_tag eq 'mRNA'   ? 'exon' : $feat->primary_tag;
+
+    if ($type eq 'gene') {
+      $transcript_version = 0;
+      $mRNA_version       = 0;
+    } elsif ($type eq 'mRNA') {
+      $name->[1] = sprintf("%s.t%02d",$name->[1],++$transcript_version);
+    } elsif ($type eq 'CDS') {
+      $name->[0] = 'mRNA';
+      $name->[1] = sprintf("%s.t%02d",$name->[1],$transcript_version);
+    }
+
+    my $strand = $feat->strand;
+    my $str    = defined $strand ?
+                                     ($strand > 0 ? '+' : '-')
+				   : '.';
+    $self->load_gff_line( {
+			   ref    => $acc,
+			   class  => $refclass,
+			   source => $source,
+			   method => $type,
+			   start  => $location->start,
+			   stop   => $location->end,
+			   score  => $feat->score || undef,
+			   strand => $str,
+			   phase  => $feat->frame || '.',
+			   gclass => $name->[0],
+			   gname  => $name->[1],
+			   tstart => undef,
+			   tstop  => undef,
+			   attributes  => $attributes,
+			  }
+			) if ($type &&
+                           ($type ne 'CDS'||($type eq 'CDS'&&@segments==1) ) );
+
+    @$attributes = ();
+
+    next if @segments == 1;
     for my $segment (@segments) {
 
+      my $strand = $feat->strand;
+      my $str    = defined $strand ?
+                                     ($strand > 0 ? '+' : '-')
+				   : '.';
       $self->load_gff_line( {
 			     ref    => $segment->[2] eq $locus ? $acc : $segment->[2],
 			     class  => $refclass,
-			     source => 'EMBL',
+			     source => $source,
 			     method => $parttype,
 			     start  => $segment->[0],
 			     stop   => $segment->[1],
 			     score  => $feat->score || undef,
-			     strand => $feat->strand > 0 ? '+' : ($feat->strand < 0 ? '-' : '.'),
+			     strand => $str,
 			     phase  => $feat->frame || '.',
 			     gclass => $name->[0],
 			     gname  => $name->[1],
@@ -265,12 +332,25 @@ sub get_attributes {
 sub guess_name {
   my $self = shift;
   my $attributes = shift;
-  my @ordered_attributes = sort {($preferred_tags{$a->[0]} || 0) <=> ($preferred_tags{$b->[0]} || 0)} @$attributes;
+# remove this fix when Lincoln fixes it properly
+  return ["Misc" => "Misc"] unless ($attributes);  # these are arbitrary, and possibly destructive defaults
+  my @ordered_attributes = sort {($self->_preferred_tags->{$a->[0]} || 0) <=> ($self->_preferred_tags->{$b->[0]} || 0)} @$attributes;
   my $best = pop @ordered_attributes;
   @$attributes = @ordered_attributes;
   return $best;
 }
 
 
+sub _preferred_tags {
+  my $self = shift;
+  $self->{preferred_tags} = shift if @_;
+  return $self->{preferred_tags};
+}
+
+sub _source {
+  my $self = shift;
+  $self->{source} = shift if @_;
+  $self->{source};
+}
 
 1;

@@ -1,4 +1,4 @@
-# $Id: Fuzzy.pm,v 1.24 2002/12/01 00:05:20 jason Exp $
+# $Id: Fuzzy.pm,v 1.26 2003/09/24 13:46:02 jason Exp $
 #
 # BioPerl module for Bio::Location::Fuzzy
 # Cared for by Jason Stajich <jason@bioperl.org>
@@ -18,7 +18,7 @@ which has unclear start and/or end locations
     use Bio::Location::Fuzzy;
     my $fuzzylocation = new Bio::Location::Fuzzy(-start => '<30',
 						 -end   => 90,
-						 -location_type => '.');
+						 -location_type => '..');
 
     print "location string is ", $fuzzylocation->to_FTstring(), "\n";
     print "location is of the type ", $fuzzylocation->location_type, "\n";
@@ -511,7 +511,8 @@ sub to_FTstring {
     if($self->is_remote() && $self->seq_id()) {
 	$str = $self->seq_id() . ":" . $str;
     }
-    if( $self->strand == -1 ) {
+    if( defined $self->strand && 
+	$self->strand == -1 ) {
 	$str = "complement(" . $str . ")";
     } elsif($self->location_type() eq "WITHIN") {
 	$str = "(".$str.")";

@@ -1,4 +1,4 @@
-# $Id: AnnotationCollectionI.pm,v 1.9 2002/10/22 07:38:24 lapp Exp $
+# $Id: AnnotationCollectionI.pm,v 1.10 2003/06/07 02:49:00 allenday Exp $
 
 #
 # BioPerl module for Bio::AnnotationCollectionI
@@ -68,13 +68,14 @@ set object values under each tag - at least that each object complies to one
 interface. The "standard" AnnotationCollection insists the following rules
 are set up
 
-  Tag         Object
-  ---         ------
-  reference   Bio::Annotation::Reference
-  comment     Bio::Annotation::Comment
-  dblink      Bio::Annotation::DBLink
-  gene_name   Bio::Annotation::SimpleValue
-  description Bio::Annotation::SimpleValue
+  Tag            Object
+  ---            ------
+  comment        Bio::Annotation::Comment
+  dblink         Bio::Annotation::DBLink
+  description    Bio::Annotation::SimpleValue
+  gene_name      Bio::Annotation::SimpleValue
+  ontology_term  Bio::Annotation::OntologyTerm
+  reference      Bio::Annotation::Reference
 
 These tags are the implict tags that the SeqIO system needs to round-trip
 GenBank/EMBL/Swissprot.

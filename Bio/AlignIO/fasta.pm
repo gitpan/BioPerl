@@ -1,4 +1,4 @@
-# $Id: fasta.pm,v 1.11 2002/12/14 19:09:05 birney Exp $
+# $Id: fasta.pm,v 1.14 2003/07/19 22:35:44 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::fasta
 
@@ -79,15 +79,17 @@ use Bio::SimpleAlign;
 sub next_aln {
     my $self = shift;
     my $entry;
-    my ($start,$end,$name,$seqname,$seq,$seqchar,$tempname,%align);
+    my ($start,$end,$name,$seqname,$seq,$seqchar,$tempname,$tempdesc,
+	%align,$desc);
     my $aln =  Bio::SimpleAlign->new();
-
-    while(defined ($entry = $self->_readline)) {
-	if($entry =~ /^>(\S+)/ ) {
-	    $tempname = $1;
+    my $maxlen;
+    while(defined ($entry = $self->_readline) ) {
+	if( $entry =~ s/^>(\S+)\s*// ) {
+	    $tempname  = $1;
+	    chomp($entry);
+	    $tempdesc  = $entry;
 	    if( defined $name ) {
 		# put away last name and sequence
-
 		if( $name =~ /(\S+)\/(\d+)-(\d+)/ ) {
 		    $seqname = $1;
 		    $start = $2;
@@ -95,24 +97,25 @@ sub next_aln {
 		} else {
 		    $seqname=$name;
 		    $start = 1;
-		    $end = length($seqchar);   #ps 9/6/00
+		    $end = length($seqchar); #ps 9/6/00
 		}
 #		print STDERR  "Going to add with $seqchar $seqname\n";
-		$seq = new Bio::LocatableSeq('-seq'=>$seqchar,
-				    '-id'=>$seqname,
-				    '-start'=>$start,
-				    '-end'=>$end,
-				    );
-
+		$seq = new Bio::LocatableSeq('-seq'        =>$seqchar,
+					     '-display_id' =>$seqname,
+					     '-description'=>$desc,
+					     '-start'      =>$start,
+					     '-end'        =>$end,
+					     );
 		$aln->add_seq($seq);
-	     }
-	     $name = $tempname;
-	     $seqchar  = "";
-	     next;
+	    }
+	    $desc = $tempdesc;	
+	    $name = $tempname;
+	    $desc = $entry;
+	    $seqchar  = "";
+	    next;
 	}
 	$entry =~ s/[^A-Za-z\.\-]//g;
-	$seqchar .= $entry;
-
+	$seqchar .= $entry;	
     }
 #
 #  Next two lines are to silence warnings that
@@ -141,17 +144,26 @@ sub next_aln {
 
 # This logic now also reads empty lines at the 
 # end of the file. Skip this is seqchar and seqname is null
+
     if( length($seqchar) == 0 && length($seqname) == 0 ) {
 	# skip
     } else {
 #	print STDERR "end to add with $seqchar $seqname\n";
-	$seq = new Bio::LocatableSeq('-seq'=>$seqchar,
-			'-id'=>$seqname,
-			'-start'=>$start,
-			'-end'=>$end,
-			);
-
+	$seq = new Bio::LocatableSeq('-seq'        => $seqchar,
+				     '-display_id' => $seqname,
+				     '-description'=> $desc,
+				     '-start'      => $start,
+				     '-end'        => $end,
+				     );
+	
 	$aln->add_seq($seq);
+    }
+    my $alnlen = $aln->length;
+    foreach my $seq ( $aln->each_seq ) {
+	if( $seq->length < $alnlen ) {
+	    my ($diff) = ($alnlen - $seq->length);
+	    $seq->seq( $seq->seq() . "-" x $diff);
+	}
     }
 
     return $aln;
@@ -172,7 +184,7 @@ sub next_aln {
 
 sub write_aln {
     my ($self,@aln) = @_;
-    my ($seq,$rseq,$name,$count,$length,$seqsub);
+    my ($seq,$desc,$rseq,$name,$count,$length,$seqsub);
 
     foreach my $aln (@aln) {
 	if( ! $aln || ! $aln->isa('Bio::Align::AlignI')  ) { 
@@ -181,8 +193,9 @@ sub write_aln {
 	}
 	foreach $rseq ( $aln->each_seq() ) {
 	    $name = $aln->displayname($rseq->get_nse());
-	    $seq  = $rseq->seq();	
-	    $self->_print (">$name\n") or return ;	
+	    $seq  = $rseq->seq();
+	    $desc = $rseq->description || '';
+	    $self->_print (">$name $desc\n") or return ;	
 	    $count =0;
 	    $length = length($seq);
 	    while( ($count * 60 ) < $length ) {

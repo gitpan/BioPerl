@@ -1,4 +1,4 @@
-# $Id: SegmentI.pm,v 1.6 2002/12/22 03:42:22 lstein Exp $
+# $Id: SegmentI.pm,v 1.8 2003/06/04 08:36:39 heikki Exp $
 #
 # BioPerl module for Bio::Das::SegmentI
 #
@@ -100,12 +100,11 @@ methods. Internal methods are usually preceded with a _
 package Bio::Das::SegmentI;
 use strict;
 
-use vars qw(@ISA $VERSION);
+use vars qw(@ISA);
 use Bio::Root::RootI;
 
 # Object preamble - inherits from Bio::Root::RootI;
 @ISA = qw(Bio::Root::RootI);
-$VERSION = 1.00;
 
 =head2 seq_id
 
@@ -119,6 +118,21 @@ $VERSION = 1.00;
 =cut
 
 sub seq_id { shift->throw_not_implemented }
+
+=head2 display_name
+
+ Title   : seq_name
+ Usage   : $ref = $s->seq_name
+ Function: return the human-readable name for the landmark
+ Returns : a string
+ Args    : none
+ Status  : Public
+
+This defaults to the same as seq_id.
+
+=cut
+
+sub display_name { shift->seq_id }
 
 =head2 start
 

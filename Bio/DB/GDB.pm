@@ -1,4 +1,4 @@
-# $Id: GDB.pm,v 1.12 2002/12/01 00:05:19 jason Exp $
+# $Id: GDB.pm,v 1.13 2003/05/15 08:13:54 heikki Exp $
 #
 # BioPerl module for Bio::DB::GenBank
 #
@@ -121,7 +121,7 @@ sub ua {
 # helper method to get specific options
 
 =head2 get_params
-    
+
  Title   : get_params
  Usage   : my %params = $self->get_params($mode)
  Function: Returns key,value pairs to be passed to query

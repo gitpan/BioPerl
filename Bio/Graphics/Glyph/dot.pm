@@ -9,7 +9,7 @@ use constant PI => 3.14159;
 
 sub draw {
   my $self = shift;
-#  $self->SUPER::draw(@_);
+
   my $gd = shift;
   my $fg = $self->fgcolor;
 
@@ -20,13 +20,12 @@ sub draw {
 
   #only point ovals allowed now
   my $r = $self->height ;
-    $gd->arc($xmid,$ymid,$r,$r,0,360,$fg);
-
 
   if ($self->option('bgcolor')){
     my $c = $self->color('bgcolor');
-    $gd->fill($xmid,$ymid,$c);
+    $gd->filledEllipse($xmid,$ymid,$r,$r,$c);
   }
+  $gd->ellipse($xmid,$ymid,$r,$r,$fg);
 
   #how about a fuse for the bomb?
   #work in degrees, not radians.  So we define PI above
@@ -89,6 +88,8 @@ L<Bio::Graphics::Glyph> for a full explanation.
   -label        Whether to draw a label	       0 (false)
 
   -description  Whether to draw a description  0 (false)
+
+  -hilite       Highlight color                undef (no color)
 
 In addition to the common options, the following glyph-specific
 options are recognized:

@@ -1,4 +1,4 @@
-# $Id: Patent.pm,v 1.7 2002/10/22 07:45:11 lapp Exp $
+# $Id: Patent.pm,v 1.9 2003/05/30 15:33:00 jason Exp $
 #
 # BioPerl module for Bio::Biblio::Patent
 #
@@ -15,7 +15,7 @@ Bio::Biblio::Patent - Representation of a patent
 
     $obj = new Bio::Biblio::Patent (-doc_number => '1-2-3-4-5');
 
- --- OR ---
+  #--- OR ---
 
     $obj = new Bio::Biblio::Patent;
     $obj->doc_number ('1-2-3-4-5');
@@ -38,7 +38,7 @@ The following attributes are specific to this class
 
 =head1 SEE ALSO
 
-=over
+=over 4
 
 =item *
 

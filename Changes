@@ -1,8 +1,114 @@
-$Id: Changes,v 1.30.2.24 2003/09/18 02:44:47 jason Exp $
+$Id: Changes,v 1.39 2003/12/22 20:00:34 heikki Exp $
+
 Revision history for Bioperl core modules
 
-Bug numbers (#XXX) refer to bugzilla bug numbers.  Full descriptions
-of the bug are at http://bugzilla.bioperl.org/.
+
+1.4 branch
+
+1.4. Stable major release
+
+Since initial 1.2.0, 3000 separate changes have been made to make this release. 
+
+   o installable scripts
+
+   o global module version from Bio::Root:Version
+
+   o Bio::Graphics
+      - major improvements; SVG support
+
+   o Bio::Popgen
+     - population genetics 
+     - support several population genetics types of questions.
+     - Tests for statistical neutrality of mutations
+       (Fu and Li's D/F, Tajima's D) are in Bio::PopGen::Statistics.
+       Tests of population structure (Wright's F-statistic: Fst) is in
+       Bio::PopGen::PopStats. Calculating composite linkage
+       disequilibrium (LD) is available in Bio::PopGen::Statistics as
+       well.
+     - Bio::PopGen::IO for reading in prettybase (SeattleSNPs)
+       and csv (comma delimited formatted) data.
+
+     - a directory for implementing population simulations has
+       been added Bio::PopGen::Simulation and 2 simulations - a
+       Coalescent and a simple single-locus multi-allele genetic drift
+       simulation have been provided.  This replaces the code in
+       Bio::Tree::RandomTree which has been deprecated until proper
+       methods for generating random phylogenetic trees are
+       implemented.
+
+   o Bio::Restriction
+      - new restrion analysis modules
+
+   o Bio::Tools::Analysis
+      - web based DNA and Protein analysis framework and several
+        implementations
+
+   o Bio::Seq::Meta
+     - per residue annotable sequences
+
+   o Bio::Matrix
+      - Bio::Matrix::PSM - Position Scoring Matrix
+      - Bio::Matrix::IO has been added for generalized parsing of
+        matrix data.  Matrix::IO::scoring and Matrix::IO::phylip are
+        initial implementations for parsing BLOSUM/PAM and Phylip
+        Distance matricies respectively.  A generic matrix
+        implementation for general use was added in
+        Bio::Matrix::Generic.
+
+   o Bio::Ontology
+     - major changes
+
+   o Bio:Tree
+
+   o Bio::Tools::SiRNA, Bio::SeqFeature::SiRNA
+     - small inhibitory RNA
+
+   o Bio::SeqFeature::Tools
+     - seqFeature mapping tools
+     - Bio::SeqFeature::Tools::Unflattener.pm
+       -- deal with mapping GenBank feature collections into
+          Chado/GFF3 processable feature sets (with SO term mappings)
+
+   o Bio::Tools::dpAlign
+     - pure perl dynamic programming sequence alignment
+     - needs Bioperl-ext
+
+   o new Bio::SearchIO formats
+
+   o new Bio::SeqIO formats
+     - chado, tab, kegg, tigr, game
+     - axt and psl:  UCSC formats.
+     - blasttable: NCBI -m 8 or -m 9 format from blastall
+     - important fixes for old modules
+
+   o Bio::AlignIO: maf
+
+   o improved Bio::Tools::Genewise
+
+   o Bio::SeqIO now can recongnize sequence formats automatically from
+     stream
+
+   o new parsers in Bio::Tools:
+      Blat, Geneid, Lagan, Mdust, Promoterwise, PrositeScan,  
+
+   o Bio::DB::Registry bugs fixed
+     - BerkeleyDB-indexed flat files can be used by the OBDA system
+     - Multiple seqdatabase.ini locations in OBDA_SEARCH_PATH are all
+       used by the OBDA system
+
+   o several new HOWTOs
+     - SimpleWebAnalysis, Trees, Feature Annotation, OBDA Access, Flat
+       Databases
+
+   o hundreds of new and improved files 
+
+
+   o 
+   o Bio::Tree::AlleleNode has been updated to be a container of
+     an Bio::PopGen::Individual object for use in the Coalescent simulations.
+
+
+1.2 Branch
 
 1.2.3 Stable release update
     o Bug #1475 - Fix and add speedup to spliced_seq for remote location
@@ -80,15 +186,12 @@ of the bug are at http://bugzilla.bioperl.org/.
     o Fixed bug in Bio::Annotation::OntologyTerm of not implementing all
       of Bio::Ontology::TermI
 
-    o brought the OBDA Registry code Bio::DB::Registry up to latest specs 
-
-    o added Bio::Tools:Promoterwise and two analysis interface files
-      to make this release compatible with the bioperl-run release.
+    o brought the OBDA Registry code up to latest specs 
 
     o Bio::DB::GenBank
       - eutils URL change
       - accession number retrieval fixed
-      
+
     o Bio::SearchIO::blast - fix bug #1443 (missing last hits), parse megablast
 
     o Bio::SearchIO::Writer::(HTML|Text)ResultWriter fix bugs #1458, 
@@ -110,27 +213,8 @@ of the bug are at http://bugzilla.bioperl.org/.
     o Bio::Tools::Genemark bug #1435 fixed which was missing last prediction
 
     o Bio::SeqIO::genbank 
-      - remarks in references are now parsed in, bug 1449
       - bug #1456 fixed which generated extra sequence lines
       - write moltype correctly for genpept
-      - allow feature table keys longer then 15 characters
-
-    o Bio::Factory::FTLocationFactory
-      - fix to bug #1371 where nonstandard bond FT key killed the parser.
-        GenBank and GenPept parsers were affected
-
-    o Bio::SeqIO::embl
-      - allow feature table keys longer then 15 characters
-      - fix bug #1393; multiple keywords now handled properly
-   
-    o Bio::SeqIO::swiss
-      - fix bug #1393; multiple keywords now handled properly
-
-    o Bio::Graphics
-      - added a few new glyphs
-
-    o Bio::DB::GFF
-      - in memory adaptor more robust
 
 1.2.1 Stable release update
 

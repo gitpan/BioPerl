@@ -1,6 +1,6 @@
 #-*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: GeneCoordinateMapper.t,v 1.8.2.2 2003/03/13 11:56:31 heikki Exp $
+## $Id: GeneCoordinateMapper.t,v 1.14 2003/03/11 08:00:59 heikki Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'

@@ -1,4 +1,4 @@
-# $Id: Alphabet.pm,v 1.6 2002/10/22 07:45:21 lapp Exp $
+# $Id: Alphabet.pm,v 1.7 2003/05/15 08:13:55 heikki Exp $
 #
 # BioPerl module for Bio::Symbol::Alphabet
 #
@@ -97,6 +97,7 @@ use Bio::Symbol::AlphabetI;
  Args    : -symbols  => Array ref of Bio::Symbol::SymbolI objects
            -subalphas=> Array ref of Bio::Symbol::AlphabetI objects 
                         representing sub alphabets
+
 =cut
 
 sub new {

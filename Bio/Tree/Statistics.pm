@@ -1,4 +1,4 @@
-# $Id: Statistics.pm,v 1.6 2002/12/24 17:52:03 jason Exp $
+# $Id: Statistics.pm,v 1.9 2003/09/08 12:17:15 heikki Exp $
 #
 # BioPerl module for Bio::Tree::Statistics
 #
@@ -16,17 +16,16 @@ Bio::Tree::Statistics - Calculate certain statistics for a Tree
 
 =head1 SYNOPSIS
 
-Give standard usage here
+  use Bio::Tree::Statistics;
+
 
 =head1 DESCRIPTION
 
-This object is a place to accumulate routines for calculating various
-tree statistics from population genetic and phylogenetic methods.  
+This should be where Tree statistics are calculated.  It was
+previously where statistics from a Coalescent simulation.  Currently
+it is empty because we have not added any Tree specific statistic
+calculations to this module yet.  We welcome any contributions.
 
-Currently Fu and Li's D is implemented.
-Tajima's D planned.
-
-References forthcoming.
 
 =head1 FEEDBACK
 
@@ -47,13 +46,13 @@ the web:
 
   http://bugzilla.bioperl.org/
 
-=head1 AUTHOR - Aaron Mackey
+=head1 AUTHOR - Jason Stajich
 
 Email jason@bioperl.org
 
 =head1 CONTRIBUTORS
 
-Matt Hahn E<lt>matthew.hahn@duke.dukeE<gt>
+none so far
 
 =head1 APPENDIX
 
@@ -70,8 +69,6 @@ package Bio::Tree::Statistics;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::Root
-
 use Bio::Root::Root;
 
 @ISA = qw(Bio::Root::Root);
@@ -86,64 +83,6 @@ use Bio::Root::Root;
 
 
 =cut
-
-=head2 fu_and_li_D
-
- Title   : fu_and_li_D
- Usage   : my $D = $statistics->fu_an_li_D($tree,$nummut);
- Function:
-           For this we assume that the tree is made up of
-           Bio::Tree::AlleleNode's which contain markers and alleles
-           each marker is a 'mutation' 
- Returns : Fu and Li's D statistic for this Tree
- Args    : $tree - Bio::Tree::TreeI which contains Bio::Tree::AlleleNodes
-
-=cut
-
-sub fu_and_li_D{
-   my ($self,$tree) = @_;
-   
-   # for this we assume that the tree is made up of
-   # allele nodes which contain markers and alleles
-   # each marker is a 'mutation' 
-   my @nodes = $tree->get_nodes();
-   my $muttotal =0;
-   my $tipmutcount = 0;
-   my $sampsize = 0;
-   foreach my $n ( @nodes ) {
-       if ($n->is_Leaf() ) {
-	   $sampsize++;
-	   $tipmutcount += $n->get_marker_names();
-       }
-       $muttotal += $n->get_marker_names();
-   }
-
-   if( $muttotal <= 0 ) { 
-       $self->warn("mutation total was not > 0, cannot calculate a Fu and Li D");
-       return 0;
-   }
-   my $a = 0;
-   for(my $k= 1; $k < $sampsize; $k++ ) {
-        $a += ( 1 / $k );
-    }
-   
-   my $b = 0;
-    for(my $k= 1; $k < $sampsize; $k++ ) {
-        $b += ( 1 / $k**2 );
-    }
- 
-    my $c = 2 * ( ( ( $sampsize * $a ) - (2 * ( $sampsize -1 ))) /
-                  ( ( $sampsize - 1) * ( $sampsize - 2 ) ) );
- 
-    my $v = 1 + ( ( $a**2 / ( $b + $a**2 ) ) * ( $c - ( ( $sampsize + 1) /
-                                                        ( $sampsize - 1) ) ));
- 
-    my $u = $a - 1 - $v;
-    my $D = ( $muttotal - (  $a * $tipmutcount) ) /
-            ( sqrt ( ($u * $muttotal) + ( $v * $muttotal**2) ) );
- 
-    return $D;
-}
 
 
 1;

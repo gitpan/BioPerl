@@ -1,5 +1,5 @@
 #
-# $Id: BDB.pm,v 1.6.2.1 2003/03/25 18:46:10 jason Exp $
+# $Id: BDB.pm,v 1.12 2003/05/17 19:03:53 heikki Exp $
 #
 # BioPerl module for Bio::DB::Flat::BDB
 #
@@ -15,7 +15,9 @@ Bio::DB::Flat::BDB - Interface for BioHackathon standard BDB-indexed flat file
 
 =head1 SYNOPSIS
 
-You should not be using this module directly.  See Bio::DB::Flat.
+  #You should not be using this module directly.
+
+See L<Bio::DB::Flat>.
 
 =head1 DESCRIPTION
 

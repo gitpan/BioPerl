@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Err.pm
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 22 July 1996
-# REVISION: $Id: Err.pm,v 1.15 2002/10/22 07:38:37 lapp Exp $
+# REVISION: $Id: Err.pm,v 1.16 2003/06/04 08:36:42 heikki Exp $
 # STATUS  : Alpha
 #
 # For documentation, run this module through pod2html
@@ -31,9 +31,8 @@ use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 		 std  => [qw(&throw &warning)]
 		);
 
-use vars qw($ID $VERSION);
+use vars qw($ID);
 $ID = 'Bio::Root::Err';
-$VERSION = 0.041;
 
 %Bio::Root::Err::ERR_FIELDS = (TYPE=>1, MSG=>1, NOTE=>1, CONTEXT=>1,
 			       TECH=>1, STACK=>1 );
