@@ -1,4 +1,4 @@
-# $Id: waba.pm,v 1.8 2002/12/11 22:12:32 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::SearchIO::waba
 #

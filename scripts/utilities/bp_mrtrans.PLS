@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: bp_mrtrans.PLS,v 1.1.2.1 2003/03/25 12:32:17 heikki Exp $
+# $Id$
 use strict;
 
 # Author:      Jason Stajich <jason@bioperl.org>

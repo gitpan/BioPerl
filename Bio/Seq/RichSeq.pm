@@ -1,4 +1,4 @@
-# $Id: RichSeq.pm,v 1.9 2002/11/11 18:16:31 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Seq::RichSeq
 #

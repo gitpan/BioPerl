@@ -1,4 +1,4 @@
-# $Id: EPCR.pm,v 1.8 2002/12/01 00:05:21 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::Tools::EPCR
 #

@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Seq.t,v 1.26 2002/10/02 01:04:42 lapp Exp $
+## $Id$
 
 use strict;
 

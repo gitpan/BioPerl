@@ -1,4 +1,4 @@
-# $Id: seqHandler.pm,v 1.15 2002/06/24 04:29:31 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::SeqIO::game::seqHandler
 #

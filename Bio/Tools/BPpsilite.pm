@@ -1,4 +1,4 @@
-# $Id: BPpsilite.pm,v 1.22 2002/10/22 07:38:45 lapp Exp $
+# $Id$
 # Bioperl module Bio::Tools::BPpsilite
 ############################################################
 #	based closely on the Bio::Tools::BPlite modules

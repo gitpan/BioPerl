@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: SimpleAlign.t,v 1.31 2002/12/09 13:28:02 shawnh Exp $
+## $Id$
 use strict;
 use constant NUMTESTS => 59;
 

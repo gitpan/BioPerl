@@ -1,4 +1,4 @@
-# $Id: QueryI.pm,v 1.1 2002/11/20 08:39:03 lstein Exp $
+# $Id$
 #
 # BioPerl module for Bio::DB::QueryI.pm
 #

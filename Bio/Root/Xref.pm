@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Xref.pm
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 8 May 1997
-# REVISION: $Id: Xref.pm,v 1.9 2002/10/22 07:38:37 lapp Exp $
+# REVISION: $Id$
 # STATUS  : Pre-Alpha 
 #
 # WARNING: This is considered an experimental module.

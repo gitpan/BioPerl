@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: change_gene.pl,v 1.1.2.1 2003/02/28 05:02:26 heikki Exp $
+# $Id$
 
 use strict;
 use Bio::LiveSeq::IO::BioPerl;

@@ -1,4 +1,4 @@
-# $Id: Genewise.pm,v 1.10 2002/12/18 01:54:51 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::Tools::Genewise
 #

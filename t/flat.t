@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: flat.t,v 1.6.2.1 2003/03/25 18:46:25 jason Exp $
+# $Id$
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -102,14 +102,7 @@ ok($seq->length,12850);
 
 undef $db;
 
-#&maketmpdir();
-#my $db = Bio::DB::Flat->new(-directory  => $tmpdir,
-#                            -index => 'flat',
-#                            -format => 'fasta',
-#                            -verbose => 1,
-#                            -write_flag => 1
-#                            );
-
+&maketmpdir();
 
 sub maketmpdir {
     mkdir ($tmpdir,0777);

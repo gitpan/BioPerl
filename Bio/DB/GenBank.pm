@@ -1,4 +1,4 @@
-# $Id: GenBank.pm,v 1.47 2002/11/29 18:18:55 lstein Exp $
+# $Id$
 #
 # BioPerl module for Bio::DB::GenBank
 #
@@ -14,12 +14,13 @@
 # completely reworked by Jason Stajich 2000-12-8
 # to use WebDBSeqI
 
-# Added batch entrez back when determined that new entrez cgi
-# will essentially work (there is a limit to the number of characters in a 
-# GET request so I am not sure how we can get around this).
-# The NCBI Batch Entrez form has changed some and it does not support
-# retrieval of text only data.  Still should investigate POST-ing (tried and
-# failed) a message to the entrez cgi to get around the GET limitations.
+# Added batch entrez back when determined that new entrez cgi will
+# essentially work (there is a limit to the number of characters in a
+# GET request so I am not sure how we can get around this).  The NCBI
+# Batch Entrez form has changed some and it does not support retrieval
+# of text only data.  Still should investigate POST-ing (tried and
+# failed) a message to the entrez cgi to get around the GET
+# limitations.
 
 =head1 NAME
 
@@ -39,15 +40,15 @@ Bio::DB::GenBank - Database object interface to GenBank
     $seq = $gb->get_Seq_by_gi('405830'); # GI Number
 
     # get a stream via a query string
-    my $seqio = $gb->get_Stream_by_query('Oryza sativa[Organism] AND EST');
+    my $query = Bio::DB::Query::GenBank->new
+        (-query   =>'Oryza sativa[Organism] AND EST',
+         -reldate => '30',
+	 -db      => 'nucleotide');
+    my $seqio = $gb->get_Stream_by_query($query);
+
     while( my $seq =  $seqio->next_seq ) {
       print "seq length is ", $seq->length,"\n";
     }
-
-    # or using a Bio::DB::Query::GenBank query
-    my $query = Bio::DB::Query::GenBank->new(-query   =>'Oryza sativa AND EST',
-                                             -reldate => '30');
-    my $seqio = $gb->get_Stream_by_query($query);
 
     # or ... best when downloading very large files, prevents
     # keeping all of the file in memory
@@ -65,17 +66,17 @@ Bio::DB::GenBank - Database object interface to GenBank
 
 =head1 DESCRIPTION
 
-Allows the dynamic retrieval of Sequence objects (Bio::Seq) from the GenBank
-database at NCBI, via an Entrez query.
+Allows the dynamic retrieval of Sequence objects (Bio::Seq) from the
+GenBank database at NCBI, via an Entrez query.
 
-WARNING: Please do NOT spam the Entrez web server with multiple requests.
-NCBI offers Batch Entrez for this purpose.  
+WARNING: Please do NOT spam the Entrez web server with multiple
+requests.  NCBI offers Batch Entrez for this purpose.
 
 Note that when querying for GenBank accessions starting with 'NT_' you
-will need to call $gb-E<gt>request_format('fasta') beforehand, because in
-GenBank format (the default) the sequence part will be left out (the
-reason is that NT contigs are rather annotation with references to
-clones).
+will need to call $gb-E<gt>request_format('fasta') beforehand, because
+in GenBank format (the default) the sequence part will be left out
+(the reason is that NT contigs are rather annotation with references
+to clones).
 
 Some work has been done to automatically detect and retrieve whole NT_
 clones when the data is in that format (NCBI RefSeq clones).  More
@@ -125,24 +126,24 @@ use Bio::DB::NCBIHelper;
 @ISA = qw(Bio::DB::NCBIHelper);
 BEGIN {    
     $DEFAULTMODE   = 'single';
-    $DEFAULTFORMAT = 'gp';	    
+    $DEFAULTFORMAT = 'gp';
     %PARAMSTRING = ( 
-		     'batch' => { 'db'     => 'protein',
+		     'batch' => { 'db'     => 'nucleotide',
 				  'usehistory' => 'n',
 				  'tool'   => 'bioperl',
 				  'retmode' => 'text'},
 		     'query' => { 'usehistory' => 'y',
 				  'tool'   => 'bioperl',
 				  'retmode' => 'text'},
-		     'gi' => { 'db'     => 'protein',
+		     'gi' => { 'db'     => 'nucleotide',
 			       'usehistory' => 'n',
 			       'tool'   => 'bioperl',
 			       'retmode' => 'text'},
-		     'version' => { 'db'     => 'protein',
+		     'version' => { 'db'     => 'nucleotide',
 				    'usehistory' => 'n',
 				    'tool'   => 'bioperl',
 				    'retmode' => 'text'},
-		     'single' => { 'db'     => 'protein',
+		     'single' => { 'db'     => 'nucleotide',
 				   'usehistory' => 'n',
 				   'tool'   => 'bioperl',
 				   'retmode' => 'text'},
@@ -180,7 +181,8 @@ ids, it is a good idea to use get
 
 sub get_params {
     my ($self, $mode) = @_;
-    return defined $PARAMSTRING{$mode} ? %{$PARAMSTRING{$mode}} : %{$PARAMSTRING{$DEFAULTMODE}};
+    return defined $PARAMSTRING{$mode} ?
+        %{$PARAMSTRING{$mode}} : %{$PARAMSTRING{$DEFAULTMODE}};
 }
 
 # from Bio::DB::WebDBSeqI from Bio::DB::RandomAccessI
@@ -205,6 +207,14 @@ sub get_params {
   Args    : the accession number as a string
   Note    : For GenBank, this just calls the same code for get_Seq_by_id()
   Throws  : "id does not exist" exception
+
+=cut
+
+
+sub get_Seq_by_acc {
+   my ($self,$seqid) = @_;
+   $self->SUPER::get_Seq_by_acc("gb|$seqid");
+}
 
 =head2 get_Seq_by_gi
 

@@ -1,4 +1,4 @@
-# $Id: locuslink.pm,v 1.2.2.2 2003/03/13 02:09:20 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::SeqIO::locuslink
 #

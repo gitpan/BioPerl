@@ -1,4 +1,4 @@
-# $Id: SequenceFamily.pm,v 1.4 2002/12/01 00:34:58 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::Cluster::SequenceFamily
 #

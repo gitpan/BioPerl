@@ -1,4 +1,4 @@
-# $Id: MapI.pm,v 1.6 2002/10/22 07:45:15 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Map::MapI
 #

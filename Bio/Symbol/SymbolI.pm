@@ -1,4 +1,4 @@
-# $Id: SymbolI.pm,v 1.6 2002/10/22 07:45:21 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Symbol::SymbolI
 #

@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Err.pm
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 22 July 1996
-# REVISION: $Id: Err.pm,v 1.15 2002/10/22 07:38:37 lapp Exp $
+# REVISION: $Id$
 # STATUS  : Alpha
 #
 # For documentation, run this module through pod2html

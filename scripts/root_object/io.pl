@@ -5,7 +5,7 @@
 # PURPOSE  : To demonstrate passing filehandles between objects.
 # AUTHOR   : Steve Chervitz (sac@bioperl.org)
 # CREATED  : 21 Mar 1997
-# REVISION : $Id: io.pl,v 1.1 2002/08/27 18:17:17 bosborne Exp $
+# REVISION : $Id$
 # INSTALLATION
 #    Edit the use lib "...." line to point the directory
 #    containing your Bioperl modules.

@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: StateMachine.t,v 1.2 2001/12/29 18:10:48 jason Exp $
+## $Id$
 ##
 ## Tests the SearchIO::blast::blast module for parsing traditional
 ## BLAST reports (non-XML).

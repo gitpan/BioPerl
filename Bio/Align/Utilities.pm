@@ -1,4 +1,4 @@
-# $Id: Utilities.pm,v 1.8 2002/11/11 18:39:19 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::Align::Utilities
 #

@@ -1,4 +1,4 @@
-# $Id: PrimarySeqI.pm,v 1.50.2.1 2003/03/31 11:49:51 heikki Exp $
+# $Id$
 #
 # BioPerl module for Bio::PrimarySeqI
 #
@@ -371,7 +371,6 @@ are encouraged to override these methods
 sub revcom{
    my ($self) = @_;
 
-
    # check the type is good first.
    my $t = $self->alphabet;
 
@@ -607,9 +606,7 @@ sub translate {
 =cut
 
 sub  id {
-   my ($self)= @_;
-
-   return $self->display_id();
+   return shift->display_id();
 }
 
 
@@ -626,8 +623,7 @@ sub  id {
 =cut
 
 sub  length {
-   my ($self)= @_;
-   $self->throw_not_implemented();
+   shift->throw_not_implemented();
 }
 
 =head2 desc
@@ -660,11 +656,7 @@ sub desc {
 =cut
 
 sub is_circular{
-    my ($self,$value) = @_;
-    if (defined $value) {
-	$self->{'_is_circular'} = $value;
-    }
-    return $self->{'_is_circular'};
+    shift->throw_not_implemented();
 }
 
 =head1 Private functions

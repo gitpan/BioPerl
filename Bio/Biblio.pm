@@ -1,4 +1,4 @@
-# $Id: Biblio.pm,v 1.7 2002/10/22 07:45:09 lapp Exp $
+# $Id$
 #
 # BioPerl module Bio::Biblio
 #
@@ -193,8 +193,8 @@ use Bio::DB::BiblioI;
 
 
 BEGIN { 
-    $VERSION = do { my @r = (q$Revision: 1.7 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id: Biblio.pm,v 1.7 2002/10/22 07:45:09 lapp Exp $;
+    $VERSION = do { my @r = (q$Revision$ =~ /\d+/g); sprintf "%d.%-02d", @r };
+    $Revision = q$Id$;
 }
 
 # -----------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-# $Id: SimpleAlign.pm,v 1.65 2002/12/09 13:29:11 shawnh Exp $
+# $Id$
 # BioPerl module for SimpleAlign
 #
 # Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
@@ -302,7 +302,7 @@ sub remove_seq {
     my ($name,$id,$start,$end);
 
     $self->throw("Need Bio::Locatable seq argument ")
-	unless ref $seq eq 'Bio::LocatableSeq';
+	unless ref $seq && $seq->isa('Bio::LocatableSeq');
 
     $id = $seq->id();
     $start = $seq->start();

@@ -1,4 +1,4 @@
-# $Id: Contig.pm,v 1.1 2002/11/04 11:50:11 heikki Exp $
+# $Id$
 #
 # BioPerl module for Bio::Assembly::Contig
 #   Mostly based on Bio::SimpleAlign by Ewan Birney

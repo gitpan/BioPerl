@@ -1,4 +1,4 @@
-# $Id: Exon.pm,v 1.8 2001/06/18 08:27:53 heikki Exp $
+# $Id$
 #
 # bioperl module for Bio::LiveSeq::Exon
 #

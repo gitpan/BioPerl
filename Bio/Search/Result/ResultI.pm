@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: ResultI.pm,v 1.16 2002/11/13 11:23:11 sac Exp $
+# $Id$
 #
 # BioPerl module Bio::Search::Result::ResultI
 #

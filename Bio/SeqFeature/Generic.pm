@@ -1,4 +1,4 @@
-# $Id: Generic.pm,v 1.74 2002/12/17 10:05:56 juguang Exp $
+# $Id$
 #
 # BioPerl module for Bio::SeqFeature::Generic
 #

@@ -1,4 +1,4 @@
-# $Id: chado.pm,v 1.1 2002/12/03 08:13:55 cjm Exp $
+# $Id$
 #
 # BioPerl module for Bio::SeqIO::chado
 #

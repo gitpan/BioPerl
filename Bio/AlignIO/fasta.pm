@@ -1,4 +1,4 @@
-# $Id: fasta.pm,v 1.11 2002/12/14 19:09:05 birney Exp $
+# $Id$
 #
 # BioPerl module for Bio::AlignIO::fasta
 

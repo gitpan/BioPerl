@@ -1,4 +1,4 @@
-# $Id: HitTableWriter.pm,v 1.14 2002/12/24 15:46:47 jason Exp $
+# $Id$
 
 =head1 NAME
 

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: fast_load_gff.pl,v 1.2 2002/10/25 21:43:06 lstein Exp $
+# $Id$
 
 use strict;
 use lib './blib/lib';

@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Chain.t,v 1.7 2001/01/25 22:13:40 jason Exp $
+## $Id$
 # Created: Wed Dec 13 15:52:33 GMT 2000
 # By Joseph A.L. Insana, <insana@ebi.ac.uk>
 #

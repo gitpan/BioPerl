@@ -1,4 +1,4 @@
-# $Id: Entry.pm,v 1.17 2002/10/22 07:38:44 lapp Exp $
+# $Id$
 #
 # bioperl module for Bio::Structure::Entry
 #

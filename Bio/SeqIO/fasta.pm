@@ -1,4 +1,4 @@
-# $Id: fasta.pm,v 1.41.2.2 2003/03/24 20:49:58 jason Exp $
+# $Id$
 # BioPerl module for Bio::SeqIO::fasta
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>

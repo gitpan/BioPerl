@@ -10,7 +10,7 @@
 #
 # Author  : Steve Chervitz <sac@bioperl.org>
 #
-# Revision: $Id: seqs1.pl,v 1.2 2002/09/07 07:13:30 sac Exp $
+# Revision: $Id$
 #
 # Usage   : seqs1.pl -h
 # Examples: seqs1.pl -eg

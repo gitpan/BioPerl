@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## # $Id: Ontology.t,v 1.1.2.2 2003/03/27 10:07:57 lapp Exp $
+## # $Id$
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -39,9 +39,7 @@ my $io = Bio::Root::IO->new(); # less typing from now on
 my $parser = Bio::OntologyIO->new(
                       -format    => "soflat",
 		      -file      => $io->catfile("t", "data",
-						 "sofa.ontology"),
-		      # test overwriting the default
-		      -ontology_name => "Sequence Feature Ontology");
+						 "sofa.ontology"));
 
 my $ont = $parser->next_ontology();
 ok ($ont);

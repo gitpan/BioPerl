@@ -1,4 +1,4 @@
-# $Id: WrapperBase.pm,v 1.7.2.2 2003/03/11 10:52:26 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::Tools::Run::WrapperBase
 #

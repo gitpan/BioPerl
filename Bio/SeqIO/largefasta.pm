@@ -1,4 +1,4 @@
-# $Id: largefasta.pm,v 1.18 2002/12/27 19:42:32 birney Exp $
+# $Id$
 # BioPerl module for Bio::SeqIO::largefasta
 #
 # Cared for by Jason Stajich

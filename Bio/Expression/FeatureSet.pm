@@ -1,4 +1,4 @@
-# $Id: FeatureSet.pm,v 1.8 2002/12/12 00:20:34 allenday Exp $
+# $Id$
 # BioPerl module for Bio::Expression::FeatureSet
 #
 # Copyright Allen Day <allenday@ucla.edu>, Stanley Nelson <snelson@ucla.edu>

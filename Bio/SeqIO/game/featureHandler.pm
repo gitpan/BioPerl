@@ -1,4 +1,4 @@
-# $Id: featureHandler.pm,v 1.9 2002/06/04 02:54:48 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::SeqIO::game::featureHandler
 #

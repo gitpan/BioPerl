@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: seqwithquality.t,v 1.6 2002/12/19 22:10:34 matsallac Exp $
+## $Id$
 
 use strict;
 use Dumpvalue;

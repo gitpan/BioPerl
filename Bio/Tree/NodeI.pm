@@ -1,4 +1,4 @@
-# $Id: NodeI.pm,v 1.19.2.1 2003/02/04 18:21:26 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::Tree::NodeI
 #

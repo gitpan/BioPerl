@@ -1,6 +1,6 @@
 #!/usr/local/bin/perl -w
 
-# $Id: chaos_plot.pl,v 1.3 2002/08/27 18:17:19 bosborne Exp $
+# $Id$
 
 # This script provides a chaos plot of DNA
 # Cared for by Jason Stajich <jason@cgt.mc.duke.edu>

@@ -1,4 +1,4 @@
-# $Id: TreeEventBuilder.pm,v 1.11 2002/10/22 07:45:25 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::TreeIO::TreeEventBuilder
 #

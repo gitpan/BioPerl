@@ -1,4 +1,4 @@
-# $Id: SegmentI.pm,v 1.6 2002/12/22 03:42:22 lstein Exp $
+# $Id$
 #
 # BioPerl module for Bio::Das::SegmentI
 #

@@ -15,7 +15,7 @@ use strict;
 use vars qw($VERSION);
 use 5.004;
 
-$VERSION = "0.13"; # $Id: Error.pm,v 1.1 2002/08/27 18:17:15 bosborne Exp $
+$VERSION = "0.13"; # $Id$
 
 use overload (
 	'""'	   =>	'stringify',

@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Genpred.t,v 1.13 2002/10/08 08:38:35 lapp Exp $
+## $Id$
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -15,7 +15,7 @@ BEGIN {
 	use lib 't';
     }
     use Test;
-    plan tests => 34;
+    plan tests => 35;
 }
 
 use Bio::Tools::Genscan;

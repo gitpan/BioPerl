@@ -1,4 +1,4 @@
-# $Id: SeqUtils.pm,v 1.11 2002/11/01 09:52:42 heikki Exp $
+# $Id$
 #
 # BioPerl module for Bio::SeqUtils
 #

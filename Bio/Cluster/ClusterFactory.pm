@@ -1,4 +1,4 @@
-# $Id: ClusterFactory.pm,v 1.2 2002/10/31 09:45:39 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Cluster::ClusterFactory
 #

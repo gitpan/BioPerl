@@ -1,4 +1,4 @@
-# $Id: DNAStatistics.pm,v 1.4 2002/10/22 07:45:10 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Align::DNAStatistics
 #

@@ -1,4 +1,4 @@
-# $Id: tabtree.pm,v 1.6 2002/10/22 07:45:25 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::TreeIO::tabtree
 #

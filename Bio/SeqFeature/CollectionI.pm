@@ -1,4 +1,4 @@
-# $Id: CollectionI.pm,v 1.2 2002/10/22 07:45:20 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::SeqFeature::CollectionI
 #

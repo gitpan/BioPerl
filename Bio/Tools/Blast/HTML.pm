@@ -4,7 +4,7 @@
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 28 Apr 1998
 # STATUS  : Alpha
-# REVISION: $Id: HTML.pm,v 1.15 2002/11/04 09:12:51 heikki Exp $
+# REVISION: $Id$
 # 
 # For the latest version and documentation, visit the distribution site:
 #    http://bio.perl.org/Projects/Blast/
@@ -39,7 +39,7 @@ use vars qw( @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS
 %EXPORT_TAGS = ( std => [qw(&get_html_func  &strip_html)] );
 
 $ID = 'Bio::Tools::Blast::HTML';
-$Revision = '$Id: HTML.pm,v 1.15 2002/11/04 09:12:51 heikki Exp $';  #'
+$Revision = '$Id$';  #'
 
 my $_set_markup = 0;
 my $_gi_link = '';

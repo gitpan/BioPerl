@@ -1,4 +1,4 @@
-# $Id: FTLocationFactory.pm,v 1.9 2002/10/22 07:45:14 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Factory::FTLocationFactory
 #
@@ -146,7 +146,7 @@ sub from_string{
 	    # parse the argument recursively, then set the strand to -1
 	    $loc = $self->from_string($oparg, 1);
 	    $loc->strand(-1);
-	} elsif(($op eq "join") || ($op eq "order")) {
+	} elsif(($op eq "join") || ($op eq "order") || ($op eq "bond")) {
 	    # This is a split location. Split into components and parse each
 	    # one recursively, then gather into a SplitLocationI instance.
 	    #

@@ -1,5 +1,5 @@
 
-# $Id: SeqIO.pm,v 1.59 2002/11/02 21:04:18 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::SeqIO
 #

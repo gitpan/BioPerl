@@ -9,7 +9,7 @@ your BLAST parsing.
 README for the Perl extension Bio::Tools::Blast and related modules
 in the Bio/Tools/Blast/ directory of the bioperl distribution.
 
-$Id: README,v 1.5 2002/06/19 22:25:15 jason Exp $
+$Id$
 
 ### Notice:
 ###

@@ -1,4 +1,4 @@
-# $Id: RelationshipI.pm,v 1.2.2.2 2003/03/27 10:07:56 lapp Exp $
+# $Id$
 #
 # BioPerl module for RelationshipI
 #

@@ -3,7 +3,7 @@
 # AUTHOR  : Steve Chervitz (sac@bioperl.org) 
 # CREATED : 7 October 1996
 # STATUS  : Alpha
-# REVISION: $Id: Sbjct.pm,v 1.20 2002/10/22 07:38:48 lapp Exp $
+# REVISION: $Id$
 #
 # For the latest version and documentation, visit the distribution site:
 #    http://genome-www.stanford.edu/perlOOP/bioperl/blast/
@@ -26,7 +26,7 @@ use Bio::Root::Object  ();
 use strict;
 use vars qw($ID %SUMMARY_OFFSET $Revision);
 $ID = 'Bio::Tools::Blast::Sbjct';
-$Revision = '$Id: Sbjct.pm,v 1.20 2002/10/22 07:38:48 lapp Exp $';  #'
+$Revision = '$Id$';  #'
 
 my $_prog       = '';
 my $_signif_fmt = '';

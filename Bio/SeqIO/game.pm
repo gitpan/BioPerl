@@ -1,4 +1,4 @@
-# $Id: game.pm,v 1.26 2002/10/12 15:48:50 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::SeqIO::game
 #
@@ -81,7 +81,6 @@ use vars qw(@ISA);
 use strict;
 # Object preamble - inherits from Bio::Root::Object
 
-use IO;
 use Bio::SeqIO;
 use Bio::SeqIO::game::seqHandler;
 use Bio::SeqIO::game::featureHandler;

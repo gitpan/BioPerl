@@ -1,7 +1,7 @@
-# $Id: StructureI.pm,v 1.3 2002/10/22 07:45:21 lapp Exp $
+# $Id$
 # placeholder for Bio::Structure::StructureI
 
-# $Id: StructureI.pm,v 1.3 2002/10/22 07:45:21 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Structure::StructureI
 #

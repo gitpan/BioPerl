@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: BlastResultFactory.pm,v 1.5 2002/10/22 07:38:32 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Factory::BlastResultFactory
 #

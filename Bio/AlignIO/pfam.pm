@@ -1,4 +1,4 @@
-# $Id: pfam.pm,v 1.10 2002/10/22 07:38:26 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::AlignIO::pfam
 

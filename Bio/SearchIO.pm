@@ -1,4 +1,4 @@
-# $Id: SearchIO.pm,v 1.18 2002/12/13 13:54:03 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::SearchIO
 #

@@ -1,4 +1,4 @@
-# $Id: DescribableI.pm,v 1.6 2002/10/25 01:29:37 lapp Exp $
+# $Id$
 
 #
 # This module is licensed under the same terms as Perl itself. You use,

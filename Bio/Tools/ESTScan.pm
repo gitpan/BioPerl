@@ -1,4 +1,4 @@
-# $Id: ESTScan.pm,v 1.10 2002/10/22 07:38:45 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Tools::ESTScan
 #

@@ -1,4 +1,4 @@
-# $Id: PositionProxy.pm,v 1.4 2002/10/22 07:38:41 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::SeqFeature::PositionProxy
 #

@@ -1,5 +1,5 @@
 #------------------------------------------------------------------
-# $Id: RestrictionEnzyme.pm,v 1.25 2002/10/28 16:57:04 jason Exp $
+# $Id$
 #
 # BioPerl module Bio::Tools::RestrictionEnzyme
 #
@@ -178,7 +178,7 @@ use vars qw (@ISA @EXPORT_OK %EXPORT_TAGS $ID $version @RE_available $Revision);
 
 $ID = 'Bio::Tools::RestrictionEnzyme';
 $version = 0.04;
-$Revision = '$Id: RestrictionEnzyme.pm,v 1.25 2002/10/28 16:57:04 jason Exp $';  #'
+$Revision = '$Id$';  #'
 
 # Generated from REBASE version 208 (strider format), dated Aug 1 2002
 # using scripts/contributed/rebase2list.pl
@@ -1025,7 +1025,7 @@ sub cut_seq {
     my $seq = uc $self->_expanded_string;
 
     if(!$self->palindromic and $self->name ne 'N') {
-	my $revseq = $self->_expanded_string( $reSeq->revcom );
+	my $revseq = $self->_expanded_string( $reSeq->revcom->seq );
 	$seq .= '|'.uc($revseq);
     }
     $self->debug(sprintf("$ID: site seq: %s\n\n", $seq));

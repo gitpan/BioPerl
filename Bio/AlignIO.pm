@@ -1,4 +1,4 @@
-# $Id: AlignIO.pm,v 1.28 2002/10/22 07:38:23 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::AlignIO
 #

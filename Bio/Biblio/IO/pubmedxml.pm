@@ -1,4 +1,4 @@
-# $Id: pubmedxml.pm,v 1.4 2002/10/22 07:45:13 lapp Exp $
+# $Id$
 #
 # BioPerl module Bio::Biblio::IO::pubmedxml.pm
 #
@@ -86,8 +86,8 @@ use Bio::Biblio::IO::medlinexml;
 
 BEGIN { 
     # set the version for version checking
-    $VERSION = do { my @r = (q$Revision: 1.4 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id: pubmedxml.pm,v 1.4 2002/10/22 07:45:13 lapp Exp $;
+    $VERSION = do { my @r = (q$Revision$ =~ /\d+/g); sprintf "%d.%-02d", @r };
+    $Revision = q$Id$;
 }
 
 sub _initialize {

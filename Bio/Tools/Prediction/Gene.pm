@@ -1,4 +1,4 @@
-# $Id: Gene.pm,v 1.8 2002/10/22 07:38:48 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Tools::Prediction::Gene
 #

@@ -1,4 +1,4 @@
-# $Id: CytoPosition.pm,v 1.4 2002/10/22 07:38:35 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Map::CytoPosition
 #

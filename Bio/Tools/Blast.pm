@@ -4,7 +4,7 @@
 #           BLAST reports.
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : March 1996
-# REVISION: $Id: Blast.pm,v 1.30 2002/11/04 09:12:50 heikki Exp $
+# REVISION: $Id$
 # STATUS  : Alpha
 #
 # For the latest version and documentation, visit:
@@ -39,7 +39,7 @@ use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS
 
 $ID = 'Bio::Tools::Blast';
 $VERSION  = 0.09; 
-$Revision = '$Id: Blast.pm,v 1.30 2002/11/04 09:12:50 heikki Exp $';  #'
+$Revision = '$Id$';  #'
 
 ## Static Blast object.
 $Blast = {};

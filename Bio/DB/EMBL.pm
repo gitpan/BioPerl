@@ -1,5 +1,5 @@
 #
-# $Id: EMBL.pm,v 1.12 2002/11/29 18:18:55 lstein Exp $
+# $Id$
 #
 # BioPerl module for Bio::DB::EMBL
 #
@@ -34,7 +34,7 @@ Bio::DB::EMBL - Database object interface for EMBL entry retrieval
   # in not getting what what want
   eval {
       $seq = $embl->get_Seq_by_version('J02231.1'); # EMBL VERSION
-  }
+  };
   print "cloneid is ", $seq->id, "\n" unless $@;
 
   # or ... best when downloading very large files, prevents

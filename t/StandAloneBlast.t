@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: StandAloneBlast.t,v 1.20.2.1 2003/01/16 22:45:17 jason Exp $
+## $Id$
 #
 
 use strict;

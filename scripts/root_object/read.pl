@@ -6,7 +6,7 @@
 #            Uses three tester files read.test1, read.test2, read.test3
 # AUTHOR   : Steve Chervitz (sac@bioperl.org)
 # CREATED  : 20 Jul 1998
-# REVISION : $Id: read.pl,v 1.1 2002/08/27 18:17:17 bosborne Exp $
+# REVISION : $Id$
 # USAGE    : read.pl < filename
 #
 # INSTALLATION

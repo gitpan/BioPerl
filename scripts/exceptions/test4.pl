@@ -9,7 +9,7 @@
 #
 # Author: Steve Chervitz <sac@bioperl.org>
 #
-# $Id: test4.pl,v 1.1 2002/08/27 18:17:15 bosborne Exp $
+# $Id$
 
 
 # Setting this variable simulates not having Error.pm installed.

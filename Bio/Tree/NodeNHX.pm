@@ -1,4 +1,4 @@
-# $Id: NodeNHX.pm,v 1.5 2002/12/24 17:52:03 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::Tree::NodeNHX
 #

@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.14 2002/11/04 09:07:45 heikki Exp $
+# $Id$
 #
 # BioPerl module for Bio::Variation::IO
 #

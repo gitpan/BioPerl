@@ -1,4 +1,4 @@
-# $Id: Reference.pm,v 1.18 2002/09/25 18:11:33 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Annotation::Reference
 #

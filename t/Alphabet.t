@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Alphabet.t,v 1.3 2001/12/13 23:10:08 jason Exp $
+## $Id$
 
 use strict;
 

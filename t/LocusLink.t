@@ -1,5 +1,5 @@
 # -*-Perl-*- mode (to keep my emacs happy)
-# $Id: LocusLink.t,v 1.3 2002/12/29 00:51:44 lapp Exp $
+# $Id$
 
 use strict;
 use vars qw($DEBUG);

@@ -1,4 +1,4 @@
-# $Id: SeqI.pm,v 1.25 2002/10/22 07:38:34 lapp Exp $
+# $Id$
 #
 # bioperl module for Bio::LiveSeq::SeqI
 #

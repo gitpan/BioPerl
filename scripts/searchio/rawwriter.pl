@@ -20,7 +20,7 @@
 #   Bio::SearchIO::psiblast
 #
 # Author: Steve Chervitz <sac@bioperl.org>
-# Revision: $Id: rawwriter.pl,v 1.2 2002/10/26 09:35:55 sac Exp $
+# Revision: $Id$
 #
 # TODO: 
 #   * Implement a Bio::SearchIO::Writer::HSPTextWriter object

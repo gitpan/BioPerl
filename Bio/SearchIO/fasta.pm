@@ -1,4 +1,4 @@
-# $Id: fasta.pm,v 1.33.2.1 2003/01/17 20:32:54 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::SearchIO::fasta
 #

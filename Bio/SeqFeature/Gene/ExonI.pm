@@ -1,4 +1,4 @@
-# $Id: ExonI.pm,v 1.6 2002/10/22 07:38:41 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::SeqFeature::Gene::ExonI
 #

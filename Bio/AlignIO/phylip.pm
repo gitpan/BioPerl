@@ -1,4 +1,4 @@
-# $Id: phylip.pm,v 1.24.2.1 2003/01/26 15:52:30 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::AlignIO::phylip
 #

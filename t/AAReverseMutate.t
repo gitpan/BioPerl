@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: AAReverseMutate.t,v 1.4 2001/01/25 22:13:39 jason Exp $
+## $Id$
 
 use strict;
 BEGIN { 

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: gccalc.pl,v 1.3 2002/08/27 18:17:19 bosborne Exp $
+# $Id$
 
 # Author Jason Stajich <jason@bioperl.org> 
 # based on script code (see bottom) submitted by cckim@stanford.edu

@@ -6,7 +6,7 @@
 #           using Bio::Root::Object.pm and Bio::Root::Err.pm.
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 28 Oct 1996
-# REVISION: $Id: error.pl,v 1.1 2002/08/27 18:17:17 bosborne Exp $
+# REVISION: $Id$
 #
 # USAGE   : err.pl >& err.out  # Traps actual exceptions as thrown
 #                              # in addition to reports created by script.

@@ -1,4 +1,4 @@
-# $Id: blast.pm,v 1.42.2.4 2003/03/25 18:16:28 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::SearchIO::blast
 #
@@ -249,6 +249,10 @@ sub next_result{
 	   if( defined $seenquery ) {
 	       $self->_pushback($reportline);
 	       $self->_pushback($_);
+	       $self->in_element('hsp') &&
+		   $self->end_element({'Name'=> 'Hsp'});
+	       $self->in_element('hit') &&
+		   $self->end_element({'Name'=> 'Hit'});
 	       $self->end_element({'Name' => 'BlastOutput'});
 	       return $self->end_document();
 	   } else { 
@@ -487,13 +491,21 @@ sub next_result{
 	   $self->element({'Name' => 'Parameters_allowgaps',
 			   'Data' => 'yes'});
 	   while( defined ($_ = $self->_readline ) ) {
-	       if( /^(PSI)?([T]?BLAST[NPX])\s*([\d\.]+)/i ) {
+	       if( /^(PSI)?([T]?BLAST[NPX])\s*(.+)$/i ||
+		   /^(RPS-BLAST)\s*(.+)$/i ||
+		   /^(MEGABLAST)\s*(.+)$/i  ) {
 		   $self->_pushback($_);
 		   # let's handle this in the loop
 		   last;
 	       } elsif( /^Query=/ ) {	
 		   $self->_pushback($reportline);
 		   $self->_pushback($_);
+		   # -- Superfluous I think
+		   $self->in_element('hsp') && 
+		       $self->end_element({'Name' => 'Hsp'});
+		   $self->in_element('hit') && 
+		       $self->end_element({'Name' => 'Hit'});
+		   # --
 		   $self->end_element({ 'Name' => 'BlastOutput'});
 		   return $self->end_document();
 	       }
@@ -618,14 +630,16 @@ sub next_result{
 	   my %data = ( 'Query' => '',
 			'Mid' => '',
 			'Hit' => '' );
-	   my $len;
+	   my ($l,$len);
 	   for( my $i = 0; 
 		defined($_) && $i < 3; 
 		$i++ ){	       
-	       chomp;
-	       if( ($i == 0 &&  /^\s+$/) ||  /^\s*Lambda/i ) { 
+	       chomp;	       
+	       if( ($i == 0 &&  /^\s+$/) || ($l = /^\s*Lambda/i) ) { 
 		   $self->_pushback($_) if defined $_;
+		   # this fixes bug #1443
 		   $self->end_element({'Name' => 'Hsp'});
+		   $self->end_element({'Name' => 'Hit'}) if $l;		   
 		   last; 
 	       }
 	       if( /^((Query|Sbjct):\s+(\d+)\s*)(\S+)\s+(\d+)/ ) {
@@ -650,7 +664,18 @@ sub next_result{
 	   $self->debug( "unrecognized line $_");
        }
    } 
-   $self->end_element({'Name' => 'BlastOutput'}) unless ! $seentop;
+
+   if( $seentop ) {
+       # double back check that hits and hsps are closed
+       # this in response to bug #1443 (may be uncessary due to fix
+       # above, but making double sure)
+       $self->in_element('hsp') && 
+	   $self->end_element({'Name' => 'Hsp'});
+       $self->in_element('hit') && 
+	   $self->end_element({'Name' => 'Hit'});       
+       $self->end_element({'Name' => 'BlastOutput'});
+   }
+#   $self->end_element({'Name' => 'BlastOutput'}) unless ! $seentop;
    return $self->end_document();
 }
 

@@ -2,7 +2,7 @@
 ## Bioperl Test Harness Script for Modules
 ##
 # CVS Version
-# $Id: SeqFeature.t,v 1.26 2002/07/02 09:42:23 heikki Exp $
+# $Id$
 
 
 # Before `make install' is performed this script should be runnable with

@@ -1,6 +1,6 @@
 
 #
-# $Id: SwissPfam.pm,v 1.15 2002/10/22 07:38:33 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Index::SwissPfam
 #

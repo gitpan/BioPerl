@@ -1,4 +1,4 @@
-# $Id: LargeSeq.pm,v 1.11 2002/10/22 07:38:40 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Seq::LargeSeq
 #

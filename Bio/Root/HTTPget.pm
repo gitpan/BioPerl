@@ -1,4 +1,4 @@
-# $Id: HTTPget.pm,v 1.4 2002/10/22 07:38:37 lapp Exp $
+# $Id$
 #
 # BioPerl module for fallback HTTP get operations.
 # Module is proxy-aware 

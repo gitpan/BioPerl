@@ -1,5 +1,5 @@
 # -*-Perl-*- mode (to keep my emacs happy)
-# $Id: SeqBuilder.t,v 1.1 2002/10/10 01:57:51 lapp Exp $
+# $Id$
 
 use strict;
 use vars qw($DEBUG $TESTCOUNT);

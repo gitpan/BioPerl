@@ -1,4 +1,4 @@
-# $Id: GeneMapper.pm,v 1.13.2.2 2003/03/13 11:56:30 heikki Exp $
+# $Id$
 #
 # bioperl module for Bio::Coordinate::GeneMapper
 #

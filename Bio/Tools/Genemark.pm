@@ -1,4 +1,4 @@
-# $Id: Genemark.pm,v 1.11 2002/10/22 07:38:45 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Tools::Genemark
 #
@@ -282,7 +282,6 @@ sub _parse_predictions {
  	        # a new gene, store the old one if it exists
 		if (defined ($gene)) {
 		    $gene->seq_id($seqname);
-		    $self->_add_prediction($gene);	    
 		    $gene = undef ;
 		}
 		#and make a new one
@@ -290,7 +289,7 @@ sub _parse_predictions {
 		    (
 		     '-primary' => "GenePrediction$prednr",
 		     '-source' => $prediction_source);
-		
+                $self->_add_prediction($gene);
 		$current_gene_no = $prednr;
 	    } 
 	    

@@ -1,4 +1,4 @@
-# $Id: scf.pm,v 1.23 2002/11/01 11:16:25 heikki Exp $
+# $Id$
 #
 # Copyright (c) 1997-2001 bioperl, Chad Matsalla. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or

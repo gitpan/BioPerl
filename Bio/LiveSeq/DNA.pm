@@ -1,4 +1,4 @@
-# $Id: DNA.pm,v 1.9 2001/10/22 08:22:51 heikki Exp $
+# $Id$
 #
 # bioperl module for Bio::LiveSeq::DNA
 #

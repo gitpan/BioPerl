@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-##$Id: OddCodes.t,v 1.5 2001/10/22 08:22:58 heikki Exp $
+##$Id$
 
 use strict;
 

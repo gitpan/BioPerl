@@ -1,4 +1,4 @@
-# $Id: clustalw.pm,v 1.21 2002/10/22 07:38:25 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::AlignIO::clustalw
 

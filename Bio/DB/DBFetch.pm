@@ -1,5 +1,5 @@
 #
-# $Id: DBFetch.pm,v 1.8 2002/12/22 22:02:13 lstein Exp $
+# $Id$
 #
 # BioPerl module for Bio::DB::DBFetch
 #

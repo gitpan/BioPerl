@@ -1,4 +1,4 @@
-# $Id: IdCollectionI.pm,v 1.2 2002/10/22 07:38:24 lapp Exp $
+# $Id$
 
 #
 # This module is licensed under the same terms as Perl itself. You use,

@@ -1,4 +1,4 @@
-# $Id: FastHitEventBuilder.pm,v 1.6 2002/12/05 13:46:35 heikki Exp $
+# $Id$
 #
 # BioPerl module for Bio::SearchIO::FastHitEventBuilder
 #

@@ -1,4 +1,4 @@
-# $Id: Result.pm,v 1.2 2002/10/22 07:45:24 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Tools::Phylo::Molphy::Result
 #

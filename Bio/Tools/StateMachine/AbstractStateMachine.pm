@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: AbstractStateMachine.pm,v 1.9 2002/10/22 07:38:49 lapp Exp $
+# $Id$
 #
 # BioPerl module Bio::Tools::StateMachine::AbstractStateMachine
 #

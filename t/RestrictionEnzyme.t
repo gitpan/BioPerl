@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: RestrictionEnzyme.t,v 1.7 2002/08/31 06:15:04 sac Exp $
+## $Id$
 
 use strict;
 

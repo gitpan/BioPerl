@@ -1,4 +1,4 @@
-# $Id: Iteration.pm,v 1.15 2002/06/19 00:27:49 jason Exp $
+# $Id$
 # Bioperl module Bio::Tools::BPlite::Iteration
 #	based closely on the Bio::Tools::BPlite modules
 #	Ian Korf (ikorf@sapiens.wustl.edu, http://sapiens.wustl.edu/~ikorf), 

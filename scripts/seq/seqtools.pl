@@ -22,7 +22,7 @@ BEGIN {
 #            See the Bio/SeqIO directory for the full list.
 # AUTHOR       : Steve Chervitz <sac@bioper.org>
 # CREATED      : 10 Apr 1998
-# REVISION     : $Id: seqtools.pl,v 1.2 2002/09/07 07:13:30 sac Exp $
+# REVISION     : $Id$
 # INSTALLATION : Edit $INSTALL_PATH to point to the directory containing
 #                your Bioperl modules (the Bio/ directory).
 #                Some operations require the Bio::Seq.pm module.

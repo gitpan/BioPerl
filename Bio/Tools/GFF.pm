@@ -1,4 +1,4 @@
-# $Id: GFF.pm,v 1.26 2002/11/24 21:35:40 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::Tools::GFF
 #

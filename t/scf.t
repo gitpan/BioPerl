@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: scf.t,v 1.6 2002/10/30 14:21:59 heikki Exp $
+## $Id$
 #
 
 use strict;

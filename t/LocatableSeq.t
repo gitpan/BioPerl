@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: LocatableSeq.t,v 1.7.2.1 2003/03/31 11:49:51 heikki Exp $
+## $Id$
 use strict;
 use constant NUMTESTS => 33;
 

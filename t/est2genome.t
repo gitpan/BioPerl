@@ -1,7 +1,7 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: est2genome.t,v 1.2 2002/10/11 16:44:09 jason Exp $
+# $Id$
 
 my $error;
 use strict;

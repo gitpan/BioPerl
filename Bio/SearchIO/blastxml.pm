@@ -1,4 +1,4 @@
-# $Id: blastxml.pm,v 1.24 2002/10/26 09:32:16 sac Exp $
+# $Id$
 #
 # BioPerl module for Bio::SearchIO::blastxml
 #

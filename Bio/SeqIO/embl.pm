@@ -1,4 +1,4 @@
-# $Id: embl.pm,v 1.57 2002/12/11 17:11:48 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::SeqIO::EMBL
 #
@@ -100,7 +100,8 @@ Describe contact details here
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -135,7 +136,7 @@ sub _initialize {
 			       -type => 'Bio::Seq::RichSeq'));
   }
 }
- 
+
 =head2 next_seq
 
  Title   : next_seq
@@ -203,7 +204,6 @@ sub next_seq {
 
    local $_;
  
-   
    BEFORE_FEATURE_TABLE :
    until( !defined $buffer ) {
        $_ = $buffer;
@@ -219,7 +219,8 @@ sub next_seq {
        #accession number
        if( /^AC\s+(.*)?/ ) {
 	   my @accs = split(/[; ]+/, $1); # allow space in addition
-	   $params{'-accession_number'} = shift @accs unless defined $params{'-accession_number'};
+	   $params{'-accession_number'} = shift @accs 
+	       unless defined $params{'-accession_number'};
 	   push @{$params{'-secondary_accessions'}}, @accs;
        }
        
@@ -234,13 +235,13 @@ sub next_seq {
        #date (NOTE: takes last date line)
        if( /^DT\s+(.+)$/ ) {
 	   my $date = $1;
-	   $params{'-dates'} = [ $date];
+	   push @{$params{'-dates'}}, $date;
        }
        
        #keywords
        if( /^KW   (.*)\S*$/ ) {
-	   my $keywords = $1;
-	   $params{'-keywords'} = $keywords;
+	   my @kw = split(/\s*\;\s+/,$1);
+	   push @{$params{'-keywords'}}, @kw;
        }
 
        # Organism name and phylogenetic information
@@ -1077,10 +1078,6 @@ sub _write_line_EMBL_regex {
     #print STDOUT "Going to print with $line!\n";
 
     $length || die "Programming error - called write_line_EMBL_regex without length.";
-
-    if( length $pre1 != length $pre2 ) {
-        die "Programming error - called write_line_EMBL_regex with different length pre1 and pre2 tags!";
-    }
 
     my $subl = $length - (length $pre1) -1 ;
 

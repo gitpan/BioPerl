@@ -1,4 +1,4 @@
-# $Id: hmmer.pm,v 1.13.2.2 2003/03/17 17:53:23 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::SearchIO::hmmer
 #

@@ -1,4 +1,4 @@
-# $Id: nhx.pm,v 1.4.2.1 2003/02/04 18:16:18 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::TreeIO::nhx
 #

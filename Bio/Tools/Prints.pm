@@ -1,4 +1,4 @@
-# $Id: Prints.pm,v 1.7 2002/10/22 07:45:22 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Tools::Prints
 #

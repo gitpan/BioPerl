@@ -1,4 +1,4 @@
-# $Id: RemoteBlast.pm,v 1.14.2.1 2003/03/25 12:32:17 heikki Exp $
+# $Id$
 #
 # BioPerl module for Bio::Tools::Run::RemoteBlast
 #

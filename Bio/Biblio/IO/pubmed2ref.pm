@@ -1,4 +1,4 @@
-# $Id: pubmed2ref.pm,v 1.2 2002/10/22 07:45:13 lapp Exp $
+# $Id$
 #
 # BioPerl module Bio::Biblio::IO::pubmed2ref.pm
 #
@@ -75,8 +75,8 @@ use Bio::Biblio::IO::medline2ref;
 
 BEGIN { 
     # set the version for version checking
-    $VERSION = do { my @r = (q$Revision: 1.2 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id: pubmed2ref.pm,v 1.2 2002/10/22 07:45:13 lapp Exp $;
+    $VERSION = do { my @r = (q$Revision$ =~ /\d+/g); sprintf "%d.%-02d", @r };
+    $Revision = q$Id$;
 }
 
 # ---------------------------------------------------------------------

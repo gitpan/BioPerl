@@ -1,4 +1,4 @@
-# $Id: GOterm.pm,v 1.12.2.2 2003/03/27 10:07:56 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Ontology::GOterm
 #
@@ -122,7 +122,8 @@ use constant FALSE        => 0;
                              integer of seven digits)
            -name          => the name of this GO term [scalar]
            -definition    => the definition of this GO term [scalar]  
-           -ontology      => a relationship between this Term and another Term [TermI or scalar]
+           -ontology      => the ontology for this term (a
+                             Bio::Ontology::OntologyI compliant object)
            -version       => version information [scalar]
            -is_obsolete   => the obsoleteness of this GO term [0 or 1]   
            -comment       => a comment [scalar]
@@ -164,7 +165,7 @@ sub init {
     $self->SUPER::init(@_);
 
     # then only initialize what we implement ourselves here
-    $self->GO_id( GOID_DEFAULT );
+    #$self->GO_id( GOID_DEFAULT );
   
 } # init
 
@@ -281,7 +282,7 @@ sub to_string {
     my $s = "";
 
     $s .= "-- GO id:\n";
-    $s .= $self->GO_id()."\n";
+    $s .= ($self->GO_id() || '')."\n";
     $s .= "-- Name:\n";
     $s .= ($self->name() || '') ."\n";
     $s .= "-- Definition:\n";

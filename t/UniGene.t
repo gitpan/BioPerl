@@ -1,7 +1,7 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: UniGene.t,v 1.10 2002/10/31 09:45:40 lapp Exp $
+# $Id$
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'

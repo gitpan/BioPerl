@@ -1,4 +1,4 @@
-# $Id: Genscan.pm,v 1.22 2002/10/22 07:38:46 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Tools::Genscan
 #

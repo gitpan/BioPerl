@@ -1,4 +1,4 @@
-# $Id: PrimarySeq.pm,v 1.73 2002/12/31 13:09:06 birney Exp $
+# $Id$
 #
 # bioperl module for Bio::PrimarySeq
 #
@@ -611,6 +611,22 @@ sub can_call_new {
 
 sub  id {
    return shift->display_id(@_);
+}
+
+=head2 is_circular
+
+ Title   : is_circular
+ Usage   : if( $obj->is_circular) { /Do Something/ }
+ Function: Returns true if the molecule is circular
+ Returns : Boolean value
+ Args    : none
+
+=cut
+
+sub is_circular{
+    my $self = shift;
+    return $self->{'is_circular'} = shift if @_;
+    return $self->{'is_circular'};
 }
 
 =head1 Methods for Bio::IdentifiableI compliance

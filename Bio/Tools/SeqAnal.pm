@@ -3,7 +3,7 @@
 # PURPOSE : To provide a base class for different sequence analysis tools.
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 27 Mar 1998
-# REVISION: $Id: SeqAnal.pm,v 1.12 2002/10/22 07:38:46 lapp Exp $
+# REVISION: $Id$
 # STATUS  : Alpha
 #
 # For documentation, run this module through pod2html

@@ -1,5 +1,5 @@
 # -*-Perl-*- mode (to keep my emacs happy)
-# $Id: SeqIO.t,v 1.59.2.1 2003/02/20 23:10:14 jason Exp $
+# $Id$
 
 use strict;
 use vars qw($DEBUG $TESTCOUNT);

@@ -1,4 +1,4 @@
-# $Id: Scaffold.pm,v 1.2 2002/11/11 18:16:30 lapp Exp $
+# $Id$
 #
 #  BioPerl module for Bio::Assembly::Scaffold
 #

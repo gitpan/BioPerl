@@ -1,6 +1,6 @@
 # POD documentation - main docs before the code
 
-# $Id: Failover.pm,v 1.5 2002/10/22 07:38:29 lapp Exp $
+# $Id$
 
 
 =head1 NAME
@@ -144,7 +144,7 @@ sub get_Seq_by_acc {
     foreach my $db ( @{$self->{'_database'}} ) {
 	my $seq;
 	eval {
-	    $seq = $db->get_Seq_by_acc($db);
+	    $seq = $db->get_Seq_by_acc($id);
 	};
 	if( defined $seq ) {
 	    return $seq;

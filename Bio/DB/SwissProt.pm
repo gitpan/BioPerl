@@ -1,5 +1,5 @@
 #
-# $Id: SwissProt.pm,v 1.19 2002/12/01 00:05:19 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::DB::SwissProt
 #

@@ -1,4 +1,4 @@
-# $Id: GenericHSP.pm,v 1.40.2.3 2003/03/24 20:44:45 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::Search::HSP::GenericHSP
 #

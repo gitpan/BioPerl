@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-##$Id: SeqUtils.t,v 1.10 2002/11/01 11:07:42 heikki Exp $
+##$Id$
 
 use strict;
 

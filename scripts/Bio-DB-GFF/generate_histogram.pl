@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: generate_histogram.pl,v 1.1 2002/08/28 14:27:41 lstein Exp $
+# $Id$
 
 use strict;
 use lib '.','./blib','../../blib/lib';

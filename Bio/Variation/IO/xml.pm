@@ -1,4 +1,4 @@
-# $Id: xml.pm,v 1.12.2.1 2003/03/01 17:23:43 jason Exp $
+# $Id$
 # BioPerl module for Bio::Variation::IO::xml
 #
 # Cared for by Heikki Lehvaslaiho <Heikki@ebi.ac.uk>

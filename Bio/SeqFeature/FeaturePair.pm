@@ -1,4 +1,4 @@
-# $Id: FeaturePair.pm,v 1.17 2002/10/08 08:38:31 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::SeqFeature::FeaturePair
 #

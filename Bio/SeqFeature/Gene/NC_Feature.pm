@@ -1,4 +1,4 @@
-# $Id: NC_Feature.pm,v 1.5 2002/10/22 07:45:20 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::SeqFeature::Gene::NC_Feature.pm
 #

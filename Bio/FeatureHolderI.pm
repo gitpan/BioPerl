@@ -1,4 +1,4 @@
-# $Id: FeatureHolderI.pm,v 1.2 2002/11/19 07:04:22 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::FeatureHolderI
 #

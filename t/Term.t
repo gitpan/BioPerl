@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Term.t,v 1.3.2.1 2003/03/13 02:09:21 lapp Exp $
+## $Id$
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -15,7 +15,7 @@ BEGIN {
         use lib 't';
     }
     use Test;
-    plan tests => 52;
+    plan tests => 49;
 }
 
 use Bio::Ontology::Term;
@@ -54,12 +54,11 @@ ok( $obj->comment(), "Consider the term ..." );
 
 ok( $obj->get_synonyms(), 0 );
 
-ok( $obj->add_synonym( ( "AA", "AB" ) ) );
-ok( $obj->get_synonyms(), 2 );
+$obj->add_synonym( ( "AA", "AB" ) );
 my @al1 = $obj->get_synonyms();
+ok( scalar(@al1), 2 );
 ok( $al1[ 0 ], "AA" );
 ok( $al1[ 1 ], "AB" );
-ok( $obj->get_synonyms(), 2 );
 
 my @al2 = $obj->remove_synonyms();
 ok( $al2[ 0 ], "AA" );
@@ -68,7 +67,7 @@ ok( $al2[ 1 ], "AB" );
 ok( $obj->get_synonyms(), 0 );
 ok( $obj->remove_synonyms(), 0 );
 
-ok( $obj->add_synonyms( ( "AA", "AB" ) ) );
+$obj->add_synonyms( ( "AA", "AB" ) );
 
 ok( $obj->identifier(undef), undef );
 ok( $obj->name(undef), undef );

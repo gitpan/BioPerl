@@ -1,4 +1,4 @@
-# $Id: ObjectFactory.pm,v 1.1.2.1 2003/03/27 10:07:56 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Factory::ObjectFactory
 #

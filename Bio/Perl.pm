@@ -1,4 +1,4 @@
-# $Id: Perl.pm,v 1.16.2.1 2003/03/25 12:32:15 heikki Exp $
+# $Id$
 #
 # BioPerl module for Bio::Perl
 #

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: faq.pl,v 1.6 2002/06/13 14:18:50 jason Exp $
+# $Id$
 
 # This script generates a HTML or text FAQ from the XML version.
 #
@@ -332,7 +332,7 @@ sub answer {
 sub code {
     my( $t, $code)= @_;
     my $table = new XML::Twig::Elt( 'table');
-    $table->set_att( bgcolor => "light grey", border => 0, cellspacing => 0, cellpadding => 10);
+    $table->set_att( bgcolor => "pink", border => 0, cellspacing => 0, cellpadding => 10);
     my $tr = new XML::Twig::Elt( 'tr');
     $tr->paste($table);
     my $td = new XML::Twig::Elt( 'td');

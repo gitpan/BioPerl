@@ -1,4 +1,4 @@
-# $Id: Range.pm,v 1.17 2002/10/22 07:38:24 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Range
 #

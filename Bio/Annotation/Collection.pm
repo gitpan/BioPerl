@@ -1,4 +1,4 @@
-# $Id: Collection.pm,v 1.16 2002/11/22 22:48:25 birney Exp $
+# $Id$
 
 #
 # BioPerl module for Bio::Annotation::Collection.pm

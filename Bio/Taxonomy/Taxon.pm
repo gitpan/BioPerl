@@ -1,4 +1,4 @@
-# $Id: Taxon.pm,v 1.1 2002/11/18 22:08:33 kortsch Exp $
+# $Id$
 #
 # BioPerl module for Bio::Taxonomy::Taxon
 #

@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: DB.t,v 1.36 2002/11/29 19:42:24 lstein Exp $
+# $Id$
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -41,7 +41,6 @@ END {
 	skip('unable to run all of the DB tests',1);
     }
 }
-
 if( $error ==  1 ) {
     exit(0);
 }
@@ -85,7 +84,6 @@ if ($@) {
 }
 
 $seq = $seqio = undef;
-
 eval {
     ok( defined($seqio = $gb->get_Stream_by_id([ qw(J00522 AF303112 
 							 2981014)])));
@@ -100,7 +98,6 @@ if ($@) {
     exit(0);
 }
 $seq = $seqio = undef;
-
 eval { 
     ok defined($gb = new Bio::DB::GenPept('-verbose'=>$verbose,'-delay'=>0)); 
     ok( defined($seq = $gb->get_Seq_by_id('195055')));
@@ -267,7 +264,6 @@ if ($@) {
   }
 
 $seq = $seqio = undef;
-
 # test query facility
 eval {
   ok defined ( $query = Bio::DB::Query::GenBank->new('-verbose' => $verbose,
@@ -286,6 +282,7 @@ eval {
   ok($seqio->next_seq->length, 408);
   ok($seqio->next_seq->length, 1611);
   ok($seqio->next_seq->length, 1156);
+  $seqio->close();
 };
 
 if ($@) {
@@ -295,6 +292,5 @@ if ($@) {
     foreach ( $Test::ntest..$NUMTESTS ) { 
 	skip('could not connect to Genbank',1); 
     }
-  }
-
+}
 $seq = $seqio = undef;

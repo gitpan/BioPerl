@@ -1,4 +1,4 @@
-# $Id: SeqAnalysisParserFactory.pm,v 1.9 2002/12/01 00:05:20 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::Factory::SeqAnalysisParserFactory
 #

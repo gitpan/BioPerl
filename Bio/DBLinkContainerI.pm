@@ -1,4 +1,4 @@
-# $Id: DBLinkContainerI.pm,v 1.8 2002/10/22 07:38:24 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::DBLinkContainerI
 #

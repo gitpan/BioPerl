@@ -8,10 +8,10 @@ ncbi_2_gff.pl - Massage NCBI chromosome annotation into GFF-format suitable for 
 
 =head1 VERSION (CVS-info)
 
- $RCSfile: process_ncbi_human.pl,v $
- $Revision: 1.2 $
- $Author: lstein $
- $Date: 2002/11/01 14:50:20 $
+ $RCSfile$
+ $Revision$
+ $Author$
+ $Date$
 
 
 =head2 SYNOPSIS

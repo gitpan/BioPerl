@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: make_primers.pl,v 1.3 2002/08/27 18:17:10 bosborne Exp $
+# $Id$
 # Author: cckim@stanford.edu
 
 # Description: This program designs primers for constructing knockouts

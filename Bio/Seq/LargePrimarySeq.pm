@@ -1,4 +1,4 @@
-# $Id: LargePrimarySeq.pm,v 1.27 2002/12/01 00:05:21 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::Seq::LargePrimarySeq
 #

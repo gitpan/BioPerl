@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: nmrpdb_parse.pl,v 1.1 2002/08/27 18:17:12 bosborne Exp $
+# $Id$
 use strict;
 
 # This program will read in an NMR derived PDB file containing

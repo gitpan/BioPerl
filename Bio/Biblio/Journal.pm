@@ -1,4 +1,4 @@
-# $Id: Journal.pm,v 1.6 2002/10/22 07:45:11 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Biblio::Journal
 #

@@ -1,4 +1,4 @@
-# $Id: mase.pm,v 1.9 2002/10/22 07:38:25 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::AlignIO::mase
 

@@ -1,4 +1,4 @@
-# $Id: biofetch.pm,v 1.5 2002/10/22 07:45:14 lapp Exp $
+# $Id$
 #
 # BioPerl module Bio::DB::Biblio::biofetch.pm
 #
@@ -105,8 +105,8 @@ use Bio::Biblio::IO;
 BEGIN {
 
     # set the version for version checking
-    $VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id: biofetch.pm,v 1.5 2002/10/22 07:45:14 lapp Exp $;
+    $VERSION = do { my @r = (q$Revision$ =~ /\d+/g); sprintf "%d.%-02d", @r };
+    $Revision = q$Id$;
 
     # you can add your own here theoretically.
     %HOSTS = (

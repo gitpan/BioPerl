@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: BlastIndex.t,v 1.5 2002/08/31 21:38:19 bdesany Exp $
+## $Id$
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -18,7 +18,7 @@ BEGIN {
 	use lib 't';
     }
     use Test;
-    $NUMTESTS = 13;
+    $NUMTESTS = 9;
     plan tests => $NUMTESTS;
     eval { require 'IO/String.pm' };
     if( $@ ) {
@@ -51,11 +51,7 @@ $index->make_index(Bio::Root::IO->catfile(cwd,"t","data","multi_blast.bls"));
     (ok(-e "Wibbl"));
 
 foreach my $id ( qw(CATH_RAT PAPA_CARPA) ) {
-
-    my $fh = $index->get_stream($id);
-    ok($fh);
-    ok( ! eof($fh) );
-    my $report = new Bio::Tools::BPlite(-fh => $fh);
+    my $report = $index->fetch_report($id);
     ok($report->query, qr/$id/);
     ok( $report->nextSbjct);
     ok( $index->fetch_report($id)->query, qr/$id/);

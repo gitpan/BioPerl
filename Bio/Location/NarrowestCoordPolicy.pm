@@ -1,4 +1,4 @@
-# $Id: NarrowestCoordPolicy.pm,v 1.7 2002/12/01 00:05:20 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::Location::NarrowestCoordPolicy
 #

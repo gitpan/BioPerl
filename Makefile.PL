@@ -1,6 +1,6 @@
 ## --Makefile.PL for Bioperl core module distribution--##
 ## ----------------------------------------------------##
-## $Id: Makefile.PL,v 1.50 2002/12/27 19:42:32 birney Exp $
+## $Id$
 ##----------------------------------------------------
 
 #
@@ -189,7 +189,7 @@ use ExtUtils::MakeMaker ;
 $do_autoload_finesse = 0;
 $NAME     = 'Bio';
 $DISTNAME = "bioperl";
-$VERSION  = "1.1";
+$VERSION  = "1.2.2";
 
 if( $do_autoload_finesse == 1 ) {
     fatal("Autoload finessing does not work at the moment!");
@@ -241,7 +241,7 @@ QQ_ERROR_QQ
 open(CONF,'>bioperl.conf') or die "couldn't open bioperl.conf";
 
 print CONF<<'!NO!GROK!';
-VERSION		1.2
+VERSION		1.2.2
 AUTHORS		file://AUTHORS
 !NO!GROK!
 

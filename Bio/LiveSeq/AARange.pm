@@ -1,4 +1,4 @@
-# $Id: AARange.pm,v 1.10 2001/10/22 08:22:49 heikki Exp $
+# $Id$
 #
 # bioperl module for Bio::LiveSeq::AARange
 #

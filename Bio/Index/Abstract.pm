@@ -1,6 +1,6 @@
 
 #
-# $Id: Abstract.pm,v 1.41 2002/12/17 02:08:36 jason Exp $
+# $Id$
 #
 # BioPerl module for Bio::Index::Abstract
 #

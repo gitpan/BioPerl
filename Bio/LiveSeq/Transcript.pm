@@ -1,4 +1,4 @@
-# $Id: Transcript.pm,v 1.17 2002/09/25 08:58:23 heikki Exp $
+# $Id$
 #
 # bioperl module for Bio::LiveSeq::Transcript
 #

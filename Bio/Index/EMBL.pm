@@ -1,4 +1,4 @@
-# $Id: EMBL.pm,v 1.21.2.1 2003/03/19 16:23:08 heikki Exp $
+# $Id$
 #
 # BioPerl module for Bio::Index::EMBL
 #

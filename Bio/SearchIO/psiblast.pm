@@ -1,5 +1,5 @@
 #------------------------------------------------------------------
-# $Id: psiblast.pm,v 1.17 2002/12/24 15:48:41 jason Exp $
+# $Id$
 #
 # BioPerl module Bio::SearchIO::psiblast
 #

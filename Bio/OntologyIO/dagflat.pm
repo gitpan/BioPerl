@@ -1,4 +1,4 @@
-# $Id: dagflat.pm,v 1.2.2.2 2003/03/27 10:07:57 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::OntologyIO::dagflat
 #
@@ -134,11 +134,13 @@ use constant FALSE        => 0;
                           process.ontology)
            -file       => if there is only a single flat file, it may
                           also be specified via the -file parameter
-           -ontology_name => the name of the ontology, defaults to
-                          "Gene Ontology"
-           -engine     => the L<Bio::Ontology::OntologyEngineI> object
+           -ontology_name => the name of the ontology; if not specified the
+                          parser will auto-discover it by using the term
+                          that starts with a '$', and converting underscores
+                          to spaces
+           -engine     => the Bio::Ontology::OntologyEngineI object
                           to be reused (will be created otherwise); note
-                          that every L<Bio::Ontology::OntologyI> will
+                          that every Bio::Ontology::OntologyI will
                           qualify as well since that one inherits from the
                           former.
 
@@ -177,7 +179,7 @@ sub _initialize {
     $self->{_flat_files} = $files ? ref($files) ? $files : [$files] : [];
 
     # ontology name (overrides implicit one through OntologyI engine)
-    $self->ontology_name($name);
+    $self->ontology_name($name) if $name;
 
 } # _initialize
 
@@ -220,6 +222,11 @@ sub ontology_name{
 sub parse {
     my $self = shift;
     
+    # setup the default term factory if not done by anyone yet
+    $self->term_factory(Bio::Ontology::TermFactory->new(
+					     -type => "Bio::Ontology::Term"))
+	unless $self->term_factory();
+
     # create the ontology object itself
     my $ont = Bio::Ontology::Ontology->new(-name => $self->ontology_name(),
 					   -engine => $self->_ont_engine());
@@ -299,8 +306,7 @@ sub defs_file {
         $self->{ "_defs_file_name" } = $f;
 	$self->_defs_io->close() if $self->_defs_io();
 	if(defined($f)) {
-	    $self->_defs_io->close() if $self->_defs_io();
-            $self->_defs_io( new Bio::Root::IO->new( -input => $f ) );
+            $self->_defs_io( Bio::Root::IO->new( -input => $f ) );
         }
     }
     return $self->{ "_defs_file_name" };
@@ -360,6 +366,9 @@ sub _add_ontology {
     foreach my $ont (@_) {
 	$self->throw(ref($ont)." does not implement Bio::Ontology::OntologyI")
 	    unless ref($ont) && $ont->isa("Bio::Ontology::OntologyI");
+	# the ontology name may have been auto-discovered while parsing
+	# the file
+	$ont->name($self->ontology_name) unless $ont->name();
 	push(@{$self->{'_ontologies'}}, $ont);
     }
 }
@@ -370,30 +379,24 @@ sub _add_term {
 
     $term->ontology($ont) if $ont && (! $term->ontology);
     $self->_ont_engine()->add_term( $term );
-
-
 } # _add_term 
 
 
 
 # This simply delegates. See SimpleGOEngine
 sub _part_of_relationship {
-    my ( $self, $term ) = @_;
+    my $self = shift;
 
-    return $self->_ont_engine()->part_of_relationship();
-
-
+    return $self->_ont_engine()->part_of_relationship(@_);
 } # _part_of_relationship 
 
 
 
 # This simply delegates. See SimpleGOEngine
 sub _is_a_relationship {
-    my ( $self, $term ) = @_;
+    my $self = shift;
 
-    return $self->_ont_engine()->is_a_relationship();
-
-
+    return $self->_ont_engine()->is_a_relationship(@_);
 } # _is_a_relationship 
 
 
@@ -412,12 +415,9 @@ sub _add_relationship {
 
 # This simply delegates. See SimpleGOEngine
 sub _has_term {
-    my ( $self, $term ) = @_;
+    my $self = shift;
 
-    
-    return $self->_ont_engine()->has_term( $term );
-
-
+    return $self->_ont_engine()->has_term( @_ );
 } # _add_term
 
 
@@ -448,7 +448,7 @@ sub _parse_flat_file {
         if ( ! $self->_has_term( $current_term ) ) {
             my $term =$self->_create_ont_entry($self->_get_name($line,
 								$current_term),
-						$current_term );
+					       $current_term );
             $self->_add_term( $term, $ont );
         }
         
@@ -478,7 +478,7 @@ sub _parse_flat_file {
             if ( ! $self->_has_term( $parent ) ) {
                 my $term = $self->_create_ont_entry($self->_get_name($line,
 								     $parent),
-						      $parent );
+						    $parent );
                 $self->_add_term( $term, $ont );
             }
            
@@ -508,25 +508,18 @@ sub _parse_flat_file {
         
         my $parent = $stack[ @stack - 1 ];
         
-        
-        if ( $line =~ /^\$/ ) {
-        }
-        elsif ( $line =~ /^\s*</ ) {
-            $self->_add_relationship( $parent,
-                                      $current_term,
-                                      $self->_part_of_relationship(),
+        # add a relationship if the line isn't the one with the root term
+	# of the ontology (which is also the name of the ontology)
+        if ( index($line,'$') != 0 ) {
+	    if ( $line !~ /^\s*[<%]/ ) {
+		$self->throw( "format error (file ".$self->file.")" );
+	    }
+	    my $reltype = ($line =~ /^\s*</) ?
+		$self->_part_of_relationship() :
+		$self->_is_a_relationship();
+            $self->_add_relationship( $parent, $current_term, $reltype,
 				      $ont);
         }
-        elsif ( $line =~ /^\s*%/ ) {
-            $self->_add_relationship( $parent,
-                                      $current_term,
-                                      $self->_is_a_relationship(),
-				      $ont);
-        }
-        else {
-	    $self->throw( "format error (file ".$self->file.")" );
-        }
-        
         
         $prev_spaces = $current_spaces;
         
@@ -542,7 +535,7 @@ sub _parse_flat_file {
 sub _get_first_termid {
     my ( $self, $line ) = @_;
     
-    if ( $line =~ /;\s*([A-Z]{1,8}:\d{7})/ ) {
+    if ( $line =~ /;\s*([A-Z]{1,8}:\d{3,})/ ) {
         return $1;
     }
     else {
@@ -557,13 +550,19 @@ sub _get_first_termid {
 sub _get_name {
     my ( $self, $line, $termid ) = @_;
     
-    if ( $line =~ /([^;<%,]+);\s*$termid/ ) {
+    if ( $line =~ /([^;<%]+);\s*$termid/ ) {
         my $name = $1;
 	# remove trailing and leading whitespace
         $name =~ s/\s+$//;
         $name =~ s/^\s+//;
-	# remove leading dollar character
-	$name = substr($name,1) if index($name,'$') == 0;
+	# remove leading dollar character; also we default the name of the
+	# ontology to this name if preset to something else
+	if(index($name,'$') == 0) {
+	    $name = substr($name,1);
+	    # replace underscores by spaces for setting the ontology name
+	    $self->ontology_name(join(" ",split(/_/,$name))) 
+		unless $self->ontology_name();
+	}
         return $name;
     }
     else {
@@ -598,7 +597,7 @@ sub _get_db_cross_refs {
    
     while ( $line =~ /;([^;^<^%^:]+:[^;^<^%^:]+)/g ) {
         my $ref = $1;
-        if ( $ref =~ /synonym/ || $ref =~ /[A-Z]{1,8}:\d{7}/ ) {
+        if ( $ref =~ /synonym/ || $ref =~ /[A-Z]{1,8}:\d{3,}/ ) {
             next;
         }
         $ref =~ s/\s+$//;
@@ -615,7 +614,7 @@ sub _get_secondary_termids {
     my ( $self, $line ) = @_;
     my @secs = ();
    
-    while ( $line =~ /,\s*([A-Z]{1,8}:\d{7})/g ) {
+    while ( $line =~ /,\s*([A-Z]{1,8}:\d{3,})/g ) {
         my $sec = $1;
         push( @secs, $sec );
     }
@@ -631,9 +630,9 @@ sub _get_isa_termids {
     
     my @ids = ();
     
-    $line =~ s/[A-Z]{1,8}:\d{7}//;
+    $line =~ s/[A-Z]{1,8}:\d{3,}//;
     
-    while ( $line =~ /%[^<^,]*?([A-Z]{1,8}:\d{7})/g ) {
+    while ( $line =~ /%[^<^,]*?([A-Z]{1,8}:\d{3,})/g ) {
         push( @ids, $1 );
     }
     return @ids; 
@@ -647,9 +646,9 @@ sub _get_partof_termids {
     
     my @ids = ();
     
-    $line =~ s/[A-Z]{1,8}:\d{7}//;
+    $line =~ s/[A-Z]{1,8}:\d{3,}//;
     
-    while ( $line =~ /<[^%^,]*?([A-Z]{1,8}:\d{7})/g ) {
+    while ( $line =~ /<[^%^,]*?([A-Z]{1,8}:\d{3,})/g ) {
         push( @ids, $1 );
     }
     return @ids; 
@@ -684,11 +683,12 @@ sub _next_term {
     }
     
     my $line      = "";
-    my $termid      = "";
-    my $next_term = "";
+    my $termid    = "";
+    my $next_term = $self->_term();
     my $def       = "";
     my $comment   = "";
     my @def_refs  = ();
+    my $isobsolete;
     
     while( $line = ( $self->_defs_io->_readline() ) ) {
     
@@ -696,26 +696,18 @@ sub _next_term {
         ||   $line =~ /^\s*!/ ) {
             next;
         }
-        
         elsif ( $line =~ /^\s*term:\s*(.+)/ ) {
+	    $self->_term( $1 );
+            last if $self->_not_first_record();
             $next_term = $1;
-            if ( $self->_not_first_record() == TRUE ) {
-                my $entry = $self->_create_ont_entry( $self->_term(), $termid,
-						      $def, $comment,
-						      \@def_refs );
-                $self->_term( $next_term );
-                return $entry;
-            }
-            else {
-                $self->_term( $next_term );
-                $self->_not_first_record( TRUE );
-            }
+	    $self->_not_first_record( TRUE );
         }
         elsif ( $line =~ /^\s*[a-z]{1,8}id:\s*(.+)/ ) {
             $termid = $1;
         }
         elsif ( $line =~ /^\s*definition:\s*(.+)/ ) {
             $def = $1;   
+	    $isobsolete = 1 if index($def,"OBSOLETE") == 0;
         }
         elsif ( $line =~ /^\s*definition_reference:\s*(.+)/ ) {
             push( @def_refs, $1 );  
@@ -724,9 +716,10 @@ sub _next_term {
             $comment = $1;  
         }
     }
-    $self->_done( TRUE );
-    return $self->_create_ont_entry( $self->_term(), $termid, $def,
-				     $comment, \@def_refs );
+    $self->_done( TRUE ) unless $line; # we'll come back until done
+    
+    return $self->_create_ont_entry( $next_term, $termid, $def,
+				     $comment, \@def_refs, $isobsolete);
 } # _next_term
 
 
@@ -750,13 +743,19 @@ sub _ont_engine {
 # Used to create ontology terms.
 # Arguments: name, id
 sub _create_ont_entry {
-    my ( $self, $name, $termid ) = @_;
+    my ( $self, $name, $termid, $def, $cmt, $dbxrefs, $obsolete ) = @_;
 
+    if((!defined($obsolete)) && (index(lc($name),"obsolete") == 0)) {
+	$obsolete = 1;
+    }
     my $term = $self->term_factory->create_object(-name => $name,
-						  -identifier => $termid);
+						  -identifier => $termid,
+						  -definition => $def,
+						  -comment => $cmt,
+						  -dblinks => $dbxrefs,
+						  -is_obsolete => $obsolete);
 
     return $term;
-
 } # _create_ont_entry
 
 
@@ -766,9 +765,6 @@ sub _not_first_record {
     my ( $self, $value ) = @_;
 
     if ( defined $value ) {
-        unless ( $value == FALSE || $value == TRUE ) {
-            $self->throw( "Argument to method \"_not_first_record\" must be either ".TRUE." or ".FALSE );
-        }
         $self->{ "_not_first_record" } = $value;
     }
     
@@ -782,10 +778,6 @@ sub _done {
     my ( $self, $value ) = @_;
 
     if ( defined $value ) {
-        unless ( $value == FALSE || $value == TRUE ) {
-            $self->throw( "Found [$value] where [" . TRUE
-            ." or " . FALSE . "] expected" );
-        }
         $self->{ "_done" } = $value;
     }
     

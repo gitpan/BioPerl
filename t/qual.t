@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: qual.t,v 1.4 2001/10/12 22:24:08 matsallac Exp $
+## $Id$
 #
 
 

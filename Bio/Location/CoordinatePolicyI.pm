@@ -1,4 +1,4 @@
-# $Id: CoordinatePolicyI.pm,v 1.4 2002/10/22 07:38:34 lapp Exp $
+# $Id$
 #
 # BioPerl module for Bio::Location::CoordinatePolicyI
 # Cared for by Hilmar Lapp <hlapp@gmx.net>

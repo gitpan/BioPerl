@@ -1,4 +1,4 @@
-# $Id: SeqPattern.pm,v 1.14 2002/10/22 07:38:46 lapp Exp $
+# $Id$
 #
 # bioperl module for Bio::Tools::SeqPattern
 #

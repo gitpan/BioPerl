@@ -1,4 +1,4 @@
-# $Id: Graph.pm,v 1.2.2.1 2003/02/20 05:11:45 heikki Exp $
+# $Id$
 #
 # bioperl module for Bio::Coordinate::Graph
 #
