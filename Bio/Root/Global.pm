@@ -4,7 +4,7 @@
 #           many different modules and scripts.
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 3 Sep 1996
-# REVISION: $Id: Global.pm,v 1.6.2.1 2000/09/15 08:24:18 jgrg Exp $
+# REVISION: $Id: Global.pm,v 1.7 2000/07/12 17:46:59 dag Exp $
 #
 # INSTALLATION:
 #   This module is included with the central Bioperl distribution:
@@ -47,6 +47,7 @@ to map numbers to roman numerals.
 
 These functions are generally called by Bio::Root::Object
 or somewhere similar, and not directly
+
 
 =head1 INSTALLATION
 
@@ -156,6 +157,7 @@ $GLOBAL = {};
 bless $GLOBAL, 'Bio::Root::Object';
 $GLOBAL->{'_name'} = 'Global object';
 
+
 ######################################
 ##         Methods                  ##
 ######################################
@@ -251,3 +253,9 @@ sub fatal_on_warn {
 #####################################################################################
 
 1;
+
+
+
+
+
+

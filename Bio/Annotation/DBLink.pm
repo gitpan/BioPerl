@@ -1,6 +1,8 @@
+
 #
 # BioPerl module for Bio::Annotation::Link
 #
+# Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
 # Copyright Ewan Birney
 #
@@ -10,70 +12,89 @@
 
 =head1 NAME
 
-Bio::Annotation::DBLink - Database Link
+Bio::Annotation::DBLink - DESCRIPTION of Object
 
 =head1 SYNOPSIS
 
-    $annotation = $seq->annotation;
-    foreach my $link ( $annotation->each_DBLink() ) {
-	print "Linked to ",$link->primary_id()," in ",$link->database,"\n";
-    }
+   $link1 = new Bio::Annotation::DBLink(-database => 'TSC',
+                                        -primary_id => 'TSC0000030'
+				     );
+
+   #or 
+
+   $link2 = new Bio::Annotation::DBLink();
+   $link2->database('dbSNP');
+   $link2->primary_id('2367');
+
+   # $feat is Bio::Annotation object, Bio::SeqFeature::Generic inherits it
+   $feat->add_DBLink($link2);
+
 
 =head1 DESCRIPTION
 
 Provides an object which represents a link from one onbject to something
-in another database without proscribing what is in the other database.
-It gives back strings for the "primary_id", something like the accession
-number or the main id for the database and "database" being a string
-representation of the database.
+in another database without proscribing what is in the other database
 
 =head1 CONTACT
 
-Ewan Birney <birney@ebi.ac.uk>
+Describe contact details here
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
+
 # Let the code begin...
+
 
 package Bio::Annotation::DBLink;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
+use Bio::Root::RootI;
 
-use Bio::Root::Object;
+@ISA = qw(Bio::Root::RootI);
 
-@ISA = qw(Bio::Root::Object);
-# new() is inherited from Bio::Root::Object
 
-# _initialize is where the heavy stuff will happen when new is called
+sub new {
+  my($class,@args) = @_;
 
-sub _initialize {
-  my($self,@args) = @_;
+  my $self = $class->SUPER::new(@args);
 
-  my $make = $self->SUPER::_initialize;
-
-# set stuff in self from @args
- return $make; # success - we hope!
+  my ($database, $primary_id, $optional_id, $comment) =
+      $self->_rearrange([qw(DATABASE
+			    PRIMARY_ID
+			    OPTIONAL_ID
+			    COMMENT
+			    )], @args);
+  
+  $database    && $self->database($database);
+  $primary_id  && $self->primary_id($primary_id);
+  $optional_id && $self->optional_id($optional_id);
+  $comment     && $self->comment($comment);
+  
+  return $self;
 }
 
 =head2 database
 
  Title   : database
  Usage   : $self->database($newval)
- Function: 
+ Function: set/get on the database string. Databases are just
+           a string here which can then be interpretted elsewhere
  Example : 
  Returns : value of database
  Args    : newvalue (optional)
+
 
 =cut
 
 sub database{
    my ($self,$value) = @_;
+
    if( defined $value) {
       $self->{'database'} = $value;
     }
@@ -85,10 +106,14 @@ sub database{
 
  Title   : primary_id
  Usage   : $self->primary_id($newval)
- Function: 
+ Function: set/get on the primary id (a string)
+           The primary id is the main identifier used for this object in 
+           the database. Good examples would be accession numbers. The id
+           is meant to be the main, stable identifier for this object
  Example : 
  Returns : value of primary_id
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -105,10 +130,17 @@ sub primary_id{
 
  Title   : optional_id
  Usage   : $self->optional_id($newval)
- Function: 
+ Function: get/set for the optional_id (a string)
+           optional id is a slot for people to use as they wish. The main
+           issue is that some databases do not have a clean single string
+           identifier scheme. It is hoped that the primary_id can behave like
+           a reasonably sane "single string identifier" of objects, and people
+           can use/abuse optional ids to their heart's content to provide
+           precise mappings. 
  Example : 
  Returns : value of optional_id
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -125,10 +157,12 @@ sub optional_id{
 
  Title   : comment
  Usage   : $self->comment($newval)
- Function: 
+ Function: get/set of comments (comment object)
+           Sets or gets comments of this dblink, which is sometimes relevant
  Example : 
- Returns : value of comment
+ Returns : value of comment (Bio::Annotation::Comment)
  Args    : newvalue (optional)
+
 
 =cut
 

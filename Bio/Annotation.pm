@@ -1,5 +1,5 @@
 #
-# $Id: Annotation.pm,v 1.5.2.2 2000/09/20 12:40:45 pvh Exp $
+# $Id: Annotation.pm,v 1.14.2.1 2001/03/02 17:32:14 heikki Exp $
 #
 # BioPerl module for Bio::Annotation
 #
@@ -20,8 +20,11 @@ Bio::Annotation - A generic object for annotations
     # get an annotation somehow in $ann
 
     # description is a simple, one line description 
-    print "Description is ",$ann->description "\n";
+    print "Description is ",$ann->description, "\n";
 
+    foreach $genename ( $self->each_gene_name() ) {
+	print "gene name: $genename\n";
+    }
 
     foreach $comment ( $ann->each_Comment ) {
        # $comment is a Bio::Annotation::Comment object
@@ -30,7 +33,7 @@ Bio::Annotation - A generic object for annotations
 
     foreach $link ( $ann->each_DBLink ) {
        # link is a Bio::Annotation::DBLink object
-       print "Link to ",$link->primary_id, " in database", $link->database "\n";
+       print "Link to ",$link->primary_id, " in database", $link->database, "\n";
     }
 
     foreach $ref ( $ann->each_Reference ) {
@@ -42,11 +45,10 @@ Bio::Annotation - A generic object for annotations
     # Making an annotation object from scratch
     #
 
-    $ann = Bio::Pfam::Annotation->new();
+    $ann = Bio::Annotation->new();
 
     $ann->description("Description text");
     print "Annotation description is ", $ann->description, "\n";
-   
 
 =head1 DESCRIPTION
 
@@ -109,34 +111,49 @@ package Bio::Annotation;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::Object
+use Bio::Root::RootI;
 
-use Bio::Root::Object;
-
-# we don't really need these object but we should do.
+# we don't really need these object but we should 
 # declare them here to prevent tears later.
 
 use Bio::Annotation::Reference;
 use Bio::Annotation::DBLink;
 use Bio::Annotation::Comment;
 
-@ISA = qw(Bio::Root::Object);
+@ISA = qw(Bio::Root::RootI);
 
-# new() is inherited from Bio::Root::Object
+=head2 new
 
-# _initialize is where the heavy stuff will happen when new is called
+ Title   : new
+ Usage   : $annotation = Bio::Annotation->new( '-description' => 'a description line');
+ Function: Makes a new Annotation object. The main thing 
+           you will want to do with this is add comment objects and
+           dblink objects, with calls like
 
-sub _initialize {
-  my($self, %params) = @_;
-  my( $text ) = ( $params{'-DESCRIPTION'}||$params{'-description'} );
+            $annotation->add_Comment($comment);
+            $annotation->add_DBLink($dblink);
 
-  my $make = $self->SUPER::_initialize;
+ Example :
+ Returns : a new Bio::Annotation Object
+ Args    : hash, potentially with one field, -description
 
-  $self->{ 'description' } = $text;
+
+=cut
+
+
+sub new {
+  my($class,@args) = @_;
+  my $self = $class->SUPER::new(@args);
+  
+  my ($text ) = $self->_rearrange([qw(DESCRIPTION)], @args);
+  
+  defined $text && $self->description($text);
   $self->{ 'refs' } = [];
   $self->{ 'comment' } = [];
   $self->{ 'link' } = [];
-  return $make; # success - we hope!
+  $self->{ '_names' } = [];
+
+  return $self; 
 }
 
 
@@ -152,36 +169,97 @@ sub _initialize {
 
 =cut
 
-sub description{
+sub description {
    my ($self,$value) = @_;
    if( defined $value) {
       $self->{'description'} = $value;
     }
     return $self->{'description'};
-
 }
 
-=head2 gene_name
+#  =head2 gene_name
 
- Title   : gene_name
- Usage   : $obj->gene_name($newval)
- Function: 
- Example : 
- Returns : value of gene name
- Args    : newvalue (optional)
+#   Title   : gene_name
+#   Usage   : $obj->gene_name($newval)
+#   Function: Get/set the primary gene name.
+
+#             Use of this method is deprecated. Use add_gene_name()/
+#             each_gene_name() instead.
+#   Example : 
+#   Returns : value of gene name
+#   Args    : newvalue (optional)
+
+
+#  =cut
+
+sub gene_name{
+    my ($self,$value) = @_;
+
+    $self->warn("gene_name() is deprecated. Use add_gene_name/each_gene_name instead.");
+    if( defined $value) {
+	$self->add_gene_name($value);
+    }
+    ($value) = $self->each_gene_name();
+    return $value;
+}
+
+
+=head2 add_gene_name
+
+ Title   : add_gene_name
+ Usage   : $self->add_gene_name($name1[,$name2,...])
+ Function: adds a reference object
+ Example :
+ Returns : 
+ Args    : a string, or a list of strings
 
 
 =cut
 
-sub gene_name{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'gene_name'} = $value;
+sub add_gene_name{
+    my ($self) = shift;
+    foreach my $name ( @_ ) {
+	push(@{$self->{'_names'}},$name);
     }
-    return $self->{'gene_name'};
-
 }
 
+=head2 remove_gene_name
+
+ Title   : remove_gene_name
+ Usage   : $self->remove_gene_name($index)
+ Function: removes a particular gene name
+ Example :
+ Returns : 
+ Args    : index of the name to remove
+
+
+=cut
+
+sub remove_gene_name{
+   my ($self,$idx) = @_;
+   splice @{$self->{'_names'}}, $idx, 1;
+}
+
+
+=head2 each_gene_name
+
+ Title   : each_gene_name
+ Usage   : foreach $genename ( $self->each_gene_name() ) {
+               print "seq has gene name $genename\n";
+           }
+ Function: gets the array of gene names
+ Example :
+ Returns : an array of strings
+ Args    :
+
+
+=cut
+
+sub each_gene_name{
+   my ($self,@args) = @_;
+   
+   return @{$self->{'_names'}}; 
+}
 
 =head2 add_Reference
 
@@ -190,7 +268,7 @@ sub gene_name{
  Function: adds a reference object
  Example :
  Returns : 
- Args    :
+ Args    : a Bio::Annotation::Reference or derived object
 
 
 =cut
@@ -198,9 +276,30 @@ sub gene_name{
 sub add_Reference{
    my ($self) = shift;
    foreach my $ref ( @_ ) {
+       if( ! $ref->isa('Bio::Annotation::Reference') ) {
+	   $self->throw("Is not a Bio::Annotation::Reference object but a [$ref]");
+       }
        push(@{$self->{'refs'}},$ref);
    }
 }
+
+=head2 remove_Reference
+
+ Title   : remove_Reference
+ Usage   : $self->remove_Reference($index)
+ Function: removes a reference object
+ Example :
+ Returns : 
+ Args    : index number from references array
+
+
+=cut
+
+sub remove_Reference{
+   my ($self,$idx) = @_;
+   splice @{$self->{'refs'}}, $idx, 1;
+}
+
 
 =head2 each_Reference
 
@@ -208,7 +307,7 @@ sub add_Reference{
  Usage   : foreach $ref ( $self->each_Reference() )
  Function: gets an array of reference
  Example :
- Returns : 
+ Returns : an array of Bio::Annotation::Reference or derived objects
  Args    :
 
 
@@ -229,7 +328,7 @@ sub each_Reference{
  Function: adds a Comment object
  Example :
  Returns : 
- Args    :
+ Args    : a Bio::Annotation::Comment or derived object
 
 
 =cut
@@ -240,9 +339,25 @@ sub add_Comment{
        if( ! $com->isa('Bio::Annotation::Comment') ) {
 	   $self->throw("Is not a comment object but a  [$com]");
        }
-
        push(@{$self->{'comment'}},$com);
    }
+}
+
+=head2 remove_Comment
+
+ Title   : remove_Comment
+ Usage   : $self->remove_Comment($index)
+ Function: removes a comment object
+ Example :
+ Returns : 
+ Args    : index number from comments array
+
+
+=cut
+
+sub remove_Comment{
+   my ($self,$idx) = @_;
+   splice @{$self->{'comment'}}, $idx, 1;
 }
 
 =head2 each_Comment
@@ -251,8 +366,8 @@ sub add_Comment{
  Usage   : foreach $ref ( $self->each_Comment() )
  Function: gets an array of Comment of objects
  Example :
- Returns : 
- Args    :
+ Returns : an array of Bio::Annotation::Comment or derived objects
+ Args    : none
 
 
 =cut
@@ -271,7 +386,7 @@ sub each_Comment{
  Function: adds a link object
  Example :
  Returns : 
- Args    :
+ Args    : a Bio::Annotation::DBLink or derived object
 
 
 =cut
@@ -284,13 +399,31 @@ sub add_DBLink{
    push(@{$self->{'link'}},$com);
 }
 
+=head2 remove_DBLink
+
+ Title   : remove_DBLink
+ Usage   : $self->remove_DBLink($index)
+ Function: removes a DBLink object
+ Example :
+ Returns : 
+ Args    : index number from links array
+
+
+=cut
+
+sub remove_DBLink{
+   my ($self,$idx) = @_;
+   splice @{$self->{'link'}}, $idx, 1;
+}
+
+
 =head2 each_DBLink
 
  Title   : each_DBLink
  Usage   : foreach $ref ( $self->each_DBlink() )
  Function: gets an array of DBlink of objects
  Example :
- Returns : 
+ Returns : an array of Bio::Annotation::DBlink or derived objects
  Args    :
 
 
@@ -304,6 +437,8 @@ sub each_DBLink{
 
 
 1;
+
+
 
 
 

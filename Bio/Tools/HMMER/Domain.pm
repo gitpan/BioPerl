@@ -1,3 +1,4 @@
+# $Id: Domain.pm,v 1.8 2001/02/04 23:19:36 lapp Exp $
 #
 # BioPerl module for Bio::Tools::HMMER::Domain
 #
@@ -45,21 +46,22 @@ use Bio::SeqFeature::FeaturePair;
 use Bio::SeqFeature::Generic;
 use strict;
 
+
 @ISA = qw(Bio::SeqFeature::FeaturePair);
 
-sub _initialize { 
-  my($self,@args) = @_;
-  my $make = $self->SUPER::_initialize(@args);
+sub new { 
+  my($class,@args) = @_;
+  my $self = $class->SUPER::new(@args);
 
   $self->{'alignlines'} = [];
 
-  my $hmmf1 = new Bio::SeqFeature::Generic;
-  my $hmmf2 = new Bio::SeqFeature::Generic;
+  my $hmmf1 = Bio::SeqFeature::Generic->new(@args);
+  my $hmmf2 = Bio::SeqFeature::Generic->new(@args);
 
   $self->feature1($hmmf1);
   $self->feature2($hmmf2);
 
-  return $make;
+  return $self;
 }
 
 =head2 add_alignment_line
@@ -92,6 +94,7 @@ sub add_alignment_line {
  Returns : 
  Args    : None
 
+
 =cut
 
 sub each_alignment_line {
@@ -110,7 +113,10 @@ sub each_alignment_line {
  Returns : A string
  Args    : Optional seperator 1 and seperator 2 (default / and -)
 
+
 =cut
+
+
 
 sub get_nse {
     my $self = shift;
@@ -127,17 +133,18 @@ sub get_nse {
     return sprintf("%s%s%d%s%d",$self->seqname,$sep1,$self->start,$sep2,$self->end);
 }
 
-=head2 start_seq
 
- Title   : start_seq
- Usage   : Backward compatibility with old HMMER modules.
-           should use $domain->start
- Function:
- Example :
- Returns : 
- Args    :
+#  =head2 start_seq
 
-=cut
+#   Title   : start_seq
+#   Usage   : Backward compatibility with old HMMER modules.
+#             should use $domain->start
+#   Function:
+#   Example :
+#   Returns : 
+#   Args    :
+
+#  =cut
 
 sub start_seq {
     my $self = shift;
@@ -147,17 +154,17 @@ sub start_seq {
     return $self->start($start);
 }
 
-=head2 end_seq
+#  =head2 end_seq
 
- Title   : end_seq
- Usage   : Backward compatibility with old HMMER modules.
-           should use $domain->end
- Function:
- Example :
- Returns : 
- Args    :
+#   Title   : end_seq
+#   Usage   : Backward compatibility with old HMMER modules.
+#             should use $domain->end
+#   Function:
+#   Example :
+#   Returns : 
+#   Args    :
 
-=cut
+#  =cut
 
 sub end_seq {
     my $self = shift;
@@ -167,40 +174,42 @@ sub end_seq {
     return $self->end($end);
 }
 
-=head2 start_hmm
+#  =head2 start_hmm
 
- Title   : start_hmm
- Usage   : Backward compatibility with old HMMER modules, and
-           for convience. Equivalent to $self->homol_SeqFeature->start
- Function:
- Example :
- Returns : 
- Args    :
+#   Title   : start_hmm
+#   Usage   : Backward compatibility with old HMMER modules, and
+#             for convience. Equivalent to $self->homol_SeqFeature->start
+#   Function:
+#   Example :
+#   Returns : 
+#   Args    :
 
-=cut
+#  =cut
 
 sub start_hmm { 
     my $self = shift; 
     my $start = shift; 
+    $self->warn("Using old domain->start_hmm. Should use domain->hstart");
     return $self->hstart($start); 
 }
 
-=head2 end_hmm
+#  =head2 end_hmm
 
- Title   : end_hmm
- Usage   : Backward compatibility with old HMMER modules, and
-           for convience. Equivalent to $self->homol_SeqFeature->start
- Function:
- Example :
- Returns : 
- Args    :
+#   Title   : end_hmm
+#   Usage   : Backward compatibility with old HMMER modules, and
+#             for convience. Equivalent to $self->homol_SeqFeature->start
+#   Function:
+#   Example :
+#   Returns : 
+#   Args    :
 
-=cut
+#  =cut
 
 sub end_hmm {
     my $self = shift;
     my $end = shift;
 
+    $self->warn("Using old domain->end_hmm. Should use domain->hend");
     return $self->hend($end); 
 }
 
@@ -213,6 +222,7 @@ sub end_hmm {
  Example :
  Returns : 
  Args    :
+
 
 =cut
 
@@ -235,10 +245,12 @@ sub hmmacc{
  Returns : 
  Args    :
 
+
 =cut
 
 sub hmmname {
    my ($self,$hname) = @_;
+
 
    if( defined $hname ) {
        $self->hseqname($hname);
@@ -331,6 +343,7 @@ sub seq_range{
  Returns : 
  Args    :
 
+
 =cut
 
 sub hmm_range{
@@ -341,4 +354,6 @@ sub hmm_range{
 
 1;  # says use was ok
 __END__
+
+
 

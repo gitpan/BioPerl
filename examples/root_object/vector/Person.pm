@@ -3,7 +3,7 @@
 # PURPOSE : Dummy object for testing Bio::Root::Vector.pm.
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 4 May 1997 (sac@genome.stanford.edu)
-# REVISION: $Id: Person.pm,v 1.1.1.1.14.1 2000/09/15 08:24:25 jgrg Exp $
+# REVISION: $Id: Person.pm,v 1.1.1.1 1998/12/11 15:24:35 birney Exp $
 #--------------------------------------------------------
 
 package Person;
@@ -15,6 +15,7 @@ use Bio::Root::Vector ();
 @ISA = qw( Bio::Root::Object Bio::Root::Vector);
 
 my $ID = 'Person';
+
 
 ####################################
 sub _initialize {
@@ -28,6 +29,7 @@ sub _initialize {
 
     $DEBUG and print "---> Initialized $ID (${\ref($self)}) ",$self->name(),"\n";
 }
+
 
 sub _display_stats {
     # Prints most recent Person first.

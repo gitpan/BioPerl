@@ -1,9 +1,11 @@
+
+#---------------------------------------------------------------------------
 # PACKAGE    : SeqWords.pm
 # PURPOSE    : To count n-mers in any sequence of characters
 # AUTHOR     : Derek Gatherer (D.Gatherer@organon.nhe.akzonobel.nl)
 # SOURCE     : 
 # CREATED    : 21st March 2000
-# MODIFIED   : 30th March 2000 (one bug removed, POD revised)
+# MODIFIED   : 
 # DISCLAIMER : I am employed in the pharmaceutical industry but my 
 #	     : employers do not endorse or sponsor this module
 #	     : in any way whatsoever.  The above email address is
@@ -20,31 +22,33 @@ Bio::Tools::SeqWords - Object holding n-mer statistics for one sequence
 
 =head1 SYNOPSIS
 
-Take a sequence object from eg, an inputstream, and creates an object
+Take a sequence object from eg, an inputstream, and creates an object 
 for the purposes of holding n-mer word statistics about that sequence.
-The sequence can be nucleic acid or protein, but the module is
-probably most relevant for DNA.  The words are counted in a
-non-overlapping manner, ie. in the style of a codon table, but with
-any word length.  For overlapping word counts, a sequence can be
-'shifted' to remove the first character and then the count repeated.
-For counts on opposite strand (DNA/RNA), a reverse complement method
-should be performed, and then the count repeated.
+The sequence can be nucleic acid or protein, but the module is probably
+most relevant for DNA.  The words are counted in a non-overlapping manner,
+ie. in the style of a codon table, but with any word length.
+For overlapping word counts, a sequence can be 'shifted' to remove the first
+character and then the count repeated.  For counts on opposite strand
+(DNA/RNA),
+a reverse complement method should be performed, and then the count
+repeated.
 
 Creating the SeqWords object, eg:
 
 	my $inputstream = Bio::SeqIO->new( -file => "seqfile", -format =>
 'Fasta');
 	my $seqobj = $inputstream->next_seq();
-	my $word_obj = Bio::Tools::SeqWords->new($seqobj);
+	my $seq_word = Bio::Tools::SeqWords->new(-seq => $seqobj);
 
 or:
-	my $seqobj = Bio::PrimarySeq->new(-seq=>'[cut and paste a sequence
-here]', -moltype = 'dna', -id = 'test');
-	my $word_obj  =  Bio::Tools::SeqWords->new($seqobj);
+
+	my $seqobj = Bio::PrimarySeq->new(-seq=>'[cut and paste a sequence here]', 
+                                          -moltype = 'dna', -id = 'test');
+	my $seq_word  =  Bio::Tools::SeqWords->new(-seq => $seqobj);
 
 obtain a hash of word counts, eg:
 
-	my $hash_ref = $word_obj->count_words($word_length);
+	my $hash_ref = $seq_stats->count_words($word_length);
 
 display hash table, eg:
 
@@ -54,25 +58,28 @@ display hash table, eg:
 		print "\n$key\t$hash{$key}";
 	}
 
+or	
+
+	my $hash_ref = Bio::SeqWords->count_words($seqobj,$word_length);
+
+
 =head1 DESCRIPTION
 
-Bio::Tools::SeqWords is a featherweight object for the calculation of
-n-mer word occurrences in a single sequence.  It is envisaged that the
+Bio:SeqWords is a featherweight object for the calculation of n-mer
+word occurrences in a single sequence.  It is envisaged that the
 object will be useful for construction of scripts which use n-mer word
 tables as the raw material for statistical calculations; for instance,
 hexamer frequency for the calculation of coding protential, or the
 calculation of periodicity in repetitive DNA.  Triplet frequency is
-already handled by Bio::Tools::SeqStats.pm (author: Peter Schattner).
-There are a few possible applications for protein, eg: hypothesised
-amino acid 7-mers in heat shock proteins, or proteins with multiple
-simple motifs.  Sometimes these protein periodicities are best seen
-when the amino acid alphabet is truncated, eg Shulman alphabet.  Since
-there are quite a few of these shortened alphabets, this module does
-not specify any particular alphabet.
+already handled by Bio::SeqStats.pm (author: Peter Schattner).  There
+are a few possible applications for protein, eg: hypothesised amino
+acid 7-mers in heat shock proteins, or proteins with multiple simple
+motifs.  Sometimes these protein periodicities are best seen when the
+amino acid alphabet is truncated, eg Shulman alphabet.  Since there
+are quite a few of these shortened alphabets, this module does not
+specify any particular alphabet.
 
 See Synopsis above for object creation code.
-
-=head1 DEVELOPERS' NOTES
 
 =head1 FEEDBACK
 
@@ -83,9 +90,7 @@ and other Bioperl modules. Send your comments and suggestions preferably
 to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
-  vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented
-discussion
+  bioperl-l@bioperl.org                 - General discussion
   http://bio.perl.org/MailList.html             - About the mailing lists
 
 =head2 Reporting Bugs
@@ -118,39 +123,36 @@ package Bio::Tools::SeqWords;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::Object
-# this code was originally written by Peter Schattner for
-# Bio::Tools::SeqStats;
+use Bio::Root::RootI;
 
-# with modifications by SAC.
+@ISA = qw(Bio::Root::RootI);
 
-@ISA = qw(Bio::Root::Object);
 
-# new() is inherited from Bio::Root::Object
+sub new {
+    my($class,@args) = @_;
+    # our new standard way of instantiation
+    my $self = $class->SUPER::new(@args);
 
-# _initialize is is called from within new()
-
-sub _initialize 
-{
-    	my($self,@args) = @_;
-    	$self->SUPER::_initialize;
-
-	my $seqobj = shift (@args);
-    	unless  ($seqobj->isa("Bio::PrimarySeqI")) 
-	{
-		die("die in _init, SeqWords works only on PrimarySeqI
-objects\n");
-    	}
+    my ($seqobj) = $self->_rearrange([qw(SEQ)],@args);
+    if((! defined($seqobj)) && @args && ref($args[0])) {
+	# parameter not passed as named parameter?
+	$seqobj = $args[0];
+    }
+    
+    if(! $seqobj->isa("Bio::PrimarySeqI")) { 
+	$self->throw(ref($self) . " works only on PrimarySeqI objects\n");
+    }
 	
-    	$self->{'_seqref'} = $seqobj;
-   
-    	return $self;
+    $self->{'_seqref'} = $seqobj;
+    return $self; 
 }
+
 
 =head2 count_words
 
  Title   : count_words
- Usage   : $word_count = $word_obj->count_words($word_length); 
+ Usage   : $word_count = $seq_stats->count_words($word_length); 
+ or 	 : $word_count = $seq_stats->Bio::SeqWords->($seqobj,$word_length);
  Function: Counts non-overlapping words within a string
 	 : any alphabet is used
  Example : a sequence ACCGTCCGT, counted at word length 4,
@@ -160,7 +162,8 @@ objects\n");
 alphabet
          : used and values are number of occurrences of the word in the
 sequence.
- Args    : Word length as scalar
+ Args    : Word length as scalar and, reference to sequence object if
+required
 
   Throws an exception word length is not a positive integer
   or if word length is longer than the sequence.
@@ -169,39 +172,44 @@ sequence.
 
 sub count_words
 {
-	my ($self,$word_length) = @_;
+	my ($self,$seqobj,$word_length) = @_;
+
+	# check how we were called, and if necessary rearrange arguments
+	if(ref($seqobj)) {
+	    # call as SeqWords->count_words($seq, $wordlen)
+	    if(! $seqobj->isa("Bio::PrimarySeqI")) { 
+		$self->throw("SeqWords works only on PrimarySeqI objects\n");
+	    }
+	} else {
+	    # call as $obj->count_words($wordlen)
+	    $word_length = $seqobj;
+	    $seqobj = undef;
+	}
 
 	if($word_length eq "" || $word_length =~ /[a-z]/i)
 	{
-		die("SeqWords cannot accept non-numeric characters or a null
-value in the \$word_length variable\n");
+		$self->throw("SeqWords cannot accept non-numeric characters or a null value in the \$word_length variable\n");
 	}
 	elsif ($word_length <1 || ($word_length - int($word_length)) >0)
 	{
-		die("SeqWords requires the word length to be a positive
-integer\n");
+		$self->throw("SeqWords requires the word length to be a positive integer\n");
     	}
 	
-	my $seqobj =  $self->{'_seqref'};
-
-	unless  ($seqobj->isa("Bio::PrimarySeqI")) 
-	{
-		die("die in count words, SeqWords works only on PrimarySeqI
-objects\n");
-    	}
-
+	if(! defined($seqobj)) {
+	    $seqobj =  $self->{'_seqref'};
+	}
 	my $seqstring = uc $seqobj->seq();
+
 	if($word_length > length($seqstring))
 	{
-		die("die in count words, \$word_length is bigger than
-sequence length\n");
+	    $self->throw("die in count words, \$word_length is bigger than sequence length\n");
 	}
 	
 	my %codon = ();
 
 # now the real business
 
-	while($seqstring =~ /(([A-Z]){$word_length})/gim)
+	while($seqstring =~ /(([ACGT]){$word_length})/gim)
 	{
 		$codon{uc($1)}++;
 	}

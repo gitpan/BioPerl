@@ -11,7 +11,7 @@
 # PURPOSE  : To submit a set of sequence for Blast analysis and parse the results.
 # AUTHOR   : Steve A. Chervitz
 # CREATED  : 15 May 1998
-# REVISION : $Id: blast_seq.pl,v 1.5.2.1 2000/05/15 09:20:06 sac Exp $
+# REVISION : $Id: blast_seq.pl,v 1.6 2000/05/15 08:58:51 sac Exp $
 # WEBSITE  : http://bio.perl.org/Projects/Blast/
 # USAGE    : blast_seq.pl -h
 # EXAMPLES : blast_seq.pl -eg

@@ -11,7 +11,7 @@
 #                 support.
 # CREATED : 4 May 1998
 # STATUS  : Alpha
-# REVISION: $Id: Webblast.pm,v 1.7.2.4 2000/09/15 08:24:25 jgrg Exp $
+# REVISION: $Id: Webblast.pm,v 1.8.2.1 2001/03/03 08:29:00 heikki Exp $
 #
 # For documentation, run this module through pod2html
 # (preferably from Perl v5.004 or better).
@@ -225,6 +225,7 @@ my $_out_dir                = '';    # where to save the Blast output files.
 my $_blastObj               = undef;
 my $_errmsg                 = '';
 
+
 # SAC: defunct options and variables:
 #my $notAsk             =  $_default{'notAsk'};
 #my $sequenceFormat     = $_default{'sequenceFormat'};
@@ -234,6 +235,8 @@ my $_errmsg                 = '';
 #my @username   = split(//, $username);  # convert the first case into upper
 #$username[0] =~ tr/a-z/A-Z/;
 #$username    = join("", @username);
+
+
 
 ## POD Documentation
 
@@ -260,6 +263,7 @@ subclass. See L<blast_remote>() for a description of available parameters.
 
     @amino_dbs      = @Blast_dbp_remote;
     @nucleotide_dbs = @Blast_dbn_remote;
+
 
 =head1 INSTALLATION
 
@@ -296,6 +300,7 @@ In principle, this module can be customized to use different servers
 that provide a Blast interface like the NCBI or WashU style servers. 
 Such servers could be remote or local. This hasn't been well-tested however. 
 
+
 =head1 DEPENDENCIES
 
 Bio::Tools::Blast::Run::Webblast.pm is used by B<Bio::Tools::Blast.pm>.
@@ -309,6 +314,7 @@ The development of this is thus linked with the Blast.pm module.
  Bio::Seq.pm                             - Biosequence object  
  Bio::Root::Object.pm                    - Bioperl base object class.
 
+
  http://bio.perl.org/Projects/modules.html  - Online module documentation
  http://bio.perl.org/Projects/Blast/        - Bioperl Blast Project     
  http://bio.perl.org/                       - Bioperl Project Homepage
@@ -321,9 +327,9 @@ User feedback is an integral part of the evolution of this and other Bioperl mod
 Send your comments and suggestions preferably to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+    vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
+    vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
+    http://bio.perl.org/MailList.html             - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -337,15 +343,15 @@ their resolution. Bug reports can be submitted via email or the web:
 
 =over 0
 
-=item Steve A. Chervitz <sac@genome.stanford.edu>
+=item Steve A. Chervitz E<lt>sac@genome.stanford.eduE<gt>
 
     - Webblast.pm modularized version of webblast script.
 
-=item Alex Dong Li <ali@genet.sickkids.on.ca>
+=item Alex Dong Li E<lt>ali@genet.sickkids.on.caE<gt>
 
     - original webblast script.
 
-=item Ross N. Crowhurst <RCrowhurst@hort.cri.nz>
+=item Ross N. Crowhurst E<lt>RCrowhurst@hort.cri.nzE<gt>
 
     - modified Webblast.pm to use LWP to give proxy server support.
 
@@ -379,6 +385,7 @@ Methods beginning with a leading underscore are considered private
 and are intended for internal use by this module. They are
 B<not> considered part of the public interface and are described here
 for documentation purposes only.
+
 
 =head2 blast_remote
 
@@ -496,11 +503,11 @@ for documentation purposes only.
        4             flat master-slave without identities
  -------------------------------------------------------------
   Available substitution scoring matrices (NCBI):
-      
+
       BLAST2 matrices: BLOSUM80, BLOSUM62, BLOSUM45, PAM30, PAM70
 
       BLAST1 matrices: BLOSUM62, PAM40, PAM120, PAM250, IDENTITY.
-      
+
       Others members of the BLOSUM and PAM family of matrices
       may be available as well.
       These are exported by this module in the @Blast_matrix_remote array.
@@ -521,6 +528,7 @@ for documentation purposes only.
   -------------------------------------------------------------
   Available sequence complexity filters:
        SEG, SEG+XNU, XNU, dust, none.
+
 
 See Also : _set_options(), _adjust_options(), _validate_options(), _blast(), B<Bio::Tools::Blast.pm>
 
@@ -674,6 +682,7 @@ sub _set_options {
     }
 }
 
+
 #--------------------
 sub _adjust_options {
 #--------------------
@@ -740,6 +749,7 @@ sub _adjust_options {
 
     $blastServerURL = 'http://' . $blastServerURL unless $blastServerURL =~ /^http:/i;
 }
+
 
 #----------------------
 sub _validate_options {
@@ -1175,6 +1185,7 @@ sub _blast {
 	#    $MONITOR && print STDERR "All done!\a\n\n";
     }
 
+
 #------------------
 sub _get_request {
 #------------------
@@ -1206,6 +1217,7 @@ sub _get_request {
 
     return POST $blastServerURL, [ %param ];
 }
+
 
 #------------------
 sub _validate_seq {
@@ -1249,6 +1261,8 @@ sub _validate_seq {
     }
     1;
 }
+
+
 
 #--------------------------
 sub _removeJunkTagAndText {
@@ -1370,6 +1384,8 @@ sub _removeJunkTagAndText {
    return 1;
 }
 
+
+
 #--------------------------------------------
 sub _removeJunkTagAndTextForEmailResponse {
 #--------------------------------------------
@@ -1399,6 +1415,7 @@ sub _removeJunkTagAndTextForEmailResponse {
 
    return 1;
 }
+
 
 #----------------------
 sub _removeHTMLtags {
@@ -1496,7 +1513,9 @@ should dicontinue use of ungapped blast), Blast2 (NCBI), PSI-Blast2
 These lists of parameters for posting to blast servers were
 obtained directly from the respective WWW forms for each server.
 
+
 =head2 Basic ungapped BLAST Search Server Parameters
+
 
 PROGRAM 
 [default value]:blastn
@@ -1562,6 +1581,7 @@ HTML
 [default value]:''
 HTML
 
+
 =head2 Basic Blast 2
 
 PROGRAM
@@ -1601,6 +1621,7 @@ HTML
 [default value]:''
 IS_SET
 
+
 =head2 BLAST2 ADVANCED
 
 PROGRAM
@@ -1636,13 +1657,16 @@ FILTER
 [default value]:default
 none
 
+
 NCBI_GI
 [default value]:''
 is_set
 
+
 OVERVIEW
 [default value]:is_set
 ''
+
 
 DESCRIPTIONS
 [default value]:500
@@ -1724,7 +1748,10 @@ HTML
 [default value]:''
 IS_SET
 
+
+
 =head2 PSI BLAST2
+
 
 PROGRAM
 [default value]:blastp
@@ -1983,7 +2010,9 @@ default
 
 sequence
 
+
 =cut
+
 
 1;
 __END__

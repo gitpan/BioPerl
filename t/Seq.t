@@ -1,112 +1,140 @@
+# -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Seq.t,v 1.10.2.3 2000/09/01 11:57:25 birney Exp $
+## $Id: Seq.t,v 1.19 2001/01/25 22:13:40 jason Exp $
 
-# Before `make install' is performed this script should be runnable with
-# `make test'. After `make install' it should work as `perl test.t'
+use strict;
 
-#-----------------------------------------------------------------------
-## perl test harness expects the following output syntax only!
-## 1..3
-## ok 1  [not ok 1 (if test fails)]
-## 2..3
-## ok 2  [not ok 2 (if test fails)]
-## 3..3
-## ok 3  [not ok 3 (if test fails)]
-##
-## etc. etc. etc. (continue on for each tested function in the .t file)
-#-----------------------------------------------------------------------
+BEGIN { 
+    # to handle systems with no installed Test module
+    # we include the t dir (where a copy of Test.pm is located)
+    # as a fallback
+    eval { require Test; };
+    if( $@ ) {
+	use lib 't';
+    }
+    use Test;
 
+    plan tests => 26;
+}
 
-## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..11\n"; 
-	use vars qw($loaded); }
-END {print "not ok 1\n" unless $loaded;}
-
-use lib '../';
 use Bio::Seq;
 use Bio::SeqFeature::Generic;
-
-$loaded = 1;
-print "ok 1\n";    # 1st test passes.
-
-
-## End of black magic.
-##
-## Insert additional test code below but remember to change
-## the print "1..x\n" in the BEGIN block to reflect the
-## total number of tests that will be run. 
-
+use Bio::Annotation;
+use Bio::Species;
+ok(1);
 
 my $seq = Bio::Seq->new(-seq=>'ACTGTGGCGTCAACT',
                         -desc=>'Sample Bio::Seq object',
 			-moltype => 'dna' );
-print "ok 2\n"; 
+ok $seq;
 
-$trunc = $seq->trunc(1,4);
+my $trunc = $seq->trunc(1,4);
+ok $trunc->length,  4, 'truncated sequence was not of length 4';
 
-print "ok 3\n";
-
-if( $trunc->seq() ne 'ACTG' ) {
-   print "not ok 4\n";
-} else {
-   print "ok 4\n";
-}
-
-$trans = $seq->translate();
-
-if( $trans->seq() ne 'TVAST' ) {
-   print "not ok 5\n";
-} else {
-   print "ok 5\n";
-}
+ok $trunc->seq, 'ACTG', 'truncated sequence was not ACTG instead was '. $trunc->seq();
 
 # test ability to get str function
+ok  $seq->seq(),  'ACTGTGGCGTCAACT' ;
 
-$t = $seq->seq();
-if( $t eq 'ACTGTGGCGTCAACT' ) {
-  print "ok 6\n";
-}
-
-$seq = Bio::Seq->new(-seq=>'actgtggcgtcaact',
+ok $seq = Bio::Seq->new(-seq=>'actgtggcgtcaact',
 		     -desc=>'Sample Bio::Seq object',
 		     -display_id => 'something',
 		     -accession_number => 'accnum',
 		     -moltype => 'dna' );
-print "ok 7\n"; 
 
-
-$trans = $seq->translate();
-
-if( $trans->seq() ne 'TVAST' ) {
-   print "not ok 8\n";
-} else {
-   print "ok 8\n";
-}
+ok uc $seq->moltype, 'DNA' , 'moltype was ' .$seq->moltype();
 
 # basic methods
 
-if( $seq->id() ne 'something' || $seq->accession_number ne 'accnum' ) {
-    print "not ok 9\n";
-    print "saw ",$seq->id,":",$seq->accession_number,":",$seq->primary_id,"\n";
-} else {
-  print "ok 9\n";
-}
-
-my $subseq = $seq->subseq(5, 9);
-
-if( $seq->subseq(5, 9) ne 'tggcg') {
-    print "not ok 10\n";
-    print "subseq(5,9) was ",$seq->subseq(5,9), " when I expected tggcg\n";
-} else {
-  print "ok 10\n";
-}
+ok $seq->id(), 'something',  "saw ".$seq->id;
+ok $seq->accession_number, 'accnum', "saw ". $seq->accession_number ;
+ok $seq->subseq(5, 9),  'tggcg', "subseq(5,9) was ". $seq->subseq(5,9);
 
 my $newfeat = Bio::SeqFeature::Generic->new( -start => 10,
 					     -end => 12,
-						-primary => 'silly',
-						-source => 'stuff');
+					     -primary => 'silly',
+					     -source => 'stuff');
 
 
 $seq->add_SeqFeature($newfeat);
+ok $seq->feature_count, 1;
 
-print "ok 11\n";
+my $species = new Bio::Species
+    (-verbose => 1, 
+     -classification => [ qw( sapiens Homo Hominidae
+			      Catarrhini Primates Eutheria
+			      Mammalia Vertebrata Chordata
+			      Metazoa Eukaryota )]);
+$seq->species($species);
+ok $seq->species->binomial, 'Homo sapiens';
+$seq->annotation(new Bio::Annotation('-description' => 'desc-here'));
+ok $seq->annotation->description, 'desc-here', 
+		 'annotation was ' . $seq->annotation();
+
+#
+#  translation tests
+#
+
+my $trans = $seq->translate();
+ok  $trans->seq(), 'TVAST' , 'translated sequence was ' . $trans->seq();
+
+# unambiguous two character codons like 'ACN' and 'GTN' should give out an amino acid
+$seq->seq('ACTGTGGCGTCAAC');
+$trans = $seq->translate();
+ok $trans->seq(), 'TVAST', 'translated sequence was ' . $trans->seq();
+
+$seq->seq('ACTGTGGCGTCAACA');
+$trans = $seq->translate();
+ok $trans->seq(), 'TVAST', 'translated sequence was ' . $trans->seq();
+
+$seq->seq('ACTGTGGCGTCAACAG');
+$trans = $seq->translate();
+ok $trans->seq(), 'TVAST', 'translated sequence was ' . $trans->seq();
+
+$seq->seq('ACTGTGGCGTCAACAGT');
+$trans = $seq->translate();
+ok $trans->seq(), 'TVASTV', 'translated sequence was ' . $trans->seq();
+
+$seq->seq('ACTGTGGCGTCAACAGTA');
+$trans = $seq->translate();
+ok $trans->seq(), 'TVASTV', 'translated sequence was ' . $trans->seq();
+
+$seq->seq('AC');
+ok $seq->translate->seq , 'T', 'translated sequence was ' . $seq->translate->seq();
+
+#difference between the default and full CDS translation
+
+$seq->seq('atgtggtaa');
+$trans = $seq->translate();
+ok $trans->seq(), 'MW*' , 'translated sequence was ' . $trans->seq();
+
+$seq->seq('atgtggtaa');
+$trans = $seq->translate(undef,undef,undef,undef,1);
+ok $trans->seq(), 'MW', 'translated sequence was ' . $trans->seq();
+
+#frame 
+my $string;
+my @frames = (0, 1, 2);
+foreach my $frame (@frames) {
+    $string .= $seq->translate(undef, undef, $frame)->seq;
+    $string .= $seq->revcom->translate(undef, undef, $frame)->seq;
+}
+ok $string, 'MW*LPHCGXYHXVVTT';
+
+#Translating with all codon tables using method defaults
+$string = '';
+my @codontables = qw( 1 2 3 4 5 6 9 10 11 12 13 14 15 16 21 22 23);
+foreach my $ct (@codontables) {
+    $string .= $seq->translate(undef, undef, undef, $ct)->seq;
+}
+ok $string, 'MW*MW*MW*MW*MW*MWQMW*MW*MW*MW*MW*MWYMW*MW*MW*MW*MW*';
+
+# CDS translation set to throw an exception for internal stop codons
+$seq->seq('atgtggtaataa');
+eval {
+    $seq->translate(undef, undef, undef, undef, 'CDS' , 'throw');
+};
+ok $@ ;
+
+$seq->seq('atgtggtaataa');
+ok $seq->translate('J', '-',)->seq, 'MWJJ';

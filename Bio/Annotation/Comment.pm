@@ -1,6 +1,8 @@
+
 #
-# BioPerl module for Bio::Annotation::Comment
+# BioPerl module for Bio::Pfam::Annotation::Comment
 #
+# Cared for by Ewan Birney <pfam@sanger.ac.uk>
 #
 # Copyright Ewan Birney
 #
@@ -10,36 +12,32 @@
 
 =head1 NAME
 
-Bio::Annotation::Comment - A Comment on an Annotation
+Bio::Annotation::Comment - A comment object, holding text
 
 =head1 SYNOPSIS
 
-    # comment objects attached to annotations
-    foreach my $comment ( $seq->annotation->each_Comment() ) {
-	# comment object currently pretty stupid. Just gives back 
-	# text as a string
-	$text = $comment->text();
-    }
+
+    $comment = Bio::Annotation::Comment->new();
+    $comment->text("This is the text of this comment");
+    $annotation->add_Comment($comment);
+
 
 =head1 DESCRIPTION
 
-A comment object is meant to represent one logical comment in a 
-piece of annotation (common CC lines in EMBL files etc). At the moment
-is a very simple object, but this will give us a placeholder for 
-more advanced things, eg, able to provide some XML stuff and eventually
-things like authorship tracking.
-
-This object originally came from the Pfam annotation object
+A holder for comments in annotations, just plain text. This is a very simple
+object, and justifably so.
 
 =head1 CONTACT
 
-Ewan Birney <birney@ebi.ac.uk>
+Describe contact details here
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
+
 
 # Let the code begin...
 
@@ -47,33 +45,46 @@ package Bio::Annotation::Comment;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
+use Bio::Root::RootI;
 
-use Bio::Root::Object;
+@ISA = qw(Bio::Root::RootI);
 
-@ISA = qw(Bio::Root::Object);
-# new() is inherited from Bio::Root::Object
+=head2 new
 
-# _initialize is where the heavy stuff will happen when new is called
+ Title   : new
+ Usage   : $comment = Bio::Annotation::Comment->new( '-text' => 'some text for this comment');
+ Function: This returns a new comment object, optionally with
+           text filed
+ Example :
+ Returns : a Bio::Annotation::Comment object
+ Args    : a hash with -text optionally set
 
-sub _initialize {
-  my($self,@args) = @_;
 
-  my $make = $self->SUPER::_initialize;
+=cut
 
-  $self->{'flat'} = [];
-# set stuff in self from @args
- return $make; # success - we hope!
+
+sub new {
+  my($class,@args) = @_;
+
+  my $self = $class->SUPER::new(@args);
+  my ($text) = $self->_rearrange([qw( TEXT )], @args);
+
+  defined $text && $self->text($text);
+
+  return $self;
 }
 
 =head2 text
 
  Title   : text
- Usage   : $self->text($newval)
- Function: 
+ Usage   : $value = $self->text($newval)
+ Function: get/set for the text field. A comment object
+           just holds a single string which is accessible through
+           this method
  Example : 
  Returns : value of text
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -85,5 +96,7 @@ sub text{
     return $self->{'text'};
 
 }
+
+
 
 1;

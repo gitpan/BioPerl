@@ -1,7 +1,7 @@
-#
+# $Id: fasta.pm,v 1.22 2001/01/30 06:55:29 lapp Exp $
 # BioPerl module for Bio::SeqIO::fasta
 #
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
+# Cared for by Ewan Birney <birney@ebi.ac.uk>
 #          and Lincoln Stein <lstein@cshl.org>
 #
 # Copyright Ewan Birney & Lincoln Stein
@@ -29,14 +29,12 @@ file databases.
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org            - General discussion
+  http://bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -49,8 +47,9 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 
 =head1 AUTHORS - Ewan Birney & Lincoln Stein
 
-Email: birney@sanger.ac.uk
+Email: birney@ebi.ac.uk
        lstein@cshl.org
+
 
 =head1 APPENDIX
 
@@ -67,24 +66,10 @@ use strict;
 # Object preamble - inherits from Bio::Root::Object
 
 use Bio::SeqIO;
+use Bio::Seq;
+use Bio::PrimarySeq;
 
 @ISA = qw(Bio::SeqIO);
-# new() is inherited from Bio::Root::Object
-
-# _initialize is where the heavy stuff will happen when new is called
-
-sub _initialize {
-  my($self,@args) = @_;
-  return unless my $make = $self->SUPER::_initialize(@args);
-}
-
-=head2 next_primary_seq
-
- Title   : next_seq
- Usage   : $seq = $stream->next_seq()
- Function: returns the next sequence in the stream
- Returns : Bio::PrimarySeq object
- Args    : NONE
 
 =head2 next_seq
 
@@ -100,46 +85,68 @@ sub next_seq {
     return next_primary_seq( $_[0], 1 );
 }
 
+=head2 next_primary_seq
+
+ Title   : next_seq
+ Usage   : $seq = $stream->next_seq()
+ Function: returns the next sequence in the stream
+ Returns : Bio::PrimarySeq object
+ Args    : NONE
+
+=cut
+
 sub next_primary_seq {
   my( $self, $as_next_seq ) = @_;
-  local $/ = '>';
+  my $seq;
+  my $moltype;
+  local $/ = "\n>";
 
   return unless my $entry = $self->_readline;
 
   if ($entry eq '>')  {  # very first one
     return unless $entry = $self->_readline;
   }
-  my $next_rec = $entry;
-  while( $next_rec =~ /(^|.)>$/) {
-      # Jason applying HL's patch from 25/05/2000 
-      # (on 02/10/2000)
-      # a greater sign not preceded by a newline indicates that there is a
-      # '>' within the description, so we need more to complete the record
-      return unless defined($next_rec = $self->_readline());
-      $entry .= $next_rec;  
-  }
 
-  my ($top,$sequence) = $entry =~ /^(.+?)\n([^>]+)/s
+  my ($top,$sequence) = $entry =~ /^(.+?)\n([^>]*)/s
     or $self->throw("Can't parse entry");
   my ($id,$fulldesc) = $top =~ /^\s*(\S+)\s*(.*)/
     or $self->throw("Can't parse fasta header");
-  
+  $id =~ s/^>//;
   $sequence =~ s/\s//g; # Remove whitespace
 
+  # for empty sequences we need to know the mol.type
+  $moltype = $self->moltype();
+  if(length($sequence) == 0) {
+      if(! defined($moltype)) {
+	  # let's default to dna
+	  $moltype = "dna";
+      }
+  } else {
+      # we don't need it really, so disable
+      $moltype = undef;
+  }
+
+  # create the seq object
   if ($as_next_seq) {
     # Return a Bio::Seq if asked for
-    return Bio::Seq->new(-seq        => $sequence,
+    $seq = Bio::Seq->new(-seq        => $sequence,
 		         -id         => $id,
 		         -primary_id => $id,
 		         -desc       => $fulldesc,
+			 -moltype    => $moltype
 		         );
   } else {
-    return Bio::PrimarySeq->new(-seq        => $sequence,
+    $seq = Bio::PrimarySeq->new(-seq        => $sequence,
 		                -id         => $id,
 		                -primary_id => $id,
 		                -desc       => $fulldesc,
+				-moltype    => $moltype
 		                );
   }
+  # if there wasn't one before, set the guessed type
+  $self->moltype($seq->moltype());
+  
+  return $seq;
 }
 
 =head2 write_seq
@@ -149,6 +156,7 @@ sub next_primary_seq {
  Function: writes the $seq object into the stream
  Returns : 1 for success and 0 for error
  Args    : Bio::Seq object
+
 
 =cut
 
@@ -161,7 +169,11 @@ sub write_seq {
 	 $desc =~ s/\n//g;
         $top .= " $desc";
      }
-     $str=~ s/(.{1,60})/$1\n/g;
+     if(length($str) > 0) {
+	 $str =~ s/(.{1,60})/$1\n/g;
+     } else {
+	 $str = "\n";
+     }
      $self->_print (">",$top,"\n",$str) or return;
    }
    return 1;

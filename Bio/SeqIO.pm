@@ -1,3 +1,4 @@
+# $Id: SeqIO.pm,v 1.26.2.1 2001/03/02 22:47:54 heikki Exp $
 #
 # BioPerl module for Bio::SeqIO
 #
@@ -67,7 +68,7 @@ also
    $stream->type() # returns 'INPUT' or 'OUTPUT'
 
 As an added bonus, you can recover a filehandle that is tied to the
-SeqIO object, allowing you to use the standard <> and print operations
+SeqIO object, allowing you to use the standard E<lt>E<gt> and print operations
 to read and write sequence objects:
 
     use Bio::SeqIO;
@@ -97,9 +98,10 @@ This makes the simplest ever reformatter
 
     print $out $_ while <$in>;
 
+
 =head1 CONSTRUCTORS
 
-=head2 Bio::SeqIO->new()
+=head2 Bio::SeqIO-E<gt>new()
 
    $seqIO = Bio::SeqIO->new(-file => 'filename',   -format=>$format);
    $seqIO = Bio::SeqIO->new(-fh   => \*FILEHANDLE, -format=>$format);
@@ -133,7 +135,7 @@ example, to read from STDIN:
 Note that you must pass filehandles as references to globs.
 
 If neither a filehandle nor a filename is specified, then the module
-will read from the @ARGV array or STDIN, using the familiar <>
+will read from the @ARGV array or STDIN, using the familiar E<lt>E<gt>
 semantics.
 
 =item -format
@@ -148,6 +150,7 @@ Specify the format of the file.  Supported formats include:
    PIR         Protein Information Resource format
    GCG         GCG format
    raw         Raw format (one sequence per line, no ID)
+   ace         ACeDB sequence format
 
 If no format is specified and a filename is given, then the module
 will attempt to deduce it from the filename.  If this is unsuccessful,
@@ -158,7 +161,7 @@ all supported.
 
 =back
 
-=head2 Bio::SeqIO->newFh()
+=head2 Bio::SeqIO-E<gt>newFh()
 
    $fh = Bio::SeqIO->newFh(-fh   => \*FILEHANDLE, -format=>$format);
    $fh = Bio::SeqIO->newFh(-format => $format);
@@ -166,9 +169,9 @@ all supported.
 
 This constructor behaves like new(), but returns a tied filehandle
 rather than a Bio::SeqIO object.  You can read sequences from this
-object using the familiar <> operator, and write to it using print().
-The usual array and $_ semantics work.  For example, you can read all
-sequence objects into an array like this:
+object using the familiar E<lt>E<gt> operator, and write to it using
+print().  The usual array and $_ semantics work.  For example, you can
+read all sequence objects into an array like this:
 
   @sequences = <$fh>;
 
@@ -179,11 +182,11 @@ are not supported.
 
 See below for more detailed summaries.  The main methods are:
 
-=head2 $sequence = $seqIO->next_seq()
+=head2 $sequence = $seqIO-E<gt>next_seq()
 
 Fetch the next sequence from the stream.
 
-=head2 $seqIO->write_seq($sequence [,$another_sequence,...])
+=head2 $seqIO-E<gt>write_seq($sequence [,$another_sequence,...])
 
 Write the specified sequence(s) to the stream.
 
@@ -200,9 +203,8 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/MailList.shtml      - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -210,12 +212,12 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  the bugs and their resolution.
  Bug reports can be submitted via email or the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  bioperl-bugs@bioperl.org
+  http://bioperl.org/bioperl-bugs/
 
 =head1 AUTHOR - Ewan Birney, Lincoln Stein
 
-Email birney@sanger.ac.uk
+Email birney@ebi.ac.uk
 
 Describe contact details here
 
@@ -233,11 +235,12 @@ package Bio::SeqIO;
 use strict;
 use vars '@ISA';
 
-use Bio::Root::Object;
-use Bio::Seq;
+use Bio::Root::RootI;
+use Bio::Root::IO;
+use Bio::PrimarySeq;
 use Symbol();
 
-@ISA = 'Bio::Root::Object';
+@ISA = qw(Bio::Root::RootI Bio::Root::IO);
 
 =head2 new
 
@@ -245,7 +248,7 @@ use Symbol();
  Usage   : $stream = Bio::SeqIO->new(-file => $filename, -format => 'Format')
  Function: Returns a new seqstream
  Returns : A Bio::SeqIO::Handler initialised with the appropriate format
- Args    : -file => $filename 
+ Args    : -file => $filename
            -format => format
            -fh => filehandle to attach to
 
@@ -254,27 +257,34 @@ use Symbol();
 my $entry = 0;
 
 sub new {
-   my ($class,%param) = @_;
-   my ($format);
-   my ($handler,$stream);
+    my ($caller,@args) = @_;
+    my $class = ref($caller) || $caller;
+    
+    # or do we want to call SUPER on an object if $caller is an
+    # object?
+    if( $class =~ /Bio::SeqIO::(\S+)/ ) {
+	my ($self) = $class->SUPER::new(@args);	
+	$self->_initialize(@args);
+	return $self;
+    } else { 
 
-   if( $class eq 'Bio::SeqIO::MultiFile' ) {
-       return Bio::Root::Object::new($class,%param);
-   }
+	my %param = @args;
+	@param{ map { lc $_ } keys %param } = values %param; # lowercase keys
+	my $format = $param{'-format'} || 
+	    $class->_guess_format( $param{-file} || $ARGV[0] ) ||
+		'fasta';
+	$format = "\L$format";	# normalize capitalization to lower case
 
-   @param{ map { lc $_ } keys %param } = values %param;  # lowercase keys
-   $format = $param{'-format'} 
-             || $class->_guess_format( $param{-file} || $ARGV[0] )
-             || 'Fasta';
-   $format = "\L$format"; # normalize capitalization to lower case
+	if ( $class eq 'Bio::SeqIO::MultiFile' ) {
+	    return $class->new(%param);
+	}	
 
-   if( &_load_format_module($format) == 0 ) { # normalize capitalization
-       return undef;
-   }
-
-   $stream = "Bio::SeqIO::$format"->_new(%param);
-   return $stream;
+	# normalize capitalization
+	return undef unless( &_load_format_module($format) );
+	return "Bio::SeqIO::$format"->new(@args);
+    }
 }
+
 
 =head2 newFh
 
@@ -285,7 +295,7 @@ sub new {
            $sequence = <$fh>;   # read a sequence object
            print $fh $sequence; # write a sequence object
  Returns : filehandle tied to the Bio::SeqIO::Fh class
- Args    : 
+ Args    :
 
 =cut
 
@@ -299,14 +309,15 @@ sub newFh {
 
  Title   : fh
  Usage   : $obj->fh
- Function: 
+ Function:
  Example : $fh = $obj->fh;      # make a tied filehandle
            $sequence = <$fh>;   # read a sequence object
            print $fh $sequence; # write a sequence object
  Returns : filehandle tied to the Bio::SeqIO::Fh class
- Args    : 
+ Args    :
 
 =cut
+
 
 sub fh {
   my $self = shift;
@@ -316,83 +327,42 @@ sub fh {
   return $s;
 }
 
-sub _new {
-  my $self = shift;
-  $self->SUPER::new(@_);
-}
 
-# _initialize is where the heavy stuff will happen when new is called
+# _initialize is chained for all SeqIO classes
 
 sub _initialize {
-  my($self,@args) = @_;
-
-  my $make = $self->SUPER::_initialize;  # exception handling code
-
-  my ($file,$fh) = $self->_rearrange([qw(
-					 FILE
-					 FH
-					)],
-				     @args,
-				     );
-  if( defined $file and defined $fh ) {
-      $self->throw("Providing both a file and a filehandle for reading from - only one please!");
-  }
-
-  if( defined $file and $file ne '' ) {
-    $fh = Symbol::gensym();
-    open ($fh,$file) || $self->throw("Could not open $file for Fasta stream reading $!");
-  }
-  $self->_filehandle($fh) if defined $fh;
-  return $make; # success - we hope!
-}
-
-=head2 _load_format_module
-
- Title   : _load_format_module
- Usage   : *INTERNAL SeqIO stuff*
- Function: Loads up (like use) a module at run time on demand
- Example :
- Returns : 
- Args    :
-
-=cut
-  
-sub _load_format_module {
-  my ($format) = @_;
-  my ($module,$load,$m);
-  
-  $module = "_<Bio/SeqIO/$format.pm";
-  $load = "Bio/SeqIO/$format.pm";
-  
-  return 1 if $main::{$module};
-  eval {
-    require $load;
-  };
-  if( $@ ) {
-    print STDERR <<END;
-$load: $format cannot be found
-Exception $@
-For more information about the SeqIO system please see the SeqIO docs.
-This includes ways of checking for formats at compile time, not run time
-END
-  ;
-    return;
-  }
-  return 1;
+    my($self, @args) = @_;
+    
+    # not really necessary unless we put more in RootI
+    $self->SUPER::_initialize(@args);
+    
+    # initialize the IO part
+    $self->_initialize_io(@args);
 }
 
 =head2 next_seq
 
  Title   : next_seq
  Usage   : $seq = stream->next_seq
- Function: reads the next $seq object from the stream
+ Function: Reads the next sequence object from the stream and returns it.
+
+           Certain driver modules may encounter entries in the stream that
+           are either misformatted or that use syntax not yet understood
+           by the driver. If such an incident is recoverable, e.g., by
+           dismissing a feature of a feature table or some other non-mandatory
+           part of an entry, the driver will issue a warning. In the case
+           of a non-recoverable situation an exception will be thrown.
+           Do not assume that you can resume parsing the same stream after
+           catching the exception. Note that you can always turn recoverable
+           errors into exceptions by calling $stream->verbose(2) (see
+           Bio::RootI POD page).
  Returns : a Bio::Seq sequence object
- Args    : 
+ Args    :
 
 =cut
 
 sub next_seq {
-   my ($self,$seq) = @_;
+   my ($self, $seq) = @_;
    $self->throw("Sorry, you cannot read from a generic Bio::SeqIO object.");
 }
 
@@ -404,16 +374,17 @@ sub next_seq {
  Returns : A Bio::PrimarySeqI object
  Args    : none
 
+
 =cut
 
-sub next_primary_seq{
+sub next_primary_seq {
    my ($self) = @_;
 
-   # in this case, we default to next_seq. This is because 
+   # in this case, we default to next_seq. This is because
    # Bio::Seq's are Bio::PrimarySeqI objects. However we
    # expect certain sub classes to override this method to provide
    # less parsing heavy methods to retrieving the objects
- 
+
    return $self->next_seq();
 }
 
@@ -428,9 +399,10 @@ sub next_primary_seq{
 =cut
 
 sub write_seq {
-    my ($self,$seq) = @_;
+    my ($self, $seq) = @_;
     $self->throw("Sorry, you cannot write to a generic Bio::SeqIO object.");
 }
+
 
 =head2 moltype
 
@@ -439,71 +411,61 @@ sub write_seq {
  Function: Set/get the molecule type for the Seq objects to be created.
  Example : $seqio->moltype('protein')
  Returns : value of moltype: 'dna', 'rna', or 'protein'
- Args    : newvalue (optional) 
- Throws  : Exception if the argument is not one of 'dna', 'rna', or 'protein' 
+ Args    : newvalue (optional)
+ Throws  : Exception if the argument is not one of 'dna', 'rna', or 'protein'
 
 =cut
 
 sub moltype {
-   my ($self,$value) = @_;
-   my @VALID_MOLTYPES = qw(dna rna protein);
-   if( defined $value) {
-     if(! grep /$value/i, @VALID_MOLTYPES) {
-         $self->throw("Invalid moltype: $value\nPlease use one of @VALID_MOLTYPES\n");
-     }
-      $self->{'moltype'} = "\L$value";
-    }
-    return $self->{'moltype'};
+   my ($self, $value) = @_;
+
+   if ( defined $value) {
+       # instead of hard-coding the allowed values once more, we check by
+       # creating a dummy sequence object
+       eval {
+	   my $seq = Bio::PrimarySeq->new('-moltype' => $value);
+       };
+       if($@) {
+	   $self->throw("Invalid moltype: $value\n. See Bio::PrimarySeq for allowed values.");
+       }
+       $self->{'moltype'} = "\L$value";
+   }
+   return $self->{'moltype'};
 }
 
-=head2 close
+=head2 _load_format_module
 
- Title   : close
- Usage   : $seqio->close()
- Function: Closes the file handle associated with this seqio system
+ Title   : _load_format_module
+ Usage   : *INTERNAL SeqIO stuff*
+ Function: Loads up (like use) a module at run time on demand
  Example :
- Returns : 
+ Returns :
  Args    :
 
 =cut
 
-sub close{
-   my ($self,@args) = @_;
+sub _load_format_module {
+  my ($format) = @_;
+  my ($module, $load, $m);
 
-   $self->{'_filehandle'} = undef;
-}
+  $module = "_<Bio/SeqIO/$format.pm";
+  $load = "Bio/SeqIO/$format.pm";
 
-=head2 _print
-
- Title   : _print
- Usage   : $obj->_print(@lines)
- Function: 
- Example : 
- Returns : writes output
-
-=cut
-
-sub _print {
-  my $self = shift;
-  my $fh = $self->_filehandle || \*STDOUT;
-  print $fh @_;
-}
-
-=head2 _readline
-
- Title   : _readline
- Usage   : $obj->_readline($newval)
- Function: 
- Example : 
- Returns : reads a line of input
-
-=cut
-
-sub _readline {
-  my $self = shift;
-  my $fh = $self->_filehandle;
-  my $line = defined($fh) ? <$fh> : <>;
-  return $line;
+  return 1 if $main::{$module};
+  eval {
+    require $load;
+  };
+  if ( $@ ) {
+    print STDERR <<END;
+$load: $format cannot be found
+Exception $@
+For more information about the SeqIO system please see the SeqIO docs.
+This includes ways of checking for formats at compile time, not run time
+END
+  ;
+    return;
+  }
+  return 1;
 }
 
 =head2 _concatenate_lines
@@ -532,29 +494,27 @@ sub _concatenate_lines {
 
  Title   : _filehandle
  Usage   : $obj->_filehandle($newval)
- Function: 
- Example : 
+ Function: This method is deprecated. Call _fh() instead.
+ Example :
  Returns : value of _filehandle
  Args    : newvalue (optional)
+
 
 =cut
 
 sub _filehandle {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'_filehandle'} = $value;
-    }
-    return $obj->{'_filehandle'};
+    my ($self,@args) = @_;
+    return $self->_fh(@args);
 }
 
 =head2 _guess_format
 
  Title   : _guess_format
  Usage   : $obj->_guess_format($filename)
- Function: 
- Example : 
+ Function:
+ Example :
  Returns : guessed format of filename (lower case)
- Args    : 
+ Args    :
 
 =cut
 
@@ -569,6 +529,7 @@ sub _guess_format {
    return 'embl'    if /\.dat$/i;
    return 'raw'     if /\.(txt)$/i;
    return 'gcg'     if /\.gcg$/i;
+   return 'ace'     if /\.ace$/i;
 }
 
 sub DESTROY {
@@ -579,20 +540,20 @@ sub DESTROY {
 
 sub TIEHANDLE {
   my $class = shift;
-  return bless {seqio => shift},$class;
+  return bless {seqio => shift}, $class;
 }
 
 sub READLINE {
   my $self = shift;
-  return $self->{seqio}->next_seq() unless wantarray;
-  my (@list,$obj);
-  push @list,$obj  while $obj = $self->{seqio}->next_seq();
+  return $self->{'seqio'}->next_seq() unless wantarray;
+  my (@list, $obj);
+  push @list, $obj while $obj = $self->{'seqio'}->next_seq();
   return @list;
 }
 
 sub PRINT {
   my $self = shift;
-  $self->{seqio}->write_seq(@_);
+  $self->{'seqio'}->write_seq(@_);
 }
 
 1;

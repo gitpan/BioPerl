@@ -4,7 +4,7 @@
 # PURPOSE  : Simple driver for Bio::Seq revcom and translate
 # AUTHOR   : Ewan Birney birney@sanger.ac.uk 
 # CREATED  : Tue Oct 27 1998
-# REVISION : $Id: rev_and_trans.pl,v 1.2.12.1 2000/09/17 12:17:25 birney Exp $
+# REVISION : $Id: rev_and_trans.pl,v 1.3 2000/09/17 12:30:07 birney Exp $
 #
 # INSTALLATION
 #    If you have installed bioperl using the standard

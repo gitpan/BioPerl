@@ -1,3 +1,4 @@
+# $Id: Generic.pm,v 1.46.2.1 2001/03/02 22:48:00 heikki Exp $
 #
 # BioPerl module for Bio::SeqFeature::Generic
 #
@@ -25,16 +26,20 @@ Bio::SeqFeature::Generic - Generic SeqFeature
 				    sillytag => 'this is silly!' } );
 
    $feat = new Bio::SeqFeature::Generic ( -gff_string => $string );
+   # if you want explicitly GFF1
+   $feat = new Bio::SeqFeature::Generic ( -gff1_string => $string );
 
    # add it to an annotated sequence
 
    $annseq->add_SeqFeature($feat);
 
+
+
 =head1 DESCRIPTION
 
 Bio::SeqFeature::Generic is a generic implementation for the
-Bio::SeqFeatureI interface, providing a simple object to provide
-all the information for a feature on a sequence.
+Bio::SeqFeatureI interface, providing a simple object to provide all
+the information for a feature on a sequence.
 
 For many Features, this is all you will need to use (for example, this
 is fine for Repeats in DNA sequence or Domains in protein
@@ -43,25 +48,47 @@ good base class to extend using inheritence to have new things: this
 is what is done in the Bio::SeqFeature::Gene,
 Bio::SeqFeature::Transcript and Bio::SeqFeature::Exon, which provide
 well coordinated classes to represent genes on DNA sequence (for
-example, you can get the protein sequence out from a transcript class).
+example, you can get the protein sequence out from a transcript
+class).
 
-For many Features, you want to add some piece of information, for example
-a common one is that this feature is 'new' whereas other features are 'old'.
-The tag system, which here is implemented using a hash can be used here.
-You can use the tag system to extend the SeqFeature::Generic programmatically:
-that is, you know that you have read in more information into the tag 
-'mytag' which you can the retrieve. This means you do not need to know 
-how to write inherieted Perl to provide more complex information on a feature,
-and/or, if you do know but you donot want to write a new class every time
-you need some extra piece of information, you can use the tag system
-to easily store and then retrieve information.
+For many Features, you want to add some piece of information, for
+example a common one is that this feature is 'new' whereas other
+features are 'old'.  The tag system, which here is implemented using a
+hash can be used here.  You can use the tag system to extend the
+SeqFeature::Generic programmatically: that is, you know that you have
+read in more information into the tag 'mytag' which you can the
+retrieve. This means you do not need to know how to write inherieted
+Perl to provide more complex information on a feature, and/or, if you
+do know but you donot want to write a new class every time you need
+some extra piece of information, you can use the tag system to easily
+store and then retrieve information.
 
 The tag system can be written in/out of GFF format, and also into EMBL
 format via AnnSeqIO::EMBL.
 
-=head1 CONTACT
+=head1 FEEDBACK
 
-Ewan Birney <birney@sanger.ac.uk>
+=head2 Mailing Lists
+
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
+
+  bioperl-l@bioperl.org          - General discussion
+  http://bio.perl.org/MailList.html             - About the mailing lists
+
+=head2 Reporting Bugs
+
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via email
+or the web:
+
+  bioperl-bugs@bio.perl.org
+  http://bio.perl.org/bioperl-bugs/
+
+=head1 AUTHOR - Ewan Birney
+
+Ewan Birney E<lt>birney@sanger.ac.ukE<gt>
 
 =head1 DEVELOPERS
 
@@ -76,63 +103,103 @@ the actual object hash are:
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
+
 # Let the code begin...
+
 
 package Bio::SeqFeature::Generic;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
-
-use Bio::Root::Object;
+use Bio::Root::RootI;
 use Bio::SeqFeatureI;
+use Bio::Annotation;
+use Bio::Location::Simple;
+use Bio::Tools::GFF;
 
-@ISA = qw(Bio::Root::Object Bio::SeqFeatureI);
-# new() is inherited from Bio::Root::Object
+@ISA = qw(Bio::Root::RootI Bio::SeqFeatureI);
 
-# _initialize is where the heavy stuff will happen when new is called
+sub new {
+    my ( $caller, @args) = @_;   
+    my ($self) = $caller->SUPER::new(@args); 
 
-sub _initialize {
-  my ($self, @args) = @_;
-  my $make = $self->SUPER::_initialize;
-
-  $self->{'_gsf_tag_hash'} = {};
-  $self->{'_gsf_sub_array'} = [];
-  $self->{'_parse_h'} = {};
-
-  my ($start, $end, $strand, $primary, $source, $frame, $score, $tag, $gff_string) =
-      $self->_rearrange([qw(START
-			    END
-			    STRAND
-			    PRIMARY
-			    SOURCE
-			    FRAME
-			    SCORE
-			    TAG
-			    GFF_STRING
-			    )],@args);
-
-  $gff_string && $self->_from_gff_string($gff_string);
-  $start && $self->start($start);
-  $end   && $self->end($end);
-  defined($strand) && $self->strand($strand);
-  $primary && $self->primary_tag($primary);
-  $source  && $self->source_tag($source);
-  $frame   && $self->frame($frame);
-  $score   && $self->score($score);
-  $tag     && do {
-      foreach my $t ( keys %$tag ) {
-	  $self->add_tag_value($t,$tag->{$t});
-      }
-  };
-
-  # set stuff in self from @args
-  return $make; # success - we hope!
+    $self->{'_gsf_tag_hash'} = {};
+    $self->{'_gsf_sub_array'} = [];
+    $self->{'_parse_h'} = {};
+    my ($start, $end, $strand, $primary, $source, $frame, 
+	$score, $tag, $gff_string, $gff1_string, $seqname, $annot, $location) =
+	    $self->_rearrange([qw(START
+				  END
+				  STRAND
+				  PRIMARY
+				  SOURCE
+				  FRAME
+				  SCORE
+				  TAG
+				  GFF_STRING
+				  GFF1_STRING
+				  SEQNAME
+				  ANNOTATION
+				  LOCATION
+				  )], @args);
+    $location    && $self->location($location);
+    $gff_string  && $self->_from_gff_string($gff_string);
+    $gff1_string  && do {
+	$self->gff_format(Bio::Tools::GFF->new('-gff_version' => 1));
+	$self->_from_gff_stream($gff1_string);
+    };
+    $primary     && $self->primary_tag($primary);
+    $source      && $self->source_tag($source);
+    $start       && $self->start($start);
+    $end         && $self->end($end);
+    $strand      && $self->strand($strand);
+    $frame       && $self->frame($frame);
+    $score       && $self->score($score);
+    $seqname     && $self->seqname($seqname);
+    $annot       && $self->annotation($annot);
+    $tag         && do {
+	foreach my $t ( keys %$tag ) {
+	    $self->add_tag_value($t,$tag->{$t});
+	}
+    };
+    return $self;
 }
+
+=head2 location
+
+ Title   : location
+ Usage   : my $location = $seqfeature->location()
+ Function: returns a location object suitable for identifying location 
+	   of feature on sequence or parent feature  
+ Returns : Bio::LocationI object
+ Args    : none
+
+
+=cut
+
+sub location {
+   my ($self,$value) = @_;  
+
+   # guarantees a real location object is returned every time
+   if( defined($value) || !exists($self->{'_location'}) ) {
+       if(defined($value)) {
+	   if(! $value->isa('Bio::LocationI')) {
+	       $self->throw("object $value pretends to be a location but ".
+			    "does not implement Bio::LocationI");
+	   }
+       } else {
+	   $value = Bio::Location::Simple->new();
+       }
+       $self->{'_location'} = $value;
+   }
+   return $self->{'_location'};
+}
+
 
 =head2 start
 
@@ -143,25 +210,12 @@ sub _initialize {
  Returns : integer
  Args    : none
 
+
 =cut
 
 sub start {
-   my $self = shift;
-
-   if ( @_ ) {
-       my $value = shift;
-       if ( $value !~ /^\-?\d+/ ) {
-	   $self->throw("$value is not a valid start");
-       }
-
-       if( defined $self->entire_seq && $value > $self->entire_seq->length ) {
-	   $self->throw("Cannot set start ($value) greater than sequence length");
-       }
-
-       $self->{'_gsf_start'} = $value
-   }
-
-   return $self->{'_gsf_start'};
+   my ($self,$value) = @_;
+   return $self->location->start($value);
 }
 
 =head2 end
@@ -173,25 +227,12 @@ sub start {
  Returns : integer
  Args    : none
 
+
 =cut
 
 sub end {
-   my $self = shift;
-
-   if ( @_ ) {
-       my $value = shift;
-       if ( $value !~ /^\-?\d+/ ) {
-	   $self->throw("$value is not a valid end");
-       }
-
-       if( defined $self->entire_seq && $value > $self->entire_seq->length ) {
-	   $self->throw("Cannot set end ($value) greater than sequence length");
-       }
-
-       $self->{'_gsf_end'} = $value
-   }
-
-   return $self->{'_gsf_end'};
+   my ($self,$value) = @_;
+   return $self->location->end($value);
 }
 
 =head2 length
@@ -203,12 +244,12 @@ sub end {
  Returns :
  Args    :
 
+
 =cut
 
 sub length {
    my ($self) = @_;
-
-   return $self->end - $self->start +1;
+   return $self->end - $self->start() + 1;
 }
 
 =head2 strand
@@ -220,24 +261,12 @@ sub length {
  Returns : -1,1 or 0
  Args    : none
 
+
 =cut
 
 sub strand {
-   my $self = shift;
-
-   if ( @_ ) {
-       my $value = shift;
-       if ( $value eq '+' ) { $value = 1; }
-       if ( $value eq '-' ) { $value = -1; }
-       if ( $value eq '.' ) { $value = 0; }
-
-       if ( $value !~ /^-?[01]$/ ) {
-	   $self->throw("'$value' is not a valid strand");
-       }
-       $self->{'_gsf_strand'} = $value
-   }
-
-   return $self->{'_gsf_strand'};
+   my ($self,$value) = @_;
+   return $self->location->strand($value);
 }
 
 =head2 score
@@ -249,13 +278,13 @@ sub strand {
  Returns : float
  Args    : none if get, the new value if set
 
+
 =cut
 
 sub score {
-  my $self = shift;
+  my ($self,$value) = @_;
 
-  if ( @_ ) {
-       my $value = shift;
+  if (defined($value)) {
        if ( $value !~ /^[+-]?\d+\.?\d*(e-\d+)?/ ) {
 	   $self->throw("'$value' is not a valid score");
        }
@@ -271,22 +300,22 @@ sub score {
  Usage   : $frame = $feat->frame()
            $feat->frame($frame)
  Function: get/set on frame information
- Returns : 0,1,2
+ Returns : 0,1,2, '.'
  Args    : none if get, the new value if set
+
 
 =cut
 
 sub frame {
-  my $self = shift;
+  my ($self,$value) = @_;
 
-  if ( @_ ) {
-       my $value = shift;
-       if ( $value != 1 && $value != 2 && $value != 3 ) {
+  if ( defined $value ) {
+       if ( $value !~ /^[0-2.]$/ ) {
 	   $self->throw("'$value' is not a valid frame");
        }
+       if( $value eq '.' ) { $value = undef; } 
        $self->{'_gsf_frame'} = $value;
   }
-
   return $self->{'_gsf_frame'};
 }
 
@@ -298,11 +327,11 @@ sub frame {
  Returns : An array
  Args    : none
 
+
 =cut
 
 sub sub_SeqFeature {
-   my ($self) = @_;
-
+   my ($self) = @_;   
    return @{$self->{'_gsf_sub_array'}};
 }
 
@@ -322,8 +351,10 @@ sub sub_SeqFeature {
  Returns : nothing
  Args    : An object which has the SeqFeatureI interface
 
+
 =cut
 
+#'
 sub add_sub_SeqFeature{
    my ($self,$feat,$expand) = @_;
 
@@ -331,18 +362,8 @@ sub add_sub_SeqFeature{
        $self->warn("$feat does not implement Bio::SeqFeatureI. Will add it anyway, but beware...");
    }
 
-   if( $expand eq 'EXPAND' ) {
-       # if this doesn't have start/end set - forget it!
-       if ( !defined $self->start && !defined $self->end ) {
-	   $self->start($feat->start());
-	   $self->end($feat->end());
-	   $self->strand($feat->strand);
-       } else {
-	   my ($start, $end, $strand) = $self->union($feat);
-	   $self->start($start);
-	   $self->end($end);
-	   $self->strand($strand);
-       }
+   if($expand && ($expand eq 'EXPAND')) {
+       $self->_expand_region($feat);
    } else {
        if ( !$self->contains($feat) ) {
 	   $self->throw("$feat is not contained within parent feature, and expansion is not valid");
@@ -365,6 +386,7 @@ sub add_sub_SeqFeature{
  Returns : none
  Args    : none
 
+
 =cut
 
 sub flush_sub_SeqFeature {
@@ -372,6 +394,7 @@ sub flush_sub_SeqFeature {
 
    $self->{'_gsf_sub_array'} = []; # zap the array implicitly.
 }
+
 
 =head2 primary_tag
 
@@ -383,12 +406,13 @@ sub flush_sub_SeqFeature {
  Returns : a string
  Args    : none
 
+
 =cut
 
 sub primary_tag {
-   my $self = shift;
-   if ( @_ ) {
-       $self->{'_primary_tag'} = shift;
+   my ($self,$value) = @_;
+   if ( defined $value ) {
+       $self->{'_primary_tag'} = $value;
    }
    return $self->{'_primary_tag'};
 }
@@ -403,13 +427,14 @@ sub primary_tag {
  Returns : a string
  Args    : none
 
+
 =cut
 
 sub source_tag {
-   my $self = shift;
+   my ($self,$value) = @_;
 
-   if( @_ ) {
-       $self->{'_source_tag'} = shift;
+   if( defined $value ) {
+       $self->{'_source_tag'} = $value;
    }
    return $self->{'_source_tag'};
 }
@@ -423,11 +448,11 @@ sub source_tag {
            and FALSE otherwise.
  Args    : The name of a tag
 
+
 =cut
 
 sub has_tag {
    my ($self, $tag) = (shift, shift);
-
    return exists $self->{'_gsf_tag_hash'}->{$tag};
 }
 
@@ -437,6 +462,7 @@ sub has_tag {
  Usage   : $self->add_tag_value('note',"this is a note");
  Returns : TRUE on success
  Args    : tag (string) and value (any scalar)
+
 
 =cut
 
@@ -450,6 +476,7 @@ sub add_tag_value {
    push(@{$self->{'_gsf_tag_hash'}->{$tag}},$value);
 }
 
+
 =head2 each_tag_value
 
  Title   : each_tag_value
@@ -458,6 +485,7 @@ sub add_tag_value {
            under a particular tag.
  Returns : A list of scalars
  Args    : The name of the tag
+
 
 =cut
 
@@ -470,6 +498,7 @@ sub each_tag_value {
    return @{$self->{'_gsf_tag_hash'}->{$tag}};
 }
 
+
 =head2 all_tags
 
  Title   : all_tags
@@ -477,6 +506,7 @@ sub each_tag_value {
  Function: Get a list of all the tags in a feature
  Returns : An array of tag names
  Args    : none
+
 
 =cut
 
@@ -486,6 +516,7 @@ sub all_tags {
    return keys %{$self->{'_gsf_tag_hash'}};
 }
 
+
 =head2 remove_tag
 
  Title   : remove_tag
@@ -493,6 +524,7 @@ sub all_tags {
  Function: removes a tag from this feature
  Returns : nothing
  Args    : tag (string)
+
 
 =cut
 
@@ -514,8 +546,9 @@ sub remove_tag {
            Bio::Seq object is for the *entire* sequence: ie
            from 1 to 10000
  Example :
- Returns :
+ Returns : TRUE on success
  Args    :
+
 
 =cut
 
@@ -535,6 +568,7 @@ sub attach_seq {
 	   $sf->attach_seq($seq);
        }
    }
+   return 1;
 }
 
 =head2 seq
@@ -543,8 +577,9 @@ sub attach_seq {
  Usage   : $tseq = $sf->seq()
  Function: returns the truncated sequence (if there) for this
  Example :
- Returns :
- Args    :
+ Returns : sub seq on attached sequence bounded by start & end
+ Args    : none
+
 
 =cut
 
@@ -563,6 +598,7 @@ sub seq {
    # the entire sequence out here.
 
    my $seq = $self->{'_gsf_seq'}->trunc($self->start(), $self->end());
+
 
    if ( $self->strand == -1 ) {
 
@@ -584,13 +620,16 @@ sub seq {
  Returns :
  Args    :
 
+
 =cut
 
 sub entire_seq {
    my ($self) = @_;
 
+   return undef unless exists($self->{'_gsf_seq'});
    return $self->{'_gsf_seq'};
 }
+
 
 =head2 seqname
 
@@ -607,40 +646,127 @@ sub entire_seq {
  Returns : value of seqname
  Args    : newvalue (optional)
 
+
 =cut
 
 sub seqname {
-   my $obj = shift;
-   if ( @_ ) {
-      my $value = shift;
-      $obj->{'_gsf_seqname'} = $value;
+    my ($obj,$value) = @_;
+    if ( defined $value ) {
+	$obj->{'_gsf_seqname'} = $value;
     }
     return $obj->{'_gsf_seqname'};
+}
+
+=head2 annotation
+
+ Title   : annotation
+ Usage   : $obj->annotation($annot_obj)
+ Function: 
+ Example : 
+ Returns : A Bio::Annotation object
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub annotation {
+    my ($obj,$value) = @_;
+
+    # we are smart if someone references the object and there hasn't been
+    # one set yet
+    if(defined $value || ! defined $obj->{'annotation'} ) {
+	$value = new Bio::Annotation unless ( defined $value );
+	$obj->{'annotation'} = $value;
+    }
+    return $obj->{'annotation'};
 
 }
 
-=head2 slurp_gff_file
+=head2 gff_format
 
- Title   : slurp_file
- Usage   : @features = Bio::SeqFeature::Generic::slurp_gff_file(\*FILE);
- Function: Sneaky function to load an entire file as in memory objects.
-           Beware big files
- Example :
- Returns :
- Args    :
+ Title   : gff_format
+ Usage   : # get:
+           $gffio = $feature->gff_format();
+           # set (change the default version of GFF2):
+           $feature->gff_format(Bio::Tools::GFF->new(-gff_version => 1));
+ Function: Get/set the GFF format interpreter. This object is supposed to 
+           format and parse GFF. See Bio::Tools::GFF for the interface.
+
+           If this method is called as class method, the default for all
+           newly created instances will be changed. Otherwise only this
+           instance will be affected.
+ Example : 
+ Returns : a Bio::Tools::GFF compliant object
+ Args    : On set, an instance of Bio::Tools::GFF or a derived object.
+
 
 =cut
+
+sub gff_format {
+    my ($self, $gffio) = @_;
+
+    if(defined($gffio)) {
+	if(ref($self)) {
+	    $self->{'_gffio'} = $gffio;
+	} else {
+	    $Bio::SeqFeatureI::static_gff_formatter = $gffio;
+	}
+    }
+    return (ref($self) && exists($self->{'_gffio'}) ?
+	    $self->{'_gffio'} : $self->_static_gff_formatter);
+}
+
+=head2 gff_string
+
+ Title   : gff_string
+ Usage   : $str = $feat->gff_string;
+           $str = $feat->gff_string($gff_formatter);
+ Function: Provides the feature information in GFF format.
+
+           We override this here from Bio::SeqFeatureI in order to use the
+           formatter returned by gff_format().
+
+ Returns : A string
+ Args    : Optionally, an object implementing gff_string().
+
+
+=cut
+
+sub gff_string{
+   my ($self,$formatter) = @_;
+
+   $formatter = $self->gff_format() unless $formatter;
+   return $formatter->gff_string($self);
+}
+
+#  =head2 slurp_gff_file
+#
+#   Title   : slurp_file
+#   Usage   : @features = Bio::SeqFeature::Generic::slurp_gff_file(\*FILE);
+#   Function: Sneaky function to load an entire file as in memory objects.
+#             Beware of big files.
+#
+#             This method is deprecated. Use Bio::Tools::GFF instead, which can
+#             also handle large files.
+#
+#   Example :
+#   Returns :
+#   Args    :
+#
+#  =cut
 
 sub slurp_gff_file {
    my ($f) = @_;
    my @out;
    if ( !defined $f ) {
-       die "Must has a filehandle";
+       die "Must have a filehandle";
    }
 
+   Bio::Root::RootI->warn("deprecated method slurp_gff_file() called in Bio::SeqFeature::Generic. Use Bio::Tools::GFF instead.");
+  
    while(<$f>) {
 
-       my $sf = Bio::SeqFeature::Generic->new(-gff_string => $_);
+       my $sf = Bio::SeqFeature::Generic->new('-gff_string' => $_);
        push(@out, $sf);
    }
 
@@ -652,43 +778,58 @@ sub slurp_gff_file {
 
  Title   : _from_gff_string
  Usage   :
- Function:
+ Function: Set feature properties from GFF string. 
+
+           This method uses the object returned by gff_format() for the
+           actual interpretation of the string. Set a different GFF format
+           interpreter first if you need a specific version, like GFF1. (The
+           default is GFF2.)
  Example :
- Returns :
- Args    :
+ Returns : 
+ Args    : a GFF-formatted string
+
 
 =cut
 
 sub _from_gff_string {
    my ($self, $string) = @_;
 
-   my ($seqname, $source, $primary, $start, $end, $score, $strand, $frame, @group) = split(/\s+/, $string);
+   $self->gff_format()->from_gff_string($self, $string);
+}
 
-   if ( !defined $frame ) {
-       $self->throw("[$string] does not look like GFF to me");
-   }
-   $self->seqname($seqname);
-   $self->source_tag($source);
-   $self->primary_tag($primary);
-   $self->start($start);
-   $self->end($end);
-   if ( $score eq '.' ) {
-       #$self->score(undef);
-   } else {
-       $self->score($score);
-   }
-   if ( $strand eq '-' ) { $self->strand(-1); }
-   if ( $strand eq '+' ) { $self->strand(1); }
-   if ( $strand eq '.' ) { $self->strand(0); }
-   foreach my $g ( @group ) {
-       if ( $g =~ /(\S+)=(\S+)/ ) {
-	   my $tag = $1;
-	   my $value = $2;
-	   $self->add_tag_value($1, $2);
-       } else {
-	   $self->add_tag_value('group', $g);
-       }
-   }
+
+=head2 _expand_region
+
+ Title   : _expand_region
+ Usage   : $self->_expand_region($feature);
+ Function: Expand the total region covered by this feature to
+           accomodate for the given feature.
+
+           May be called whenever any kind of subfeature is added to this
+           feature. add_sub_SeqFeature() already does this.
+ Returns : 
+ Args    : A Bio::SeqFeatureI implementing object.
+
+
+=cut
+
+sub _expand_region {
+    my ($self, $feat) = @_;
+
+    if(! $feat->isa('Bio::SeqFeatureI')) {
+	$self->warn("$feat does not implement Bio::SeqFeatureI");
+    }
+    # if this doesn't have start/end set - forget it!
+    if((! defined($self->start())) && (! defined $self->end())) {
+	$self->start($feat->start());
+	$self->end($feat->end());
+	$self->strand($feat->strand) unless defined($self->strand());
+    } else {
+	my ($start, $end, $strand) = $self->union($feat);
+	$self->start($start);
+	$self->end($end);
+	$self->strand($strand);
+    }
 }
 
 =head2 _parse
@@ -700,6 +841,7 @@ sub _from_gff_string {
  Returns :
  Args    :
 
+
 =cut
 
 sub _parse {
@@ -708,3 +850,26 @@ sub _parse {
    return $self->{'_parse_h'};
 }
 
+=head2 _tag_value
+
+ Title   : _tag_value
+ Usage   : 
+ Function: For internal use only. Convenience method for those tags that
+           may only have a single value.
+ Returns : 
+ Args    : 
+
+
+=cut
+
+sub _tag_value {
+    my ($self, $tag, $value) = @_;
+
+    if(defined($value) || (! $self->has_tag($tag))) {
+	$self->remove_tag($tag) if($self->has_tag($tag));
+	$self->add_tag_value($tag, $value);
+    }
+    return ($self->each_tag_value($tag))[0];
+}
+
+1;

@@ -12,7 +12,7 @@
 #            Bio::Tools::Blast.pm module.
 # AUTHOR   : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED  : 3 Feb 1998
-# REVISION : $Id: run_blast_remote.pl,v 1.2.2.1 2000/05/15 09:20:52 sac Exp $
+# REVISION : $Id: run_blast_remote.pl,v 1.4 2000/05/15 09:03:45 sac Exp $
 # WEBSITE  : http://bio.perl.org/Projects/Blast/
 # USAGE    : run_blast_remote.pl -h
 # EXAMPLES : run_blast_remote.pl -eg

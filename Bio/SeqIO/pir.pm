@@ -1,3 +1,4 @@
+# $Id: pir.pm,v 1.7.2.1 2001/03/02 22:48:02 heikki Exp $
 #
 # BioPerl module for Bio::SeqIO::PIR
 #
@@ -29,14 +30,12 @@ file databases.
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                 - General discussion
+  http://www.bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -49,8 +48,8 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 
 =head1 AUTHORS
 
-Aaron Mackey <amackey@virginia.edu>
-Lincoln Stein <lstein@cshl.org>
+Aaron Mackey E<lt>amackey@virginia.eduE<gt>
+Lincoln Stein E<lt>lstein@cshl.orgE<gt>
 
 =head1 APPENDIX
 
@@ -64,7 +63,9 @@ methods. Internal methods are usually preceded with a _
 package Bio::SeqIO::pir;
 use vars qw(@ISA);
 use strict;
+
 use Bio::SeqIO;
+use Bio::Seq;
 
 @ISA = qw(Bio::SeqIO);
 
@@ -75,6 +76,7 @@ use Bio::SeqIO;
  Function: returns the next sequence in the stream
  Returns : Bio::Seq object
  Args    :
+
 
 =cut
 
@@ -90,7 +92,7 @@ sub next_seq{
 
    chomp($desc = $self->_readline);
    local $/ = "";
-   #my $junk = $self->_readline;  # throw away everything to first empty line
+   my $junk = $self->_readline;  # throw away everything to first empty line
    $seq = $self->_readline;   # everything else is the sequence
    $seq =~ s/\s+//g;
    $seq = Bio::Seq->new(-seq => $seq,
@@ -108,6 +110,7 @@ sub next_seq{
  Returns : 1 for success and 0 for error
  Args    : Bio::Seq object
 
+
 =cut
 
 sub write_seq {
@@ -118,6 +121,7 @@ sub write_seq {
      $str =~ s/(.{66})/$1\n/g;
      return unless $self->_print(">P1;", $seq->id(), 
 				 "\n", $seq->desc(), "\n", 
+				 ">P1;", $seq->id(),"\n", 
 				 "\n",$str, "\n");
    }
    return 1;

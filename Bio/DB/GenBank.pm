@@ -1,4 +1,4 @@
-# test
+# $Id: GenBank.pm,v 1.35.2.1 2001/03/02 22:47:55 heikki Exp $
 #
 # BioPerl module for Bio::DB::GenBank
 #
@@ -7,8 +7,12 @@
 # Copyright Aaron Mackey
 #
 # You may distribute this module under the same terms as perl itself
-
+#
 # POD documentation - main docs before the code
+# 
+# Added LWP support - Jason Stajich 2000-11-6
+# completely reworked by Jason Stajich 2000-12-8
+# to use WebDBSeqI
 
 =head1 NAME
 
@@ -23,6 +27,18 @@ Bio::DB::GenBank - Database object interface to GenBank
     # or ...
 
     $seq = $gb->get_Seq_by_acc('J00522'); # Accession Number
+
+    # or ... best when downloading very large files, prevents
+    # keeping all of the file in memory
+
+    # also don't want features, just sequence so let's save bandwith
+    # and request Fasta sequence
+    $gb = new Bio::DB::GenBank(-retrievaltype => 'tempfile' , 
+			       -format => 'Fasta');
+    my $seqio = $gb->get_Stream_by_acc(['AC013798', 'AC021953'] );
+    while( my $clone =  $seqio->next_seq ) {
+      print "cloneid is ", $clone->
+    }
 
 =head1 DESCRIPTION
 
@@ -43,9 +59,8 @@ your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation
 is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org              - General discussion
+  http://bioperl.org/MailList.shtml  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -57,9 +72,10 @@ web:
   bioperl-bugs@bio.perl.org
   http://bio.perl.org/bioperl-bugs/
 
-=head1 AUTHOR - Aaron Mackey
+=head1 AUTHOR - Aaron Mackey, Jason Stajich
 
 Email amackey@virginia.edu
+Email jason@chg.mc.duke.edu
 
 =head1 APPENDIX
 
@@ -73,116 +89,75 @@ preceded with a _
 
 package Bio::DB::GenBank;
 use strict;
-use vars qw(@ISA);
+use vars qw(@ISA %PARAMSTRING);
+use Bio::DB::NCBIHelper;
 
-# Object preamble - inherits from Bio::DB::RandomAccessI
-
-use Bio::DB::RandomAccessI;
-use Bio::SeqIO;
-use IO::Socket;
-use IO::File;
-
-@ISA = qw(Bio::Root::Object Bio::DB::RandomAccessI);
-
-# new() is inherited from Bio::Root::Object
-
-# _initialize is where the heavy stuff will happen when new is called
-
-sub _initialize {
-  my($self,@args) = @_;
-
-  my $make = $self->SUPER::_initialize;
-  
-# set stuff in self from @args  
-  return $make; # success - we hope!
+@ISA = qw(Bio::DB::NCBIHelper);
+BEGIN {    
+    %PARAMSTRING = ( 'batch'=> { 'DB'          => 'n',
+				 'REQUEST_TYPE'=> 'LIST_OF_GIS',
+				 'HTML'        => 'FALSE',
+			         'SAVETO'      => 'FALSE',
+				 'NOHEADER'    => 'TRUE' },
+		     'single'=> { 'db'    => 'n',
+				  'form'  => '6',			     
+				  'title' => 'no',			     
+			     }
+		     );
 }
+
+# new is in NCBIHelper
+
+# helper method to get db specific options
+
+=head2 get_params
+
+ Title   : get_params
+ Usage   : my %params = $self->get_params($mode)
+ Function: Returns key,value pairs to be passed to NCBI database
+           for either 'batch' or 'single' sequence retrieval method
+ Returns : a key,value pair hash
+ Args    : 'single' or 'batch' mode for retrieval
+
+=cut
+
+sub get_params {
+    my ($self, $mode) = @_;
+    return %{$PARAMSTRING{$mode}};
+}
+
+# from Bio::DB::WebDBSeqI from Bio::DB::RandomAccessI
+
+=head1 Routines Bio::DB::WebDBSeqI from Bio::DB::RandomAccessI
 
 =head2 get_Seq_by_id
 
  Title   : get_Seq_by_id
- Usage   : $seq = $db->get_Seq_by_id($uid);
- Function: Gets a Bio::Seq object by its unique identifier/name
+ Usage   : $seq = $db->get_Seq_by_id('ROA1_HUMAN')
+ Function: Gets a Bio::Seq object by its name
  Returns : a Bio::Seq object
- Args    : $uid : the id (as a string) of the desired sequence entry
-
-=cut
-
-sub get_Seq_by_id {
-
-  my $self = shift;
-  my $uid = shift or $self->throw("Must supply an identifier!\n");
-
-  my $entrez = "db=n&form=6&dopt=f&html=no&title=no&uid=$uid";
-
-  my $stream = $self->_get_stream($entrez);
-  my $seq = $stream->next_seq();
-  $self->throw("Unable to get seq for id $uid, is it really a genbank id?\n") 
-      if ( !defined $seq );
-  return $seq;
-}
+ Args    : the id (as a string) of a sequence
+ Throws  : "id does not exist" exception
 
 =head2 get_Seq_by_acc
 
   Title   : get_Seq_by_acc
   Usage   : $seq = $db->get_Seq_by_acc($acc);
-  Function: Gets a Bio::Seq object by its accession number
+  Function: Gets a Seq object by accession numbers
   Returns : a Bio::Seq object
-  Args    : $acc : the accession number of the desired sequence entry
+  Args    : the accession number as a string
   Note    : For GenBank, this just calls the same code for get_Seq_by_id()
+  Throws  : "id does not exist" exception
 
-=cut
+=head1 Routines implemented by Bio::DB::NCBIHelper
 
-sub get_Seq_by_acc {
+=head2 get_request
 
-  my $self = shift;
-  my $acc = shift or $self->throw("Must supply an accesion number!\n");
-  
-  return $self->get_Seq_by_id($acc);
-}
-
-=head2 get_Stream_by_id
-
-  Title   : get_Stream_by_id
-  Usage   : $stream = $db->get_Stream_by_id( [$uid1, $uid2] );
-  Function: Gets a series of Seq objects by unique identifiers
-  Returns : a Bio::SeqIO stream object
-  Args    : $ref : a reference to an array of unique identifiers for
-                   the desired sequence entries
-
-=cut
-
-sub get_Stream_by_id {
-
-  my $self = shift;
-  my $id = shift or $self->throw("Must supply a unique identifier!\n");
-  ref($id) eq "ARRAY" or $self->throw("Must supply an array ref!\n");
-
-  my $uid = join(',', @{$id});
-  my $entrez = "db=n&form=6&dopt=f&html=no&title=no&uid=$uid" ;
-
-  return $self->_get_stream($entrez);
-
-}
-
-=head2 get_Stream_by_acc
-
-  Title   : get_Stream_by_acc
-  Usage   : $seq = $db->get_Seq_by_acc($acc);
-  Function: Gets a series of Seq objects by accession numbers
-  Returns : a Bio::SeqIO stream object
-  Args    : $ref : a reference to an array of accession numbers for
-                   the desired sequence entries
-  Note    : For GenBank, this just calls the same code for get_Stream_by_id()
-
-=cut
-
-sub get_Stream_by_acc {
-
-  my $self = shift;
-  my $acc = shift or $self->throw("Must supply an accession number!\n");
-
-  return $self->get_Seq_by_id($acc);
-}
+ Title   : get_request
+ Usage   : my $url = $self->get_request
+ Function: HTTP::Request
+ Returns : 
+ Args    : %qualifiers = a hash of qualifiers (ids, format, etc)
 
 =head2 get_Stream_by_batch
 
@@ -194,103 +169,26 @@ sub get_Stream_by_acc {
   Example :
   Returns : a Bio::SeqIO stream object
   Args    : $ref : either an array reference, a filename, or a filehandle
-            from which to get the list of unique id's/accession numbers.
+            from which to get the list of unique ids/accession numbers.
 
-=cut
+=head2 get_Stream_by_id
 
-sub get_Stream_by_batch {
-   my $self = shift;
-   my $ref = shift or $self->throw("Must supply an argument!\n");
-   my $which = ref($ref);
-   my $fh;
-   my $filename;
-   if ( $which eq 'ARRAY') { # $ref is an array reference
-       $fh = new_tmpfile IO::File;
-       for ( @{$ref} ) {
-	   print $fh $_ . "\n";
-       }
-       seek $fh, 0, 0;
-       $filename = "tempfile.txt";
-   } elsif ( $which eq '') { # $ref is a filename
-       $fh = new IO::File $ref, "r";
-       $filename = $ref;
-   } elsif ( $which eq 'GLOB' or $which eq 'IO::File') { # $ref is assumed to be a filehandle
-       $fh = $ref;
-       $filename = "tempfile.txt";
-   }
+  Title   : get_Stream_by_id
+  Usage   : $stream = $db->get_Stream_by_id( [$uid1, $uid2] );
+  Function: Gets a series of Seq objects by unique identifiers
+  Returns : a Bio::SeqIO stream object
+  Args    : $ref : a reference to an array of unique identifiers for
+                   the desired sequence entries
 
-   my $wwwbuf = "DB=n&REQUEST_TYPE=LIST_OF_GIS&FORMAT=1&HTML=FALSE&SAVETO=FALSE&NOHEADER=TRUE&UID=" . join(',', grep { chomp; } <$fh> );
+=head2 get_Stream_by_acc
 
-   my $sock = $self->_get_sock();
-
-   select $sock;
-   print "POST /cgi-bin/Entrez/qserver.cgi HTTP/1.0\015\012";
-   print "Host: www.ncbi.nlm.nih.gov\015\012";
-   print "User-Agent: $0::Bio::DB::GenBank\015\012";
-   print "Connection: Keep-Alive\015\012";
-   print "Content-type: application/x-www-form-urlencoded\015\012";
-   print "Content-length: " . length($wwwbuf) . "\015\012";
-   print "\015\012";
-   print $wwwbuf;
-
-   while (<$sock>) {
-       if ( m,^HTTP/\d+\.\d+\s+(\d+)[^\012]\012, ) {
-	   my $code = $1;
-	   return undef unless $code =~ /^2/;
-       }
-       $self->throw("Entrez Error - check query sequences!\n") if m/^ERROR/i;
-       last if m/Batch Entrez results/;
-   }
-
-   return Bio::SeqIO->new('-fh' => $sock, '-format' => 'Fasta');
-
-}
-
-sub _get_stream {
-
-  my($self, $entrez) = @_;
-
-# most of this socket stuff is borrowed heavily from LWP::Simple, by
-# Gisle Aas and Martijn Koster.  They copyleft'ed it, but we should give
-# them full credit for this little diddy.
-
-  my $sock = $self->_get_sock();
-
-  print $sock join("\015\012" =>
-		   "GET /htbin-post/Entrez/query?$entrez HTTP/1.0",
-		   "Host: www.ncbi.nlm.nih.gov",
-		   "User-Agent: $0::Bio::DB::GenBank",
-		   "", "");
-
-  while(<$sock>) {
-    if ( m,^HTTP/\d+\.\d+\s+(\d+)[^\012]\012, ) {
-      my $code = $1;
-      return undef unless $code =~ /^2/;
-    }
-    $self->throw("Entrez Error - check query sequences!\n") if m/^ERROR/i;
-    last if m/^------/; # Kludgy, but it's how L. Stein does Boulder too
-  }
-
-  return Bio::SeqIO->new('-fh' => $sock, '-format' => 'Fasta');
-
-}
-
-sub _get_sock {
-    my $self = shift;
-    my $sock = IO::Socket::INET->new(PeerAddr => 'www.ncbi.nlm.nih.gov',
-				     PeerPort => 80,
-				     Proto    => 'tcp',
-				     Timeout  => 60
-				     );
-    unless ($sock) {
-	$@ =~ s/^.*?: //;
-	$self->throw("Can't connect to GenBank ($@)\n");
-    }
-    $sock->autoflush();		# just for safety's sake if they have old IO::Socket
-
-    return $sock;
-}
+  Title   : get_Stream_by_acc
+  Usage   : $seq = $db->get_Stream_by_acc([$acc1, $acc2]);
+  Function: Gets a series of Seq objects by accession numbers
+  Returns : a Bio::SeqIO stream object
+  Args    : $ref : a reference to an array of accession numbers for
+                   the desired sequence entries
+  Note    : For GenBank, this just calls the same code for get_Stream_by_id()
 
 1;
 __END__
-

@@ -4,7 +4,7 @@
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 28 Apr 1998
 # STATUS  : Alpha
-# REVISION: $Id: HTML.pm,v 1.3.2.3 2000/09/15 08:24:24 jgrg Exp $
+# REVISION: $Id: HTML.pm,v 1.8.2.1 2001/03/03 08:28:59 heikki Exp $
 # 
 # For the latest version and documentation, visit the distribution site:
 #    http://bio.perl.org/Projects/Blast/
@@ -31,7 +31,7 @@ use Bio::Tools::WWW  qw(:obj);
 use Carp;
 
 use vars qw( @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS
-             $ID $VERSION %DbUrl %SGDUrl $Revision
+             $ID %DbUrl %SGDUrl $Revision
 	     $Acc $Pir_acc $Word $Signif $Int $Descrip);
 
 @ISA        = qw(Exporter);
@@ -40,17 +40,18 @@ use vars qw( @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS
 %EXPORT_TAGS = ( std => [qw(&get_html_func  &strip_html)] );
 
 $ID = 'Bio::Tools::Blast::HTML';
-$VERSION  = 0.076; 
-$Revision = '$Id: HTML.pm,v 1.3.2.3 2000/09/15 08:24:24 jgrg Exp $';  #'
+$Revision = '$Id: HTML.pm,v 1.8.2.1 2001/03/03 08:28:59 heikki Exp $';  #'
 
 my $_set_markup = 0;
 my $_gi_link = '';
+
 
 ## POD Documentation:
 
 =head1 NAME
 
-Bio::Tools::Blast::HTML.pm - Bioperl Utility module for HTML formatting Blast reports
+Bio::Tools::Blast::HTML.pm - Bioperl Utility module for HTML
+formatting Blast reports
 
 =head1 SYNOPSIS
 
@@ -65,6 +66,7 @@ Bio::Tools::Blast::HTML.pm - Bioperl Utility module for HTML formatting Blast re
 See L<get_html_func>() for details.
 Also see B<Bio::Tools::Blast::to_html> for an example of usage.
 
+
 =head2 Removing HTML-formatting
 
     use Bio::Tools::Blast::HTML qw(&strip_html);
@@ -72,6 +74,7 @@ Also see B<Bio::Tools::Blast::to_html> for an example of usage.
     &strip_html(\$blast_report_string)
 
 See L<strip_html>() for details.
+
 
 =head1 INSTALLATION
 
@@ -84,23 +87,25 @@ Follow the installation instructions included in the README file.
 
 =head1 DESCRIPTION
 
-This module can be used to add HTML formatting to or remove HTML formatting from a 
-raw Blast sequence analysis report. Hypertext links to the appropriate database 
-are added for each hit sequence (GenBank, Swiss-Prot, PIR, PDB, SGD).
+This module can be used to add HTML formatting to or remove HTML
+formatting from a raw Blast sequence analysis report. Hypertext links
+to the appropriate database are added for each hit sequence (GenBank,
+Swiss-Prot, PIR, PDB, SGD).
 
 This module is intended for use by Bio::Tools::Blast.pm and related modules, 
 which provides a front-end to the methods in Bio::Tools::Blast::HTML.pm.
 
 =head1 DEPENDENCIES
 
-Bio::Tools::Blast::HTML.pm does not inherit from any other class besides Exporter.
-It is used by B<Bio::Tools::Blast.pm> only.
-This class relies on B<Bio::Tools::WWW.pm> to provide key URLS for adding links in the
-Blast report to specific databases.
+Bio::Tools::Blast::HTML.pm does not inherit from any other class
+besides Exporter.  It is used by B<Bio::Tools::Blast.pm> only.  This
+class relies on B<Bio::Tools::WWW.pm> to provide key URLS for adding
+links in the Blast report to specific databases.
 
-The greatest dependency comes from the dynamic state of the web. URLs are are likely to
-change in the future, so all links cannot be guaranteed to work indefinitely. 
-Feel free to report broken or incorrect database links (L<FEEDBACK>). Thanks!
+The greatest dependency comes from the dynamic state of the web. URLs
+are are likely to change in the future, so all links cannot be
+guaranteed to work indefinitely.  Feel free to report broken or
+incorrect database links (L<FEEDBACK>). Thanks!
 
 =head1 SEE ALSO
 
@@ -115,18 +120,18 @@ Feel free to report broken or incorrect database links (L<FEEDBACK>). Thanks!
 
 =head2 Mailing Lists 
 
-User feedback is an integral part of the evolution of this and other Bioperl modules.
-Send your comments and suggestions preferably to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules.  Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+    bioperl-l@bioperl.org          - General discussion
+    http://bio.perl.org/MailList.html             - About the mailing lists
 
 =head2 Reporting Bugs
 
-Report bugs to the Bioperl bug tracking system to help us keep track the bugs and 
-their resolution. Bug reports can be submitted via email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep 
+track the bugs and  their resolution. Bug reports can be submitted 
+via email or the web:
 
     bioperl-bugs@bio.perl.org                   
     http://bio.perl.org/bioperl-bugs/           
@@ -135,17 +140,15 @@ their resolution. Bug reports can be submitted via email or the web:
 
 Steve A. Chervitz, sac@genome.stanford.edu
 
-=head1 VERSION
-
-Bio::Tools::Blast::HTML.pm, 0.076
-
 =head1 COPYRIGHT
 
-Copyright (c) 1998 Steve A. Chervitz. All Rights Reserved.
+Copyright (c) 1998-2000 Steve A. Chervitz. All Rights Reserved.
 This module is free software; you can redistribute it and/or 
 modify it under the same terms as Perl itself.
 
+
 =cut
+
 
 #
 ##
@@ -155,6 +158,7 @@ modify it under the same terms as Perl itself.
 ##
 #'
 
+
 ######################  BEGIN FUNCTIONS  ########################
 
 =head1 APPENDIX
@@ -163,6 +167,8 @@ Methods beginning with a leading underscore are considered private
 and are intended for internal use by this module. They are
 B<not> considered part of the public interface and are described here
 for documentation purposes only.
+
+
 
 =head2 get_html_func
 
@@ -302,6 +308,9 @@ sub get_html_func {
     } # end sub {}
 }
 
+
+
+
 =head2 _set_markup_data
 
  Usage     : n/a; utility method used by get_html_func()
@@ -330,6 +339,7 @@ sub _set_markup_data {
     $_set_markup = 1;
 }
 
+
 =head2 _markup_database
 
  Usage     : n/a; utility method used by get_html_func()
@@ -338,7 +348,7 @@ sub _set_markup_data {
  Comments  : This is used for converting local database IDs into
            : understandable terms. At present, it only recognizes
            : databases used locally at SGD. 
-           
+
 See Also   : L<get_html_func>()
 
 =cut
@@ -358,6 +368,7 @@ sub _markup_database {
 
     $$line_ref = $_;
 }
+
 
 =head2 _markup_report
 
@@ -443,25 +454,29 @@ sub _markup_report {
     local($^W) = 0;
 
   # GenBank/EMBL, DDBJ hits (GenBank Format):
-  s@^>(gb|emb|dbj)\|($Word)(\|$Word)?(.*)$@<a name=$2_A></a><b>$1:<a href="$DbUrl{'gb_n'}$2">$2$3</a></b>$4<br>(<a href="\#$2_H">Back|<a href="\#top">Top</a>)@o;
+  s@^>(gb|emb|dbj|ref)\|($Word)(\|$Word)?(.*)$@<a name=$2_A></a><b>$1:<a href="$_gi_link$2">$2$3</a></b>$4<br>(<a href="\#$2_H">Back|<a href="\#top">Top</a>)@o;
+
+  s@^>(gb|emb|dbj|ref)\|($Word)(\| \(?$Word\)?)(.*)$@<a name=$2_A></a><b>$1:<a href="$_gi_link$2">$2</a></b>$3$4<br>(<a href="\#$2_H">Back|<a href="\#top">Top</a>)@o;
 
   # PIR hits
   s@^>pir\|\|($Word)( .*)$@<a name=$1_A></a><b><a href=\"$DbUrl{'pir_acc'}$1\">pir</a>:<a href="$DbUrl{'gb_p'}$1">$1</a></b> $2 <br>(<a href="\#$1_H">Back|<a href="\#top">Top</a>)@o;
 
   # GI hits (GenBank Format):  using a nested (())
-  s@^>(gi)\|($Word)( +\(($Word)\))( .*)$@<a name=$4_A></a><b>$1:<a href="$DbUrl{'gb_n'}$4">$2</a></b>$3$5<br>(<a href="\#$4_H">Back|<a href="\#top">Top</a>)@o;
+  s@^>(gi)\|($Word)( +\(($Word)\))( .*)$@<a name=$4_A></a><b>$1:<a href="$_gi_link$4">$2</a></b>$3$5<br>(<a href="\#$4_H">Back|<a href="\#top">Top</a>)@o;
 
   # GNL PID hits (GenBank Format):
-  s@^>(gnl)\|($Word)?(\|$Word) +\(($Word)\)( .*)$@<a name=$4_A></a><b>$1:<a href="$DbUrl{'gb_n'}$4">$2$3</a></b>($4)$5<br>(<a href="\#$4_H">Back|<a href="\#top">Top</a>)@o;
+  s@^>(gnl)\|($Word)?(\|$Word) +\(($Word)\)( .*)$@<a name=$4_A></a><b>$1:<a href="$_gi_link$4">$2$3</a></b>($4)$5<br>(<a href="\#$4_H">Back|<a href="\#top">Top</a>)@o;
 
   # BBS and PRF hits (what db?) (GenBank Format):
-  s@^>(bbs|prf)\|\|?($Word)( .*)$@<a name=$2_A></a><b>$1:<a href="$DbUrl{'gb_n'}$2">$2</a></b>$3<br>(<a href="\#$2_H">Back|<a href="\#top">Top</a>)@o;
+  s@^>(bbs|prf)\|\|?($Word)( .*)$@<a name=$2_A></a><b>$1:<a href="$_gi_link$2">$2</a></b>$3<br>(<a href="\#$2_H">Back|<a href="\#top">Top</a>)@o;
 
     # SwissProt hits:
   s@^>sp\|($Word)\|($Word)?( .*)$@<a name=$1_A></a><b><a href="$DbUrl{'swpr'}$1">sp</a>:<a href="$DbUrl{'gb_p'}$1">$1|$2</a></b>$3<br>(<a href="\#$1_H">Back|<a href="\#top">Top</a>)@o;
 
+
   ## PDB ids with or without a chain identifier (GenBank format)
   s@^>pdb\|(\d\w{3})\|[\w ] (.*)$@<a name=$1_A></A><b><a href=\"$DbUrl{'3db'}$1\">pdb</A>:<a href="$DbUrl{'gb_struct'}$1">$1</a></b> (<a href="\#$1_H">Back</a>|<a href="\#top">Top</a>)  $2@o;
+
 
     ### SGD-specific markups for HSP alignment section lines:
 
@@ -479,7 +494,7 @@ sub _markup_report {
 
   s@^>WORMPEPT:(\S+)(.*)$@<a name=$1_A></a><b>WORMPEP:<A HREF="$DbUrl{'wormace'}$1">$1</a></b> $2 <br>(<a href="\#$1_H">Back|<a href="\#top">Top</a>)@o;
 
-  s#^>(GB_$Word):($Word) ($Acc) (.*$)#<a name=$2_$3_A></A><a href=\#$2_$3_H>$2|$3</A>$4\t<b>[<A HREF=$DbUrl{'gb_n'}$3>GenBank</A> / <A HREF=$DbUrl{'embl'}$3>EMBL</A> / <A HREF=\"$SGDUrl{'seq_an'}$2\*\">SGD</A>]</b> #o;
+  s#^>(GB_$Word):($Word) ($Acc) (.*$)#<a name=$2_$3_A></A><a href=\#$2_$3_H>$2|$3</A>$4\t<b>[<A HREF=$_gi_link$3>GenBank</A> / <A HREF=$DbUrl{'embl'}$3>EMBL</A> / <A HREF=\"$SGDUrl{'seq_an'}$2\*\">SGD</A>]</b> #o;
 
    # Sac's version: ORF name is an external link into SGD:
   s@^>ORFP:(\S*) +([\w-]+)(.*$)@<a name=$1_A></A>ORFP:<a href=\"$SGDUrl{'locus'}$2\">$1 $2</A>$3<br>&nbsp&nbsp&nbsp&nbsp&nbsp<b>[<A HREF=\"$SGDUrl{'seq_an'}$2\">Gene/Sequence Resources</a> / <a href=\"$SGDUrl{'map_orf'}$2\">ORF Map</a></b>] <a href="\#$1_H">Back</a>|<a href="\#top">Top</a>@o;
@@ -517,17 +532,21 @@ sub _markup_report {
     ### NCBI-specific markups for description lines:
 
   # GenBank/EMBL, DDBJ hits (GenBank Format):
-  s@^ ?(gb|emb|dbj)\|($Word)(\|$Word)?($Descrip)($Int +)($Signif)(.*)$@$1:<a href="$DbUrl{'gb_n'}$2">$2$3</a>$4$5<A href="\#$2_A">$6</a>$7<a name="$2_H"></a>@o;
+  s@^ ?(gb|emb|dbj|ref)\|($Word)(\|$Word)?($Descrip)($Int +)($Signif)(.*)$@$1:<a href="$_gi_link$2">$2$3</a>$4$5<A href="\#$2_A">$6</a>$7<a name="$2_H"></a>@o;
+
+  s@^ ?(gb|emb|dbj|ref)\|($Word)(\| \(?$Word\)?)($Descrip)($Int +)($Signif)(.*)$@$1:<a href="$_gi_link$2">$2</a>$3$4$5<A href="\#$2_A">$6</a>$7<a name="$2_H"></a>@o;
 
     # Missing inner ID
   s@^ ?pir\|\|($Word)?($Descrip)($Int)  ($Signif)(.*)$@<a href="$DbUrl{'pir_acc'}$1">pir</a>:<a href="$DbUrl{'gb_p'}$1">$1</a> $2$3  <A href="\#$1_A">$4</a>$5<a name="$1_H"></a>@o;
 
   # GI hits (GenBank Format):  using a nested (())
-  s@^ ?gi\|($Word)( +\(($Word)\))($Descrip)($Int)  ($Signif)(.*)$@gi:<a href="$DbUrl{'gb_n'}$3">$1</a>$2$4$5  <A href="\#$3_A">$6</a>$7<a name="$3_H"></a>@o;
+  s@^ ?gi\|($Word)( +\(($Word)\))($Descrip)($Int)  ($Signif)(.*)$@gi:<a href="$_gi_link$3">$1</a>$2$4$5  <A href="\#$3_A">$6</a>$7<a name="$3_H"></a>@o;
 
-  s@^ ?(gnl)\|($Word)?(\|$Word +)\(($Word)\)($Descrip)($Int)  ($Signif)(.*)$@$1:<a href="$DbUrl{'gb_n'}$4">$2$3</a>($4)$5$6  <A href="\#$4_A">$7</a>$8<a name="$4_H"></a>@o;
+  s@^ ?(gnl)\|($Word)?(\|$Word +)\(($Word)\)($Descrip)($Int)  ($Signif)(.*)$@$1:<a href="$_gi_link$4">$2$3</a>($4)$5$6  <A href="\#$4_A">$7</a>$8<a name="$4_H"></a>@o;
 
-  s@^ ?(bbs|prf)\|\|?($Word)($Descrip)($Int)  ($Signif)(.*)$@$1:<a href="$DbUrl{'gb_n'}$2">$2</a> $3$4  <A href="\#$2_A">$5</a>$6<a name="$2_H"></a>@o;
+
+  s@^ ?(bbs|prf)\|\|?($Word)($Descrip)($Int)  ($Signif)(.*)$@$1:<a href="$_gi_link$2">$2</a> $3$4  <A href="\#$2_A">$5</a>$6<a name="$2_H"></a>@o;
+
 
   ## SwissProt accessions (GenBank format)
   s@^ ?sp\|($Word)(\|$Word)?($Descrip)($Int)  ($Signif)(.*)$@<a href="$DbUrl{'swpr'}$1">sp</a>:<a href="$DbUrl{'gb_p'}$1">$1$2</a>$3$4  <a href="\#$1_A">$5</a>$6<a name="$1_H"></a>@o;
@@ -535,13 +554,16 @@ sub _markup_report {
   ## PDB ids with or without a chain ID (GenBank format)
   s@^ ?pdb\|($Word)\|($Word)?($Descrip)($Int)  ($Signif)(.*)$@<a href="$DbUrl{'3db'}$1">pdb</a>:<a href="$DbUrl{'gb_struct'}$1">$1_$2</a>$3$4  <a href="\#$1_A">$5</a>$6<a name="$1_H"></a>@o;
 
+
  ### SGD-specific markups for description lines:
 
   ## PDB ids without chain identifier
   s@^ ?PDB_UNIQUEP:(\d\w{3})_($Descrip)($Int)  ($Signif)(.*)$@<a href="$DbUrl{'3db'}$1">PDB</a>:<A HREF="$DbUrl{'gb_struct'}$1">$1</A>       $2$3  <a href="\#$1_A">$4</a>$5<a name="$1_H"></a>@o;
 
+
   ## PDB ids with chain identifier
   s@^ ?PDB_UNIQUEP:(\d\w{3})_(\w)($Descrip)($Int)  ($Signif)(.*)$@<a href="$DbUrl{'3db'}$1">PDB</a>:<A HREF="$DbUrl{'gb_struct'}$1">$1</A> Chain:$2$3$4  <a href="\#$1_A">$5</a>$6<a name="$1_H"></a>@o;
+
 
   s@^ ?($Word)PEPT:GI_(\d+)($Descrip)($Int)  ($Signif)(.*)$@$1:<A HREF="$DbUrl{'gb_p'}$2">GI_$2</A> $3 $4  <a href="\#$2_A">$5</a> $6<a name="$2_H"></a>@o;
 
@@ -550,7 +572,7 @@ sub _markup_report {
     ## Mike Cherry's markups. SAC note: added back database name to allow
     ## the HTML-formatted version to be parsable by Blast.pm.
     
-  s#^ ?(GB_$Word:)($Word)( *)($Acc)($Descrip)($Int)  ( *$Signif) ( *\d*)$#GenBank\|<a href="$DbUrl{'gb_n'}$4">$2</A>\|$4 $3$5$6 <a href="\#$2_$4_A">$7</A> $8<a name="$2_$4_H"></A>#o;
+  s#^ ?(GB_$Word:)($Word)( *)($Acc)($Descrip)($Int)  ( *$Signif) ( *\d*)$#GenBank\|<a href="$_gi_link$4">$2</A>\|$4 $3$5$6 <a href="\#$2_$4_A">$7</A> $8<a name="$2_$4_H"></A>#o;
 
 # Mike's version:
 #  s#^ ?(ORFP:)(\S*)($Descrip)($Int)  ($Signif) ($Int)$#$1<b>$2</b> $3 $4 <a href="\#$2_A">$5</a> $6<a name="$2_H"></a>#o;
@@ -579,6 +601,9 @@ sub _markup_report {
 
     $$line_ref = $_;
 }
+
+
+
 
 =head2 _prog_ref_html
 
@@ -623,6 +648,7 @@ QQ_REF_QQ
 
 }
 
+
 =head2 _genbank_alert
 
  Usage     : n/a; utility method used by get_html_func().
@@ -647,6 +673,8 @@ sub _genbank_alert {
          be listed as gene X, since gene Y had not yet been identified). </b>
 QQ_GENBANK_QQ
 }
+
+
 
 =head2 strip_html
 
@@ -723,4 +751,6 @@ __END__
 #####################################################################################
 #                                END OF CLASS                                       #
 #####################################################################################
+
+
 

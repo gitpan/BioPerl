@@ -4,7 +4,7 @@
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu).
 # CREATED : 22 May 1998
 # STATUS  : STUB MODULE, MUST BE CUSTOMIZED FOR A LOCAL SITE.
-# REVISION: $Id: LocalBlast.pm,v 1.2.2.2 2000/09/15 08:24:25 jgrg Exp $
+# REVISION: $Id: LocalBlast.pm,v 1.5.2.1 2001/03/03 08:28:59 heikki Exp $
 #
 # For the latest version and documentation, visit the distribution site:
 #    http://genome-www.stanford.edu/perlOOP/bioperl/blast/
@@ -26,7 +26,7 @@ use Bio::Root::Utilities qw(:obj);
 use Carp;
 
 use Exporter;
-use vars qw( @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
+use vars qw( @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS );
 @ISA        = qw(Exporter);
 @EXPORT     = qw();
 @EXPORT_OK  = qw(&blast_local @Blast_dbp_local @Blast_dbn_local 
@@ -40,11 +40,13 @@ use vars qw( $ID $VERSION);
 $ID      = 'Bio::Tools::Blast::Run::LocalBlast';
 $VERSION = '0.01';
 
+
 ## POD Documentation
 
 =head1 NAME
 
-Bio::Tools::Blast::Run::LocalBlast.pm - Bioperl module for running Blast analyses locally.
+Bio::Tools::Blast::Run::LocalBlast.pm - Bioperl module for running
+Blast analyses locally.
 
 =head1 SYNOPSIS
 
@@ -65,9 +67,9 @@ Follow the installation instructions included in the README file.
 
 =head1 DESCRIPTION
 
-Bio::Tools::Blast::Run::LocalBlast.pm contains methods and data necessary for
-running Blast sequence analyses on a local machine. This module must be customized
-for a specific site.
+Bio::Tools::Blast::Run::LocalBlast.pm contains methods and data
+necessary for running Blast sequence analyses on a local machine. This
+module must be customized for a specific site.
 
 The basic requirements are that it conform to this minimal API:
 
@@ -75,28 +77,32 @@ The basic requirements are that it conform to this minimal API:
 
 =item 1 Export a method called L<blast_local>()
 
-that accepts a Bio::Tools::Blast.pm object + named parameters as specified by L<blast_local>().
+that accepts a Bio::Tools::Blast.pm object + named parameters as
+specified by L<blast_local>().
 
 =item 2 The L<blast_local>() method should return 
 
 a list of names of files containing the raw Blast reports.
 
-=item 3 Export arrays containing a list of available databases 
+=item 3 Exporting arrays containing a list of available databases 
 
 in the arrays C<@Blast_dbn_local> and C<@Blast_dbp_local>.
 
 =back
 
-The generic version of this module provides some rudimentary logic, but feel free
-to customize as necessary.
+The generic version of this module provides some rudimentary logic,
+but feel free to customize as necessary.
+
 
 =head2 Script Files
 
-Sometimes it is convenient to write an executable shell script for running a set of Blasts
-on a local machine. This script can be saved and re-executed as necessary or saved
-for documentation purposes. This module could provide a convenient way to consolidate
-the logic necessary for producing such script files or perhaps stubs of script file 
-that could be further modified for Blast-ing specific datasets.
+Sometimes it is convenient to write an executable shell script for
+running a set of Blasts on a local machine. This script can be saved
+and re-executed as necessary or saved for documentation purposes. This
+module could provide a convenient way to consolidate the logic
+necessary for producing such script files or perhaps stubs of script
+file that could be further modified for Blast-ing specific datasets.
+
 
 =head1 DEPENDENCIES
 
@@ -112,6 +118,7 @@ be updated along with that module.
  Bio::Tools::Blast::HTML.pm              - Blast HTML-formating utility class.
  Bio::Seq.pm                             - Biosequence object  
 
+
  http://bio.perl.org/Projects/modules.html  - Online module documentation
  http://bio.perl.org/Projects/Blast/        - Bioperl Blast Project     
  http://bio.perl.org/                       - Bioperl Project Homepage
@@ -120,18 +127,18 @@ be updated along with that module.
 
 =head2 Mailing Lists 
 
-User feedback is an integral part of the evolution of this and other Bioperl modules.
-Send your comments and suggestions preferably to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules.  Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+    bioperl-l@bioperl.org          - General discussion
+    http://bio.perl.org/MailList.html             - About the mailing lists
 
 =head2 Reporting Bugs
 
-Report bugs to the Bioperl bug tracking system to help us keep track the bugs and 
-their resolution. Bug reports can be submitted via email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution. Bug reports can be submitted via email
+or the web:
 
     bioperl-bugs@bio.perl.org                   
     http://bio.perl.org/bioperl-bugs/           
@@ -159,6 +166,7 @@ modify it under the same terms as Perl itself.
 ###
 ##
 #'
+
 
 use vars qw(@Blast_dbp_local @Blast_dbn_local @Blast_matrix_local);
 
@@ -193,6 +201,7 @@ my $_out_dir                = '';    # where to save the Blast output files.
 my $_blastObj               = undef;
 my $_errmsg                 = '';
 
+
 ######################  BEGIN FUNCTIONS  ########################
 
 =head1 APPENDIX
@@ -201,6 +210,7 @@ Methods beginning with a leading underscore are considered private
 and are intended for internal use by this module. They are
 B<not> considered part of the public interface and are described here
 for documentation purposes only.
+
 
 =head2 blast_local
 
@@ -341,6 +351,7 @@ sub _validate_options {
     }
 }
 
+
 #---------------
 sub _blast_seqs {
 #---------------
@@ -376,6 +387,7 @@ sub _blast_seqs {
     }
 }
 
+
 #---------------
 sub _blast_files {
 #---------------
@@ -392,6 +404,7 @@ sub _blast_files {
 	$count++;
     }
 }
+
 
 #------------------
 sub _validate_seq {
@@ -442,4 +455,5 @@ __END__
 #####################################################################################
 #                                END OF CLASS                                       #
 #####################################################################################
+
 

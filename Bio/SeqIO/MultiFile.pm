@@ -1,3 +1,4 @@
+# $Id: MultiFile.pm,v 1.7 2001/01/28 06:45:10 lapp Exp $
 #
 # BioPerl module for Bio::SeqIO::MultiFile
 #
@@ -35,9 +36,8 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                 - General discussion
+  http://www.bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -60,25 +60,24 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
+
 # Let the code begin...
 
-package Bio::SeqIO::MultiFile;
-use vars qw(@ISA);
-use strict;
-use Bio::SeqIO;
 
-# Object preamble - inherits from Bio::Root::Object
+package Bio::SeqIO::MultiFile;
+use strict;
+use vars qw(@ISA);
+use Bio::SeqIO;
 
 @ISA = qw(Bio::SeqIO);
 
-# new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
 
 sub _initialize {
   my($self,@args) = @_;
 
-  my $make = $self->SUPER::_initialize(@args);
+  $self->SUPER::_initialize(@args);
 
   my ($file_array,$format) = $self->_rearrange([qw(
 					 FILES
@@ -101,9 +100,6 @@ sub _initialize {
   if( $self->_load_file() == 0 ) {
      $self->throw("Unable even to initialise the first file");
   }
-
-# set stuff in self from @args
- return $make; # success - we hope!
 }
 
 =head2 next_seq
@@ -114,6 +110,7 @@ sub _initialize {
  Example :
  Returns : 
  Args    :
+
 
 =cut
 
@@ -142,6 +139,7 @@ sub next_seq{
  Returns : 
  Args    :
 
+
 =cut
 
 sub next_primary_seq{
@@ -168,6 +166,7 @@ sub next_primary_seq{
  Example :
  Returns : 
  Args    :
+
 
 =cut
 
@@ -197,6 +196,7 @@ sub _load_file{
  Returns : 
  Args    :
 
+
 =cut
 
 sub _set_file{
@@ -214,6 +214,7 @@ sub _set_file{
  Example : 
  Returns : value of _current_seqio
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -235,6 +236,7 @@ sub _current_seqio{
  Returns : value of _format
  Args    : newvalue (optional)
 
+
 =cut
 
 sub _format{
@@ -246,3 +248,4 @@ sub _format{
 
 }
 
+1;

@@ -1,8 +1,8 @@
 #-----------------------------------------------------------------------------
 # PACKAGE : Bio::SeqIO::raw
-# AUTHOR  : Ewan Birney <birney@sanger.ac.uk>
+# AUTHOR  : Ewan Birney <birney@ebi.ac.uk>
 # CREATED : Feb 16 1999
-# REVISION: $Id: raw.pm,v 1.2.2.1 2000/09/15 08:24:22 jgrg Exp $
+# REVISION: $Id: raw.pm,v 1.7 2001/01/30 06:49:14 lapp Exp $
 #            
 # Copyright (c) 1997-9 bioperl, Ewan Birney. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
@@ -10,7 +10,7 @@
 #
 # _History_
 #
-# Ewan Birney <birney@sanger.ac.uk> developed the SeqIO 
+# Ewan Birney <birney@ebi.ac.uk> developed the SeqIO 
 # schema and the first prototype modules.
 #
 # This code is based on his Bio::SeqIO::Fasta module with
@@ -39,6 +39,7 @@ Do not use this module directly.  Use it via the L<Bio::SeqIO> class.
 This object can transform Bio::Seq objects to and from raw flat
 file databases.
 
+
 =head1 FEEDBACK
 
 =head2 Mailing Lists
@@ -48,9 +49,8 @@ and other Bioperl modules. Send your comments and suggestions preferably
 to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                 - General discussion
+  http://www.bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -63,7 +63,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 
 =head1 AUTHORS
 
-  Ewan Birney  <birney@sanger.ac.uk>
+  Ewan Birney  <birney@ebi.ac.uk>
   Lincoln Stein <lstein@cshl.org>
 
 =head1 APPENDIX
@@ -73,15 +73,15 @@ Internal methods are usually preceded with a _
 
 =cut
 
+
 # Let the code begin...
 
 package Bio::SeqIO::raw;
-use vars '@ISA';
 use strict;
-use Bio::SeqIO;
-# Object preamble - inheriets from Bio::Root::Object
+use vars qw(@ISA);
 
-use FileHandle;
+use Bio::SeqIO;
+use Bio::Seq;
 
 @ISA = qw(Bio::SeqIO);
 
@@ -92,6 +92,7 @@ use FileHandle;
  Function: returns the next sequence in the stream
  Returns : Bio::Seq object
  Args    :
+
 
 =cut
 
@@ -117,6 +118,7 @@ sub next_seq{
  Function: writes the $seq object into the stream
  Returns : 1 for success and 0 for error
  Args    : Bio::Seq object
+
 
 =cut
 

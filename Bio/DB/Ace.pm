@@ -1,3 +1,5 @@
+
+# $Id: Ace.pm,v 1.7.2.1 2001/03/02 22:47:55 heikki Exp $
 #
 # BioPerl module for Bio::DB::Ace
 #
@@ -56,9 +58,8 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org              - General discussion
+  http://bioperl.org/MailList.shtml  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -99,15 +100,16 @@ BEGIN {
   }
 }
 
+
 @ISA = qw(Bio::DB::RandomAccessI);
 
 # new() is inherited from Bio::DB::Abstract
 
 # _initialize is where the heavy stuff will happen when new is called
 
-sub _initialize {
-  my($self,@args) = @_;
-  my $make = $self->SUPER::_initialize;
+sub new {
+  my($class,@args) = @_;
+  my $sekf = $class->SUPER::new(@args);
   my ($host,$port) = $self->_rearrange([qw(
 					 HOST
 					 PORT
@@ -125,7 +127,8 @@ sub _initialize {
 
   $self->_aceobj($aceobj);
 
-  return $make; # success - we hope!
+
+  return $self;
 }
 
 =head2 get_Seq_by_id
@@ -166,6 +169,7 @@ sub get_Seq_by_id {
   Returns : a Bio::Seq object
   Args    : $acc : the accession number of the desired sequence entry
 
+
 =cut
 
 sub get_Seq_by_acc {
@@ -185,7 +189,7 @@ sub get_Seq_by_acc {
   Args    : New value of the ace object
 
 =cut
-  
+
 sub _aceobj {
   my ($self,$arg) = @_;
 
@@ -197,3 +201,9 @@ sub _aceobj {
 }
 
 1;
+
+
+
+
+
+

@@ -1,65 +1,58 @@
+# -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Range.t,v 1.2.6.1 2000/09/04 17:00:09 jason Exp $
+## $Id: Range.t,v 1.7 2001/02/05 09:53:51 heikki Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
-#-----------------------------------------------------------------------
-## perl test harness expects the following output syntax only!
-## 1..3
-## ok 1  [not ok 1 (if test fails)]
-## 2..3
-## ok 2  [not ok 2 (if test fails)]
-## 3..3
-## ok 3  [not ok 3 (if test fails)]
-##
-## etc. etc. etc. (continue on for each tested function in the .t file)
-#-----------------------------------------------------------------------
+use strict;
+BEGIN { 
+    # to handle systems with no installed Test module
+    # we include the t dir (where a copy of Test.pm is located)
+    # as a fallback
+    eval { require Test; };
+    if( $@ ) {
+	use lib 't';
+    }
+    use Test;
+    plan tests => 17;
+}
 
-
-## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..5\n"; 
-	use vars qw($loaded); }
-END {print "not ok 1\n" unless $loaded;}
-
-use lib '../';
 use Bio::Range;
 
-$loaded = 1;
-print "ok 1\n";    # 1st test passes.
-
-
-## End of black magic.
-##
-## Insert additional test code below but remember to change
-## the print "1..x\n" in the BEGIN block to reflect the
-## total number of tests that will be run. 
-
+ok 1;
 
 my $range = Bio::Range->new(-start=>10,
                             -end=>20,
 			    -strand=>1);
-print "ok 2\n"; 
+ok defined $range;
+ok $range->strand, 1;
 
 my $range2 = Bio::Range->new(-start=>15,
                              -end=>25,
 			     -strand=>1);
 
-print "ok 3\n";
+ok defined $range2;
+ok $range2->strand, 1;
 
-my ($start, $stop);
+my $r = Bio::Range->new();
+ok $r->strand(0), 0;
+ok $r->start(27), 27;
+ok $r->end(28), 28;
 
-($start, $stop) = $range->union($range2);
-if( $start == 10 && $stop == 25 ) {
-   print "ok 4\n";
-} else {
-   print "not ok 4\n";
-}
+ok $r->intersection($range2), undef;
 
-($start, $stop) = $range->intersection($range2);
-if( $start == 15 && $stop == 20 ) {
-   print "ok 5\n";
-} else {
-   print "not ok 5\n";
-}
+$r = $range->union($range2);
+ok $r->start, 10;
+ok $r->end, 25;
+
+$r = $range->intersection($range2);
+ok $r->start, 15;
+ok $r->end, 20;
+
+ok !($range->contains($range2));
+ok !($range2->contains($range));
+ok $range->overlaps($range2);
+ok $range2->overlaps($range);
+
 

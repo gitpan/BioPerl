@@ -1,36 +1,39 @@
+# -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
 ##
 # CVS Version
-# $Id: SeqFeature.t,v 1.7 2000/03/01 15:36:43 birney Exp $
+# $Id: SeqFeature.t,v 1.17.2.1 2001/03/02 18:32:22 jason Exp $
 
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
-#-----------------------------------------------------------------------
-## perl test harness expects the following output syntax only!
-## 1..3
-## ok 1  [not ok 1 (if test fails)]
-## 2..3
-## ok 2  [not ok 2 (if test fails)]
-## 3..3
-## ok 3  [not ok 3 (if test fails)]
-##
-## etc. etc. etc. (continue on for each tested function in the .t file)
-#-----------------------------------------------------------------------
+use strict;
 
+BEGIN { 
+    # to handle systems with no installed Test module
+    # we include the t dir (where a copy of Test.pm is located)
+    # as a fallback
+    eval { require Test; };
+    if( $@ ) {
+	use lib 't';
+    }
+    use Test;
 
-## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..17\n"; 
-	use vars qw($loaded); }
+    plan tests => 25;
+}
 
-END {print "not ok 1\n" unless $loaded;}
-
+use Bio::Seq;
 use Bio::SeqFeature::Generic;
 use Bio::SeqFeature::FeaturePair;
+use Bio::SeqFeature::SimilarityPair;
+use Bio::Tools::Blast;
 
-$loaded = 1;
-print "ok 1\n";    # 1st test passes.
+ok(1);
+
+# predeclare variables for strict
+my ($feat,$str,$feat2,$pair,$comp_obj1,$comp_obj2,@sft); 
+
 
 $feat = new Bio::SeqFeature::Generic ( -start => 40,
 				       -end => 80,
@@ -43,38 +46,15 @@ $feat = new Bio::SeqFeature::Generic ( -start => 40,
 					   }
 				       );
 
-if( $feat->start == 40 ) { 
-    print "ok 2\n";
-} else {
-    print "not ok 2\n";
-}
+ok $feat->start, 40;
 
+ok $feat->end, 80;
 
-if( $feat->end == 80 ) { 
-    print "ok 3\n";
-} else {
-    print "not ok 3\n";
-}
+ok $feat->primary_tag, 'exon';
 
+ok $feat->source_tag, 'internal';
 
-if( $feat->primary_tag eq 'exon' ) { 
-    print "ok 4\n";
-} else {
-    print "not ok 4\n";
-}
-
-
-if( $feat->source_tag eq 'internal' ) { 
-    print "ok 5\n";
-} else {
-    print "not ok 5\n";
-}
-
-
-
-
-$str = $feat->gff_string();
-$str = ""; # shut up -w
+$str = $feat->gff_string() || ""; # placate -w
 
 # we need to figure out the correct mapping of this stuff
 # soon
@@ -85,11 +65,11 @@ $str = ""; # shut up -w
 #    print "ok 3\n";
 #}
 
-print "ok 6\n";
+ok(1);
 
 $pair = new Bio::SeqFeature::FeaturePair();
 
-print "ok 7\n";
+ok defined $pair;
 
 $feat2 = new Bio::SeqFeature::Generic ( -start => 400,
 				       -end => 440,
@@ -102,75 +82,62 @@ $feat2 = new Bio::SeqFeature::Generic ( -start => 400,
 					   }
 				       );
 
+ok defined $feat2;
 $pair->feature1($feat);
 $pair->feature2($feat2);
 
-print "ok 8\n";
-
-if( $pair->start == 40 ) { 
-    print "ok 9\n";
-} else {
-    print "not ok 9\n";
-}
-
-
-if( $pair->end == 80 ) { 
-    print "ok 10\n";
-} else {
-    print "not ok 10\n";
-}
-
-
-if( $pair->primary_tag eq 'exon' ) { 
-    print "ok 11\n";
-} else {
-    print "not ok 11\n";
-}
-
-
-if( $pair->source_tag eq 'internal' ) { 
-    print "ok 12\n";
-} else {
-    print "not ok 12\n";
-}
-
-
-
-if( $pair->hstart == 400 ) { 
-    print "ok 13\n";
-} else {
-    print "not ok 13\n";
-}
-
-
-if( $pair->hend == 440 ) { 
-    print "ok 14\n";
-} else {
-    print "not ok 14\n";
-}
-
-
-if( $pair->hprimary_tag eq 'other' ) { 
-    print "ok 15\n";
-} else {
-    print "not ok 15\n";
-}
-
-
-if( $pair->hsource_tag eq 'program_a' ) { 
-    print "ok 16\n";
-} else {
-    print "not ok 16\n";
-}
+ok $pair->feature1, $feat;
+ok $pair->feature2, $feat2;
+ok $pair->start, 40;
+ok $pair->end, 80;
+ok $pair->primary_tag, 'exon';
+ok $pair->source_tag, 'internal';
+ok $pair->hstart, 400;
+ok $pair->hend, 440;
+ok $pair->hprimary_tag, 'other' ;
+ok $pair->hsource_tag, 'program_a';
 
 $pair->invert;
+ok $pair->end, 440;
 
-if( $pair->end == 440 ) {
-    print "ok 17\n";
-} else {
-    print "not ok 17\n";
+# Test attaching a SeqFeature::Generic to a Bio::Seq
+{
+    # Make the parent sequence object
+    my $seq = Bio::Seq->new(
+        '-seq'          => 'aaaaggggtttt',
+        '-display_id'   => 'test',
+        '-moltype'      => 'dna',
+        );
+    
+    # Make a SeqFeature
+    my $sf1 = Bio::SeqFeature::Generic->new(
+        '-start'    => 4,
+        '-end'      => 9,
+        '-strand'   => 1,
+        );
+    
+    # Add the SeqFeature to the parent
+    ok ($seq->add_SeqFeature($sf1));
+    
+    # Test that it gives the correct sequence
+    my $sf_seq1 = $sf1->seq->seq;
+    ok $sf_seq1, 'aggggt';
+    ok $sf1->end,9;
+    ok $sf1->start,4;
+
+    # Make a second seqfeature on the opposite strand
+    my $sf2 = Bio::SeqFeature::Generic->new(
+        '-start'    => 4,
+        '-end'      => 9,
+        '-strand'   => -1,
+        );
+    
+    # This time add the PrimarySeq to the seqfeature
+    # before adding it to the parent
+    ok ($sf2->attach_seq($seq->primary_seq));
+    $seq->add_SeqFeature($sf2);
+    
+    # Test again that we have the correct sequence
+    my $sf_seq2 = $sf2->seq->seq;
+    ok $sf_seq2, 'acccct';
 }
-
-
-
-

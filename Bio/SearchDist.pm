@@ -1,3 +1,5 @@
+# $Id: SearchDist.pm,v 1.13.2.1 2001/03/02 22:47:54 heikki Exp $
+
 #
 # BioPerl module for Bio::SearchDist
 #
@@ -36,9 +38,9 @@ histogram object. The histogram object can bascially take in a number
 of scores which are sensibly distributed somewhere around 0 that come
 from a supposed Extreme Value Distribution. Having add all the scores
 from a database search via the add_score method you can then fit a
-extreme value distribution using ->fit_evd(). Once fitted you can then
+extreme value distribution using fit_evd(). Once fitted you can then
 get out the evalue for each score (or a new score) using
-->evalue($score).
+evalue($score).
 
 The fitting procedure is better described in Sean Eddy's own code
 (available from http://hmmer.wustl.edu, or in the histogram.h header
@@ -48,11 +50,13 @@ positives are discarded in the fitting procedure. This comes from
 an orginally idea of Richard Mott's and the likelhood fitting
 is from a book by Lawless [should ref here].
 
+
 The object relies on the fact that the scores are sensibly distributed
 around about 0 and that integer bins are sensible for the
 histogram. Scores based on bits are often ideal for this (bits based
 scoring mechanisms is what this histogram object was originally
 designed for).
+
 
 =head1 CONTACT
 
@@ -63,14 +67,25 @@ Its use in Bioperl is via the Compiled XS extension which is cared for
 by Ewan Birney (birney@sanger.ac.uk). Please contact Ewan first about
 the use of this module
 
+=head1 FEEDBACK
+
+=head2 Mailing Lists
+
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
+
+  bioperl-l@bioperl.org          - General discussion
+  http://bio.perl.org/MailList.html             - About the mailing lists
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution. Bug reports can be submitted via email
+the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
-    bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+  bioperl-bugs@bio.perl.org
+  http://bio.perl.org/bioperl-bugs/
 
 =head1 APPENDIX
 
@@ -79,37 +94,35 @@ methods. Internal methods are usually preceded with a _
 
 =cut
 
+
 # Let the code begin...
+
 
 package Bio::SearchDist;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
-
-use Bio::Root::Object;
+use Bio::Root::RootI;
 
 BEGIN {
     eval {
 	require Bio::Ext::Align;
     };
     if ( $@ ) {
+print $@;
 	print STDERR ("\nThe C-compiled engine for histogram object (Bio::Ext::Align) has not been installed.\n Please install the bioperl-ext package\n\n");
 	exit(1);
     }
 }
 
-@ISA = qw(Bio::Root::Object);
-# new() is inherited from Bio::Root::Object
 
-# _initialize is where the heavy stuff will happen when new is called
+@ISA = qw(Bio::Root::RootI);
 
-sub _initialize {
-  my($self,%args) = @_;
+sub new {
+  my($class,@args) = @_;
+  my $self = $class->SUPER::new(@args);
   my($min, $max, $lump) = 
-	$self->_rearrange([qw(MIN MAX LUMP)], %args);
-
-  my $make = $self->SUPER::_initialize(%args);
+	$self->_rearrange([qw(MIN MAX LUMP)], @args);
 
   if( !  $min ) {
     $min = -100;
@@ -123,9 +136,9 @@ sub _initialize {
     $lump = 50;
   }
 
-  $self->_engine(&Bio::Ext::new_Histogram($min,$max,$lump));
+  $self->_engine(&Bio::Ext::Align::new_Histogram($min,$max,$lump));
 
-  return $make; # success - we hope!
+  return $self;
 }
 
 =head2 add_score
@@ -136,14 +149,15 @@ sub _initialize {
  Returns : nothing
  Args    : 
 
+
 =cut
 
 sub add_score{
    my ($self,$score) = @_;
    my ($eng);
    $eng = $self->_engine();
-   $eng->AddToHistogram($score);
-
+   #$eng->AddToHistogram($score);
+   $eng->add($score);
 }
 
 =head2 fit_evd
@@ -154,14 +168,37 @@ sub add_score{
  Returns : 1 if it fits successfully, 0 if not
  Args    :
 
+
 =cut
 
 sub fit_evd{
    my ($self,@args) = @_;
 
-   return $self->_engine()->ExtremeValueFitHistogram(10000);
-   
+   return $self->_engine()->fit_EVD(10000,1);
 }
+
+=head2 fit_Gaussian
+
+ Title   : fit_Gaussian
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub fit_Gaussian{
+   my ($self,$high) = @_;
+
+   if( ! defined $high ) {
+       $high = 10000;
+   }
+
+   return $self->_engine()->fit_Gaussian($high);
+}
+
 
 =head2 evalue
 
@@ -170,6 +207,7 @@ sub fit_evd{
  Function: Returns the evalue of this score 
  Returns : float 
  Args    :
+
 
 =cut
 
@@ -180,6 +218,8 @@ sub evalue{
 
 }
 
+
+
 =head2 _engine
 
  Title   : _engine
@@ -188,16 +228,17 @@ sub evalue{
  Returns : value of _engine
  Args    : newvalue (optional)
 
+
 =cut
 
 sub _engine{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $obj->{'_engine'} = $value;
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'_engine'} = $value;
     }
-    return $obj->{'_engine'};
-
+    return $self->{'_engine'};
 }
+
 
 ## End of Package
 

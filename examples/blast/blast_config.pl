@@ -18,7 +18,7 @@ BEGIN {
 #                processing for working with Bio::Tools::Blast.pm objects.
 # AUTHOR       : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED      : 15 May 1998
-# REVISION     : $Id: blast_config.pl,v 1.6.2.1 2000/05/15 09:22:35 sac Exp $
+# REVISION     : $Id: blast_config.pl,v 1.7 2000/05/15 08:24:06 sac Exp $
 # WEBSITE      : http://bio.perl.org/Projects/Blast/
 # INSTALLATION : Edit $INSTALL_PATH to point to the directory containing
 #                your Bioperl modules (the Bio/ directory).

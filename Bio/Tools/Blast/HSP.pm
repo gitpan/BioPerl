@@ -3,7 +3,7 @@
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : March 1996
 # STATUS  : Alpha
-# REVISION: $Id: HSP.pm,v 1.6.2.3 2000/09/21 16:35:01 sac Exp $
+# REVISION: $Id: HSP.pm,v 1.11.2.1 2001/03/03 08:28:58 heikki Exp $
 #
 # For the latest version and documentation, visit the distribution site:
 #    http://genome-www.stanford.edu/perlOOP/bioperl/blast/
@@ -25,10 +25,9 @@ use Bio::Root::Object ();
 @ISA = qw( Bio::Root::Object);  
 
 use strict;
-use vars qw($ID $VERSION $GAP_SYMBOL @SCORE_CUTOFFS $Revision %STRAND_SYMBOL);
+use vars qw($ID $GAP_SYMBOL @SCORE_CUTOFFS $Revision %STRAND_SYMBOL);
 $ID       = 'Bio::Tools::Blast::HSP';
-$VERSION  = 0.09;
-$Revision = '$Id: HSP.pm,v 1.6.2.3 2000/09/21 16:35:01 sac Exp $';  #'
+$Revision = '$Id: HSP.pm,v 1.11.2.1 2001/03/03 08:28:58 heikki Exp $';  #'
 
 $GAP_SYMBOL    = '-';          # Need a more general way to handle gap symbols.
 @SCORE_CUTOFFS = ( 100, 30 );  # Bit score cutoffs (see homol_score()).
@@ -86,45 +85,49 @@ HSP objects (L<Links:>).
 
 =back
 
-Bio::Tools::Blast::HSP.pm has the ability to extract a list of all residue 
-indices for identical and conservative matches along both query and
-sbjct sequences. Since this degree of detail is not always needed, 
-this behavior does not occur during construction of the HSP object.
-These data will automatically be collected as necessary as the 
-HSP.pm object is used.
+Bio::Tools::Blast::HSP.pm has the ability to extract a list of all
+residue indices for identical and conservative matches along both
+query and sbjct sequences. Since this degree of detail is not always
+needed, this behavior does not occur during construction of the HSP
+object.  These data will automatically be collected as necessary as
+the HSP.pm object is used.
 
 =head1 DEPENDENCIES
 
-Bio::Tools::Blast::HSP.pm is a concrete class that inherits from B<Bio::Root::Object.pm>
-and relies on B<Bio::Tools::Sbjct.pm> as a container for HSP.pm objects.
-B<Bio::Seq.pm> and B<Bio::UnivAln.pm> are employed for creating sequence
-and alignment objects, respectively.
+Bio::Tools::Blast::HSP.pm is a concrete class that inherits from
+B<Bio::Root::Object.pm> and relies on B<Bio::Tools::Sbjct.pm> as a
+container for HSP.pm objects.  B<Bio::Seq.pm> and B<Bio::UnivAln.pm>
+are employed for creating sequence and alignment objects,
+respectively.
+
 
 =head2 Relationship to UnivAln.pm & Seq.pm
 
-HSP.pm can provide the query or sbjct sequence as a B<Bio::Seq.pm> object
-via the L<seq>() method. The HSP.pm object can also create a two-sequence 
-B<Bio::UnivAln.pm> alignment object using the the query and sbjct sequences 
-via the L<get_aln>() method. Creation of alignment objects is not automatic when
-constructing the HSP.pm object since this level of functionality is not always
-required and would generate a lot of extra overhead when crunching many reports.
+HSP.pm can provide the query or sbjct sequence as a B<Bio::Seq.pm>
+object via the L<seq>() method. The HSP.pm object can also create a
+two-sequence B<Bio::UnivAln.pm> alignment object using the the query
+and sbjct sequences via the L<get_aln>() method. Creation of alignment
+objects is not automatic when constructing the HSP.pm object since
+this level of functionality is not always required and would generate
+a lot of extra overhead when crunching many reports.
+
 
 =head1 FEEDBACK
 
 =head2 Mailing Lists 
 
-User feedback is an integral part of the evolution of this and other Bioperl modules.
-Send your comments and suggestions preferably to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules.  Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+    bioperl-l@bioperl.org          - General discussion
+    http://bio.perl.org/MailList.html             - About the mailing lists
 
 =head2 Reporting Bugs
 
-Report bugs to the Bioperl bug tracking system to help us keep track the bugs and 
-their resolution. Bug reports can be submitted via email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution. Bug reports can be submitted via email
+or the web:
 
     bioperl-bugs@bio.perl.org                   
     http://bio.perl.org/bioperl-bugs/           
@@ -132,10 +135,6 @@ their resolution. Bug reports can be submitted via email or the web:
 =head1 AUTHOR
 
 Steve A. Chervitz, sac@genome.stanford.edu
-
-=head1 VERSION
-
-Bio::Tools::Blast::HSP.pm, 0.09
 
 =head1 SEE ALSO
 
@@ -145,7 +144,7 @@ Bio::Tools::Blast::HSP.pm, 0.09
  Bio::UnivAln.pm               - Biosequence alignment object.
  Bio::Root::Object.pm          - Proposed base class for all Bioperl objects.
 
-Links:
+=head2 Links:
 
  http://bio.perl.org/Core/POD/Tools/Blast/Sbjct.pm.html
 
@@ -160,6 +159,8 @@ This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
 =cut
+
+
 
 #
 ##
@@ -220,6 +221,7 @@ sub _initialize {
 #####################################################################################
 ##                                  ACCESSORS                                      ##
 #####################################################################################
+
 
 =head2 _set_data
 
@@ -304,6 +306,8 @@ sub _set_data {
       }
 }
 
+
+
 =head2 _set_score_stats
 
  Usage     : n/a; called automatically by _set_data()
@@ -366,6 +370,8 @@ sub _set_score_stats {
 
 }
 
+
+
 =head2 _set_match_stats
 
  Usage     : n/a; called automatically by _set_data()
@@ -423,6 +429,8 @@ sub _set_match_stats {
 #    }
 }
 
+
+
 =head2 _set_seq_data
 
  Usage     : n/a; called automatically when sequence data is requested.
@@ -452,6 +460,8 @@ sub _set_seq_data {
 
     $self->{'_set_seq_data'} = 1;
 }
+
+
 
 =head2 _set_seq
 
@@ -536,6 +546,7 @@ sub _set_seq {
 #    }
 }
 
+
 =head2 _set_residues
 
  Usage     : n/a; called automatically when residue data is requested.
@@ -607,6 +618,9 @@ sub _set_residues {
 
 }
 
+
+
+
 =head2 _set_match_seq
 
  Usage     : n/a. Internal method.
@@ -660,6 +674,8 @@ sub _set_match_seq {
     $self->{'_matchSeq'};
 }
 
+
+
 =head2 score
 
  Usage     : $hsp_obj->score()
@@ -676,6 +692,8 @@ See Also   : L<bits>()
 sub score { my $self = shift; $self->{'_score'}; }
 #---------
 
+
+
 =head2 bits
 
  Usage     : $hsp_obj->bits()
@@ -684,6 +702,7 @@ sub score { my $self = shift; $self->{'_score'}; }
  Argument  : n/a
  Throws    : n/a
 
+
 See Also   : L<score>()
 
 =cut
@@ -691,6 +710,8 @@ See Also   : L<score>()
 #--------
 sub bits { my $self = shift; $self->{'_bits'}; }
 #--------
+
+
 
 =head2 n
 
@@ -714,6 +735,8 @@ See Also   : L<score>()
 sub n { my $self = shift; $self->{'_n'} || ''; }
 #-----
 
+
+
 =head2 frame
 
  Usage     : $hsp_obj->frame()
@@ -727,6 +750,8 @@ sub n { my $self = shift; $self->{'_n'} || ''; }
 #---------
 sub frame { my $self = shift; $self->{'_frame'} || ''; }
 #---------
+
+
 
 =head2 signif()
 
@@ -753,6 +778,8 @@ sub signif {
     $val; 
 }
 
+
+
 =head2 expect
 
  Usage     : $hsp_obj->expect()
@@ -771,6 +798,8 @@ See Also   : L<p>()
 #----------
 sub expect { my $self = shift; $self->{'_expect'}; }
 #----------
+
+
 
 =head2 p
 
@@ -791,6 +820,7 @@ See Also   : L<expect>()
 #-----
 sub p { my $self = shift; $self->{'_p'}; }
 #-----
+
 
 =head2 length
 
@@ -822,6 +852,8 @@ sub length {
     $type = "_\L$type\E";
     $self->{$type.'Length'};
 }
+
+
 
 =head2 gaps
 
@@ -864,6 +896,8 @@ sub gaps {
 	return $self->{$seqType.'Gaps'} || 0;
     }
 }
+
+
 
 =head2 matches
 
@@ -963,6 +997,8 @@ sub matches {
     @data;
 }
 
+
+
 =head2 frac_identical
 
  Usage     : $hsp_object->frac_identical( [seq_type] );
@@ -1008,6 +1044,7 @@ sub frac_identical {
 
     sprintf( "%.2f", $self->{'_numIdentical'}/$self->{$seqType.'Length'});
 }
+
 
 =head2 frac_conserved
 
@@ -1058,6 +1095,7 @@ sub frac_conserved {
     sprintf( "%.2f", $self->{'_numConserved'}/$self->{$seqType.'Length'});
 }
 
+
 =head2 num_identical
 
  Usage     : $hsp_object->num_identical();
@@ -1079,6 +1117,7 @@ sub num_identical {
     $self->{'_numIdentical'};
 }
 
+
 =head2 num_conserved
 
  Usage     : $hsp_object->num_conserved();
@@ -1099,6 +1138,8 @@ sub num_conserved {
 
     $self->{'_numConserved'};
 }
+
+
 
 =head2 range
 
@@ -1204,6 +1245,8 @@ sub end {
     }
 }
 
+
+
 =head2 strand
 
  Usage     : $hsp_object->strand( [seq_type] )
@@ -1247,9 +1290,11 @@ sub strand {
     $STRAND_SYMBOL{$self->{$seqType.'Strand'}} || 0;
 }
 
+
 #####################################################################################
 ##                            INSTANCE METHODS                                     ##
 #####################################################################################
+
 
 =head2 seq
 
@@ -1286,6 +1331,8 @@ sub seq {
 		  -DESC => "Blast HSP #$num, $seqType sequence",
 		  );
 }
+
+
 
 =head2 seq_str
 
@@ -1337,6 +1384,9 @@ sub seq_str {
     }
 }
 
+
+
+
 =head2 seq_inds
 
  Usage     : $hsp->seq_inds( seq_type, class, collapse );
@@ -1386,6 +1436,9 @@ sub seq_inds {
     return $collapse ? &collapse_nums(@ary) : @ary;
 }
 
+
+
+
 =head2 get_aln
 
  Usage     : $hsp->get_aln()
@@ -1428,6 +1481,7 @@ sub get_aln {
 		       );
 }
 
+
 =head2 display
 
  Usage     : $sbjct_object->display( %named_parameters );
@@ -1452,7 +1506,7 @@ sub display {
 #-----------
     my( $self, %param ) = @_;
     
-    my $sbjctName = $self->parent->name();
+     my $sbjctName = $self->parent->name();
     my $queryName = $self->parent->parent->name();
     my $layout = $self->parent->parent->_layout();
     
@@ -1479,11 +1533,14 @@ sub display {
     printf( $OUT "%-15s: %d (%0.0f%%)  %s \n", "CONSERVED", $self->{'_numConserved'}, 
 	   $self->{'_numConserved'}/$queryLength * 100,
 	   "includes identical" );
-
+    
     $self->_display_seq('query', $queryName, $OUT);
     $self->_display_seq('sbjct', $sbjctName, $OUT);
     $self->_display_matches($queryName, $sbjctName, $OUT);
 }
+
+
+
 
 =head2 _display_seq
 
@@ -1518,6 +1575,7 @@ sub _display_seq {
 	printf( $OUT "%15s%s\n", "", $_);
     }
 }
+
 
 =head2 _display_matches
 
@@ -1592,6 +1650,9 @@ sub _display_matches {
     }
 }
 
+
+
+
 =head2 homol_data
 
  Usage     : $data = $hsp_object->homo_data( %named_params );
@@ -1627,6 +1688,7 @@ sub homol_data {
     return ( $homolScore.' '.$self->{$seq.'Start'}.' '.$self->{$seq.'Stop'});
 }
 
+
 =head2 homol_score
 
  Usage     : $self->homol_score();
@@ -1659,6 +1721,7 @@ sub homol_score {
 	  $self->{'_bits'} >= $SCORE_CUTOFFS[1] ) { 2 }
     else  { 3 }
 }
+
 
 #####################################################################################
 ##                                  CLASS METHODS                                  ##
@@ -1714,6 +1777,7 @@ sub collapse_nums {
 
     @ca;
 }
+
 
 1;
 __END__
@@ -1791,6 +1855,7 @@ all or some of the following fields:
 		:
  _parent        : From Bio::Root::Object.pm. This member contains a reference to the
 		: Bio::Tools::Blast::Sbjct.pm object to which this hit belongs.
+
 
 =cut
 

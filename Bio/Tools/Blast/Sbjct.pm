@@ -3,7 +3,7 @@
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu) 
 # CREATED : 7 October 1996
 # STATUS  : Alpha
-# REVISION: $Id: Sbjct.pm,v 1.8.2.3 2000/09/15 08:24:24 jgrg Exp $
+# REVISION: $Id: Sbjct.pm,v 1.12 2001/01/28 06:45:12 lapp Exp $
 #
 # For the latest version and documentation, visit the distribution site:
 #    http://genome-www.stanford.edu/perlOOP/bioperl/blast/
@@ -21,13 +21,12 @@ package Bio::Tools::Blast::Sbjct;
 use Bio::Root::Global  qw(:devel);
 use Bio::Root::Object  ();
 
-@ISA        = qw( Bio::Root::Object );
+@ISA        = qw( Bio::Root::Object Exporter );
 
 use strict;
-use vars qw($ID $VERSION %SUMMARY_OFFSET $Revision);
+use vars qw($ID %SUMMARY_OFFSET $Revision);
 $ID = 'Bio::Tools::Blast::Sbjct';
-$VERSION = 0.091;
-$Revision = '$Id: Sbjct.pm,v 1.8.2.3 2000/09/15 08:24:24 jgrg Exp $';  #'
+$Revision = '$Id: Sbjct.pm,v 1.12 2001/01/28 06:45:12 lapp Exp $';  #'
 
 my $_prog       = '';
 my $_signif_fmt = '';
@@ -84,23 +83,30 @@ The terms "sbjct" and "hit" will be used interchangeably in this and related mod
 
 This module supports BLAST versions 1.x and 2.x, gapped and ungapped.
 
+
 =head2 HSP Tiling and Ambiguous Alignments
 
-If a Blast hit has more than one HSP, the Bio::Tools::Blast::Sbjct.pm object has
-the ability to merge overlapping HSPs into contiguous blocks. This permits the Sbjct object
-to sum data across all HSPs without counting data in the overlapping regions 
-multiple times, which would happen if data from each overlapping HSP are simply summed. 
-HSP tiling is performed automatically when methods of the Sbjct object that rely on 
-tiled data are invoked. These include L<frac_identical>(), L<frac_conserved>(), L<gaps>(),
-L<frac_aligned_query>(), L<frac_aligned_hit>(), L<num_unaligned_query>(), L<num_unaligned_hit>().
+If a Blast hit has more than one HSP, the Bio::Tools::Blast::Sbjct.pm
+object has the ability to merge overlapping HSPs into contiguous
+blocks. This permits the Sbjct object to sum data across all HSPs
+without counting data in the overlapping regions multiple times, which
+would happen if data from each overlapping HSP are simply summed.  HSP
+tiling is performed automatically when methods of the Sbjct object
+that rely on tiled data are invoked. These include
+L<frac_identical>(), L<frac_conserved>(), L<gaps>(),
+L<frac_aligned_query>(), L<frac_aligned_hit>(),
+L<num_unaligned_query>(), L<num_unaligned_hit>().
 
-It also permits the assessment of an "ambiguous alignment" if the query (or sbjct)
-sequences from different HSPs overlap. The existence of an overlap could indicate a
-biologically interesting region in the sequence, such as a repeated domain.
-The Sbjct object uses the -OVERLAP parameter to determine when two sequences overlap; 
-if this is set to 2 -- the default -- then any two sbjct or query HSP sequences 
-must overlap by more than two residues to get merged into the same contig and counted
-as an overlap. See the L<BUGS> section below for "issues" with HSP tiling.
+It also permits the assessment of an "ambiguous alignment" if the
+query (or sbjct) sequences from different HSPs overlap. The existence
+of an overlap could indicate a biologically interesting region in the
+sequence, such as a repeated domain.  The Sbjct object uses the
+-OVERLAP parameter to determine when two sequences overlap; if this is
+set to 2 -- the default -- then any two sbjct or query HSP sequences
+must overlap by more than two residues to get merged into the same
+contig and counted as an overlap. See the L<BUGS> section below for
+"issues" with HSP tiling.
+
 
 The results of the HSP tiling is reported with the following ambiguity codes:
 
@@ -112,6 +118,7 @@ The results of the HSP tiling is reported with the following ambiguity codes:
  
    'qs' = Both query and sbjct sequences contain more than one
           sub-sequence with similarity to the other sequence.
+
 
 For addition information about ambiguous BLAST alignments, see
 L<_tile_hsps>() and 
@@ -135,17 +142,20 @@ Provides a container for Sbjct.pm objects.
 
 =back
 
-Bio::Tools::Blast::Sbjct.pm does not currently inherit from Bio::Root::Vector.pm
-since Bio::Root::Vector.pm may be re-designed to make it usable via delegation.
-Thus, a Blast.pm object would manage a vector of Sbjct.pm objects.
-Stay tuned.
+
+Bio::Tools::Blast::Sbjct.pm does not currently inherit from
+Bio::Root::Vector.pm since Bio::Root::Vector.pm may be re-designed to
+make it usable via delegation.  Thus, a Blast.pm object would manage a
+vector of Sbjct.pm objects.  Stay tuned.
+
 
 =head1 BUGS
 
-One consequence of the HSP tiling is that methods that rely on HSP tiling such as
-L<frac_identical>(), L<frac_conserved>(), L<gaps>() etc. may report misleading numbers 
-when C<-OVERLAP> is set to a large number.
-For example, say we have two HSPs and the query sequence tile as follows:
+One consequence of the HSP tiling is that methods that rely on HSP
+tiling such as L<frac_identical>(), L<frac_conserved>(), L<gaps>()
+etc. may report misleading numbers when C<-OVERLAP> is set to a large
+number.  For example, say we have two HSPs and the query sequence tile
+as follows:
 
             1      8             22      30        40             60 
  Full seq:  ------------------------------------------------------------
@@ -154,19 +164,24 @@ For example, say we have two HSPs and the query sequence tile as follows:
                               **   **  **
  HSP2:                        -------------           (6 identical matches)
 
-If C<-OVERLAP> is set to some number over 4, HSP1 and HSP2 will not be tiled into a single
-contig and their numbers of identical matches will be added, giving a total of 12,
-not 10 if they had be combined into one contig. This can lead to number greater than 1.0 for
-methods L<frac_identical>() and L<frac_conserved>(). This is less of an issue with gapped 
-Blast since it tends to combine HSPs that would be listed separately without gapping.
-(Fractions E<gt>1.0 can be viewed as a signal for an interesting alignment that warrants 
-further inspection, thus turning this bug into a feature).
 
-Using large values for C<-OVERLAP> can lead to incorrect numbers reported by methods that
-rely on HSP tiling but can be useful if you care more about detecting ambiguous alignments. 
-Setting C<-OVERLAP> to zero will lead to the most accurate numbers for the tiling-dependent
-methods but will be useless for detecting overlapping HSPs since all HSPs will appear to
-overlap.
+If C<-OVERLAP> is set to some number over 4, HSP1 and HSP2 will not be
+tiled into a single contig and their numbers of identical matches will
+be added, giving a total of 12, not 10 if they had be combined into
+one contig. This can lead to number greater than 1.0 for methods
+L<frac_identical>() and L<frac_conserved>(). This is less of an issue
+with gapped Blast since it tends to combine HSPs that would be listed
+separately without gapping.  (Fractions E<gt>1.0 can be viewed as a
+signal for an interesting alignment that warrants further inspection,
+thus turning this bug into a feature).
+
+Using large values for C<-OVERLAP> can lead to incorrect numbers
+reported by methods that rely on HSP tiling but can be useful if you
+care more about detecting ambiguous alignments.  Setting C<-OVERLAP>
+to zero will lead to the most accurate numbers for the
+tiling-dependent methods but will be useless for detecting overlapping
+HSPs since all HSPs will appear to overlap.
+
 
 =head1 SEE ALSO
 
@@ -182,22 +197,23 @@ Links:
  http://bio.perl.org/Projects/Blast/        - Bioperl Blast Project     
  http://bio.perl.org/                       - Bioperl Project Homepage
 
+
 =head1 FEEDBACK
 
 =head2 Mailing Lists 
 
-User feedback is an integral part of the evolution of this and other Bioperl modules.
-Send your comments and suggestions preferably to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules.  Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+    bioperl-l@bioperl.org          - General discussion
+    http://bio.perl.org/MailList.html             - About the mailing lists
 
 =head2 Reporting Bugs
 
-Report bugs to the Bioperl bug tracking system to help us keep track the bugs and 
-their resolution. Bug reports can be submitted via email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution. Bug reports can be submitted via email
+or the web:
 
     bioperl-bugs@bio.perl.org                   
     http://bio.perl.org/bioperl-bugs/           
@@ -208,17 +224,15 @@ Steve A. Chervitz, sac@genome.stanford.edu
 
 See the L<FEEDBACK> section for where to send bug reports and comments.
 
-=head1 VERSION
-
-Bio::Tools::Blast::Sbjct.pm, 0.091
-
 =head1 COPYRIGHT
 
-Copyright (c) 1996-98 Steve A. Chervitz. All Rights Reserved.
+Copyright (c) 1996-2000 Steve A. Chervitz. All Rights Reserved.
 This module is free software; you can redistribute it and/or 
 modify it under the same terms as Perl itself.
 
 =cut
+
+
 
 #
 ##
@@ -227,6 +241,7 @@ modify it under the same terms as Perl itself.
 ###
 ##
 #'
+
 
 =head1 APPENDIX
 
@@ -310,6 +325,7 @@ sub destroy {
 ##                                  ACCESSORS                                      ##
 #####################################################################################
 
+
 =head2 rank
 
  Usage     : $sbjct->rank( integer or string );
@@ -335,6 +351,8 @@ sub rank {
     if(@_) {$self->{'_rank'} = shift; }
     $self->{'_rank'};
 }
+
+
 
 =head2 _set_id
 
@@ -415,6 +433,7 @@ sub _set_id {
 #    }
 #    $self->{'_db'}  = $dbID || '-';
 }
+
 
 =head2 _set_hsps
 
@@ -620,6 +639,7 @@ sub _set_desc {
 #    print "$ID: _set_desc =  $desc";<STDIN>;
 }
 
+
 =head2 _tile_hsps
 
  Usage     : n/a; called automatically during object construction or
@@ -810,6 +830,8 @@ sub _tile_hsps {
     }
 }
 
+
+
 =head2 _adjust_contigs
 
  Usage     : n/a; called automatically during object construction.
@@ -901,6 +923,7 @@ sub _adjust_contigs {
     $overlap;
 }
 
+
 =head2 ambiguous_aln
 
  Usage     : $ambig_code = $sbjct_object->ambiguous_aln();
@@ -932,6 +955,8 @@ sub ambiguous_aln {
     $self->{'_ambiguous_aln'} || '-';
 }
 
+
+
 =head2 overlap
 
  Usage     : $blast_object->overlap( [integer] );
@@ -957,6 +982,9 @@ sub overlap {
     if(@_) { $self->{'_overlap'} = shift; }
     defined $self->{'_overlap'} ? $self->{'_overlap'} : 0;
 }
+
+
+
 
 =head2 score
 
@@ -988,6 +1016,8 @@ sub score {
     return $score;
 }
 
+
+
 =head2 bits
 
  Usage     : $sbjct_object->bits();
@@ -1018,6 +1048,8 @@ sub bits {
     } 
     return $bits;
 }
+
+
 
 =head2 n
 
@@ -1060,6 +1092,8 @@ sub n {
     return $n;
 }
 
+
+
 =head2 frame
 
  Usage     : $sbjct_object->frame();
@@ -1089,6 +1123,10 @@ sub frame {
     } 
     return $frame;
 }
+
+
+
+
 
 =head2 p
 
@@ -1146,6 +1184,8 @@ sub p {
     return $val;
 }
 
+
+
 =head2 expect
 
  Usage     : $sbjct_object->expect( [format] );
@@ -1192,6 +1232,8 @@ sub expect {
     ## Default: return the raw Expect-value.
     return $val;
 }
+
+
 
 =head2 signif
 
@@ -1254,6 +1296,8 @@ sub signif {
     return $val;
 }
 
+
+
 =head2 desc
 
  Usage     : $sbjct_object->desc( [integer] );
@@ -1276,6 +1320,8 @@ sub desc {
     substr( $self->{'_desc'}, 0 ,$len ); 
 }
 
+
+
 =head2 database
 
  Usage     : $sbjct_object->database();
@@ -1295,6 +1341,9 @@ sub desc {
 #--------------
 sub database { my $self = shift; return $self->{'_db'}; }
 #--------------
+
+
+
 
 =head2 hsps
 
@@ -1328,6 +1377,8 @@ sub hsps {
         #  returning number of HSPs.
         : scalar(@{$self->{'_hsps'}});
 }
+
+
 
 =head2 hsp
 
@@ -1367,6 +1418,8 @@ sub hsp {
 		 "Valid arguments: 'best', 'worst'");
 }
 
+
+
 =head2 num_hsps
 
  Usage     : $sbjct_object->num_hsps();
@@ -1392,6 +1445,8 @@ sub num_hsps {
     return scalar(@{$self->{'_hsps'}});
 }
 
+
+
 =head2 length
 
  Usage     : $sbjct_object->length();
@@ -1413,6 +1468,7 @@ sub length {
     my $self = shift;
     $self->{'_length'}; 
 }    
+
 
 =head2 logical_length
 
@@ -1455,6 +1511,8 @@ sub logical_length {
     return $qlen;
 }    
 
+
+
 =head2 length_aln
 
  Usage     : $sbjct_object->length_aln( [seq_type] );
@@ -1496,6 +1554,7 @@ sub length_aln {
     }		
     $data;
 }    
+
 
 =head2 gaps
 
@@ -1544,6 +1603,8 @@ sub gaps {
 	return $self->{'_gaps_'.$seqType} || 0;
     }
 }    
+
+
 
 =head2 matches
 
@@ -1598,6 +1659,7 @@ sub matches {
     $self->throw("Can't get identical or conserved data: no data.");
 }
 
+
 =head2 start
 
  Usage     : $sbjct->start( [seq_type] );
@@ -1644,6 +1706,7 @@ sub start {
 	}
     }
 }
+
 
 =head2 end
 
@@ -1716,6 +1779,7 @@ sub range {
     return ($self->start($seqType), $self->end($seqType));
 }
 
+
 =head2 frac_identical
 
  Usage     : $sbjct_object->frac_identical( [seq_type] );
@@ -1763,6 +1827,8 @@ sub frac_identical {
 
     sprintf( "%.2f", $self->{'_totalIdentical'}/$self->{'_length_aln_'.$seqType});
 }
+
+
 
 =head2 frac_conserved
 
@@ -1812,6 +1878,9 @@ sub frac_conserved {
     sprintf( "%.2f", $self->{'_totalConserved'}/$self->{'_length_aln_'.$seqType});
 }
 
+
+
+
 =head2 frac_aligned_query
 
  Usage     : $sbjct_object->frac_aligned_query();
@@ -1845,6 +1914,8 @@ sub frac_aligned_query {
 
     sprintf( "%.2f", $self->{'_length_aln_query'}/$self->logical_length('query'));
 }
+
+
 
 =head2 frac_aligned_hit
 
@@ -1891,6 +1962,8 @@ sub frac_aligned_sbjct {  my $self=shift; $self->frac_aligned_hit(@_); }
 sub num_unaligned_sbjct {  my $self=shift; $self->num_unaligned_hit(@_); }
 #-----------------------  
 
+
+
 =head2 num_unaligned_hit
 
  Usage     : $sbjct_object->num_unaligned_hit();
@@ -1922,6 +1995,7 @@ sub num_unaligned_hit {
     ($num < 0 ? 0 : $num );
 }
 
+
 =head2 num_unaligned_query
 
  Usage     : $sbjct_object->num_unaligned_query();
@@ -1952,6 +2026,8 @@ sub num_unaligned_query {
     my $num = $self->logical_length('query') - $self->{'_length_aln_query'};
     ($num < 0 ? 0 : $num );
 }
+
+
 
 =head2 seq_inds
 
@@ -2003,9 +2079,11 @@ sub seq_inds {
     $collapse ?  &Bio::Tools::Blast::HSP::collapse_nums(@inds) : @inds; 
 }
 
+
 #####################################################################################
 ##                                  INSTANCE METHODS                               ##
 #####################################################################################
+
 
 =head2 display
 
@@ -2032,6 +2110,7 @@ sub display {
     
     $self->show =~ /hsp/i and $self->_display_hsps( %param);
 }
+
 
 =head2 _display_stats
 
@@ -2084,6 +2163,7 @@ sub _display_stats {
 
 }
 
+
 =head2 _display_hsps
 
  Usage     : n/a; called automatically by display()
@@ -2123,6 +2203,8 @@ sub _display_hsps {
 	}
     }
 }
+
+
 
 =head2 homol_data
 
@@ -2250,6 +2332,7 @@ __END__
 #                                END OF CLASS                                       #
 #####################################################################################
 
+
 =head1 FOR DEVELOPERS ONLY
 
 =head2 Data Members
@@ -2314,6 +2397,7 @@ all or some of the following fields:
 		   :
  _length_aln_sbjct : Length of the aligned region of the sbjct sequence.
 
+
  INHERITED DATA MEMBERS 
  ----------------------
  _name          : From Bio::Root::Object.pm. String representing the name of the 
@@ -2321,6 +2405,7 @@ all or some of the following fields:
 		:
  _parent        : From Bio::Root::Object.pm. This member contains a reference to the
 		: Bio::Tools::Blast.pm object to which this hit belongs.
+
 
 =cut
 

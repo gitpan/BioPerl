@@ -1,7 +1,8 @@
+# $Id: Range.pm,v 1.11.2.1 2001/03/02 22:47:54 heikki Exp $
 #
 # BioPerl module for Bio::Range
 #
-# Cared for by Matthew Pocock <mrp@sanger.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
 #
 # Copywright Matthew Pocock
 #
@@ -9,15 +10,6 @@
 #
 # POD documentation - main docs before the code
 #
-# BioPerl module for Bio::RangeI
-#
-# Cared for by Matthew Pocock <mrp@sanger.ac.uk>
-#
-# Copywright Matthew Pocock
-#
-# You may distribute this module under the same terms as perl itself
-#
-# POD documentation - main docs before the code
 
 =head1 NAME
 
@@ -25,13 +17,14 @@ Bio::Range - Pure perl RangeI implementation
 
 =head1 DESCRIPTION
 
-This provides a pure perl implementation of the  BioPerl range interface.
+This provides a pure perl implementation of the BioPerl range
+interface.
 
-Ranges are modeled as having (start, end, length, strand). They
-use Bio-coordinates - all points >= start and <= end are within
-the range. End is always greater-than or equal-to start, and
-length is greather than or equal to 1. The behaviour of a range
-is undefined if ranges with negative numbers or zero are used.
+Ranges are modeled as having (start, end, length, strand). They use
+Bio-coordinates - all points E<gt>= start and E<lt>= end are within the
+range. End is always greater-than or equal-to start, and length is
+greather than or equal to 1. The behaviour of a range is undefined if
+ranges with negative numbers or zero are used.
 
 So, in summary:
 
@@ -41,8 +34,8 @@ So, in summary:
 
 =head1 SYNOPSIS
 
-  $range = new Bio::Range(-start=>10, -stop=>30, -strand=>+1);
-  $r2 = new Bio::Range(-start=>15, -stop=>200, -strand=>+1);
+  $range = new Bio::Range(-start=>10, -end=>30, -strand=>+1);
+  $r2 = new Bio::Range(-start=>15, -end=>200, -strand=>+1);
 
   print join(', ', $range->union($r2), "\n";
   print join(', ', $range->intersection($r2), "\n";
@@ -53,28 +46,25 @@ So, in summary:
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
-  vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussio
-n
+  bioperl-l@bioperl.org          - General discussion
   http://bio.perl.org/MailList.html             - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via email
+or the web:
 
   bioperl-bugs@bio.perl.org
   http://bio.perl.org/bioperl-bugs/
 
-=head1 AUTHOR - Matthew Pocock
+=head1 AUTHOR - Heikki Lehvaslaiho
 
-Email mrp@sanger.ac.uk
+Email heikki@ebi.ac.uk
 
 =head1 APPENDIX
 
@@ -87,52 +77,48 @@ package Bio::Range;
 
 use strict;
 use Carp;
-
+use integer;
 use Bio::RangeI;
+use Bio::Root::RootI;
 
 use vars qw(@ISA);
 
-@ISA = qw(Bio::RangeI);
+@ISA = qw(Bio::Root::RootI Bio::RangeI);
 
 =head1 Constructors
 
 =head2 new
 
   Title   : new
-  Usage   : $range = Bio::Range->new(-start => 100, -stop=> 200, -strand = +1);
+  Usage   : $range = Bio::Range->new(-start => 100, -end=> 200, -strand = +1);
   Function: generates a new Bio::Range
   Returns : a new range
-  Args    : two of (-start, -stop, '-length') - the third is calculated
+  Args    : two of (-start, -end, '-length') - the third is calculated
           : -strand (defaults to 0)
 
 =cut
 
 sub new {
-  my $thingy = shift;
-  my $package = ref($thingy) || $thingy;
-  my $self = bless {}, $package;
-  my $usageMessage = "Specify exactly two of -start, -end, '-length'";
-  my %args = @_;
-  $self->strand($args{-strand} || 0);
-  
-  if($args{-start} && $args{-end} && $args{'-length'}) {
-    confess $usageMessage;
-  }
-  
-  if($args{-start}) {
-    $self->start($args{-start});
-    if($args{-end}) {
-      $self->end($args{-end});
-    } elsif($args{'-length'}) {
-      $self->end($self->start()+$args{'-length'}-1);
-    } else {
-      confess $usageMessage;
-    }
-  } elsif($args{-end} && $args{'-length'}) {
-    $self->end($args{-end});
-    $self->start($self->end() - $args{'-length'} + 1);
-  } else {
-    confess $usageMessage;
+  my ($caller, @args) = @_;
+  my $self = $caller->SUPER::new(@args);
+  my ($strand, $start, $end, $length) = 
+      $self->_rearrange([qw(STRAND 
+			    START
+			    END 
+			    LENGTH
+			    )],@args);
+  $self->strand($strand || 0);
+
+  if(defined $start ) {
+      $self->start($start);
+      if(defined $end) {
+	  $self->end($end);
+      } elsif(defined $length) {
+	  $self->end($self->start()+ $length - 1);
+      }
+  } elsif(defined $end && defined $length ) {
+      $self->end($end);
+      $self->start($self->end() - $length + 1);
   }
   return $self;
 }
@@ -147,15 +133,19 @@ These methods let you get at and set the member variables
   Function : return or set the start co-ordinate
   Example  : $s = $range->start(); $range->start(7);
   Returns  : the value of the start co-ordinate
-  Args     : optionaly, the new start co-ordinate
+  Args     : optionally, the new start co-ordinate
   Overrides: Bio::RangeI::start
 
 =cut
 
 sub start {
-  my $self = shift;
-  @_ ? $self->{start} = shift
-     : $self->{start};
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->throw("'$value' is not an integer.\n") 
+	    unless $value =~ /^[-+]?\d+$/;
+        $self->{'start'} = $value;
+    }
+    return $self->{'start'};
 }
 
 =head2 end
@@ -164,15 +154,20 @@ sub start {
   Function : return or set the end co-ordinate
   Example  : $e = $range->end(); $range->end(2000);
   Returns  : the value of the end co-ordinate
-  Args     : optionaly, the new end co-ordinate
+  Args     : optionally, the new end co-ordinate
   Overrides: Bio::RangeI::end
 
 =cut
 
 sub end {
-  my $self = shift;
-  @_ ? $self->{end} = shift
-     : $self->{end};
+
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->throw("'$value' is not an integer.\n") 
+	    unless $value =~ /^[-+]?\d+$/;
+        $self->{'end'} = $value;
+    }
+    return $self->{'end'};
 }
 
 =head2 strand
@@ -194,10 +189,10 @@ sub strand {
     $val =~ tr/-/-1/;
     $val =~ tr/./0/;
     if($val == -1 || $val == 0 || $val == 1 ) {
-      $self->{strand} = $val;
+      $self->{'strand'} = $val;
     }
-  }  
-  return $self->{strand};
+  }
+  return $self->{'strand'};
 }
 
 =head2 length
@@ -257,7 +252,7 @@ These methods return true or false.
   Returns  : true if the argument is totaly contained within this range
   Inherited: Bio::RangeI
 
-=head2
+=head2 equals
 
   Title    : equals
   Usage    : if($r1->equals($r2))
@@ -269,25 +264,29 @@ These methods return true or false.
 =head1 Geometrical methods
 
 These methods do things to the geometry of ranges, and return
-triplets (start, stop, strand) from which new ranges could be built.
+triplets (start, end, strand) from which new ranges could be built.
 
-=head2
+=head2 intersection
 
   Title    : intersection
   Usage    : ($start, $stop, $strand) = $r1->intersection($r2)
   Function : gives the range that is contained by both ranges
   Args     : a range to compare this one to
-  Returns  : nothing if they don't overlap, or the range that they do overlap
-  Inherited: Bio::RangeI
+  Returns  : nothing if they do not overlap, or the range that they do overlap
+  Inherited: Bio::RangeI::intersection
 
-=head2
+=cut
+
+=head2 union
 
   Title    : union
   Usage    : ($start, $stop, $strand) = $r1->union($r2);
-           : ($start, $stop, $strand) = Bio::RangeI->union(@ranges);
+           : ($start, $stop, $strand) = Bio::Range->union(@ranges);
   Function : finds the minimal range that contains all of the ranges
   Args     : a range or list of ranges to find the union of
   Returns  : the range containing all of the ranges
-  Inherited: Bio::RangeI
+  Inherited: Bio::RangeI::union
+
+=cut
 
 1;

@@ -1,3 +1,4 @@
+
 #
 # BioPerl module for Bio::SeqI
 #
@@ -54,15 +55,14 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org          - General discussion
+  http://bio.perl.org/MailList.html             - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+the bugs and their resolution.  Bug reports can be submitted via email
+or the web:
 
   bioperl-bugs@bio.perl.org
   http://bio.perl.org/bioperl-bugs/
@@ -71,13 +71,16 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 
 Email birney@sanger.ac.uk
 
+
 =head1 APPENDIX
 
 The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
 
 =cut
 
+#'
 # Let the code begin...
+
 
 package Bio::SeqI;
 use vars qw(@ISA);
@@ -106,6 +109,7 @@ sub _abstractDeath {
  Returns : 
  Args    :
 
+
 =cut
 
 sub top_SeqFeatures{
@@ -115,6 +119,7 @@ sub top_SeqFeatures{
 
 }
 
+
 =head2 all_SeqFeatures
 
  Title   : all_SeqFeatures
@@ -122,6 +127,7 @@ sub top_SeqFeatures{
  Function: returns all SeqFeatures, included sub SeqFeatures
  Returns : an array
  Args    : none
+
 
 =cut
 
@@ -141,6 +147,7 @@ sub all_SeqFeatures{
  Returns : 
  Args    :
 
+
 =cut
 
 sub seq{
@@ -148,23 +155,6 @@ sub seq{
 
    $self->_abstractDeath();
 
-}
-
-=head2 annotation
-
- Title   : annotation
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-=cut
-
-sub annotation{
-   my ($self,@args) = @_;
-
-   $self->throw("Did not provide annotation method call in SeqI interface");
 }
 
 =head2 write_GFF
@@ -175,6 +165,7 @@ sub annotation{
  Example :
  Returns : 
  Args    :
+
 
 =cut
 
@@ -189,3 +180,72 @@ sub write_GFF{
 
 }
 
+=head2 annotation
+
+ Title   : annotation
+ Usage   : $obj->annotation($seq_obj)
+ Function: 
+ Example : 
+ Returns : value of annotation
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub annotation {
+   my ($obj) = @_;
+   $obj->_abstractDeath();
+}
+
+=head2 primary_seq
+
+ Title   : primary_seq
+ Usage   : $obj->primary_seq($newval)
+ Function: 
+ Example : 
+ Returns : value of primary_seq
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub primary_seq {
+    my ($obj) = @_;
+    $obj->_abstractDeath();
+}
+
+=head2 feature_count
+
+ Title   : feature_count
+ Usage   : $seq->feature_count()
+ Function: Return the number of SeqFeatures attached to a sequence
+ Example : 
+ Returns : number of SeqFeatures
+ Args    : none
+
+
+=cut
+
+sub feature_count {
+    my ($obj) = @_;
+    $obj->_abstractDeath();
+}
+
+=head2 species
+
+ Title   : species
+ Usage   : 
+ Function: Gets or sets the species
+ Example : $species = $self->species();
+ Returns : Bio::Species object
+ Args    : Bio::Species object or none;
+
+
+=cut
+
+sub species {
+    my ($self) = @_;
+    $self->_abstractDeath();
+}
+
+1;

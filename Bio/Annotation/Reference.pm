@@ -1,3 +1,4 @@
+
 #
 # BioPerl module for Bio::Annotation::Reference
 #
@@ -11,39 +12,34 @@
 
 =head1 NAME
 
-Bio::Annotation::Reference - Literature Reference Block
+Bio::Annotation::Reference - Specialised DBLink object for Literature References
 
 =head1 SYNOPSIS
 
-    $annotation = $seq->annotation();
-    foreach $ref ( $annotation->each_Reference() ) {
-	print "Title: ",$ref->title,"\n";
-        print "Authors:",$ref->authors,"\n";
-        print "Location:",$ref->location,"\n";
-    }
-
-    
+    $reg = Bio::Annotation::Reference->new( -title => 'title line',
+					    -location => 'location line',
+					    -authors => 'author line',
+					    -medline => 998122 );
 
 =head1 DESCRIPTION
 
 Object which presents a literature reference. This is considered to be
-a specialised form of database link. The literature reference contains
-the title, authors and location lines as text: no attempt is made to
-parse these into more computationally accessibly aspects, as it
-becomes a nightmare. A slot for the medline accession number is also
-provided.
+a specialised form of database link. The additional methods provided
+are all set/get methods to store strings commonly associated with
+references, in particular title, location (ie, journal page) and
+authors line.
 
-As most people will realise this object is really designed to
-supported literature references made in flat files. For more complex
-representations, including abstract and possibly full text a richer
-object that can somehow be easily connected (? inheritence or
-composition) to this object would be ideal. Please air your views on
-the guts list and if possible, nominate yourself as someone who can do
-this.
+There is no attempt to do anything more than store these things as
+strings for processing elsewhere. This is mainly because parsing these
+things suck and generally are specific to the specific format one is
+using. To provide an easy route to go format --E<gt> object --E<gt> format
+without losing data, we keep them as strings. Feel free to post the
+list for a better solution, but in general this gets very messy very
+fast...
 
 =head1 CONTACT
 
-Ewan Birney <birney@ebi.ac.uk>
+Describe contact details here
 
 =head1 APPENDIX
 
@@ -51,28 +47,116 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
+
 # Let the code begin...
 
 package Bio::Annotation::Reference;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
-
 use Bio::Annotation::DBLink;
 
 @ISA = qw(Bio::Annotation::DBLink);
-# new() is inherited from Bio::Root::Object
 
-# _initialize is where the heavy stuff will happen when new is called
+=head2 new
 
-sub _initialize {
-  my($self,@args) = @_;
+ Title   : new
+ Usage   : $ref = Bio::Annotation::Reference->new( -title => 'title line',
+						   -authors => 'author line',
+						   -location => 'location line',
+						   -medline => 9988812);
+ Function:
+ Example :
+ Returns : a new Bio::Annotation::Reference object
+ Args    : a hash with optional title, authors, location, medline, start and end
+           attributes
 
-  my $make = $self->SUPER::_initialize(@args);
 
-# set stuff in self from @args
- return $make; # success - we hope!
+=cut
+
+sub new{
+    my ($class,@args) = @_;
+
+    my $self = $class->SUPER::new(@args);
+
+    my ($start,$end,$authors,
+	$location,$title,$medline) = $self->_rearrange([qw(START
+							   END
+							   AUTHORS
+							   LOCATION
+							   TITLE
+							   MEDLINE
+							   )],@args);
+
+    defined $start    && $self->start($start);
+    defined $end      && $self->end($end);
+    defined $authors  && $self->authors($authors);
+    defined $location && $self->location($location);
+    defined $title    && $self->title($title);
+    defined $medline  && $self->medline($medline);
+
+    return $self;
+}
+
+=head2 start
+
+ Title   : start
+ Usage   : $self->start($newval)
+ Function: Gives the reference start base
+ Example : 
+ Returns : value of start
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub start {
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'start'} = $value;
+    }
+    return $self->{'start'};
+
+}
+=head2 end
+
+ Title   : end
+ Usage   : $self->end($newval)
+ Function: Gives the reference end base
+ Example : 
+ Returns : value of end
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub end {
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'end'} = $value;
+    }
+    return $self->{'end'};
+}
+
+=head2 rp
+
+ Title   : rp
+ Usage   : $self->rp($newval)
+ Function: Gives the RP line. No attempt is made to parse this line.
+ Example : 
+ Returns : value of rp
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub rp{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'rp'} = $value;
+    }
+    return $self->{'rp'};
+
 }
 
 =head2 authors
@@ -83,6 +167,7 @@ sub _initialize {
  Example : 
  Returns : value of authors
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -104,6 +189,7 @@ sub authors{
  Returns : value of location
  Args    : newvalue (optional)
 
+
 =cut
 
 sub location{
@@ -123,6 +209,7 @@ sub location{
  Example : 
  Returns : value of title
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -144,32 +231,55 @@ sub title{
  Returns : value of medline
  Args    : newvalue (optional)
 
+
 =cut
 
 sub medline{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'medline'} = $value;
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'medline'} = $value;
     }
     return $self->{'medline'};
+}
 
+=head2 pubmed
+
+ Title   : pubmed
+ Usage   : $refobj->pubmed($newval)
+ Function: Get/Set the PubMed number, if it is different from the MedLine
+           number.
+ Example : 
+ Returns : value of medline
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub pubmed {
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'pubmed'} = $value;
+    }
+    return $self->{'pubmed'};
 }
 
 =head2 database
 
  Title   : database
  Usage   :
- Function: Overrides DBLink database to be hard coded to 'MEDLINE'
+ Function: Overrides DBLink database to be hard coded to 'MEDLINE', unless
+           the database has been set explicitely before.
  Example :
  Returns : 
  Args    :
 
+
 =cut
 
 sub database{
-   my ($self) = @_;
+   my ($self, @args) = @_;
 
-   return 'MEDLINE';
+   return $self->SUPER::database(@args) || 'MEDLINE';
 }
 
 =head2 primary_id
@@ -181,6 +291,7 @@ sub database{
  Returns : 
  Args    :
 
+
 =cut
 
 sub primary_id{
@@ -189,64 +300,25 @@ sub primary_id{
    return $self->medline(@args);
 }
 
-=head2 start
+=head2 optional_id
 
- Title   : start
- Usage   : $self->start($newval)
- Function: Gives the reference start base
- Example : 
- Returns : value of start
- Args    : newvalue (optional)
+ Title   : optional_id
+ Usage   :
+ Function: Overrides DBLink optional_id to provide the PubMed number.
+ Example :
+ Returns : 
+ Args    :
 
-=cut
-
-sub start{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'start'} = $value;
-    }
-    return $self->{'start'};
-
-}
-=head2 end
-
- Title   : end
- Usage   : $self->end($newval)
- Function: Gives the reference end base 
- Example : 
- Returns : value of end
- Args    : newvalue (optional)
 
 =cut
 
-sub end{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'end'} = $value;
-    }
-    return $self->{'end'};
+sub optional_id{
+   my ($self, @args) = @_;
 
+   return $self->pubmed(@args);
 }
 
-=head2 rp
-
- Title   : rp
- Usage   : $self->rp($newval)
- Function: Gives the RP line. No attempt is made to parse this line.
- Example : 
- Returns : value of rp
- Args    : newvalue (optional)
-
-=cut
-
-sub rp{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'rp'} = $value;
-    }
-    return $self->{'rp'};
-
-}
 
 1;
+
 

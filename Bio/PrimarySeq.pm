@@ -1,3 +1,4 @@
+# $Id: PrimarySeq.pm,v 1.24.2.1 2001/03/02 22:47:54 heikki Exp $
 #
 # bioperl module for Bio::PrimarySeq
 #
@@ -24,10 +25,10 @@ Bio::PrimarySeq - Bioperl lightweight Sequence Object
   #make from memory
   $seqobj = Bio::PrimarySeq->new ( -seq => 'ATGGGGTGGGCGGTGGGTGGTTTG',
 			    -id  => 'GeneFragment-12',
-			    -accession => 'X78121',
+			    -accession_number => 'X78121',
 			    -moltype => 'dna'
 			    );
-  
+
   # read from file
   $inputstream = Bio::SeqIO->new(-file => "myseq.fa",-format => 'Fasta');
   $seqobj = $inputstream->next_seq();
@@ -43,7 +44,7 @@ Bio::PrimarySeq - Bioperl lightweight Sequence Object
   $string  = $seqobj->seq();
   $string2 = $seqobj->subseq(1,40);
 
-  
+
 
 =head1 DESCRIPTION
 
@@ -102,7 +103,7 @@ A number of methods which were present in the old 0.04/0.05 series
 have been deprecated.  Most of these methods work as before, but
 provide a warning that someone has called a deprecated method.
 
-=over 
+=over 4
 
 =item getseq - use seq/subseq instead
 
@@ -122,15 +123,14 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org             - General discussion
+  http://bio.perl.org/MailList.html - About the mailing lists
 
 =head2 Reporting Bugs
 
-report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via email
+or the web:
 
   bioperl-bugs@bio.perl.org
   http://bio.perl.org/bioperl-bugs/
@@ -147,57 +147,81 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
+
 # Let the code begin...
 
+
 package Bio::PrimarySeq;
-use vars qw(@ISA);
+use vars qw(@ISA %valid_type);
 use strict;
 
-# Object preamble - inherits from Bio::Root::Object
-
-use Bio::Root::Object;
+use Bio::Root::RootI;
 use Bio::PrimarySeqI;
 
-@ISA = qw(Bio::Root::Object Bio::PrimarySeqI);
+@ISA = qw(Bio::Root::RootI Bio::PrimarySeqI);
 
-# new() is inherited from Bio::Root::Object
+#
+# setup the allowed values for moltype()
+#
+BEGIN {
+    %valid_type = map {$_, 1} qw( dna rna protein );
+}
 
-# _initialize is where the heavy stuff will happen when new is called
+=head2 new
 
-sub _initialize {
-  my($self,@args) = @_;
+ Title   : new
+ Usage   : $seq    = Bio::PrimarySeq->new( -seq => 'ATGGGGGTGGTGGTACCCT',
+                                           -id  => 'human_id',
+					   -accession_number => 'AL000012',
+					   );
 
-  my($seq,$id,$acc,$pid,$desc,$moltype,$given_id) =
-      $self->_rearrange([qw(SEQ
-			    DISPLAY_ID
-			    ACCESSION_NUMBER
-			    PRIMARY_ID
-			    DESC
-			    MOLTYPE
-                            ID
-			    )],
-			@args);
+ Function: Returns a new primary seq object from
+           basic constructors, being a string for the sequence
+           and strings for id and accession_number.
 
-  
+           Note that you can provide an empty sequence string. However, in
+           this case you MUST specify the type of sequence you wish to
+           initialize by the parameter -moltype. See moltype() for possible
+           values.
+ Returns : a new Bio::PrimarySeq object
 
-  my $make = $self->SUPER::_initialize(@args);
+=cut
 
-  if( defined $id && defined $given_id ) {
-      if( $id ne $given_id ) {
-	  $self->throw("Provided both id and display_id constructor functions. [$id] [$given_id]");
-      }
-  }
-  if( defined $given_id ) { $id = $given_id; }
 
-  $seq     && $self->seq($seq);
-  $id      && $self->display_id($id);
-  $acc     && $self->accession_number($acc);
-  $pid     && $self->primary_id($pid);
-  $desc    && $self->desc($desc);
-  $moltype && $self->moltype($moltype);
+sub new {
+    my ($class, @args) = @_;
+    my $self = $class->SUPER::new(@args);
 
-# set stuff in self from @args
-  return $make; # success - we hope!
+    my($seq,$id,$acc,$pid,$desc,$moltype,$given_id) =
+	$self->_rearrange([qw(SEQ
+			      DISPLAY_ID
+			      ACCESSION_NUMBER
+			      PRIMARY_ID
+			      DESC
+			      MOLTYPE
+			      ID
+			      )],
+			  @args);
+
+
+    if( defined $id && defined $given_id ) {
+	if( $id ne $given_id ) {
+	    $self->throw("Provided both id and display_id constructor functions. [$id] [$given_id]");	
+	}
+    }
+    if( defined $given_id ) { $id = $given_id; }
+
+    # if moltype is provided we set it first, so that it won't be guessed
+    # when the sequence is set
+    $moltype && $self->moltype($moltype);
+    # note: the sequence string may be empty
+    $self->seq($seq) if defined($seq);
+    $id      && $self->display_id($id);
+    $acc     && $self->accession_number($acc);
+    $pid     && $self->primary_id($pid);
+    $desc    && $self->desc($desc);
+
+    return $self;
 }
 
 =head2 seq
@@ -214,12 +238,19 @@ sub _initialize {
 
 sub seq {
    my ($obj,$value) = @_;
+
    if( defined $value) {
-       if( $value !~ /^[A-Za-z\-\.\*]+$/ ) {
+       if((CORE::length($value) > 0) &&
+	  ($value !~ /^[A-Za-z\-\.\*]+$/)) {
 	   $obj->throw("Attempting to set the sequence to [$value] which does not look healthy");
        }
+       # if a sequence was already set we make sure that we re-adjust the
+       # mol.type, otherwise we skip guessing if mol.type is already set
+       my $is_changed_seq = exists($obj->{'seq'});
        $obj->{'seq'} = $value;
-       $obj->_guess_type();
+       if($is_changed_seq || (! defined($obj->moltype()))) {
+	   $obj->_guess_type();
+       }
     }
    return $obj->{'seq'};
 }
@@ -234,6 +265,7 @@ sub seq {
  Returns : a string
  Args    :
 
+
 =cut
 
 sub subseq {
@@ -243,20 +275,15 @@ sub subseq {
        $self->throw("in subseq, start [$start] has to be greater than end [$end]");
    }
 
-   if( $start <= 0 ) {
-       $self->throw("Can't get subseq: Start must be positive (start = $start)");
-   }
-
-   my $len = $self->length;
-   if( $end > $len ) {
-       $self->throw("Can't get subseq: End must be less than the total length of sequence: (end = $end, length = $len)");
+   if( $start <= 0 || $end > $self->length ) {
+       $self->throw("You have to have start positive and length less than the total length of sequence [$start:$end] Total ".$self->length."");
    }
 
    # remove one from start, and then length is end-start
 
    $start--;
 
-   return substr $self->{'seq'}, $start, ($end-$start);
+   return substr $self->seq(), $start, ($end-$start);
 
 }
 
@@ -273,8 +300,9 @@ sub subseq {
 
 sub length {
    my ($self)= @_;
-
-   return CORE::length($self->{'seq'});
+   my $seq = $self->seq();
+   return 0 if ( !defined $seq );
+   return CORE::length($seq);
 }
 
 =head2 display_id
@@ -282,18 +310,19 @@ sub length {
  Title   : display_id
  Usage   : $id_string = $obj->display_id();
  Function: returns the display id, aka the common name of the Sequence object.
-           
+
          The semantics of this is that it is the most likely string to be
          used as an identifier of the sequence, and likely to have "human" readability.
          The id is equivalent to the ID field of the GenBank/EMBL databanks and
          the id field of the Swissprot/sptrembl database. In fasta format, the >(\S+)
-         is presumed to be the id, though some people overload the id to embed other 
+         is presumed to be the id, though some people overload the id to embed other
          information. Bioperl does not use any embedded information in the ID field,
          and people are encouraged to use other mechanisms (accession field for example,
-         or extending the sequence object) to solve this. 
+         or extending the sequence object) to solve this.
 
  Returns : A string
  Args    : None
+
 
 =cut
 
@@ -305,6 +334,7 @@ sub display_id {
     return $obj->{'display_id'};
 
 }
+
 
 =head2 accession_number
 
@@ -318,22 +348,24 @@ sub display_id {
            to have the same accession number in a particular implementation.
 
            For sequences with no accession number, this method should return
-           "unknown".  
+           "unknown".
  Returns : A string
  Args    : A string (optional) for setting
 
 =cut
 
 sub accession_number {
-    my ($obj,$value) = @_;
-    if( defined $value) {
-	$obj->{'accession_number'} = $value;
+    my( $obj, $acc ) = @_;
+
+    if (defined $acc) {
+        $obj->{'accession_number'} = $acc;
+    } else {
+        $acc = $obj->{'accession_number'};
+        $acc = 'unknown' unless defined $acc;
     }
-    if( ! exists $obj->{'accession_number'} ) {
-	return "unknown";
-    } 
-    return $obj->{'accession_number'};
+    return $acc;
 }
+
 
 =head2 primary_id
 
@@ -363,48 +395,46 @@ sub primary_id {
 
 }
 
+
 =head2 moltype
 
  Title   : moltype
  Usage   : if( $obj->moltype eq 'dna' ) { /Do Something/ }
- Function: Returns the type of sequence being one of 
+ Function: Returns the type of sequence being one of
            'dna', 'rna' or 'protein'. This is case sensitive.
 
            This is not called <type> because this would cause
            upgrade problems from the 0.5 and earlier Seq objects.
-           
+
  Returns : a string either 'dna','rna','protein'. NB - the object must
            make a call of the type - if there is no type specified it
            has to guess.
  Args    : none
 
+
 =cut
 
-BEGIN {
-    my %valid_type = map {$_, 1} qw( dna rna protein );
-
-    sub moltype {
-       my ($obj,$value) = @_;
-       if (defined $value) {
-           unless ( $valid_type{$value} ) {
-	       $obj->throw("Molecular type '$value' is not a valid type (".
-                  join(',', map "'$_'", sort keys %valid_type) .") lowercase");
-           }
-           $obj->{'moltype'} = $value;
-       }
-       return $obj->{'moltype'};
-
+sub moltype {
+    my ($obj,$value) = @_;
+    if (defined $value) {
+	unless ( $valid_type{$value} ) {
+	    $obj->throw("Molecular type '$value' is not a valid type (".
+			join(',', map "'$_'", sort keys %valid_type) .") lowercase");
+	}
+	$obj->{'moltype'} = $value;
     }
+    return $obj->{'moltype'};
 }
 
 =head2 desc
 
  Title   : desc
  Usage   : $obj->desc($newval)
- Function: 
- Example : 
+ Function: Get/set description of the sequence.
+ Example :
  Returns : value of desc
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -423,8 +453,9 @@ sub desc {
  Usage   :
  Function:
  Example :
- Returns : 
+ Returns :
  Args    :
+
 
 =cut
 
@@ -434,6 +465,28 @@ sub can_call_new {
    return 1;
 
 }
+
+=head2 id
+
+ Title   : id
+ Usage   : $id = $seq->id()
+ Function: This is mapped on display_id
+ Example :
+ Returns :
+ Args    :
+
+
+=cut
+
+sub  id {
+   my ($self,$value) = @_;
+
+   if( defined $value ) {
+	return $self->display_id($value);
+   }
+   return $self->display_id();
+}
+
 
 =head1 Methods Inherieted from Bio::PrimarySeqI
 
@@ -446,7 +499,7 @@ implemented on Bio::PrimarySeqI
  Usage   : $rev = $seq->revcom()
  Function: Produces a new Bio::SeqI implementing object which
            is the reversed complement of the sequence. For protein
-           sequences this throws an exception of 
+           sequences this throws an exception of
            "Sequence is a protein. Cannot revcom"
 
            The id is the same id as the orginal sequence, and the
@@ -455,7 +508,7 @@ implemented on Bio::PrimarySeqI
            define its own extensions
 
            To do an inplace edit of an object you can go:
-   
+
            $seqobj = $seqobj->revcom();
 
            This of course, causes Perl to handle the garbage
@@ -472,10 +525,11 @@ implemented on Bio::PrimarySeqI
  Title   : trunc
  Usage   : $subseq = $myseq->trunc(10,100);
  Function: Provides a truncation of a sequence,
-           
+
  Example :
  Returns : a fresh Bio::SeqI implementing object
  Args    :
+
 
 =cut
 
@@ -491,8 +545,9 @@ These are internal methods to PrimarySeq
  Usage   :
  Function:
  Example :
- Returns : 
+ Returns :
  Args    :
+
 
 =cut
 
@@ -500,7 +555,7 @@ sub _guess_type {
    my ($self) = @_;
    my ($str,$str2,$total,$atgc,$u,$type);
 
-   $str = $self->{'seq'};
+   $str = $self->seq();
    $str =~ s/\-\.//g;
 
    $total = CORE::length($str);
@@ -513,9 +568,10 @@ sub _guess_type {
    $str2 =~ s/[ATGCNatgcn]//g;
    $atgc = $total - CORE::length $str2;
    $str = $str2;
-   $str2 =~ s/Uu//g;
-   
+   $str2 =~ s/[Uu]//g;
+
    $u = CORE::length($str) - CORE::length($str2);
+
 
    if( ($atgc / $total) > 0.85 ) {
        $type = 'dna';
@@ -524,10 +580,18 @@ sub _guess_type {
    } else {
        $type = 'protein';
    }
-   
+
    $self->moltype($type);
 
 }
 
 1;
+
+
+
+
+
+
+
+
 

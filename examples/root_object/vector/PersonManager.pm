@@ -3,7 +3,7 @@
 # PURPOSE : Dummy object for testing Bio::Root::Vector.pm.
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 4 May 1997 (sac@genome.stanford.edu)
-# REVISION: $Id: PersonManager.pm,v 1.1.1.1.14.1 2000/09/15 08:24:25 jgrg Exp $
+# REVISION: $Id: PersonManager.pm,v 1.1.1.1 1998/12/11 15:24:35 birney Exp $
 #
 # A PersonManager object may have one or more Person.pm objects.
 # The _people data member holds the Bio::Root::Vector.pm object.
@@ -57,6 +57,7 @@ sub _make_person {
 
     my $p = new Person(%param);
 }
+
 
 ###################################
 sub insert_person {
@@ -138,4 +139,5 @@ sub _display_stats {
 
 ######################################
 1;
+
 

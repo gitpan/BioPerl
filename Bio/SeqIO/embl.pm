@@ -1,7 +1,8 @@
+# $Id: embl.pm,v 1.24.2.1 2001/03/02 22:48:02 heikki Exp $
 #
 # BioPerl module for Bio::SeqIO::EMBL
 #
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
+# Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
 # Copyright Ewan Birney
 #
@@ -37,18 +38,18 @@ with swissprot). Too much of the magic is identical.
 
 =head2 Optional functions
 
-=over
+=over 3
 
 =item _show_dna()
 
 (output only) shows the dna or not
 
-=item _post_sort
+=item _post_sort()
 
 (output only) provides a sorting func which is applied to the FTHelpers
 before printing
 
-=item _id_generation_func
+=item _id_generation_func()
 
 This is function which is called as 
 
@@ -69,9 +70,8 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                 - General discussion
+  http://www.bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -84,7 +84,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 
 =head1 AUTHOR - Ewan Birney
 
-Email birney@sanger.ac.uk
+Email birney@ebi.ac.uk
 
 Describe contact details here
 
@@ -94,58 +94,29 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
+
 # Let the code begin...
+
 
 package Bio::SeqIO::embl;
 use vars qw(@ISA);
 use strict;
-use Bio::Seq;
+use Bio::Seq::RichSeq;
 use Bio::SeqIO::FTHelper;
 use Bio::SeqFeature::Generic;
 use Bio::Species;
 
-# Object preamble - inheriets from Bio::Root::Object
-
-use Bio::Root::Object;
-use FileHandle;
-
 @ISA = qw(Bio::SeqIO);
-# new() is inherited from Bio::Root::Object
-
-# _initialize is where the heavy stuff will happen when new is called
 
 sub _initialize {
   my($self,@args) = @_;
 
-  my $make = $self->SUPER::_initialize;
-   
-  my ($file,$fh) = $self->_rearrange([qw(
-					 FILE
-					 FH
-					 )],
-				     @args,
-				     );
-  if( $file && $fh ) {
-      $self->throw("Providing both a file and a filehandle for reading from - only one please!");
-  }
-
-  if( !$file && !$fh ) {
-      $self->throw("Neither a file (-file) nor a filehandle (-fh) provided to EMBL opening");
-  }
-
-  if( $file ) {
-      $fh = new FileHandle;
-      $fh->open($file) || $self->throw("Could not open $file for EMBL stream reading $!");
-  }
-  
+  $self->SUPER::_initialize(@args);  
   # hash for functions for decoding keys.
   $self->{'_func_ftunit_hash'} = {}; 
-  $self->_filehandle($fh);
-  $self->_show_dna(1); # sets this to one by default. People can change it
-
-# set stuff in self from @args
- return $make; # success - we hope!
+  $self->_show_dna(1); # sets this to one by default. People can change it 
 }
+
 
 =head2 next_seq
 
@@ -155,12 +126,15 @@ sub _initialize {
  Returns : Bio::Seq object
  Args    :
 
+
 =cut
 
 sub next_seq {
    my ($self,@args) = @_;
-   my ($pseq,$c,$line,$name,$desc,$acc,$seqc,$mol,$div, $date, $comment, @date_arr);
-   my $seq = Bio::Seq->new();
+   my ($pseq,$c,$line,$name,$desc,$acc,$seqc,$mol,$div, 
+       $date, $comment, @date_arr);
+   my $seq = Bio::Seq::RichSeq->new(-verbose =>$self->verbose());
+
 
    $line = $self->_readline;   # This needs to be before the first eof() test
 
@@ -221,7 +195,7 @@ sub next_seq {
        if( /^SV\s+(\S+);?/ ) {
 	   my $sv = $1;
 	   $sv =~ s/\;//;
-	   $seq->sv($sv);
+	   $seq->seq_version($sv);
        }
 
        #date (NOTE: takes last date line)
@@ -323,6 +297,7 @@ sub next_seq {
  Returns : 1 for success and 0 for error
  Args    : Bio::Seq
 
+
 =cut
 
 sub write_seq {
@@ -381,8 +356,8 @@ sub write_seq {
         my( $sv );
         if (my $func = $self->_sv_generation_func) {
             $sv = &{$func}($seq);
-        } elsif( $seq->can('sv')) {
-            $sv = $seq->sv;
+        } elsif( $seq->can('seq_version')) {
+            $sv = $seq->seq_version;
         }
         if (defined $sv) {
             $self->_print( "SV   $sv\n",
@@ -392,8 +367,8 @@ sub write_seq {
 
     # Date lines
     my $switch=0;
-    if( $seq->can('each_date') ) {
-	foreach my $dt ( $seq->each_date() ) {
+    if( $seq->can('get_dates') ) {
+	foreach my $dt ( $seq->get_dates() ) {
 	    $self->_write_line_EMBL_regex("DT   ","DT   ",$dt,'\s+|$',80);
             $switch=1;
         }
@@ -596,6 +571,7 @@ sub write_seq {
  Returns : 
  Args    :
 
+
 =cut
 
 sub _print_EMBL_FTHelper {
@@ -605,6 +581,7 @@ sub _print_EMBL_FTHelper {
    if( ! ref $fth || ! $fth->isa('Bio::SeqIO::FTHelper') ) {
        $fth->warn("$fth is not a FTHelper class. Attempting to print, but there could be tears!");
    }
+
 
    #$self->_print( "FH   Key             Location/Qualifiers\n");
    #$self->_print( sprintf("FT   %-15s  %s\n",$fth->key,$fth->loc));
@@ -629,6 +606,7 @@ sub _print_EMBL_FTHelper {
 
 }
 
+#'
 =head2 _read_EMBL_References
 
  Title   : _read_EMBL_References
@@ -637,6 +615,7 @@ sub _print_EMBL_FTHelper {
  Example :
  Returns : 
  Args    :
+
 
 =cut
 
@@ -715,7 +694,7 @@ sub _read_EMBL_Species {
         
         if (/^OS\s+(\S+)(?:\s+([^\(]\S*))?(?:\s+([^\(]\S*))?(?:\s+\((.*)\))?/) {
             $genus   = $1;
-            $species = $2 || 'sp.';
+	    $species = $2 || 'sp.';
 	    $sub_species = $3 if $3;
             $common      = $4 if $4;
         }
@@ -800,6 +779,7 @@ sub _read_EMBL_DBLink {
  Returns : value of _filehandle
  Args    : newvalue (optional)
 
+
 =cut
 
 sub _filehandle{
@@ -819,6 +799,7 @@ sub _filehandle{
  Example :
  Returns : Bio::SeqIO::FTHelper object 
  Args    : filehandle and reference to a scalar
+
 
 =cut
 
@@ -869,7 +850,7 @@ sub _read_FTHelper_EMBL {
     $$buffer = $_;
 
     # Make the new FTHelper object
-    my $out = new Bio::SeqIO::FTHelper();
+    my $out = new Bio::SeqIO::FTHelper(-verbose => $self->verbose());
     $out->key($key);
     $out->loc($loc);
 
@@ -923,6 +904,7 @@ sub _read_FTHelper_EMBL {
  Returns : 
  Args    :
 
+
 =cut
 
 sub _write_line_EMBL {
@@ -957,6 +939,7 @@ sub _write_line_EMBL {
  Returns : nothing
  Args    : file handle, first header, second header, text-line, regex for line breaks, total line length
 
+
 =cut
 
 sub _write_line_EMBL_regex {
@@ -972,18 +955,22 @@ sub _write_line_EMBL_regex {
 
     my $subl = $length - (length $pre1) -1 ;
 
+
+
     my( @lines );
-    while($line =~ m/(.{1,$subl})($regex)/g) {
-        push(@lines, $1.$2);
+    while(defined $line && 
+	  $line =~ m/(.{1,$subl})($regex)/g) {
+	push(@lines, $1.$2);
     }
     foreach (@lines) { s/\s+$//; }
     
     # Print first line
-    my $s = shift(@lines);
+    my $s = shift(@lines) || '';    
     $self->_print( "$pre1$s\n");
     
     # Print the rest
     foreach my $s ( @lines ) {
+	$s = '' if( !defined $s );
         $self->_print( "$pre2$s\n");
     }
 }
@@ -995,6 +982,7 @@ sub _write_line_EMBL_regex {
  Function: 
  Returns : value of _post_sort
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -1016,6 +1004,7 @@ sub _post_sort{
  Returns : value of _show_dna
  Args    : newvalue (optional)
 
+
 =cut
 
 sub _show_dna{
@@ -1035,6 +1024,7 @@ sub _show_dna{
  Function: 
  Returns : value of _id_generation_func
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -1056,6 +1046,7 @@ sub _id_generation_func{
  Returns : value of _ac_generation_func
  Args    : newvalue (optional)
 
+
 =cut
 
 sub _ac_generation_func{
@@ -1075,6 +1066,7 @@ sub _ac_generation_func{
  Function: 
  Returns : value of _sv_generation_func
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -1096,6 +1088,7 @@ sub _sv_generation_func{
  Returns : value of _kw_generation_func
  Args    : newvalue (optional)
 
+
 =cut
 
 sub _kw_generation_func{
@@ -1109,5 +1102,3 @@ sub _kw_generation_func{
 }
 
 1;
-    
-

@@ -2,7 +2,7 @@
 # PACKAGE : Bio::SeqIO::scf
 # AUTHOR  : Aaron Mackey <amackey@virginia.edu>
 # CREATED : Feb 16 1999
-# REVISION: $Id: scf.pm,v 1.2.2.1 2000/09/15 08:24:22 jgrg Exp $
+# REVISION: $Id: scf.pm,v 1.7 2001/01/30 06:48:11 lapp Exp $
 #            
 # Copyright (c) 1997-9 bioperl, Aaron Mackeyy. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
@@ -10,7 +10,7 @@
 #
 # _History_
 #
-# Ewan Birney <birney@sanger.ac.uk> developed the SeqIO 
+# Ewan Birney <birney@ebi.ac.uk> developed the SeqIO 
 # schema and the first prototype modules.
 #
 # This code is based on his Bio::SeqIO::Fasta module with
@@ -48,9 +48,8 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                 - General discussion
+  http://www.bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -75,20 +74,15 @@ methods. Internal methods are usually preceded with a _
 
 # Let the code begin...
 
+
 package Bio::SeqIO::scf;
-use vars qw(@ISA);
 use strict;
+use vars qw(@ISA);
+
 use Bio::SeqIO;
-# Object preamble - inherits from Bio::Root::Object
+use Bio::Seq;
 
 @ISA = qw(Bio::SeqIO);
-
-# _initialize is where the heavy stuff will happen when new is called
-
-sub _initialize {
-  my($self,@args) = @_;
-  return unless my $make = $self->SUPER::_initialize(@args);
-}
 
 =head2 next_seq
 
@@ -97,6 +91,7 @@ sub _initialize {
  Function: returns the next sequence in the stream
  Returns : Bio::Seq object
  Args    :
+
 
 =cut
 
@@ -171,6 +166,7 @@ sub next_seq{
  Function: writes the $seq object into the stream
  Returns : 1 for success and 0 for error
  Args    : Bio::Seq object
+
 
 =cut
 

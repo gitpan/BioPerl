@@ -3,7 +3,7 @@
 # PURPOSE : To encapsulate commonly used URLs for web key websites in bioinformatics.
 # AUTHOR  : Steve A. Chervitz
 # CREATED : 27 Aug 1996 
-# REVISION: $Id: WWW.pm,v 1.3.2.1 2000/09/15 08:24:24 jgrg Exp $
+# REVISION: $Id: WWW.pm,v 1.4 2001/01/30 20:40:46 jason Exp $
 #
 # For documentation, run this module through pod2html 
 # (preferably from Perl v5.004 or better).
@@ -18,26 +18,25 @@
 
 package	 Bio::Tools::WWW;
 use strict;  
-
-use Bio::Root::Object   ();
-use Bio::Root::Global  qw($AUTHORITY);
+use Bio::Root::RootI;
 use Exporter      ();
-
-use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS $ID $VERSION $BioWWW $Revision);
-
-@ISA         = qw( Bio::Root::Object Exporter);
+use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS $ID $VERSION $BioWWW $Revision 
+	    $AUTHORITY);
+$AUTHORITY = 'nobody@localhost';
+@ISA         = qw( Bio::Root::RootI Exporter);
 @EXPORT_OK   = qw($BioWWW);
 %EXPORT_TAGS = ( obj => [qw($BioWWW)],
 		 std => [qw($BioWWW)]);
 
 $ID = 'Bio::Tools::WWW';
 $VERSION = 0.014;
-$Revision = '$Id: WWW.pm,v 1.3.2.1 2000/09/15 08:24:24 jgrg Exp $'; #'
+$Revision = '$Id: WWW.pm,v 1.4 2001/01/30 20:40:46 jason Exp $'; #'
 
 ## Static object.
 $BioWWW = {};
 bless $BioWWW, $ID;
 $BioWWW->{'_name'} = "Static $ID object";
+
 
 ## POD Documentation:
 
@@ -136,9 +135,9 @@ User feedback is an integral part of the evolution of this and other Bioperl mod
 Send your comments and suggestions preferably to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+    vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
+    vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
+    http://bio.perl.org/MailList.html             - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -162,7 +161,9 @@ Copyright (c) 1996-98 Steve A. Chervitz. All Rights Reserved.
 This module is free software; you can redistribute it and/or 
 modify it under the same terms as Perl itself.
 
+
 =cut
+
 
 #
 ##
@@ -171,6 +172,7 @@ modify it under the same terms as Perl itself.
 ###
 ##
 #
+
 
 ############################  DATA ##################################
 
@@ -225,6 +227,7 @@ my %Stem_url =
       'pfam_us'     =>'http://pfam.wustl.edu/cgi-bin/',
       'pir'         =>'http://www-nbrf.georgetown.edu/cgi-bin/nbrfget?',
       );
+
 
 ### Database access stems/links.
 my %Search_url = 
@@ -289,6 +292,8 @@ my %Search_url =
       'ypd'          =>'http://quest7.proteome.com/YPD/',  
       );
 
+
+
 ### CGI stems for SGD and Sacch3D.
 my %SGD_stem_url =
     ('stanford'      =>'http://genome-www.stanford.edu/',
@@ -330,6 +335,7 @@ my %SGD_url =
      'tmp'          =>$SGD_stem_url{'stanford'}.'tmp/',
      );
 
+
 ### Sacch3D stems and links.
 my %S3d_url =
     ('home'          =>$Home_url{'sacch3d'},
@@ -367,6 +373,7 @@ my %S3d_url =
      'pdb_neighbors' =>$SGD_stem_url{'s3d'}.'pdb_neighbors?id=CHAIN&gene=ORF_NAME',
      );
 
+
 ### 3D viewer stems.
 my %Viewer_url = 
 #    ('java'     =>$SGD_stem_url{'sgd'}.'Sacch3D/pdbViewer.pl?pdbCode=PDB&orf=',
@@ -379,6 +386,7 @@ my %Viewer_url =
      'cn3d'     =>$Stem_url{'entrez'}.'db=t&form=6&Dopt=i&Complexity=Cn3D+Subset&uid=',
      'kinemage' =>'http://prosci.org/Kinemage',
      );
+
 
 ### Stock HTML
 # The error reporting HTML strings represent some experiments in human psychology: 
@@ -406,9 +414,12 @@ QQ_TECH_QQ
 
      );
 
+
 ### Miscellaneous URLs. Configure as desired for your site.
 my $Not_found_url = 'http://genome-www.stanford.edu/Sacch3D/notfound.html';
 my $Tmp_url       = 'http://genome-www.stanford.edu/tmp/';
+
+
 
 =head1 APPENDIX
 
@@ -422,6 +433,7 @@ for documentation purposes only.
 #########################################################################
 ##                          ACCESSOR METHODS                            
 #########################################################################
+
 
 =head2 home_url
 
@@ -450,6 +462,8 @@ sub home_url {
                              : ($self->warn("Can't resolve argument to URL: $arg"), 
 				$Not_found_url);
 }
+
+
 
 =head2 search_url
 
@@ -492,6 +506,8 @@ sub search_url {
                              : ($self->warn("Can't resolve argument to URL: $arg"), 
 				$Not_found_url);
 }
+
+
 
 =head2 stem_url
 
@@ -548,6 +564,8 @@ sub viewer_url {
 				$Not_found_url);
 }
 
+
+
 =head2 not_found_url
 
  Usage     : $BioWWW->not_found_url()
@@ -563,6 +581,7 @@ sub viewer_url {
 sub not_found_url {  my $self = shift; $Not_found_url; }
 #-----------------
 
+
 =head2 tmp_url
 
  Usage     : $BioWWW->tmp_url()
@@ -577,6 +596,8 @@ sub not_found_url {  my $self = shift; $Not_found_url; }
 #-----------
 sub tmp_url {  my $self = shift; $Tmp_url; }
 #-----------
+
+
 
 =head2 search_link
 
@@ -602,6 +623,8 @@ sub search_link {
     qq|<A HREF="$url$value">$text</A>|;
 }
 
+
+
 =head2 viewer_link
 
  Usage     : $BioWWW->viewer_link(<site>, <value>, <text>)
@@ -625,6 +648,8 @@ sub viewer_link {
     $text ||= $value;
     qq|<A HREF="$url$value">$text</A>|;
 }
+
+
 
 =head2 html
 
@@ -653,10 +678,12 @@ sub html {
     (exists $Html{$arg}) ? $Html{$arg} : "<pre>(missing HTML for \"$arg\")</pre>";
 }
 
+
 ###
 ### Below are accessors specialized for the Saccharomyces Genome Database
 ### It is possible that they will be moved to Bio::SGD::WWW.pm in the future.
 ### 
+
 
 =head2 sgd_url
 
@@ -683,6 +710,8 @@ sub sgd_url {
 				$Not_found_url);
 }
 
+
+
 =head2 s3d_url
 
  Usage     : $BioWWW->s3d_url(<string>)
@@ -708,6 +737,8 @@ sub s3d_url {
 				$Not_found_url);
 }
 
+
+
 =head2 sgd_stem_url
 
  Usage     : $BioWWW->sgd_stem_url(<string>)
@@ -732,6 +763,8 @@ sub sgd_stem_url {
                              : ($self->warn("Can't resolve argument to URL: $arg"), 
 				$Not_found_url);
 }
+
+
 
 =head2 s3d_link
 
@@ -760,6 +793,7 @@ sub s3d_link {
 }
 	      
 
+
 =head2 sgd_link
 
  Usage     : $BioWWW->sgd_link(<site>, <value>, <text>)
@@ -785,6 +819,7 @@ sub sgd_link {
     $text ||= $value;
     qq|<A HREF="$url$value">$text</A>|;
 }
+
 
 #########################################################################
 ##                        INSTANCE METHODS                              
@@ -818,6 +853,7 @@ sub start_html {
     }
 }
 
+
 =head2 redirect
 
  Usage     : $BioWWW->redirect(<string>)
@@ -838,6 +874,8 @@ sub redirect {
     print "Content-type: text/html\n\n"; 
 }
 
+
+
 =head2 pre
 
  Usage     : $BioWWW->pre("text to be pre-formatted");
@@ -855,6 +893,7 @@ sub pre {
     my $self = shift; 
     "<PRE>\n".shift()."\n</PRE>";
 }
+
 
 #----------------
 sub html_footer {
@@ -885,6 +924,7 @@ $modified
 
 HTML
 }
+
 
 =head2 strip_html
 
@@ -960,6 +1000,7 @@ sub strip_html {
     $stripped;
 }
 
+
 1;
 __END__
 
@@ -979,7 +1020,9 @@ all or some of the following fields:
  _started_html   Defined the on the initial invocation of start_html()
                  to avoid duplicate printing out the "Content-type..." header.
 
+
 =cut
 
 1;
+
 

@@ -1,3 +1,4 @@
+# $Id: Seq.pm,v 1.35.2.1 2001/03/02 22:47:54 heikki Exp $
 #
 # BioPerl module for Bio::Seq
 #
@@ -15,7 +16,7 @@ Bio::Seq - Sequence object, with features
 
 =head1 SYNOPSIS
 
-    $seqio  = Bio::SeqIO->new ( '-format' => 'Fasta' , -file => 'myfile.fasta');
+    $seqio  = Bio::SeqIO->new ( '-format' => 'embl' , -file => 'myfile.dat');
     $seqobj = $seqio->next_seq();
 
     # features must implement Bio::SeqFeatureI
@@ -24,7 +25,7 @@ Bio::Seq - Sequence object, with features
     @features = $seqobj->all_SeqFeatures(); # descend into sub features
 
     $seq      = $seqobj->seq(); # actual sequence as a string
-    $seqstr   = $seqobj->subseq(10,50);    
+    $seqstr   = $seqobj->subseq(10,50);
     $ann      = $seqobj->annotation(); # annotation object
 
 =head1 DESCRIPTION
@@ -36,16 +37,17 @@ also implements its interface.
 In bioperl we have 3 main players that people are going to use
 
   Bio::PrimarySeq - just the sequence and its names, nothing else.
-  Bio::SeqFeature - a location on a sequence, potentially with a sequence.
+  Bio::SeqFeatureI - a location on a sequence, potentially with a sequence.
                     and annotation
   Bio::Seq        - A sequence and a collection of seqfeatures (an aggregate) with
                     its own annotation.
 
-Although bioperl is not tied to file formats heavily, these distrinctions do map to file formats
-sensibly and for some bioinformaticians this might help you:
+Although bioperl is not tied to file formats heavily, these distinctions do
+map to file formats sensibly and for some bioinformaticians this might help
+you:
 
   Bio::PrimarySeq - Fasta file of a sequence
-  Bio::SeqFeature - A single entry in an EMBL/GenBank/DDBJ feature table
+  Bio::SeqFeatureI - A single entry in an EMBL/GenBank/DDBJ feature table
   Bio::Seq        - A single EMBL/GenBank/DDBJ entry
 
 By having this split we avoid alot of nasty ciricular references
@@ -63,9 +65,8 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                 - General discussion
+  http://bio.perl.org/MailList.html  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -73,7 +74,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
  the bugs and their resolution.
  Bug reports can be submitted via email or the web:
 
-  bioperl-bugs@bio.perl.org
+  bioperl-bugs@bioperl.org
   http://bio.perl.org/bioperl-bugs/
 
 =head1 AUTHOR - Ewan Birney, inspired by Ian Korf objects
@@ -88,46 +89,55 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
+
 # Let the code begin...
 
+
 package Bio::Seq;
-use vars qw(@ISA $VERSION);
+use vars qw(@ISA);
 use strict;
 use Bio::SeqI;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::Object;
+use Bio::Root::RootI;
 use Bio::Annotation;
 use Bio::PrimarySeq;
 
-$VERSION = '0.6.2';
+@ISA = qw(Bio::Root::RootI Bio::SeqI);
 
-@ISA = qw(Bio::Root::Object Bio::SeqI);
-# new() is inherited from Bio::Root::Object
 
-# _initialize is where the heavy stuff will happen when new is called
+=head2 new
 
-sub _initialize {
-  my($self,@args) = @_;
-  my($ann);
-  my $make = $self->SUPER::_initialize(@args);
+ Title   : new
+ Usage   : $seq    = Bio::Seq->new( -seq => 'ATGGGGGTGGTGGTACCCT',
+                                    -id  => 'human_id',
+				    -accession_number => 'AL000012',
+				   );
 
-  # this is way too sneaky probably. We delegate the construction of
-  # the Seq object onto PrimarySeq and then pop primary_seq into
-  # our primary_seq slot
+ Function: Returns a new seq object from
+           basic constructors, being a string for the sequence
+           and strings for id and accession_number
+ Returns : a new Bio::Seq object
 
-  my $pseq = Bio::PrimarySeq->new(@args);
-  $self->{'_as_feat'} = [];
-  $self->{'date'} = [];
-  $self->{'secondary_accession'} = [];
-  
-  $ann = new Bio::Annotation;
-  $self->annotation($ann);
-  $self->primary_seq($pseq);
+=cut
 
-# set stuff in self from @args
- return $make; # success - we hope!
+sub new {
+    # standard new call..
+    my($caller,@args) = @_;
+    my $self = $caller->SUPER::new(@args);
+    # this is way too sneaky probably. We delegate the construction of
+    # the Seq object onto PrimarySeq and then pop primary_seq into
+    # our primary_seq slot
+
+    my $pseq = Bio::PrimarySeq->new(@args);
+    $self->{'_as_feat'} = [];
+
+    my $ann = new Bio::Annotation;
+    $self->annotation($ann);
+    $self->primary_seq($pseq);
+
+    return $self;
 }
 
 =head1 PrimarySeq interface
@@ -154,14 +164,15 @@ of course, you are free to use these functions anyway.
            case (some users... want mixed case!)
  Returns : A scalar
 
+
 =cut
 
 sub seq {
    my ($self,$value) = @_;
    if( defined $value ) {
-       return $self->primary_seq->seq($value);
+       return $self->primary_seq()->seq($value);
    }
-   return $self->primary_seq->seq();
+   return $self->primary_seq()->seq();
 }
 
 =head2 length
@@ -177,7 +188,7 @@ sub seq {
 
 sub length {
    my ($self) = @_;
-   return $self->primary_seq->length();
+   return $self->primary_seq()->length();
 }
 
 =head2 subseq
@@ -193,18 +204,20 @@ sub length {
  Returns : a string
  Args    :
 
+
 =cut
 
 sub subseq {
    my ($self,$s,$e) = @_;
-   return $self->{'primary_seq'}->subseq($s,$e);
+   return $self->primary_seq()->subseq($s,$e);
 }
 
 =head2 display_id
 
  Title   : display_id
- Usage   : $id_string = $obj->display_id();
- Function: returns the display id, aka the common name of the Sequence object.
+ Usage   : $id_string = $obj->display_id($newid);
+ Function: returns or sets the display id, aka the common name of the
+           Sequence object.
 
            The semantics of this is that it is the most likely string
            to be used as an identifier of the sequence, and likely to
@@ -217,10 +230,11 @@ sub subseq {
            encouraged to use other mechanisms (accession field for
            example, or extending the sequence object) to solve this.
 
-           Notice that $seq->id() maps to this function, mainly for 
+           Notice that $seq->id() maps to this function, mainly for
            legacy/convience issues
  Returns : A string
- Args    : None
+ Args    : newid (optional)
+
 
 =cut
 
@@ -231,6 +245,8 @@ sub display_id {
    }
    return $self->primary_seq->display_id();
 }
+
+
 
 =head2 accession_number
 
@@ -248,6 +264,7 @@ sub display_id {
  Returns : A string
  Args    : None
 
+
 =cut
 
 sub accession_number {
@@ -258,14 +275,16 @@ sub accession_number {
    return $self->primary_seq->accession_number();
 }
 
+
 =head2 desc
 
  Title   : desc
  Usage   : $seqobj->desc()
  Function: Sets/Gets the description of the sequnce
  Example :
- Returns : 
+ Returns :
  Args    :
+
 
 =cut
 
@@ -277,6 +296,9 @@ sub desc {
    }
    return $self->primary_seq->desc();
 }
+
+
+
 
 =head2 primary_id
 
@@ -295,12 +317,12 @@ sub desc {
  Returns : A string
  Args    : None
 
+
 =cut
 
 sub primary_id {
-   my ($self,@args) = @_;
-
    my ($obj,$value) = @_;
+
    if( defined $value) {
       $obj->{'primary_id'} = $value;
     }
@@ -308,7 +330,6 @@ sub primary_id {
        return "$obj";
    }
    return $obj->{'primary_id'};
-
 }
 
 =head2 can_call_new
@@ -316,7 +337,7 @@ sub primary_id {
  Title   : can_call_new
  Usage   : if( $obj->can_call_new ) {
              $newobj = $obj->new( %param );
-	 }
+	   }
  Function: can_call_new returns 1 or 0 depending
            on whether an implementation allows new
            constructor to be called. If a new constructor
@@ -332,6 +353,7 @@ sub primary_id {
  Returns : 1 or 0
  Args    :
 
+
 =cut
 
 sub can_call_new {
@@ -344,16 +366,17 @@ sub can_call_new {
 
  Title   : moltype
  Usage   : if( $obj->moltype eq 'dna' ) { /Do Something/ }
- Function: Returns the type of sequence being one of 
+ Function: Returns the type of sequence being one of
            'dna', 'rna' or 'protein'. This is case sensitive.
 
            This is not called <type> because this would cause
            upgrade problems from the 0.5 and earlier Seq objects.
-           
+
  Returns : a string either 'dna','rna','protein'. NB - the object must
            make a call of the type - if there is no type specified it
            has to guess.
  Args    : none
+
 
 =cut
 
@@ -367,8 +390,8 @@ sub moltype {
 
 =head1 Methods provided in the Bio::PrimarySeqI interface
 
-These methods are inherieted from the PrimarySeq interface
-and work as one expects, building new Bio::Seq objects 
+These methods are inherited from the PrimarySeq interface
+and work as one expects, building new Bio::Seq objects
 or other information as expected.
 
 Sequence Features are B<not> transfered to the new objects.
@@ -388,7 +411,7 @@ dealing with this is welcome to give it a go.
            reversed, it needs to define its own extensions
 
            To do an inplace edit of an object you can go:
-   
+
            $seq = $seq->revcom();
 
            This of course, causes Perl to handle the garbage collection of the old
@@ -397,6 +420,7 @@ dealing with this is welcome to give it a go.
  Returns : A new (fresh) Bio::Seq object
  Args    : none
 
+
 =cut
 
 =head2 trunc
@@ -404,10 +428,11 @@ dealing with this is welcome to give it a go.
  Title   : trunc
  Usage   : $subseq = $myseq->trunc(10,100);
  Function: Provides a truncation of a sequence,
-           
+
  Example :
  Returns : a fresh Bio::Seq object
  Args    :
+
 
 =cut
 
@@ -415,81 +440,23 @@ dealing with this is welcome to give it a go.
 
  Title   : id
  Usage   : $id = $seq->id()
- Function:
- Example :
- Returns : 
- Args    :
-
-=cut
-
-sub  id {
-   my ($self)= @_;
-
-   return $self->display_id();
-}
-
-=head2 length
-
- Title   : length
- Usage   : $len = $seq->length()
- Function:
- Example :
- Returns : 
- Args    :
-
-=cut
-
-=head1 Methods for Backward Compatibility
-
-These methods are here for backward compatibility with the old, 0.5
-Seq objects. They all throw warnings that someone is using a 
-deprecated method, and may eventually be removed completely from
-this object. However, they are important to ease the transition from
-the old system.
-
-=head2 str
-
- Title   : str
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-=cut
-
-=head2 ary
-
- Title   : ary
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-=cut
-
-=head2 getseq
-
- Title   : getseq
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-=cut
-
-=head2 type
-
- Title   : type
- Usage   :
- Function:
+ Function: This is mapped on display_id
  Example :
  Returns :
  Args    :
 
+
 =cut
+
+sub  id {
+   my ($self,$value) = @_;
+
+   if( defined $value ) {
+	return $self->display_id($value);
+   }
+   return $self->display_id();
+}
+
 
 =head1 Seq only methods
 
@@ -498,12 +465,13 @@ found on the Bio::PrimarySeq object
 
 =head2 primary_seq
 
- Title   : seq
+ Title   : primary_seq
  Usage   : $obj->primary_seq($newval)
- Function: 
- Example : 
+ Function:
+ Example :
  Returns : value of primary_seq
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -536,10 +504,11 @@ sub primary_seq {
 
  Title   : annotation
  Usage   : $obj->annotation($seq_obj)
- Function: 
- Example : 
+ Function:
+ Example :
  Returns : value of annotation
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -555,11 +524,16 @@ sub annotation {
 =head2 add_SeqFeature
 
  Title   : add_SeqFeature
- Usage   : $annseq->add_SeqFeature($feat);
- Function: Adds t
+ Usage   : $seq->add_SeqFeature($feat);
+           $seq->add_SeqFeature(@feat);
+ Function: Adds the given feature object (or each of an array of feature
+           objects to the feature array of this
+           sequence. The object passed is required to implement the
+           Bio::SeqFeatureI interface.
  Example :
- Returns : 
- Args    :
+ Returns : TRUE on success
+ Args    : A Bio::SeqFeatureI implementing object, or an array of such objects.
+
 
 =cut
 
@@ -567,70 +541,56 @@ sub add_SeqFeature {
    my ($self,@feat) = @_;
    my ($fseq,$aseq);
 
+
    foreach my $feat ( @feat ) {
        if( !$feat->isa("Bio::SeqFeatureI") ) {
 	   $self->throw("$feat is not a SeqFeatureI and that's what we expect...");
        }
-       
+
        if( $feat->can("entire_seq") ) {
 	   $fseq = $feat->entire_seq;
 	   $aseq = $self->primary_seq;
-	   
+	
 	   if( defined $aseq ) {
 	       if( defined $fseq ) {
-		   if( $aseq ne $fseq ) {
+		   unless ($aseq == $fseq) {
 		       $self->warn("$feat has an attached sequence which is not in this annseq. I worry about this");
 		   }
 	       } else {
 		   if( $feat->can("attach_seq") ) {
-		       # attach it 
+		       # attach it
 		       $feat->attach_seq($aseq);
 		   }
 	       }
 	   } # end of if aseq
        } # end of if the feat can entire_seq
-       
+
        push(@{$self->{'_as_feat'}},$feat);
    }
+   return 1;
 }
-
-=head2 feature_count
-
- Title   : feature_count
- Usage   : $seq-feature_count()
- Function: Return the number of SeqFeatures attached to a sequence
- Example :
- Returns : number of SeqFeatures
- Args    : none
-
-=cut
-
-sub feature_count {
-    my ($self) = @_;
-    
-    if (defined($self-{'_as_feat'})) {
-	return ($#{$self-{'_as_feat'}} + 1);
-    } else {
-	return 0;
-    }
-}
-
-
 
 =head2 top_SeqFeatures
 
  Title   : top_SeqFeatures
- Usage   :
- Function:
+ Usage   : @feat_ary = $seq->top_SeqFeatures();
+ Function: Returns the array of top-level features for this sequence object.
+           Features which are not top-level are subfeatures of one or more
+           of the returned feature objects, which means that you must
+           traverse the subfeature arrays of each top-level feature object
+           in order to traverse all features associated with this sequence.
+
+           Use all_SeqFeatures() if you want the feature tree flattened into
+           one single array.
  Example :
- Returns : 
+ Returns : An array of Bio::SeqFeatureI implementing objects.
  Args    :
+
 
 =cut
 
 sub top_SeqFeatures {
    my ($self) = @_;
-   my ($p,$f,$l) = caller;
 
    return @{$self->{'_as_feat'}};
 }
@@ -638,11 +598,19 @@ sub top_SeqFeatures {
 =head2 all_SeqFeatures
 
  Title   : all_SeqFeatures
- Usage   :
- Function:
+ Usage   : @feat_ary = $seq->all_SeqFeatures();
+ Function: Returns the tree of feature objects attached to this sequence
+           object flattened into one single array. Top-level features will
+           still contain their subfeature-arrays, which means that you
+           will encounter subfeatures twice if you traverse the subfeature
+           tree of the returned objects.
+
+           Use top_SeqFeatures() if you want the array to contain only the
+           top-level features.
  Example :
- Returns : 
+ Returns : An array of Bio::SeqFeatureI implementing objects.
  Args    :
+
 
 =cut
 
@@ -657,6 +625,28 @@ sub all_SeqFeatures {
    return @array;
 }
 
+=head2 feature_count
+
+ Title   : feature_count
+ Usage   : $seq->feature_count()
+ Function: Return the number of SeqFeatures attached to a sequence
+ Example :
+ Returns : number of SeqFeatures
+ Args    : none
+
+
+=cut
+
+sub feature_count {
+    my ($self) = @_;
+
+    if (defined($self->{'_as_feat'})) {
+	return ($#{$self->{'_as_feat'}} + 1);
+    } else {
+	return 0;
+    }
+}
+
 sub _retrieve_subSeqFeature {
     my ($arrayref,$feat) = @_;
 
@@ -667,221 +657,31 @@ sub _retrieve_subSeqFeature {
 
 }
 
-=head2 fetch_SeqFeatures
-
- Title   : fetch_SeqFeatures
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-=cut
-
-sub fetch_SeqFeatures {
-   my ($self,@args) = @_;
-
-   $self->throw("Not implemented yet");
-}
 
 =head2 species
 
  Title   : species
- Usage   : 
+ Usage   :
  Function: Gets or sets the species
  Example : $species = $self->species();
  Returns : Bio::Species object
  Args    : Bio::Species object or none;
 
+
 =cut
 
 sub species {
     my ($self, $species) = @_;
-
     if ($species) {
         $self->{'species'} = $species;
     } else {
-        return $self->{'species'}
+        return $self->{'species'};
     }
 }
 
-=head1 EMBL/GenBank/DDBJ methods
-
-These methods are here to support the EMBL/GenBank/DDBJ format.
-The problem is that these formats require a certain amount
-of additional information (eg, what division they are from), but
-to make bioperl slavishly involved with this is just a bad idea.
-
-If you want to use these methods, B<please> preface them with
-a $as->can('method-name'). If this fails, then do something
-sensible. This means that we do not have to think about
-being in lock-step with EMBL/GenBank/DDBJ but can still support
-all the information that is required.
-
-=head2 division
-
- Title   : division
- Usage   : $obj->division($newval)
- Function: 
- Returns : value of division
- Args    : newvalue (optional)
-
-=cut
-
-sub division {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'division'} = $value;
-    }
-    return $obj->{'division'};
-
+# keep AUTOLOAD happy
+sub DESTROY {
+    my ($self) = @_;
 }
 
-=head2 molecule
-
- Title   : molecule
- Usage   : $obj->molecule($newval)
- Function: 
- Returns : type of molecule (DNA, mRNA)
- Args    : newvalue (optional)
-
-=cut
-
-sub molecule {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'molecule'} = $value;
-    }
-    return $obj->{'molecule'};
-
-}
-
-=head2 add_date
-
- Title   : add_date
- Usage   : $self->add_date($ref)
- Function: adds a date
- Example :
- Returns : 
- Args    :
-
-=cut
-
-sub add_date {
-   my ($self) = shift;
-   foreach my $dt ( @_ ) {
-       push(@{$self->{'date'}},$dt);
-   }
-}
-
-=head2 each_date
-
- Title   : each_date
- Usage   : foreach $dt ( $self->each_date() )
- Function: gets an array of dates
- Example :
- Returns : 
- Args    :
-
-=cut
-
-sub each_date {
-   my ($self) = @_;
-   return @{$self->{'date'}}; 
-}
-
-=head2 accession
-
- Title   : accession
- Usage   : $obj->accession($newval)
- Function: Whilst the underlying sequence object does not 
-           have an accession, so we need one here. Wont stay
-           when we do the reimplementation.
- Example : 
- Returns : value of accession
- Args    : newvalue (optional)
-
-=cut
-
-sub accession {
-   my ($obj,$value) = @_;
-   
-   return $obj->accession_number($value);
-}
-
-=head2 add_secondary_accession
-
- Title   : add_secondary_accession
- Usage   : $self->add_domment($ref)
- Function: adds a secondary_accession
- Example :
- Returns : 
- Args    :
-
-=cut
-
-sub add_secondary_accession {
-   my ($self) = shift;
-   foreach my $dt ( @_ ) {
-       push(@{$self->{'secondary_accession'}},$dt);
-   }
-}
-
-=head2 each_secondary_accession
-
- Title   : each_secondary_accession
- Usage   : foreach $dt ( $self->each_secondary_accession() )
- Function: gets an array of secondary_accessions
- Example :
- Returns : 
- Args    :
-
-=cut
-
-sub each_secondary_accession {
-   my ($self) = @_;
-   return @{$self->{'secondary_accession'}}; 
-}
-
-=head2 sv
-
- Title   : sv
- Usage   : $obj->sv($newval)
- Function: 
- Returns : value of sv
- Args    : newvalue (optional)
-
-=cut
-
-sub sv {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'sv'} = $value;
-    }
-    return $obj->{'sv'};
-
-}
-
-=head2 keywords
-
- Title   : keywords
- Usage   : $obj->keywords($newval)
- Function: 
- Returns : value of keywords
- Args    : newvalue (optional)
-
-=cut
-
-sub keywords {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'keywords'} = $value;
-    }
-    return $obj->{'keywords'};
-
-}
-
+1;

@@ -1,6 +1,5 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
-## $Id: bpfetch.pl,v 1.8.8.2 2000/09/23 21:26:11 dag Exp $
 
 =head1 NAME
 
@@ -10,9 +9,9 @@ bpfetch.pl - fetches sequences from bioperl indexed databases
 
   bpfetch.pl swiss:ROA1_HUMAN
 
-  bpfetch.pl net::genbank:D87434
+  bpfetch.pl net::genbank:X47072
 
-  bpfetch.pl net::genpept:Y247_HUMAN
+  bpfetch.pl net::genpept:ROA1_HUMAN
 
   bpfetch.pl ace::myserver.somewhere.edu,21000:X56676
 
@@ -45,7 +44,7 @@ db information
 =head1 OPTIONS
 
   -fmt  <format> - Output format
-                   Fasta (default), EMBL, Raw or GCG
+                   Fasta (default), EMBL, Raw, swiss or GCG
   -acc           - string is an accession number, not an
                    id. 
 
@@ -102,10 +101,9 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules.  Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org      - General discussion
-  bioperl-guts-l@bioperl.org - Technical discussions, bug reports & CVS notices
-  
-  http://bioperl.org/MailList.shtml - About the mailing lists
+    vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
+    vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
+    http://bio.perl.org/MailList.html             - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -113,8 +111,8 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
-    bioperl-bugs@bioperl.org                   
-    http://bioperl.org/bioperl-bugs/           
+    bioperl-bugs@bio.perl.org                   
+    http://bio.perl.org/bioperl-bugs/           
 
 =head1 AUTHOR
 
@@ -136,6 +134,7 @@ BEGIN {
     eval {
 	require Bio::Index::Fasta;
 	require Bio::Index::EMBL;
+	require Bio::Index::Swissprot;
         require Bio::DB::GenBank;
         require Bio::DB::GenPept;
         require Bio::SeqIO;
@@ -147,12 +146,13 @@ BEGIN {
 	eval {
 	    require Bio::Index::Fasta;
 	    require Bio::Index::EMBL;
+	    require Bio::Index::Swissprot;
             require Bio::DB::GenBank;
             require Bio::DB::GenPept;
             require Bio::SeqIO;
 	};
 	if ( $@ ) {
-	    print STDERR ("\nbpindex cannot find Bio::Index::Fasta and Bio::Index::EMBL\nbpindex needs to have bioperl installed for it to run.\nBioperl is very easy to install\nSee http://bioperl.org for more information\n\n");
+	    print STDERR ("\nbpindex cannot find Bio::Index::Fasta and Bio::Index::EMBL\nbpindex needs to have bioperl installed for it to run.\nBioperl is very easy to install\nSee http://bio.perl.org for more information\n\n");
 	    exit(1);
 	} else {
 	    print STDERR ("\nYou are running bpindex.pl without installing bioperl.\nYou have done it from bioperl/scripts, and so we can find the necessary information\nbut it is much better to install bioperl\n\nPlease read the README in the bioperl distribution\n\n");

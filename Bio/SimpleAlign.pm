@@ -8,6 +8,10 @@
 # You may distribute this module under the same terms as perl itself
 
 # POD documentation - main docs before the code
+#
+#  History:
+#	11/3/00 Added threshold feature to consensus and consensus_aa  - PS
+#		
 
 =head1 NAME
 
@@ -16,9 +20,9 @@ SimpleAlign - Multiple alignments held as a set of sequences
 =head1 SYNOPSIS
 
     $aln = new Bio::SimpleAlign;
-   
+
     $aln->read_MSF(\*STDIN);
- 
+
     $aln->write_fasta(\*STDOUT);
 
 =head1 INSTALLATION
@@ -41,7 +45,7 @@ read/writing alignments.
 SimpleAlign basically views an alignment as an immutable block of text.
 SimpleAlign *is not* the object to be using if you want to perform complex
 alignment alignment manipulations.
-These functions are much better done by UnivAln by Georg Fuellen. 
+These functions are much better done by UnivAln by Georg Fuellen.
 
 However for lightweight display/formatting and minimal manipulation
 (e.g. removiung all-gaps columns) - this is the one to use.
@@ -57,12 +61,12 @@ alignment. They default to name/start-end
 
 The SimpleAlign Module came from Ewan Birney's Align module
 
-=head1 PROGRESS 
+=head1 PROGRESS
 
 SimpleAlign is being slowly converted to bioperl coding standards,
 mainly by Ewan.
 
-=over
+=over 3
 
 =item Use Bio::Root::Object - done
 
@@ -74,23 +78,22 @@ mainly by Ewan.
 
 =head1 FEEDBACK
 
-=head2 Mailing Lists 
+=head2 Mailing Lists
 
 User feedback is an integral part of the evolution of this and other Bioperl modules.
 Send your comments and suggestions preferably to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
    bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
    http://bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
-Report bugs to the Bioperl bug tracking system to help us keep track the bugs and 
+Report bugs to the Bioperl bug tracking system to help us keep track the bugs and
 their resolution. Bug reports can be submitted via email or the web:
 
-    bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    bioperl-bugs@bio.perl.org
+    http://bio.perl.org/bioperl-bugs/
 
 =head1 AUTHOR
 
@@ -98,7 +101,7 @@ Ewan Birney, birney@sanger.ac.uk
 
 =head1 SEE ALSO
 
- Bio::LocatableSeq.pm 
+ Bio::LocatableSeq.pm
 
  http://bio.perl.org/Projects/modules.html  - Online module documentation
  http://bio.perl.org/Projects/SeqAlign/     - Bioperl sequence alignment project
@@ -116,20 +119,14 @@ package Bio::SimpleAlign;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
+use Bio::Root::RootI;
+use Bio::LocatableSeq;         # uses Seq's as list
 
-use Bio::Root::Object;
-use Bio::LocatableSeq;         # uses Seq's as list 
+@ISA = qw(Bio::Root::RootI);
+sub new {
+  my($class,@args) = @_;
 
-@ISA = qw(Bio::Root::Object);
-# new() is inherited from Bio::Root::Object
-
-# _initialize is where the heavy stuff will happen when new is called
-
-sub _initialize {
-  my($self,@args) = @_;
-
-  my $make = $self->SUPER::_initialize;
+  my $self = $class->SUPER::new(@args);
 
   # we need to set up internal hashs first!
 
@@ -141,22 +138,21 @@ sub _initialize {
 
   # maybe we should automatically read in from args. Hmmm...
 
-# set stuff in self from @args
-  return $make; # success - we hope!
+  return $self; # success - we hope!
 }
 
 =head2 addSeq
 
  Title     : addSeq
  Usage     : $myalign->addSeq($newseq);
-           : 
+           :
            :
  Function  : Adds another sequence to the alignment
-           : *doesn't* align it - just adds it to the
+           : *does not* align it - just adds it to the
            : hashes
            :
  Returns   : nothing
- Argument  : 
+ Argument  :
 
 =cut
 
@@ -172,7 +168,7 @@ sub addSeq {
 
     $id = $seq->id();
     $start = $seq->start();
-    $end  = $seq->end(); 
+    $end  = $seq->end();
 
     if( !defined $order ) {
 	$order = keys %{$self->{'seq'}};
@@ -185,6 +181,8 @@ sub addSeq {
 
     }
     else {
+	#print STDERR "Assigning $name to $order\n";
+
 	$self->{'order'}->{$order} = $name;
 
 	if (not exists( $self->{'start_end_lists'}->{$id})) {
@@ -205,7 +203,7 @@ sub addSeq {
     This function gives the position in the alignment (i.e. column number) of
     the given residue number in the sequence with the given name. For example,
     for the alignment
-    
+
     Seq1/91-97 AC..DEF.GH
     Seq2/24-30 ACGG.RTY..
     Seq3/43-51 AC.DDEFGHI
@@ -217,7 +215,7 @@ sub addSeq {
     An exception is thrown if the residue number would lie outside the length
     of the aligment (e.g. column_from_residue_number( "Seq2", 22 )
 
- Returns : 
+ Returns :
     A column number for the postion in the alignment of the given residue in the given
          sequence (1 = first column)
  Args    :
@@ -239,7 +237,7 @@ sub column_from_residue_number {
 		if ($residues[$i] ne '.' and $residues[$i] ne '-') {
 		    $count == $resnumber and last;
 		    $count++;
-		}		    
+		}		
 	    }
 	    # $i now holds the index of the column. The actual colimn number is this index + 1
 		
@@ -254,20 +252,19 @@ sub column_from_residue_number {
 =head2 consensus_string
 
  Title     : consensus_string
- Usage     : $str = $ali->consensus_string()
-           : 
-           :
+ Usage     : $str = $ali->consensus_string($threshold_percent)
  Function  : Makes a consensus
-           : 
-           : 
-           :
- Returns   : 
- Argument  : 
+ Returns   :
+ Argument  : Optional treshold ranging from 0 to 100.  If consensus residue appears in
+		fewer than threshold % of the sequences at a given location
+		consensus_string will return a "?" at that location rather than the consensus
+		letter. (Default value = 0%)
 
 =cut
 
 sub consensus_string {
     my $self = shift;
+    my $threshold = shift;
     my $len;
     my ($out,$count);
 
@@ -276,16 +273,31 @@ sub consensus_string {
     $len = $self->length_aln();
 
     foreach $count ( 0 .. $len ) {
-	$out .= $self->consensus_aa($count);
+	$out .= $self->consensus_aa($count,$threshold);
     }
 
     return $out;
-    
+
 }
+
+=head2 consensus_aa
+
+ Title     : consensus_aa
+ Usage     : $consensus_residue = $ali->consensus_aa($residue_number, $threshold_percent)
+ Function  : Makes a consensus
+ Returns   :
+ Argument  : Optional treshold ranging from 0 to 100.  If consensus residue appears in
+		fewer than threshold % of the sequences at the specified location
+		consensus_string will return a "?"  rather than the consensus
+		letter. (Default value = 0%)
+
+=cut
+
 
 sub consensus_aa {
     my $self = shift;
     my $point = shift;
+    my $threshold_percent = shift || -1 ;
     my ($seq,%hash,$count,$letter,$key);
 
     foreach $seq ( $self->eachSeq() ) {
@@ -294,13 +306,14 @@ sub consensus_aa {
 	# print "Looking at $letter\n";
 	$hash{$letter}++;
     }
-
+    my $number_of_sequences = $self->no_sequences();
+    my $threshold = $number_of_sequences * $threshold_percent / 100. ;
     $count = -1;
     $letter = '?';
 
     foreach $key ( keys %hash ) {
 	# print "Now at $key $hash{$key}\n";
-	if( $hash{$key} > $count ) {
+	if( $hash{$key} > $count && $hash{$key} > $threshold) {
 	    $letter = $key;
 	    $count = $hash{$key};
 	}
@@ -312,14 +325,14 @@ sub consensus_aa {
 
  Title     : each_alphabetically
  Usage     : foreach $seq ( $ali->each_alphabetically() )
-           : 
+           :
            :
  Function  : returns an array of sequence object sorted
            : alphabetically by name and then by start point
-           : 
+           :
            : Does not change the order of the alignment
- Returns   : 
- Argument  : 
+ Returns   :
+ Argument  :
 
 =cut
 
@@ -349,22 +362,22 @@ sub alpha_startend {
     if( $aname eq $bname ) {
 	return $astart <=> $bstart;
     }
-    else { 
+    else {
 	return $aname cmp $bname;
     }
 
 }
 
-    
+
 =head2 eachSeq
 
  Title     : eachSeq
- Usage     : foreach $seq ( $align->eachSeq() ) 
-           : 
+ Usage     : foreach $seq ( $align->eachSeq() )
+           :
            :
  Function  : gets an array of Seq objects from the
            : alignment
-           : 
+           :
            :
  Returns   : an array
  Argument  : nothing
@@ -384,12 +397,12 @@ sub eachSeq {
     return @arr;
 }
 
-    
+
 =head2 eachSeqWithId
 
  Title     : eachSeqWithId
- Usage     : foreach $seq ( $align->eachSeqWithName() ) 
-           : 
+ Usage     : foreach $seq ( $align->eachSeqWithName() )
+           :
            :
  Function  : gets an array of Seq objects from the
            : alignment, the contents being those sequences
@@ -409,7 +422,7 @@ sub eachSeqWithId {
     if (exists($self->{'start_end_lists'}->{$id})) {
 	@arr = @{$self->{'start_end_lists'}->{$id}};
     }
-    return @arr; 
+    return @arr;
 
     return @arr;
 }
@@ -418,8 +431,8 @@ sub get_displayname {
     my $self = shift;
     my $name = shift;
 
-    if( defined $self->{dis_name}->{$name} ) {
-	return  $self->{dis_name}->{$name};
+    if( defined $self->{'dis_name'}->{$name} ) {
+	return  $self->{'dis_name'}->{$name};
     } else {
 	return $name;
     }
@@ -442,22 +455,22 @@ sub id {
     if (defined( $name )) {
 	$self->{'id'} = $name;
     }
-    
+
     return $self->{'id'};
 }
 
 =head2 is_flush
 
  Title     : is_flush
- Usage     : if( $ali->is_flush() )  
-           : 
+ Usage     : if( $ali->is_flush() )
            :
- Function  : Tells you whether the alignment 
+           :
+ Function  : Tells you whether the alignment
            : is flush, ie all of the same length
-           : 
+           :
            :
  Returns   : 1 or 0
- Argument  : 
+ Argument  :
 
 =cut
 
@@ -466,7 +479,7 @@ sub is_flush {
     my $seq;
     my $length = (-1);
     my $temp;
-    
+
     foreach $seq ( $self->eachSeq() ) {
 	if( $length == (-1) ) {
 	    $length = length($seq->seq());
@@ -486,15 +499,15 @@ sub is_flush {
 =head2 length_aln
 
  Title     : length_aln()
- Usage     : $len = $ali->length_aln() 
-           : 
+ Usage     : $len = $ali->length_aln()
+           :
            :
  Function  : returns the maximum length of the alignment.
            : To be sure the alignment is a block, use is_flush
-           : 
            :
- Returns   : 
- Argument  : 
+           :
+ Returns   :
+ Argument  :
 
 =cut
 
@@ -518,18 +531,18 @@ sub length_aln {
 
  Title     : map_chars
  Usage     : $ali->map_chars('\.','-')
-           : 
            :
- Function  : does a s/$arg1/$arg2/ on 
+           :
+ Function  : does a s/$arg1/$arg2/ on
            : the sequences. Useful for
            : gap characters
            :
-           : Notice that the from (arg1) is interpretted 
+           : Notice that the from (arg1) is interpretted
            : as a regex, so be careful about quoting meta
            : characters (eg $ali->map_chars('.','-') wont
            : do what you want)
- Returns   : 
- Argument  : 
+ Returns   :
+ Argument  :
 
 =cut
 
@@ -598,14 +611,14 @@ sub maxnse_length {
 
  Title     : no_residues
  Usage     : $no = $ali->no_residues
-           : 
+           :
            :
  Function  : number of residues in total
            : in the alignment
-           : 
            :
- Returns   : 
- Argument  : 
+           :
+ Returns   :
+ Argument  :
 
 =cut
 
@@ -626,17 +639,17 @@ sub no_residues {
 
  Title     : no_sequences
  Usage     : $depth = $ali->no_sequences
-           : 
+           :
            :
  Function  : number of sequence in the
            : sequence alignment
-           : 
            :
- Returns   : 
- Argument  : 
+           :
+ Returns   :
+ Argument  :
 
 =cut
-    
+
 sub no_sequences {
     my $self = shift;
 
@@ -670,7 +683,7 @@ sub percentage_identity{
    $len = $self->length_aln();
 
    # load the each hash with correct keys for existence checks
-   for( my $index=0; $index < $len; $index++) { 
+   for( my $index=0; $index < $len; $index++) {
        foreach my $letter (@alphabet) {
 	   $countHashes[$index]->{$letter} = 0;
        }
@@ -718,11 +731,11 @@ sub percentage_identity{
 sub purge{
   my ($self,$perc) = @_;
   my (@seqs,$seq,%removed,$i,$j,$count,@one,@two,$seq2,$k,$res,$ratio,@ret);
-  
+
  # $self->write_Pfam(\*STDOUT);
 
   @seqs = $self->eachSeq();
-  
+
   #$self->write_Pfam(\*STDOUT);
 
 #  foreach $seq ( @seqs ) {
@@ -741,7 +754,7 @@ sub purge{
       }
 
       # if not ... look at the other sequences
-      
+
       # make the first array once
 
       @one = $seq->seq();
@@ -776,7 +789,7 @@ sub purge{
 	  }
       }
   }
-  
+
   return @ret;
 }
 
@@ -784,14 +797,14 @@ sub purge{
 
  Title     : read_fasta
  Usage     : $ali->read_fasta(\*INPUT)
-           : 
+           :
            :
  Function  : reads in a fasta formatted
            : file for an alignment
-           : 
            :
- Returns   : 
- Argument  : 
+           :
+ Returns   :
+ Argument  :
 
 =cut
 
@@ -805,7 +818,7 @@ sub read_fasta {
 	if( /^>(\S+)/ ) {
 	    $tempname = $1;
 	    if( defined $name ) {
-		# put away last name and sequence 
+		# put away last name and sequence
 
 		if( $name =~ /(\S+)\/(\d+)-(\d+)/ ) {
 		    $seqname = $1;
@@ -820,7 +833,7 @@ sub read_fasta {
 		$seq = new Bio::LocatableSeq('-seq'=>$seqchar,
 				    '-id'=>$seqname,
 				    '-start'=>$start,
-				    '-end'=>$end, 
+				    '-end'=>$end,
 				    );
 
 		$self->addSeq($seq);
@@ -835,8 +848,8 @@ sub read_fasta {
 	$seqchar .= $_;
 
     }
-    # put away last name and sequence 
-    
+    # put away last name and sequence
+
     if( $name =~ /(\S+)\/(\d+)-(\d+)/ ) {
 	$seqname = $1;
 	$start = $2;
@@ -846,33 +859,33 @@ sub read_fasta {
 	$start = 1;
 	$end = length($seqchar);
     }
-    
+
     $seq = new Bio::LocatableSeq('-seq'=>$seqchar,
 			'-id'=>$seqname,
 			'-start'=>$start,
-			'-end'=>$end, 
+			'-end'=>$end,
 			);
-    
+
     $self->addSeq($seq);
-    
+
     $count++;
 
     return $count;
 }
-	    
+	
 
 =head2 read_mase
 
  Title     : read_mase
  Usage     : $ali->read_mase(\*INPUT)
-           : 
            :
- Function  : reads mase (seaview) 
+           :
+ Function  : reads mase (seaview)
            : formatted alignments
-           : 
            :
- Returns   : 
- Argument  : 
+           :
+ Returns   :
+ Argument  :
 
 =cut
 	
@@ -914,7 +927,7 @@ sub read_mase {
 	$add = new Bio::LocatableSeq('-seq'=>$seq,
 			    '-id'=>$name,
 			    '-start'=>$start,
-			    '-end'=>$end, 
+			    '-end'=>$end,
 			    );
 
 	
@@ -935,7 +948,7 @@ sub read_mase {
           area. For MSFs with weird gaps (eg ~~~) map them by using
           $al->map_chars('~','-');
  Example :
- Returns : 
+ Returns :
  Args    : filehandle
 
 =cut
@@ -958,6 +971,8 @@ sub read_MSF{
    # alignment section
 
    while( <$fh> ) {
+       # following regexp changed to not require initial whitespace, according
+       # to a suggestion of Peter Schattner <schattner@alum.mit.edu>
        /^\s*(\S+)\s+(.*)$/ && do {
 	   $name = $1;
 	   $str = $2;
@@ -985,15 +1000,15 @@ sub read_MSF{
 	   $str =~ s/[^A-Za-z]//g;
 	   $end = length($str);
        }
-    
+
        $seq = new Bio::LocatableSeq('-seq'=>$hash{$name},
 			   '-id'=>$seqname,
 			   '-start'=>$start,
-			   '-end'=>$end, 
+			   '-end'=>$end,
 			   );
-    
+
        $self->addSeq($seq);
-    
+
        $count++;
    }
 
@@ -1004,14 +1019,14 @@ sub read_MSF{
 
  Title     : read_Pfam
  Usage     : $ali->read_Pfam(\*INPUT)
-           : 
+           :
            :
  Function  : reads a Pfam formatted
            : Alignment (Mul format).
            : - this is the format used by Belvu
            :
- Returns   : 
- Argument  : 
+ Returns   :
+ Argument  :
 
 =cut
 
@@ -1030,7 +1045,7 @@ sub read_Pfam {
     while( <$in> ) {
 	chop;
 	/^\/\// && last;
-	if( !/^(\S+)\/(\d+)-(\d+)\s+(\S+)\s*/ ) { 
+	if( !/^(\S+)\/(\d+)-(\d+)\s+(\S+)\s*/ ) {
 	    $self->throw("Found a bad line [$_] in the pfam format alignment");
 	    next;
 	}
@@ -1043,9 +1058,9 @@ sub read_Pfam {
 	$add = new Bio::LocatableSeq('-seq'=>$seq,
 			    '-id'=>$name,
 			    '-start'=>$start,
-			    '-end'=>$end, 
+			    '-end'=>$end,
 			    );
-     
+
 	$self->addSeq($add);
 	
 	$count++;
@@ -1060,14 +1075,14 @@ sub read_Pfam {
 
  Title     : read_Pfam_file
  Usage     : $ali->read_Pfam_file("thisfile");
-           : 
+           :
  Function  : opens a filename, reads
            : a Pfam (mul) formatted alignment
            :
-           : 
            :
- Returns   : 
- Argument  : 
+           :
+ Returns   :
+ Argument  :
 
 =cut
 
@@ -1082,7 +1097,7 @@ sub read_Pfam_file {
     }
 
     $out = read_Pfam($self,\*_TEMPFILE);
-    
+
     close(_TEMPFILE);
 
     return $out;
@@ -1093,7 +1108,7 @@ sub read_Pfam_file {
  Title   : read_Prodom
  Usage   : $ali->read_Prodom( $file )
  Function: Reads in a Prodom format alignment
- Returns : 
+ Returns :
     Args    : A filehandle glob or ref. to a filehandle object
 
 =cut
@@ -1114,15 +1129,15 @@ sub read_Prodom{
 	   $start=$3;
 	   $end=$4;
 	   $seq=$5;
-	   
+	
 	   $names{'fake_id'} = $fake_id;
 
 	   $add = new Bio::LocatableSeq('-seq'=>$seq,
 			       '-id'=>$acc,
 			       '-start'=>$start,
-			       '-end'=>$end, 
+			       '-end'=>$end,
 			       );
-	   
+	
 	   $self->addSeq($add);
        }
        elsif (/^CO/) {
@@ -1135,15 +1150,15 @@ sub read_Prodom{
 =head2 read_selex
 
  Title     : read_selex
- Usage     : $ali->read_selex(\*INPUT) 
-           : 
+ Usage     : $ali->read_selex(\*INPUT)
+           :
            :
  Function  : reads selex (hmmer) format
            : alignments
-           : 
            :
- Returns   : 
- Argument  : 
+           :
+ Returns   :
+ Argument  :
 
 =cut
 
@@ -1151,15 +1166,15 @@ sub read_selex {
     my $self = shift;
     my $in = shift;
     my ($start,$end,%align,$name,$seqname,$seq,$count,%hash,%c2name, %accession, $no);
-   
+
     # in selex format, every non-blank line that does not start
     # with '#=' is an alignment segment; the '#=' lines are mark up lines.
-    # Of particular interest are the '#=GF <name/st-ed> AC <accession>' 
+    # Of particular interest are the '#=GF <name/st-ed> AC <accession>'
     # lines, which give accession numbers for each segment
 
     while( <$in> ) {
 	/^\#=GS\s+(\S+)\s+AC\s+(\S+)/ && do {
-	    $accession{ $1 } = $2; 
+	    $accession{ $1 } = $2;
 	    next;
 	};
 
@@ -1195,7 +1210,7 @@ sub read_selex {
 	$seq = new Bio::LocatableSeq('-seq'=>$align{$name},
 			    '-id'=>$seqname,
 			    '-start'=>$start,
-			    '-end'=>$end, 
+			    '-end'=>$end,
 			    '-type'=>'aligned',
 				     '-accession_number' => $accession{$name},
 
@@ -1206,20 +1221,20 @@ sub read_selex {
 	$count++;
     }
 
-    return $count; 
+    return $count;
 }
 
 =head2 read_stockholm
 
  Title     : read_stockholm
- Usage     : $ali->read_stockholm(\*INPUT) 
-           : 
+ Usage     : $ali->read_stockholm(\*INPUT)
+           :
            :
  Function  : reads stockholm  format alignments
-           : 
            :
- Returns   : 
- Argument  : 
+           :
+ Returns   :
+ Argument  :
 
 =cut
 
@@ -1227,10 +1242,10 @@ sub read_stockholm {
     my $self = shift;
     my $in = shift;
     my ($start,$end,%align,$name,$seqname,$seq,$count,%hash,%c2name, %accession, $no);
-   
+
     # in stockholm format, every non-blank line that does not start
     # with '#=' is an alignment segment; the '#=' lines are mark up lines.
-    # Of particular interest are the '#=GF <name/st-ed> AC <accession>' 
+    # Of particular interest are the '#=GF <name/st-ed> AC <accession>'
     # lines, which give accession numbers for each segment
 
     while( <$in> ) {
@@ -1263,15 +1278,15 @@ sub removeSeq {
 
     $id = $seq->id();
     $start = $seq->start();
-    $end  = $seq->end(); 
+    $end  = $seq->end();
     $name = sprintf("%s-%d-%d",$id,$start,$end);
 
     if( !exists $self->{'seq'}->{$name} ) {
 	$self->throw("Sequence $name does not exist in the alignment to remove!");
     }
-    
+
     delete $self->{'seq'}->{$name};
-    
+
     # we need to remove this seq from the start_end_lists hash
 
     if (exists $self->{'start_end_lists'}->{$id}) {
@@ -1305,21 +1320,21 @@ sub set_displayname {
     my $disname = shift;
 
     # print "Setting $name to $disname\n";
-    $self->{dis_name}->{$name} = $disname;
+    $self->{'dis_name'}->{$name} = $disname;
 }
 
 =head2 set_displayname_count
 
  Title     : set_displayname_count
- Usage     : $ali->set_displayname_count 
-           : 
+ Usage     : $ali->set_displayname_count
+           :
            :
  Function  : sets the names to be name_#
            : where # is the number of times this
-           : name has been used. 
+           : name has been used.
            :
- Returns   : 
- Argument  : 
+ Returns   :
+ Argument  :
 
 =cut
 
@@ -1351,15 +1366,15 @@ sub set_displayname_count {
 =head2 set_displayname_flat
 
  Title     : set_displayname_flat
- Usage     : $ali->set_displayname_flat() 
-           : 
+ Usage     : $ali->set_displayname_flat()
+           :
            :
  Function  : Makes all the sequences be displayed
            : as just their name, not name/start-end
-           : 
            :
- Returns   : 
- Argument  : 
+           :
+ Returns   :
+ Argument  :
 
 =cut
 
@@ -1376,15 +1391,15 @@ sub set_displayname_flat {
 =head2 set_displayname_normal
 
  Title     : set_displayname_normal
- Usage     : $ali->set_displayname_normal() 
-           : 
+ Usage     : $ali->set_displayname_normal()
+           :
            :
  Function  : Makes all the sequences be displayed
            : as name/start-end
-           : 
            :
- Returns   : 
- Argument  : 
+           :
+ Returns   :
+ Argument  :
 
 =cut
 
@@ -1398,22 +1413,22 @@ sub set_displayname_normal {
     }
 }
 
-   
+
 =head2 sort_alphabetically
 
  Title     : sort_alphabetically
  Usage     : $ali->sort_alphabetically
-           : 
+           :
            :
  Function  : changes the order of the alignemnt
            : to alphabetical on name followed by
            : numerical by number
            :
- Returns   : 
- Argument  : 
+ Returns   :
+ Argument  :
 
 =cut
- 
+
 sub sort_alphabetically {
     my $self = shift;
     my ($seq,$nse,@arr,%hash,$count);
@@ -1439,14 +1454,14 @@ sub sort_alphabetically {
 
  Title     : uppercase()
  Usage     : $ali->uppercase()
-           : 
+           :
            :
  Function  : Sets all the sequences
            : to uppercase
-           : 
            :
- Returns   : 
- Argument  : 
+           :
+ Returns   :
+ Argument  :
 
 =cut
 
@@ -1466,15 +1481,15 @@ sub uppercase {
 =head2 write_clustalw
 
  Title     : write_clustalw
- Usage     : $ali->write_clustalw 
-           : 
+ Usage     : $ali->write_clustalw
+           :
            :
  Function  : writes a clustalw formatted
            : (.aln) file
-           : 
            :
- Returns   : 
- Argument  : 
+           :
+ Returns   :
+ Argument  :
 
 =cut
 
@@ -1484,7 +1499,7 @@ sub write_clustalw {
     my ($count,$length,$seq,@seq,$tempcount);
 
     print $file "CLUSTAL W(1.4) multiple sequence alignment\n\n\n";
-    
+
     $length = $self->length_aln();
     $count = $tempcount = 0;
     @seq = $self->eachSeq();
@@ -1497,19 +1512,19 @@ sub write_clustalw {
 	$count += 50;
     }
 
-    
+
 }
 
 =head2 write_fasta
 
  Title     : write_fasta
- Usage     : $ali->write_fasta(\*OUTPUT) 
-           : 
+ Usage     : $ali->write_fasta(\*OUTPUT)
+           :
            :
  Function  : writes a fasta formatted alignment
-           : 
- Returns   : 
- Argument  : reference-to-glob to file or filehandle object 
+           :
+ Returns   :
+ Argument  : reference-to-glob to file or filehandle object
 
 =cut
 
@@ -1538,14 +1553,14 @@ sub write_fasta {
 
  Title     : write_MSF
  Usage     : $ali->write_MSF(\*FH)
-           : 
+           :
            :
  Function  : writes MSF format output
-           : 
-           : 
            :
- Returns   : 
- Argument  : 
+           :
+           :
+ Returns   :
+ Argument  :
 
 =cut
 
@@ -1557,7 +1572,7 @@ sub write_MSF {
     my $count = 0;
     my $maxname;
     my ($length,$date,$name,$seq,$miss,$pad,%hash,@arr,$tempcount,$index);
-    
+
     $date = localtime(time);
     $msftag = "MSF";
     $type = "P";
@@ -1567,7 +1582,7 @@ sub write_MSF {
     if( !defined $name ) {
 	$name = "Align";
     }
-    
+
     print $file sprintf("\n%s   MSF: %d  Type: P  %s  Check: 00 ..\n\n",$name,$self->no_sequences,$date);
 
     foreach $seq ( $self->eachSeq() ) {
@@ -1590,16 +1605,16 @@ sub write_MSF {
     while( $count < $length ) {
 	
 	# there is another block to go!
-    
+
 	foreach $name  ( @arr ) {
 	    print $file sprintf("%20s  ",$name);
-	    
+	
 	    $tempcount = $count;
 	    $index = 0;
 	    while( ($tempcount + 10 < $length) && ($index < 5)  ) {
 		
 		print $file sprintf("%s ",substr($hash{$name},$tempcount,10));
-				    
+				
 		$tempcount += 10;
 		$index++;
 	    }
@@ -1611,7 +1626,7 @@ sub write_MSF {
 	    if( $index < 5) {
 		
 		#
-		# space to print! 
+		# space to print!
 		#
 
 		print $file sprintf("%s ",substr($hash{$name},$tempcount));
@@ -1621,7 +1636,8 @@ sub write_MSF {
 	    print $file "\n";
 	} # end of each sequence
 
-	print $file "\n\n";
+	print $file "\n\n"; # added $file HL 08/08/2000; do we really need
+                            # so many newlines?
 
 	$count = $tempcount;
     }				
@@ -1630,15 +1646,15 @@ sub write_MSF {
 =head2 write_Pfam
 
  Title     : write_Pfam
- Usage     : $ali->write_Pfam(\*OUTPUT) 
-           : 
+ Usage     : $ali->write_Pfam(\*OUTPUT)
+           :
            :
  Function  : writes a Pfam/Mul formatted
            : file
-           : 
            :
- Returns   : 
- Argument  : 
+           :
+ Returns   :
+ Argument  :
 
 =cut
 
@@ -1649,7 +1665,7 @@ sub write_Pfam {
     my ($maxn);
 
     $maxn = $self->maxdisplayname_length();
-    
+
     foreach $seq ( $self->eachSeq() ) {
 	$namestr = $self->get_displayname($seq->get_nse());
 	$add = $maxn - length($namestr) + 2;
@@ -1661,13 +1677,13 @@ sub write_Pfam {
 =head2 write_selex
 
  Title     : write_selex
- Usage     : $ali->write_selex(\*OUTPUT) 
-           : 
+ Usage     : $ali->write_selex(\*OUTPUT)
+           :
            :
  Function  : writes a selex (hmmer) formatted alignment
-           : 
- Returns   : 
- Argument  : reference-to-glob to file or filehandle object 
+           :
+ Returns   :
+ Argument  : reference-to-glob to file or filehandle object
 
 =cut
 
@@ -1679,7 +1695,7 @@ sub write_selex {
     my ($maxn);
 
     $maxn = $self->maxdisplayname_length();
-    
+
     foreach $seq ( $self->eachSeq() ) {
 	$namestr = $self->get_displayname($seq->get_nse());
 	$add = $maxn - length($namestr) + 2;

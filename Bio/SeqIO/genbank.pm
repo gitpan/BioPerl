@@ -1,3 +1,4 @@
+# $Id: genbank.pm,v 1.33.2.1 2001/03/02 22:48:02 heikki Exp $
 # BioPerl module for Bio::SeqIO::GenBank
 #
 # Cared for by Elia Stupka <elia@ebi.ac.uk>
@@ -31,20 +32,21 @@ file databases.
 There is alot of flexibility here about how to dump things which I need
 to document fully.
 
+
 =head2 Optional functions
 
-=over
+=over 3
 
 =item _show_dna()
 
 (output only) shows the dna or not
 
-=item _post_sort
-    
+=item _post_sort()
+
 (output only) provides a sorting func which is applied to the FTHelpers
 before printing
 
-=item _id_generation_func
+=item _id_generation_func()
 
 This is function which is called as 
 
@@ -53,7 +55,6 @@ This is function which is called as
 To generate the ID line. If it is not there, it generates a sensible ID
 line using a number of tools.
 
- 
 =back
 
 =head1 FEEDBACK
@@ -65,9 +66,8 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://www.bioperl.org/MailList.shtml  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -90,60 +90,31 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
+
 # Let the code begin...
+
 
 package Bio::SeqIO::genbank;
 use vars qw(@ISA);
 use strict;
 
-use Bio::Seq;
+use Bio::Seq::RichSeq;
 use Bio::SeqIO;
 use Bio::SeqIO::FTHelper;
 use Bio::SeqFeature::Generic;
 use Bio::Species;
 
-# Object preamble - inherits from Bio::Root::Object
-
-use Bio::Root::Object;
-use FileHandle;
-
 @ISA = qw(Bio::SeqIO);
-# new() is inherited from Bio::Root::Object
-
-# _initialize is where the heavy stuff will happen when new is called
-
+ 
 sub _initialize {
     my($self,@args) = @_;
-
-    my $make = $self->SUPER::_initialize;
-    
-    my ($file,$fh) = $self->_rearrange([qw(
-					   FILE
-					   FH
-					   )],
-				       @args,
-				       );
-    if( $file && $fh ) {
-	$self->throw("Providing both a file and a filehandle for reading from - oly one please!");
-    }
-    
-    if( !$file && !$fh ) {
-	$self->throw("Neither a file (-file) nor a filehandle (-fh) provided to GenBank opening");
-    }
-    
-    if( $file ) {
-	$fh = new FileHandle;
-	$fh->open($file) || $self->throw("Could not open $file for GenBank stream reading $!");
-    }
-    
+    $self->SUPER::_initialize(@args);
+ 
     # hash for functions for decoding keys.
     $self->{'_func_ftunit_hash'} = {}; 
-    $self->_filehandle($fh);
     $self->_show_dna(1); # sets this to one by default. People can change it
-    
-# set stuff in self from @args
-    return $make; # success - we hope!
 }
+
 
 =head2 next_seq
 
@@ -153,156 +124,170 @@ sub _initialize {
  Returns : Bio::Seq object
  Args    :
 
+
 =cut
 
 sub next_seq{
     my ($self,@args) = @_;
-    my ($pseq,$c,$line,$name,$desc,$acc,$seqc,$mol,$div,$date);
-    my $seq = Bio::Seq->new();
-
-    $line = $self->_readline;
+    my ($pseq,$c,$name,$desc,$seqc,$mol,$div,$date);
+    my $line;
+    my @acc = ();
+    my $seq = Bio::Seq::RichSeq->new('-verbose' =>$self->verbose());
     
-    if( !defined $line) {
-	return undef; # no throws - end of file
+    while(defined($line = $self->_readline())) {
+	$line =~ /^\S/ && last;
     }
+    return undef if( !defined $line ); # end of file
     
-    if( $line =~ /^\s+$/ ) {
-	while( defined($line = $self->_readline) ) {
-	    $line =~ /\S/ && last;
-	}
-    }
-    if( !defined $line ) {
-	return undef; # end of file
-    }
-    
-    $line =~ /^LOCUS\s+\S+/ || $self->throw("GenBank stream with no LOCUS. Not GenBank in my book. Got $line");
-    $line =~ /^LOCUS\s+(\S+)\s+\S+\s+bp\s+(\S+)\s+(\S+)\s+(\S+)/;
-
+    $line =~ /^LOCUS\s+\S+/ ||
+	$self->throw("GenBank stream with no LOCUS. Not GenBank in my book. Got $line");
+    $line =~ /^LOCUS\s+(\S+)\s+\S+\s+(bp|aa)\s+(\S+)\s+(\S+)\s+(\S+)?/ || do {
+	$line =~ /^LOCUS\s+(\S+)/ ||
+	    $self->throw("GenBank stream with no LOCUS. Not GenBank in my book. Got $line");
+	# fall back to at least an ID
+	$name = $1;
+	$self->warn("GenBank record with LOCUS line in unexpected format. ".
+		    "Attributes from this line other than ID will be missing.");
+    };
     $name = $1;
     # this is important to have the id for display in e.g. FTHelper, otherwise
     # you won't know which entry caused an error
     $seq->display_id($name);
-    $mol=$2; 
-    if ($mol) {
-	$seq->molecule($mol);
+    # the moltype of the entry
+    if($2 eq 'bp') {
+	$seq->moltype('dna');
+    } else {
+	# $2 eq 'aa'
+	$seq->moltype('protein');
     }
-    
-    $div=$3;
-    if ($div) {
-	$seq->division($div);
+    # for aa there is usually no 'molecule' (mRNA etc)
+    if (($2 eq 'bp') || defined($5)) {
+	$seq->molecule($3);
+	$seq->division($4);
+	$date = $5;
+    } else {
+	$seq->molecule('PRT') if($2 eq 'aa');
+	$seq->division($3);
+	$date = $4;
     }
-    
-    $date=$4;
     if ($date) {
 	$seq->add_date($date);
     }
-
-    my $buffer = $line;
+    my $buffer = $self->_readline();
         
-    BEFORE_FEATURE_TABLE :
-	until( !defined ( $buffer )  ) {
-	    $_ = $buffer;
-	    
-	    # Exit at start of Feature table
-	    last if /^FEATURES/;
-	    
-	    # Description line(s)
-	    if (/^DEFINITION\s+(\S.*\S)/) {
-		$desc .= $desc ? " $1" : $1;
-		$desc .= " ";
-		while ( defined($_ = $self->_readline) ) { 
-		    /^\s+(.*)/ && do { $desc .= $1; next;};
-		    last;
-		}
-	    }		 
-	    
-	    if( /^ACCESSION\s+(\S+)/ ) {
-		$acc = $1;
-		$seq->accession($acc);
+    until( !defined ($buffer) ) {
+	$_ = $buffer;
+	
+	# Description line(s)
+	if (/^DEFINITION\s+(\S.*\S)/) {
+	    $desc .= $desc ? " $1" : $1;
+	    $desc .= " ";
+	    while ( defined($_ = $self->_readline) ) { 
+		/^\s+(.*)/ && do { $desc .= $1; next;};
+		last;
 	    }
-	    
-	    #Version number
-	    if( /^VERSION\s+(\S+)/ ) {
-		my $sv = $1;
-		$seq->sv($sv);
-	    }
-
-	    #Keywords
-	    if( /^KEYWORDS\s+(.*)/ ) {
-		my $keywords = $1;
-		$keywords =~ s/\;//g;
-		$seq->keywords($keywords);
-	    }
-
-	    # Organism name and phylogenetic information
-	    if (/^SOURCE/) {
-		my $species = $self->_read_GenBank_Species(\$buffer);
-		$seq->species( $species );
-		next;
-	    }
-
-	    #References
-	    if (/^REFERENCE/) {
-		my @refs = $self->_read_GenBank_References(\$buffer);
-		$seq->annotation->add_Reference(@refs);
-		next;
-	    }
-	    
-	    #Comments
-	    if (/^COMMENT\s+(.*)/) {
-		my $comment = $1;
-		while (defined($_ = $self->_readline)) {
-		    if (/^FEATURES/) {
-			$comment =~ s/\n/ /g;
-			$comment =~ s/  +/ /g;
-			my $commobj = Bio::Annotation::Comment->new();
-			$commobj->text($comment);
-			$seq->annotation->add_Comment($commobj);
-			last BEFORE_FEATURE_TABLE;
-		    }
-		    $comment .= $_; 
-		}
-	    }
-	    
-	    # Get next line.
-	    $buffer = $self->_readline;
+	}		 
+	
+	# accession number (there can be multiple accessions)
+	if( /^ACCESSION\s+(\S.*\S)/ ) {
+	    push(@acc, split(' ',$1));
+	}
+	
+	# PID
+	if( /^PID\s+(\S+)/ ) {
+	    $seq->pid($1);
+	}
+	
+	#Version number
+	if( /^VERSION\s+(\S+)\.(\d+)\s*(GI:\d+)?/ ) {
+	    $seq->seq_version($2);
+	    $seq->primary_id(substr($3, 3)) if($3);
 	}
 
-    # need to read the first line of the feature table
+	#Keywords
+	if( /^KEYWORDS\s+(.*)/ ) {
+	    my $keywords = $1;
+	    $keywords =~ s/\;//g;
+	    $seq->keywords($keywords);
+	}
+	
+	# Organism name and phylogenetic information
+	if (/^SOURCE/) {
+	    my $species = $self->_read_GenBank_Species(\$buffer);
+	    $seq->species( $species );
+	    next;
+	}
+	
+	#References
+	if (/^REFERENCE/) {
+	    my @refs = $self->_read_GenBank_References(\$buffer);
+	    $seq->annotation->add_Reference(@refs);
+	    next;
+	}
+	
+	#Comments
+	if (/^COMMENT\s+(.*)/) {
+	    my $comment = $1;
+	    while (defined($_ = $self->_readline)) {
+		if (/^\S/) {
+		    $comment =~ s/\n/ /g;
+		    $comment =~ s/  +/ /g;
+		    my $commobj = Bio::Annotation::Comment->new();
+		    $commobj->text($comment);
+		    $seq->annotation->add_Comment($commobj);
+		    last;
+		}
+		$comment .= $_; 
+	    }
+	    $buffer = $_;
+	    next;
+	}
+	# Exit at start of Feature table, or start of sequence
+	last if( /^(FEATURES)|(ORIGIN)/ );
+	# Get next line and loop again
+	$buffer = $self->_readline;
+    }
+    return undef if(! defined($buffer));
+    $seq->desc($desc); # don't forget!
+    $seq->accession_number(shift(@acc));
+    $seq->add_secondary_accession(@acc);
     
-    # following block and loop fixed by
-    # HL <Hilmar.Lapp@pharma.novartis.com>, 05/05/2000
-    # see comments
+    # some "minimal" formats may not necessarily have a feature table
+    if(/^FEATURES/) {
+	# need to read the first line of the feature table
+	$buffer = $self->_readline;
 
-    $buffer = $self->_readline;
-    FEATURE_TABLE :
 	# DO NOT read lines in the while condition -- this is done as a side
 	# effect in _read_FTHelper_GenBank!
 	while( defined($buffer) ) {
-	    # check immidiately -- not at the end of the loop
-	    last if($buffer =~ /^BASE/);
+	    # check immediately -- not at the end of the loop
+	    # note: GenPept entries obviously do not have a BASE line
+	    last if(($buffer =~ /^BASE/) || ($buffer =~ /^ORIGIN/));
 	    # slurp in one feature at a time -- at return, the start of
 	    # the next feature will have been read already, so we need
 	    # to pass a reference, and the called method must set this
 	    # to the last line read before returning 
 	    my $ftunit = $self->_read_FTHelper_GenBank(\$buffer);
 	    # process ftunit
-	    $ftunit->_generic_seqfeature($seq, 'GenBank');
+	    $ftunit->_generic_seqfeature($seq);
 	}
-    $seqc = "";	
-    while (defined( $_ = $self->_readline)) {
-	last if /^ORIGIN/;
+	$_ = $buffer;
     }
-
+    # advance to the section with the sequence
+    if(! /^ORIGIN/) {
+	$seqc = "";	
+	while (defined( $_ = $self->_readline)) {
+	    last if /^ORIGIN/;
+	}
+    }
     while( defined($_ = $self->_readline) ) {
 	/^\/\// && last;
 	$_ = uc($_);
 	s/[^A-Za-z]//g;
 	$seqc .= $_;
     }
+    $seq->seq($seqc);
 
-    $pseq = Bio::PrimarySeq->new(-seq => $seqc , -id => $name, -desc => $desc);
-    $seq->primary_seq($pseq);
     return $seq;
 }
 
@@ -313,6 +298,7 @@ sub next_seq{
  Function: writes the $seq object (must be seq) to the stream
  Returns : 1 for success and 0 for error
  Args    : Bio::Seq
+
 
 =cut
 
@@ -352,8 +338,10 @@ sub write_seq {
     if( $self->_id_generation_func ) {
 	$temp_line = &{$self->_id_generation_func}($seq);
     } else {
-	my @dates = $seq->each_date();
-	my $date = shift @dates;
+	my $date = '';
+	if( $seq->can('get_dates') ) { 
+	    ($date) = $seq->get_dates(); # get first one from the list
+	}
 	$temp_line = sprintf ("%-12s%-10s%10s bp%8s%5s %3s ", 'LOCUS',$seq->id(),$len,$mol,$div,$date);
     } 
     
@@ -366,12 +354,20 @@ sub write_seq {
 	$temp_line = &{$self->_ac_generation_func}($seq);
 	$self->_print("ACCESSION   $temp_line\n");   
     } else {
-	if( $seq->can('accession') ) {
-	    $self->_print("ACCESSION   ",$seq->accession,"\n");
+	my @acc = ();
+	push(@acc, $seq->accession_number());
+	if( $seq->isa('Bio::Seq::RichSeqI') ) {
+	    push(@acc, $seq->get_secondary_accessions());
 	}
+	$self->_print("ACCESSION   ", join(" ", @acc), "\n");
 	# otherwise - cannot print <sigh>
     } 
-    
+
+    # if PID defined, print it
+    if($seq->isa('Bio::Seq::RichSeqI') && $seq->pid()) {
+	$self->_print("PID         ", $seq->pid(), "\n");
+    }
+
     # if there, write the version line
     
     if( defined $self->_sv_generation_func() ) {
@@ -380,8 +376,12 @@ sub write_seq {
 	    $self->_print("VERSION     $temp_line\n");   
 	}
     } else {
-	if( $seq->can('sv') ) {
-	    $self->_print("VERSION     ",$seq->sv,"\n");
+	if($seq->isa('Bio::Seq::RichSeqI') && defined($seq->seq_version)) {
+	    my $id = $seq->primary_id(); # this may be a GI number
+	    $self->_print("VERSION     ",
+			  $seq->accession_number(), ".", $seq->seq_version,
+			  ($id && ($id =~ /^\d+$/) ? " GI:".$id : ""),
+			  "\n");
        }
     } 
     
@@ -399,13 +399,15 @@ sub write_seq {
     
     # Organism lines
     if (my $spec = $seq->species) {
-        my($species, $genus, @class) = $spec->classification();
+        my ($species, $genus, @class) = $spec->classification();
         my $OS = "$genus $species";
         if (my $ssp = $spec->sub_species) {
             $OS .= " $ssp";
         }
 	$self->_print("SOURCE      $OS.\n");
-	$self->_print("  ORGANISM  $OS\n");
+	$self->_print("  ORGANISM  ",
+		      ($spec->organelle() ? $spec->organelle()." " : ""),
+		      $OS, "\n");
         my $OC = join('; ', (reverse(@class), $genus)) .'.';
         $self->_write_line_GenBank_regex("            ","            ",
 					 $OC,"\\s\+\|\$",80);
@@ -414,7 +416,10 @@ sub write_seq {
     # Reference lines
     my $count = 1;
     foreach my $ref ( $seq->annotation->each_Reference() ) {
-	$temp_line = sprintf ("REFERENCE    $count  (bases %d to %d)",$ref->start,$ref->end);
+	$temp_line = sprintf ("REFERENCE   $count  (%s %d to %d)",
+			      ($seq->moltype() eq "protein" ?
+			       "residues" : "bases"),
+			      $ref->start,$ref->end);
 	$self->_print("$temp_line\n");
 	$self->_write_line_GenBank_regex("  AUTHORS   ","            ",
 					 $ref->authors,"\\s\+\|\$",80);
@@ -521,6 +526,7 @@ sub write_seq {
  Returns : 
  Args    :
 
+
 =cut
 
 sub _print_GenBank_FTHelper {
@@ -558,6 +564,7 @@ sub _print_GenBank_FTHelper {
 
 }
 
+
 =head2 _read_GenBank_References
 
  Title   : _read_GenBank_References
@@ -567,101 +574,122 @@ sub _print_GenBank_FTHelper {
  Returns : 
  Args    :
 
+
 =cut
 
 sub _read_GenBank_References{
    my ($self,$buffer) = @_;
    my (@refs);
-   my $previous;
+   my $ref;
    
    # assumme things are starting with RN
 
    if( $$buffer !~ /^REFERENCE/ ) {
        warn("Not parsing line '$$buffer' which maybe important");
    }
+
+   $_ = $$buffer;
+
    my $title;
    my $loc;
    my $au;
-   my $b1;
-   my $b2;
    my $com;
 
-   if ($$buffer =~ /^REFERENCE\s+\d+\s+\(bases (\d+) to (\d+)/){
-       $b1=$1;
-       $b2=$2;
-   }
-   while( defined($_ = $self->_readline) ) {
+   while( defined($_) || defined($_ = $self->_readline) ) {
        if (/^  AUTHORS\s+(.*)/) { 
 	   $au .= $1;   
 	   while ( defined($_ = $self->_readline) ) {
-	       /^  TITLE/ && last; 
-	       /^\s+(.*)/ && do { $au .= $1; $au =~ s/\,(\S)/ $1/g;$au .= " ";next;};
-	   }    
+	       /^\s{3,}(.*)/ && do {
+		   $au .= $1;
+		   $au =~ s/\,(\S)/ $1/g;
+		   $au .= " ";
+		   next;
+	       };
+	       last;
+	   }
+	   $ref->authors($au);
        }
        if (/^  TITLE\s+(.*)/)  { 
 	   $title .= $1;
 	   while ( defined($_ = $self->_readline) ) {
-	       /^  JOURNAL/ && last; 
-	       /^\s+(.*)/ && do { $title .= $1;$title .= " ";next;};
+	       /^\s{3,}(.*)/ && do { $title .= " " . $1;
+				     next;};
+	       last;
 	   }
+	   $ref->title($title);
        }
        if (/^  JOURNAL\s+(.*)/) { 
 	   $loc .= $1;
 	   while ( defined($_ = $self->_readline) ) {
-	       /^  REMARK/ && last;
-	       /^\s+(.*)/ && do { $loc .= $1;$loc .= " ";next;};
+	       /^\s{3,}(.*)/ && do { $loc .= $1;$loc .= " ";next;};
 	       last;
 	   }
+	   $ref->location($loc);
        }
-
        if (/^  REMARK\s+(.*)/) { 
 	   $com .= $1;
 	   while ( defined($_ = $self->_readline) ) {	       
-	       /^\s+(.*)/ && do { $com .= $1;$com .= " ";next;};
+	       /^\s{3,}(.*)/ && do { $com .= $1;$com .= " ";next;};
 	       last;
 	   }
-       }
-
-       /^REFERENCE/ && do {
-	   # put away current reference
-	   my $ref = new Bio::Annotation::Reference;
-	   $au =~ s/;\s*$//g;
-	   $title =~ s/;\s*$//g;
-	   $ref->start($b1);
-	   $ref->end($b2);
-	   $ref->authors($au);
-	   $ref->title($title);
-	   $ref->location($loc);
 	   $ref->comment($com);
-	   push(@refs,$ref);
+       }
+       /^REFERENCE/ && do {
+	   # store current reference
+	   $self->_add_ref_to_array(\@refs,$ref) if $ref;
+	   # reset
 	   $au = "";
 	   $title = "";
 	   $loc = "";
 	   $com = "";
-
-	   # return to main reference loop
-	   next;
+	   # create the new reference object
+	   $ref = Bio::Annotation::Reference->new();
+	   # check whether start and end base is given
+	   if (/^REFERENCE\s+\d+\s+\([a-z]+ (\d+) to (\d+)/){
+	       $ref->start($1);
+	       $ref->end($2);
+	   }
        };
-	   
-       /^FEATURES||^COMMENT/ && last;
+
+       /^(FEATURES)|(COMMENT)/ && last;
+
+       $_ = undef; # Empty $_ to trigger read of next line
    }
 
-   # put away last reference
+   # store last reference
+   $self->_add_ref_to_array(\@refs,$ref) if $ref;
 
-   my $ref = new Bio::Annotation::Reference;
-   $au =~ s/;\s*$//g;
-   $title =~ s/;\s*$//g;
-
-   $ref->start($b1);
-   $ref->end($b2);
-   $ref->authors($au);
-   $ref->title($title);
-   $ref->location($loc);
-   $ref->comment($com);
-   push(@refs,$ref);
    $$buffer = $_;
-   
+
+   #print "\nnumber of references found: ", $#refs+1,"\n";
+
    return @refs;
+}
+
+#
+# This is undocumented as it shouldn't be called by anywhere else as
+# read_GenBank_References. For those who still want to know:
+#
+# Purpose: adds a Reference object to an array of Reference objects, takes
+#     care of possible cleanups to be done (currently, only author and title
+#     will be chopped of trailing semicolons).
+# Parameters:
+#     a reference to an array of Reference objects
+#     the Reference object to be added
+# Returns: nothing
+#
+sub _add_ref_to_array {
+    my ($self, $refs, $ref) = @_;
+
+    # first, polish author and title by removing possible trailing semicolons
+    my $au = $ref->authors();
+    my $title = $ref->title();
+    $au =~ s/;\s*$//g if $au;
+    $title =~ s/;\s*$//g if $title;
+    $ref->authors($au);
+    $ref->title($title);
+    # the rest should be clean already, so go ahead and add it
+    push(@{$refs}, $ref);
 }
 
 =head2 _read_GenBank_Species
@@ -678,27 +706,37 @@ sub _read_GenBank_References{
 
 sub _read_GenBank_Species {
     my( $self,$buffer) = @_;
-    
+    my @organell_names = ("chloroplast", "mitochondr"); 
+             # only those carrying DNA, apart from the nucleus
+
     $_ = $$buffer;
     
-    my( $sub_species, $species, $genus, $common, @class );
+    my( $sub_species, $species, $genus, $common, $organelle, @class );
     # upon first entering the loop, we must not read a new line -- the SOURCE
     # line is already in the buffer (HL 05/10/2000)
     while (defined($_) || defined($_ = $self->_readline())) {
-        if (/^SOURCE\s+(.*)/) {
+	# de-HTMLify (links that may be encountered here don't contain
+	# escaped '>', so a simple-minded approach suffices)
+        s/<[^>]+>//g;
+	if (/^SOURCE\s+(.*)/) {
 	    # FIXME this is probably mostly wrong (e.g., it yields things like
 	    # Homo sapiens adult placenta cDNA to mRNA
 	    # which is certainly not what you want)
 	    $common = $1;
-	    $common =~ s/\.$//;
-	} elsif (/^\s+ORGANISM\s+(\S+)(?:\s+(\S+))?(?:\s+(\S+))?/) {
-            $genus = $1;
-	    if ($2) {
-		$species = $2;
+	    $common =~ s/\.$//; # remove trailing dot
+	} elsif (/^\s+ORGANISM/) {
+	    my @spflds = split(' ', $_);
+	    shift(@spflds); # ORGANISM
+	    if(grep { $_ =~ /^$spflds[0]/i; } @organell_names) {
+		$organelle = shift(@spflds);
+	    }
+            $genus = shift(@spflds);
+	    if(@spflds) {
+		$species = shift(@spflds);
 	    } else {
 		$species = "sp.";
 	    }
-	    $sub_species = $3 if $3;
+	    $sub_species = shift(@spflds) if(@spflds);
         } elsif (/^\s+(.+)/) {
             push(@class, split /[;\s\.]+/, $1);
         } else {
@@ -725,27 +763,8 @@ sub _read_GenBank_Species {
     $make->classification( @class );
     $make->common_name( $common      ) if $common;
     $make->sub_species( $sub_species ) if $sub_species;
+    $make->organelle($organelle) if $organelle;
     return $make;
-}
-
-=head2 _filehandle
-
- Title   : _filehandle
- Usage   : $obj->_filehandle($newval)
- Function: 
- Example : 
- Returns : value of _filehandle
- Args    : newvalue (optional)
-
-=cut
-
-sub _filehandle{
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'_filehandle'} = $value;
-    }
-    return $obj->{'_filehandle'};
-
 }
 
 =head2 _read_FTHelper_GenBank
@@ -757,15 +776,16 @@ sub _filehandle{
  Returns : Bio::SeqIO::FTHelper object 
  Args    : filehandle and reference to a scalar
 
+
 =cut
 
 sub _read_FTHelper_GenBank {
     my ($self,$buffer) = @_;
     
     my ($key,   # The key of the feature
-        $loc,   # The location line from the feature
-        @qual,  # An arrray of lines making up the qualifiers
+        $loc    # The location line from the feature
         );
+    my @qual = (); # An arrray of lines making up the qualifiers
     
     if ($$buffer =~ /^     (\S+)\s+(\S+)/) {
         $key = $1;
@@ -776,13 +796,10 @@ sub _read_FTHelper_GenBank {
                 # Lines inside features are preceeded by 21 spaces
                 # A new feature is preceeded by 5 spaces
                 if (length($1) > 6) {
-                    # Add to qualifiers if we're in the qualifiers
-                    if (@qual) {
+                    # Add to qualifiers if we're in the qualifiers, or if it's
+		    # the first qualifier
+                    if (($#qual >= 0) || (substr($2, 0, 1) eq '/')) {
                         push(@qual, $2);
-                    }
-                    # Start the qualifier list if it's the first qualifier
-                    elsif (substr($2, 0, 1) eq '/') {
-                        @qual = ($2);
                     }
                     # We're still in the location line, so append to location
                     else {
@@ -806,7 +823,7 @@ sub _read_FTHelper_GenBank {
     $$buffer = $_;
 
     # Make the new FTHelper object
-    my $out = new Bio::SeqIO::FTHelper();
+    my $out = new Bio::SeqIO::FTHelper(-verbose=>$self->verbose());
     $out->key($key);
     $out->loc($loc);
 
@@ -814,24 +831,44 @@ sub _read_FTHelper_GenBank {
     # intact to provide informative error messages.)
   QUAL: for (my $i = 0; $i < @qual; $i++) {
         $_ = $qual[$i];
-        my( $qualifier, $value ) = m{^/([^=]+)(?:=(.+))?}
-	or $self->warn("cannot see new qualifier in feature $key: ".
-		       $qual[$i]);
-#            or $self->throw("Can't see new qualifier in: $_\nfrom:\n"
-#                . join('', map "$_\n", @qual));
+        my( $qualifier, $value ) = (m{^/([^=]+)(?:=(.+))?})
+	    or $self->warn("cannot see new qualifier in feature $key: ".
+			   $qual[$i]);
+            #or $self->throw("Can't see new qualifier in: $_\nfrom:\n"
+            #    . join('', map "$_\n", @qual));
+	$qualifier = '' unless( defined $qualifier);
         if (defined $value) {
             # Do we have a quoted value?
             if (substr($value, 0, 1) eq '"') {
                 # Keep adding to value until we find the trailing quote
                 # and the quotes are balanced
-                while ($value !~ /"$/ or $value =~ tr/"/"/ % 2) {
-                    $i++;
-                    my $next = $qual[$i];
-                    unless (defined($next)) {
-                        warn("Unbalanced quote in:\n", map("$_\n", @qual),
-                            "No further qualifiers will be added for this feature");
-                        last QUAL;
+                while ($value !~ /\"$/ or $value =~ tr/"/"/ % 2) {
+		    if($i >= $#qual) {
+			# We haven't found the closing douple quote ...
+			# Even though this should be considered as a malformed
+			# entry, we allow for a single exception, namely if the
+			# value ends exactly at the last char position of a
+			# GenBank line.
+			# At least 78 chars required, of which 21 are spaces
+			#Currently disabled, let's wait for an actual sequence
+			#entry that really requires this.
+			#if(length($qual[$i]) >= 57) {
+			#    $self->warn("unbalanced quotes in feature $key ".
+			#		"(location: $loc), ".
+			#		"qualifier $qualifier, ".
+			#		"accepting though");
+			#    last;
+			#} else {
+			    $self->warn("Unbalanced quote in:\n" .
+					join('', map("$_\n", @qual)) .
+					"No further qualifiers will " .
+					"be added for this feature");
+			    last QUAL;
+			#}
                     }
+                    $i++; # modifying a for-loop variable inside of the loop
+		          # is not the best programming style ...
+                    my $next = $qual[$i];
 
                     # Join to value with space if value or next line contains a space
                     $value .= (grep /\s/, ($value, $next)) ? " $next" : $next;
@@ -839,12 +876,11 @@ sub _read_FTHelper_GenBank {
                 # Trim leading and trailing quotes
                 $value =~ s/^"|"$//g;
                 # Undouble internal quotes
-                $value =~ s/""/"/g;
+                $value =~ s/""/\"/g;
             }
         } else {
             $value = '_no_value';
         }
-
         # Store the qualifier
         $out->field->{$qualifier} ||= [];
         push(@{$out->field->{$qualifier}},$value);
@@ -861,6 +897,7 @@ sub _read_FTHelper_GenBank {
  Example :
  Returns : 
  Args    :
+
 
 =cut
 
@@ -895,6 +932,7 @@ sub _write_line_GenBank{
  Example :
  Returns : nothing
  Args    : file handle, first header, second header, text-line, regex for line breaks, total line length
+
 
 =cut
 
@@ -931,6 +969,7 @@ sub _write_line_GenBank_regex {
  Returns : value of _post_sort
  Args    : newvalue (optional)
 
+
 =cut
 
 sub _post_sort{
@@ -950,6 +989,7 @@ sub _post_sort{
  Function: 
  Returns : value of _show_dna
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -971,6 +1011,7 @@ sub _show_dna{
  Returns : value of _id_generation_func
  Args    : newvalue (optional)
 
+
 =cut
 
 sub _id_generation_func{
@@ -990,6 +1031,7 @@ sub _id_generation_func{
  Function: 
  Returns : value of _ac_generation_func
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -1011,6 +1053,7 @@ sub _ac_generation_func{
  Returns : value of _sv_generation_func
  Args    : newvalue (optional)
 
+
 =cut
 
 sub _sv_generation_func{
@@ -1031,6 +1074,7 @@ sub _sv_generation_func{
  Returns : value of _kw_generation_func
  Args    : newvalue (optional)
 
+
 =cut
 
 sub _kw_generation_func{
@@ -1044,5 +1088,3 @@ sub _kw_generation_func{
 }
 
 1;
-    
-

@@ -5,7 +5,7 @@
 # PURPOSE : To extract identical + conserved positions for a hit.
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 12 Jun 1998
-# REVISION: $Id: parse_positions.pl,v 1.2.12.1 2000/03/27 10:09:13 birney Exp $
+# REVISION: $Id: parse_positions.pl,v 1.2 1999/02/27 12:28:06 sac Exp $
 # WEBSITE : http://bio.perl.org/Projects/Blast/
 # USAGE   : parse.pl -h
 # EXAMPLES: parse.pl -eg
@@ -87,8 +87,7 @@ QQ_EG_QQ
 &set_blast_params();
 
 my $file = $opt_in || $ARGV[0];
-my (@qidentical, @sconserved, @qconserved);  
-# my (@qidentical, @qidentical, @sconserved, @qconserved);   #ps 3/24/00
+my (@qidentical, @qidentical, @sconserved, @qconserved);
 
 # Load the file into the Blast parameters.
 $blastParam{-file} = $file || '';

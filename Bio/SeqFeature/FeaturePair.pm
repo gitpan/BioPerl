@@ -1,3 +1,4 @@
+# $Id: FeaturePair.pm,v 1.15.2.1 2001/03/02 22:48:00 heikki Exp $
 #
 # BioPerl module for Bio::SeqFeature::FeaturePair
 #
@@ -32,11 +33,12 @@ Bio::SeqFeature::FeaturePair - hold pair feature information e.g. blast hits
 
 =head1 DESCRIPTION
 
-A sequence feature object where the feature is itself a feature on another 
-sequence - e.g. a blast hit where residues 1-40 of a  protein sequence SW:HBA_HUMAN  
-has hit to bases 100 - 220 on a genomic sequence HS120G22.  The genomic sequence 
-coordinates are used to create one sequence feature $f1 and the protein coordinates
-are used to create feature $f2.  A FeaturePair object can then be made
+A sequence feature object where the feature is itself a feature on
+another sequence - e.g. a blast hit where residues 1-40 of a protein
+sequence SW:HBA_HUMAN has hit to bases 100 - 220 on a genomic sequence
+HS120G22.  The genomic sequence coordinates are used to create one
+sequence feature $f1 and the protein coordinates are used to create
+feature $f2.  A FeaturePair object can then be made
 
     my $fp = new Bio::SeqFeature::FeaturePair(-feature1 => $f1,   # genomic
 					      -feature2 => $f2,   # protein
@@ -64,55 +66,48 @@ so...
 
     $feat->start # etc. returns data in $feature2 object
 
-No sub_SeqFeatures or tags can be stored in this object directly.
-Any features or tags are expected to be stored in the contained objects
+
+No sub_SeqFeatures or tags can be stored in this object directly.  Any
+features or tags are expected to be stored in the contained objects
 feature1, and feature2.
 
 =head1 CONTACT
 
-Ewan Birney <birney@sanger.ac.uk>
-
-=head1 DEVELOPERS
+Ewan Birney E<lt>birney@sanger.ac.ukE<gt>
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
+
 # Let the code begin...
+
 
 package Bio::SeqFeature::FeaturePair;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
-
-use Bio::Root::Object;
 use Bio::SeqFeatureI;
 use Bio::SeqFeature::Generic;
 
 @ISA = qw(Bio::SeqFeature::Generic);
-# new() is inherited from Bio::Root::Object
 
-# _initialize is where the heavy stuff will happen when new is called
-
-sub _initialize {
-  my($self,@args) = @_;
-  my $make = $self->SUPER::_initialize;
-
-  my ($feature1,$feature2) = 
-      $self->_rearrange([qw(FEATURE1
-			    FEATURE2
-			    )],@args);
-
-  # Store the features in the object
-
-  $feature1 && $self->feature1($feature1);
-  $feature2 && $self->feature2($feature2);
-
-  # set stuff in self from @args
-  return $make; # success - we hope!
+sub new {
+    my ($class, @args) = @_;
+    my $self = $class->SUPER::new(@args);
+    
+    my ($feature1,$feature2) = 
+	$self->_rearrange([qw(FEATURE1
+			      FEATURE2
+			      )],@args);
+    
+    # Store the features in the object
+    $feature1 && $self->feature1($feature1);
+    $feature2 && $self->feature2($feature2);
+    return $self;
 }
 
 =head2 feature1
@@ -122,19 +117,20 @@ sub _initialize {
            $featpair->feature1($feature)
  Function: Get/set for the query feature
  Returns : Bio::SeqFeatureI
- Args    : none
+ Args    : Bio::SeqFeatureI
+
 
 =cut
 
 sub feature1 {
-    my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-	$self->throw("Argument [$arg] must be a Bio::SeqFeatureI") unless (ref($arg) ne "" && $arg->isa("Bio::SeqFeatureI"));
-	$self->{_feature1} = $arg;
-    } 
-
-    return $self->{_feature1};
+    my ($self,$arg) = @_;    
+    if ( defined($arg) || !defined $self->{'feature1'} ) {
+	$arg = new Bio::SeqFeature::Generic() unless( defined $arg);
+	$self->throw("Argument [$arg] must be a Bio::SeqFeatureI") 
+	    unless (ref($arg) && $arg->isa("Bio::SeqFeatureI"));
+	$self->{'feature1'} = $arg;
+    }
+    return $self->{'feature1'};
 }
 
 =head2 feature2
@@ -144,18 +140,21 @@ sub feature1 {
            $featpair->feature2($feature)
  Function: Get/set for the hit feature
  Returns : Bio::SeqFeatureI
- Args    : none
+ Args    : Bio::SeqFeatureI
+
 
 =cut
 
 sub feature2 {
     my ($self,$arg) = @_;
 
-    if (defined($arg)) {
-	$self->throw("Argument [$arg] must be a Bio::SeqFeatureI") unless (ref($arg) ne "" && $arg->isa("Bio::SeqFeatureI"));
-	$self->{_feature2} = $arg;
-    } 
-    return $self->{_feature2};
+    if ( defined($arg) || ! defined $self->{'feature2'}) {
+	$arg = new Bio::SeqFeature::Generic unless( defined $arg);
+	$self->throw("Argument [$arg] must be a Bio::SeqFeatureI") 
+	    unless (ref($arg) && $arg->isa("Bio::SeqFeatureI"));
+	$self->{'feature2'} = $arg;
+    }
+    return $self->{'feature2'};
 }
 
 =head2 start
@@ -165,19 +164,13 @@ sub feature2 {
            $featpair->start(20)
  Function: Get/set on the start coordinate of feature1
  Returns : integer
- Args    : none
+ Args    : [optional] beginning of feature
 
 =cut
 
 sub start {
-    my ($self,$value) = @_;
-    
-    if (defined($value)) {
-	return $self->feature1->start($value);
-    } else {
-	return $self->feature1->start;
-    }
-
+    my ($self,$value) = @_;    
+    return $self->feature1->start($value);
 }
 
 =head2 end
@@ -187,35 +180,14 @@ sub start {
            $featpair->end($end)
  Function: get/set on the end coordinate of feature1
  Returns : integer
- Args    : none
+ Args    : [optional] ending point of feature
+
 
 =cut
 
 sub end{
-    my ($self,$value) = @_;
-
-    if (defined($value)) {
-	return $self->feature1->end($value);
-    } else {
-	return $self->feature1->end;
-    }
-}
-
-=head2 length
-
- Title   : length
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-=cut
-
-sub length {
-   my ($self) = @_;
-
-   return $self->end - $self->start +1;
+    my ($self,$value) = @_;    
+    return $self->feature1->end($value);    
 }
 
 =head2 strand
@@ -225,18 +197,30 @@ sub length {
            $feat->strand($strand)
  Function: get/set on strand information, being 1,-1 or 0
  Returns : -1,1 or 0
- Args    : none
+ Args    : [optional] strand information to set
+
 
 =cut
 
 sub strand{
     my ($self,$arg) = @_;
+    return $self->feature1->strand($arg);    
+}
 
-    if (defined($arg)) {
-	return $self->feature1->strand($arg);
-    } else {
-	return $self->feature1->strand;
-    }
+=head2 location
+
+ Title   : location
+ Usage   : $location = $featpair->location
+           $featpair->location($location)
+ Function: Get/set location object (using feature1)
+ Returns : Bio::LocationI object
+ Args    : [optional] LocationI to store
+
+=cut
+
+sub location {
+    my ($self,$value) = @_;    
+    return $self->feature1->location($value);
 }
 
 =head2 score
@@ -248,16 +232,12 @@ sub strand{
  Returns : float
  Args    : none if get, the new value if set
 
+
 =cut
 
 sub score {
     my ($self,$arg) = @_;
-  
-    if (defined($arg)) {
-	return $self->feature1->score($arg);
-    } else {
-	return $self->feature1->score;
-    }
+    return $self->feature1->score($arg);    
 }
 
 =head2 frame
@@ -269,16 +249,12 @@ sub score {
  Returns : 0,1,2
  Args    : none if get, the new value if set
 
+
 =cut
 
 sub frame {
     my ($self,$arg) = @_;
-    
-    if (defined($arg)) {
-	return $self->feature1->frame($arg);
-    } else {
-	return $self->feature1->frame;
-    }
+    return $self->feature1->frame($arg);    
 }
 
 =head2 primary_tag
@@ -289,16 +265,12 @@ sub frame {
  Returns : 0,1,2
  Args    : none if get, the new value if set
 
+
 =cut
 
 sub primary_tag{
     my ($self,$arg) = @_;
-    
-    if (defined($arg)) {
-	return $self->feature1->primary_tag($arg);
-    } else {
-	return $self->feature1->primary_tag;
-    }
+    return $self->feature1->primary_tag($arg);    
 }
 
 =head2 source_tag
@@ -311,16 +283,12 @@ sub primary_tag{
  Returns : a string 
  Args    : none
 
+
 =cut
 
 sub source_tag{
     my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-	return $self->feature1->source_tag($arg);
-    } else {
-	return $self->feature1->source_tag;
-    }
+    return $self->feature1->source_tag($arg);    
 }
 
 =head2 seqname
@@ -338,16 +306,12 @@ sub source_tag{
  Returns : value of seqname
  Args    : newvalue (optional)
 
+
 =cut
 
 sub seqname{
     my ($self,$arg) = @_;
-    
-    if (defined($arg)) {
-	return $self->feature1->seqname($arg);
-    } else {
-	return $self->feature1->seqname;
-    }
+    return $self->feature1->seqname($arg);    
 }
 
 =head2 hseqname
@@ -359,17 +323,14 @@ sub seqname{
  Returns : value of $feature2->seqname
  Args    : newvalue (optional)
 
+
 =cut
 
 sub hseqname {
     my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-	$self->feature2->seqname($arg);
-    }
-
-    return $self->feature2->seqname;
+    return $self->feature2->seqname($arg);
 }
+
 
 =head2 hstart
 
@@ -384,13 +345,7 @@ sub hseqname {
 
 sub hstart {
     my ($self,$value) = @_;
-    
-    if (defined($value)) {
-	return $self->feature2->start($value);
-    } else {
-	return $self->feature2->start;
-    }
-
+    return $self->feature2->start($value);    
 }
 
 =head2 hend
@@ -402,17 +357,14 @@ sub hstart {
  Returns : integer
  Args    : none
 
+
 =cut
 
 sub hend{
     my ($self,$value) = @_;
-
-    if (defined($value)) {
-	return $self->feature2->end($value);
-    } else {
-	return $self->feature2->end;
-    }
+    return $self->feature2->end($value);    
 }
+
 
 =head2 hstrand
 
@@ -423,16 +375,12 @@ sub hend{
  Returns : -1,1 or 0
  Args    : none
 
+
 =cut
 
 sub hstrand{
     my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-	return $self->feature2->strand($arg);
-    } else {
-	return $self->feature2->strand;
-    }
+    return $self->feature2->strand($arg);
 }
 
 =head2 hscore
@@ -444,16 +392,12 @@ sub hstrand{
  Returns : float
  Args    : none if get, the new value if set
 
+
 =cut
 
 sub hscore {
     my ($self,$arg) = @_;
-  
-    if (defined($arg)) {
-	return $self->feature2->score($arg);
-    } else {
-	return $self->feature2->score;
-    }
+    return $self->feature2->score($arg);    
 }
 
 =head2 hframe
@@ -465,16 +409,12 @@ sub hscore {
  Returns : 0,1,2
  Args    : none if get, the new value if set
 
+
 =cut
 
 sub hframe {
     my ($self,$arg) = @_;
-    
-    if (defined($arg)) {
-	return $self->feature2->frame($arg);
-    } else { 
-	return $self->feature2->frame;
-    }
+    return $self->feature2->frame($arg);    
 }
 
 =head2 hprimary_tag
@@ -485,16 +425,12 @@ sub hframe {
  Returns : 0,1,2
  Args    : none if get, the new value if set
 
+
 =cut
 
 sub hprimary_tag{
     my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-	return $self->feature2->primary_tag($arg);
-    } else {
-	return $self->feature2->primary_tag;
-    }
+    return $self->feature2->primary_tag($arg);    
 }
 
 =head2 hsource_tag
@@ -507,16 +443,12 @@ sub hprimary_tag{
  Returns : a string 
  Args    : none
 
+
 =cut
 
 sub hsource_tag{
     my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-	return $self->feature2->source_tag($arg);
-    } else {
-	return $self->feature2->source_tag;
-    }
+    return $self->feature2->source_tag($arg);
 }
 
 =head2 invert
@@ -527,6 +459,7 @@ sub hsource_tag{
  Returns : Nothing
  Args    : none
 
+
 =cut
 
 sub invert {
@@ -536,7 +469,7 @@ sub invert {
     
     $self->feature1($self->feature2);
     $self->feature2($tmp);
-
+    return undef;
 }
 
 1;

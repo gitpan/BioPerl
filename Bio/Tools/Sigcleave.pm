@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Tools::Sigcleave.pm
 # AUTHOR  : Chris Dagdigian, dag@sonsorol.org
 # CREATED : Jan 28 1999
-# REVISION: $Id: Sigcleave.pm,v 1.9.2.1 2000/09/15 08:24:24 jgrg Exp $
+# REVISION: $Id: Sigcleave.pm,v 1.12 2000/12/29 07:43:27 lapp Exp $
 #            
 # Copyright (c) 1997-9 bioperl, Chris Dagdigian and others. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
@@ -66,8 +66,8 @@ that objects can be created.
 
 This module is included with the central Bioperl distribution:
 
-   http://bio.perl.org/Core/Latest
-   ftp://bio.perl.org/pub/DIST
+   http://bioperl.org/Core/Latest
+   ftp://bioperl.org/pub/DIST
 
 Follow the installation instructions included in the README file.
 
@@ -90,8 +90,6 @@ Since EGCG is no longer distributed for the latest versions of GCG, this code
 was developed to emulate the output of the original program as much as possible for
 those who lost access to sigcleave when upgrading to newer versions of GCG.
 
-The EGCG website can be found at: http://www.sanger.ac.uk/Software/EGCG/
-
 There are 2 accessor methods for this object. "signals" will return a perl
 associative array containing the sigcleave scores keyed by amino acid position.
 "pretty_print" returns a formatted string similar to the output of the original
@@ -105,6 +103,8 @@ In this implemntation the accessor will never return any score/position pair whi
 meet the threshold limit. This is the slightly different from the behaviour of
 the 8.1 EGCG sigcleave program which will report the highest of the under-threshold
 results if nothing else is found.
+
+
 
 Example of pretty_print output:
 
@@ -124,6 +124,7 @@ Example of pretty_print output:
 	 Sequence:  CSRQLFGWLFCKV-HPGAIVFVILAAMSIQGSANLQTQWKSTASLALET
          	   | (signal)    | (mature peptide)
            	99            112
+
 
 =head1 USAGE
 
@@ -153,7 +154,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track the bugs an
 their resolution. Bug reports can be submitted via email or the web:
 
     bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    http://bioperl.org/bioperl-bugs/           
 
 =head1 AUTHOR
 
@@ -161,7 +162,7 @@ Chris Dagdigian, dag@sonsorol.org  & others
 
 =head1 VERSION
 
-Bio::Tools::Sigcleave.pm, $Id: Sigcleave.pm,v 1.9.2.1 2000/09/15 08:24:24 jgrg Exp $
+Bio::Tools::Sigcleave.pm, $Id: Sigcleave.pm,v 1.12 2000/12/29 07:43:27 lapp Exp $
 
 =head1 COPYRIGHT
 
@@ -177,7 +178,6 @@ Nucleic Acids Res. 14, 4683-4690.
 von Heijne G. (1987) in "Sequence Analysis in Molecular Biology: Treasure Trove or Trivial Pursuit" 
 (Acad. Press, (1987), 113-117). 
 
-EGCG website: http://www.sanger.ac.uk/Software/EGCG/
 
 =head1 APPENDIX
 
@@ -185,6 +185,7 @@ The following documentation describes the various functions
 contained in this module. Some functions are for internal 
 use and are not meant to be called by the user; they are 
 preceded by an underscore ("_").
+
 
 =cut
 
@@ -249,51 +250,33 @@ foreach $i (keys %WeightTable)
      }
  }
 
+
+
+
 #####################################################################################
 ##                                 CONSTRUCTOR                                     ##
 #####################################################################################
 
-=head1 _initialize
 
- Title     : _initialize
- Usage     : n/a; automatically called by Bio::Root::Object::new()
- Purpose   : Verifies that the type is correct for superclass (Bio::Seq.pm)
-           : and calls superclass constructor last.
- Returns   : n/a
- Argument  : Parameters passed to new()
- Throws    : Exception if given type is not protein.
- Comments  : 
-See Also   : B<Bio::Root::Object::new()>, B<Bio::Seq::_initialize()>
+sub new {
+    my ($class, @args) = @_;
+    my $self = Bio::Seq->new(@args);
 
-=cut
+    bless $self, ref($class) || $class;
 
-#----------------
-sub _initialize {
-#----------------
-    my($self, %param) = @_;
-    
-    my($threshold,$type) = $self->_rearrange([qw(THRESHOLD
-                                                 TYPE)], %param);
-
-    my $make = $self->SUPER::_initialize(%param);
-
-    # complain if not protein
-    if ($type =~ /nuc|[dr]na/i) {
-	$self->throw("Sigcleave.pm only supports protein sequences.");
-    } elsif ($type =~ /amino|pep|prot/i) {
-	$self->{type} = 'amino';
-    }
+    my ($threshold) = $self->_rearrange([qw(THRESHOLD)],@args);
 
     # set threshold if supplied, otherwise default to 3.5
     if (defined $threshold) {
-	$self->{threshold} = $threshold;
+	$self->{'threshold'} = $threshold;
     } else {
-      $self->{threshold} = 3.5;
+      $self->{'threshold'} = 3.5;
     }
 
     $self->_Analyze;
-    $make;
+    return $self;
 }
+
 
 =head1 _Analyze
 
@@ -372,6 +355,8 @@ for($seqPos = $seqBegin; $seqPos < $seqEnd; $seqPos++)
   $self->{"signal_scores"} = { %signals };
 }
 
+
+
 =head1 threshold
 
  Title     : threshold
@@ -392,8 +377,10 @@ See Also   : n/a
 sub threshold {
 #----------------
 my $self = shift;
-return $self->{threshold};
+return $self->{'threshold'};
 }
+
+
 
 =head1 signals
 
@@ -420,12 +407,14 @@ my $self = shift;
 my %results;
 my $position;
 
- foreach $position ( sort keys %{ $self->{signal_scores} } ) {
-     $results{$position} = $self->{signal_scores}{$position};    
+ foreach $position ( sort keys %{ $self->{'signal_scores'} } ) {
+     $results{$position} = $self->{'signal_scores'}{$position};    
  }
 
 return %results;
 }
+
+
 
 =head1 pretty_print
 
@@ -485,10 +474,20 @@ if($hitcount > 0) {
 $output;
 }
 
+
 1;
 __END__
+
 
 #########################################################################
 #  End of class 
 #########################################################################
+
+
+
+
+
+
+
+
 

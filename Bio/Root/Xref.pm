@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Xref.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 8 May 1997
-# REVISION: $Id: Xref.pm,v 1.1.1.1.14.1 2000/09/15 08:24:18 jgrg Exp $
+# REVISION: $Id: Xref.pm,v 1.3.2.1 2001/03/02 22:47:59 heikki Exp $
 # STATUS  : Pre-Alpha 
 #
 # WARNING: This is considered an experimental module.
@@ -35,7 +35,7 @@ B<WARNING: This module is still in the experimental phase and has not been teste
 =head1 SYNOPSIS
 
 =head2 Object Creation
-  
+
  use Bio::Root::Object;
 
  $myObj->xref($object_ref);
@@ -73,6 +73,7 @@ See the xref() method in that module.
 
 B<The API for this module is not complete since the module is under development. Caveat emptor.>
 
+
 =head1 SEE ALSO
 
   Bio::Root::Object.pm       - Core object
@@ -89,9 +90,8 @@ User feedback is an integral part of the evolution of this and other Bioperl mod
 Send your comments and suggestions preferably to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org             - General discussion
+  http://bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -117,6 +117,7 @@ Copyright (c) 1997-8 Steve A. Chervitz. All Rights Reserved.
 This module is free software; you can redistribute it and/or 
 modify it under the same terms as Perl itself.
 
+
 =head1 TODO
 
 Update documentation to work with pod2html from Perl 5.004.
@@ -130,6 +131,8 @@ Update documentation to work with pod2html from Perl 5.004.
 ###
 ##
 #
+
+
 
 #####################################################################################
 ##                                 CONSTRUCTOR                                     ##
@@ -151,6 +154,7 @@ sub _initialize {
 	$self->{'_type'} = 'asym';
     }	
 }
+
 
 #####################################################################################
 ##                                  ACCESSORS                                      ##
@@ -189,4 +193,5 @@ __END__
  _name   : Descriptive nature of the cross-reference.
 
 =cut
+
 

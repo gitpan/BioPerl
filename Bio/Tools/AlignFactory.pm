@@ -1,3 +1,4 @@
+# $Id: AlignFactory.pm,v 1.7 2001/02/23 15:19:39 birney Exp $
 #
 # BioPerl module for Bio::Tools::AlignFactory
 #
@@ -28,9 +29,11 @@ http://bio.perl.org/ or birney@sanger.ac.uk
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
+
 
 # Let the code begin...
 
@@ -38,9 +41,8 @@ package Bio::Tools::AlignFactory;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::Object
-
-use Bio::Root::Object;
+use Bio::Root::RootI;
+@ISA = qw(Bio::Root::RootI);
 
 BEGIN {
     eval {
@@ -52,22 +54,17 @@ BEGIN {
     }
 }
 
-@ISA = qw(Bio::Root::Object);
-# new() is inherited from Bio::Root::Object
-
-# _initialize is where the heavy stuff will happen when new is called
-
-sub _initialize {
-  my($self,@p) = @_;
-  my $make = $self->SUPER::_initialize(@p);
-  
+sub new {
+  my($class,@args) = @_;
+  my $self = $class->SUPER::new(@args);
+  $self->_initialize(@args);
   # set up defaults
-
+  
   $self->{'kbyte'} = 20000;
-  $self->{'report'} = 0;
-# set stuff in self from @args
- return $make; # success - we hope!
+  $self->{'report'} = 0;  
+  return $self;
 }
+
 
 =head2 kbyte
 
@@ -87,9 +84,9 @@ sub kbyte {
     if( defined $value ) {
 	$self->{'kbyte'} = $value;
     } 
-
     return $self->{'kbyte'};
 }
+
 
 =head2 report
 
@@ -126,6 +123,7 @@ sub report {
  Returns : 
  Args    :
 
+
 =cut
 
 sub set_memory_and_report{
@@ -144,3 +142,4 @@ sub set_memory_and_report{
    }
 }
 
+1;

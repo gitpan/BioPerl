@@ -1,7 +1,8 @@
+# $Id: FTHelper.pm,v 1.25 2001/02/27 23:18:11 jason Exp $
 #
 # BioPerl module for Bio::SeqIO::FTHelper
 #
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
+# Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
 # Copyright Ewan Birney
 #
@@ -29,73 +30,58 @@ Represents one particular Feature with the following fields
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                 - General discussion
+  http://www.bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via email
+or the web:
 
   bioperl-bugs@bio.perl.org
   http://bio.perl.org/bioperl-bugs/
 
 =head1 AUTHOR - Ewan Birney
 
-Email birney@sanger.ac.uk
+Email birney@ebi.ac.uk
 
 Describe contact details here
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
+
 # Let the code begin...
+
 
 package Bio::SeqIO::FTHelper;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
+use Bio::SeqFeature::Generic;
+use Bio::Location::Simple;
+use Bio::Location::Fuzzy;
+use Bio::Location::Split;
 
-use Bio::Root::Object;
+use Bio::Root::RootI;
 
-@ISA = qw(Bio::Root::Object);
-# new() is inherited from Bio::Root::Object
+@ISA = qw(Bio::Root::RootI);
 
-# _initialize is where the heavy stuff will happen when new is called
-
-sub _initialize {
-  my ($self, @args) = @_;
-
-  my $make = $self->SUPER::_initialize;
-  $self->{'_field'} = {};
-# set stuff in self from @args
-  return $make; # success - we hope!
+sub new {
+    my ($class, @args) = @_;
+    my $self = $class->SUPER::new(@args);
+    $self->{'_field'} = {};
+    return $self; 
 }
-
-=head2 from_SeqFeature
-
- Title   : from_SeqFeature
- Usage   : @fthelperlist = Bio::SeqIO::FTHelper::from_SeqFeature($sf,$context_annseq);
- Function: constructor of fthelpers from SeqFeatures
-         :
-         : The additional annseq argument is to allow the building of FTHelper
-         : lines relevant to particular sequences (ie, when features are spread over
-         : enteries, knowing how to build this)
- Returns : an array of FThelpers
- Args    : seq features
-
-=cut
 
 =head2 _generic_seqfeature
 
@@ -104,6 +90,7 @@ sub _initialize {
  Function: processes fthelper into a generic seqfeature
  Returns : TRUE on success and otherwise FALSE
  Args    : Bio::Seq, string indicating the source (GenBank/EMBL/SwissProt)
+
 
 =cut
 
@@ -117,60 +104,44 @@ sub _generic_seqfeature {
     if(! defined($source)) {
 	$source = "EMBL/GenBank/SwissProt";
     }
-    
+
     $sf = new Bio::SeqFeature::Generic;
-    
-    # Trap 23.46 type fuzzy locations
-    if ($fth->loc =~ /\d+\.\d+/) {
-        $fth->warn("unable to parse fuzzy location ('" .
-		   $fth->loc . "') ignoring feature (seqid=" .
-		   $annseq->id() . ")");
-        $sf = undef;
-    }
-    # Parse compound features
-    elsif ( $fth->loc =~ /join/ ) {
-	my $strand;
-	if ( $fth->loc =~ /complement/ ) {
-	    $strand = -1;
-	} else {
-	    $strand = 1;
-	}
-
-	$sf->strand($strand);
-	$sf->primary_tag($fth->key . "_span");
+    my $strand = ( $fth->loc =~ /complement/ ) ? -1 : 1;    
+    $sf->strand($strand);
+        # Parse compound features
+    if ( $fth->loc =~ /(join)/i || $fth->loc =~ /(order)/i) {
+	my $combotype=$1; 	
+	$sf->primary_tag($fth->key);
 	$sf->source_tag($source);
-	$sf->has_tag("parent", 1);
-	$sf->_parse->{'parent_homogenous'} = 1;
 
+	my $splitlocation = new Bio::Location::Split(-strand=>$strand, 
+						     -splittype => $combotype);
 	# we need to make sub features
 	my $loc = $fth->loc;
-	while ( $loc =~ /(\<?\d+[ \W]{1,3}\>?\d+)/g ) {
-	    my $next_loc = $1;
-	    my $sub = new Bio::SeqFeature::Generic;
-	    $sub->primary_tag($fth->key);
-	    $sub->strand($strand);
-	    if($fth->_parse_loc($sub, $next_loc)) {
-		$sub->source_tag($source);
-		$sf->add_sub_SeqFeature($sub,'EXPAND');
+	$loc =~ s/^$combotype\((\S+)\)/$1/;	
+	foreach my $next_loc ( split(/\s*,\s*/, $loc) ) {
+	    if( my $location = $fth->_parse_loc($sf,$next_loc)) {
+		print STDERR "I got ", join(",", ($location->start(), 
+					 $location->end(), 
+					 $location->strand())), 
+		" for $next_loc\n" if( $fth->verbose > 0 );
+		$splitlocation->add_sub_Location($location);
 	    } else {
 		$fth->warn("unable to parse location successfully out of " .
 			   $next_loc . ", ignoring feature (seqid=" .
-			   $annseq->id() . ")");
+			   $annseq->id() . ")");		
                 $sf = undef;
 	    }
 	}
-
-    }
-    # Parse simple locations
+	$sf->location($splitlocation);
+    }     
+    # Parse simple locations and fuzzy locations
     else {
 	$sf->source_tag($source);
-	$sf->primary_tag($fth->key);
-	if ( $fth->loc =~ /complement/ ) {
-	    $sf->strand(-1);
+	$sf->primary_tag($fth->key);	
+	if( my $location = $fth->_parse_loc($sf,$fth->loc()) ) {
+	    $sf->location($location);
 	} else {
-	    $sf->strand(1);
-	}
-	if(! $fth->_parse_loc($sf, $fth->loc())) {
 	    $annseq->warn("unexpected location line [" . $fth->loc() .
 			  "] in reading $source, ignoring feature " .
 			  $fth->key() . " (seqid=" . $annseq->id() . ")");
@@ -198,27 +169,23 @@ sub _generic_seqfeature {
 =head2 _parse_loc
 
  Title   : _parse_loc
- Usage   : $fthelper->_parse_loc($feature, $loc_string)
- Function: Parses the given location string and sets start() and end() in the
-           given feature object appropriately. As side effects, tag values
-           (private) for features where only partial locations are given
-           may be set.  These tags are prefixed with an underscore, and are
-           not included in the FTHelper object generated by the from_SeqFeature
-           method.
+ Usage   : $fthelper->_parse_loc( $loc_string)
 
+ Function: Parses the given location string and returns a location object 
+           with start() and end() and strand() set appropriately.
            Note that this method is private.
- Returns : TRUE on success and otherwise FALSE
- Args    : Bio::SeqFeatureI, string
+ Returns : location object or 0 on fail
+ Args    : location string
 
 =cut
 
 sub _parse_loc {
-    my ($self, $sf, $loc) = @_;
-    my ($start,$end,$fea_type,$tagval);
-    my %compl_of = ("5" => "3", "3" => "5");
-    my $fwd = ($sf->strand() > -1) ? "5" : "3";
-
-    #print "Processing $loc\n";
+    my ($self, $sf,$locstr) = @_;
+#my ($start,$end,$fea_type,$tagval)
+#    my %compl_of = ("5" => "3", "3" => "5");
+    my ($fea_type, $tagval) = ('','');
+    my ($strand,$start,$end) = (1);
+    print STDERR "Processing $locstr\n" if( $self->verbose > 0 );
 
     # Two numbers separated by anything of '.', '^', and spaces (SRS puts a
     # space between the two dots), optionally surrounded by parentheses and a
@@ -245,62 +212,76 @@ sub _parse_loc {
     # *not* be passed to this method.
     #
     # HL 05/16/2000
-    if($loc =~ /^\s*(\w+[A-Za-z])?\(?([\<\?\d]\d*)[.\^\s]{1,3}([\>\?\d]\d*)[,;\" ]*([A-Za-z]\w*)?\"?\)?\s*$/) {
-	#print "1 = \"$1\", 2 = \"$2\", 3 = \"$3\", 4 = \"$4\"\n";
+    #
+    # FuzzyLocation management works now, 
+    # however the location strings
+    # (5.12)..17 
+    # (5.18)..(300.305)
+    # will not be parsed by the regex below.  Something to work on
+    if( $locstr =~ /complement\((.+)/ ) {
+	$locstr = $1;
+	$strand = -1;
+    }
+    my ($delim) = '';
+    if($locstr =~ /^\s*(\w+[A-Za-z])?\({0,2}([\<\>\?]?\d+[\<\>\?]?([\.\^]\d+)?)\)?([\.\^\s]{1,3})\(?([\<\>\?]?\d+[\<\>\?]?([\.\^]\d+)?)\){0,2}[,;\" ]*([A-Za-z]\w*)?\"?\)?\s*$/) {
+#	print "1 = \"$1\", 2 = \"$2\", 3 = \"$3\", 4 = \"$4\", 5 = \"$5\", 6 = \"$6\", 7 = \"$7\"\n";
 	$fea_type = $1 if $1;
 	$start = $2;
-	$end   = $3;
-	$tagval = $4 if $4;
+	$delim = $4;
+	$end   = $5;
+	$tagval = $7 if $7;
     } 
     # like before, but only one number
-    elsif($loc =~ /^\s*(\w+[A-Za-z])?\(?([\<\>\?\d]\d*)[,;\" ]*([A-Za-z]\w*)?\"?\)?\s*$/) {
-	#print "1 = \"$1\", 2 = \"$2\", 3 = \"$3\"\n";
+    elsif($locstr =~ /^\s*(\w+[A-Za-z])?\(?([\<\>\?]?\d+[\<\>\?]?([\.\^]\d+)?)\)?[,;\" ]*([A-Za-z]\w*)?\"?\)?\s*$/) {
+#	print "1 = \"$1\", 2 = \"$2\", 3 = \"$3\"\n";	
 	$fea_type = $1 if $1;
 	$start = $end = $2;
-	$tagval = $3 if $3;
-    } else {
-	#print "didn't match\n";
+	$tagval = $4 if $4;
+    } else  {
+	$self->warn( "$locstr didn't match\n") if( $self->verbose > 0);
 	return 0;
     }
-    if ( $start =~ s/^[\<\>\?]// ) {
-	#print "partial feature 5' (loc=$loc; start=$start)\n";
-	$sf->add_tag_value('_part_feature', $fwd . '_prime_missing');
-    }
-    if ( $end =~ s/^[\<\>\?]// ) {
-	#print "partial feature 3' (loc=$loc; end=$end)\n";
-	$sf->add_tag_value('_part_feature',
-			    $compl_of{$fwd} . '_prime_missing');
-    }
-    $sf->start($start) if(length($start) > 0);
-    $sf->end($end) if(length($end) > 0);
     
-    # Commented out as this is taken care of by the next block - JGRG
-    #if(defined($fea_type) && ($fea_type ne "complement")) {
-    #    #print "featype: $fea_type\n";
-    #    $sf->add_tag_value('_feature_type', $fea_type);
-    #}
-    if(defined($tagval)) {
+    my $type = 'Bio::Location::Simple';
+    my @args = ('-start'=>$start, '-end' => $end,
+		'-strand' => $strand);
+    if ( $start =~ /[\>\<\?]/ || 
+	 $end    =~ /[\>\<\?]/ || 
+	 $delim =~ /^[\.^]$/ )
+    {
+	$type = 'Bio::Location::Fuzzy';
+	push @args, ('-loc_type' => $delim); 
+    } 
+    my $location = $type->new(@args);
+    if(defined($tagval) && $tagval ne '') {
 	if(! $fea_type) {
 	    $fea_type = "note";
 	}
 	$sf->add_tag_value($fea_type, $tagval);
     }
-    
-    if ( $loc =~ /\d+\^\d+/ ) {
-	$sf->add_tag_value('_zero_width_feature', 1);
-	$sf->strand(0);
-	if ($sf->start + 1 != $sf->end ) {
-	    # FIXME this is a uncertainty condition, which is not yet retained
-	    # in the feature object
-	}
-    }
-    return 1;
+
+    return $location;
 }
+
+=head2 from_SeqFeature
+
+ Title   : from_SeqFeature
+ Usage   : @fthelperlist = Bio::SeqIO::FTHelper::from_SeqFeature($sf,
+						     $context_annseq);
+ Function: constructor of fthelpers from SeqFeatures
+         :
+         : The additional annseq argument is to allow the building of FTHelper
+         : lines relevant to particular sequences (ie, when features are spread over
+         : enteries, knowing how to build this)
+ Returns : an array of FThelpers
+ Args    : seq features
+
+
+=cut
 
 sub from_SeqFeature {
     my ($sf, $context_annseq) = @_;
     my @ret;
-    my $key;
 
     #
     # If this object knows how to make FThelpers, then let it
@@ -312,117 +293,18 @@ sub from_SeqFeature {
 	return $sf->to_FTHelper($context_annseq);
     }
 
-    # build something sensible...
-    # if the parent homogenous flag is set, build things from the
-    # sub level
-    my $loc;
-    my ($start_mod, $end_mod, $delim) = ( "", "", ".." );
-    my $ph_flag;
-
-    if ( $sf->can('_parse') ) {
-	$ph_flag = $sf->_parse->{'parent_homogenous'} || 0;
-    } else {
-	$ph_flag = 0;
-    }
-
-    if ( $ph_flag == 1 ) {
-	$key = $sf->primary_tag();
-	$key =~ s/_span//g;
-	$loc = "join(";
-	my $touch = 0;
-	foreach my $sub ( $sf->sub_SeqFeature() ) {
-	    if ( $touch == 1 ) {
-		$loc .= ",";
-	    } else {
-		$touch = 1;
-	    }
-
-	    # decide which symbols to use to describe locations
-	    #     Supported: .. ^ < >
-	    # Not supported: . (fuzzy ranges)
-
-	    if ( $sf->has_tag('_part_feature') ) {
-
-		if ( grep /5_prime_missing/, $sub->each_tag_value('_part_feature') ) {
-
-		    if ( $sub->strand() == 1 ) {
-			$start_mod = '<';
-		    } elsif ( $sub->strand() == -1 ) {
-			$end_mod = '>';
-		    }
-		}
-
-		if ( grep /3_prime_missing/, $sub->each_tag_value('_part_feature') ) {
-
-		    if ( $sub->strand() == 1 ) {
-			$end_mod = '>';
-		    } elsif ( $sub->strand() == -1 ) {
-			$start_mod = '<';
-		    }
-		}
-	    }
-
-	    if ( $sub->has_tag('_zero_width_feature')) {
-		$delim = "^";
-	    }
-
-	    $loc .= $start_mod . $sub->start() . $delim . $end_mod . $sub->end();
-	}
-
-	$loc .= ")";
-	if ( $sf->strand() == -1 ) {
-	    $loc = "complement($loc)";
-	}
-    } else {
-
-	# decide which symbols to use to describe locations
-	#     Supported: .. ^ < >
-	# Not supported: . (fuzzy ranges)
-
-	if ( $sf->has_tag('_part_feature')) {
-
-	    if ( grep /5_prime_missing/, $sf->each_tag_value('_part_feature') ) {
-
-		if ( $sf->strand() == 1 ) {
-		    $start_mod = '<';
-		}
-		elsif ( $sf->strand() == -1 ) {
-		    $end_mod = '>';
-		}
-	    }
-
-	    if ( grep /3_prime_missing/, $sf->each_tag_value('_part_feature') ) {
-
-		if ( $sf->strand() == 1 ) {
-		    $end_mod = '>';
-		}
-		elsif ( $sf->strand() == -1 ) {
-		    $start_mod = '<';
-		}
-	    }
-	}
-
-	if ( $sf->has_tag('_zero_width_feature')) {
-	    $delim = "^";
-	}
-
-	$loc = $start_mod . $sf->start() . $delim . $end_mod . $sf->end();
-
-	$key = $sf->primary_tag();
-
-	if ( $sf->strand() == -1 ) {
-	    $loc = "complement($loc)";
-	}
-	# going into sub features
-	foreach my $sub ( $sf->sub_SeqFeature() ) {
-	    my @subfth = &Bio::SeqIO::FTHelper::from_SeqFeature($sub);
-	    push(@ret, @subfth);
-	}
-    }
-
     my $fth = Bio::SeqIO::FTHelper->new();
+    my $key = $sf->primary_tag();
 
-    $fth->loc($loc);
+    my $locstr = $sf->location->to_FTstring;
+
+    # going into sub features
+    foreach my $sub ( $sf->sub_SeqFeature() ) {
+	my @subfth = &Bio::SeqIO::FTHelper::from_SeqFeature($sub);
+	push(@ret, @subfth);    
+    }
+
+    $fth->loc($locstr);
     $fth->key($key);
     $fth->field->{'note'} = [];
     #$sf->source_tag && do { push(@{$fth->field->{'note'}},"source=" . $sf->source_tag ); };
@@ -457,6 +339,7 @@ sub from_SeqFeature {
 
 }
 
+
 =head2 key
 
  Title   : key
@@ -465,6 +348,7 @@ sub from_SeqFeature {
  Example :
  Returns : value of key
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -486,6 +370,7 @@ sub key {
  Returns : value of loc
  Args    : newvalue (optional)
 
+
 =cut
 
 sub loc {
@@ -494,8 +379,8 @@ sub loc {
       $obj->{'loc'} = $value;
     }
     return $obj->{'loc'};
-
 }
+
 
 =head2 field
 
@@ -505,6 +390,7 @@ sub loc {
  Example :
  Returns :
  Args    :
+
 
 =cut
 
@@ -523,6 +409,7 @@ sub field {
  Returns :
  Args    :
 
+
 =cut
 
 sub add_field {
@@ -535,3 +422,4 @@ sub add_field {
 
 }
 
+1;

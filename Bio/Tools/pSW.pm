@@ -1,3 +1,4 @@
+## $Id: pSW.pm,v 1.9.2.2 2001/03/05 17:44:43 dag Exp $
 
 #
 # BioPerl module for Bio::Tools::pSW
@@ -12,7 +13,7 @@
 
 =head1 NAME
 
-Bio::Tools::pSW - DESCRIPTION of Object
+Bio::Tools::pSW - pairwise Smith Waterman object
 
 =head1 SYNOPSIS
 
@@ -54,7 +55,7 @@ bioperl-ext package.
 The mixture of C and Perl is ideal for this sort of 
 problem. Here are some plus points for this strategy: 
 
-=over
+=over 2
 
 =item Speed and Memory 
 
@@ -86,9 +87,8 @@ User feedback is an integral part of the evolution of this and other Bioperl mod
 Send your comments and suggestions preferably to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+    bioperl-l@bioperl.org              - General discussion
+    http://bioperl.org/MailList.html  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -96,7 +96,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track the bugs an
 their resolution. Bug reports can be submitted via email or the web:
 
     bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    http://bioperl.org/bioperl-bugs/           
 
 =head1 AUTHOR
 
@@ -108,27 +108,31 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
+
 # Let the code begin...
+
 
 package Bio::Tools::pSW;
 use vars qw(@ISA);
 use strict;
 no strict ( 'refs');
 
-use Bio::Tools::AlignFactory;
-use Bio::SimpleAlign;
-
-@ISA = qw(Bio::Tools::AlignFactory);
-
 BEGIN {
     eval {
 	require Bio::Ext::Align;
     };
     if ( $@ ) {
-	print STDERR ("\nThe C-compiled engine for Smith Waterman alignments (Bio::Ext::Align) has not been installed.\n Please read the install the bioperl-ext package\n\n");
+	die("\nThe C-compiled engine for Smith Waterman alignments (Bio::Ext::Align) has not been installed.\n Please read the install the bioperl-ext package\n\n");
 	exit(1);
     }
 }
+
+use Bio::Tools::AlignFactory;
+use Bio::SimpleAlign;
+
+
+@ISA = qw(Bio::Tools::AlignFactory);
+
 
 # new() is inherited from Bio::Root::Object
 
@@ -136,6 +140,8 @@ BEGIN {
 
 sub _initialize {
   my($self,@p) = @_;
+
+
 
   my($matrix,$gap,$ext) = $self->_rearrange([qw(MATRIX
 						GAP
@@ -163,11 +169,12 @@ sub _initialize {
 
   if( $ext ) {
       $ext =~ /^\d+$/ || $self->throw("Extension penalty must be a number, not [$ext]");
-      $self->gap($gap);
+      $self->ext($ext);
   }
 
   return $make; # success - we hope!
 }
+
 
 =head2 pairwise_alignment
 
@@ -176,6 +183,7 @@ sub _initialize {
  Function: Makes a SimpleAlign object from two sequences
  Returns : A SimpleAlign object
  Args    :
+
 
 =cut
 
@@ -192,6 +200,7 @@ sub pairwise_alignment{
     if( ! defined $aln || $aln == 0 ) {
 	$self->throw("Unable to build an alignment");
     }
+
 
     # free sequence engine objects
 
@@ -240,8 +249,8 @@ sub pairwise_alignment{
     # end points = real residue end in 'C' coordinates = residue
     # end in biocoordinates. Oh... the wonder of coordinate systems!
 
-    $end1 = $alctemp->alu(0)->end;
-    $end2 = $alctemp->alu(1)->end;
+    $end1 = $alctemp->alu(0)->end+1;
+    $end2 = $alctemp->alu(1)->end+1;
 
     # get rid of the alnblock 
     $alc = 0;
@@ -324,6 +333,8 @@ sub matrix {
     $self->{'matrix'} = $temp;
 }
 
+
+
 =head2 gap
 
  Title     : gap
@@ -348,6 +359,7 @@ sub gap {
     }
     return $self->{'gap'};
 }
+
 
 =head2 ext
 

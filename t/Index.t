@@ -1,51 +1,38 @@
-## Bioperl Test Harness Script for Modules
-##
-# CVS Version
-# $Id: Index.t,v 1.6.2.1 2000/04/25 16:47:24 jgrg Exp $
-
-
-# Before `make install' is performed this script should be runnable with
-# `make test'. After `make install' it should work as `perl test.t'
-
-#-----------------------------------------------------------------------
-## perl test harness expects the following output syntax only!
-## 1..3
-## ok 1  [not ok 1 (if test fails)]
-## 2..3
-## ok 2  [not ok 2 (if test fails)]
-## 3..3
-## ok 3  [not ok 3 (if test fails)]
-##
-## etc. etc. etc. (continue on for each tested function in the .t file)
-#-----------------------------------------------------------------------
-
-
-## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..5\n"; 
-	use vars qw($loaded); }
-
-END {print "not ok 1\n" unless $loaded;}
-
 use strict;
+BEGIN {     
+    eval { require Test; };
+    if( $@ ) {
+	use lib 't';
+    }
+    use Test;
+    plan tests => 10;
+}
+
+use Bio::Root::IO;
 use Bio::Index::Fasta;
 use Bio::Index::SwissPfam;
 use Bio::Index::EMBL;
+use Bio::Index::GenBank;
+use Bio::Index::Swissprot;
+use vars qw ($dir);
 
-$loaded = 1;
-print "ok 1\n";    # 1st test passes.
+($Bio::Root::IO::FILESPECLOADED && File::Spec->can('cwd') && ($dir = File::Spec->cwd) ) ||
+    ($dir = `pwd`) || ($dir = '.');
+ 
+END {  unlink qw( Wibbl Wibbl2 Wibbl3 Wibbl4 Wibbl5); }
 
-chomp( my $dir = `pwd` );
+chomp( $dir );
 {
-    my $ind = Bio::Index::Fasta->new(-filename => 'Wibbl', -write_flag => 1, -verbose => 0);
-    $ind->make_index("$dir/t/multifa.seq");
-    $ind->make_index("$dir/t/seqs.fas");
-    $ind->make_index("$dir/t/multi_1.fa");
+    my $ind = Bio::Index::Fasta->new(-filename => 'Wibbl', 
+				     -write_flag => 1,
+				     -verbose => 0);
+    $ind->make_index(Bio::Root::IO->catfile($dir,"t","multifa.seq"));
+    $ind->make_index(Bio::Root::IO->catfile($dir,"t","seqs.fas"));
+    $ind->make_index(Bio::Root::IO->catfile($dir,"t","multi_1.fa"));
 }
 
-print "ok 2\n";
+ok ( -e "Wibbl" );
 
-# Test that the sequences we've indexed
-# are all retrievable, and the correct length
 {
     my %t_seq = (
         HSEARLOBE               => 321,
@@ -54,7 +41,6 @@ print "ok 2\n";
         'gi|238775|bbs|65126'   => 70,
     );
 
-    # Tests opening index of unknown type
     my $ind = Bio::Index::Abstract->new(-FILENAME => 'Wibbl');
 
     my $ok_3 = 1;
@@ -71,29 +57,50 @@ print "ok 2\n";
             $ok_3 = 0;
         }
     }
-    print $ok_3 ? "ok 3\n" : "not ok 3\n";
+    ok $ok_3;
 
     my $stream = $ind->get_PrimarySeq_stream();
     my $ok_4 = 1;
     while( my $seq2 = $stream->next_primary_seq ) {
 	unless ($seq2->isa('Bio::PrimarySeqI')) {
 	    $ok_4 = 0;
+	    last; # no point continuing...
 	}
     }
-    print $ok_4 ? "ok 4\n" : "not ok 4\n";
+    ok $ok_4;
 }
-
 
 {
-    my $ind = Bio::Index::SwissPfam->new('Wibbl2', 'WRITE');
-    $ind->make_index("$dir/t/swisspfam.data");
-    print "ok 5\n";
+    my $ind = Bio::Index::SwissPfam->new(-filename=>'Wibbl2', 
+					 -write_flag=>1);
+    $ind->make_index(Bio::Root::IO->catfile($dir,"t","swisspfam.data"));
+    ok ( -e "Wibbl2" );
 }
 
-# don't test EMBL yet. Bad...
+{
+    my $ind = Bio::Index::EMBL->new(-filename=>'Wibbl3', 
+				    -write_flag=>1);
+    $ind->make_index(Bio::Root::IO->catfile($dir,"t","test.embl"));
+    ok ( -e "Wibbl3" );
+    ok $ind->fetch('AL031232')->length, 4870;
+}
 
-system("rm -f Wibbl*");
+{
+    my $ind = Bio::Index::Swissprot->new(-filename=>'Wibbl4', 
+				    -write_flag=>1);
+    $ind->make_index(Bio::Root::IO->catfile($dir,"t","roa1.swiss"));
+    ok ( -e "Wibbl4" );
+    ok ($ind->fetch('P09651')->display_id(), 'ROA1_HUMAN');
+}
 
+{
+    my $ind = Bio::Index::GenBank->new(-filename=>'Wibbl5', 
+				       -write_flag=>1, 
+				       -verbose => 0);
+    $ind->make_index(Bio::Root::IO->catfile($dir,"t","roa1.genbank"));
+    ok ( -e "Wibbl5" );
+    ok ($ind->fetch('AI129902')->length, 37);
+}
 
 
 

@@ -1,94 +1,57 @@
+# -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: PrimarySeq.t,v 1.1.4.1 2000/07/25 15:07:43 heikki Exp $
+## $Id: PrimarySeq.t,v 1.9 2001/01/25 22:13:40 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
-#-----------------------------------------------------------------------
-## perl test harness expects the following output syntax only!
-## 1..3
-## ok 1  [not ok 1 (if test fails)]
-## 2..3
-## ok 2  [not ok 2 (if test fails)]
-## 3..3
-## ok 3  [not ok 3 (if test fails)]
-##
-## etc. etc. etc. (continue on for each tested function in the .t file)
-#-----------------------------------------------------------------------
-
-
-## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..9\n"; 
-	use vars qw($loaded); }
-END {print "not ok 1\n" unless $loaded;}
-
-use lib '../';
+use strict;
+BEGIN { 
+    # to handle systems with no installed Test module
+    # we include the t dir (where a copy of Test.pm is located)
+    # as a fallback
+    eval { require Test; };
+    if( $@ ) {
+	use lib 't';
+    }
+    use Test;
+    plan tests => 14;
+}
 use Bio::PrimarySeq;
 
-$loaded = 1;
-print "ok 1\n";    # 1st test passes.
+ok(1);
 
+my $seq = Bio::PrimarySeq->new('-seq'              =>'TTGGTGGCGTCAACT',
+			       '-display_id'       => 'new-id',
+			       '-moltype'          => 'dna',
+			       '-accession_number' => 'X677667',
+			       '-desc'             =>'Sample Bio::Seq object');
+ok defined $seq;
+ok $seq->isa('Bio::PrimarySeqI');
+ok $seq->accession_number(), 'X677667';
+ok $seq->seq(), 'TTGGTGGCGTCAACT';
+ok $seq->display_id(), 'new-id';
+ok $seq->moltype(), 'dna';
 
-## End of black magic.
-##
-## Insert additional test code below but remember to change
-## the print "1..x\n" in the BEGIN block to reflect the
-## total number of tests that will be run. 
+my $trunc = $seq->trunc(1,4);
+ok defined $trunc;
+ok $trunc->length, 4;
+ok $trunc->seq(), 'TTGG', "Expecting TTGG. Got ".$trunc->seq();
 
+my $rev = $seq->revcom();
+ok defined $rev; 
 
-my $seq = Bio::PrimarySeq->new(-seq=>'TTGGTGGCGTCAACT',
-			-display_id => 'new-id',
-			-moltype => 'dna',
-			-accession_number => 'X677667',
-                        -desc=>'Sample Bio::Seq object');
-print "ok 2\n";  
-
-$seq->accession_number();
-$seq->seq();
-$seq->display_id();
-
-print "ok 3\n";
-
-$trunc = $seq->trunc(1,4);
-
-print "ok 4\n";
-
-if( $trunc->seq() ne 'TTGG' ) {
-   print "not ok 5\n";
-   $s = $trunc->seq();
-   print STDERR "Expecting TTGG. Got $s\n";
-} else {
-   print "ok 5\n";
-}
-
-$rev = $seq->revcom();
-
-print "ok 6\n";
-
-if( $rev->seq() ne 'AGTTGACGCCACCAA' ) {
-   print "not ok 7\n";
-} else {
-   print "ok 7\n";
-}
+ok $rev->seq(), 'AGTTGACGCCACCAA', 'rev faile was ' . $rev->seq();
 
 #
 # Translate
 #
 
-$aa = $seq->translate();
+my $aa = $seq->translate();
+ok $aa->seq, 'LVAST', "Translation: ". $aa->seq;
 
-print "ok 8\n";
+$seq->seq('TTGGTGGCGTCAACTTAA');
+$aa = $seq->translate(undef, undef, undef, undef, 1);
 
 # tests for non-Methionin initiator codon (AGT) coding for M
-if( $aa->seq ne 'MVAST' ) {
-    print STDERR "Translation: ", $aa->seq, "\n";
-    print "not ok 9\n";
-} else {
-    print "ok 9\n";
-}
-
-
-
-
-
-
+ok $aa->seq, 'MVAST', "Translation: ". $aa->seq;

@@ -1,5 +1,6 @@
+# $Id: swiss.pm,v 1.34.2.1 2001/03/02 22:48:02 heikki Exp $
 #
-# BioPerl module for Bio::SeqIO::swissprot
+# BioPerl module for Bio::SeqIO::swiss
 #
 # Cared for by Elia Stupka <elia@ebi.ac.uk>
 #
@@ -11,7 +12,7 @@
 
 =head1 NAME
 
-Bio::SeqIO::swissprot - Swissprot sequence input/output stream
+Bio::SeqIO::swiss - Swissprot sequence input/output stream
 
 =head1 SYNOPSIS
 
@@ -32,20 +33,21 @@ file databases.
 There is alot of flexibility here about how to dump things which I need
 to document fully.
 
+
 =head2 Optional functions
 
-=over
+=over 3
 
 =item _show_dna()
 
 (output only) shows the dna or not
 
-=item _post_sort
+=item _post_sort()
 
 (output only) provides a sorting func which is applied to the FTHelpers
 before printing
 
-=item _id_generation_func
+=item _id_generation_func()
 
 This is function which is called as 
 
@@ -66,9 +68,8 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org          - General discussion
+  http://bio.perl.org/MailList.html             - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -91,58 +92,30 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
+
 # Let the code begin...
+
 
 package Bio::SeqIO::swiss;
 use vars qw(@ISA);
 use strict;
-use Bio::Seq;
+use Bio::Seq::RichSeq;
+use Bio::SeqIO;
 use Bio::SeqIO::FTHelper;
 use Bio::SeqFeature::Generic;
 use Bio::Species;
-#use Bio::SeqIO::StreamI;
-
-# Object preamble - inherits from Bio::Root::Object
-
-use Bio::Root::Object;
-use FileHandle;
+use Bio::Tools::SeqStats;
 
 @ISA = qw(Bio::SeqIO);
-# new() is inherited from Bio::Root::Object
 
-# _initialize is where the heavy stuff will happen when new is called
 
 sub _initialize {
   my($self,@args) = @_;
-
-  my $make = $self->SUPER::_initialize;
+  $self->SUPER::_initialize(@args);
    
-  my ($file,$fh) = $self->_rearrange([qw(
-					 FILE
-					 FH
-					 )],
-				     @args,
-				     );
-  if( $file && $fh ) {
-      $self->throw("Providing both a file and a filehandle for reading from - oly one please!");
-  }
-
-  if( !$file && !$fh ) {
-      $self->throw("Neither a file (-file) nor a filehandle (-fh) provided to swissprot opening");
-  }
-
-  if( $file ) {
-      $fh = new FileHandle;
-      $fh->open($file) || $self->throw("Could not open $file for swissprot stream reading $!");
-  }
-  
   # hash for functions for decoding keys.
   $self->{'_func_ftunit_hash'} = {}; 
-  $self->_filehandle($fh);
   $self->_show_dna(1); # sets this to one by default. People can change it
-
-# set stuff in self from @args
- return $make; # success - we hope!
 }
 
 =head2 next_seq
@@ -153,12 +126,15 @@ sub _initialize {
  Returns : Bio::Seq object
  Args    :
 
+
 =cut
 
 sub next_seq {
    my ($self,@args) = @_;
-   my ($pseq,$c,$line,$name,$desc,$acc,$seqc,$mol,$div, $date, $comment, @date_arr);
-   my $seq = Bio::Seq->new();
+   my ($pseq,$c,$line,$name,$desc,$acc,$seqc,$mol,$div,
+       $date,$comment,@date_arr, @sec);
+   my ($keywords,$acc_string);
+   my $seq = Bio::Seq::RichSeq->new(-verbose =>$self->verbose());
    $line = $self->_readline;
 
    if( !defined $line) {
@@ -174,8 +150,12 @@ sub next_seq {
        return undef; # end of file
    }
 
-   $line =~ /^ID\s+(\S+)/ || $self->throw("swissprot stream with no ID. Not swissprot in my book");
-   $name = $1;
+   $line =~ /^ID\s+([^\s_]+)_([^\s_]+)\s+([^\s;]+);\s+([^\s;]+);/ 
+     || $self->throw("swissprot stream with no ID. Not swissprot in my book");
+   $name = $1."_".$2;
+   $seq->primary_id($1);
+   $seq->division($2);
+   $seq->molecule($4);
     # this is important to have the id for display in e.g. FTHelper, otherwise
     # you won't know which entry caused an error
    $seq->display_id($name);
@@ -196,31 +176,30 @@ sub next_seq {
            $desc .= $desc ? " $1" : $1;
        }
        #Gene name
-       elsif (/^GN\s+(\S+)/) {
-	   $seq->annotation->gene_name($1);
-       }  
-       #accession number
+       elsif(/^GN\s+([^\.]+)/) {
+	   foreach my $gn (split(/ OR /,$1)) {
+	       $seq->annotation->add_gene_name($gn);
+	   }
+       }     
+       #accession number(s)
        elsif( /^AC\s+(.+)/) {
-	   my( $acc, @sec ) = split /[\s;]+/, $1;
-	   $seq->accession($acc);
-           foreach my $s (@sec) {
-	      $seq->add_secondary_accession($s);
-           }
+           $acc_string .= $acc_string ? " $1" : $1;
        }
        #version number
        elsif( /^SV\s+(\S+);?/ ) {
 	   my $sv = $1;
 	   $sv =~ s/\;//;
-	   $seq->sv($sv);
+	   $seq->seq_version($sv);
        }
-       #date (NOTE: takes last date line)
-       elsif( /^DT\s+(\S+)/ ) {
+       #date
+       elsif( /^DT\s+(.*)/ ) {
 	   my $date = $1;
 	   $date =~ s/\;//;
+	   $date =~ s/\s+$//;
 	   $seq->add_date($date);
        }
        # Organism name and phylogenetic information
-       elsif (/^O[SC]/) {
+       elsif (/^O[SCG]/) {
            my $species = $self->_read_swissprot_Species(\$buffer);
            $seq->species( $species );
 	   # now we are one line ahead -- so continue without reading the next
@@ -229,28 +208,32 @@ sub next_seq {
        }
        # References
        elsif (/^R/) {
-	   my @refs = $self->_read_swissprot_References(\$buffer);
-	   $seq->annotation->add_Reference(@refs);
+	   my $refs = $self->_read_swissprot_References(\$buffer);
+	   #my $r;
+	   #foreach $r (@$refs)
+	   #{
+	     $seq->annotation->add_Reference(@$refs);
+	   #}
 	   # now we are one line ahead -- so continue without reading the next
 	   # line   HL 05/11/2000
 	   next;
        }
        #Comments
-       elsif (/^CC\s+(.*)/) {
+       elsif (/^CC\s{3}(.*)/) {
 	   $comment .= $1;
-	   $comment .= " ";
+	   $comment .= "\n";
 	   while (defined ($buffer = $self->_readline)) {
-	       if ($buffer =~ /^CC\s+(.*)/) {
+	       if ($buffer =~ /^CC\s{3}(.*)/) {
 		   $comment .= $1;
-		   $comment .= " ";
+		   $comment .= "\n";
 	       }
 	       else { 
 		   last;
 	       }
 	   }
 	   my $commobj = Bio::Annotation::Comment->new();
-	   $comment =~ s/-\!- //g;
-	   $comment =~ s/    //g;
+	   # note: don't try to process comments here -- they may contain
+           # structure. LP 07/30/2000
 	   $commobj->text($comment);
 	   $seq->annotation->add_Comment($commobj);
 	   $comment = "";
@@ -259,24 +242,22 @@ sub next_seq {
 	   next;
        }
        #DBLinks
-       elsif (/^DR\s+(\S+)\; (\S+)\; (\S+)\; (\S+)/) {
+       elsif (/^DR\s+(\S+)\; (\S+)\; (\S+)[\;\.](.*)$/) {
 	   my $dblinkobj =  Bio::Annotation::DBLink->new();
 	   $dblinkobj->database($1);
 	   $dblinkobj->primary_id($2);
 	   $dblinkobj->optional_id($3);
-	   $dblinkobj->comment($4);
-	   $seq->annotation->add_DBLink($dblinkobj);
-       }
-       elsif (/^DR\s+(\S+)\; (\S+)\;/) {
-	   my $dblinkobj =  Bio::Annotation::DBLink->new();
-	   $dblinkobj->database($1);
-	   $dblinkobj->primary_id($2);
+	   my $comment = $4;
+	   if(length($comment) > 0) {
+	       # edit comment to get rid of leading space and trailing dot
+	       $comment = s/^\s*(\S+)\..*/$1/;
+	       $dblinkobj->comment($comment);
+	   }
 	   $seq->annotation->add_DBLink($dblinkobj);
        }
        #keywords
-       elsif( /^KW   (.*)\S*$/ ) {
-	   my $keywords = $1;
-	   $seq->keywords($keywords);
+       elsif( /^KW\s+(.*)$/ ) {
+           $keywords .= $keywords ? " $1" : $1;
        }
 
        # Get next line. Getting here assumes that we indeed need to read the
@@ -315,6 +296,14 @@ sub next_seq {
    }
    $seq->seq($seqc);
    $seq->desc($desc);
+   $seq->keywords($keywords);
+   $acc_string =~ s/\;\s*/ /g;
+   ( $acc, @sec ) = split " ",$acc_string;
+   $seq->accession_number($acc);
+   foreach my $s (@sec) {
+     $seq->add_secondary_accession($s);
+   }
+
    return $seq;
 }
 
@@ -325,6 +314,7 @@ sub next_seq {
  Function: writes the $seq object (must be seq) to the stream
  Returns : 1 for success and 0 for error
  Args    : Bio::Seq
+
 
 =cut
 
@@ -338,14 +328,6 @@ sub write_seq {
    if( ! ref $seq || ! $seq->isa('Bio::SeqI') ) {
        $self->warn(" $seq is not a SeqI compliant module. Attempting to dump, but may fail!");
    }
-
-   # FIXME the implementation here doesn't print all the information correctly.
-   # Tell people in order to avoid being flooded by bug reports -- watch out
-   # for the 0.7 release if you indeed find the printed entries incorrect
-   $self->warn("SwissProt printing facility incomplete yet -- ".
-	       "printed entries may be misformatted or missing information.\n".
-	       "Use the CVS main development trunk or watch out for ".
-	       "BioPerl 0.7 if you need SwissProt printing.");
 
    my $i;
    my $str = $seq->seq;
@@ -382,7 +364,7 @@ sub write_seq {
        # Hence, switch to display_id(); _every_ sequence is supposed to have
        # this. HL 2000/09/03
        $temp_line = sprintf ("%10s     STANDARD;      %3s;   %d AA.",
-			     $seq->display_id(),$mol,$len);
+			     $seq->display_id(), $mol, $len);
    } 
 
    $self->_print( "ID   $temp_line\n");   
@@ -394,10 +376,13 @@ sub write_seq {
        $temp_line = &{$self->_ac_generation_func}($seq);
        $self->_print( "AC   $temp_line\n");   
    } else {
-       if ($seq->can('accession') ) {
-	   $self->_print("AC   ",$seq->accession,";");
-	   if ($seq->can('each_secondary_accession') ) {
-	       $self->_print(" ",$seq->each_secondary_accession,";\n");
+       if ($seq->can('accession_number') ) {
+	   $self->_print("AC   ",$seq->accession_number,";");
+	   if ($seq->can('get_secondary_accessions') ) {
+	     foreach my $sacc ($seq->get_secondary_accessions) {
+	       $self->_print(" ",$sacc,";");
+	     }
+	     $self->_print("\n");
 	   }
 	   else {
 	       $self->_print("\n");
@@ -407,7 +392,7 @@ sub write_seq {
    } 
 
    #Date lines
-   foreach my $dt ( $seq->each_date() ) {
+   foreach my $dt ( $seq->get_dates() ) {
        $self->_write_line_swissprot_regex("DT   ","DT   ",$dt,"\\s\+\|\$",80);
    }
    
@@ -415,7 +400,7 @@ sub write_seq {
    $self->_write_line_swissprot_regex("DE   ","DE   ",$seq->desc(),"\\s\+\|\$",80);
 
    #Gene name
-   if ($seq->annotation->can('gene_name')) {
+   if ($seq->annotation->can('gene_name') && $seq->annotation->gene_name) {
        $self->_print("GN   ",$seq->annotation->gene_name,"\n");
    }
    
@@ -428,8 +413,12 @@ sub write_seq {
             $OS .= " $ssp";
         }
         if (my $common = $spec->common_name) {
-            $OS .= " ($common)";
+            $OS .= " ($common).";
         }
+	if ($class[$#class] =~ /viruses/i) { # different OS / OC syntax
+	  $OS = $spec->common_name;          # for viruses LP 09/16/2000
+	  unshift @class, $species;
+	}
         $self->_print( "OS   $OS\n");
         my $OC = join('; ', reverse(@class)) .'.';
         $self->_write_line_swissprot_regex("OC   ","OC   ",$OC,"\; \|\$",80);
@@ -442,36 +431,66 @@ sub write_seq {
    my $t = 1;
    foreach my $ref ( $seq->annotation->each_Reference() ) {
        $self->_print( "RN   [$t]\n");
-       if ($ref->start && $ref->end) {
-	   # changed by jason <jason@chg.mc.duke.edu> on 3/16/00 
+#       if ($ref->start && $ref->end) {
+#	   # changed by jason <jason@chg.mc.duke.edu> on 3/16/00 
 #	   print "RP   SEQUENCE OF ",$ref->start,"-",$ref->end," FROM N.A.\n";
-	   # to
-	   $self->_print("RP   SEQUENCE OF ",$ref->start,"-",$ref->end," FROM N.A.\n");
-       }
-       elsif ($ref->rp) {
-	   # changed by jason <jason@chg.mc.duke.edu> on 3/16/00 
+#	   # to
+#	   $self->_print("RP   SEQUENCE OF ",$ref->start,"-",$ref->end," FROM N.A.\n");
+#       }
+#       elsif ($ref->rp) {
+#	   # changed by jason <jason@chg.mc.duke.edu> on 3/16/00 
 #	   print "RP   ",$ref->rp,"\n";
-	   # to
-	   $self->_print("RP   ",$ref->rp,"\n");
-       } 
+#	   # to
 
+       # changed by lorenz 08/03/00
+       # j.gilbert and h.lapp agreed that the rp line in swissprot seems 
+       # more like a comment than a parseable value, so print it as is
+       if ($ref->rp) {
+	 $self->_write_line_swissprot_regex("RP   ","RP   ",$ref->rp,
+					    "\\s\+\|\$",80); 
+       } 
+       if ($ref->comment) {
+	 $self->_write_line_swissprot_regex("RC   ","RC   ",$ref->comment,
+					    "\\s\+\|\$",80); 
+       }
+       if ($ref->medline) {
+	 # new RX format in swissprot LP 09/17/00
+	 if ($ref->pubmed) {
+	 $self->_write_line_swissprot_regex("RX   ","RX   ",
+					    "MEDLINE=".$ref->medline.
+					    "; PubMed=".$ref->pubmed.";",
+					    "\\s\+\|\$",80);
+	 } else {
+	 $self->_write_line_swissprot_regex("RX   MEDLINE; ","RX   MEDLINE; ",
+					    $ref->medline.".","\\s\+\|\$",80);
+	 }
+       }
        $self->_write_line_swissprot_regex("RA   ","RA   ",$ref->authors,"\\s\+\|\$",80);       
        $self->_write_line_swissprot_regex("RT   ","RT   ",$ref->title,"\\s\+\|\$",80);       
        $self->_write_line_swissprot_regex("RL   ","RL   ",$ref->location,"\\s\+\|\$",80);
-       if ($ref->comment) {
-	   $self->_write_line_swissprot_regex("RC   ","RC   ",$ref->comment,"\\s\+\|\$",80); 
-       }
        $t++;
    }
    
    # Comment lines
 
    foreach my $comment ( $seq->annotation->each_Comment() ) {
-       $self->_write_line_swissprot_regex("CC   ","CC   ",$comment->text,"\\s\+\|\$",80);
+       foreach my $cline (split ("\n", $comment->text)) {
+	 while (length $cline > 74) {
+	   $self->_print("CC   ",(substr $cline,0,74),"\n");
+	   $cline = substr $cline,74;
+	 }
+	 $self->_print("CC   ",$cline,"\n");
+       }
    }
 
    foreach my $dblink ( $seq->annotation->each_DBLink() ) {
-       $self->_print("DR   ",$dblink->database,"; ",$dblink->primary_id,"; ",$dblink->optional_id,"; ",$dblink->comment,"\n");
+     if (defined($dblink->comment)&&($dblink->comment)) {
+       $self->_print("DR   ",$dblink->database,"; ",$dblink->primary_id,"; ",
+		     $dblink->optional_id,"; ",$dblink->comment,".\n");
+     } else {
+       $self->_print("DR   ",$dblink->database,"; ",$dblink->primary_id,"; ",
+		     $dblink->optional_id,".\n");
+     }
    }
    
 
@@ -482,7 +501,8 @@ sub write_seq {
        $self->_print( "KW   $temp_line\n");   
    } else {
        if( $seq->can('keywords') ) {
-	   $self->_print( "KW   ",$seq->keywords,"\n");
+	 $self->_write_line_swissprot_regex("KW   ","KW   ",
+					    $seq->keywords,"\\s\+\|\$",80);       
        }
    } 
    if( defined $self->_post_sort ) {
@@ -522,18 +542,90 @@ sub write_seq {
 
    # finished printing features.
 
-   $self->_print( "SQ   SEQUENCE   $len AA;\n");
+   # molecular weight
+   my $mw = ${Bio::Tools::SeqStats->get_mol_wt($seq->primary_seq)}[0];
+   # checksum
+   my $crc32 = $self->_crc32(\$str); 
+   $self->_print( sprintf("SQ   SEQUENCE  %4d AA;  %d MW;  %X CRC32;\n",
+			  $len,$mw,$crc32));
    $self->_print( "     ");
    my $linepos;
    for ($i = 0; $i < length($str); $i += 10) {
        $self->_print( substr($str,$i,10), " ");
        $linepos += 11;
-       if( ($i+10)%60 == 0 ) {
+       if( ($i+10)%60 == 0 && (($i+10) < length($str))) {
 	   $self->_print( "\n     ");
       }
    }
    $self->_print( "\n//\n");
    return 1;
+}
+
+# Thanks to James Gilbert for the following two. LP 08/01/2000
+
+=head2 _generateCRCTable
+
+ Title   : _generateCRCTable
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub _generateCRCTable {
+  # 10001000001010010010001110000100
+  # 32 
+  my $poly = 0xEDB88320;
+  my ($self) = shift;
+        
+  $self->{'_crcTable'} = [];
+  foreach my $i (0..255) {
+    my $crc = $i;
+    for (my $j=8; $j > 0; $j--) {
+      if ($crc & 1) {
+	$crc = ($crc >> 1) ^ $poly;
+      }
+      else {
+	$crc >>= 1;
+      }
+    }
+    ${$self->{'_crcTable'}}[$i] = $crc;
+  }
+}
+
+
+=head2 _crc32
+
+ Title   : _crc32
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _crc32 {
+  my( $self, $str ) = @_;
+  
+  $self->throw("Argument to crc32() must be ref to scalar")
+    unless ref($str) eq 'SCALAR';
+  
+  $self->_generateCRCTable() unless exists $self->{'_crcTable'};
+  
+  my $len = length($$str);
+  
+  my $crc = 0xFFFFFFFF;
+  for (my $i = 0; $i < $len; $i++) {
+    # Get upper case value of each letter
+    my $int = ord uc substr $$str, $i, 1;
+    $crc = (($crc >> 8) & 0x00FFFFFF) ^ 
+      ${$self->{'_crcTable'}}[ ($crc ^ $int) & 0xFF ];
+  }
+  return $crc;
 }
 
 =head2 _print_swissprot_FTHelper
@@ -545,15 +637,32 @@ sub write_seq {
  Returns : 
  Args    :
 
+
 =cut
 
 sub _print_swissprot_FTHelper {
    my ($self,$fth,$always_quote) = @_;
+   $always_quote ||= 0;
+   my ($start,$end);
    
-    ### FIXME - not implemented
-    warn "_print_swissprot_FTHelper NOT IMPLEMENTED";
+   if( ! ref $fth || ! $fth->isa('Bio::SeqIO::FTHelper') ) {
+       $fth->warn("$fth is not a FTHelper class. ".
+		  "Attempting to print, but there could be tears!");
+   }
 
+   $fth->loc =~ /(\d+)\.\.(\d+)/;
+   $start = $1;
+   $end = $2;
+   my $desc = "";
+   $desc = @{$fth->field->{"description"}}[0]."." 
+     if exists $fth->field->{"description"};
+   
+   $self->_write_line_swissprot_regex(sprintf("FT   %-8s %6s %6s       ",
+					      $fth->key,$start,$end),
+				      "FT                                ",
+				      $desc,'\s+|$',80);
 }
+
 
 =head2 _read_swissprot_References
 
@@ -564,21 +673,23 @@ sub _print_swissprot_FTHelper {
  Returns : 
  Args    :
 
+
 =cut
 
 sub _read_swissprot_References{
    my ($self,$buffer) = @_;
    my (@refs);
-   my ($b1, $b2, $rp, $title, $loc, $au, $med, $com);
+   my ($b1, $b2, $rp, $title, $loc, $au, $med, $com, $pubmed);
    
    if ($$buffer !~ /^RP/) {
        $$buffer = $self->_readline;
    }
    if( !defined $$buffer ) { return undef; }
    if( $$buffer =~ /^RP/ ) {
-       if ($$buffer =~ /^RP   SEQUENCE OF (\d+)-(\d+)/) { 
-	   $b1=$1;
-	   $b2=$2; 
+       if ($$buffer =~ /^RP   (SEQUENCE OF (\d+)-(\d+).*)/) { 
+	   $rp=$1;
+	   $b1=$2;
+	   $b2=$3; 
        }
        elsif ($$buffer =~ /^RP   (.*)/) {
 	   $rp=$1;
@@ -587,14 +698,15 @@ sub _read_swissprot_References{
    }
    while( defined ($_ = $self->_readline) ) {
        #/^CC/ && last;
-       #/^RN/ && last;
+       /^RN/ && last; # separator between references ! LP 07/25/2000
        #/^SQ/ && last; # there may be sequences without CC lines! HL 05/11/2000
        /^[^R]/ && last; # may be the safest exit point HL 05/11/2000
        /^RX   MEDLINE;\s+(\d+)/ && do {$med=$1};
-       /^RA   (.*)/ && do { $au .= $1;   next;};
-       /^RT   (.*)/ && do { $title .= $1; next;};
-       /^RL   (.*)/ && do { $loc .= $1; next;};
-       /^RC   (.*)/ && do { $com .= $1; next;};
+       /^RX   MEDLINE=(\d+);\s+PubMed=(\d+);/ && do {$med=$1;$pubmed=$2};
+       /^RA   (.*)/ && do { $au .= $au ? " $1" : $1;   next;};
+       /^RT   (.*)/ && do { $title .= $title ? " $1" : $1; next;};
+       /^RL   (.*)/ && do { $loc .= $loc ? " $1" : $1; next;};
+       /^RC   (.*)/ && do { $com .= $com ? " $1" : $1; next;};
    }
    
    my $ref = new Bio::Annotation::Reference;
@@ -609,13 +721,15 @@ sub _read_swissprot_References{
    $ref->title($title);
    $ref->location($loc);
    $ref->medline($med);
+   $ref->pubmed($pubmed) if (defined $pubmed);
    $ref->comment($com);
    $ref->rp($rp);
 
    push(@refs,$ref);
    $$buffer = $_;
-   return @refs;
+   return \@refs;
 }
+
 
 =head2 _read_swissprot_Species
 
@@ -634,22 +748,27 @@ sub _read_swissprot_Species {
     my $org;
 
     $_ = $$buffer;
-    my( $sub_species, $species, $genus, $common, @class );
+    my( $sub_species, $species, $genus, $common, @class, $osline );
     while (defined( $_ ||= $self->_readline )) {
-        if (/^OS\s+(\S+)(?:\s+([^\(]\S*))?(?:\s+([^\(]\S*))?(?:\s+\((.*)\))?/) {
-            $genus   = $1;
-	    if ($2) {
-		$species = $2;
+        if (/^OS\s+((\S+)(?:\s+([^\(]\S*))?(?:\s+([^\(]\S*))?(?:\s+\((.*)\))?.*)/) {
+	    $osline = $1;
+            $genus   = $2;
+	    if ($3) {
+		$species = $3;
 		# remove trailing dot -- TrEMBL has that. HL 05/11/2000
-		$species =~ s/.$//;
+		# forgot to escape the dot. LP 07/30/2000
+		$species =~ s/\.$//;
 	    } else {
 		$species = "sp.";
 	    }
-	    $sub_species = $3 if $3;
-            $common      = $4 if $4;
+	    $sub_species = $4 if $4;
+            $common      = $5 if $5;
         }
         elsif (s/^OC\s+//) {
-            push(@class, split /[\;\s\.]+/);
+            push(@class, split /[\;\.]\s*/);
+	    if ($class[0] =~ /viruses/i) { # viruses have different OS / OC syntax
+	      $common = $osline;           # LP 09/16/2000
+	    }
         }
 	elsif (/^OG\s+(.*)/) {
 	    $org = $1;
@@ -666,11 +785,13 @@ sub _read_swissprot_Species {
     # Don't make a species object if it is "Unknown" or "None"
     return if $genus =~ /^(Unknown|None)$/i;
 
-    # Bio::Species array needs array in Species -> Kingdom direction
-    if ($class[$#class] eq $genus) {
+    if ($class[0] !~ /viruses/i) { # different OS / OC syntax for viruses
+      # Bio::Species array needs array in Species -> Kingdom direction
+      if ($class[$#class] eq $genus) {
         push( @class, $species );
-    } else {
+      } else {
         push( @class, $genus, $species );
+      }
     }
     @class = reverse @class;
     
@@ -691,6 +812,7 @@ sub _read_swissprot_Species {
  Returns : value of _filehandle
  Args    : newvalue (optional)
 
+
 =cut
 
 # inherited from SeqIO.pm ! HL 05/11/2000
@@ -703,6 +825,7 @@ sub _read_swissprot_Species {
  Example :
  Returns : Bio::SeqIO::FTHelper object 
  Args    : filehandle and reference to a scalar
+
 
 =cut
 
@@ -721,7 +844,7 @@ sub _read_FTHelper_swissprot {
         my $loc2 = $3;
 	$loc = "$loc1..$loc2";
 	if($4 && (length($4) > 0)) {
-	    $desc = 4;
+	    $desc = $4;
 	    chomp($desc);
 	} else {
 	    $desc = "";
@@ -742,7 +865,7 @@ sub _read_FTHelper_swissprot {
     $$buffer = $_;
 
     # Make the new FTHelper object
-    my $out = new Bio::SeqIO::FTHelper();
+    my $out = new Bio::SeqIO::FTHelper(-verbose => $self->verbose());
     $out->key($key);
     $out->loc($loc);
     
@@ -754,6 +877,7 @@ sub _read_FTHelper_swissprot {
     return $out;
 }
 
+
 =head2 _write_line_swissprot
 
  Title   : _write_line_swissprot
@@ -762,6 +886,7 @@ sub _read_FTHelper_swissprot {
  Example :
  Returns : 
  Args    :
+
 
 =cut
 
@@ -796,6 +921,7 @@ sub _write_line_swissprot{
  Example :
  Returns : nothing
  Args    : file handle, first header, second header, text-line, regex for line breaks, total line length
+
 
 =cut
 
@@ -833,6 +959,7 @@ sub _write_line_swissprot_regex {
  Returns : value of _post_sort
  Args    : newvalue (optional)
 
+
 =cut
 
 sub _post_sort{
@@ -852,6 +979,7 @@ sub _post_sort{
  Function: 
  Returns : value of _show_dna
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -873,6 +1001,7 @@ sub _show_dna{
  Returns : value of _id_generation_func
  Args    : newvalue (optional)
 
+
 =cut
 
 sub _id_generation_func{
@@ -892,6 +1021,7 @@ sub _id_generation_func{
  Function: 
  Returns : value of _ac_generation_func
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -913,6 +1043,7 @@ sub _ac_generation_func{
  Returns : value of _sv_generation_func
  Args    : newvalue (optional)
 
+
 =cut
 
 sub _sv_generation_func{
@@ -933,6 +1064,7 @@ sub _sv_generation_func{
  Returns : value of _kw_generation_func
  Args    : newvalue (optional)
 
+
 =cut
 
 sub _kw_generation_func{
@@ -946,5 +1078,3 @@ sub _kw_generation_func{
 }
 
 1;
-    
-

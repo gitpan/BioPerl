@@ -1,27 +1,27 @@
 #-----------------------------------------------------------------------------
 # PACKAGE : Bio::Root::Vector.pm
-# AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu) 
+# AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 15 April 1997
-# REVISION: $Id: Vector.pm,v 1.1.1.1.14.1 2000/09/15 08:24:18 jgrg Exp $
+# REVISION: $Id: Vector.pm,v 1.4.2.1 2001/03/02 22:47:59 heikki Exp $
 # STATUS  : Alpha
 #
 # WARNING: This is considered an experimental module.
 #
-# For documentation, run this module through pod2html 
+# For documentation, run this module through pod2html
 # (preferably from Perl v5.004 or better).
 #
-# MODIFIED: 
+# MODIFIED:
 #    sac --- Fri Nov  6 14:24:48 1998
 #       * Added destroy() method (experimental).
 #    0.023, 20 Jul 1998, sac:
 #      * Improved memory management (_destroy_master()).
 #
 #   Copyright (c) 1997 Steve A. Chervitz. All Rights Reserved.
-#             This module is free software; you can redistribute it and/or 
+#             This module is free software; you can redistribute it and/or
 #             modify it under the same terms as Perl itself.
 #-----------------------------------------------------------------------------
 
-package Bio::Root::Vector; 
+package Bio::Root::Vector;
 
 use Bio::Root::Global qw(:devel);
 use Bio::Root::Object ();
@@ -45,9 +45,9 @@ Bio::Root::Vector - Interface for managing linked lists of Perl5 objects.
 
 =head2 Object Creation
 
-B<At present, Vector objects cannot be instantiated.> This 
+B<At present, Vector objects cannot be instantiated.> This
 package is currently designed to be inherited along with another class
-that provides a constructor (e.g., B<Bio::Root::Object.pm>). 
+that provides a constructor (e.g., B<Bio::Root::Object.pm>).
 The Vector provides a set of methods that can then be used for managing
 sets of objects.
 
@@ -62,24 +62,25 @@ This module is included with the central Bioperl distribution:
 
 Follow the installation instructions included in the README file.
 
+
 =head1 DESCRIPTION
 
-Bio::Root::Vector.pm  provides an interface for creating and manipulating 
+Bio::Root::Vector.pm  provides an interface for creating and manipulating
 dynamic sets (linked lists) of Perl5 objects. This is an abstract class (ie.,
-there is no constructor) and as such is expected to be inherited along with 
+there is no constructor) and as such is expected to be inherited along with
 some other class (see note above).
 
 Vectors are handy when, for example, an object may contain one or more
 other objects of a certain class. The container object knows only
 that is has at least one such object; the multiplex nature of the contained
-object is managed by the contained object via its Vector interface. 
-The methods for adding, removing, counting, listing, and sorting all objects 
+object is managed by the contained object via its Vector interface.
+The methods for adding, removing, counting, listing, and sorting all objects
 are bundled together in Vector.pm.
 
-Thus, the current Bio::Root::Vector class is somewhat of a cross between an 
+Thus, the current Bio::Root::Vector class is somewhat of a cross between an
 interator and a composite design pattern. At present, a number of classes
 utilize Bio::Root::Vector's composite-like behavior to implement a composite
-pattern (Bio::SeqManager.pm, for example). 
+pattern (Bio::SeqManager.pm, for example).
 This is not necessarily ideal and is expected to change.
 
 =head1 USAGE
@@ -87,6 +88,7 @@ This is not necessarily ideal and is expected to change.
 For a usage demo of Bio::Root::Vector.pm, see:
 
     http://bio.perl.org/Core/Examples/Root_object/Vector
+
 
 =head1 DEPENDENCIES
 
@@ -97,7 +99,7 @@ creates an manager object which does.
 
 By default, all Vectors are doubly-linked lists. This relieves one from
 the burden of worrying about whether a given Vector is single- or doubly-linked.
-However, when generating lots of Vectors or extremely large vectors, memory 
+However, when generating lots of Vectors or extremely large vectors, memory
 becomes an issue. In particular, signaling the GC to free the memory for
 an object when you want to remove it. B<Until this memory issue is resolved,
 the use of Vector.pm is not recommended for large projects.>
@@ -109,23 +111,22 @@ as you know what you're doing).
 
 =head1 FEEDBACK
 
-=head2 Mailing Lists 
+=head2 Mailing Lists
 
 User feedback is an integral part of the evolution of this and other Bioperl modules.
 Send your comments and suggestions preferably to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org             - General discussion
+  http://bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
-Report bugs to the Bioperl bug tracking system to help us keep track the bugs and 
+Report bugs to the Bioperl bug tracking system to help us keep track the bugs and
 their resolution. Bug reports can be submitted via email or the web:
 
-    bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    bioperl-bugs@bio.perl.org
+    http://bio.perl.org/bioperl-bugs/
 
 =head1 AUTHOR
 
@@ -141,9 +142,9 @@ Bio::Root::Vector.pm, 0.04
 
 =over 4
 
-=item * (Maybe) create an container class version of this module 
+=item * (Maybe) create an container class version of this module
 
-to permit Vectors to be instantiated. Thus, instead of inherited 
+to permit Vectors to be instantiated. Thus, instead of inherited
 from both Object.pm and Vector.pm, you could create a Vector.pm object.
 
 =item * Improve documentation.
@@ -157,7 +158,7 @@ from both Object.pm and Vector.pm, you could create a Vector.pm object.
   Bio::Root::Global.pm    - Manages global variables/constants
 
   http://bio.perl.org/Projects/modules.html  - Online module documentation
-  http://bio.perl.org/                       - Bioperl Project Homepage 
+  http://bio.perl.org/                       - Bioperl Project Homepage
 
 =head1 ACKNOWLEDGEMENTS
 
@@ -168,18 +169,19 @@ Database:
 =head1 COPYRIGHT
 
 Copyright (c) 1996-98 Steve A. Chervitz. All Rights Reserved.
-This module is free software; you can redistribute it and/or 
+This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
 =cut
+
 
 #'
 ##
 ###
 #### END of main POD documentation.
 ###
-## 
-# 
+##
+#
 
 =head1 APPENDIX
 
@@ -214,11 +216,12 @@ sub destroy {
 ##                                  ACCESSORS                                      ##
 #####################################################################################
 
+
 =head2 set_rank
 
  Purpose  : To set an object's rank to an arbitrary numeric
           : value to be used for sorting the objects of the Vector.
- Usage    : $self->set_rank(-RANK    =>numeric_ranking_data, 
+ Usage    : $self->set_rank(-RANK    =>numeric_ranking_data,
 	  :     	    -RANK_BY =>ranking_criterion_string);
           : or without the named parameters as (rank, rank_by).
  Throws   : warning (if rank is set without also setting RANK_BY)
@@ -245,7 +248,7 @@ sub set_rank {
     $self->{'_master'}->{'_rankBy'} = ($rank_by || undef);
     if( defined $self->{'_rank'} and not defined $self->{'_master'}->{'_rankBy'} ) {
 	return $self->master->warn('Rank defined without ranking criteria.');
-    }	       
+    }	
     1;
 }
 
@@ -257,15 +260,15 @@ sub _set_rank_by {
 sub _set_master {
     ## A vector does not need a master object unless it needs to grow.
     my($self,$obj) = @_;
-    
+
 #    print "$ID: _set_master() new Master object for ${\$obj->name}."; <STDIN>;
 
     require Bio::Root::Object;
     my $master = {};
     bless $master, 'Bio::Root::Object';
-    
+
     $master->{'_set'}  = 1;  ## Special member indicating that this method has been called.
-                            ## Necessary since perl will generate an anonymous {Master} 
+                            ## Necessary since perl will generate an anonymous {Master}
                             ## hash ref on the fly. This ref will not be blessed however.
     $master->{'_first'} = $obj;
     $master->{'_last'}  = $obj;
@@ -295,17 +298,18 @@ sub _destroy_master {
     undef $master;
 }
 
+
 =head2 clone_vector
 
- Purpose  : Call this method to clone the whole vector. 
+ Purpose  : Call this method to clone the whole vector.
           : NOT calling this method will extract the vector element.
  Usage    : $self->clone_vector();
- Throws   : Exception if argument is not an object reference. 
+ Throws   : Exception if argument is not an object reference.
  Comments : This method is usually called from within a module's
-          : _set_clone() method for modules that inherit from 
+          : _set_clone() method for modules that inherit from
           : Bio::Root::Vector.pm.
 
-=cut 
+=cut
 
 #-----------------'
 sub clone_vector {
@@ -320,9 +324,10 @@ sub clone_vector {
     $self->{'_master'} = $obj->{'_master'};
 }
 
+
 =head2 prev
 
- Purpose  : Returns the previous object in the Vector or undef 
+ Purpose  : Returns the previous object in the Vector or undef
           : if on first object.
  Usage    : $self->prev
 
@@ -332,9 +337,11 @@ sub clone_vector {
 sub prev { my $self = shift; $self->{'_prev'}; }
 #--------
 
+
+
 =head2 next
 
- Purpose  : Returns the next object in the Vector or undef 
+ Purpose  : Returns the next object in the Vector or undef
           : if on last object.
  Usage    : $self->next
 
@@ -344,9 +351,11 @@ sub prev { my $self = shift; $self->{'_prev'}; }
 sub next { my $self = shift; $self->{'_next'}; }
 #--------
 
+
+
 =head2 first
 
- Purpose  : Returns the first object in the Vector or $self 
+ Purpose  : Returns the first object in the Vector or $self
           : if Vector size = 1.
  Usage    : $self->first
 
@@ -356,23 +365,26 @@ sub next { my $self = shift; $self->{'_next'}; }
 sub first  {
 #----------
     my $self = shift;
-    defined $self->{'_master'} ? $self->{'_master'}->{'_first'} : $self; 
+    defined $self->{'_master'} ? $self->{'_master'}->{'_first'} : $self;
 }
+
 
 =head2 last
 
- Purpose  : Returns the last object in the Vector or 
+ Purpose  : Returns the last object in the Vector or
           : $self if Vector size = 1.
  Usage    : $self->last
 
 =cut
 
 #-------
-sub last   { 
+sub last   {
 #-------
-    my $self = shift; 
-    defined $self->{'_master'} ? $self->{'_master'}->{'_last'} : $self; 
+    my $self = shift;
+    defined $self->{'_master'} ? $self->{'_master'}->{'_last'} : $self;
 }
+
+
 
 =head2 rank
 
@@ -388,6 +400,8 @@ See Also  : L<set_rank>()
 sub rank { my $self = shift; $self->{'_rank'} || 1; }
 #---------
 
+
+
 =head2 rank_by
 
  Purpose  : Returns the ranking criterion or the string 'order of addition'
@@ -399,12 +413,14 @@ See Also  : L<set_rank>()
 =cut
 
 #-----------
-sub rank_by { 
+sub rank_by {
 #-----------
     my $self = shift;
     defined $self->{'_master'} ? ($self->{'_master'}->{'_rankBy'}||'order of addition')
-	: 'unranked'; 
+	: 'unranked';
 }
+
+
 
 =head2 size
 
@@ -414,11 +430,12 @@ sub rank_by {
 =cut
 
 #---------
-sub size {  
+sub size {
 #---------
-    my $self = shift; 
-    defined $self->{'_master'} ? $self->{'_master'}->{'_size'} : 1; 
+    my $self = shift;
+    defined $self->{'_master'} ? $self->{'_master'}->{'_size'} : 1;
 }
+
 
 =head2 master
 
@@ -432,6 +449,7 @@ sub size {
 sub master { my $self = shift; $self->{'_master'}; }
 #-----------
 
+
 ## Not sure what these potentially dangerous methods are used for.
 ## Should be unnecessary and probably can be removed.
 sub set_prev { my($self,$obj) = @_; $self->{'_prev'} = $obj;  }
@@ -440,6 +458,7 @@ sub set_next { my($self,$obj) = @_; $self->{'_next'} = $obj; }
 #############################################################################
 #                           INSTANCE METHODS                               ##
 #############################################################################
+
 
 =head2 is_first
 
@@ -452,6 +471,7 @@ sub set_next { my($self,$obj) = @_; $self->{'_next'} = $obj; }
 sub is_first { my($self) = shift; return not defined $self->{'_prev'}; }
 #------------
 
+
 =head2 is_last
 
  Purpose  : Test whether the current object is the last in the Vector.
@@ -462,6 +482,9 @@ sub is_first { my($self) = shift; return not defined $self->{'_prev'}; }
 #------------
 sub is_last { my($self) = shift; return not defined $self->{'_next'}; }
 #------------
+
+
+
 
 =head2 get
 
@@ -493,7 +516,7 @@ sub get {
     elsif($self->name =~ /$name/i) {
 #	print "  returning self\n";
 	$obj = $self;
-    } 
+    }
 
     if(not ref $obj) {
 	$self->throw("Can't get object named \"$name\": object not set or name undefined.");
@@ -503,10 +526,13 @@ sub get {
 
 ## Former strategy: hunt through the list for the object.
 ## No longer needed since master indexes all objects.
-#	 do{ 
+#	 do{
 #	     if($obj->name eq $name) { return $obj; }
-#	     
+#	
 #	 } while($obj = $current->prev());
+
+
+
 
 =head2 add
 
@@ -523,7 +549,7 @@ sub add {
     my($self,$new,$index) = @_;
 
     $self->_set_master($self) unless $self->{'_master'}->{'_set'};
-    
+
 #    print "\n\nADDING TO VECTOR ${\ref $self} ${\$self->name}\nFOR PARENT: ${\ref $self->parent} ${\$self->parent->name}\n\n";
 
     $self->{'_next'} = $new;
@@ -541,7 +567,8 @@ sub add {
 #	       $obj->display;
 #     } while($obj=$obj->next);
 #    <STDIN>;
-}    
+}
+
 
 sub _index {
     my($self) = @_;
@@ -562,6 +589,7 @@ sub _incrementRank {
     return if not defined $self->{'_prev'};
     $self->{'_rank'} = $self->{'_prev'}->rank() + 1;
 }
+
 
 =head2 remove
 
@@ -652,9 +680,10 @@ sub _update_last {
     $self->{'_master'}->{'_last'} = $last;
 }
 
+
 =head2 remove_all
 
- Purpose  : Remove all objects currently in the Vector. 
+ Purpose  : Remove all objects currently in the Vector.
  Usage    : $self->remove_all
 
 See Also  : L<remove>(), L<shift>(), L<chop>()
@@ -672,15 +701,16 @@ sub remove_all {
 
     $self = $self->first();
 
-    while(ref $self) { 
+    while(ref $self) {
 #	print "$ID: removing ${\$self->name}\n";
 	$self = $self->remove(-RET=>'next');
     }
 }
 
+
 =head2 shift
 
- Purpose  : Remove the first object from the Vector. 
+ Purpose  : Remove the first object from the Vector.
           : This is a wrapper for remove().
  Usage    : $self->shift([-RET=>'first'|'last'|'next'|'prev'])
  Returns  : The object returned by remove().
@@ -697,9 +727,10 @@ sub shift {
     $self = $self->remove(%param);
 }
 
+
 =head2 chop
 
- Purpose  : Remove the last object from the Vector. 
+ Purpose  : Remove the last object from the Vector.
           : This is a wrapper for remove().
  Usage    : $self->chop([-RET=>'first'|'last'|'next'|'prev'])
  Returns  : The object returned by remove().
@@ -716,12 +747,14 @@ sub chop {
     $self = $self->remove(%param);
 }
 
+
+
 =head2 insert
 
  Purpose  : Insert a new object into the vector relative to the current object.
  Usage    : $self->insert(object_ref, ['before'|'after'])
  Examples : $self->insert($obj)  # Default insert after $self
-          : $self->insert($obj,'before')  
+          : $self->insert($obj,'before')
  Returns  : The new number of objects in the vector (int).
  Throws   : exception if the first argument is not a reference.
 
@@ -744,14 +777,14 @@ sub insert {
 	$object->{'_next'} = $self;
 	$object->{'_prev'} = $self->{'_prev'};
 	$object->{'_master'} = $self->{'_master'};
-	$self->{'_prev'}->{'_next'} = $object;  
-	$self->{'_prev'} = $object;  
+	$self->{'_prev'}->{'_next'} = $object;
+	$self->{'_prev'} = $object;
     } else {
 	$object->{'_prev'} = $self;
 	$object->{'_next'} = $self->{'_next'};
 	$object->{'_master'} = $self->{'_master'};
-	$self->{'_next'}->{'_prev'} = $object;  
-	$self->{'_next'} = $object;  
+	$self->{'_next'}->{'_prev'} = $object;
+	$self->{'_next'} = $object;
     }
     $self->{'_master'}->{'_size'}++;
     $object->Bio::Root::Vector::_index();  ##Fully qualified to disambiguate a potentially common method name.
@@ -763,12 +796,13 @@ sub _update_rank {
     my $current = $self->first();
     my $count = 0;
     $DEBUG && print STDERR "$ID: Updating rank.\n";
-    do{ 
+    do{
 	$count++;
-	$current->{'_rank'} = $count; 
+	$current->{'_rank'} = $count;
 
     } while($current = $current->next());
 }
+
 
 =head2 list
 
@@ -803,13 +837,14 @@ sub list {
 
     my $obj = $start;
     my $fini = 0;
-    do{ 
+    do{
 	push @list, $obj;
 	if($obj eq $stop) { $fini = 1; }
     } while( $obj = $obj->next() and !$fini);
 
     @list;
 }
+
 
 =head2 sort
 
@@ -820,7 +855,7 @@ sub list {
           : the object's name or rank data member, respectively.
           : If reverse is non-zero, sort will be in reverse order.
  Example  : $self->sort()   #  Default sort by rank, not reverse.
-          : $self->sort('name','reverse')   
+          : $self->sort('name','reverse')
 
 =cut
 
@@ -835,7 +870,7 @@ sub sort {
 
     ### Build the initial unsorted list.
     my $obj = $self->first();
-    do{ 
+    do{
 	push @unsortedList, $obj;
     } while( $obj = $obj->next());
 
@@ -866,6 +901,7 @@ sub sort {
 	@sortedList = sort _sort_by_rank @unsortedList;
     }
 
+
 #    if($reverse) { @sortedList = reverse sort @sortedList;  }
 
 #    print "SORTED LIST:\n";
@@ -884,13 +920,15 @@ sub sort {
 	$current->add($sortedList[$i]);
 	if($i==$#sortedList) { $sortedList[$i]->{'_next'} = undef;}
     }
-    
+
     $self->last();
 }
 
 sub _sort_by_rank { my $aRank = $a->rank(); my $bRank = $b->rank(); $aRank <=> $bRank; }
 
 sub _sort_by_name { my $aName = $a->name(); my $bName = $b->name(); $aName cmp $bName; }
+
+
 
 =head2 valid_any
 
@@ -899,7 +937,7 @@ sub _sort_by_name { my $aName = $a->name(); my $bName = $b->name(); $aName cmp $
  Status   : Deprecated.
  Comments : A non-valid object should throw an exception that must be
           : be caught an dealt with on the spot.
-       
+
 See Also  : B<Bio::Root::Object::valid()>
 
 =cut
@@ -907,15 +945,16 @@ See Also  : B<Bio::Root::Object::valid()>
 #-------------
 sub valid_any {
 #-------------
-    my $self = shift;
-    
+    my $self = &shift(@_);
+
     my $obj = $self->first();
-    do{ 
+    do{
 	return 1 if $obj->valid();
     } while( $obj = $obj->next());
 
    return undef;
 }
+
 
 =head2 valid_all
 
@@ -931,10 +970,10 @@ See Also  : B<Bio::Root::Object::valid()>
 #--------------
 sub valid_all {
 #--------------
-    my $self = shift;
-    
+    my $self = &shift(@_);
+
     my $obj = $self->first();
-    do{ 
+    do{
 	return  unless $obj->valid();
     } while( $obj = $obj->next());
 
@@ -945,7 +984,7 @@ sub _display_stats {
 # This could be fleshed out a bit...
 
     my( $self, $OUT ) = @_;
-    
+
     printf ( $OUT "%-11s %s\n","RANK:", $self->rank());
     printf ( $OUT "%-11s %s\n","RANK BY:", $self->rank_by());
 }
@@ -961,20 +1000,20 @@ __END__
 
 =head2 Data Members
 
-Information about the various data members of this module is provided for those 
-wishing to modify or understand the code. Two things to bear in mind: 
+Information about the various data members of this module is provided for those
+wishing to modify or understand the code. Two things to bear in mind:
 
 =over 4
 
-=item 1 Do NOT rely on these in any code outside of this module. 
+=item 1 Do NOT rely on these in any code outside of this module.
 
 All data members are prefixed with an underscore to signify that they are private.
-Always use accessor methods. If the accessor doesn't exist or is inadequate, 
-create or modify an accessor (and let me know, too!). 
+Always use accessor methods. If the accessor doesn't exist or is inadequate,
+create or modify an accessor (and let me know, too!).
 
 =item 2 This documentation may be incomplete and out of date.
 
-It is easy for this documentation to become obsolete as this module is still evolving. 
+It is easy for this documentation to become obsolete as this module is still evolving.
 Always double check this info and search for members not described here.
 
 =back
@@ -986,25 +1025,25 @@ Vector.pm defines the following fields:
  FIELD          VALUE
  ------------------------------------------------------------------------
   _prev         Reference to the previous object in the Vector.
- 	  
+
   _next         Reference to the next object in the Vector.
 
   _rank         Rank relative to other objects in the Vector.
   	        Default rank = chronological order of addition to the Vector.
- 	  
-  _master       A reference to an Bio::Root::Object that acts as a manager for 
+
+  _master       A reference to an Bio::Root::Object that acts as a manager for
  	        the given Vector. There is only one master per Vector.
- 	        A master object is only needed when the Vector size is >1. 
+ 	        A master object is only needed when the Vector size is >1.
  	        The master object manages the following Vector data:
- 	  
+
  	        _first  - Reference to the first object in the Vector.
  	        _last   - Reference to the last object in the Vector.
  	        _size   - Total number of objects in the Vector.
- 	        _rankBy - Criteria used to rank the object. 
+ 	        _rankBy - Criteria used to rank the object.
  	                 Default: chronological order of addition.
- 	        _index  - Hash reference for quick access to any object 
+ 	        _index  - Hash reference for quick access to any object
  	                 based on its name.
- 	        Bio::Root::Object{'_err'} - Holds any errors affecting the 
+ 	        Bio::Root::Object{'_err'} - Holds any errors affecting the
  	                             Vector as a whole.
 
 =cut

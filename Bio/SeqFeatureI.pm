@@ -1,3 +1,4 @@
+# $Id: SeqFeatureI.pm,v 1.22.2.1 2001/03/02 22:47:54 heikki Exp $
 #
 # BioPerl module for Bio::SeqFeatureI
 #
@@ -18,8 +19,9 @@ Bio::SeqFeatureI - Abstract interface of a Sequence Feature
     # get a seqfeature somehow, eg,
 
     foreach $feat ( $annseq->all_seqfeatures() ) {
-            print "Feature from ", $feat->start, "to ", $feat->end, " Primary tag  " $feat->primary_tag, 
-	    " From", $feat->source_tag() "\n";
+            print "Feature from ", $feat->start, "to ", 
+	          $feat->end, " Primary tag  ", $feat->primary_tag, 
+	          ", produced by ", $feat->source_tag(), "\n";
 
             if( $feat->strand == 0 ) {
 		print "Feature applicable to either strand\n";
@@ -28,46 +30,68 @@ Bio::SeqFeatureI - Abstract interface of a Sequence Feature
             }
 
             foreach $tag ( $feat->all_tags() ) {
-		print "Feature has tag ",$tag,"with value," $feat->has_tag($tag), "\n";
+		print "Feature has tag ", $tag, "with values, ",
+		      join(' ',$feat->each_tag_value($tag)), "\n";
             }
+	    print "new feature\n" if $feat->has_tag('new');
+	    # features can have sub features
+	    my @subfeat = $feat->sub_SeqFeature();
 	}
 
 =head1 DESCRIPTION
 
-This interface is the functions one can expect for any Sequence
-Feature, whatever its implemtation or whether it is a more complex
-type (eg, a Gene). This object doesn't actually provide any
-implemention, it just provides the definitions of what methods one can
-call. See Bio::SeqFeature::Generic for a good standard implementation
-of this object
+This interface is the functions one can expect for any Sequence Feature, whatever
+its implemtation or whether it is a more complex type (eg, a Gene). This object
+doesn't actually provide any implemention, it just provides the definitions
+of what methods one can call. See Bio::SeqFeature::Generic for a good standard
+implementation of this object
 
-=head1 CONTACT
+=head1 FEEDBACK
 
-Describe contact details here
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
+
+  bioperl-l@bioperl.org          - General discussion
+  http://bio.perl.org/MailList.html             - About the mailing lists
+
+=head2 Reporting Bugs
+
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via email
+or the web:
+
+  bioperl-bugs@bio.perl.org
+  http://bio.perl.org/bioperl-bugs/
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
+#'
+
 # Let the code begin...
+
 
 package Bio::SeqFeatureI;
 use vars qw(@ISA);
 use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
-
 use Bio::RangeI;
+
 use Carp;
 
 @ISA = qw(Bio::RangeI);
 
-# utility method
-#
-# Prints out a method like:
-# Abstract method stop defined in interface Bio::SeqFeatureI not implemented by package You::BadFeature
+
+# utility method Prints out a method like: 
+# Abstract method stop defined in interface Bio::SeqFeatureI not
+# implemented by package You::BadFeature
+
 sub _abstractDeath {
   my $self = shift;
   my $package = ref $self;
@@ -83,6 +107,7 @@ sub _abstractDeath {
  Function: Returns the start coordinate of the feature
  Returns : integer
  Args    : none
+
 
 =cut
 
@@ -100,6 +125,7 @@ sub start{
  Returns : integer
  Args    : none
 
+
 =cut
 
 sub end{
@@ -109,6 +135,7 @@ sub end{
 
 }
 
+
 =head2 strand
 
  Title   : strand
@@ -116,6 +143,7 @@ sub end{
  Function: Returns strand information, being 1,-1 or 0
  Returns : -1,1 or 0
  Args    : none
+
 
 =cut
 
@@ -134,6 +162,7 @@ sub strand{
  Returns : An array
  Args    : none
 
+
 =cut
 
 sub sub_SeqFeature{
@@ -141,6 +170,7 @@ sub sub_SeqFeature{
 
    $self->_abstractDeath();
 }
+
 
 =head2 primary_tag
 
@@ -150,6 +180,7 @@ sub sub_SeqFeature{
            eg 'exon'
  Returns : a string 
  Args    : none
+
 
 =cut
 
@@ -169,6 +200,7 @@ sub primary_tag{
  Returns : a string 
  Args    : none
 
+
 =cut
 
 sub source_tag{
@@ -181,11 +213,11 @@ sub source_tag{
 =head2 has_tag
 
  Title   : has_tag
- Usage   : $value = $self->has_tag('some_tag')
- Function: TRUE if the SeqFeature has the tag,
-           and FALSE otherwise.
- Returns : 
+ Usage   : $tag_exists = $self->has_tag('some_tag')
+ Function: 
+ Returns : TRUE if the specified tag exists, and FALSE otherwise
  Args    :
+
 
 =cut
 
@@ -204,6 +236,7 @@ sub has_tag{
  Returns : An array comprising the values of the specified tag.
  Args    :
 
+
 =cut
 
 sub each_tag_value {
@@ -220,6 +253,7 @@ sub each_tag_value {
  Returns : an array of strings
  Args    : none
 
+
 =cut
 
 sub all_tags{
@@ -232,62 +266,56 @@ sub all_tags{
 =head2 gff_string
 
  Title   : gff_string
- Usage   : $str = $feat->gff_string
- Function: provides the feature information in GFF
-           version 2 format.
+ Usage   : $str = $feat->gff_string;
+           $str = $feat->gff_string($gff_formatter);
+ Function: Provides the feature information in GFF format.
+
+           The implementation provided here returns GFF2 by default. If you
+           want a different version, supply an object implementing a method
+           gff_string() accepting a SeqFeatureI object as argument. E.g., to
+           obtain GFF1 format, do the following:
+
+                my $gffio = Bio::Tools::GFF->new(-gff_version => 1);
+                $gff1str = $feat->gff_string($gff1io);
+
  Returns : A string
- Args    : None
+ Args    : Optionally, an object implementing gff_string().
+
 
 =cut
 
 sub gff_string{
-   my ($feat) = @_;
-   my ($str,$score,$frame,$name);
+   my ($self,$formatter) = @_;
 
-   if( $feat->can('score') ) {
-       $score = $feat->score();
-   }
-   $score = '.' unless defined $score;
-
-   if( $feat->can('frame') ) {
-       $frame = $feat->frame();
-   }
-   $frame = '.' unless defined $frame;
-
-   my $strand;
-   if( $feat->strand == 1 ) {
-       $strand = '+';
-   } elsif ( $feat->strand == -1 ) {
-       $strand = '-';
-   } else {
-       $strand = '.';
-   }
-   
-   if( $feat->can('seqname') ) {
-       $name = $feat->seqname();
-       $name ||= 'SEQ';
-   } else {
-       $name = 'SEQ';
-   }
-
-   $str = join("\t",
-                 $name,
-		 $feat->source_tag(),
-		 $feat->primary_tag(),
-		 $feat->start(),
-		 $feat->end(),
-		 $score,
-		 $strand,
-		 $frame);
-
-   foreach my $tag ( $feat->all_tags ) {
-       foreach my $value ( $feat->each_tag_value($tag) ) {
-	   $str .= " $tag=$value";
-       }
-   }
-
-   return $str;
+   $formatter = $self->_static_gff_formatter unless $formatter;
+   return $formatter->gff_string($self);
 }
+
+my $static_gff_formatter = undef;
+
+=head2 _static_gff_formatter
+
+ Title   : _static_gff_formatter
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _static_gff_formatter{
+   my ($self,@args) = @_;
+
+   if( !defined $static_gff_formatter ) {
+       $static_gff_formatter = Bio::Tools::GFF->new('-gff_version' => 2);
+   }
+
+   return $static_gff_formatter;
+}
+
+
 
 =head1 RangeI methods
 
@@ -305,6 +333,7 @@ can use a feature ($r in the below documentation).
   Args    : a RangeI to test for overlap with, or a point
   Returns : true if the Range overlaps with the feature, false otherwise
 
+
 =head2 contains
 
   Title   : contains
@@ -312,6 +341,7 @@ can use a feature ($r in the below documentation).
   Function: tests whether $feat totally contains $r
   Args    : a RangeI to test for being contained
   Returns : true if the argument is totaly contained within this range
+
 
 =head2 equals
 
@@ -321,18 +351,19 @@ can use a feature ($r in the below documentation).
   Args    : a RangeI to test for equality
   Returns : true if they are describing the same range
 
+
 =head1 Geometrical methods
 
 These methods do things to the geometry of ranges, and return
 triplets (start, stop, strand) from which new ranges could be built.
 
-=head2
+=head2 intersection
 
   Title   : intersection
   Usage   : ($start, $stop, $strand) = $feat->intersection($r)
   Function: gives the range that is contained by both ranges
   Args    : a RangeI to compare this one to
-  Returns : nothing if they don't overlap, or the range that they do overlap
+  Returns : nothing if they do not overlap, or the range that they do overlap
 
 =head2 union
 
@@ -345,5 +376,23 @@ triplets (start, stop, strand) from which new ranges could be built.
 
 =cut
 
-1;
+=head2 location
 
+ Title   : location
+ Usage   : my $location = $seqfeature->location()
+ Function: returns a location object suitable for identifying location 
+	   of feature on sequence or parent feature  
+ Returns : Bio::LocationI object
+ Args    : none
+
+
+=cut
+
+sub location {
+   my ($self) = @_;
+
+   $self->_abstractDeath();
+}
+
+
+1;

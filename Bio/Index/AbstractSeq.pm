@@ -1,3 +1,4 @@
+# $Id: AbstractSeq.pm,v 1.13.2.1 2001/03/02 22:47:56 heikki Exp $
 #
 # BioPerl module for Bio::DB::AbstractSeq
 #
@@ -11,7 +12,7 @@
 
 =head1 NAME
 
-Bio::Index::AbstractSeq - Base class for AbstractSeqs
+Bio::Index::AbstractSeq - Base class for AbstractSeq s 
 
 =head1 SYNOPSIS
 
@@ -21,7 +22,7 @@ Bio::Index::AbstractSeq - Base class for AbstractSeqs
   use Bio::Index::AbstractSeq;
 
   @ISA = ('Bio::Index::AbstractSeq');
-  
+
   # Now provide the necessary methods...
 
 =head1 DESCRIPTION
@@ -40,9 +41,8 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org             - General discussion
+  http://bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -72,7 +72,8 @@ not necessarily sequence files).
 
 =cut
 
-# Lets begin the code ...
+# Let's begin the code ...
+
 
 package Bio::Index::AbstractSeq;
 use vars qw(@ISA);
@@ -82,20 +83,15 @@ use Bio::SeqIO::MultiFile;
 use Bio::Index::Abstract;
 use Bio::DB::SeqI;
 
+
 @ISA = qw(Bio::Index::Abstract Bio::DB::SeqI);
 
-# new() is inherited from Bio::Root::Object
-
-# _initialize is where the heavy stuff will happen when new is called
-
-sub _initialize {
-  my($self,@args) = @_;
-
-  my $make = $self->SUPER::_initialize(@args);
-
+sub new {
+    my ($class, @args) = @_;
+    my $self = $class->SUPER::new(@args);
+    
     $self->{'_seqio_cache'} = [];
-
- return $make; # success - we hope!
+    return $self;
 }
 
 =head2 _file_format
@@ -108,6 +104,7 @@ sub _initialize {
  Example :
  Returns : 
  Args    :
+
 
 =cut
 
@@ -124,8 +121,7 @@ sub _file_format {
   Usage   : $index->fetch( $id )
   Function: Returns a Bio::Seq object from the index
   Example : $seq = $index->fetch( 'dJ67B12' )
-  Returns : Bio::Seq object, or throws an exception
-            if the ID given is not in the index.
+  Returns : Bio::Seq object
   Args    : ID
 
 =cut
@@ -146,8 +142,6 @@ sub fetch {
         seek($fh, $begin, 0);
 	
 	$seq = $seqio->next_seq();
-    } else {
-        $self->throw("No record found for '$id'");
     }
 
     # we essentially assumme that the primary_id for the database
@@ -164,8 +158,7 @@ sub fetch {
   Usage   : $index->_get_SeqIO_object( $file )
   Function: Returns a Bio::SeqIO object for the file
   Example : $seq = $index->_get_SeqIO_object( 0 )
-  Returns : Bio::SeqIO object or throws an exception
-             if the ID given is not in the index.
+  Returns : Bio::SeqIO object
   Args    : File number (an integer)
 
 =cut
@@ -192,6 +185,7 @@ sub _get_SeqIO_object {
  Returns : new Bio::Seq object
  Args    : string represents the id
 
+
 =cut
 
 sub get_Seq_by_id {
@@ -209,6 +203,7 @@ sub get_Seq_by_id {
  Returns : new Bio::Seq object
  Args    : string represents the accession number
 
+
 =cut
 
 sub get_Seq_by_acc {
@@ -225,6 +220,7 @@ sub get_Seq_by_acc {
            which provides a single method, next_primary_seq
  Returns : Bio::DB::SeqStreamI
  Args    : none
+
 
 =cut
 
@@ -256,6 +252,7 @@ sub get_PrimarySeq_stream {
  Returns : an array of strings
  Args    : none
 
+
 =cut
 
 sub get_all_primary_ids {
@@ -273,7 +270,7 @@ sub get_all_primary_ids {
    # someone is going to index a database with no accession numbers.
    # doh!. We have to uniquify the index...
 
-    my( %bytepos );
+   my( %bytepos );
    while (my($id, $rec) = each %$db) {
        if( $id =~ /^__/ ) {
            # internal info
@@ -286,6 +283,7 @@ sub get_all_primary_ids {
 
    return values %bytepos;
 }
+
 
 =head2 get_Seq_by_primary_id
 
@@ -302,6 +300,7 @@ sub get_all_primary_ids {
  Returns : A Bio::Seq object
  Args    : primary id (as a string)
  Throws  : "acc does not exist" exception
+
 
 =cut
 

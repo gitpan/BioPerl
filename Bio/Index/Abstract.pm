@@ -1,3 +1,6 @@
+
+#
+# $Id: Abstract.pm,v 1.31.2.1 2001/03/02 22:47:56 heikki Exp $
 #
 # BioPerl module for Bio::Index::Abstract
 #
@@ -43,7 +46,6 @@ Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org             - General discussion
-  bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
   http://bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
@@ -66,6 +68,7 @@ methods are usually preceded with an "_" (underscore).
 
 =cut
 
+
 # Let the code begin...
 
 package Bio::Index::Abstract;
@@ -77,12 +80,28 @@ use vars qw( $TYPE_AND_VERSION_KEY
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::Object;
+use Bio::Root::RootI;
+use Bio::Root::IO;
 use Symbol();
 
-@ISA = qw(Bio::Root::Object);
+@ISA = qw(Bio::Root::RootI);
 
-# new() is inherited from Bio::Root::Object
+# Generate accessor methods for simple object fields
+BEGIN {
+    foreach my $func (qw(filename write_flag)) {
+        no strict 'refs';
+        my $field = "_$func";
+
+        *$func = sub {
+            my( $self, $value ) = @_;
+            
+            if (defined $value) {
+                $self->{$field} = $value;
+            }
+            return $self->{$field};
+        }
+    }
+}
 
 =head2 new
 
@@ -106,23 +125,27 @@ use Symbol();
 
 =cut
 
-sub _initialize {
-    my($self, @args) = @_;
-    
-    my( $filename, $write_flag, $dbm_package, $verbose ) =
-        $self->_rearrange(['FILENAME','WRITE_FLAG','DBM_PACKAGE','VERBOSE'], @args);
+sub new {
+    my($class, @args) = @_;
+    my $self = $class->SUPER::new(@args);
+
+    my( $filename, $write_flag, $dbm_package ) =
+        $self->_rearrange([qw(FILENAME 
+			      WRITE_FLAG
+			      DBM_PACKAGE
+			      )], @args);
     
     # Store any parameters passed
     $self->filename($filename)       if $filename;
     $self->write_flag($write_flag)   if $write_flag;
     $self->dbm_package($dbm_package) if $dbm_package;
-    $self->verbose($verbose);
 
     $self->{'_filehandle'} = []; # Array in which to cache SeqIO objects
     $self->{'_DB'}         = {}; # Gets tied to the DBM file
     
     # Open database
     $self->open_dbm() if $filename;
+    return $self;
 }
 
 =pod
@@ -153,7 +176,7 @@ sub _initialize {
 
  Usage   : $value = $self->dbm_package();
            $self->dbm_package($value);
-           
+
  Function: Gets or sets the name of the Perl dbm module used. 
            If the value is unset, then it returns the value of
            the package variable $USE_DBM_TYPE or if that is
@@ -170,47 +193,26 @@ sub _initialize {
 
 sub dbm_package {
     my( $self, $value ) = @_;
-    
-    if ($value) {
-        $self->{'_dbm_package'} = $value;
-    }
-    elsif (! $self->{'_dbm_package'}) {
-        if ($USE_DBM_TYPE) {
-            $self->{'_dbm_package'} = $USE_DBM_TYPE;
-        } else {
-            my( $type );
-            # DB_File isn't available on all systems
-            eval {
-                require DB_File;
-                DB_File->import('$DB_HASH');
-            };
-            if ($@) {
-                require SDBM_File;
-                $type = 'SDBM_File';
-            } else {
-                $type = 'DB_File';
-            }
-            $USE_DBM_TYPE = $self->{'_dbm_package'} = $type;
-        }
-    }
+    my $to_require = 0;
+    if( $value || ! $self->{'_dbm_package'} ) {
+	my $type = $value || $USE_DBM_TYPE || 'DB_File';	
+	if( $type =~ /DB_File/i ) {
+	    eval { 
+		require DB_File;
+		DB_File->import('$DB_HASH');
+	    };
+	    $type = ( $@ ) ? 'SDBM_File' : 'DB_File';
+	} 	
+	if( $type ne 'DB_File' ) {
+	    eval { require "$type.pm"; };
+	    $self->throw($@) if( $@ );
+	}
+	$self->{'_dbm_package'} = $type;
+	if( ! defined $USE_DBM_TYPE ) {
+	    $USE_DBM_TYPE = $self->{'_dbm_package'};
+	}	
+    } 
     return $self->{'_dbm_package'};
-}
-
-# Generate accessor methods for simple object fields
-BEGIN {
-    foreach my $func (qw(filename write_flag)) {
-        no strict 'refs';
-        my $field = "_$func";
-        
-        *$func = sub {
-            my( $self, $value ) = @_;
-            
-            if (defined $value) {
-                $self->{$field} = $value;
-            }
-            return $self->{$field};
-        }
-    }
 }
 
 =head2 db
@@ -231,6 +233,7 @@ BEGIN {
 sub db {
     return $_[0]->{'_DB'};
 }
+
 
 =head2 get_stream
 
@@ -290,10 +293,11 @@ sub get_stream {
    }
 }
 
+
+
 =head2 open_dbm
 
   Usage   : $index->open_dbm()
-  
   Function: Opens the dbm file associated with the index
             object.  Write access is only given if explicitly
             asked for by calling new(-write => 1) or having set
@@ -383,6 +387,7 @@ sub _version {
  Returns : Code package to be used with this 
  Args    :
 
+
 =cut
 
 sub _code_base {
@@ -399,6 +404,7 @@ sub _code_base {
        return $code;
    }
 }
+
 
 =head2 _type_and_version
 
@@ -434,34 +440,14 @@ sub _type_and_version {
     return 1;
 }
 
-=head2 
 
-  Title   : allow_relative_paths
-  Usage   : $index->allow_relative_paths()
-  Function: Allow files being indexed to have
-            non-absolute paths
-  Example : $index->allow_relative_paths(1)
-  Returns : TRUE or FALSE
-  Args    : TRUE or FALSE
-
-=cut
-
-sub allow_relative_paths {
-    my( $self, $arg ) = @_;
-    
-    if (defined $arg) {
-        $self->{'_allow_relative_paths'} = $arg;
-    }
-    return $self->{'_allow_relative_paths'};
-}
-
-=head2 
+=head2 _check_file_sizes
 
   Title   : _check_file_sizes
   Usage   : $index->_check_file_sizes()
   Function: Verifies that the files listed in the database
             are the same size as when the database was built,
-            or throws an exception.  Called by the _initialize()
+            or throws an exception.  Called by the new()
             function.
   Example : 
   Returns : 1 or exception
@@ -482,6 +468,7 @@ sub _check_file_sizes {
     }
     return 1;
 }
+
 
 =head2 make_index
 
@@ -509,15 +496,23 @@ sub make_index {
 	$self->throw("Attempting to make an index on a read-only database. What about a WRITE flag on opening the index?");
     }
 
+    # We're really fussy/lazy, expecting all file names to be fully qualified
     $self->throw("No files to index provided") unless @files;
-    foreach my $file (@files) {
-        # We're really fussy/lazy, expecting all file names to be
-        # fully qualified unless allow_relative_paths is set.
-        unless ($self->allow_relative_paths) {
-            $self->throw("File name not fully qualified : '$file'")
-                unless $file =~ m|^/|;
-        }
-        $self->throw("File does not exist: $file") unless -e $file;
+    for(my $i=0;$i<scalar @files; $i++)  {
+	if( $Bio::Root::IO::FILESPECLOADED && File::Spec->can('rel2abs') ) {	    
+	    if( ! File::Spec->file_name_is_absolute($files[$i]) ) {
+		$files[$i] = File::Spec->rel2abs($files[$i]);
+	    }
+	} else { 
+	    if(  $^O =~ /MSWin/i ) {
+		($files[$i] =~ m|^[A-Za-z]:/|) || 
+		    $self->throw("File name not fully qualified : $files[$i]");
+	    } else {
+		($files[$i] =~ m|^/|) || 
+		    $self->throw("File name not fully qualified : $files[$i]"); 
+	    }
+	}
+        $self->throw("File does not exist: $files[$i]")   unless -e $files[$i];
     }
 
     # Add each file to the index
@@ -549,10 +544,11 @@ sub make_index {
 	}
 
 	# index this file
-	warn "Indexing file $file\n" if $self->verbose;
+	warn "Indexing file $file\n" if( $self->verbose > 0);
 
 	# this is supplied by the subclass and does the serious work
         $self->_index_file( $file, $i ); # Specific method for each type of index
+
 
         # Save file name and size for this index
         $self->add_record("__FILE_$i", $file, -s $file)
@@ -588,6 +584,8 @@ sub _index_file {
     $self->throw("Error: '$pkg' does not provide the _index_file() method");
 }
 
+
+
 =head2 _file_handle
 
   Title   : _file_handle
@@ -617,6 +615,7 @@ sub _file_handle {
     return $self->{'_filehandle'}[$i];
 }
 
+
 =head2 _file_count
 
   Title   : _file_count
@@ -639,6 +638,7 @@ sub _file_count {
     return $self->db->{'__FILE_COUNT'};
 }
 
+
 =head2 add_record
 
   Title   : add_record
@@ -656,11 +656,11 @@ sub _file_count {
 
 sub add_record {
     my( $self, $id, @rec ) = @_;
-
-    print STDERR "Adding key $id\n" if $self->verbose;
+    print STDERR "Adding key $id\n" if( $self->verbose > 0 );
     $self->db->{$id} = $self->pack_record( @rec );
     return 1;
 }
+
 
 =head2 pack_record
 
@@ -697,27 +697,6 @@ sub unpack_record {
     return split /\034/, $args[0];
 }
 
-=head2 verbose
-
- Title   : verbose
- Usage   : $obj->verbose($newval)
- Function: sets whether a report to STDERR should be issued or not
-           for each sequence indexed. Helps track errors
- Example : 
- Returns : value of verbose
- Args    : newvalue (optional)
-
-=cut
-
-sub verbose {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'_verbose'} = $value;
-    }
-    return $obj->{'_verbose'};
-
-}
-
 =head2 DESTROY
 
  Title   : DESTROY
@@ -727,13 +706,13 @@ sub verbose {
  Returns : NEVER
  Args    : NONE
 
+
 =cut
 
 sub DESTROY {
     my $self = shift;
-    
+
     untie %{$self->db};
 }
 
 1;
-

@@ -1,6 +1,5 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
-## $Id: bpindex.pl,v 1.4.8.1 2000/09/23 21:26:11 dag Exp $
 
 =head1 NAME
 
@@ -37,7 +36,7 @@ fasta format on stdout
 
 =head1 OPTIONS
 
-  -fmt  <format>   - Fasta (default), or EMBL
+  -fmt  <format>   - Fasta (default), swiss or EMBL
   -v               - report every index addition (debugging)
 
 options only for expert use
@@ -78,10 +77,9 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules.  Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org      - General discussion
-  bioperl-guts-l@bioperl.org - Technical discussions, bug reports & CVS notices
-  
-  http://bioperl.org/MailList.shtml - About the mailing lists
+    vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
+    vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
+    http://bio.perl.org/MailList.html             - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -89,15 +87,15 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
-    bioperl-bugs@bioperl.org                   
-    http://bioperl.org/bioperl-bugs/           
+    bioperl-bugs@bio.perl.org                   
+    http://bio.perl.org/bioperl-bugs/           
 
 =head1 AUTHOR
 
 Ewan Birney, birney@sanger.ac.uk
 
 =cut
-
+#'
 #use strict;
 
 #
@@ -109,6 +107,7 @@ BEGIN {
     eval {
 	require Bio::Index::Fasta;
 	require Bio::Index::EMBL;
+	require Bio::Index::Swissprot;
     };
     if ( $@ ) {
 	# one up from here is Bio directory - we hope!
@@ -118,7 +117,7 @@ BEGIN {
 	    require Bio::Index::EMBL;
 	};
 	if ( $@ ) {
-	    print STDERR ("\nbpindex cannot find Bio::Index::Fasta and Bio::Index::EMBL\nbpindex needs to have bioperl installed for it to run.\nBioperl is very easy to install\nSee http://bioperl.org for more information\n\n");
+	    print STDERR ("\nbpindex cannot find Bio::Index::Fasta and Bio::Index::EMBL\nbpindex needs to have bioperl installed for it to run.\nBioperl is very easy to install\nSee http://bio.perl.org for more information\n\n");
 	    exit(1);
 	} else {
 	    print STDERR ("\nYou are running bpindex.pl without installing bioperl.\nYou have done it from bioperl/scripts, and so we can find the necessary information\nbut it is much better to install bioperl\n\nPlease read the README in the bioperl distribution\n\n");
@@ -150,7 +149,6 @@ if( !$dir ) {
 if( $type ) {
    $Bio::Index::Abstract::USE_DBM_TYPE = $type;
 }
-
 #
 # Rock and roll...
 # 
@@ -163,6 +161,10 @@ SWITCH : {
     };
     /EMBL/ && do {
 	$index = Bio::Index::EMBL->new("$dir/$name", 'WRITE');
+	last;
+    };
+    /swiss/ && do {
+	$index = Bio::Index::Swissprot->new("$dir/$name", 'WRITE');
 	last;
     };
     die("No index format called $fmt");

@@ -3,7 +3,7 @@
 # PURPOSE : Provides general-purpose utilities of potential interest to any Perl script.
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : Feb 1996
-# REVISION: $Id: Utilities.pm,v 1.7.2.3 2000/10/02 16:28:43 jason Exp $
+# REVISION: $Id: Utilities.pm,v 1.13.2.1 2001/03/02 22:47:59 heikki Exp $
 # STATUS  : Alpha
 #
 # This module manages file compression and uncompression using gzip or
@@ -14,7 +14,7 @@
 #
 # If you manage to incorporate an alternate compression utility into this
 # module, please post a note to the bio.perl.org mailing list
-# vsns-bcd-perl@lists.uni-bielefeld.de. Thanks.
+# bioperl-l@bioperl.org
 #
 # TODO    : Configure $GNU_PATH during installation.
 #           Improve documentation (POD).
@@ -39,7 +39,7 @@ use POSIX;
 #*AUTOLOAD = \&AutoLoader::AUTOLOAD;
 
 use vars qw( @ISA @EXPORT_OK %EXPORT_TAGS );
-@ISA         = qw( Bio::Root::Object Exporter);
+@ISA         = qw( Bio::Root::RootI Exporter);
 @EXPORT_OK   = qw($Util);
 %EXPORT_TAGS = ( obj => [qw($Util)],
 		 std => [qw($Util)],);
@@ -131,9 +131,8 @@ User feedback is an integral part of the evolution of this and other Bioperl mod
 Send your comments and suggestions preferably to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org             - General discussion
+  http://bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -175,6 +174,7 @@ modify it under the same terms as Perl itself.
 ##
 #'
 
+
 =head1 APPENDIX
 
 Methods beginning with a leading underscore are considered private
@@ -184,9 +184,10 @@ for documentation purposes only.
 
 =cut
 
-##########################################################################################
-##                               INSTANCE METHODS                                       ##
-##########################################################################################
+
+############################################################################
+##                 INSTANCE METHODS                                       ##
+############################################################################
 
 =head2 date_format
 
@@ -229,7 +230,7 @@ for documentation purposes only.
            :           12/1/97 (for 1 December 1997)
            :           1997-12-01 
            :           1997-Dec-01
- Throws    : Exception if the file appears to be empty or non-existent
+ Throws    : 
  Comments  : Relies on the $BASE_YEAR constant exported by Bio:Root::Global.pm.
            :
            : If you don't care about formatting or using backticks, you can
@@ -257,7 +258,7 @@ sub date_format {
     my (@date);
 
     # Load a supplied date for conversion:
-    if(defined($date)) {
+    if(defined($date) && ($date =~ /[\D-]+/)) {
 	if( $date =~ /\//) {
 	    ($mon,$mday,$year) = split(/\//, $date); 
 	} elsif($date =~ /(\d{4})-(\d{1,2})-(\d{1,2})/) {
@@ -271,7 +272,8 @@ sub date_format {
 	if(length($year) == 4) { $year = substr $year, 2; }
 	$mon -= 1;
     } else {
-	($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = @date =localtime(time);
+	($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = @date =
+	    localtime(($date ? $date : time()));
 	return @date if $option =~ /list/i;
     }
     $month_txt = $MONTHS[$mon];
@@ -316,6 +318,7 @@ sub date_format {
 
     return $date || join(" ", @date);
 }
+
 
 =head2 month2num
 
@@ -434,6 +437,7 @@ sub compress {
     return $compressed;
 }
 
+
 =head2 uncompress
 
  Title     : uncompress
@@ -507,6 +511,7 @@ sub uncompress {
     return $uncompressed;
 }
 
+
 =head2 file_date
 
  Title    : file_date
@@ -518,11 +523,7 @@ sub uncompress {
           : date_format = string, desired format for date (see date_format()).
           :               Default = yyyy-mm-dd
  Thows    : Exception if no file is provided or does not exist.
- Comments : Uses `ls -lga` to get file date data.
-          : Not so universal and not taint-safe. 
-          : Think about using stat() or a standard CPAN module for this, like
-          : Date::Manip or Date::DateCalc. However, these are pretty heavy-duty.
-          : I just want a simple function.
+ Comments : Uses the mtime field as obtained by stat().
 
 =cut
 
@@ -534,33 +535,11 @@ sub file_date {
     $self->throw("No such file: $file") if not $file or not -e $file;
 
     $fmt ||= 'yyyy-mm-dd';
-    my($fmon,$fday,$fyear);
 
-    my $file_data = `ls -lga $file`;
-    # Parsing lines such as:
-    # -rwxr-xr-x   1 sac      sac          7028 Nov  5  1997 ./YDR222W.blastp
-    # -rwxrwxr-x   1 sac      sac           525 Jun 23 16:20 ./utilities.p
-    if($file_data =~ / ([a-z]{3})  ?([\d]{1,2})  ?([\d:]+) /i) {
-	($fmon,$fday,$fyear) = ($1, $2, $3);
-    } else {
-	# If the regexp fails, split().
-	my @file_data = split /\s+/, $file_data;
-	($fmon,$fday,$fyear) = @file_data[5..7];
-    }
-
-    if($fyear =~ /:/) { $fyear = $self->date_format('year'); }
-    my $fmon_num = '00';
-    foreach(0..11) { if($MONTHS[$_] eq $fmon) {$fmon_num = $_ + 1; last;} }
-
-    my $date = sprintf "%4d-%02d-%02d",$fyear,$fmon_num,$fday;
-
-    if($fmt =~ /yyyy-mmm-dd/i ) {
-	$date = sprintf "%4d-%3s-%02d",$fyear,$fmon,$fday;
-    } elsif($fmt eq 'd m y' ) {
-	$date = sprintf "%s %s %s",$fday,$fmon,$fyear;
-    }
-    $date;
+    my @file_data = stat($file);
+    return $self->date_format($fmt, $file_data[9]); # mtime field
 }
+
 
 =head2 untaint
 
@@ -612,29 +591,6 @@ sub untaint {
     $untainted;
 }
 
-=head2 is_tainted
-
- Title  : is_tainted
- Purpose: Test whether a variable is tainted or not.
-        : Used for testing variables for taintedness. 
-        : Development use only. 
- Usage  : $Util->is_tainted($string);
- Warning: This method  always generates a compile-time
-        : warning and is therefore commented out.
-
-=cut
-
-#--------------
-sub is_tainted {
-#--------------
-#    my $self = shift;
-#    local($^W) = 0;    ## disable warnings with -w (run-time only)
-#    # Test for tained data. See the Camel book 2ed, p.358.
-#    not eval {
-#	  join("",@_), kill 0;
-#	  1;
-#    };
-}
 
 =head2 mean_stdev
 
@@ -659,6 +615,7 @@ sub mean_stdev {
     my $stdev = sqrt(abs($sum_diff_sqd/(scalar @data)-1));
     return ($mean, $stdev);
 }
+
 
 =head2 count_files
 
@@ -722,6 +679,7 @@ sub count_files {
     }
 }
 
+
 #=head2 file_info
 #
 # Title   : file_info 
@@ -757,6 +715,7 @@ sub file_info {
     }
 }
 
+
 #------------
 sub delete { 
 #------------
@@ -770,6 +729,7 @@ sub delete {
   my $ulval = unlink($fileName) > 0 or
     $self->throw("Failed to delete file $fileName: $!"); 
 }
+
 
 =head2 create_filehandle
 
@@ -796,7 +756,7 @@ sub delete {
            : this method should probably have a -mode parameter to
            : specify ascii or binary.
 
-See Also :  L<get_newline>(), L<Bio::Root:IOManager::read>(),
+See Also :  L<get_newline>(), L<Bio::Root::IOManager::read>(),
 
 =cut
 
@@ -843,7 +803,6 @@ sub create_filehandle {
 
     } else {
       # Read from STDIN.
-      # This should also work: $FH = new FileHandle('-');
       $FH = \*STDIN;
       $self->verbose > 0 and printf STDERR "$ID: reading data from STDIN\n";
       $client->{'_input_type'} = "STDIN";
@@ -904,6 +863,7 @@ sub get_newline {
     return $NEWLINE || $DEFAULT_NEWLINE;
   }
 
+
 =head2 taste_file
 
  Usage     : $object->taste_file( <FileHandle> );
@@ -935,12 +895,24 @@ sub taste_file {
   ref($FH) eq 'FileHandle' or $self->throw("Can't taste file: not a FileHandle ref");
 
   $buffer = '';
+
+  # this is a quick hack to check for availability of alarm(); just copied
+  # from Bio/Root/IOManager.pm HL 02/19/01
+  my $alarm_available = 1;
+  eval {
+      alarm(0);
+  };
+  if($@) {
+      # alarm() not available (ActiveState perl for win32 doesn't have it.
+      # See jitterbug PR#98)
+      $alarm_available = 0;
+  }
   $SIG{ALRM} = sub { die "Timed out!"; };
   my $result;
   eval {
-    alarm( $wait );
+    $alarm_available && alarm( $wait );
     $result = read($FH, $buffer, $BUFSIZ); # read the $BUFSIZ characters of file
-    alarm(0);
+    $alarm_available && alarm(0);
   };
   if($@ =~ /Timed out!/) {
     $self->throw("Timed out while waiting for input.", 
@@ -1014,6 +986,7 @@ sub mail_authority {
 
 }
 
+
 =head2 send_mail
 
  Title    : send_mail
@@ -1039,6 +1012,7 @@ sub mail_authority {
 See Also  : L<mail_authority>()
 
 =cut
+
 
 #-------------'
 sub send_mail {
@@ -1067,9 +1041,11 @@ QQ_EOF_QQ
     if ($?) { warn "sendmail didn't exit nicely: $?" }
 }
 
+
 ######################################
 ###   Interactive Functions      #####
 ######################################
+
 
 =head2 yes_reply
 
@@ -1096,6 +1072,8 @@ sub yes_reply {
     chomp( $reply = <STDIN> );
     $reply =~ /^y/i;
 }
+
+
 
 =head2 request_data
 
@@ -1131,6 +1109,7 @@ sub quit_reply {
     $reply =~ /^q.*/i;
 }
 
+
 =head2 verify_version
 
  Purpose : Checks the version of Perl used to invoke the script.
@@ -1151,6 +1130,7 @@ sub verify_version {
 	exit(1);
     }
 }
+
 
 1;
 __END__
@@ -1183,4 +1163,6 @@ MODIFICATION NOTES:
       if the first attempt to compress/uncompress fails.
       This allows users to access compressed files in directories in which they
       lack write permission.
+
+
 

@@ -1,52 +1,68 @@
+# -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Annotation.t,v 1.1.6.1 2000/04/02 11:07:28 birney Exp $
+## $Id: Annotation.t,v 1.6 2001/01/25 22:13:40 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
-#-----------------------------------------------------------------------
-## perl test harness expects the following output syntax only!
-## 1..3
-## ok 1  [not ok 1 (if test fails)]
-## 2..3
-## ok 2  [not ok 2 (if test fails)]
-## 3..3
-## ok 3  [not ok 3 (if test fails)]
-##
-## etc. etc. etc. (continue on for each tested function in the .t file)
-#-----------------------------------------------------------------------
-
-
-## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..5\n"; }
-END {print "not ok 1\n" unless $loaded;}
+use strict;
+BEGIN { 
+    # to handle systems with no installed Test module
+    # we include the t dir (where a copy of Test.pm is located)
+    # as a fallback
+    eval { require Test; };
+    if( $@ ) { 
+	use lib 't';
+    }
+    use Test;
+    plan tests => 16;
+}
 
 use Bio::Annotation;
+use Bio::Annotation::DBLink;
 
-$loaded = 1;
-print "ok 1\n";    # 1st test passes.
+ok(1);
 
-## End of black magic.
-##
-## Insert additional test code below but remember to change
-## the print "1..x\n" in the BEGIN block to reflect the
-## total number of tests that will be run. 
+my $link1 = new Bio::Annotation::DBLink(-database => 'TSC',
+				     -primary_id => 'TSC0000030'
+				     );
+ok defined $link1;
+ok $link1->isa('Bio::Annotation::DBLink');
 
-$annotation = Bio::Annotation->new();
-$comment    = Bio::Annotation::Comment->new();
-$annotation->add_Comment($comment);
-print "ok 2\n";
+ok $link1->database(), 'TSC';
 
-$dblink     = Bio::Annotation::DBLink->new();
-$annotation->add_DBLink($dblink);
+ok $link1->primary_id(), 'TSC0000030';
 
-print "ok 3\n";
-$ref        = Bio::Annotation::Reference->new();
-$annotation->add_Reference($ref);
-print "ok 4\n";
+my $a = Bio::Annotation->new ( '-description'  => 'something');
+ok defined $a;
+ok $a->isa('Bio::Annotation');
 
-$annotation->each_Comment();
-$annotation->each_DBLink();
-$annotation->each_Reference();
 
-print "ok 5\n";
+$a->add_DBLink($link1);
+ok defined $a;
+
+foreach my $link ( $a->each_DBLink ) {
+    $link->primary_id;
+    $link->database;
+}
+ok ($a->each_DBLink, 1);
+
+
+ok $a->description, 'something';
+
+
+my $comment = Bio::Annotation::Comment->new( '-text' => 'sometext');
+
+ok $comment->text, 'sometext';
+
+my $ref = Bio::Annotation::Reference->new( '-authors' => 'author line',
+					   '-title'   => 'title line',
+					   '-location'=> 'location line',
+					   '-start'   => 12);
+
+ok $ref->authors, 'author line';
+ok $ref->title,  'title line';
+ok $ref->location, 'location line';
+ok $ref->start, 12;
+
+ok $ref->database, 'MEDLINE';

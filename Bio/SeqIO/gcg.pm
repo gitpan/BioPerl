@@ -1,7 +1,8 @@
+# $Id: gcg.pm,v 1.10 2001/02/26 02:00:34 lapp Exp $
 #
 # BioPerl module for Bio::SeqIO::gcg
 #
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
+# Cared for by Ewan Birney <birney@ebi.ac.uk>
 #          and Lincoln Stein <lstein@cshl.org>
 #
 # Copyright Ewan Birney & Lincoln Stein
@@ -35,9 +36,8 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                 - General discussion
+  http://www.bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -50,8 +50,9 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 
 =head1 AUTHORS - Ewan Birney & Lincoln Stein
 
-Email: birney@sanger.ac.uk
+Email: birney@ebi.ac.uk
        lstein@cshl.org
+
 
 =head1 APPENDIX
 
@@ -65,10 +66,11 @@ methods. Internal methods are usually preceded with a _
 package Bio::SeqIO::gcg;
 use vars qw(@ISA);
 use strict;
+
 use Bio::SeqIO;
+use Bio::Seq;
 
 @ISA = qw(Bio::SeqIO);
-# new() is inherited from Bio::Root::Object
 
 =head2 next_seq
 
@@ -78,16 +80,19 @@ use Bio::SeqIO;
  Returns : Bio::Seq object
  Args    :
 
+
 =cut
 
-sub next_seq{
+sub next_seq {
    my ($self,@args)    = @_;
    my($id,$type,$desc,$line,$chksum,$sequence);
+
 
    while( defined($_ = $self->_readline()) ) {
 
        ## Get the descriptive info (anything before the line with '..')
        unless( /\.\.$/ ) { $desc.= $_; }
+
        ## Pull ID, Checksum & Type from the line containing '..'
        /\.\.$/ && do     { $line = $_; chomp; 
                            if(/Check\:\s(\d+)\s/) { $chksum = $1; }
@@ -96,6 +101,7 @@ sub next_seq{
                            last; 
                          }
    }
+
 
    while( defined($_ = $self->_readline()) ) {
 
@@ -110,6 +116,7 @@ sub next_seq{
        $_ = uc($_);               ## uppercase sequence
        $sequence .= $_;
    }
+
 
    ##If we parsed out a checksum, we might as well test it
 
@@ -130,6 +137,7 @@ sub next_seq{
        if($type eq "P") { $type = "amino";    }
    }
 
+
    return Bio::Seq->new(-seq  => $sequence, 
                         -id   => $id, 
                         -desc => $desc, 
@@ -144,6 +152,7 @@ sub next_seq{
  Returns : 1 for success and 0 for error
  Args    : Bio::Seq object, sequence string
 
+
 =cut
 
 sub write_seq {
@@ -157,18 +166,11 @@ sub write_seq {
      my($sum,$offset,$len,$i,$j,$cnt,@out);
 
      $len = length($str);
-     $offset=1;
      ## Set the offset if we have any non-standard numbering going on
-     $sum=0;
+     $offset=1;
+     # checksum
+     $sum = $self->GCG_checksum($seq);
      
-     #Generate the GCG Checksum value
-     for($i=0; $i<$len ;$i++) {             
-       $cnt++;
-       $sum += $cnt * ord(substr($str,$i,1));
-       ($cnt == 57) && ($cnt=0);
-     }
-     $sum %= 10000;
-
      #Output the sequence header info
      push(@out,"$comment\n");                        
      push(@out," $id Length: $len  $timestamp  $type Check: $sum  ..\n\n");
@@ -192,9 +194,44 @@ sub write_seq {
        $out[$i] .= "\n";
      }
      $out[$i] .= "\n";
+
+
      return unless $self->_print(@out);
    }
    return 1;
+}
+
+=head2 GCG_checksum
+
+ Title     : GCG_checksum
+ Usage     : $cksum = $gcgio->GCG_checksum($seq);
+ Function  : returns a gcg checksum for the sequence specified
+
+             This method can also be called as a class method.
+ Example   : 
+ Returns   : a GCG checksum string
+ Argument  : a Bio::PrimarySeqI implementing object
+
+=cut
+ 
+sub GCG_checksum {
+    my ($self,$seqobj) = @_;
+    my $index = 0;
+    my $checksum = 0;
+    my $char;
+
+    my $seq = $seqobj->seq();
+    $seq =~ tr/a-z/A-Z/;
+    
+    foreach $char ( split(/[\.\-]*/, $seq)) {
+	$index++;
+	$checksum += ($index * (unpack("c",$char) || 0) );
+	if( $index ==  57 ) {
+	    $index = 0;
+	}
+    }
+
+    return ($checksum % 10000);
 }
 
 =head2 _validate_checksum
@@ -208,6 +245,7 @@ sub write_seq {
          :
  Returns : 1 for success, 0 for failure
  Args    : string containing parsed seq, value of parsed cheksum
+
 
 =cut
 
@@ -231,6 +269,7 @@ sub _validate_checksum {
     if($parsed_sum == $computed_sum) {
 	return 1;
     } else { return 0; }
+
 
 }
 

@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Tools::SeqPattern.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 28 Aug 1997
-# REVISION: $Id: SeqPattern.pm,v 1.2.6.4 2000/09/17 14:53:57 birney Exp $
+# REVISION: $Id: SeqPattern.pm,v 1.5 2001/01/30 20:40:46 jason Exp $
 #            
 # Copyright (c) 1997-8 Steve A. Chervitz. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
@@ -11,10 +11,8 @@
 
 package Bio::Tools::SeqPattern;
 
-use Bio::Root::Global qw(:devel);
-use Bio::Root::Object;
-
-@ISA = qw(Bio::Root::Object);
+use Bio::Root::RootI;
+@ISA = qw(Bio::Root::RootI);
 use strict;
 use vars qw ($ID $VERSION);
 $ID  = 'Bio::Tools::SeqPattern';
@@ -137,6 +135,8 @@ Amino acid alphabet support is different from that of Seq.pm (see below).
   N      G or A or T or C 
   .      G or A or T or C 
 
+
+
  ------------------------------------------
  Symbol           Meaning   
  ------------------------------------------
@@ -165,6 +165,7 @@ Amino acid alphabet support is different from that of Seq.pm (see below).
  Z        Any hydrophilic: TSHEDQNKR
  X        Any amino acid
  .        Any amino acid
+
 
 =head2   Multiple Format Support
 
@@ -195,14 +196,14 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules.  Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-   bioperl-l@bioperl.org             - General discussion
-   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
-   http://bioperl.org/MailList.shtml - About the mailing lists
+    bioperl-l@bioperl.org              - General discussion
+    http://bio.perl.org/MailList.html  - About the mailing lists
 
 =head2 Reporting Bugs
 
-Report bugs to the Bioperl bug tracking system to help us keep track the bugs and 
-their resolution. Bug reports can be submitted via email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution. Bug reports can be submitted via email
+or the web:
 
     bioperl-bugs@bio.perl.org                   
     http://bio.perl.org/bioperl-bugs/           
@@ -233,14 +234,17 @@ modify it under the same terms as Perl itself.
 ##
 #'
 
+
+
 #####################################################################################
 ##                                 CONSTRUCTOR                                     ##
 #####################################################################################
 
-=head1 _initialize
 
- Title     : _initialize
- Usage     : n/a; automatically called by Bio::Root::Object::new()
+=head1 new
+
+ Title     : new
+ Usage     : my $seqpat = new Bio::Tools::SeqPattern();
  Purpose   : Verifies that the type is correct for superclass (Bio::Seq.pm)
            : and calls superclass constructor last.
  Returns   : n/a
@@ -249,16 +253,18 @@ modify it under the same terms as Perl itself.
  Comments  : The process of creating a new SeqPattern.pm object
            : ensures that the pattern string is untained.
 
-See Also   : L<_untaint_pat>(), B<Bio::Root::Object::new()>, B<Bio::Seq::_initialize()>
+See Also   : L<_untaint_pat>(), B<Bio::Root::RootI::new()>, 
+             B<Bio::Seq::_initialize()>
 
 =cut
 
 #----------------
-sub _initialize {
+sub new {
 #----------------
-    my($self, %param) = @_;
+    my($class, %param) = @_;
     
-    my($seq, $type) = $self->_rearrange([qw(SEQ TYPE)], %param);
+    my $self = $class->SUPER::new(%param);
+    my ($seq,$type) = $self->_rearrange([qw(SEQ TYPE)], %param);
 
     $seq || $self->throw("Empty pattern.");
     my $t;
@@ -268,14 +274,13 @@ sub _initialize {
     } elsif ($type =~ /amino|pep|prot/i) {
 	$t = 'Amino';
     }
-
-    $seq =~ tr/a-z/A-Z/;
-
+    $seq =~ tr/a-z/A-Z/;  #ps 8/8/00 Canonicalize to upper case
     $self->str($seq);
     $self->type($t);
 
     return $self;
 }
+
 
 =head1 alphabet_ok
 
@@ -348,6 +353,7 @@ sub expand {
     }
 }
 
+
 =head1 _expand_pep
 
  Title     : _expand_pep
@@ -386,6 +392,8 @@ sub _expand_pep {
 
     return $pat;
 }
+
+
 
 =head1 _expand_nuc
 
@@ -453,6 +461,8 @@ sub _expand_nuc {
     return $pat;  
 }
 
+
+
 =head1 revcom
 
  Title     : revcom
@@ -479,7 +489,7 @@ See Also   : B<Bio::Seq::revcom()>, L<_fixpat_1>(), L<_fixpat_2>(), L<_fixpat_3>
 
 =cut
 
-#-----------
+#-----------'
 sub revcom {
 #-----------
     my($self,$expand) = @_;
@@ -517,11 +527,17 @@ sub revcom {
     
      $fixrev = _fixpat_5($fixrev);
 #    print "FIX 5: $fixrev";<STDIN>;
-    
+
+##### Added by ps 8/7/00 to allow non-greedy matching
+     $fixrev = _fixpat_6($fixrev);
+#    print "FIX 6: $fixrev";<STDIN>;
+
 #    $self->{'_rev'} = $fixrev;
 
      return new Bio::Tools::SeqPattern(-seq =>$fixrev, -type =>$self->type);
 }
+
+
 
 =head1 _fixpat_1
 
@@ -592,6 +608,7 @@ sub _fixpat_1 {
     
 }
 
+
 =head1 _fixpat_2
 
  Title     : _fixpat_2
@@ -630,6 +647,7 @@ sub _fixpat_2 {
     return join('', reverse @done);
 }
 
+
 =head1 _fixpat_3
 
  Title     : _fixpat_3
@@ -654,17 +672,17 @@ sub _fixpat_3 {
 #	$pat =~ s/(.+)(\{\S+\})(\(\w+\))(.*)/$1#$3$2$4/ or do{ push @done, $pat; last; };
 	if( $pat =~ /(.*)(.)(\{\S+\})(\(\w+\))(.*)/) {
 	    $newpat = "$1#$2$4$3$5";
-	    $oldpat = "$1#$2$3$4$5";
+##ps	    $oldpat = "$1#$2$3$4$5";
 #	    print "1: $1\n2: $2\n3: $3\n4: $4\n5: $5\n";
-	    $braces = $3;
-	    $braces =~ s/[{}]//g;
-	    if( exists $Processed_braces{"$2$braces"} || exists $Processed_asterics{$2}) {
-		$pat = $oldpat;  # Don't change it. Already processed.
+##ps	    $braces = $3;
+##ps	    $braces =~ s/[{}]//g;
+##ps	    if( exists $Processed_braces{"$2$braces"} || exists $Processed_asterics{$2}) {
+##ps		$pat = $oldpat;  # Don't change it. Already processed.
 #		print "saved pat: $pat";<STDIN>;
-	    } else {
+##ps	    } else {
 #		print "new pat: $newpat";<STDIN>;
 		$pat = $newpat;  # Change it.
-	    }
+##ps	    }
 	} elsif( $pat =~ /^(\{\S+\})(\(\w+\))(.*)/) {
 	    $pat = "#$2$1$3";
 	} else { 
@@ -678,6 +696,7 @@ sub _fixpat_3 {
     }
     return join('', reverse @done);
 }
+
 
 =head1 _fixpat_4
 
@@ -731,6 +750,7 @@ sub _fixpat_4 {
     return join('', reverse @done);
 }
 
+
 =head1 _fixpat_5
 
  Title     : _fixpat_5
@@ -781,6 +801,57 @@ sub _fixpat_5 {
     return join('', reverse @done);
 }
 
+
+
+
+
+############################
+#
+#  PS: Added 8/7/00 to allow non-greedy matching patterns
+#
+######################################
+
+=head1 _fixpat_6
+
+ Title     : _fixpat_6
+ Usage     : n/a; called automatically by revcom()
+ Purpose   : Utility method for revcom()
+           : Converts all ?Y{5,7}  ---> Y{5,7}?
+           :          and ?(XXX){5,7}  ---> (XXX){5,7}?
+           :          and ?[XYZ]{5,7}  ---> [XYZ]{5,7}?
+ Returns   : String (the new, partially reversed pattern)
+ Argument  : String (the expanded, partially reversed pattern)
+ Throws    : n/a
+
+See Also   : L<revcom>()
+
+=cut
+
+#--------------
+sub _fixpat_6 {
+#--------------
+    my $pat = shift;
+    my (@done,@parts);
+
+   @done = ();
+    while(1) {
+	$pat =~   /(.*)\?(\[\w+\]|\(\w+\)|\w)(\{\S+?\})?(.*)/ or do{ push @done, $pat; last; };
+     my $quantifier = $3 ? $3 : ""; # Shut up warning if no explicit quantifier
+ 	$pat = $1.'#'.$2.$quantifier.'?'.$4;
+#	$pat = $1.'#'.$2.$3.'?'.$4;
+
+#	print "1: $1\n2: $2\n3: $3\n";
+#	print "modified pat: $pat";<STDIN>;
+	@parts = split '#', $pat;
+	push @done, $parts[1];
+	$pat = $parts[0];
+#	print "done: $parts[1]<---\nnew pat: $pat<---";<STDIN>;
+	last if not $pat;
+    }
+    return join('', reverse @done);
+
+ }
+
 =head2 str
 
  Title   : str
@@ -788,6 +859,7 @@ sub _fixpat_5 {
  Function: 
  Returns : value of str
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -808,6 +880,7 @@ sub str{
  Function: 
  Returns : value of type
  Args    : newvalue (optional)
+
 
 =cut
 
@@ -832,26 +905,29 @@ __END__
 
 =head2 Data Members
 
-Information about the various data members of this module is provided for those 
-wishing to modify or understand the code. Two things to bear in mind: 
+Information about the various data members of this module is provided
+for those wishing to modify or understand the code. Two things to bear
+in mind:
 
 =over 4
 
 =item 1 Do NOT rely on these in any code outside of this module. 
 
-All data members are prefixed with an underscore to signify that they are private.
-Always use accessor methods. If the accessor doesn't exist or is inadequate, 
-create or modify an accessor (and let me know, too!). 
+All data members are prefixed with an underscore to signify that they
+are private.  Always use accessor methods. If the accessor doesn't
+exist or is inadequate, create or modify an accessor (and let me know,
+too!).
 
 =item 2 This documentation may be incomplete and out of date.
 
-It is easy for this documentation to become obsolete as this module is still evolving. 
-Always double check this info and search for members not described here.
+It is easy for this documentation to become obsolete as this module is
+still evolving.  Always double check this info and search for members
+not described here.
 
 =back
 
-An instance of Bio::Tools::RestrictionEnzyme.pm is a blessed reference to a hash
-containing all or some of the following fields:
+An instance of Bio::Tools::RestrictionEnzyme.pm is a blessed reference
+to a hash containing all or some of the following fields:
 
  FIELD          VALUE
  ------------------------------------------------------------------------
@@ -862,5 +938,9 @@ containing all or some of the following fields:
  _seq     : (From Bio::Seq.pm) The original, unexpanded input sequence after untainting.
  _type    : (From Bio::Seq.pm) 'Dna' or 'Amino' 
 
+
 =cut
 
+
+
+1;
