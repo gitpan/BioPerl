@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Object.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 23 July 1996
-# REVISION: $Id: Object.pm,v 1.3 1999/04/06 11:14:13 sac Exp $
+# REVISION: $Id: Object.pm,v 1.3.6.1 1999/06/25 08:55:49 sac Exp $
 # STATUS  : Alpha
 #            
 # For documentation, run this module through pod2html 
@@ -35,7 +35,7 @@ use vars qw($ID $VERSION %Objects_created $Revision);
 
 $ID       = 'Bio::Root::Object';
 $VERSION  = 0.041;
-$Revision = '$Id: Object.pm,v 1.3 1999/04/06 11:14:13 sac Exp $';  #'
+$Revision = '$Id: Object.pm,v 1.3.6.1 1999/06/25 08:55:49 sac Exp $';  #'
 
 ### POD Documentation:
 
@@ -2017,7 +2017,7 @@ sub _display_stats {
     if($self->parent) {
 	printf ( $OUT "%-15s: %s\n","PARENT", $self->parent->to_string);
     }
-    printf ( $OUT "%-15s: %d\n",'ERRORS',    $self->err('count'));
+    printf ( $OUT "%-15s: %d\n",'ERRORS', (defined $self->err('count') ? $self->err('count') : 0)); ###JES###
     printf ( $OUT "%-15s: %s\n","ERR STATE", $self->err_state());
     if($self->err()) {
 	print $OUT "ERROR:\n";

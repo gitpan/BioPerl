@@ -1,7 +1,7 @@
 ## Bioperl Test Harness Script for Modules
 ##
 # CVS Version
-# $Id: SeqIO.t,v 1.4 1999/04/06 15:52:25 birney Exp $
+# $Id: SeqIO.t,v 1.4.6.1 1999/06/21 17:59:53 amackey Exp $
 
 
 # Before `make install' is performed this script should be runnable with
@@ -114,11 +114,14 @@ $str->write_seq($seq);
 
 print "ok 9\n";
 
-
 #####
 ## End of ChrisDag's SeqIO tests.
 #####
 
+
+# leave this as the last statement, please - AJM
+
+$str = undef;
 
 
 

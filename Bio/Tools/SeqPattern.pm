@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Tools::SeqPattern.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 28 Aug 1997
-# REVISION: $Id: SeqPattern.pm,v 1.1.1.1 1998/12/11 15:24:23 birney Exp $
+# REVISION: $Id: SeqPattern.pm,v 1.1.1.1.8.1 1999/06/25 09:06:34 sac Exp $
 #            
 # Copyright (c) 1997-8 Steve A. Chervitz. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
@@ -725,7 +725,8 @@ sub _fixpat_4 {
 #	    print "1: $1\n2: $2\n3: $3\n4: $4\n5: $5\n";
 	    $braces = $3;
 	    $braces =~ s/[{}]//g;
-	    if( exists $Processed_braces{"$2$braces"} || exists $Processed_asterics{$2}) {
+	    if( (defined $braces and defined $2) and
+		exists $Processed_braces{"$2$braces"} || exists $Processed_asterics{$2}) {
 		$pat = $oldpat;  # Don't change it. Already processed.
 #		print "saved pat: $pat";<STDIN>;
 	    } else {

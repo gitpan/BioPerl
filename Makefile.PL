@@ -1,7 +1,7 @@
 ## --Makefile.PL for Bioperl core module distribution--##
 ## ----------------------------------------------------##
 
-# $Id: Makefile.PL,v 1.5 1999/04/25 18:21:26 birney Exp $
+# $Id: Makefile.PL,v 1.5.2.1 1999/06/18 09:37:08 sac Exp $
 
 #
 # Basically this is a standard makefile except 
@@ -23,13 +23,13 @@
 
 # Let the code begin...
 
-require 5.003;
+require 5.004;
 use ExtUtils::MakeMaker;
 
 $do_autoload_finesse = 0;
 $NAME     = 'Bio';
 $DISTNAME = "bioperl";
-$VERSION  = "0.05";
+$VERSION  = "0.05.1";
 
 if( $do_autoload_finesse == 1 ) {
     fatal("Autoload finessing does not work at the moment!");

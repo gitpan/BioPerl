@@ -5,7 +5,7 @@
 # PURPOSE  : To submit a set of sequence for Blast analysis and parse the results.
 # AUTHOR   : Steve A. Chervitz
 # CREATED  : 15 May 1998
-# REVISION : $Id: blast_seq.pl,v 1.2 1999/02/27 12:28:04 sac Exp $
+# REVISION : $Id: blast_seq.pl,v 1.2.6.1 1999/04/28 02:53:07 sac Exp $
 # WEBSITE  : http://bio.perl.org/Projects/Blast/
 # USAGE    : blast_seq.pl -h
 # EXAMPLES : blast_seq.pl -eg
@@ -36,7 +36,7 @@ use vars qw($ID $VERSION $DESC %runParam %blastParam
 @blast_opts = qw(prog=s vers=s db=s html! v=s b=s expect=s gap!
 		 filt=s mat=s gap_c=s gap_e=s email=s word=s
 		 parse! signif=s strict! stats! best!    
-		 table=s compress! rem! loc! check_all!
+		 table=s compress! rem! loc! check_all! desc!
 		 );
 $ID      = 'blast_seq.pl';
 $VERSION = 0.1;

@@ -5,7 +5,7 @@
 # PURPOSE : To demonstrate parsing features of the Bio::Tools::Blast.pm module.
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 3 Feb 1998
-# REVISION: $Id: parse_blast.pl,v 1.4 1999/04/25 08:14:18 sac Exp $
+# REVISION: $Id: parse_blast.pl,v 1.4.2.2 1999/05/28 16:54:20 sac Exp $
 # WEBSITE : http://bio.perl.org/Projects/Blast/
 # USAGE   : parse_blast.pl -h
 # EXAMPLES: parse_blast.pl -eg
@@ -16,14 +16,14 @@
 #
 # COMMENTS:
 #
-# Sample BLAST output files can be found in examples/blast/out/ of the distribution.
-# This script can process Blast report files specified on the command line or
-# supplied via a STDIN stream.
-#
-# This demo script does not exercise all of the functionality of the Blast object.
-# See parse2.pl and parse_positions.pl script for some other manipulations and 
-# the documentation in the Bio::Tools::Blast.pm, accessible from the above website
-# or by running Blast.pm through pos2html.
+# Sample BLAST output files can be found in examples/blast/out/ of the 
+# distribution. This script can process Blast report files specified 
+# on the command line or supplied via a STDIN stream.
+# 
+# This demo script does not exercise all of the functionality of the Blast 
+# object. See parse_blast2.pl and parse_positions.pl script for some other
+# manipulations and the documentation in the Bio::Tools::Blast.pm, 
+# accessible from the above website or by running Blast.pm through pod2html.
 #
 # TODO:
 #  * Create an example that shows how to parse with HTML-formatted
@@ -31,8 +31,8 @@
 #    directly.
 #
 # MODIFIED:
-#  sac, 11 Mar 1999: Merged parse_stream.pl with parse.pl to create parse_blast.pl.
-#                    No longer any parse_stream.pl or parse.pl.
+#  sac, 11 Mar 1999: Merged parse_stream.pl with parse.pl to create
+#                    parse_blast.pl. Replaces parse_stream.pl and parse.pl.
 #  sac,  4 Sep 1998: Added example of using -filt_func option.
 #  sac, 16 Jun 1998: Added installation comment, require statement comments.
 #                    Minor alteration of seq_inds() calls.
@@ -97,9 +97,14 @@ STREAM PARSING:
   gapped, ungapped, etc.). Most of the time, -noshare is unnecessary
   since all reports have the same program, version, gapping, etc.
 
-  THe "print_blasts.pl dir" syntax or the parse_multi.pl script are 
+  The "print_blasts.pl dir" syntax or the parse_multi.pl script are 
   recommended when working with large numbers of Blast reports (thousands).
   The Blasts reports located in "dir" can be compressed or not. 
+
+  WARNING:
+  Parsing large numbers of Blast reports can lead to serious
+  memory usage problems. See documentation in parse_multi.pl and
+  Blast.pm for more information (including a workaround).
 
 QQ_EG_QQ
 }

@@ -7,18 +7,24 @@
 #  streams containing large numbers of reports (several thousand).
 #  sac --- Tue Jul 21 15:35:56 1998.
 #
-#  The memory leak has been somewhat abated but is still a problem.
-#  The severity of the problem depends on the nature of the reports
-#  and the parsing parameters (e.g., saving all hits or only those 
-#  below 1e-20).
-#  sac --- Thu Dec  3 00:22:04 1998
+# The good news is that there is now a workaround!
+# Memory usage seems to be a problem only when a -signif parameter is supplied
+# separately. By placing the significance criterion within a -filt_func,
+# memory usage is not a problem. The cause is still under investigation.
+#
+# For example, the command-line argument of:
+#      -signif 1e-5 
+# is equivalent to
+#      -filt_func '$hit->signif <= 1e-5'
+#
+# For more information, see the documentation for the Blast.pm module.
 
 #---------------------------------------------------------------------------
 # PROGRAM : parse_multi.pl
 # PURPOSE : To parse a set of Blast report files.
 # AUTHOR  : Steve A. Chervitz
 # CREATED : 21 Jul 1998
-# REVISION: $Id: parse_multi.pl,v 1.4 1999/04/25 08:14:19 sac Exp $
+# REVISION: $Id: parse_multi.pl,v 1.4.2.1 1999/05/10 08:09:33 sac Exp $
 # WEBSITE : http://bio.perl.org/Projects/Blast/
 # USAGE   : parse_multi.pl -h
 # EXAMPLES: parse_multi.pl -eg

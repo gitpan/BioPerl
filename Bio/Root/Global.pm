@@ -4,7 +4,7 @@
 #           many different modules and scripts.
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 3 Sep 1996
-# REVISION: $Id: Global.pm,v 1.4 1999/04/06 11:14:11 sac Exp $
+# REVISION: $Id: Global.pm,v 1.4.6.1 1999/06/23 08:06:38 birney Exp $
 #
 # INSTALLATION:
 #   This module is included with the central Bioperl distribution:
@@ -28,6 +28,38 @@
 #    sac --- Fri 5 Jun 1998: Added @DAYS.
 #    sac --- Sun Aug 16 1998: Added $RECORD_ERR and &record_err().
 #--------------------------------------------------------------------------------
+
+### POD Documentation:
+
+=head1 NAME
+
+Bio::Root::Global - Global variables and utility functions
+
+=head1 SYNOPSIS
+
+    # no real synopsis - see Bio::Root::Object
+
+=head1 DESCRIPTION
+
+The Bio::Root::Global file contains all the global flags
+about erro warning etc, and also utility functions, eg
+to map numbers to roman numerals.
+
+These functions are generally called by Bio::Root::Object
+or somewhere similar, and not directly
+
+
+=head1 INSTALLATION
+
+This module is included with the central Bioperl distribution:
+
+   http://bio.perl.org/Core/Latest
+   ftp://bio.perl.org/pub/DIST
+
+Follow the installation instructions included in the README file.
+
+=cut
+
 package	 Bio::Root::Global;
 
 BEGIN {

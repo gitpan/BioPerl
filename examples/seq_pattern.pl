@@ -7,7 +7,7 @@
 #           nucleotide or peptide sequences).
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 28 Aug 1997
-# REVISION: $Id: seq_pattern.pl,v 1.2 1999/02/27 12:28:02 sac Exp $
+# REVISION: $Id: seq_pattern.pl,v 1.2.6.1 1999/06/25 09:06:34 sac Exp $
 # USAGE   : seq_pattern.pl -h
 # COMMENTS: 
 #    This is a driver script for the Bio::Tools::SeqPattern.pm Bioperl module
@@ -113,7 +113,7 @@ sub test_nuc {
     print "-----------------------\n";
     printf "%18s: %s\n", 'Type',    $npat->type;
     printf "%18s: %s\n", 'Original',$npat->str;
-    printf "%18s: %s\n", 'Expaned', $npat->expand;
+    printf "%18s: %s\n", 'Expanded', $npat->expand;
     printf "%18s: %s\n", 'Reverse-Comp', $npat->revcom->str;
     printf "%18s: %s\n", 'Rev-Comp+Expanded', $npat->revcom(1)->str; # Hate this syntax. May change.
     print "\n";
@@ -131,7 +131,7 @@ sub test_pep {
     print "-----------------------\n";
     printf "%18s: %s\n", 'Type',    $ppat->type;
     printf "%18s: %s\n", 'Original',$ppat->str;
-    printf "%18s: %s\n", 'Expaned', $ppat->expand;
+    printf "%18s: %s\n", 'Expanded', $ppat->expand;
     print "\n";
 }    
 

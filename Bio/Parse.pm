@@ -5,7 +5,7 @@ require Exporter;
 @EXPORT_OK   = qw($VERSION $OK);
 $VERSION     = 0.05;
 
-# $Id: Parse.pm,v 1.1.1.1 1998/12/11 15:24:21 birney Exp $ #
+# $Id: Parse.pm,v 1.1.1.1.8.1 1999/06/30 08:39:42 sac Exp $ #
 
 ############  MANUAL EDITING NEEDED HERE!
 ############
@@ -137,7 +137,7 @@ to the ReadSeq executable. This option should only be used by people
 familiar with operating ReadSeq on the command-line. Use at your own
 risk as this has not been fully tested. 
 
-As an example, the ReadSeq switch '-c' will cause all of the
+As an example, the ReadSeq switch C<-c> will cause all of the
 characters in the formatted sequence to be returned in lowercase.
 
  $reply  = &Parse::convert_from_raw(-sequence=>"$seq_string",
@@ -515,7 +515,7 @@ $reply = join('',@response);
 Bioperl Project
 http://bio.perl.org
 
-=head1 COPYWRITE
+=head1 COPYRIGHT
 
 Copyright (c) 1997-1998 Chris Dagdigian, Georg Fuellen,
 Steven E. Brenner and others. All Rights Reserved.
