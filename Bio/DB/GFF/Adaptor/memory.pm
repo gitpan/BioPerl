@@ -1,6 +1,6 @@
 package Bio::DB::GFF::Adaptor::memory;
 use strict;
-# $Id: memory.pm,v 1.4.2.2 2002/03/31 21:25:03 lstein Exp $
+# $Id: memory.pm,v 1.4.2.4 2002/07/11 03:02:16 lstein Exp $
 # AUTHOR: Shulamit Avraham
 # This module needs to be cleaned up and documented
 
@@ -50,6 +50,9 @@ sub insert_sequence {
 sub get_dna {
   my $self = shift;
   my ($id,$start,$stop,$class) = @_;
+  return $self->{dna}{$id} if !defined $start || !defined $stop;
+  $start = 1 if !defined $start;
+  
   my $reversed = 0;
   if ($start > $stop) {
     $reversed++;

@@ -1,4 +1,4 @@
-# $Id: PrimarySeq.pm,v 1.42.2.2 2002/03/15 12:36:15 heikki Exp $
+# $Id: PrimarySeq.pm,v 1.42.2.3 2002/06/13 22:27:41 jason Exp $
 #
 # bioperl module for Bio::PrimarySeq
 #
@@ -278,7 +278,8 @@ sub seq {
 
 sub validate_seq {
    my ($self,$seqstr) = @_;
-
+    if( ! defined $seqstr ){ $seqstr = $self->seq(); }
+    return 0 unless( defined $seqstr); 
    if((CORE::length($seqstr) > 0) && ($seqstr !~ /^[A-Za-z\-\.\*\?]+$/)) {
        return 0;
    }

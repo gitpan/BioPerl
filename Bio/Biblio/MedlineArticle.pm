@@ -1,4 +1,4 @@
-# $Id: MedlineArticle.pm,v 1.2.2.1 2002/03/11 16:02:34 jason Exp $
+# $Id: MedlineArticle.pm,v 1.2.2.2 2002/06/19 00:28:25 jason Exp $
 #
 # BioPerl module for Bio::Biblio::MedlineArticle
 #
@@ -9,7 +9,7 @@
 
 =head1 NAME
 
-Bio::Biblio::edlineArticle - Representation of a MEDLINE article
+Bio::Biblio::MedlineArticle - Representation of a MEDLINE article
 
 =head1 SYNOPSIS
 

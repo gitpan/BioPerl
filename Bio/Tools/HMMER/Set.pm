@@ -1,4 +1,4 @@
-# $Id: Set.pm,v 1.11 2001/11/20 02:09:41 lstein Exp $
+# $Id: Set.pm,v 1.11.2.1 2002/07/04 17:02:34 jason Exp $
 #
 # BioPerl module for Bio::Tools::HMMER::Set
 #
@@ -85,6 +85,7 @@ sub new {
     $desc && $self->desc($desc);
 
     $self->{'domains'} = [];
+    $self->{'domainnames'} = {};
     return $self;
 }
 
@@ -105,7 +106,7 @@ sub add_Domain{
    if( ! defined $domain || ! $domain->isa("Bio::Tools::HMMER::Domain") ) {
        $self->throw("[$domain] is not a Bio::Tools::HMMER::Domain. aborting");
    }
-
+   return if $self->{'domainnames'}->{$domain->get_nse}++;
    push(@{$self->{'domains'}},$domain);
 
 }

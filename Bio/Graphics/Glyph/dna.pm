@@ -70,6 +70,7 @@ sub draw_dna {
   my $color = $self->fgcolor;
   my $font  = $self->font;
   my $lineheight = $font->height;
+
   my %complement = (g=>'c',a=>'t',t=>'a',c=>'g',
 		    G=>'C',A=>'T',T=>'A',C=>'G');
   for (my $i=0;$i<@bases;$i++) {
@@ -104,13 +105,13 @@ sub draw_gc_content {
   my $axiscolor  = $self->color('axis_color') || $fgcolor;
 
   $gd->line($x1,  $y1,        $x1,  $y2,        $axiscolor);
-  $gd->line($x2,  $y1,        $x2,  $y2,        $axiscolor);
+  $gd->line($x2-1,$y1,        $x2-1,$y2,        $axiscolor);
   $gd->line($x1,  $y1,        $x1+3,$y1,        $axiscolor);
   $gd->line($x1,  $y2,        $x1+3,$y2,        $axiscolor);
   $gd->line($x1,  ($y2+$y1)/2,$x1+3,($y2+$y1)/2,$axiscolor);
-  $gd->line($x2-3,$y1,        $x2,  $y1,        $axiscolor);
-  $gd->line($x2-3,$y2,        $x2,  $y2,        $axiscolor);
-  $gd->line($x2-3,($y2+$y1)/2,$x2,  ($y2+$y1)/2,$axiscolor);
+  $gd->line($x2-3,$y1,        $x2-1, $y1,       $axiscolor);
+  $gd->line($x2-3,$y2,        $x2-1, $y2,       $axiscolor);
+  $gd->line($x2-3,($y2+$y1)/2,$x2-1,($y2+$y1)/2,$axiscolor);
   $gd->line($x1+5,$y2,        $x2-5,$y2,        $bgcolor);
   $gd->line($x1+5,($y2+$y1)/2,$x2-5,($y2+$y1)/2,$bgcolor);
   $gd->line($x1+5,$y1,        $x2-5,$y1,        $bgcolor);
@@ -144,11 +145,11 @@ __END__
 
 =head1 NAME
 
-Ace::Graphics::Glyph::dna - The "dna" glyph
+Bio::Graphics::Glyph::dna - The "dna" glyph
 
 =head1 SYNOPSIS
 
-  See L<Ace::Graphics::Panel> and L<Ace::Graphics::Glyph>.
+  See L<Bio::Graphics::Panel> and L<Bio::Graphics::Glyph>.
 
 =head1 DESCRIPTION
 
@@ -212,14 +213,35 @@ Please report them.
 
 =head1 SEE ALSO
 
-L<Ace::Sequence>, L<Ace::Sequence::Feature>, L<Ace::Graphics::Panel>,
-L<Ace::Graphics::Track>, L<Ace::Graphics::Glyph::anchored_arrow>,
-L<Ace::Graphics::Glyph::arrow>,
-L<Ace::Graphics::Glyph::box>,
-L<Ace::Graphics::Glyph::primers>,
-L<Ace::Graphics::Glyph::segments>,
-L<Ace::Graphics::Glyph::toomany>,
-L<Ace::Graphics::Glyph::transcript>,
+L<Bio::Graphics::Panel>,
+L<Bio::Graphics::Glyph>,
+L<Bio::Graphics::Glyph::arrow>,
+L<Bio::Graphics::Glyph::cds>,
+L<Bio::Graphics::Glyph::crossbox>,
+L<Bio::Graphics::Glyph::diamond>,
+L<Bio::Graphics::Glyph::dna>,
+L<Bio::Graphics::Glyph::dot>,
+L<Bio::Graphics::Glyph::ellipse>,
+L<Bio::Graphics::Glyph::extending_arrow>,
+L<Bio::Graphics::Glyph::generic>,
+L<Bio::Graphics::Glyph::graded_segments>,
+L<Bio::Graphics::Glyph::heterogeneous_segments>,
+L<Bio::Graphics::Glyph::line>,
+L<Bio::Graphics::Glyph::pinsertion>,
+L<Bio::Graphics::Glyph::primers>,
+L<Bio::Graphics::Glyph::rndrect>,
+L<Bio::Graphics::Glyph::segments>,
+L<Bio::Graphics::Glyph::ruler_arrow>,
+L<Bio::Graphics::Glyph::toomany>,
+L<Bio::Graphics::Glyph::transcript>,
+L<Bio::Graphics::Glyph::transcript2>,
+L<Bio::Graphics::Glyph::translation>,
+L<Bio::Graphics::Glyph::triangle>,
+L<Bio::DB::GFF>,
+L<Bio::SeqI>,
+L<Bio::SeqFeatureI>,
+L<Bio::Das>,
+L<GD>
 
 =head1 AUTHOR
 

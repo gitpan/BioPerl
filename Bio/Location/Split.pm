@@ -1,4 +1,4 @@
-# $Id: Split.pm,v 1.20 2002/03/01 16:35:36 lstein Exp $
+# $Id: Split.pm,v 1.20.2.3 2002/07/15 00:11:30 jason Exp $
 #
 # BioPerl module for Bio::Location::SplitLocation
 # Cared for by Jason Stajich <jason@chg.mc.duke.edu>
@@ -87,16 +87,33 @@ BEGIN {
     @CORBALOCATIONOPERATOR= ('NONE','JOIN', undef, 'ORDER');  
 }
 
+=head2 new
+
+ Title   : new
+ Usage   : my $splitloc = new Bio::Location::Split( @args);
+ Function: Builds a location which contains multiple sub pieces
+ Returns : Bio::Location::Split
+ Args    : -split_type => 'JOIN' or 'ORDER'
+           -seq_id   => The ID of the containing sequence for this feature
+           -locations=> array ref of Bio::LocationI objects contained within
+                        this location
+=cut
+
+
 sub new {
     my ($class, @args) = @_;
     my $self = $class->SUPER::new(@args);
     # initialize
     $self->{'_sublocations'} = [];
-    my ( $type, $locations ) = $self->_rearrange([qw(SPLITTYPE 
-						     LOCATIONS)], @args);
+    my ( $type, $seqid, $locations ) = 
+	$self->_rearrange([qw(SPLITTYPE
+                              SEQ_ID
+			      LOCATIONS
+                              )], @args);
     if( defined $locations && ref($locations) =~ /array/i ) {
 	$self->add_sub_Location(@$locations);
     }
+    $seqid  && $self->seq_id($seqid);
     $type = lc ($type);    
     $self->splittype($type || 'JOIN');
     return $self;
@@ -142,7 +159,7 @@ sub sub_Location {
     while((! defined($seqid)) && ($i <= $#sublocs)) {
 	$seqid = $sublocs[$i++]->seq_id();
     }
-    if((! $self->seq_id()) && $seqid) {
+    if(! $self->seq_id && $seqid) {
 	$self->warn("sorted sublocation array requested but ".
 		    "root location doesn't define seq_id ".
 		    "(at least one sublocation does!)");

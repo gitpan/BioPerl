@@ -41,7 +41,7 @@ sub draw {
   $gd->line($x2 - HEIGHT,$center,$x2 - HEIGHT + $a2,$center-$a2,$fg);
 
   # connect the dots if requested
-  if ($self->option('connect')) {
+  if ($self->connect) {
     my $c = $self->color('connect_color') || $self->bgcolor;
     $gd->line($x1 + HEIGHT + 2,$center,$x2 - HEIGHT - 2,$center,$c);
   }
@@ -49,6 +49,12 @@ sub draw {
   # add a label if requested
   $self->draw_label($gd,@_) if $self->option('label');
 
+}
+
+sub connect {
+  my $self = shift;
+  return $self->option('connect') if defined $self->option('connect');
+  1;  # default
 }
 
 1;
@@ -78,7 +84,7 @@ options are recognized:
   Option      Description               Default
   ------      -----------               -------
 
-  -connect    Whether to connect the      false
+  -connect    Whether to connect the      true
               two arrowheads by a line.
 
   -connect_color  The color to use for the    bgcolor
@@ -90,14 +96,36 @@ Please report them.
 
 =head1 SEE ALSO
 
-L<Ace::Sequence>, L<Ace::Sequence::Feature>, L<Bio::Graphics::Panel>,
-L<Bio::Graphics::Track>, L<Bio::Graphics::Glyph::anchored_arrow>,
+
+L<Bio::Graphics::Panel>,
+L<Bio::Graphics::Glyph>,
 L<Bio::Graphics::Glyph::arrow>,
-L<Bio::Graphics::Glyph::box>,
+L<Bio::Graphics::Glyph::cds>,
+L<Bio::Graphics::Glyph::crossbox>,
+L<Bio::Graphics::Glyph::diamond>,
+L<Bio::Graphics::Glyph::dna>,
+L<Bio::Graphics::Glyph::dot>,
+L<Bio::Graphics::Glyph::ellipse>,
+L<Bio::Graphics::Glyph::extending_arrow>,
+L<Bio::Graphics::Glyph::generic>,
+L<Bio::Graphics::Glyph::graded_segments>,
+L<Bio::Graphics::Glyph::heterogeneous_segments>,
+L<Bio::Graphics::Glyph::line>,
+L<Bio::Graphics::Glyph::pinsertion>,
 L<Bio::Graphics::Glyph::primers>,
+L<Bio::Graphics::Glyph::rndrect>,
 L<Bio::Graphics::Glyph::segments>,
+L<Bio::Graphics::Glyph::ruler_arrow>,
 L<Bio::Graphics::Glyph::toomany>,
 L<Bio::Graphics::Glyph::transcript>,
+L<Bio::Graphics::Glyph::transcript2>,
+L<Bio::Graphics::Glyph::translation>,
+L<Bio::Graphics::Glyph::triangle>,
+L<Bio::DB::GFF>,
+L<Bio::SeqI>,
+L<Bio::SeqFeatureI>,
+L<Bio::Das>,
+L<GD>
 
 =head1 AUTHOR
 

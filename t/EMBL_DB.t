@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: EMBL_DB.t,v 1.7.2.2 2002/06/11 13:07:35 jason Exp $
+# $Id: EMBL_DB.t,v 1.7.2.3 2002/07/08 22:53:40 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -59,7 +59,7 @@ eval {
     ok( $seq->length, 408); 
     ok defined ($db->request_format('fasta'));
     ok(defined($seq = $db->get_Seq_by_acc('J02231')));
-    ok $seq->id, 'embl|J02231|BUM';
+    ok( $seq->id, qr/embl.+BUM/);
     ok( $seq->length, 200); 
     ok( defined($db = new Bio::DB::EMBL(-verbose=>$verbose, 
 					-retrievaltype => 'tempfile')));

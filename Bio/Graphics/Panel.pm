@@ -97,7 +97,7 @@ sub pad_bottom {
 
 # numerous direct calls into array used here for performance considerations
 sub map_pt {
-  my $self = shift;
+  my $self   = shift;
   my $offset = $self->{offset};
   my $scale  = $self->{scale} || $self->scale;
   my $pl = $self->{pad_left};
@@ -111,6 +111,21 @@ sub map_pt {
   }
   @result;
 }
+
+sub map_no_trunc {
+  my $self   = shift;
+  my $offset = $self->{offset};
+  my $scale  = $self->{scale} || $self->scale;
+  my $pl = $self->{pad_left};
+  my $pr = $self->{width} - $self->{pad_right};
+  my @result;
+  foreach (@_) {
+    my $val = int (0.5 + $pl + ($_-$offset-1) * $scale);
+    push @result,$val;
+  }
+  @result;
+}
+
 sub scale {
   my $self = shift;
   $self->{scale} ||= ($self->{width}-$self->pad_left-$self->pad_right-1)/($self->length-1);
@@ -572,6 +587,15 @@ sub read_colors {
   }
 }
 
+sub color_name_to_rgb {
+  my $class = shift;
+  my $color_name  = shift;
+  $class->read_colors() unless %COLORS;
+  return unless $COLORS{$color_name};
+  return wantarray ? @{$COLORS{$color_name}}
+                   : $COLORS{$color_name};
+}
+
 sub color_names {
     my $class = shift;
     $class->read_colors unless %COLORS;
@@ -981,18 +1005,67 @@ Currently, the following glyphs are available:
   Name        Description
   ----        -----------
 
-  generic      A filled rectangle, nondirectional.
-
-  ellipse     An oval.
-
   arrow	      An arrow; can be unidirectional or bidirectional.
 	      It is also capable of displaying a scale with
 	      major and minor tickmarks, and can be oriented
 	      horizontally or vertically.
 
+  cds         Draws CDS features, using the phase information to
+              show the reading frame usage.  At high magnifications
+              draws the protein translation.
+
+  crossbox    A box with a big "X" inside it.
+
+  diamond     A diamond, useful for point features like SNPs.
+
+  dna         At high magnification draws the DNA sequence.  At
+              low magnifications draws the GC content.
+
+  dot         A circle, useful for point features like SNPs, stop
+              codons, or promoter elements.
+
+  ellipse     An oval.
+
+  extending_arrow
+              Similar to arrow, but a dotted line indicates when the
+              feature extends beyond the end of the canvas.
+
+  generic     A filled rectangle, nondirectional.
+
+  graded_segments
+              Similar to segments, but the intensity of the color
+              is proportional to the score of the feature.  This
+              is used for showing the intensity of blast hits or
+              other alignment features.
+
+  group	      A group of related features connected by a dashed line.
+	      This is used internally by Panel.
+
+  heterogeneous_segments
+              Like segments, but you can use the source field of the feature
+              to change the color of each segment.
+
+  line        A simple line.
+
+  pinsertion  A triangle designed to look like an insertion location
+              (e.g. a transposon insertion).
+
+  primers     Two inward pointing arrows connected by a line.
+	      Used for STSs.
+
+  rndrect     A round-cornered rectangle.
+
   segments    A set of filled rectangles connected by solid lines.
 	      Used for interrupted features, such as gapped
 	      alignments.
+
+  ruler_arrow An arrow with major and minor tick marks and interval
+              labels.
+
+  toomany     Tries to show many features as a cloud.  Not very successful.
+
+  track	      A group of related features not connected by a line.
+	      This is used internally by Panel.
 
   transcript  Similar to segments, but the connecting line is
 	      a "hat" shape, and the direction of transcription
@@ -1002,17 +1075,17 @@ Currently, the following glyphs are available:
               transcription is indicated by a terminal exon
               in the shape of an arrow.
 
-  primers     Two inward pointing arrows connected by a line.
-	      Used for STSs.
+  translation 1, 2 and 3-frame translations.  At low magnifications,
+              can be configured to show start and stop codon locations.
+              At high magnifications, shows the multi-frame protein
+              translation.
 
-  group	      A group of related features connected by a dashed line.
-	      This is used internally by Panel.
+  triangle    A triangle whose width and orientation can be altered.
 
-  track	      A group of related features not connected by a line.
-	      This is used internally by Panel.
-
-If the glyph name is omitted from add_track(), the "generic" glyph will be
-used by default.
+If the glyph name is omitted from add_track(), the "generic" glyph
+will be used by default.  To get more information about a glyph, run
+perldoc on "Bio::Graphics::Glyph::glyphname", replacing "glyphname"
+with the name of the glyph you are interested in.
 
 The @options array is a list of name/value pairs that control the
 attributes of the track.  Some options are interpretered directly by
@@ -1227,8 +1300,10 @@ B<Collision control:> The -bump argument controls what happens when
 glyphs collide.  By default, they will simply overlap (value 0).  A
 -bump value of +1 will cause overlapping glyphs to bump downwards
 until there is room for them.  A -bump value of -1 will cause
-overlapping glyphs to bump upwards.  This argument can also be a code
-reference; see below.
+overlapping glyphs to bump upwards.  Bump values of +2 and -2
+implement a simpler bump algorithm in which each horizontal position
+is occupied by one and only one feature.  The bump argument can also
+be a code reference; see below.
 
 B<Keys:> The -key argument declares that the track is to be shown in a
 key appended to the bottom of the image.  The key contains a picture
@@ -1300,7 +1375,7 @@ and then caches the result.
    pad_bottom()	      Get/set bottom padding
    pad_right()	      Get/set right padding
 
-=head2 INTERNAL METHODS
+=head2 COLOR METHODS
 
 The following methods are used internally, but may be useful for those
 implementing new glyph types.
@@ -1311,6 +1386,12 @@ implementing new glyph types.
 
 Return the symbolic names of the colors recognized by the panel
 object.  In a scalar context, returns an array reference.
+
+=item ($red,$green,$blue) = Bio::Graphics::Panel-E<gt>color_name_to_rgb($color)
+
+Given a symbolic color name, returns the red, green, blue components
+of the color.  In a scalar context, returns an array reference to the
+rgb triplet.  Returns undef for an invalid color name.
 
 =item @rgb = $panel-E<gt>rgb($index)
 
@@ -1342,8 +1423,32 @@ Please report them.
 =head1 SEE ALSO
 
 L<Bio::Graphics::Glyph>,
-L<Bio::SeqI>,L<Bio::SeqFeatureI>,
-L<Bio::Das>,L<GD>
+L<Bio::Graphics::Glyph::arrow>,
+L<Bio::Graphics::Glyph::cds>,
+L<Bio::Graphics::Glyph::crossbox>,
+L<Bio::Graphics::Glyph::diamond>,
+L<Bio::Graphics::Glyph::dna>,
+L<Bio::Graphics::Glyph::dot>,
+L<Bio::Graphics::Glyph::ellipse>,
+L<Bio::Graphics::Glyph::extending_arrow>,
+L<Bio::Graphics::Glyph::generic>,
+L<Bio::Graphics::Glyph::graded_segments>,
+L<Bio::Graphics::Glyph::heterogeneous_segments>,
+L<Bio::Graphics::Glyph::line>,
+L<Bio::Graphics::Glyph::pinsertion>,
+L<Bio::Graphics::Glyph::primers>,
+L<Bio::Graphics::Glyph::rndrect>,
+L<Bio::Graphics::Glyph::segments>,
+L<Bio::Graphics::Glyph::ruler_arrow>,
+L<Bio::Graphics::Glyph::toomany>,
+L<Bio::Graphics::Glyph::transcript>,
+L<Bio::Graphics::Glyph::transcript2>,
+L<Bio::Graphics::Glyph::translation>,
+L<Bio::Graphics::Glyph::triangle>,
+L<Bio::SeqI>,
+L<Bio::SeqFeatureI>,
+L<Bio::Das>,
+L<GD>
 
 =head1 AUTHOR
 

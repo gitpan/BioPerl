@@ -1,4 +1,4 @@
-# $Id: bptutorial.pl,v 1.40.2.6 2002/04/18 13:07:51 jason Exp $
+# $Id: bptutorial.pl,v 1.40.2.7 2002/06/11 22:11:55 jason Exp $
 
 =head1 NAME
 
@@ -195,7 +195,7 @@ called by a given object. One way to resolve this question is by using
 the software described in Appendix V.1.
 
 For those who prefer more visual descriptions,
-http://bioperl.org/Core/Lates/modules.html also offers links to three
+http://bioperl.org/Core/Latest/modules.html also offers links to three
 PDF files which contain schematics that describe how many of the bioperl
 objects related to one another.
 
@@ -2458,7 +2458,7 @@ and use the displayed help screen.
 # PURPOSE  : Demonstrate various uses of the bioperl package
 # AUTHOR   : Peter Schattner schattner@alum.mit.edu
 # CREATED  : Dec 15 2000
-# REVISION : $Id: bptutorial.pl,v 1.40.2.6 2002/04/18 13:07:51 jason Exp $
+# REVISION : $Id: bptutorial.pl,v 1.40.2.7 2002/06/11 22:11:55 jason Exp $
 
 use strict;
 use Bio::SimpleAlign;

@@ -1,4 +1,4 @@
-# $Id: Iteration.pm,v 1.14 2001/11/20 02:09:41 lstein Exp $
+# $Id: Iteration.pm,v 1.14.2.1 2002/06/19 00:27:35 jason Exp $
 # Bioperl module Bio::Tools::BPlite::Iteration
 #	based closely on the Bio::Tools::BPlite modules
 #	Ian Korf (ikorf@sapiens.wustl.edu, http://sapiens.wustl.edu/~ikorf), 
@@ -16,7 +16,7 @@
 
 =head1 NAME
 
-Bio::Tools:: BPlite::Iteration - object for parsing single iteration
+Bio::Tools::BPlite::Iteration - object for parsing single iteration
 of a PSIBLAST report
 
 =head1 SYNOPSIS

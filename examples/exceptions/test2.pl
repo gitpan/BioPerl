@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 # This shows how Error.pm-based objects can be thrown 
-# by Bio::Root::RootI::throw() when Error.pm is available.
+# by Bio::Root::Root::throw() when Error.pm is available.
 # When Error.pm isn't available, Bio::Root::Root::throw() 
 # works as usual.
 #
@@ -12,7 +12,7 @@
 #
 # Author: Steve Chervitz <sac@bioperl.org>
 #
-# $Id: test2.pl,v 1.5 2002/01/11 08:05:40 sac Exp $
+# $Id: test2.pl,v 1.5.2.1 2002/07/01 22:54:44 sac Exp $
 
 use strict;
 

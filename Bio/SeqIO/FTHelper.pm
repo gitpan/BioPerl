@@ -1,4 +1,4 @@
-# $Id: FTHelper.pm,v 1.45 2002/03/08 20:46:26 jason Exp $
+# $Id: FTHelper.pm,v 1.45.2.2 2002/07/15 00:25:57 jason Exp $
 #
 # BioPerl module for Bio::SeqIO::FTHelper
 #
@@ -127,8 +127,9 @@ sub _generic_seqfeature {
 	my $combotype=$1;
 	$sf->primary_tag($fth->key);
 	$sf->source_tag($source);
+	
 	my $splitlocation = new Bio::Location::Split(-strand=>$strand, 
-						     -seqid => $annseq->id,
+						     -seq_id => $annseq->id,
 						     -splittype => $combotype);
 	# we need to make sub features
 	my $loc = $fth->loc;
@@ -197,11 +198,10 @@ sub _generic_seqfeature {
 	$sf->location($location);
 
       } else {
-	
+	  
 	if ( $loc =~ s/\(?\s*([A-Za-z\d\_]+(\.\d+)?):// ) {
 	  ($seqid) = $1;
 	}
-	
 	
 	if( my $location = $fth->_parse_loc($sf,$loc) ) {
 	  $location->seq_id($seqid) if ( $seqid);
@@ -324,7 +324,7 @@ sub _parse_loc {
 	 $delim =~ /^[\.^]$/ )
     {
 	$type = 'Bio::Location::Fuzzy';
-	push @args, ('-loc_type' => $delim); 
+	push @args, ('-location_type' => $delim); 
     } 
     my $location = $type->new(@args);
     if(defined($tagval) && $tagval ne '') {

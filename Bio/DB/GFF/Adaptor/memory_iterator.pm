@@ -1,6 +1,6 @@
 package Bio::DB::GFF::Adaptor::memory_iterator;
 use strict;
-# $Id: memory_iterator.pm,v 1.1.2.2 2002/03/31 21:25:03 lstein Exp $
+# $Id: memory_iterator.pm,v 1.1.2.3 2002/06/19 21:57:27 lstein Exp $
 # this module needs to be cleaned up and documented
 
 #use constant STH         => 0;

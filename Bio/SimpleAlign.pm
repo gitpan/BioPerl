@@ -1,4 +1,4 @@
-# $Id: SimpleAlign.pm,v 1.49.2.6 2002/06/07 10:30:44 heikki Exp $
+# $Id: SimpleAlign.pm,v 1.49.2.7 2002/06/19 00:30:16 jason Exp $
 # BioPerl module for SimpleAlign
 #
 # Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
@@ -15,7 +15,7 @@
 
 =head1 NAME
 
-SimpleAlign - Multiple alignments held as a set of sequences
+Bio::SimpleAlign - Multiple alignments held as a set of sequences
 
 =head1 SYNOPSIS
 

@@ -115,7 +115,7 @@ use Bio::RangeI;
 
 use vars qw($VERSION @ISA);
 @ISA = qw(Bio::DB::GFF::Segment);
-$VERSION = '0.30';
+$VERSION = '0.41';
 
 use overload '""' => 'asString',
              'bool' => sub { overload::StrVal(shift) },
@@ -183,7 +183,7 @@ be a sequence that has been specified as the "source" in the GFF file.
 
 =cut
 
-# Create a new Ace::Sequence::DBI::Segment object
+# Create a new Bio::DB::GFF::RelSegment Object
 # arguments are:
 #      -factory    => factory and DBI interface
 #      -seq        => $sequence_name
@@ -192,10 +192,12 @@ be a sequence that has been specified as the "source" in the GFF file.
 #      -ref        => $sequence which establishes coordinate system
 #      -offset     => 0-based offset relative to sequence
 #      -length     => length of segment
+#      -nocheck    => turn off checking, force segment to be constructed
+#      -absolute   => use absolute coordinate addressing
 #' 
 sub new {
   my $package = shift;
-  my ($factory,$name,$start,$stop,$refseq,$class,$refclass,$offset,$length,$force_absolute) =
+  my ($factory,$name,$start,$stop,$refseq,$class,$refclass,$offset,$length,$force_absolute,$nocheck) =
     rearrange([
 	       'FACTORY',
 	       [qw(NAME SEQ SEQUENCE SOURCESEQ)],
@@ -206,7 +208,8 @@ sub new {
 	       qw(REFCLASS),
 	       [qw(OFFSET OFF)],
 	       [qw(LENGTH LEN)],
-	       [qw(ABSOLUTE FORCE_ABSOLUTE)],
+	       [qw(ABSOLUTE)],
+	       [qw(NOCHECK FORCE)],
 	     ],@_);
 
   $package = ref $package if ref $package;
@@ -234,6 +237,11 @@ sub new {
 
   # abscoords() will now return an array ref, each element of which is
   # ($absref,$absclass,$absstart,$absstop,$absstrand)
+
+  if ($nocheck) {
+    $force_absolute++;
+    $start = 1;
+  }
 
   if ($force_absolute && defined($start)) { # absolute position is given to us
     @abscoords = ([$name,$class,$start,$stop,'+']);
@@ -577,6 +585,8 @@ are ANDed together.
 
 =cut
 
+#'
+
 # return all features that overlap with this segment;
 # optionally modified by a list of types to filter on
 sub features {
@@ -711,7 +721,7 @@ sub contained_features {
   return $self->factory->contained_features(@args);
 }
 
-*contains = \&contained_features;
+# *contains = \&contained_features;
 
 =head2 contained_in
 
@@ -992,6 +1002,26 @@ sub intersection {
 	     -seq    => $ref,
 	     -start  => $low,
 	     -stop   => $high);
+}
+
+sub overlaps {
+  my $self = shift;
+  my($other,$so) = @_;
+  return $self->SUPER::overlaps(@_) unless $other->isa('Bio::DB::GFF::RelSegment');
+  return if $self->abs_ref ne $other->abs_ref;
+  return if $self->abs_low  > $other->abs_high;
+  return if $self->abs_high < $other->abs_low;
+  1;
+}
+
+sub contains {
+  my $self = shift;
+  my($other,$so) = @_;
+  return $self->SUPER::overlaps(@_) unless $other->isa('Bio::DB::GFF::RelSegment');
+  return if $self->abs_ref ne $other->abs_ref;
+  return unless $self->abs_low <= $other->abs_low;
+  return unless $self->abs_high >= $other->abs_high;
+  1;
 }
 
 sub union {

@@ -1,4 +1,4 @@
-# $Id: Results.pm,v 1.17.2.2 2002/05/22 03:50:54 jason Exp $
+# $Id: Results.pm,v 1.17.2.3 2002/07/04 17:04:07 jason Exp $
 #
 # Perl Module for HMMResults
 #
@@ -393,6 +393,7 @@ sub filter_on_cutoff {
     foreach $seq ( $self->each_Set()) {
 	next if( $seq->bits() < $seqthr );
 	$new->add_Set($seq);
+	
 	foreach $unit ( $seq->each_Domain() ) {
 	    next if( $unit->bits() < $domthr );
 	    $new->add_Domain($unit);

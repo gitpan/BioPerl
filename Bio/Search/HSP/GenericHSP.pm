@@ -1,4 +1,4 @@
-# $Id: GenericHSP.pm,v 1.15.2.2 2002/06/04 21:41:01 jason Exp $
+# $Id: GenericHSP.pm,v 1.15.2.5 2002/06/27 19:18:00 jason Exp $
 #
 # BioPerl module for Bio::Search::HSP::GenericHSP
 #
@@ -666,21 +666,59 @@ sub get_aln {
     my $aln = new Bio::SimpleAlign;
     my $hs = $self->hit_string();
     my $qs = $self->query_string();
-    $hs =~ s/[\/\\]/\-/g;
-    $qs =~ s/[\/\\]/\-/g;
+
+    if( $self->algorithm  =~ /FAST/i ) {
+	# fasta reports some extra 'regional' sequence information
+	# we need to clear out first
+	# this seemed a bit insane to me at first, but it appears to 
+	# work --jason
+	
+	# we infer the end of the regional sequence where the first
+	# non space is in the homology string
+	# then we use the HSP->length to tell us how far to read
+	# to cut off the end of the sequence
+
+	# one possible problem is the sequence which 
+	
+	my ($start) = 0;
+	if( $self->homology_string() =~ /^(\s+)/ ) {
+	    $start = CORE::length($1);
+	}
+	$hs = substr($hs, $start,$self->length('total'));
+	$qs = substr($qs, $start,$self->length('total'));
+	foreach my $seq ( $qs,$hs)  {
+	    foreach my $f ( '\\', '/', ' ') {
+		my $index = index($seq,$f);
+		while( $index >=0 ) {
+		    substr($hs,$index,1) = '';
+		    substr($qs,$index,1) = '';
+		    $index = index($seq,$f,$index+1);
+		}
+	    }
+	}
+    }
+
     my $seqonly = $qs;
-    $seqonly =~ s/\-//g;
-    
+    $seqonly =~ s/[\-\s]//g;
+    my ($q_nm,$s_nm) = ($self->query->seqname(),
+			$self->hit->seqname());
+    unless( defined $q_nm && CORE::length ($q_nm) ) {
+	$q_nm = 'query';
+    }
+    unless( defined $s_nm && CORE::length ($s_nm) ) {
+	$s_nm = 'hit';
+    }
+
     my $query = new Bio::LocatableSeq('-seq'   => $qs,
-				      '-id'    => $self->query->seqname(),
+				      '-id'    => $q_nm,
 				      '-start' => 1,
 				      '-end' => CORE::length($seqonly),
 				      );
     $seqonly = $hs;
-    $seqonly =~ s/\-//g;
+    $seqonly =~ s/[\-\s]//g;
     
-    my $hit =  new Bio::LocatableSeq('-seq'   => $hs,
-				      '-id'    => $self->hit->seqname(),
+    my $hit =  new Bio::LocatableSeq('-seq'    => $hs,
+				      '-id'    => $s_nm,
 				      '-start' => 1,
 				      '-end' => CORE::length($seqonly),
 				      );

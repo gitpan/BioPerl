@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: HitI.pm,v 1.9.2.1 2002/05/31 18:08:30 jason Exp $
+# $Id: HitI.pm,v 1.9.2.2 2002/06/19 22:17:08 jason Exp $
 #
 # BioPerl module Bio::Search::Hit::HitI
 #
@@ -35,8 +35,6 @@ you can do the following things with it:
     $score = $hit->raw_score();
 
     $significance = $hit->significance();
-
-    while( $hsp = $obj->next_hsp()) { ... }
 
     while( $hsp = $obj->next_hsp()) { ... }
 

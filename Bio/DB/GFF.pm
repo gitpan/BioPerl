@@ -1,4 +1,4 @@
-# $Id: GFF.pm,v 1.52.2.2 2002/03/31 21:25:03 lstein Exp $
+# $Id: GFF.pm,v 1.52.2.4 2002/07/11 02:10:50 lstein Exp $
 =head1 NAME
 
 Bio::DB::GFF -- Storage and retrieval of sequence annotation data
@@ -451,7 +451,7 @@ use Bio::Root::Root;
 use vars qw($VERSION @ISA);
 @ISA = qw(Bio::Root::Root);
 
-$VERSION = '1.03';
+$VERSION = '1.04';
 my %valid_range_types = (overlaps     => 1,
 			 contains     => 1,
 			 contained_in => 1);
@@ -698,9 +698,16 @@ Arguments:
  -refclass     Specifies the class of the reference landmark, for those databases
                that distinguish different object classes.  Defaults to "Sequence".
 
- -absolute,-force_absolute
+ -absolute
                Return features in absolute coordinates rather than relative to the
                parent segment.
+
+ -nocheck      Don't check the database for the coordinates and length of this
+               feature.  Construct a segment using the indicated name as the
+               reference, a start coordinate of 1, an undefined end coordinate,
+               and a strand of +1.
+
+ -force        Same as -nocheck.
 
  -seq,-sequence,-sourceseq   Aliases for -name.
 
@@ -768,19 +775,25 @@ sub segment {
     $_->absolute(1) if $self->absolute;
   }
 
-  # handle expectations of caller
-  if (@segments == 0) {
+  $self->_multiple_return_args(@segments);
+}
+
+sub _multiple_return_args {
+  my $self = shift;
+  my @args = @_;
+  if (@args == 0) {
     return;
-  } elsif (@segments == 1) {
-    return $segments[0];
+  } elsif (@args == 1) {
+    return $args[0];
   } elsif (wantarray) { # more than one reference sequence
-    return @segments;
+    return @args;
   } else {
-    $self->error($segments[0]->name,
+    $self->error($args[0]->name,
 		 " has more than one reference sequence in database.  Please call in a list context to retrieve them all.");
     $self->throw('multiple segment exception');
     return;
   }
+
 }
 
 # backward compatibility -- don't use!
@@ -1447,6 +1460,26 @@ sub load_fasta {
   return $result;
 }
 
+=head2 load_sequence_string
+
+ Title   : load_sequence_string
+ Usage   : $db->load_sequence_string($id,$dna)
+ Function: load a single DNA entry
+ Returns : true if successfully loaded
+ Args    : a raw sequence string (DNA, RNA, protein)
+ Status  : Public
+
+=cut
+
+sub load_sequence_string {
+  my $self = shift;
+  my ($acc,$seq)  = @_;
+  my $offset = 0;
+  $self->insert_sequence_chunk($acc,\$offset,\$seq) or return;
+  $self->insert_sequence($acc,$offset,$seq) or return;
+  1;
+}
+
 sub setup_argv {
   my $self = shift;
   my $file_or_directory = shift;
@@ -2062,7 +2095,7 @@ sub do_initialize {
 =head2 dna
 
  Title   : dna
- Usage   : $db->dna($id,$class,$start,$stop)
+ Usage   : $db->dna($id,$start,$stop,$class)
  Function: return the raw DNA string for a segment
  Returns : a raw DNA string
  Args    : id of the sequence, its class, start and stop positions
@@ -2070,6 +2103,20 @@ sub do_initialize {
 
 This method is invoked by Bio::DB::GFF::Segment to fetch the raw DNA
 sequence.
+
+Arguments: -name          sequence name
+           -start         start position
+           -stop          stop position
+           -class         sequence class
+
+If start and stop are both undef, then the entire DNA is retrieved.
+So to fetch the whole dna, call like this:
+
+  $db->dna($name_of_sequence);
+
+or like this:
+
+   $db->dna(-name=>$name_of_sequence,-class=>$class_of_sequence);
 
 NOTE: you will probably prefer to create a Segment and then invoke its
 dna() method.
@@ -2086,7 +2133,7 @@ sub dna {
 					     [qw(STOP END)],
     					    'CLASS',
 					   ],@_);
-  return unless defined $start && defined $stop;
+# return unless defined $start && defined $stop;
   $self->get_dna($id,$start,$stop,$class);
 }
 
@@ -2623,7 +2670,7 @@ sub make_match_sub {
   my $sub =<<END;
 sub {
   my \$feature = shift or return;
-  return \$feature->type =~ /^($expr)\$/;
+  return \$feature->type =~ /^($expr)\$/i;
 }
 END
   warn "match sub: $sub\n" if $self->debug;

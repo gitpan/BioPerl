@@ -1,7 +1,7 @@
 package Bio::Root::Root;
 use strict;
 
-# $Id: Root.pm,v 1.10.2.1 2002/03/11 00:51:57 jason Exp $
+# $Id: Root.pm,v 1.10.2.2 2002/07/01 22:38:14 sac Exp $
 
 =head1 NAME
 
@@ -156,7 +156,7 @@ use Carp 'confess';
 BEGIN { 
     $ID        = 'Bio::Root::Root';
     $VERSION   = 1.0;
-    $Revision  = '$Id: Root.pm,v 1.10.2.1 2002/03/11 00:51:57 jason Exp $ ';
+    $Revision  = '$Id: Root.pm,v 1.10.2.2 2002/07/01 22:38:14 sac Exp $ ';
     $DEBUG     = 0;
     $VERBOSITY = 0;
     $ERRORLOADED = 0;
@@ -306,13 +306,13 @@ sub throw{
            $class ||= "Bio::Root::Exception";
    
 	   my %args;
-	   if( @args % 2 == 0 ) {
+	   if( @args % 2 == 0 && $args[0] =~ /^-/ ) {
 	       %args = @args;
+	       $args{-text} = $text;
+	       $args{-object} = $self;
 	   }
-	   $args{-text} = $text;
-	   $args{-object} = $self;       
  
-           throw $class ( %args );
+           throw $class ( %args || @args );
        }
    }
    else {
@@ -322,8 +322,8 @@ sub throw{
        my $title = "------------- EXCEPTION $class -------------";
        my $footer = "\n" . '-' x CORE::length($title);
 
-       my $out = $title . "\n" .
-           "MSG: ".$text."\n". $std . $footer . "\n";
+       my $out = "\n$title\n" .
+           "MSG: $text\n". $std . $footer . "\n";
 
        die $out;
    }

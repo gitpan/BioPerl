@@ -1,4 +1,4 @@
-# $Id: VariantI.pm,v 1.10 2002/02/18 17:17:25 bosborne Exp $
+# $Id: VariantI.pm,v 1.10.2.1 2002/07/15 13:48:09 heikki Exp $
 #
 # BioPerl module for Bio::Variation::VariantI
 #
@@ -459,7 +459,7 @@ sub status {
  Function: 
 
            Returns the proof of the sequence change object.
-           Valid values are: 'suspected' and 'proven'
+           Valid values are: 'computed' and 'experimental'.
 
  Example : $obj->proof('computed');
  Returns : scalar

@@ -1,4 +1,4 @@
-# $Id: IUPAC.pm,v 1.15 2001/12/11 21:30:27 jason Exp $
+# $Id: IUPAC.pm,v 1.15.2.1 2002/06/19 00:29:43 jason Exp $
 #
 # BioPerl module for IUPAC
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-IUPAC - Generates unique Seq objects from an ambiguous Seq object
+Bio::Tools::IUPAC - Generates unique Seq objects from an ambiguous Seq object
 
 =head1 SYNOPSIS
 

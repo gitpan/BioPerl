@@ -5,7 +5,7 @@ use strict;
 use Carp 'croak';
 use constant BUMP_SPACING => 2; # vertical distance between bumped glyphs
 use vars '$VERSION';
-$VERSION = '1.01';
+$VERSION = '1.02';
 
 my %LAYOUT_COUNT;
 
@@ -40,9 +40,11 @@ sub new {
     $self->{parts}   = \@subglyphs;
   }
 
-  if (defined $self->start && defined $self->stop) {
-    my ($left,$right) = $factory->map_pt($self->start,$self->stop);
-    ($left,$right) = ($right,$left) if $left > $right;  # paranoia
+  my ($start,$stop) = ($self->start, $self->stop);
+  if (defined $start && defined $stop) {
+    ($start,$stop) = ($stop,$start) if $start > $stop;  # sheer paranoia
+    # the +1 here is critical for allowing features to meet nicely at nucleotide resolution
+    my ($left,$right) = $factory->map_pt($start,$stop+1); 
     $self->{left}    = $left;
     $self->{width}   = $right - $left + 1;
   }
@@ -107,6 +109,7 @@ sub stop    {
 }
 sub end     { shift->stop }
 sub map_pt  { shift->{factory}->map_pt(@_) }
+sub map_no_trunc { shift->{factory}->map_no_trunc(@_) }
 
 # add a feature (or array ref of features) to the list
 sub add_feature {
@@ -324,6 +327,8 @@ sub connector {
 #              0    no bumping
 #              +1   bump down
 #              -1   bump up
+#              +2   simple (hyper) bump up
+#              -2   simple (hyper) bump down
 sub bump {
   my $self = shift;
   return $self->option('bump');
@@ -381,6 +386,7 @@ sub layout {
 
   $_->layout foreach @parts;  # recursively lay out
 
+  # no bumping requested, or only one part here
   if (@parts == 1 || !$bump_direction) {
     my $highest = 0;
     foreach (@parts) {
@@ -390,40 +396,68 @@ sub layout {
     return $self->{layout_height} = $highest + $self->pad_top + $self->pad_bottom;
   }
 
-  my %occupied;
-  for my $g (sort { $a->left <=> $b->left } @parts) {
+  if (abs($bump_direction) <= 1) {  # original bump algorithm
 
-    my $pos = 0;
+    my %occupied; # format of occupied: key={top,bottom}, value=right
+    for my $g (sort { $a->left <=> $b->left } @parts) {
 
-    while (1) {
-      # look for collisions
-      my $bottom = $pos + $g->{layout_height};
+      my $pos = 0;
+      my $left   = $g->left;
+      my $right  = $g->right;
+      my $height = $g->{layout_height};
 
-      my $collision;
-      for my $old (sort {$b->[2]<=> $a->[2]} values %occupied) {
-	last if $old->[2] + 2 < $g->left;
-	next if $old->[3]  < $pos;
-	next if $old->[1] > $bottom;
-	$collision = $old;
-	last;
+      while (1) {
+	# look for collisions
+	my $bottom = $pos + $height;
+
+	my $collision;
+	for my $key (keys %occupied) {
+	  my ($oldtop,$oldbottom) = split /,/,$key;
+	  my $oldright = $occupied{$key};
+	  next if $oldright+2  < $left;
+	  next if $oldbottom   < $pos;
+	  next if $oldtop      > $bottom;
+	  $collision = [$oldtop,$oldbottom,$oldright];
+	  last;
+	}
+	last unless $collision;
+
+	if ($bump_direction > 0) {
+	  $pos += $collision->[1]-$collision->[0] + BUMP_SPACING;    # collision, so bump
+
+	} else {
+	  $pos -= BUMP_SPACING;
+	}
+
       }
-      last unless $collision;
 
-      if ($bump_direction > 0) {
-	$pos += $collision->[3]-$collision->[1] + BUMP_SPACING;                    # collision, so bump
-
-      } else {
-	$pos -= BUMP_SPACING;
-      }
+      $g->move(0,$pos);
+      my $key = join ',',$g->top,$g->bottom;
+      $occupied{$key} = $right if !exists $occupied{$key} or $occupied{$key} < $right;
     }
-    $g->move(0,$pos);
-    $occupied{$g} = [$g->left,$g->top,$g->right,$g->bottom];
+  }
+
+  else {  # abs(bump) >= 2 -- simple bump algorithm
+    my $pos = 0;
+    my $last;
+    for my $g (sort { $a->left <=> $b->left } @parts) {
+      next if !defined($last);
+      $pos += $bump_direction > 0 ? $last->{layout_height} + BUMP_SPACING 
+                                  : - ($g->{layout_height}+BUMP_SPACING);
+      $g->move(0,$pos);
+    } continue {
+      $last = $g;
+    }
   }
 
   # If -1 bumping was allowed, then normalize so that the top glyph is at zero
   if ($bump_direction < 0) {
-    my ($topmost) = sort {$a->top <=> $b->top} @parts;
-    my $offset = 0 - $topmost->top;
+    my $topmost;
+    foreach (@parts) {
+      my $top  = $_->top;
+      $topmost = $top if !defined($topmost) or $top < $topmost;
+    }
+    my $offset = - $topmost;
     $_->move(0,$offset) foreach @parts;
   }
 
@@ -487,8 +521,8 @@ sub draw_connectors {
     my($x1,$y1,$x2,$y2) = $self->bounds(0,0);
     my($xl,$xt,$xr,$xb) = $parts[0]->bounds;
     $self->_connector($gd,$dx,$dy,$x1,$xt,$x1,$xb,$xl,$xt,$xr,$xb);
-    ($xl,$xt,$xr,$xb) = $parts[-1]->bounds;
-    $self->_connector($gd,$dx,$dy,$parts[-1]->bounds,$x2,$xt,$x2,$xb);
+    my ($xl2,$xt2,$xr2,$xb2) = $parts[-1]->bounds;
+    $self->_connector($gd,$dx,$dy,$parts[-1]->bounds,$x2,$xt2,$x2,$xb2) if $xr2 >= $xr;
   }
 
 }
