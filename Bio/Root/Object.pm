@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Object.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 23 July 1996
-# REVISION: $Id: Object.pm,v 1.3.6.1 1999/06/25 08:55:49 sac Exp $
+# REVISION: $Id: Object.pm,v 1.8 2000/03/22 10:07:41 sac Exp $
 # STATUS  : Alpha
 #            
 # For documentation, run this module through pod2html 
@@ -10,32 +10,39 @@
 #
 # MODIFICATION NOTES: See bottom of file.
 #
-# Copyright (c) 1996-98 Steve A. Chervitz. All Rights Reserved.
+# Copyright (c) 1996-2000 Steve A. Chervitz. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
 #           modify it under the same terms as Perl itself.
 #           Retain this notice and note any modifications made.
 #-----------------------------------------------------------------------------
 
 package Bio::Root::Object;
+use strict;
 
 require 5.002;
 use Bio::Root::Global qw(:devel $AUTHORITY $CGI);
+use Bio::Root::RootI;
+
 use Exporter ();
+
 #use AutoLoader; 
 #*AUTOLOAD = \&AutoLoader::AUTOLOAD;
 
+use vars qw(@EXPORT_OK %EXPORT_TAGS);
 @EXPORT_OK = qw($VERSION &find_object &stack_trace &containment &_rearrange);  
 %EXPORT_TAGS = ( std => [qw(&stack_trace &containment)] );
 
-use strict;
-use vars qw($ID $VERSION %Objects_created $Revision);
+use vars qw($ID $VERSION %Objects_created $Revision @ISA);
+
+@ISA = qw(Bio::Root::RootI);
+
 
 # %Objects_created can be used for tracking all objects created.
 # See _initialize() for details.
 
 $ID       = 'Bio::Root::Object';
 $VERSION  = 0.041;
-$Revision = '$Id: Object.pm,v 1.3.6.1 1999/06/25 08:55:49 sac Exp $';  #'
+$Revision = '$Id: Object.pm,v 1.8 2000/03/22 10:07:41 sac Exp $';  #'
 
 ### POD Documentation:
 
@@ -726,115 +733,6 @@ sub _drop_child {
 #################################################################
 
 
-=head2 _rearrange
-
- Usage     : $object->_rearrange( array_ref, list_of_arguments)
- Purpose   : Rearranges named parameters to requested order.
- Example   : $self->_rearrange([qw(SEQUENCE ID DESC)],@param);
-           : Where @param = (-sequence => $s, 
-	   :                 -id       => $i, 
-	   :	             -desc     => $d);
- Returns   : @params - an array of parameters in the requested order.
-           : The above example would return ($s, $i, $d)
- Argument  : $order : a reference to an array which describes the desired
-           :          order of the named parameters.
-           : @param : an array of parameters, either as a list (in
-           :          which case the function simply returns the list),
-           :          or as an associative array with hyphenated tags
-           :          (in which case the function sorts the values 
-           :          according to @{$order} and returns that new array.)
-	   :	      The tags can be upper, lower, or mixed case
-           :          but they must start with a hyphen (at least the
-           :          first one should be hyphenated.)
- Source    : This function was taken from CGI.pm, written by Dr. Lincoln
-           : Stein, and adapted for use in Bio::Seq by Richard Resnick and
-           : then adapted for use in Bio::Root::Object.pm by Steve A. Chervitz.
- Comments  : (SAC)
-           : This method may not be appropriate for method calls that are
-           : within in an inner loop if efficiency is a concern.
-           :
-           : Parameters can be specified using any of these formats:
-           :  @param = (-name=>'me', -color=>'blue');
-           :  @param = (-NAME=>'me', -COLOR=>'blue');
-           :  @param = (-Name=>'me', -Color=>'blue');
-           :  @param = ('me', 'blue');  
-           : A leading hyphenated argument is used by this function to 
-           : indicate that named parameters are being used.
-           : Therefore, the ('me', 'blue') list will be returned as-is.
-           :
-	   : Note that Perl will confuse unquoted, hyphenated tags as 
-           : function calls if there is a function of the same name 
-           : in the current namespace:
-           :    -name => 'foo' is interpreted as -&name => 'foo'
-	   :
-           : For ultimate safety, put single quotes around the tag:
-	   :    ('-name'=>'me', '-color' =>'blue');
-           : This can be a bit cumbersome and I find not as readable
-           : as using all uppercase, which is also fairly safe:
-	   :    (-NAME=>'me', -COLOR =>'blue');
-	   :
-           : Personal note (SAC): I have found all uppercase tags to
-           : be more managable: it involves less single-quoting,
-           : the code is more readable, and there are no method naming conlicts.
-           : Regardless of the style, it greatly helps to line
-	   : the parameters up vertically for long/complex lists.
-
-See Also   : L<_initialize>() 
-
-=cut
-
-#----------------'
-sub _rearrange {
-#----------------
-    my($self,$order,@param) = @_;
-    
-    # If there are no parameters, we simply wish to return
-    # an empty array which is the size of the @{$order} array.
-    return ('') x $#{$order} unless @param;
-    
-    # If we've got parameters, we need to check to see whether
-    # they are named or simply listed. If they are listed, we
-    # can just return them. 
-
-    return @param unless (defined($param[0]) && $param[0]=~/^-/); 
-    
-    # Tester
-#    print "\n_rearrange() named parameters:\n";
-#    my $i; for ($i=0;$i<@param;$i+=2) { printf "%20s => %s\n", $param[$i],$param[$i+1]; }; <STDIN>;
-
-    # Now we've got to do some work on the named parameters.
-    # The next few lines strip out the '-' characters which
-    # preceed the keys, and capitalizes them.
-    my $i;
-    for ($i=0;$i<@param;$i+=2) {
-	$param[$i]=~s/^\-//;
-	$param[$i]=~tr/a-z/A-Z/;
-    }
-    
-    # Now we'll convert the @params variable into an associative array.
-    local($^W) = 0;  # prevent "odd number of elements" warning with -w.
-    my(%param) = @param;
-    
-    my(@return_array);
-    
-    # What we intend to do is loop through the @{$order} variable,
-    # and for each value, we use that as a key into our associative
-    # array, pushing the value at that key onto our return array.
-    my($key);
-    
-    foreach $key (@{$order}) {
-	my($value) = $param{$key};
-	delete $param{$key};
-	push(@return_array,$value);
-    }
-    
-#    print "\n_rearrange() after processing:\n";
-#    my $i; for ($i=0;$i<@return_array;$i++) { printf "%20s => %s\n", ${$order}[$i], $return_array[$i]; } <STDIN>;
-
-    return (@return_array);
-}
-
-
 
 =head2 name
 
@@ -999,140 +897,6 @@ sub make {
 }
 
 
-
-=head2 throw
-
- Purpose   : Generate, report, and set a fatal error on the object.
-           : Uses Perl's die() function to report error data.
-           : This does not invalidate the object but will crash the script
-           : unless it is trapped with eval{}. 
-           : (fatal = un-recoverable)'
- Usage     : $object->throw([arguments for _set_err()])
- Returns   : die()s with the contents of the error object in a string.
-           : This string is human-readable and can be used to reconstruct
-           : the Bio::Root::Err.pm object (e.g., new  Bio::Root::Err($@) ).
-           :
-           : The behavior of throw() is affected by the current verbosity
-           : and strictness settings:
-           : If verbosity is < 0, the stack trace is not printed.
-           : If verbosity is > 0, all data including stack trace is shown and a
-           :   system beep is issued.
-           : If verbosity = 0, print all data but no beep (message, note, tech note,
-           :  containment hierarchy, stack).
-           : If strictness is less than -1, the throw() call is converted
-           : into a warn() call.
- Argument  : Arguments for _set_err() 
- Comments  : Calling $self->throw() method creates a Bio::Root::Err.pm object.
-           : There are two ways to generate errors:
-           :   1) $object->throw(<ERROR DATA>);
-           :   2) &Bio::Root::Err::throw($object, ERROR_DATA);
-           : To use the second option, include the line use Bio::Root::Err qw(:std);
-           : in your script or module. ERROR_DATA = arguments for _set_err().
-           :
-           : Some auxilliary issues:
-           :   * It would be great if Perl could throw an object reference with die().
-           :     This would permit more intelligent exception handlers. For now the
-           :     Err object is reconstructed from the output of Err::string().
-           :
-           : All errors are reported to STDERR. 
-           : Redirection to an alternate location for storing errors
-           : can be achieved by redirecting STDERR manually [ open(STDERR, ">>filename") ],
-           : or by using set_log_err().
-
-See also   : L<_set_err>(), L<warn>(), L<strict>(), L<verbose>(), L<set_log_err>(), L<STRICTNESS & VERBOSITY>, B<Bio::Root::Global:strictness()>, B<Bio::Root::Global:verbosity()>
-
-=cut
-
-#----------
-sub throw {
-#----------
-    my($self,@param) = @_;
-
-#    printf "Throwing exception for object %s \"%s\"\n",ref($self),$self->name;
-#    print "param: @param";<STDIN>;
-
-    my $verbosity = $self->verbose;
-
-    if($self->strict < -1) {
-	# Convert throw() to warn()
-	return $self->warn(@param);
-
-    } else {
-	if($verbosity < 0) {
-	    # Low verbosity: no stack trace.
-	    die $self->_set_err(@param)->string(-SHOW=>'msgnotechcontext', -CURRENT=>1);
-	} elsif($verbosity > 0) {
-	    # Extra verbosity: all data and beep.
-	    die $self->_set_err(@param)->string(-BEEP=>1, -CURRENT=>1);
-	} else {
-	    # Default: all data (msg, note, tech, context, stack trace) but no beep.
-	    die $self->_set_err(@param)->string(-CURRENT=>1);
-	}
-    }
-    0;
-}
-
-=head2 warn
-
- Usage     : $object->warn([arguments for _set_err()])
- Purpose   : Generate, report, and set a recoverable error on the object.
- Returns   : Prints the contents of the error to STDERR and returns false (0).
-           : The behavior of warn() is affected by the current verbosity
-           : and strictness settings:
-           : If verbose() is < 0, nothing is printed but a warning is still set.
-           : If verbose() is > 0, the full error listing is shown
-           :  (message, note, tech note, containment hierarchy, stack).
-           : If verbosity  = 0, the message, note, and tech note are shown.
-           : If the strict() indicator is greater than 1, warn() calls are 
-           : converted into throw() calls.
- Argument  : Arguments for _set_err() 
- Comments  : The return value is experimental. Typically, warnings are not
-           : programatically trappable: a method will issue a warning and 
-           : then go about its business. By allowing
-           : warn() calls to evaluate to zero, a method can halt execution 
-           : by returning a warning to signal the warning without setting a 
-           : fatal error on itself. Still, returning 0 does not guarantee
-           : the exception will be noticed. This sort of polling-based
-           : exception handling is generally frowned upon. Using throw()
-           : and trapping any exceptions is highly recommended unless
-           : the condition is truly inconsequential.
-           :
-           : All errors are reported to STDERR. 
-           : Redirection to an alternate location for storing errors
-           : can be achieved by redirecting STDERR manually [ open(STDERR, ">>filename") ],
-           : or by using set_log_err().
-
-See also   : L<_set_warning>(), L<throw>(), L<strict>(), L<verbose>(), L<set_log_err>(),  L<STRICTNESS & VERBOSITY>, B<Bio::Root::Global:strictness()>, B<Bio::Root::Global:verbosity()>
-
-=cut
-
-#---------
-sub warn {
-#---------
-    my($self,@param) = @_;
-
-    my $verbosity = $self->verbose;
-
-    if($self->strict > 1) {
-	# Convert warn() to throw()
-	$self->throw(@param);
-
-    } else {
-	if($verbosity < 0 || $CGI) {
-	    # Low verbosity or script is a cgi: don't print anything but set warning.
-	    $self->_set_warning(@param);
-	} elsif($verbosity > 0) {
-	    # Extra verbosity: print all data and beep
-	    print STDERR $self->_set_warning(@param)->string(-BEEP=>1, -CURRENT=>1);
-	} else {
-	    # Default: message and notes only. No beep.
-	    print STDERR $self->_set_warning(@param)->string(-SHOW=>'msgnotech', -CURRENT=>1);
-	}
-    }
-    0;
-}
-
-
 =head2 err
 
  Usage     : $self->err([$data], [$delimit])
@@ -1230,192 +994,6 @@ sub record_err {
 
     if (@_) { $self->{'_record_err'} = shift }
     return $self->{'_record_err'} || 0;
-}
-
-
-=head2 _set_err
-
- Purpose   : To create a Bio::Root::Err.pm object and optionally attach it
-           : it to the current object.
- Usage     : This is an internal method and should not be called directly
-           : $object->_set_err( msg)  
-           : $object->_set_err( msg, note) 
-           : $object->_set_err( msg, note, tech)
-           : $object->_set_err( -MSG  =>"main message", 
-	   :	                -TECH =>"technical note only")
-           : $object->_set_err($object->err())  # Transfers pre-existing err
-           : $object->_set_err()                # Re-sets an object's error state 
-           :                                    # (Public method: clear_err())
- Example   : $self->throw("Data not found.");
-           : To throw an error:
-           : $myData eq 'foo' || return $self->throw("Data is not 'foo'.")
- Returns   : Object reference to the newly created Bio::Root::Err.pm object
-           : via call to _set_err_state().
-           :
- Argument  : @param may be empty, or contain a single error object, 
-           : named parameters, or a list of unnamed parameters for 
-           : building an Bio::Root::Err object.
-           :   msg  = string, basic description of the exception.
-           :   note = string, additional note to indicate cause or exception
-           :          or provide information about how to fix/report it.
-           :   tech = string, addition note with technical information
-           :          of interest to developer.
-           :
-           : When using unnamed parameters, the number of items in @param 
-           : is used as a "syntactic sugar" to indicate which fields in the 
-           : err object to set (1 = msg, 2 = msg + note, 3 = msg + note + tech)
-           : Calling _set_err() with no arguments clears the {'_err'} and 
-           : {'_errState'} data members and destroys the Err object.
-           : 
- Comments  : NEW VERSION: NOT ATTACHING EXCEPTIONS TO THE OBJECT.
-           : Since exceptions are fatal, it is more expedient for the calling code
-           : to handle them as they arise. Attaching exceptions to the objects
-           : that generated them implies that the object assumes responsibility for 
-           : any error it might throw, which is not usually appropriate and is 
-           : difficult to manage.
-           :
-           : The new code now by default will not attach Err objects to the 
-           : object that. Attaching Err objects can be enabled using the -RECORD_ERR
-           : constructor option or the record_err() method. Bio::Root::Global::record_err()
-           : turns on Err attaching for all objects in a script.
-           :
-           : Attaching exceptions to the objects that produced them is considered
-           : non-standard and must be explicitly requested. This behavior might be 
-           : useful in situations where one runs some code in an unsupervised 
-           : setting and needs a means for reporting all warnings/errors later.
-           :
-           : One problem with attaching Err objects is that if an object is contained 
-           : within another object, the containing object will not know about the 
-           : warning unless it polls all of it contained objects, (bad design).
-           : One could propagate the warning through the containment hierarchy
-           : but the hierarchy may not be accessible to the objects themselves:
-           : a given object may not know where it is contained (i.e, it may not 
-           : have a parent).
-           :    
-           : * To transfer an error between objects, you can use 
-           :   $self->warn($object->err) or $self->throw($object->err) or
-           :   $self->_set_err($object->err) to not generate a warning.
-
-See also   : L<_set_warning>(), L<err>(), L<warn>(), L<throw>(), L<record_err>(), L<_set_err_state>(), B<Bio::Root::Err.pm>
-
-=cut
-
-#--------------
-sub _set_err {   
-#--------------
-    my($self, @param) = @_;
-    
-    require Bio::Root::Err; import Bio::Root::Err qw(:data);
-
-    ## Re-set the object's 'Err' member and clear the 'ErrState'
-    ## if no data was provided. 
-    if(!@param) {
-	if(ref($self->{'_err'})) {
-	    $self->{'_err'}->remove_all;
-	    %{$self->{'_err'}} = ();
-	}
-	undef $self->{'_err'};
-	undef $self->{'_errState'};
-	return;
-    }
-    
-    # If client specifies any error field (ie. -MSG=>'Bad data') the 'custom' constructor
-    # is used. If no error field is specified by name, the constructor is selected based on
-    # the number of arguments in @param.
-
-    local($^W) = 0;  
-    my %err_fields = %Bio::Root::Err::ERR_FIELDS;  # prevents warnings
-    my $constructor = 'custom';
-    if( !grep exists $Bio::Root::Err::ERR_FIELDS{uc($_)}, @param) {
-	$constructor = scalar @param;
-    }
-    
-    $DEBUG and do{ print STDERR "\n$ID: setting error ${\ref($self)} with constructor = $constructor"; <STDIN>; };
-    
-    ## Adjust the constructor number if STACK_NUM was given in @param (for warnings).
-    ## This is a bit of a hack, but will do for now.
-    ## The constructor needs to be adjusted since it included the "-STACK_NUM=>#" data
-    ## which increases the number of arguments by 2 and is not to be included in 
-    ## the exception's data.
-
-    my $stackNum = 3;  
-    if($constructor =~ /\d/ and grep (/STACK_NUM/i, @param)) { 
-	$constructor -= 2;  ## Since STACK_NUM data was appended to @_.
-	$stackNum=$param[$#param];
-    }
-
-    my ($err);
-    eval {
-	local $_ = $constructor;
-	## Switching on the number of items in @param (now in $_).
-	SWITCH: {
-	    ## Single argument: $param[0] is either an Err object or a message.
-	    /1/ && do{ 	if((ref($param[0]) =~ /Err/)) {
-#		print "$ID: cloning err for object ${\ref $self}, \"${\$self->name}\"\n";<STDIN>;
-		$err = $param[0]->clone(); ## Cloning error object.
-	    } else {
-		$err = new Bio::Root::Err(-MSG     =>$param[0], 
-					  -STACK   =>scalar($self->stack_trace($stackNum)),
-					  -CONTEXT =>$self->containment,
-				       # -PARENT =>$self
-					  );
-	    }
-			last SWITCH; };
-	    
-	    ## Two arguments: Message and note data.
-	    /2/ && do{ $err = new Bio::Root::Err(-MSG     =>$param[0], 
-						 -NOTE    =>$param[1], 
-						 -STACK   =>scalar($self->stack_trace($stackNum)),
-						 -CONTEXT =>$self->containment,
-						# -PARENT =>$self 
-						 );
-		       last SWITCH; };
-	    
-	    ## Three arguments: Message, note, and tech data.
-	    /3/ && do{ $err = new Bio::Root::Err(-MSG     =>$param[0], 
-						 -NOTE    =>$param[1],  
-						 -TECH    =>$param[2], 
-						 -STACK   =>scalar($self->stack_trace($stackNum)),
-						 -CONTEXT =>$self->containment,
-					      #   -PARENT =>$self 
-						 );
-		       last SWITCH; };
-	    
-	    ## Default. Pass arguments to Err object for custom construction.
-	    ## Note: Stack data is not added. Should be provided in @_.
-	    $err = new Bio::Root::Err( @param, 
-				       -STACK   =>scalar($self->stack_trace($stackNum)),
-				     #  -PARENT =>$self
-				       );
-	}
-    };
-    if($@) {
-	printf STDERR "%s \"%s\": Failed to create Err object: \n $@", ref($self),$self->name;<STDIN>;
-	print STDERR "\nReturning $self->{'_err'}:";<STDIN>;
-	return $self->{'_err'}; }  ## Err construction will fail if the err is a duplicate.
-                                  ## In any event, the Err object creation error is
-                                  ## simply reported to STDERR and 
-                                  ## the current 'Err' member is returned since 
-                                  ## there is no call to _set_err_state().
-
-    ## ONLY ATTACH THE Err OBJECT IF DIRECTED TO.
-    if($RECORD_ERR or $self->{'_record_err'}) {
-	if( ref($self->{'_err'})) {
-	    ## Expand the linked list of Err objects if necessary.
-#	    print "Expanding linked list of errors for ${\$self->name}.\nError = ${\$err->msg}\n";
-	    $self->{'_err'}->last->add($err);
-	} else {
-#	    print "Adding new error for ${\$self->name}.\nError = ${\$err->msg}\n";
-	    $self->{'_err'} = $err;
-	}
-
-	## Propagate the error up the containment hierarchy to ensure it gets noticed.
-	## No longer needed since exception is fatal.
-#	$self->_propagate_err($err);
-    }
-#    else { print "NOT SETTING ERR OBJECT: \n${\$err->string}\n\n"; }
-
-    $self->_set_err_state($err);
 }
 
 
@@ -1534,70 +1112,6 @@ sub _set_warning {
 }
 
 
-
-=head2 stack_trace
-
- Usage     : $stack_aref = $myObj->stack_trace([start_index, [end_index]]);
-           : @stack_list = $myObj->stack_trace([start_index, [end_index]]);
-           : @stack_list = stack_trace($object);  # As an exported method.
- Purpose   : Returns the contents of the current call stack
-           : in a slightly modified, more intuitive form. 
-           : Permits extraction of a portion of the stack. 
-           : Call stack is obtained from the perl caller() function.
-           : MODIFIED FORMAT: Line numbers are shifted down one
-           : level in the stack entries so that they correspond 
-           : to the location of the indicated method.
- Example   : @stackData = $self->stack_trace(2); 
- Argument  : start_index : number of the beginning entry in the
-           :               desired stack trace. The call to stack_trace()
-           :               is at index 0.
-           : end_index   : number of the last entry in the
-           :               desired stack trace.
- Returns   : A list or list reference (depending on wantarray)
-           : consisting of the desired portion of the call stack.
-
-See also   : B<Bio::Root::Err::format_stack_entry()>
-
-=cut
-
-#-----------------
-sub stack_trace {
-#-----------------
-    my($self,$beg,$end) = @_;
-    my(@call,@data);
-
-    ## Set the complete stack trace.
-    my $i = 0;
-    while( @call = caller($i++)) { 
-	my @callData = @call; 
-#	print "CALL DATA $i: \n";
-#	my $j = 0; for($j=0; $j<@callData; $j++) {print "$j: $callData[$j]\n"; }; <STDIN>;
-	next if $callData[3] eq '(eval)';  ## Screening out the (eval) calls.
-	push @data, \@callData;
-    }
-
-    ## Shift the line numbers down so that they correspond to 
-    ## the location of the shown method. This is more intuitive.
-    ## Processing stack in reverse.
-    my( @base_call, $temp);
-    for($i=$#data; $i > 0; $i--) {
-	$temp = $data[$i]->[2];
-	$data[$i]->[2] = $data[$i-1]->[2];
-	if($i == $#data) { @base_call = @{$data[$i]}; 
-			   $base_call[2] = $temp;
-			   $base_call[3] = "$data[$i]->[0]::$data[$i]->[1]";
-		       }
-    }
-    @data = (@data, \@base_call);
-#    print "FULL STACK:\n";foreach(@data){print "@$_\n";};<STDIN>;
-
-    ## Get everything but the call to stack_trace
-    $beg ||= 1;
-    $end ||= $#data;
-    @data = @data[$beg..$end];
-
-    wantarray ? @data : \@data;
-}
 
 
 
@@ -1888,7 +1402,9 @@ sub _set_io {
     
     require Bio::Root::IOManager;
 
-    $self->{'_io'} = new Bio::Root::IOManager(-PARENT=>$self, @_);
+# See PR#192. 
+#    $self->{'_io'} = new Bio::Root::IOManager(-PARENT=>$self, @_);
+    $self->{'_io'} = new Bio::Root::IOManager(-PARENT=>$self);
 }
 
 

@@ -132,15 +132,13 @@ The rest of the documentation details each of the object methods. Internal metho
 package Bio::Tools::IUPAC;
 
 use strict;
-use vars qw(@ISA @EXPORT_OK $AUTOLOAD);
+use vars qw(@ISA $AUTOLOAD);
 
 # Object preamble - inherits from Bio::Root::Object
 
 use Bio::Root::Object;
-use Exporter;
 
-@ISA = qw(Bio::Root::Object Exporter);
-@EXPORT_OK = qw();
+@ISA = qw(Bio::Root::Object);
 
 =head2 new
 
@@ -168,7 +166,7 @@ sub _initialize {
     my $seq = shift @args;
     $seq->isa('Bio::Seq') or $self->throw("Must supply a Seq.pm object to IUPAC!");
     $self->{'_SeqObj'} = $seq;
-    if ($self->{'_SeqObj'}->type() =~ m/^[dr]na$/i ) { # nucleotide seq object
+    if ($self->{'_SeqObj'}->moltype() =~ m/^[dr]na$/i ) { # nucleotide seq object
 	$self->{'_iupac_iub'} = { A => [qw(A)],
 				  C => [qw(C)],
 				  G => [qw(G)],
@@ -187,8 +185,8 @@ sub _initialize {
 				  X => [qw(G A T C)],
 				  N => [qw(G A T C)]
 				};
-	$self->{'_alpha'} = [ map { $self->{'_iupac_iub'}{uc($_)} } split('', $self->{'_SeqObj'}->str()) ];
-    } elsif ($self->{'_SeqObj'}->type() =~ m/^amino$/i ) { # amino acid seq object
+	$self->{'_alpha'} = [ map { $self->{'_iupac_iub'}{uc($_)} } split('', $self->{'_SeqObj'}->seq()) ];
+    } elsif ($self->{'_SeqObj'}->moltype() =~ m/^protein$/i ) { # amino acid seq object
 	$self->{'_iupac_iup'} = { A => [qw(A)],
 				  B => [qw(D N)],
 				  C => [qw(C)],
@@ -215,11 +213,11 @@ sub _initialize {
 				  Z => [qw(E Q)],
 				  '*' => ['*']
 				};
-	$self->{'_alpha'} = [ map { $self->{'_iupac_iup'}{uc($_)} } split('', $self->{'_SeqObj'}->str()) ];
+	$self->{'_alpha'} = [ map { $self->{'_iupac_iup'}{uc($_)} } split('', $self->{'_SeqObj'}->seq()) ];
     } else { # unknown type: we could make a guess, but let's not.
 	$self->throw("You must specify the 'type' of sequence provided to IUPAC");
     }
-    $self->{'_string'} = [(0) x length($self->{'_SeqObj'}->str())];
+    $self->{'_string'} = [(0) x length($self->{'_SeqObj'}->seq())];
     scalar @{$self->{'_string'}} or $self->throw("Sequence has zero-length!");
     $self->{'_string'}->[0] = -1;
     return $make; # success - we hope!
@@ -251,8 +249,10 @@ sub next_seq{
 	} else {
 	    $self->{'_string'}->[$i]++;
 	    my $j = -1;
-	    $self->{'_SeqObj'}->setseq(join('', map { $j++; $self->{'_alpha'}->[$j]->[$_]; } @{$self->{'_string'}}));
+	    $self->{'_SeqObj'}->seq(join('', map { $j++; $self->{'_alpha'}->[$j]->[$_]; } @{$self->{'_string'}}));
 	    my $desc = $self->{'_SeqObj'}->desc();
+	    if ( !defined $desc ) { $desc = ""; }
+
 	    $self->{'_num'}++;
 	    1 while $self->{'_num'} =~ s/(\d)(\d\d\d)(?!\d)/$1,$2/;
 	    $desc =~ s/( \[Bio::Tools::IUPAC-generated\sunique sequence # [^\]]*\])|$/ \[Bio::Tools::IUPAC-generated unique sequence # $self->{'_num'}\]/;

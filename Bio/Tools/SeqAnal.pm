@@ -3,7 +3,7 @@
 # PURPOSE : To provide a base class for different sequence analysis tools.
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 27 Mar 1998
-# REVISION: $Id: SeqAnal.pm,v 1.3 1999/04/06 11:20:47 sac Exp $
+# REVISION: $Id: SeqAnal.pm,v 1.4 2000/03/15 11:23:21 jgrg Exp $
 # STATUS  : Alpha
 #
 # For documentation, run this module through pod2html 
@@ -14,16 +14,11 @@ package Bio::Tools::SeqAnal;
 
 use Bio::Root::Object ();
 use Bio::Root::Global qw(:std);
-use Exporter          ();
-
-@ISA        = qw( Bio::Root::Object Exporter );
-@EXPORT     = qw();
-@EXPORT_OK  = qw();
-%EXPORT_TAGS = ();
 
 use strict;
-use vars qw($ID $VERSION);
+use vars qw($ID $VERSION @ISA);
 
+@ISA        = qw( Bio::Root::Object );
 $ID = 'Bio::Tools::SeqAnal';
 $VERSION  = 0.011;  
 

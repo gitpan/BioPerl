@@ -91,7 +91,7 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::SearchDist;
-use vars qw($AUTOLOAD @ISA);
+use vars qw(@ISA);
 use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
@@ -100,17 +100,16 @@ use Bio::Root::Object;
 
 BEGIN {
     eval {
-	require bp_sw;
+	require Bio::Ext::Align;
     };
     if ( $@ ) {
-	print STDERR ("\nThe C-compiled engine for histogram object (bp_sw) has not been installed.\n Please read the installation instructions for bioperl for using the compiled extensions\n\n");
+	print STDERR ("\nThe C-compiled engine for histogram object (Bio::Ext::Align) has not been installed.\n Please install the bioperl-ext package\n\n");
 	exit(1);
     }
 }
 
 
-@ISA = qw(Bio::Root::Object Exporter);
-@EXPORT_OK = qw();
+@ISA = qw(Bio::Root::Object);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
@@ -134,7 +133,7 @@ sub _initialize {
     $lump = 50;
   }
 
-  $self->_engine(&Wise2::new_Histogram($min,$max,$lump));
+  $self->_engine(&Bio::Ext::new_Histogram($min,$max,$lump));
 
   return $make; # success - we hope!
 }

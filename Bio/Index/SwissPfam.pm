@@ -76,28 +76,31 @@ The rest of the documentation details each of the object methods. Internal metho
 =cut
 
 
-# Let the code begin...
+# Let's begin the code...
 
 
 package Bio::Index::SwissPfam;
 
-use vars qw($VERSION @ISA @EXPORT_OK);
+use vars qw($VERSION @ISA);
 use strict;
 
 use Bio::Index::Abstract;
 use Bio::Seq;
 
-@ISA = qw(Bio::Index::Abstract Exporter);
-@EXPORT_OK = qw();
+@ISA = qw(Bio::Index::Abstract);
 
-sub _type_stamp {
-    return '__SWISSPFAM__'; # What kind of index are we?
+#
+# Suggested fix by Michael G Schwern <schwern@pobox.com> to
+# get around a clash with CPAN shell...
+#
+
+BEGIN {
+    $VERSION = 0.1;
 }
 
 sub _version {
-    return 0.1;
+    return $VERSION;
 }
-$VERSION = _version();
 
 
 
@@ -113,9 +116,9 @@ $VERSION = _version();
 =cut
 
 sub _initialize {
-    my($self, $index_file, $write_flag) = @_;
+    my $self = shift;
     
-    $self->SUPER::_initialize($index_file, $write_flag);
+    $self->SUPER::_initialize(@_);
 }
 
 

@@ -3,11 +3,12 @@
 # http://www.techfak.uni-bielefeld.de/bcd/Perl/Bio/welcome.html
 
 package Bio::UnivAln;
+use strict;
 
 use vars qw ($VERSION $Revision);
 
 $VERSION    = 1.010; # bio.perl.org Version;
-$Revision   = '$Id: UnivAln.pm,v 1.3.6.2 1999/06/27 07:54:20 sac Exp $';
+$Revision   = '$Id: UnivAln.pm,v 1.5 2000/03/15 11:23:20 jgrg Exp $';
 
 # Disclaimer from Georg Fuellen:
 # UnivAln is now under the CVS system. Georg Fuellen is currently 
@@ -926,14 +927,14 @@ doing :-)
 
 =cut
 
-require Exporter;
+use Exporter;
+use vars qw( @ISA  @EXPORT @EXPORT_OK );
 @ISA         = qw(Exporter);
 @EXPORT      = qw();
 @EXPORT_OK   = qw($VERSION %UnivAlnType @UnivAlnType %UnivAlnForm @UnivAlnForm %UnivAlnAlphs @UnivAlnAlphs);
 require 5.002;
 use Carp;
 #if ($] < 5.005) {carp "Not tested for Perl 5.002 or 5.003";}
-use strict;
 use POSIX;
 use File::Basename;
 

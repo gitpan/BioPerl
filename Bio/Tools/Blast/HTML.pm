@@ -4,7 +4,7 @@
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 28 Apr 1998
 # STATUS  : Alpha
-# REVISION: $Id: HTML.pm,v 1.2 1999/02/27 12:27:57 sac Exp $
+# REVISION: $Id: HTML.pm,v 1.3 2000/03/15 11:23:21 jgrg Exp $
 # 
 # For the latest version and documentation, visit the distribution site:
 #    http://bio.perl.org/Projects/Blast/
@@ -24,22 +24,24 @@
 #-------------------------------------------------------------------------------
 
 package Bio::Tools::Blast::HTML;
+use strict;
+use Exporter;
 
 use Bio::Tools::WWW  qw(:obj); 
 use Carp;
+
+use vars qw( @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS
+             $ID $VERSION %DbUrl %SGDUrl $Revision
+	     $Acc $Pir_acc $Word $Signif $Int $Descrip);
 
 @ISA        = qw(Exporter);
 @EXPORT     = qw();
 @EXPORT_OK  = qw(&get_html_func &strip_html);
 %EXPORT_TAGS = ( std => [qw(&get_html_func  &strip_html)] );
 
-use strict;
-use vars qw( $ID $VERSION %DbUrl %SGDUrl $Revision
-	     $Acc $Pir_acc $Word $Signif $Int $Descrip);
-
 $ID = 'Bio::Tools::Blast::HTML';
 $VERSION  = 0.075; 
-$Revision = '$Id: HTML.pm,v 1.2 1999/02/27 12:27:57 sac Exp $';  #'
+$Revision = '$Id: HTML.pm,v 1.3 2000/03/15 11:23:21 jgrg Exp $';  #'
 
 my $_set_markup = 0;
 my $_gi_link = '';

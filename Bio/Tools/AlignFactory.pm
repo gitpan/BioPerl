@@ -38,25 +38,25 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::Tools::AlignFactory;
-use vars qw($AUTOLOAD @ISA);
+use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
+# Object preamble - inherits from Bio::Root::Object
 
 use Bio::Root::Object;
 
 BEGIN {
     eval {
-	require bp_sw;
+	require Bio::Ext::Align;
     };
     if ( $@ ) {
-	print STDERR ("\nThe C-compiled engine for Smith Waterman alignments (bp_sw) has not been installed.\n Please read the installation instructions for bioperl for using the compiled extensions\n\n");
+	print STDERR ("\nThe C-compiled engine for Smith Waterman alignments (Bio::Ext::Align) has not been installed.\n Please install the bioperl-ext package\n\n");
 	exit(1);
     }
 }
 
 
-@ISA = qw(Bio::Root::Object Exporter);
+@ISA = qw(Bio::Root::Object);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
@@ -142,12 +142,12 @@ sub set_memory_and_report{
        $self->throw("You can suggest aligning things with less than 5kb");
    }
 
-   &bp_sw::change_max_BaseMatrix_kbytes($self->{'kbyte'});
+   &Bio::Ext::Align::change_max_BaseMatrix_kbytes($self->{'kbyte'});
 
    if( $self->{'report'} == 0 ) {
-       &bp_sw::error_off(16);
+       &Bio::Ext::Align::error_off(16);
    } else {
-       &bp_sw::error_on(16);
+       &Bio::Ext::Align::error_on(16);
    }
 }
 

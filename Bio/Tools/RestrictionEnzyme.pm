@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Tools::RestrictionEnzyme.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 3 June 1997
-# REVISION: $Id: RestrictionEnzyme.pm,v 1.2 1999/04/03 01:52:21 sac Exp $
+# REVISION: $Id: RestrictionEnzyme.pm,v 1.4.2.1 2000/03/27 10:09:13 birney Exp $
 # STATUS  : Alpha
 #            
 # MODIFIED: 
@@ -20,20 +20,20 @@
 #-----------------------------------------------------------------------------
 
 package Bio::Tools::RestrictionEnzyme;
+use strict;
 
 use Bio::Root::Object ();
 use Exporter;
+
+use vars qw (@ISA @EXPORT_OK %EXPORT_TAGS $ID $VERSION @RE_available $Revision);
 
 @ISA         = qw(Bio::Root::Object Exporter);
 @EXPORT_OK   = qw(@RE_available);
 %EXPORT_TAGS = ( std => [qw(@RE_available)] );
 
-use strict;
-use vars qw ($ID $VERSION @RE_available $Revision);
-
 $ID = 'Bio::Tools::RestrictionEnzyme';
 $VERSION = 0.04;
-$Revision = '$Id: RestrictionEnzyme.pm,v 1.2 1999/04/03 01:52:21 sac Exp $';  #'
+$Revision = '$Id: RestrictionEnzyme.pm,v 1.4.2.1 2000/03/27 10:09:13 birney Exp $';  #'
 
 # Generated from REBASE version 802 (strider format), dated Jan 29 98
 # by rebase2perl.pl (JA Feb 98). Merged with previous list by Ewan, Nov 1998
@@ -361,6 +361,7 @@ sub _initialize {
     $self->{'_seq'} = new Bio::Seq(%data, 
 				   -STRICT  =>$self->strict, 
 				   -VERBOSE =>$self->verbose,
+				   -moltype => 'dna',
 				  );
     $make;
 }
@@ -497,7 +498,7 @@ sub site {
 #---------
     my $self = shift;
     my $seq = $self->seq;
-    return $seq->str(1, $self->cuts_after).'^'.$seq->str($self->cuts_after+1, $seq->seq_len); 
+    return $seq->subseq(1, $self->cuts_after).'^'.$seq->subseq($self->cuts_after+1, $seq->length); 
 }
     
 
@@ -538,7 +539,7 @@ See Also   : L<seq>(), L<revcom>()
 =cut
 
 #-----------
-sub string {  my $self = shift; $self->{'_seq'}->str; }
+sub string {  my $self = shift; $self->{'_seq'}->seq; }
 #-----------
 
 
@@ -561,7 +562,7 @@ See Also   : L<seq>(), L<string>()
 =cut
 
 #-----------
-sub revcom {  my $self = shift; $self->{'_seq'}->revcom->str(); }
+sub revcom {  my $self = shift; $self->{'_seq'}->revcom->seq(); }
 #-----------
 
 
@@ -599,19 +600,19 @@ sub cut_seq {
     my $reSeq = $self->seq;
     if($cuts_after == 0) {
 	$site_3prime_seq = '';
-	$site_5prime_seq = $reSeq->str();
-    } elsif($cuts_after == $reSeq->seq_len) {
-	$site_3prime_seq = $reSeq->str();
+	$site_5prime_seq = $reSeq->seq();
+    } elsif($cuts_after == $reSeq->length) {
+	$site_3prime_seq = $reSeq->seq();
 	$site_5prime_seq = '';
     } else {
-	$site_3prime_seq = $reSeq->str(1, $self->{'_cuts_after'});
-	$site_5prime_seq = $reSeq->str($self->{'_cuts_after'}+1, $reSeq->seq_len);
+	$site_3prime_seq = $reSeq->subseq(1, $self->{'_cuts_after'});
+	$site_5prime_seq = $reSeq->subseq($self->{'_cuts_after'}+1, $reSeq->length);
     }
 
 #    print "3' site: $site_3prime_seq\n5' site: $site_5prime_seq";<STDIN>;
 
     my(@re_frags);
-    my $seq = $reSeq->str;
+    my $seq = $reSeq->seq;
     $seq =~ s/N/\./g;
     $seq =~ s/R/\[AG\]/g;
     $seq =~ s/Y/\[CT\]/g;
@@ -628,7 +629,7 @@ sub cut_seq {
     }
 #    printf "$ID: site seq: %s\n\n", $seq;
 #    printf "$ID: splitting %s\n\n",$reSeq->str;
-    @re_frags = split(/$seq/, $seqObj->str);
+    @re_frags = split(/$seq/, $seqObj->seq);
 
 #    print "$ID: cut_seq, ",scalar @re_frags, " fragments.\n";
 
@@ -771,6 +772,81 @@ sub available_list {
     }
     @names;
 }
+
+=head1 cuts_seq_at
+
+ Title     : cuts_seq_at
+ Usage     : $re->cuts_seq_at(<sequence object>);
+ Purpose   : Conceptually cut or "digest" a DNA sequence with the given enzyme.
+           : and return information about the positions at which the cuts 
+           : occur.
+ Example   : @positions = $re->cuts_seq_at(<sequence object>); 
+ Returns   : An array of integers.  Each integer describes the
+           : position at which the restriction enzyme would cut.
+ Argument  : Reference to a Bio::Seq.pm-derived object.
+ Throws    : Exception if argument is not an object.
+           : (Does not yet verify that it is derived from Bio::Seq.pm.)
+ Comments  : I *think* that this is right for non-palindromic enzymes
+           : like TspRI, but I wouldn't bet a lot of beer on it.  
+
+=cut
+
+#-------------
+sub cuts_seq_at {
+#-------------
+    my( $self, $seqObj) = @_;
+
+    # Could check that $seqObj is derived from Seq (Perl 5.004).
+    ref $seqObj || $self->throw( "Can't cut sequence. Missing or invalid object",
+				 "seqObj: $seqObj");
+    
+#    print "$ID: locating cut sites in sequence.\n";
+
+    my $cuts_after = $self->{'_cuts_after'};
+    my $reString = $self->seq()->seq;
+    my $revReString = $self->seq->revcom->seq;
+    my $forwardFudgeFactor = length($reString) - $cuts_after;
+    my $reverseFudgeFactor = $cuts_after;
+    my $seqString;
+    my @positions;
+    my $position;
+
+    # translate the ambiguity codes into perl regular expression patterns.
+    $reString =~ s/N/\./g;
+    $reString =~ s/R/\[AG\]/g;
+    $reString =~ s/Y/\[CT\]/g;
+    $reString =~ s/S/\[GC\]/g;
+    $reString =~ s/W/\[AT\]/g;
+
+    # build up the array of positions where the restriction enzyme's pattern
+    # matches.  These are the positions of the last base before the cut.
+    $seqString = $seqObj->seq;
+    while ($seqString =~ m/$reString/gc) {
+      $position = pos $seqString;
+      push @positions, $position - $forwardFudgeFactor;
+    }
+
+    # check for cuts on the other strand by non-palindromic enzymes.
+    # e.g. TspRI
+    if(!$self->palindromic) {
+      $revReString =~ s/N/\./g;
+      $revReString =~ s/R/\[AG\]/g;
+      $revReString =~ s/Y/\[CT\]/g;
+      $revReString =~ s/S/\[GC\]/g;
+      $revReString =~ s/W/\[AT\]/g;
+      
+      $seqString = $seqObj->seq;
+      while ($seqString =~ m/$revReString/gc) {
+ 	$position = pos $seqString;
+ 	push @positions, $position - $reverseFudgeFactor;
+      }
+    }
+    
+    my(@tempArray) = sort {$a<=>$b} @positions;
+    @positions = @tempArray;
+    return(@positions);
+}
+
 
 1;
 __END__

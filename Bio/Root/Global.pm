@@ -4,7 +4,7 @@
 #           many different modules and scripts.
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 3 Sep 1996
-# REVISION: $Id: Global.pm,v 1.4.6.1 1999/06/23 08:06:38 birney Exp $
+# REVISION: $Id: Global.pm,v 1.6 2000/03/15 11:23:20 jgrg Exp $
 #
 # INSTALLATION:
 #   This module is included with the central Bioperl distribution:
@@ -61,6 +61,7 @@ Follow the installation instructions included in the README file.
 =cut
 
 package	 Bio::Root::Global;
+use strict;
 
 BEGIN {
     use vars qw($CGI $TIMEOUT_SECS);
@@ -75,6 +76,7 @@ BEGIN {
 use Exporter ();
 use vars qw($BASE_YEAR @DAYS @MONTHS);
 
+use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS);
 @ISA       = qw( Exporter );
 @EXPORT_OK = qw($AUTHORITY $NEWLINE
 		$DEBUG $MONITOR $TESTING 
@@ -115,6 +117,10 @@ use vars qw($BASE_YEAR @DAYS @MONTHS);
 ######################################
 ##             Data                 ##
 ######################################
+
+use vars qw($AUTHORITY $DEBUG $MONITOR $TESTING $DONT_WARN $WARN_ON_FATAL
+            $FATAL_ON_WARN $RECORD_ERR $STRICTNESS $VERBOSITY $NEWLINE
+            %ROMAN_NUMS $GLOBAL);
 
 # Who should receive feedback from users and possibly automatic error messages.
 $AUTHORITY     = 'sac@genome.stanford.edu';

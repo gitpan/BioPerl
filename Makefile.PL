@@ -1,15 +1,13 @@
+
+# $Id: Makefile.PL,v 1.9.2.3 2000/04/01 19:50:18 dag Exp $
+
 ## --Makefile.PL for Bioperl core module distribution--##
 ## ----------------------------------------------------##
 
-# $Id: Makefile.PL,v 1.5.2.1 1999/06/18 09:37:08 sac Exp $
 
 #
-# Basically this is a standard makefile except 
-# that we are experimenting with an 'optional autoload'
-# on the Seq.pm file. 
-#
-# At the moment, (oct 1998) this don't work, so it
-# is switched off, hence $do_autoload_finesse =0; [EB]
+# Basically this is a standard Makefile with a hash of
+# needed packages which are tested at the start
 #
 # If you want help with this Makefile get in touch with
 # the bioperl core by sending a message to bioperl-bugs@bio.perl.org
@@ -17,6 +15,59 @@
 # to send a mail to all the bioperl core developpers.
 #
 
+
+%packages = (
+	     'HTTP::Request::Common' => '0.0/Part of the LWP package/remote http Blast jobs/Bio::Tools::Blast',
+	     'LWP::UserAgent'        => '0.0/Part of the LWP package/remote http Blast jobs/Bio::Tools::Blast',
+	     'Ace'                   => '0.0/Aceperl/access of ACeDB database/Bio::DB::Ace',
+	     'Bio::Ext::Align'       => '0.0/Bioperl compile extensions/Bioperl alignment generation/Bio::Tools::pSW'
+	     );
+
+sub check_package {
+    my ($name,$str) = @_;
+    my($ver,$desc,$expl,@modules);
+
+    ($ver,$desc,$expl,$module) = split( /\// , $str);
+    if( !eval "require $name") {
+	print "External Module $name, $desc,\n is not installed on this computer.\n  The $module in Bioperl needs it for $expl\n\n";
+	return 1;
+    }
+
+    return 0;
+}
+
+#
+# Generate sub testing package system
+#
+#
+
+# make mini test targets for playing around with
+# in testing...
+
+opendir(DIR,"t") || warn "No test directory. Weird!";
+@files = readdir(DIR);
+shift @files;
+shift @files;
+foreach my $file (@files) {
+    $file =~ /(\w+)\.t/ || next;
+    $file = $1;
+    $line = "test_$file :: pure_all\n\tPERL_DL_NONLAZY=1 \$(FULLPERL) -I\$(INST_ARCHLIB) -I\$(INST_LIB) -I\$(PERL_ARCHLIB) -I\$(PERL_LIB) -e \'use Test::Harness qw(&runtests \$\$verbose); \$\$verbose=\$(TEST_VERBOSE); runtests \@ARGV;\' t/$file.t\n";
+    push(@tline,$line);
+    push(@targets,$file);
+    $tset  .= "$file \\\n";
+}
+
+$tline = join('',@tline);
+$tline = "show_tests :\n\t\@echo \'type make test_<subtest> to run\'\n\t\@echo '$tset'\n$tline\n";
+
+print STDERR "Generated sub tests. go make show_tests to see available subtests\n";
+
+sub MY::postamble {
+             $tline;
+           }
+
+
+				           
 #
 # Talk to Ewan (<birney@sanger.ac.uk>) for more info.
 #
@@ -29,7 +80,7 @@ use ExtUtils::MakeMaker;
 $do_autoload_finesse = 0;
 $NAME     = 'Bio';
 $DISTNAME = "bioperl";
-$VERSION  = "0.05.1";
+$VERSION  = "0.06.0";
 
 if( $do_autoload_finesse == 1 ) {
     fatal("Autoload finessing does not work at the moment!");
@@ -55,46 +106,36 @@ if( $do_autoload_finesse ) {
     print "done.\n\n";
 }
 
-# Check for LWP and warn that Webblast requires it.
-
-unless( eval "require HTTP::Request::Common" and
-	eval "require LWP::UserAgent") {
-
-print STDERR <<QQ_MISSING_LWP_QQ;
-
-======================================================
-WARNING: LWP IS NOT INSTALLED.
-
-   Webblast.pm now requires the LWP (libwww-perl) modules.
-   To launch remote BLASTs, you will need to install
-   these most-excellent modules which can be readily
-   obtained from your local CPAN site:
-   http://www.perl.com/CPAN/
-
-   But don't worry, the rest of bioperl will work fine  
-======================================================
-
-QQ_MISSING_LWP_QQ
+$error = 0;
+foreach $name ( keys %packages ) {
+    if( &check_package($name,$packages{$name}) == 1 ) {
+	$error = 1;
+    }
 }
 
-# Check for Ace and warn that Bio::DB::Ace
+if( $error == 1 ) {
+    print <<QQ_ERROR_QQ;
 
-unless( eval "require Ace" ) {
+Warning:
 
-print STDERR <<QQ_MISSING_ACE_QQ;
+   There are some external packages, listed above, which bioperl 
+   uses. This only effects the functionality which is listed above:
+   the rest of bioperl will work fine.
 
-======================================================
-WARNING: Ace IS NOT INSTALLED.
+   The installation of these external packages is very simple. You
+   can read more about the external packages at
 
-  Ace.pm (AcePerl) is not installed. Bio::DB::Ace 
-  requires it for access to acedb databases. You can
-  download this sweet module from
-  http://stein.cshl.org/AcePerl
-  
-  But don't worry, the rest of bioperl will work fine  
-======================================================
+   http://bio.perl.org/Download/Core/External.html
 
-QQ_MISSING_ACE_QQ
+   The ftp site
+
+   ftp://bio.perl.org/pub/External/Core/
+
+   has all the external packages for easy retrieval, or you can use CPAN
+
+   Enjoy the rest of bioperl, which you can use after going 'make install'
+
+QQ_ERROR_QQ
 }
 
 WriteMakefile(

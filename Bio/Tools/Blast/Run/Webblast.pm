@@ -11,7 +11,7 @@
 #                 support.
 # CREATED : 4 May 1998
 # STATUS  : Alpha
-# REVISION: $Id: Webblast.pm,v 1.4.2.5 1999/06/27 07:41:36 sac Exp $
+# REVISION: $Id: Webblast.pm,v 1.7 2000/03/22 09:41:11 sac Exp $
 #
 # For documentation, run this module through pod2html
 # (preferably from Perl v5.004 or better).
@@ -25,6 +25,7 @@
 #------------------------------------------------------------------------
 
 package Bio::Tools::Blast::Run::Webblast;
+use strict;
 
 # rnc: now uses HTTP and LWP.
 # sac: Make sure HTTP and LWP are available.
@@ -53,6 +54,8 @@ use Bio::Root::Utilities qw(:obj);
 use Bio::Tools::Blast::HTML qw(&strip_html);
 use Carp;
 
+use Exporter;
+use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 @ISA        = qw(Exporter);
 @EXPORT     = qw();
 @EXPORT_OK  = qw(&blast_remote @Blast_dbp_remote @Blast_dbn_remote 
@@ -64,7 +67,7 @@ use strict;
 use vars qw( $ID $VERSION $revision);
 
 $ID       = 'Bio::Tools::Blast::Run::Webblast';
-$VERSION  = 1.22; 
+$VERSION  = 1.23; 
 
 # SAC: grouped database names.
 # May want to put these sorts of things in a
@@ -101,9 +104,11 @@ my %_default = (
 		'minimumLengthProtein'  => 10,
 		'maximumLength'         => 100000, 
 		'maximumLengthProtein'  => 50000, 
-		'blastServerURL1'       => 'www.ncbi.nlm.nih.gov/cgi-bin/BLAST/nph-blast',
-		'blastServerURL2'       => 'www.ncbi.nlm.nih.gov/cgi-bin/BLAST/nph-newblast',
-		'blastServerURLpsi'     => 'www.ncbi.nlm.nih.gov/cgi-bin/BLAST/nph-psi_blast',
+# Blast1 no longer supported at NCBI
+#		'blastServerURL1'       => 'www.ncbi.nlm.nih.gov/',
+		'blastServerURL2'       => 'www.ncbi.nlm.nih.gov/blast/blast.cgi',
+		'blastServerURLpsi'     => 'www.ncbi.nlm.nih.gov/blast/psiblast.cgi',
+		'blastServerURLphi'     => 'www.ncbi.nlm.nih.gov/blast/phiblast.cgi',
 		# rnc:	added WashU-Blast2 server address, ..WashU - first remote WashU Blast Server to use
 		# rnc:	added proxy server address option
 		'blastServerURLWashU'	=> 'www2.ebi.ac.uk/cgi-bin/newblast2.pl',
@@ -341,7 +346,7 @@ their resolution. Bug reports can be submitted via email or the web:
 
 =head1 VERSION
 
-Bio::Tools::Blast::Run::Webblast.pm, 1.22
+Bio::Tools::Blast::Run::Webblast.pm, 1.23
 
 =head1 COPYRIGHT
 
@@ -1989,6 +1994,8 @@ __END__
 ############################################################################
 
 # MODIFICATION HISTORY :
+#  1.23, 15 Oct 1999, sac:
+#     -- Updated the URLs for the NCBI servers.
 #
 #  1.22, 26 Jun 1999, sac:
 #      -- Bug fix in _blast(): Removing characters from temp file name 

@@ -24,7 +24,7 @@
 # PURPOSE : To parse a set of Blast report files.
 # AUTHOR  : Steve A. Chervitz
 # CREATED : 21 Jul 1998
-# REVISION: $Id: parse_multi.pl,v 1.4.2.1 1999/05/10 08:09:33 sac Exp $
+# REVISION: $Id: parse_multi.pl,v 1.7 2000/03/22 10:20:11 sac Exp $
 # WEBSITE : http://bio.perl.org/Projects/Blast/
 # USAGE   : parse_multi.pl -h
 # EXAMPLES: parse_multi.pl -eg

@@ -68,20 +68,18 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 package Bio::DB::GenPept;
-use vars qw($AUTOLOAD @ISA @EXPORT_OK);
 use strict;
+use vars qw(@ISA);
 
 # Object preamble - inherits from Bio::DB::BioSeqI
 
-use Bio::DB::BioSeqI;
-
+use Bio::DB::RandomAccessI;
 use Bio::SeqIO;
 use IO::Socket;
 
-@ISA = qw(Bio::DB::BioSeqI Exporter);
-@EXPORT_OK = qw();
+@ISA = qw(Bio::Root::Object Bio::DB::RandomAccessI);
 
-# new() is inherited from Bio::DB::BioSeqI
+# new() is inherited from Bio::DB::SeqI
 
 # _initialize is where the heavy stuff will happen when new is called
 
@@ -205,6 +203,7 @@ sub get_Stream_by_batch {
        for ( @{$ref} ) {
            print $fh $_ . "\n";
        }
+       seek $fh, 0, 0;
        $filename = "tempfile.txt";
    } elsif ( $which eq '') { # $ref is a filename
        $fh = new IO::File $ref, "r";
@@ -213,11 +212,11 @@ sub get_Stream_by_batch {
        $fh = $ref;
        $filename = "tempfile.txt";
    }
-   
+
    my $wwwbuf = "DB=n&REQUEST_TYPE=LIST_OF_GIS&FORMAT=1&HTML=FALSE&SAVETO=FALSE&NOHEADER=TRUE&UID=" . join(',', grep { chomp; } <$fh> );
-   
+
    my $sock = $self->_get_sock();
-   
+
    select $sock;
    print "POST /cgi-bin/Entrez/qserver.cgi HTTP/1.0\015\012";
    print "Host: www.ncbi.nlm.nih.gov\015\012";
@@ -227,7 +226,7 @@ sub get_Stream_by_batch {
    print "Content-length: " . length($wwwbuf) . "\015\012";
    print "\015\012";
    print $wwwbuf;
-   
+
    while (<$sock>) {
        if ( m,^HTTP/\d+\.\d+\s+(\d+)[^\012]\012, ) {
            my $code = $1;

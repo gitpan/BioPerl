@@ -3,7 +3,7 @@
 # PURPOSE : Provides general-purpose utilities of potential interest to any Perl script.
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : Feb 1996
-# REVISION: $Id: Utilities.pm,v 1.5 1999/04/06 11:14:15 sac Exp $
+# REVISION: $Id: Utilities.pm,v 1.7 2000/03/22 10:07:41 sac Exp $
 # STATUS  : Alpha
 #
 # This module manages file compression and uncompression using gzip or
@@ -22,13 +22,14 @@
 #
 # MODIFICATIONS: See bottom of file.
 #
-# Copyright (c) 1996-8 Steve A. Chervitz. All Rights Reserved.
+# Copyright (c) 1996-2000 Steve A. Chervitz. All Rights Reserved.
 #          This module is free software; you can redistribute it and/or 
 #          modify it under the same terms as Perl itself.
 #
 #-----------------------------------------------------------------------------
 
 package	Bio::Root::Utilities;
+use strict;
 
 use Bio::Root::Global  qw(:data :std $TIMEOUT_SECS);
 use Bio::Root::Object  ();
@@ -37,16 +38,16 @@ use POSIX;
 #use AutoLoader;
 #*AUTOLOAD = \&AutoLoader::AUTOLOAD;
 
+use vars qw( @ISA @EXPORT_OK %EXPORT_TAGS );
 @ISA         = qw( Bio::Root::Object Exporter);
 @EXPORT_OK   = qw($Util);
 %EXPORT_TAGS = ( obj => [qw($Util)],
 		 std => [qw($Util)],);
 
-use strict;  
-use vars qw($ID $VERSION $Util $GNU_PATH);
+use vars qw($ID $VERSION $Util $GNU_PATH $DEFAULT_NEWLINE);
 
 $ID        = 'Bio::Root::Utilities';
-$VERSION   = 0.042;
+$VERSION   = 0.05;
 
 # $GNU_PATH points to the directory containing the gzip and gunzip 
 # executables. It may be required for executing gzip/gunzip 
@@ -55,6 +56,8 @@ $VERSION   = 0.042;
 # uncompress() functions are generating exceptions.
 $GNU_PATH  = ''; 
 #$GNU_PATH  = '/tools/gnu/bin/'; 
+
+$DEFAULT_NEWLINE = "\012";  # \n  (used if get_newline() fails for some reason)
 
 ## Static UTIL object.
 $Util = {};
@@ -242,7 +245,7 @@ See Also   : L<file_date>(), L<month2num>()
 
 =cut
 
-#---------------
+#---------------'
 sub date_format {
 #---------------
     my $self   = shift;
@@ -330,7 +333,9 @@ sub date_format {
 
 =cut
 
+#--------------'
 sub month2num {
+#--------------
 
     my ($self, $str) = @_;
 
@@ -587,7 +592,7 @@ sub file_date {
 
 =cut
 
-#------------	
+#------------`
 sub untaint {
 #------------	
     my($self,$value,$relax) = @_;
@@ -829,7 +834,6 @@ sub create_filehandle {
 	$FH = $file;
 	$client->{'_input_type'} = "FileHandle";
       } elsif($handle_ref eq 'GLOB') {
-#	$FH = new FileHandle($file);  # Can't do this
 	$FH = $file;
 	$client->{'_input_type'} = "Glob";
       } else {
@@ -890,10 +894,9 @@ sub get_newline {
 
     if(not $client) {  $client = $self;   }
 
-    if($client->{'_input_type'} eq 'STDIN' ||
-      $client->{'_input_type'} =~ /compressed/ ) {
+    if($client->{'_input_type'} =~ /STDIN|Glob|compressed/) {
       # Can't taste from STDIN since we can't seek 0 on it.
-      # Are other non special Glob refs seek able?
+      # Are other non special Glob refs seek-able? 
       # Attempt to guess newline based on platform.
       # Not robust since we could be reading Unix files on a Mac, e.g.
       if(defined $ENV{'MACPERL'}) {
@@ -905,11 +908,13 @@ sub get_newline {
       $NEWLINE = $self->taste_file($FH);
     }
 
-    close ($FH) unless $client->{'_input_type'} eq 'STDIN';
+    close ($FH) unless ($client->{'_input_type'} eq 'STDIN' || 
+                        $client->{'_input_type'} eq 'FileHandle' ||
+                        $client->{'_input_type'} eq 'Glob' );
     
     delete $client->{'_input_type'};
 
-    return $NEWLINE;
+    return $NEWLINE || $DEFAULT_NEWLINE;
   }
 
 
@@ -1051,7 +1056,7 @@ See Also  : L<mail_authority>()
 =cut
 
 
-#-------------
+#-------------'
 sub send_mail {
 #-------------
     my( $self, @param) = @_;

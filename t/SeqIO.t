@@ -1,7 +1,5 @@
 ## Bioperl Test Harness Script for Modules
 ##
-# CVS Version
-# $Id: SeqIO.t,v 1.4.6.1 1999/06/21 17:59:53 amackey Exp $
 
 
 # Before `make install' is performed this script should be runnable with
@@ -21,16 +19,13 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..9\n"; 
+BEGIN { $| = 1; print "1..17\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
 
 use Bio::SeqIO;
-use Bio::SeqIO::Fasta;
-use Bio::SeqIO::EMBL;
-use Bio::SeqIO::Raw;
-use Bio::SeqIO::GCG;
+use Bio::SeqIO::MultiFile;
 
 $loaded = 1;
 print "ok 1\n";    # 1st test passes.
@@ -118,10 +113,78 @@ print "ok 9\n";
 ## End of ChrisDag's SeqIO tests.
 #####
 
+## Now we test Bio::SeqIO::GenBank
+$str = Bio::SeqIO->new(-file=> 't/test.genbank', '-format' => 'GenBank');
 
-# leave this as the last statement, please - AJM
 
+if( $str ) {
+    print "ok 10\n";
+} else {
+    print "not ok 10 , unable to open stream from GenBank sequence file\n";	
+}
+
+if($seq = $str->next_seq()) { print "ok 11\n";
+ } else { print "not ok 11 , failed to read GenBank sequence from stream,\n"; }
+print "Sequence 1 of 1 from GenBank stream:\n", $seq->seq, "\n";
+
+
+$str = Bio::SeqIO->new(-file=> '>t/genbank.out', '-format' => 'GenBank');
+
+$str->write_seq($seq);
+
+print "ok 12\n";
+
+# please leave this as the last line:
 $str = undef;
+
+
+# EMBL format
+
+$ast = Bio::SeqIO->new( '-format' => 'embl' , -file => 't/roa1.dat');
+
+while( my $as = $ast->next_seq() ) {
+       if( ! defined $as->seq ) {
+	   print "not ok 13\n";
+	   }
+      }
+
+
+print "ok 13\n";
+
+$ast = Bio::SeqIO->new( '-format' => 'GenBank' , -file => 't/roa1.genbank');
+
+while( my $as = $ast->next_seq() ) {
+       if( ! defined $as->seq ) {
+	   print "not ok 14\n";
+	   }
+      }
+
+
+print "ok 14\n";
+
+$mf = Bio::SeqIO::MultiFile->new( '-format' => 'Fasta' , -files => ['t/multi_1.fa','t/multi_2.fa']);
+
+print "ok 15\n";
+
+# read completely to the end
+
+while( $seq = $mf->next_seq() ) {
+	$temp = $seq->display_id;
+}
+$temp = undef;
+print "ok 16\n";
+
+
+$ast = Bio::SeqIO->new( '-format' => 'Swiss' , -file => 't/roa1.swiss');
+
+while( my $as = $ast->next_seq() ) {
+   if( ! defined $as->seq || $as->id ne 'ROA1_HUMAN' ) {
+	print "not ok 17\n";
+	print STDERR "id is ".$as->id."\n";
+   } else {
+     print "ok 17\n";
+   }
+}
 
 
 

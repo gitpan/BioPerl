@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Tools::SeqPattern.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 28 Aug 1997
-# REVISION: $Id: SeqPattern.pm,v 1.1.1.1.8.1 1999/06/25 09:06:34 sac Exp $
+# REVISION: $Id: SeqPattern.pm,v 1.2.6.2 2000/03/31 07:50:02 birney Exp $
 #            
 # Copyright (c) 1997-8 Steve A. Chervitz. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
@@ -12,9 +12,9 @@
 package Bio::Tools::SeqPattern;
 
 use Bio::Root::Global qw(:devel);
-use Bio::Seq ();
+use Bio::Root::Object;
 
-@ISA = qw(Bio::Seq);
+@ISA = qw(Bio::Root::Object);
 use strict;
 use vars qw ($ID $VERSION);
 $ID  = 'Bio::Tools::SeqPattern';
@@ -60,10 +60,12 @@ Follow the installation instructions included in the README file.
 
 =head1 DESCRIPTION
 
-The Bio::Tools::SeqPattern.pm module encapsulates generic data and methods for manipulating 
-regular expressions describing nucleic or amino acid sequence patterns (a.k.a, "motifs").
+The Bio::Tools::SeqPattern.pm module encapsulates generic data and
+methods for manipulating regular expressions describing nucleic or
+amino acid sequence patterns (a.k.a, "motifs").
 
-Bio::Tools::SeqPattern.pm is a concrete class that inherits from B<Bio::Seq.pm>.
+Bio::Tools::SeqPattern.pm is a concrete class that inherits from
+B<Bio::Seq.pm>.
 
 This class grew out of a need to have a standard module for doing routine
 tasks with sequence patterns such as:
@@ -175,8 +177,8 @@ Currently, this module only supports patterns using a grep-like syntax.
 
 =head1 USAGE
 
-A simple demo script is included with the central Bioperl distribution (L<INSTALLATION>)
-and is also available from:
+A simple demo script is included with the central Bioperl distribution
+(L<INSTALLATION>) and is also available from:
 
     http://bio.perl.org/Core/Examples/seq_pattern.pl
 
@@ -192,9 +194,9 @@ and is also available from:
 
 =head2 Mailing Lists 
 
-User feedback is an integral part of the evolution of this and other Bioperl modules.
-Send your comments and suggestions preferably to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules.  Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
     vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
     vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
@@ -265,22 +267,18 @@ sub _initialize {
     my($seq, $type) = $self->_rearrange([qw(SEQ TYPE)], %param);
 
     $seq || $self->throw("Empty pattern.");
-
+    my $t;
     # Get the type ready for Bio::Seq.pm
     if ($type =~ /nuc|[dr]na/i) {
-	$param{-TYPE} = 'Dna';
+	$t = 'Dna';
     } elsif ($type =~ /amino|pep|prot/i) {
-	$param{-TYPE} = 'Amino';
+	$t = 'Amino';
     }
 
-    my $make = $self->SUPER::_initialize(%param);
-#	 if($self->make() =~ /^nuc/i) {
-#	     $param{-SEQ} = $self->_expand_nuc($param{-SEQ}); 
-#	 } else {
-##	    $param{-SEQ} = $self->_expand_pep($param{-SEQ});  #unimplemented here.
-#	 }
+    $self->str($seq);
+    $self->type($t);
 
-    $make;
+    return $self;
 }
 
 
@@ -327,6 +325,7 @@ sub alphabet_ok {
 #    print STDERR "\npattern ok: $pat\n";
     1;
 }
+
 
 
 
@@ -504,7 +503,9 @@ sub revcom {
 #    return $self->{'_rev'} if defined $self->{'_rev'};
 
     $expand ||= 0;
-    my $rev = $self->SUPER::revcom->str;  ## Invoke Bio::Seq::revcom()
+    my $str = $self->str;
+    $str =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
+    my $rev = CORE::reverse $str;
     $rev    =~ tr/[](){}<>/][)(}{></;
 
     if($expand) {
@@ -797,6 +798,49 @@ sub _fixpat_5 {
 	last if not $pat;
     }
     return join('', reverse @done);
+}
+
+
+=head2 str
+
+ Title   : str
+ Usage   : $obj->str($newval)
+ Function: 
+ Returns : value of str
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub str{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'str'} = $value;
+    }
+    return $obj->{'str'};
+
+}
+
+=head2 type
+
+ Title   : type
+ Usage   : $obj->type($newval)
+ Function: 
+ Returns : value of type
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub type{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'type'} = $value;
+    }
+    return $obj->{'type'};
+
 }
 
 1;

@@ -1,5 +1,5 @@
 ## Bioperl Test Harness Script for Modules
-## $Id: Blast.t,v 1.2 1999/03/15 11:10:59 sac Exp $
+## $Id: Blast.t,v 1.3 2000/03/23 14:43:05 birney Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -57,7 +57,8 @@ test 5, $blast->num_hits == 4;
 test 6, $blast->length == 504;
 test 7, $blast->program eq 'TBLASTN';
 test 8, $blast->query eq 'gi|1401126';
-test 9, $blast->hit->name eq 'U49928/HSU49928';
+test 9, $blast->hit->name eq 'gb|U49928|HSU49928';
+#print STDERR "Hit is ",$blast->hit->name,"\n";
 test 10, $blast->hit->length == 3096;
 
 @hits  = $blast->hits;

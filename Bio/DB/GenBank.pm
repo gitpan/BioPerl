@@ -68,21 +68,19 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 package Bio::DB::GenBank;
-use vars qw($AUTOLOAD @ISA @EXPORT_OK);
 use strict;
+use vars qw(@ISA);
 
 # Object preamble - inherits from Bio::DB::Abstract
 
-use Bio::DB::BioSeqI;
-
+use Bio::DB::RandomAccessI;
 use Bio::SeqIO;
 use IO::Socket;
 use IO::File;
 
-@ISA = qw(Bio::DB::BioSeqI Exporter);
-@EXPORT_OK = qw();
+@ISA = qw(Bio::Root::Object Bio::DB::RandomAccessI);
 
-# new() is inherited from Bio::DB::Abstract
+# new() is inherited from Bio::DB::SeqI
 
 # _initialize is where the heavy stuff will happen when new is called
 
@@ -90,9 +88,9 @@ sub _initialize {
   my($self,@args) = @_;
 
   my $make = $self->SUPER::_initialize;
-
-# set stuff in self from @args
- return $make; # success - we hope!
+  
+# set stuff in self from @args  
+  return $make; # success - we hope!
 }
 
 =head2 get_Seq_by_id
@@ -191,7 +189,7 @@ sub get_Stream_by_acc {
   Returns : a Bio::SeqIO stream object
   Args    : $ref : either an array reference, a filename, or a filehandle
             from which to get the list of unique id's/accession numbers.
-
+#'
 
 =cut
 
@@ -206,6 +204,7 @@ sub get_Stream_by_batch {
        for ( @{$ref} ) {
 	   print $fh $_ . "\n";
        }
+       seek $fh, 0, 0;
        $filename = "tempfile.txt";
    } elsif ( $which eq '') { # $ref is a filename
        $fh = new IO::File $ref, "r";
@@ -228,7 +227,7 @@ sub get_Stream_by_batch {
    print "Content-length: " . length($wwwbuf) . "\015\012";
    print "\015\012";
    print $wwwbuf;
-   
+
    while (<$sock>) {
        if ( m,^HTTP/\d+\.\d+\s+(\d+)[^\012]\012, ) {
 	   my $code = $1;
@@ -275,18 +274,18 @@ sub _get_stream {
 
 sub _get_sock {
     my $self = shift;
-  my $sock = IO::Socket::INET->new(PeerAddr => 'www.ncbi.nlm.nih.gov',
-				   PeerPort => 80,
-				   Proto    => 'tcp',
-				   Timeout  => 60
-				  );
-  unless ($sock) {
-    $@ =~ s/^.*?: //;
-    $self->throw("Can't connect to GenBank ($@)\n");
-  }
-  $sock->autoflush(); # just for safety's sake if they have old IO::Socket
+    my $sock = IO::Socket::INET->new(PeerAddr => 'www.ncbi.nlm.nih.gov',
+				     PeerPort => 80,
+				     Proto    => 'tcp',
+				     Timeout  => 60
+				     );
+    unless ($sock) {
+	$@ =~ s/^.*?: //;
+	$self->throw("Can't connect to GenBank ($@)\n");
+    }
+    $sock->autoflush();		# just for safety's sake if they have old IO::Socket
 
-  return $sock;
+    return $sock;
 }
 
 

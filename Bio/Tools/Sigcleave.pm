@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Tools::Sigcleave.pm
 # AUTHOR  : Chris Dagdigian, dag@sonsorol.org
 # CREATED : Jan 28 1999
-# REVISION: $Id: Sigcleave.pm,v 1.8 1999/02/27 12:35:31 birney Exp $
+# REVISION: $Id: Sigcleave.pm,v 1.9 2000/02/14 13:37:59 birney Exp $
 #            
 # Copyright (c) 1997-9 bioperl, Chris Dagdigian and others. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
@@ -164,7 +164,7 @@ Chris Dagdigian, dag@sonsorol.org  & others
 
 =head1 VERSION
 
-Bio::Tools::Sigcleave.pm, $Id: Sigcleave.pm,v 1.8 1999/02/27 12:35:31 birney Exp $
+Bio::Tools::Sigcleave.pm, $Id: Sigcleave.pm,v 1.9 2000/02/14 13:37:59 birney Exp $
 
 =head1 COPYRIGHT
 
@@ -348,8 +348,8 @@ my $seqBegin  = 0;
 my $pVal      = -13; 
 my $nVal      = 2;
 my $nHits     = 0;
-my $seqEnd    = $self->seq_len;
-my $pep       = $self->str;
+my $seqEnd    = $self->length;
+my $pep       = $self->seq;
 my $minWeight = $self->threshold;
 
  ## The weight table is keyed by UPPERCASE letters so we uppercase
@@ -470,9 +470,9 @@ my %results  = $self->signals;
 my @hits     = keys %results;
 my $hitcount = $#hits; $hitcount++;
 my $thresh   = $self->threshold;
-my $seqlen   = $self->seq_len;
+my $seqlen   = $self->length;
 my $name     = $self->id;
-my $pep      = $self->str;
+my $pep      = $self->seq;
    $pep      =~ tr/a-z/A-Z/;
 
 $output = "SIGCLEAVE of $name from: 1 to $seqlen\n\n";
