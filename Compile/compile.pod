@@ -1,0 +1,56 @@
+
+=head1 NAME
+
+Notes on the compilation part of the bioperl
+
+=head1 DESCRIPTION
+
+These are notes on the compiled part of the bioperl stuff.
+This only for people who are curious about the underlying
+compile C/XS extension used by bioperl
+
+First off, Ewan Birney <birney@sanger.ac.uk> is solely responsible
+for this stuff. 
+
+The compiled extensions come from my Wise2 software project, which
+has a large number of algorithms and objects in C. These objects are
+in fact built using my own, home grown language called dynamite,
+and I have provided in dynamite the ability to load things into perl
+using the XS interface.
+
+The compiled extensions for each area will generally end up in one
+'module' (perl speak for one set of XS functions that is dragged in
+using the bootstrap command) although inside the module they can
+be multiple packages (packages being the usual package command in
+perl). 
+
+In bioperl the module is bp_sw (bioperl smith waterman) and packages
+inside it are bp_sw and things like bp_sw::Sequence etc. The precise
+functions which are provided are in the bp_sw.xs file in the SW
+subdirectory. (the reason why this is in a sub directory is to allow
+multiple compiled portions to be provided).
+
+In bioperl you are not expected to access this package directly as it
+requires too much programming knowledge and also doesn't coordinate
+with the rest of bioperl. Instead helper object provide a second
+layer on top of the bp_sw package. For this reason I call the bp_sw
+'the engine' in the sense that it is in some ways completely isolated
+from the rest of bioperl
+
+The only layer I have put on so far is the smith waterman pairwise
+alignments. Soon I will add smith waterman database searching code and
+Sean Eddy's histogram package (EVD fitting).
+
+
+=head1 Guts of the XS extension
+
+You may well be interested in the actual nuts and bolts of the XS
+extension (I know that for me it took a while to figure out
+what was going on). The XS extension is only possible because I can
+a very nice C API. I think most of the problems in making XS extensions
+are due to limitations in the C API.
+
+Not finished yet
+
+
+
