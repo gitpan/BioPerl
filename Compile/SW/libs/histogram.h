@@ -74,6 +74,20 @@ typedef struct bp_sw_Histogram bp_sw_Histogram;
 
 
 
+/* Function:  Evalue_from_Histogram(his,score)
+ *
+ * Descrip: No Description
+ *
+ * Arg:          his [UNKN ] Histogram object [Histogram *]
+ * Arg:        score [UNKN ] score you want the evalue for [double]
+ *
+ * Return [UNKN ]  Undocumented return value [double]
+ *
+ */
+double bp_sw_Evalue_from_Histogram(Histogram * his,double score);
+#define Evalue_from_Histogram bp_sw_Evalue_from_Histogram
+
+
 /* Function:  new_Histogram(min,max,lumpsize)
  *
  * Descrip: No Description
@@ -141,7 +155,7 @@ void bp_sw_EVDBasicFit(Histogram * h);
  *
  * Arg:                h [UNKN ] histogram to fit [Histogram *]
  * Arg:           censor [UNKN ] TRUE to censor data left of the peak [int]
- * Arg:        high_hint [UNKN ] score cutoff; above this are `real' hits that aren't fit [float]
+ * Arg:        high_hint [UNKN ] score cutoff; above this are real hits that arent fit [float]
  *
  * Return [UNKN ]  if fit is judged to be valid else 0 if fit is invalid (too few seqs.) [int]
  *
@@ -160,7 +174,7 @@ int bp_sw_ExtremeValueFitHistogram(Histogram * h, int censor, float high_hint) ;
  * Arg:         lowbound [UNKN ] low bound of the histogram that was fit [float]
  * Arg:        highbound [UNKN ] high bound of histogram that was fit [float]
  * Arg:            wonka [UNKN ] fudge factor; fraction of hits estimated to be "EVD-like" [float]
- * Arg:         ndegrees [UNKN ] extra degrees of freedom to subtract in X^2 test: [int]
+ * Arg:         ndegrees [UNKN ] extra degrees of freedom to subtract in chi2 test: [int]
  *
  */
 void bp_sw_ExtremeValueSetHistogram(Histogram * h, float mu, float lambda, float lowbound, float highbound, float wonka, int ndegrees);

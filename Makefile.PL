@@ -1,7 +1,7 @@
 ## --Makefile.PL for Bioperl core module distribution--##
 ## ----------------------------------------------------##
 
-# $Id: Makefile.PL,v 1.1.1.1.2.2 1999/02/03 13:12:02 sac Exp $
+# $Id: Makefile.PL,v 1.5 1999/04/25 18:21:26 birney Exp $
 
 #
 # Basically this is a standard makefile except 
@@ -17,16 +17,6 @@
 # to send a mail to all the bioperl core developpers.
 #
 
-
-
-# Novemeber 1998.
-#
-# A note for CVS maintainers *only*
-#
-# Currently this makefile is kept *in the wrong place* 
-# for the distribution. It should be kept in the directory
-# above. This means that all the autoloading finesseing
-# needs rewriting once we get around to it. 
 #
 # Talk to Ewan (<birney@sanger.ac.uk>) for more info.
 #
@@ -39,7 +29,7 @@ use ExtUtils::MakeMaker;
 $do_autoload_finesse = 0;
 $NAME     = 'Bio';
 $DISTNAME = "bioperl";
-$VERSION  = "0.04.3";
+$VERSION  = "0.05";
 
 if( $do_autoload_finesse == 1 ) {
     fatal("Autoload finessing does not work at the moment!");
@@ -63,6 +53,48 @@ if( $do_autoload_finesse ) {
     print "Bioperl module installation\nPreparing modules for AUTOLOADing...";
     `perl -p -i.bak -e 's/#__END__/__END__/' Seq.pm`;
     print "done.\n\n";
+}
+
+# Check for LWP and warn that Webblast requires it.
+
+unless( eval "require HTTP::Request::Common" and
+	eval "require LWP::UserAgent") {
+
+print STDERR <<QQ_MISSING_LWP_QQ;
+
+======================================================
+WARNING: LWP IS NOT INSTALLED.
+
+   Webblast.pm now requires the LWP (libwww-perl) modules.
+   To launch remote BLASTs, you will need to install
+   these most-excellent modules which can be readily
+   obtained from your local CPAN site:
+   http://www.perl.com/CPAN/
+
+   But don't worry, the rest of bioperl will work fine  
+======================================================
+
+QQ_MISSING_LWP_QQ
+}
+
+# Check for Ace and warn that Bio::DB::Ace
+
+unless( eval "require Ace" ) {
+
+print STDERR <<QQ_MISSING_ACE_QQ;
+
+======================================================
+WARNING: Ace IS NOT INSTALLED.
+
+  Ace.pm (AcePerl) is not installed. Bio::DB::Ace 
+  requires it for access to acedb databases. You can
+  download this sweet module from
+  http://stein.cshl.org/AcePerl
+  
+  But don't worry, the rest of bioperl will work fine  
+======================================================
+
+QQ_MISSING_ACE_QQ
 }
 
 WriteMakefile(

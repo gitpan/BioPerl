@@ -2,41 +2,14 @@
 # PACKAGE : Bio::Root::IOManager.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 26 Mar 1997
-# REVISION: $Id: IOManager.pm,v 1.1.1.1.2.2 1999/02/04 15:52:01 sac Exp $
+# REVISION: $Id: IOManager.pm,v 1.5 1999/04/06 11:14:11 sac Exp $
 # STATUS  : Alpha
 #            
 # For documentation, run this module through pod2html 
 # (preferably from Perl v5.004 or better).
 #
-# MODIFIED: 
-#   3 Feb 1999, sac:
-#      * Added timeout support to read().
-#      * Moved the FileHandle creation code out of read() and into 
-#        Bio::Root::Utilties since it's of more general use.
+# MODIFICATION NOTES: See bottom of file.
 #
-#    24 Nov 1998, sac:
-#      * Modified read(), compress(), and uncompress() to properly
-#        deal with file ownership issues.
-#
-#    19 Aug 1998, sac:
-#      * Fixed bug in display(), which wasn't returning true (1).
-#
-#    0.023, 20 Jul 1998, sac:
-#      * read() can now use a supplied FileHandle or GLOB ref (\*IN).
-#      * A few other touch-ups in read().
-#
-#    0.022, 16 Jun 1998, sac:
-#      * read() now terminates reading when a supplied &$func_ref
-#        returns false.
-#
-#    0.021, May 1998, sac:
-#      * Refined documentation to use 5.004 pod2html.
-#      * Properly using typglob refs as necessary 
-#        (e.g., set_display(), set_fh()).
-#
-#    0.031, 2 Sep 1998, sac:
-#      * Doc changes only
-# 
 # Copyright (c) 1997-8 Steve A. Chervitz. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
 #           modify it under the same terms as Perl itself.
@@ -44,7 +17,7 @@
 
 package Bio::Root::IOManager;
 
-use Bio::Root::Global     qw(:devel $CGI);
+use Bio::Root::Global     qw(:devel $CGI $TIMEOUT_SECS);
 use Bio::Root::Object     ();
 use Bio::Root::Utilities  qw(:obj); 
 use FileHandle            ();
@@ -54,7 +27,7 @@ use FileHandle            ();
 use strict;
 use vars qw($ID $VERSION $revision);
 $ID = 'Bio::Root::IOManager';
-$VERSION = 0.041;
+$VERSION = 0.043;
 
 ## POD Documentation:
 
@@ -184,7 +157,7 @@ See the L<FEEDBACK> section for where to send bug reports and comments.
 
 =head1 VERSION
 
-Bio::Root::IOManager.pm, 0.041
+Bio::Root::IOManager.pm, 0.043
 
 =head1 ACKNOWLEDGEMENTS
 
@@ -679,7 +652,7 @@ sub fh {
            :                (The -HANDLE parameter is no longer necessary
            :                 since -FILE can now contain a FileHandle ref.)
            :    -WAIT    => integer (number of seconds to wait for input
-           :                before timing out. Default = 3 seconds).
+           :                before timing out. Default = 20 seconds).
            :
  Returns   : string, array, or undef depending on the arguments.
            : If a function reference is supplied, this function will be
@@ -698,12 +671,8 @@ sub fh {
            : read from STDIN.
            :
            : COMPRESSED FILES:
-           :    read() will attempt to uncompress the file 
+           :    read() will attempt to use gzip -cd to read the file 
            : if it appears to be compressed (binary file test).
-           : If the file is compressed and the user is not the owner of 
-           : the file, a temporary file is created which is removed after
-           : it is read. Compressed files are always left in their
-           : original compressed state.
            :
            : If the raw data is to be returned, wantarray is used to
            : determine how the data are to be returned (list or string).
@@ -731,7 +700,7 @@ sub read {
 	$self->_rearrange([qw( REC_SEP FUNC WAIT)], @param);
 
     my $fmt = (wantarray ? 'list' : 'string');
-    $wait ||= 3;  # seconds to wait before timing out.
+    $wait ||= $TIMEOUT_SECS;  # seconds to wait before timing out.
 
     my $FH = $Util->create_filehandle( -client => $self, @param);
 
@@ -761,18 +730,18 @@ sub read {
 #	    next if m@^(\s*|$/*)$@; 
 	    
 	    $lines++;
+	    alarm(0);  # Deactivate the alarm as soon as we start reading.
 	    my($result);
 	    if($func_ref) {
 		$result = &$func_ref($_) or last READ_LOOP;
-#		print "$ID read(): RESULT = $result\n"; 
 	    } else {
 		$data .= $_;
 	    }
 	}
-	alarm(0);
     };
     if($@ =~ /Timed out!/) {
-	 $self->throw("Timed out while waiting for input from $self->{'_input_type'}.");
+	 $self->throw("Timed out while waiting for input from $self->{'_input_type'}.", "Timeout period = $wait seconds.\nFor a longer time out period, supply a -wait => <seconds> parameter\n".
+		     "or edit \$TIMEOUT_SECS in Bio::Root::Global.pm.");
     } elsif($@ =~ /\S/) {
          my $err = $@;
 	 $self->throw("Unexpected error during read: $err");
@@ -780,13 +749,6 @@ sub read {
 
     close ($FH) unless $self->{'_input_type'} eq 'STDIN';
     
-    # If the file was compressed and the user is the owner of file,
-    #   then leave the file in its original compressed state.
-    # If the file was compressed and the user was NOT the owner of file,
-    #   then removed the compressed file which is a tmp file.
-
-    $self->{'_compressed_file'} and ($self->{'_file_owner'} ? $self->compress_file() : $self->delete_file());
-
     if($data) {
 	$DEBUG && do{ 
 	    print STDERR "$ID: $lines records read.\nReturning $fmt.\n" };
@@ -797,8 +759,6 @@ sub read {
 	$self->throw("No data input from $self->{'_input_type'}");
     }
     delete $self->{'_input_type'};
-    delete $self->{'_file_owner'};
-    delete $self->{'_compressed_file'};
     undef;
 }
 
@@ -1135,4 +1095,39 @@ all or some of the following fields:
  
 =cut
 
-1;
+
+MODIFICATION NOTES:
+-------------------
+
+17 Feb 1999, sac:
+   * Using $Global::TIMEOUT_SECS
+ 
+3 Feb 1999, sac:
+   * Added timeout support to read().
+   * Moved the FileHandle creation code out of read() and into 
+     Bio::Root::Utilties since it's of more general use.
+
+ 24 Nov 1998, sac:
+   * Modified read(), compress(), and uncompress() to properly
+     deal with file ownership issues.
+
+ 19 Aug 1998, sac:
+   * Fixed bug in display(), which wasn't returning true (1).
+
+ 0.023, 20 Jul 1998, sac:
+   * read() can now use a supplied FileHandle or GLOB ref (\*IN).
+   * A few other touch-ups in read().
+
+ 0.022, 16 Jun 1998, sac:
+   * read() now terminates reading when a supplied &$func_ref
+     returns false.
+
+ 0.021, May 1998, sac:
+   * Refined documentation to use 5.004 pod2html.
+   * Properly using typglob refs as necessary 
+     (e.g., set_display(), set_fh()).
+
+0.031, 2 Sep 1998, sac:
+   * Doc changes only
+
+

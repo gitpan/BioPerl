@@ -1,9 +1,9 @@
-#!/usr/local/bin/perl -w
+#!/usr/bin/perl -w
 
 # A minimal script using seqtools.pl
 # See seqs2.pl, seqs3.pl, and seqs4.pl for some more advanced scripts.
 # Author  : Steve A. Chervitz (sac@genome.stanford.edu)
-# Revision: $Id: seqs1.pl,v 1.1.1.1 1998/12/11 15:24:32 birney Exp $
+# Revision: $Id: seqs1.pl,v 1.2 1999/02/27 12:28:11 sac Exp $
 # Usage   : seqs1.pl -h
 # Modified: 
 #  sac, 16 Jun 1998: Added installation comment, require statement comments.

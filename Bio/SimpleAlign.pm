@@ -70,7 +70,7 @@ mainly by Ewan.
 
 =item Use hashed constructor - not done!
 
-=back
+=end
 
 =head1 FEEDBACK
 
@@ -146,6 +146,32 @@ sub _initialize {
 # set stuff in self from @args
   return $make; # success - we hope!
 }
+
+
+
+
+=head2 id
+
+ Title     : id
+ Usage     : $myalign->id("Ig")
+ Function  : Gets/sets the id field of the alignment
+           :
+ Returns   : An id string
+ Argument  : An id string (optional)
+
+=cut
+
+sub id {
+    my ($self, $name) = @_;
+
+    if (defined( $name )) {
+	$self->{'id'} = $name;
+    }
+    
+    return $self->{'id'};
+}
+
+
 
 
 =head2 addSeq
@@ -376,11 +402,11 @@ sub read_MSF{
 	   $end = length($str);
        }
     
-       $seq = new Bio::Seq(-seq=>$hash{$name},
-			   -id=>$seqname,
-			   -start=>$start,
-			   -end=>$end, 
-			   -type=>'aligned');
+       $seq = new Bio::Seq('-seq'=>$hash{$name},
+			   '-id'=>$seqname,
+			   '-start'=>$start,
+			   '-end'=>$end, 
+			   '-type'=>'aligned');
     
        $self->addSeq($seq);
     
@@ -419,7 +445,7 @@ sub write_MSF {
     $type = "P";
     $maxname = $self->maxnse_length();
     $length  = $self->length_aln();
-    $name = $self->name();
+    $name = $self->id();
     if( !defined $name ) {
 	$name = "Align";
     }
@@ -640,11 +666,11 @@ sub read_fasta {
 		    $end = length($align{$name});
 		}
 		
-		$seq = new Bio::Seq(-seq=>$seqchar,
-			    -id=>$seqname,
-			    -start=>$start,
-			    -end=>$end, 
-			    -type=>'aligned');
+		$seq = new Bio::Seq('-seq'=>$seqchar,
+				    '-id'=>$seqname,
+				    '-start'=>$start,
+				    '-end'=>$end, 
+				    '-type'=>'aligned');
 
 		$self->addSeq($seq);
 
@@ -670,11 +696,11 @@ sub read_fasta {
 	$end = length($align{$name});
     }
     
-    $seq = new Bio::Seq(-seq=>$seqchar,
-			-id=>$seqname,
-			-start=>$start,
-			-end=>$end, 
-			-type=>'aligned');
+    $seq = new Bio::Seq('-seq'=>$seqchar,
+			'-id'=>$seqname,
+			'-start'=>$start,
+			'-end'=>$end, 
+			'-type'=>'aligned');
     
     $self->addSeq($seq);
     
@@ -707,7 +733,7 @@ sub read_selex {
     # not quite sure 'what' selex format is, but here we go!
 
     while( <$in> ) {
-	/^#=SQ/ && last;
+	#/^#=SQ/ && last;
 	/^#=RF/ && last;
     }
 
@@ -768,11 +794,11 @@ sub read_selex {
 	    $end = length($align{$name});
 	}
 
-	$seq = new Bio::Seq(-seq=>$align{$name},
-			    -id=>$seqname,
-			    -start=>$start,
-			    -end=>$end, 
-			    -type=>'aligned'
+	$seq = new Bio::Seq('-seq'=>$align{$name},
+			    '-id'=>$seqname,
+			    '-start'=>$start,
+			    '-end'=>$end, 
+			    '-type'=>'aligned'
 			    );
 
 	$self->addSeq($seq);
@@ -834,11 +860,11 @@ sub read_mase {
 	    $end = length($seq);
 	}
 
-	$add = new Bio::Seq(-seq=>$seq,
-			    -id=>$name,
-			    -start=>$start,
-			    -end=>$end, 
-			    -type=>'aligned');
+	$add = new Bio::Seq('-seq'=>$seq,
+			    '-id'=>$name,
+			    '-start'=>$start,
+			    '-end'=>$end, 
+			    '-type'=>'aligned');
 
 
 	
@@ -908,6 +934,8 @@ sub read_Pfam {
     my $end;
     my $seq;
     my $add;
+    my $acc;
+    my %names;
     my $count = 0;
 
     while( <$in> ) {
@@ -924,11 +952,17 @@ sub read_Pfam {
 	$seq = $4;
 
 
-	$add = new Bio::Seq(-seq=>$seq,
-			    -id=>$name,
-			    -start=>$start,
-			    -end=>$end, 
-			    -type=>'aligned');
+	# there may be an accession number at the end of the line
+
+	($acc) = ($' =~ /\s*(\S+)\s*/);
+	$names{'acc'} = $acc;
+
+	$add = new Bio::Seq('-seq'=>$seq,
+			    '-id'=>$name,
+			    '-names'=>\%names,
+			    '-start'=>$start,
+			    '-end'=>$end, 
+			    '-type'=>'aligned');
      
 	$self->addSeq($add);
 	
@@ -951,7 +985,7 @@ sub write_Pfam_link {
     }
 
     foreach $seq ( $self->eachSeq() ) {
-	$name = $seq->name();
+	$name = $seq->id();
 	$disname = $self->get_displayname($seq->get_nse());
 
 	$add = $len - length($disname);
@@ -961,7 +995,7 @@ sub write_Pfam_link {
 #	print $out "Going to eval \$linkstr = $link\n";
 	eval ("\$linkstr = \"$link\"");
 	if( defined $acc ) { 
-	    print $out sprintf("%s%s%s %s\n",$linkstr,$place,$seq->str(),$seq->acc());
+	    print $out sprintf("%s%s%s %s\n",$linkstr,$place,$seq->str(),$seq->names()->{'acc'});
 	} else {
 	    print $out sprintf("%s%s%s\n",$linkstr,$place,$seq->str());
 	}
@@ -992,13 +1026,13 @@ sub write_Pfam {
     my ($maxn);
 
     $maxn = $self->maxdisplayname_length();
-
+    
     foreach $seq ( $self->eachSeq() ) {
 	$namestr = $self->get_displayname($seq->get_nse());
 	$add = $maxn - length($namestr) + 2;
 	$namestr .= " " x $add;
-	if( $acc == 1) {
-	    print $out sprintf("%s  %s %s\n",$namestr,$seq->str(),$seq->acc());
+	if( defined $acc && $acc == 1) {
+	    print $out sprintf("%s  %s %s\n",$namestr,$seq->str(),$seq->names()->{'acc'});
 	} else {
 	    print $out sprintf("%s  %s\n",$namestr,$seq->str());
 	}
@@ -1052,9 +1086,8 @@ sub write_clustalw {
            :
  Function  : writes a fasta formatted alignment
            : 
-           :
  Returns   : 
- Argument  : 
+ Argument  : reference-to-glob to file or filehandle object 
 
 =cut
 
@@ -1070,7 +1103,7 @@ sub write_fasta {
 	print $file ">$name\n";
 	
 	$count =0;
-	$length = &length($seq);
+	$length = length($seq);
 	while( ($count * 60 ) < $length ) {
 	    $seqsub = substr($seq,$count*60,60);
 	    print $file "$seqsub\n";
@@ -1315,9 +1348,13 @@ sub map_chars {
 sub uppercase {
     my $self = shift;
     my $seq;
+    my $temp;
 
     foreach $seq ( $self->eachSeq() ) {
-	$seq->uppercase();
+      $temp = $seq->str();
+      $temp =~ tr/[a-z]/[A-Z]/;
+
+      $seq->setseq($temp);
     }
 }
 
@@ -1474,13 +1511,104 @@ sub purge{
 }
 
 
+
+=head2 percentage_identity
+
+ Title   : percentage_identity
+ Usage   : $id = $align->percentage_identity
+ Function:
+    The function uses a fast method to calculate the average percentage identity of the alignment
+ Returns : The average percentage identity of the alignment
+ Args    : None
+
+=cut
+
+sub percentage_identity{
+   my ($self,@args) = @_;
+
+   my @alphabet = ('A','B','C','D','E','F','G','H','I','J','K','L','M',
+                   'N','O','P','Q','R','S','T','U','V','W','X','Y','Z');
+
+   my ($len, $total, $subtotal, $divisor, $subdivisor, @seqs, @countHashes);
+
+   if (! $self->is_flush()) {
+       $self->throw("All sequences in the alignment must be the same length");
+   }
+
+   @seqs = $self->eachSeq();
+   $len = $self->length_aln();
+
+   # load the each hash with correct keys for existence checks
+   for( my $index=0; $index < $len; $index++) { 
+       foreach my $letter (@alphabet) {
+	   $countHashes[$index]->{$letter} = 0;
+       }
+   }
+
+
+   foreach my $seq (@seqs)  {
+       my @seqChars = $seq->ary();
+       for( my $column=0; $column < @seqChars; $column++ ) {
+	   my $char = uc($seqChars[$column]);
+	   if (exists $countHashes[$column]->{$char}) {
+	       $countHashes[$column]->{$char}++;
+	   }
+       }
+   }
+
+   $total = 0;
+   $divisor = 0;
+   for(my $column =0; $column < $len; $column++) {
+       my %hash = %{$countHashes[$column]};
+       $subdivisor = 0;
+       foreach my $res (keys %hash) {
+	   $total += $hash{$res}*($hash{$res} - 1);
+	   $subdivisor += $hash{$res};
+       }
+       $divisor += $subdivisor * ($subdivisor - 1);
+   }
+   return ($total / $divisor )*100.0;
+}
+
+
+=head2 read_Prodom
+
+ Title   : read_Prodom
+ Usage   : $ali->read_Prodom( $file )
+ Function: Reads in a Prodom format alignment
+ Returns : 
+    Args    : A filehandle glob or ref. to a filehandle object
+
+=cut
+
+sub read_Prodom{
+   my $self = shift;
+   my $file = shift;
+
+   my ($acc, $fake_id, $start, $end, $seq, $add, %names);
+
+   while (<$file>){
+       if (/^AL\s+(\S+)\|(\S+)\s+(\d+)\s+(\d+)\s+\S+\s+(\S+)$/){
+	   $acc=$1;
+	   $fake_id=$2;  # Accessions have _species appended
+	   $start=$3;
+	   $end=$4;
+	   $seq=$5;
+	   
+	   $names{'fake_id'} = $fake_id;
+
+	   $add = new Bio::Seq('-seq'=>$seq,
+			       '-id'=>$acc,
+			       '-names'=>\%names,
+			       '-start'=>$start,
+			       '-end'=>$end, 
+			       '-type'=>'aligned');
+	   
+	   $self->addSeq($add);
+        }
+    }
+}
+
+
 1;
-
-
-
-
-
-
-
-
 

@@ -13,10 +13,9 @@ WriteMakefile(
 
 sub MY::postamble{
 '
-$(MYEXTLIB): libs/libsw$(LIB_EXT)
+$(MYEXTLIB): 
 	DEFINE=\'$(DEFINE)\'; CC=\'$(PERLMAINCC)\'; export DEFINE INC CC; \
-	cd libs && $(MAKE) libsw.a -e
+	cd libs && $(MAKE) CC=$(CC) libsw$(LIB_EXT) -e
 
 ';
 }
-

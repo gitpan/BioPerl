@@ -1,5 +1,5 @@
 ## Bioperl Test Harness Script for Modules
-## $Id: Blast.t,v 1.1.1.1 1998/12/11 15:24:32 birney Exp $
+## $Id: Blast.t,v 1.2 1999/03/15 11:10:59 sac Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -47,6 +47,7 @@ open (OUT,">$testout");
 test 1, $blast = Bio::Tools::Blast->new(-file   =>'t/blast.report',
 					-signif => 1e-5,
 					-parse  => 1,
+					-stats  => 1,
 					-check_all_hits => 1,
 					);
 test 2, $blast->display();

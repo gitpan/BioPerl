@@ -20,7 +20,7 @@ BEGIN {
 #                Thus, only Fasta-formatted sequence may be used as input.
 # AUTHOR       : Steve A. Chervitz ((sac@genome.stanford.edu)
 # CREATED      : 10 Apr 1998
-# REVISION     : $Id: seqtools.pl,v 1.1.1.1.2.2 1999/02/04 16:24:28 sac Exp $
+# REVISION     : $Id: seqtools.pl,v 1.2 1999/02/27 12:28:13 sac Exp $
 # INSTALLATION : Edit $INSTALL_PATH to point to the directory containing
 #                your Bioperl modules (the Bio/ directory).
 #                Some operations require the Bio::Seq.pm module.

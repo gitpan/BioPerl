@@ -1,9 +1,10 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
 # PROGRAM  : rev_and_trans.pl
 # PURPOSE  : Simple driver for Bio::Seq revcom and translate
 # AUTHOR   : Ewan Birney birney@sanger.ac.uk 
 # CREATED  : Tue Oct 27 1998
+# REVISION : $Id: rev_and_trans.pl,v 1.2 1999/02/27 12:28:01 sac Exp $
 #
 # INSTALLATION
 #    If you have installed bioperl using the standard

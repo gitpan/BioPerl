@@ -1,11 +1,11 @@
-#!/usr/local/bin/perl -w
+#!/usr/bin/perl -w
 
 #---------------------------------------------------------------------------
 # PROGRAM  : blast_seq.pl
 # PURPOSE  : To submit a set of sequence for Blast analysis and parse the results.
 # AUTHOR   : Steve A. Chervitz
 # CREATED  : 15 May 1998
-# REVISION : $Id: blast_seq.pl,v 1.1.1.1.2.1 1999/02/04 16:24:30 sac Exp $
+# REVISION : $Id: blast_seq.pl,v 1.2 1999/02/27 12:28:04 sac Exp $
 # WEBSITE  : http://bio.perl.org/Projects/Blast/
 # USAGE    : blast_seq.pl -h
 # EXAMPLES : blast_seq.pl -eg

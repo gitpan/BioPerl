@@ -1,4 +1,4 @@
-## $Id: pSW.pm,v 1.1.1.1.2.1 1999/01/29 16:34:42 birney Exp $
+## $Id: pSW.pm,v 1.3 1999/04/06 15:52:19 birney Exp $
 
 #
 # BioPerl module for Bio::Tools::pSW
@@ -163,12 +163,12 @@ sub _initialize {
 
   #I'm pretty sure I am not doing this right... ho hum...
 
-  if( $gap =~ /\S/ ) {
+  if( $gap ) {
       $gap =~ /^\d+$/ || $self->throw("Gap penalty must be a number, not [$gap]");
       $self->gap($gap);
   }
 
-  if( $ext =~ /\S/ ) {
+  if( $ext ) {
       $ext =~ /^\d+$/ || $self->throw("Extension penalty must be a number, not [$ext]");
       $self->gap($gap);
   }

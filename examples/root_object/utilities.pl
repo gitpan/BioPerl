@@ -1,14 +1,16 @@
 #!/usr/bin/perl -w
 
 #---------------------------------------------------------
-# A minimal demo script for the Bio::Root::Utilities.pm module.
-# Steve A. Chervitz (sac@genome.stanford.edu)
-# $Id: utilities.pl,v 1.1.1.1 1998/12/11 15:24:35 birney Exp $
+# PROGRAM  : utilities.pl
+# PURPOSE  : A minimal demo script for the Bio::Root::Utilities.pm module.
+# AUTHOR   : Steve A. Chervitz (sac@genome.stanford.edu)
+# REVISION : $Id: utilities.pl,v 1.2 1999/02/27 12:28:10 sac Exp $
+#
 # Installation: 
 #   Edit the use lib line to point at your Bioperl lib
 #---------------------------------------------------------
 
-use lib "/home/sac";
+use lib "/home/steve/perl/bioperl";
 use Bio::Root::Utilities qw(:obj);
 
 select(STDOUT);$|=1;
@@ -24,9 +26,9 @@ $tmp = 0;
 if(-T $file) {
     if(-o $file) {
 	$compressed = $Util->compress($file);
-	$tmp = 1;
     } else {
 	$compressed = $Util->compress($file, 'tmp');
+	$tmp = 1;
     }
     printf "%-15s: %s\n", "Compressed", $compressed;
 } else {

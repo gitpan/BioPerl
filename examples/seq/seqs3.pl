@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -w
+#!/usr/bin/perl -w
 
 #---------------------------------------------------------------------------
 # PROGRAM  : seqs3.pl
@@ -7,7 +7,7 @@
 #            to work with sequence data directly rather than sequence objects.
 # AUTHOR   : Steve A. Chervitz (sac@genome.stanford.edu).
 # CREATED  : 10 Apr 1998
-# REVISION : $Id: seqs3.pl,v 1.1.1.1 1998/12/11 15:24:32 birney Exp $
+# REVISION : $Id: seqs3.pl,v 1.2 1999/02/27 12:28:12 sac Exp $
 # USAGE    : seqs3.pl -h
 # EXAMPLES : seqs3.pl -eg
 #

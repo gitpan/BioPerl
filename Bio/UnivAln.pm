@@ -7,7 +7,7 @@ package Bio::UnivAln;
 use vars qw ($VERSION $Revision);
 
 $VERSION    = 1.010; # bio.perl.org Version;
-$Revision   = '$Id: UnivAln.pm,v 1.1.1.1.2.2 1999/02/02 11:48:20 sac Exp $';
+$Revision   = '$Id: UnivAln.pm,v 1.3 1999/02/27 12:27:42 sac Exp $';
 
 # Disclaimer from Georg Fuellen:
 # UnivAln is now under the CVS system. Georg Fuellen is currently 

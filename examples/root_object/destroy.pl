@@ -6,13 +6,13 @@
 #           references and parent-child relationships.
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 3 Nov 1996
-# REVISION: $Id: destroy.pl,v 1.1.1.1 1998/12/11 15:24:35 birney Exp $
+# REVISION: $Id: destroy.pl,v 1.2 1999/02/27 12:28:09 sac Exp $
 # INSTALLATION
 #    Edit the use lib "...." line to point the directory
 #    containing your Bioperl modules.
 #---------------------------------------------------------------------------
 
-use lib "/home/steve/perl/lib";
+use lib "/home/steve/perl/bioperl";
 use Bio::Root::Object ();    
 use Bio::Root::Global qw(:std);    
 use Foo               ();

@@ -3,7 +3,7 @@
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu) 
 # CREATED : 7 October 1996
 # STATUS  : Alpha
-# REVISION: $Id: Sbjct.pm,v 1.2.2.2 1999/02/03 12:50:52 sac Exp $
+# REVISION: $Id: Sbjct.pm,v 1.6 1999/04/06 11:20:49 sac Exp $
 #
 # For the latest version and documentation, visit the distribution site:
 #    http://genome-www.stanford.edu/perlOOP/bioperl/blast/
@@ -28,16 +28,11 @@ use Exporter           ();
 use strict;
 use vars qw($ID $VERSION %SUMMARY_OFFSET $Revision);
 $ID = 'Bio::Tools::Blast::Sbjct';
-$VERSION = 0.074;
-$Revision = '$Id: Sbjct.pm,v 1.2.2.2 1999/02/03 12:50:52 sac Exp $';  #'
+$VERSION = 0.080;
+$Revision = '$Id: Sbjct.pm,v 1.6 1999/04/06 11:20:49 sac Exp $';  #'
 
-my $_layout     = '';
-my $_gapped     = 0;
 my $_prog       = '';
 my $_signif_fmt = '';
-#my $_residues  = 0;
-#my %SUMMARY_OFFSET_BLAST1 = ('frame'=>3, 'score'=>2, 'signif'=>1, 'n'=>0 );
-#my %SUMMARY_OFFSET_BLAST2 = ('score'=>1, 'signif'=>0 );
 
 ## POD Documentation:
 
@@ -62,8 +57,6 @@ for a description of constructor parameters.
 					 -RANK_BY =>'order',
 					 -MAKE    =>'query' (or 'sbjct'),
 					 -OVERLAP =>2,
-					 -LAYOUT  =>1, 
-					 -GAPPED  =>0, 
 					 -PROGRAM =>'TBLASTN'
 					 );
 
@@ -227,7 +220,7 @@ See the L<FEEDBACK> section for where to send bug reports and comments.
 
 =head1 VERSION
 
-Bio::Tools::Blast::Sbjct.pm, 0.074
+Bio::Tools::Blast::Sbjct.pm, 0.080
 
 =head1 COPYRIGHT
 
@@ -286,8 +279,6 @@ for documentation purposes only.
 	   :	 -RANK_BY    => 'order',
 	   :	 -OVERLAP    => integer (maximum overlap between adjacent
            :                    HSPs when tiling)
-	   :	 -LAYOUT     => 1 or 2 (layout of report)
-	   :	 -GAPPED     => boolean (true if gapped Blast.)
 	   :	 -PROGRAM    => string (type of Blast blastp, blastn, etc).
 
 See Also   : L<_set_id>(), L<_set_hsps>(), L<_tile_hsps>(), B<Bio::Root::Object.pm>::new, B<Bio::Tools::Blast.pm>::_set_hit_db
@@ -303,9 +294,7 @@ sub _initialize {
     my $make = $self->SUPER::_initialize( %param );
     
     # Set various class data.
-    $_gapped     = $param{-GAPPED} || 0;
     $_prog       = $param{-PROGRAM} || '';
-    $_layout     = $param{-LAYOUT}  || $self->throw("Unknown layout.");
     $_signif_fmt = $param{-SIGNIF_FMT};
 
     $self->{'_rank'} = $param{-RANK} || '';
@@ -370,7 +359,8 @@ sub rank {
            : Also extracts database id.
            : For sequences without database ids, database id is set to "-".
  Returns   : n/a
- Argument  : String containing description line of the hit from Blast report.
+ Argument  : String containing description line of the hit from Blast report
+           : or first line of an alignment section.
  Throws    : Warning if cannot locate sequence ID.
  Comments  : If more than one sequence identifier is present they are
            : combined as "SEQID1/SEQID2"
@@ -431,43 +421,6 @@ sub _set_id {
 }
 
 
-=head2 _set_desc
-
- Usage     : n/a; called automatically by _set_desc_data() and _set_hsps()
- Purpose   : Sets the description of the hit sequence.
-           : For sequence without descriptions, sets description to "-".
- Argument  : Array containing description (multiple lines).
- Comments  : _set_hsps() calls this method with the data from the 
-           : HSP alignment listing, which contains the complete description.
-           : (Formerly, this was called from the _set_desc_data() method initially.)
-
-See Also   : _set_hsps()
-
-=cut
-
-#--------------
-sub _set_desc {
-#--------------
-    my( $self, @desc ) = @_;
-    my( $desc);
-    
-#    print "$ID: RAW DESC:\n@desc";<STDIN>;
-    
-    $desc = join(" ", @desc);
-    
-    if($desc) {
-	$desc =~ s/^[\s!]+//;
-	$desc =~ s/ \d+$//;
-	$desc =~ s/\.+$//;
-	$self->{'_desc'} = $desc || '-';
-    } else {
-	$self->{'_desc'} = '-';
-    }
-
-#    print "$ID: _set_desc =  $desc";<STDIN>;
-}
-
-
 =head2 _set_hsps
 
  Usage     : n/a; called automatically during object construction.
@@ -509,7 +462,7 @@ sub _set_hsps {
     $set_desc = 0;
 
     hit_loop:
-   foreach $line( @data[1..$#data] ) {
+   foreach $line( @data ) {
 
        if( $line =~ /^\s*Length = ([\d,]+)/ ) {
 	   $self->_set_desc(@desc);
@@ -536,7 +489,6 @@ sub _set_hsps {
 		my $hspObj = eval { new Bio::Tools::Blast::HSP(-DATA    =>\@hspData, 
 							       -PARENT  =>$self, 
 							       -NAME    =>$hspCount,
-							       -GAPPED  =>$_gapped,
 							       -PROGRAM =>$_prog,
 							       ); 
 				};
@@ -568,7 +520,6 @@ sub _set_hsps {
 	       my $hspObj = eval { new Bio::Tools::Blast::HSP(-DATA    =>\@hspData, 
 							      -PARENT  =>$self, 
 							      -NAME    =>$hspCount,
-							      -GAPPED  =>$_gapped,
 							      -PROGRAM =>$_prog,
 							      );
 			       };
@@ -629,6 +580,42 @@ sub _set_hsps {
     }
 }
 
+=head2 _set_desc
+
+ Usage     : n/a; called automatically by _set_hsps()
+ Purpose   : Sets the description of the hit sequence.
+           : For sequence without descriptions, sets description to "-".
+ Argument  : Array containing description (multiple lines).
+ Comments  : _set_hsps() calls this method with the data from the 
+           : HSP alignment listing, which contains the complete description.
+           : (Formerly, this was called from the _set_desc_data() method initially.)
+
+See Also   : _set_hsps()
+
+=cut
+
+#--------------
+sub _set_desc {
+#--------------
+    my( $self, @desc ) = @_;
+    my( $desc);
+    
+#    print "$ID: RAW DESC:\n@desc";<STDIN>;
+    
+    $desc = join(" ", @desc);
+    
+    if($desc) {
+	$desc =~ s/^\s*\S+\s+//; # remove the sequence ID(s)
+	$desc =~ s/^[\s!]+//;
+	$desc =~ s/ \d+$//;
+	$desc =~ s/\.+$//;
+	$self->{'_desc'} = $desc || '-';
+    } else {
+	$self->{'_desc'} = '-';
+    }
+
+#    print "$ID: _set_desc =  $desc";<STDIN>;
+}
 
 
 =head2 _tile_hsps
@@ -704,7 +691,7 @@ See Also   : L<_adjust_contigs>(), L<ambiguous_aln>(), L<overlap>(), L<frac_iden
 sub _tile_hsps {
 #--------------
     my $self = shift;
-    my $gapped = shift || 0;
+#    my $gapped = $self->parent->gapped || 0;   # no special treatment
 
     $self->{'_tile_hsps'} = 1;
     $self->{'_gaps_query'} = 0;
@@ -717,10 +704,9 @@ sub _tile_hsps {
 	$self->{'_length_aln_sbjct'} = $hsp->length('sbjct');
 	$self->{'_length_aln_total'} = $hsp->length('total');
 	($self->{'_totalIdentical'},$self->{'_totalConserved'}) = $hsp->matches();
-	if($gapped) {
-	    $self->{'_gaps_query'} = $hsp->gaps('query');
-	    $self->{'_gaps_sbjct'} = $hsp->gaps('sbjct');
-	}
+	$self->{'_gaps_query'} = $hsp->gaps('query');
+	$self->{'_gaps_sbjct'} = $hsp->gaps('sbjct');
+
 #	print "_tile_hsps(): single HSP, easy stats.\n";
 	return;
     } else {
@@ -745,11 +731,11 @@ sub _tile_hsps {
 #	printf "  Length = %d; Identical = %d; Conserved = %d; Conserved(1-10): %d",$hsp->length, $hsp->length(-TYPE=>'iden'), $hsp->length(-TYPE=>'cons'), $hsp->length(-TYPE=>'cons',-START=>0,-STOP=>10); <STDIN>;
 	($qstart, $qstop) = $hsp->range('query');
 	($sstart, $sstop) = $hsp->range('sbjct');
-	if($gapped) {
-	    my ($qgaps, $sgaps)  = $hsp->gaps();
-	    $self->{'_gaps_query'} += $qgaps;
-	    $self->{'_gaps_sbjct'} += $sgaps;
-	}
+
+	my ($qgaps, $sgaps)  = $hsp->gaps();
+	$self->{'_gaps_query'} += $qgaps;
+	$self->{'_gaps_sbjct'} += $sgaps;
+
 	$self->{'_length_aln_total'} += $hsp->length;
 	## Collect contigs in the query sequence.
 	$qoverlap = &_adjust_contigs('query', $hsp, $qstart, $qstop, \@qcontigs, $max_overlap);
@@ -774,7 +760,7 @@ sub _tile_hsps {
     ## Collect data across the collected contigs.
 
 #    print "\nQUERY CONTIGS:\n";
-#    print "  gaps = $self->{'_gaps_query'}\n" if $gapped;
+#    print "  gaps = $self->{'_gaps_query'}\n";
 
     foreach(@qcontigs) {
 #	print "  query contig: $_->{'start'} - $_->{'stop'}\n";
@@ -789,7 +775,7 @@ sub _tile_hsps {
     ## as determined for the query contigs.
 
 #    print "\nSBJCT CONTIGS:\n";
-#    print "  gaps = $self->{'_gaps_sbjct'}\n" if $gapped;
+#    print "  gaps = $self->{'_gaps_sbjct'}\n";
 
     foreach(@scontigs) {
 #	print "  sbjct contig: $_->{'start'} - $_->{'stop'}\n";
@@ -838,7 +824,7 @@ sub _tile_hsps {
            : Also, it does not keep track of the number of HSPs that
            : overlap within the amount specified by overlap().
            : This will lead to significant tracking errors for large
-           : overlaP-values()
+           : overlap values.
 
 See Also   : L<overlap>(), L<_tile_hsps>(), B<Bio::Tools::Blast::HSP.pm>::matches
 
@@ -1535,7 +1521,7 @@ sub length_aln {
     
     $type ||= 'query';
 
-    $self->_tile_hsps($self->parent->gapped) if not $self->{'_tile_hsps'};
+    $self->_tile_hsps() if not $self->{'_tile_hsps'};
 
     my $data = $self->{'_length_aln_'.$type};
     
@@ -1581,7 +1567,7 @@ sub gaps {
 
     $seqType ||= (wantarray ? 'list' : 'total');
 
-    $self->_tile_hsps($self->parent->gapped) if not $self->{'_tile_hsps'};
+    $self->_tile_hsps() if not $self->{'_tile_hsps'};
 
     $seqType = lc($seqType);
 
@@ -1688,7 +1674,7 @@ sub start {
     if($self->num_hsps == 1) {
 	return $self->hsp->start($seqType);
     } else {
-	$self->_tile_hsps($self->parent->gapped) if not $self->{'_tile_hsps'};
+	$self->_tile_hsps() if not $self->{'_tile_hsps'};
 	if($seqType =~ /list|array/i) {
 	    return ($self->{'_queryStart'}, $self->{'_sbjctStart'});
 	} else {
@@ -1736,7 +1722,7 @@ sub end {
     if($self->num_hsps == 1) {
 	return $self->hsp->end($seqType);
     } else {
-	$self->_tile_hsps($self->parent->gapped) if not $self->{'_tile_hsps'};
+	$self->_tile_hsps() if not $self->{'_tile_hsps'};
 	if($seqType =~ /list|array/i) {
 	    return ($self->{'_queryStop'}, $self->{'_sbjctStop'});
 	} else {
@@ -1815,7 +1801,7 @@ sub frac_identical {
     ## Sensitive to member name format.
     $seqType = lc($seqType);
 
-    $self->_tile_hsps($self->parent->gapped) if not $self->{'_tile_hsps'};
+    $self->_tile_hsps() if not $self->{'_tile_hsps'};
 
     sprintf( "%.2f", $self->{'_totalIdentical'}/$self->{'_length_aln_'.$seqType});
 }
@@ -1865,7 +1851,7 @@ sub frac_conserved {
     ## Sensitive to member name format.
     $seqType = lc($seqType);
 
-    $self->_tile_hsps($self->parent->gapped) if not $self->{'_tile_hsps'};
+    $self->_tile_hsps() if not $self->{'_tile_hsps'};
 
     sprintf( "%.2f", $self->{'_totalConserved'}/$self->{'_length_aln_'.$seqType});
 }
@@ -1902,7 +1888,7 @@ sub frac_aligned_query {
 #----------------------
     my $self = shift;
 
-    $self->_tile_hsps($self->parent->gapped) if not $self->{'_tile_hsps'};
+    $self->_tile_hsps() if not $self->{'_tile_hsps'};
 
     sprintf( "%.2f", $self->{'_length_aln_query'}/$self->logical_length('query'));
 }
@@ -1938,7 +1924,7 @@ sub frac_aligned_hit {
 #--------------------
     my $self = shift;
 
-    $self->_tile_hsps($self->parent->gapped) if not $self->{'_tile_hsps'};
+    $self->_tile_hsps() if not $self->{'_tile_hsps'};
 
     sprintf( "%.2f", $self->{'_length_aln_sbjct'}/$self->logical_length('sbjct'));
 }
@@ -1981,7 +1967,7 @@ sub num_unaligned_hit {
 #---------------------
     my $self = shift;
 
-    $self->_tile_hsps($self->parent->gapped) if not $self->{'_tile_hsps'};
+    $self->_tile_hsps() if not $self->{'_tile_hsps'};
 
     my $num = $self->logical_length('sbjct') - $self->{'_length_aln_sbjct'};
     ($num < 0 ? 0 : $num );
@@ -2013,7 +1999,7 @@ sub num_unaligned_query {
 #-----------------------
     my $self = shift;
 
-    $self->_tile_hsps($self->parent->gapped) if not $self->{'_tile_hsps'};
+    $self->_tile_hsps() if not $self->{'_tile_hsps'};
 
     my $num = $self->logical_length('query') - $self->{'_length_aln_query'};
     ($num < 0 ? 0 : $num );

@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl  -w
+#!/usr/bin/perl  -w
 
 # WARNING:
 #
@@ -18,7 +18,7 @@
 # PURPOSE : To parse a set of Blast report files.
 # AUTHOR  : Steve A. Chervitz
 # CREATED : 21 Jul 1998
-# REVISION: $Id: parse_multi.pl,v 1.1.1.1 1998/12/11 15:24:33 birney Exp $
+# REVISION: $Id: parse_multi.pl,v 1.4 1999/04/25 08:14:19 sac Exp $
 # WEBSITE : http://bio.perl.org/Projects/Blast/
 # USAGE   : parse_multi.pl -h
 # EXAMPLES: parse_multi.pl -eg
@@ -42,8 +42,6 @@
 # TODO: Possibly add a recurse option.
 #
 #---------------------------------------------------------------------------
-
-use Getopt::Long;
 
 # Using blast_config.pl in the examples/blast distribution directory:
 require "blast_config.pl"; 
@@ -216,7 +214,7 @@ sub get_blast {
     if($@) {
 	my $er = "\nFILE: $blastParam{-file}\n$@\n";
 	push @errs, $er;
-	print STDERR "TROUBLE:\n$er\n";
+	print STDERR "\n$er\n";
     }
     $opt_mon and print STDERR ".", $count % 50 ? '' : "\n";
 

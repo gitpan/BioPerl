@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Err.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 22 July 1996
-# REVISION: $Id: Err.pm,v 1.1.1.1.2.2 1999/02/04 08:06:35 sac Exp $
+# REVISION: $Id: Err.pm,v 1.2 1999/02/27 12:27:44 sac Exp $
 # STATUS  : Alpha
 # 
 # For documentation, run this module through pod2html 

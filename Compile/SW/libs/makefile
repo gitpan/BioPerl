@@ -7,25 +7,16 @@ OBJS =	aln.o\
 	asciibtcanvas.o\
 	basematrix.o\
 	btcanvas.o\
-	cdna.o\
-	cdnadb.o\
-	codon.o\
-	codonmapper.o\
-	codonmatrix.o\
 	commandline.o\
 	complexconsensi.o\
 	complexevalset.o\
 	complexsequence.o\
 	compmat.o\
+	codon.o\
 	dna.o\
 	dnamatrix.o\
 	dpenvelope.o\
 	dynlibcross.o\
-	embl.o\
-	gene.o\
-	genomic.o\
-	genomicdb.o\
-	genomicregion.o\
 	histogram.o\
 	hscore.o\
 	linesubs.o\
@@ -38,8 +29,6 @@ OBJS =	aln.o\
 	sequence.o\
 	sequencedb.o\
 	sw_wrap.o\
-	transcript.o\
-	translation.o\
 	wiseerror.o\
 	wisefile.o\
 	wisememman.o\
@@ -53,6 +42,10 @@ libsw.a : $(OBJS)
 
 wisefile.o : wisefile.c
 	$(CC) $(CFLAGS) -DNOERROR wisefile.c
+
+#
+# For NetBSD or Sun (solaris) installs, add -fPIC to the CFLAGS lines
+#
 
 CFLAGS = -c -O
 CC     = cc

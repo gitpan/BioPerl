@@ -4,6 +4,22 @@ extern "C" {
 #include "histogram.h"
 
 
+/* Function:  Evalue_from_Histogram(his,score)
+ *
+ * Descrip: No Description
+ *
+ * Arg:          his [UNKN ] Histogram object [Histogram *]
+ * Arg:        score [UNKN ] score you want the evalue for [double]
+ *
+ * Return [UNKN ]  Undocumented return value [double]
+ *
+ */
+# line 85 "histogram.dy"
+double Evalue_from_Histogram(Histogram * his,double score)
+{
+   return ExtremeValueE(score,his->param[EVD_MU],his->param[EVD_LAMBDA],his->total);
+}
+
 /* Function:  new_Histogram(min,max,lumpsize)
  *
  * Descrip: No Description
@@ -15,7 +31,7 @@ extern "C" {
  * Return [UNKN ]  Undocumented return value [Histogram *]
  *
  */
-# line 98 "histogram.dy"
+# line 113 "histogram.dy"
 Histogram * new_Histogram(int min, int max, int lumpsize)
 {
   Histogram *h;
@@ -54,7 +70,7 @@ Histogram * new_Histogram(int min, int max, int lumpsize)
  * Arg:        h [UNKN ] Undocumented argument [Histogram *]
  *
  */
-# line 141 "histogram.dy"
+# line 156 "histogram.dy"
 void UnfitHistogram(Histogram * h)
 {
   if (h->expect != NULL) 
@@ -73,7 +89,7 @@ void UnfitHistogram(Histogram * h)
  * Arg:        sc [UNKN ] Undocumented argument [float]
  *
  */
-# line 167 "histogram.dy"
+# line 182 "histogram.dy"
 void AddToHistogram(Histogram * h, float sc)
 {
   int score;
@@ -150,7 +166,7 @@ void AddToHistogram(Histogram * h, float sc)
  * Arg:        fp [UNKN ] open file to print to (stdout works) [FILE *]
  *
  */
-# line 253 "histogram.dy"
+# line 268 "histogram.dy"
 void PrintASCIIHistogram(Histogram * h,FILE * fp)
 {
   int units;
@@ -322,7 +338,7 @@ void PrintASCIIHistogram(Histogram * h,FILE * fp)
  * Arg:        h [UNKN ] histogram to fit [Histogram *]
  *
  */
-# line 441 "histogram.dy"
+# line 456 "histogram.dy"
 void EVDBasicFit(Histogram * h)
 {
   float *d;            /* distribution P(S < x)          */
@@ -387,12 +403,12 @@ void EVDBasicFit(Histogram * h)
  *
  * Arg:                h [UNKN ] histogram to fit [Histogram *]
  * Arg:           censor [UNKN ] TRUE to censor data left of the peak [int]
- * Arg:        high_hint [UNKN ] score cutoff; above this are `real' hits that aren't fit [float]
+ * Arg:        high_hint [UNKN ] score cutoff; above this are real hits that arent fit [float]
  *
  * Return [UNKN ]  if fit is judged to be valid else 0 if fit is invalid (too few seqs.) [int]
  *
  */
-# line 525 "histogram.dy"
+# line 540 "histogram.dy"
 int ExtremeValueFitHistogram(Histogram * h, int censor, float high_hint) 
 {
   float *x;                     /* array of EVD samples to fit */
@@ -436,7 +452,11 @@ int ExtremeValueFitHistogram(Histogram * h, int censor, float high_hint)
       x = NULL;
       y = NULL;
       hsize = highbound - lowbound + 1;
-      if (hsize < 5) goto FITFAILED; /* require at least 5 bins or we don't fit */
+      if (hsize < 5) {
+	warn("On iteration %d, got %d bins, which is not fitable",iteration,hsize);
+	goto FITFAILED; /* require at least 5 bins or we don't fit */
+      }
+
 
       x = ckalloc(sizeof(float) * hsize);
       y = ckalloc(sizeof(int)   * hsize);
@@ -453,7 +473,11 @@ int ExtremeValueFitHistogram(Histogram * h, int censor, float high_hint)
 	  n             += h->histogram[sc - h->min];
 	}
 
-      if (n < 100) goto FITFAILED;  /* require fitting to at least 100 points */
+      if (n < 100) {
+	warn("On iteration %d, got only %d points, which is not fitable",iteration,n);
+	goto FITFAILED;  /* require fitting to at least 100 points */
+      }
+
 
       /* If we're censoring, estimate z, the number of censored guys
        * left of the bound. Our initial estimate is crudely that we're
@@ -476,11 +500,17 @@ int ExtremeValueFitHistogram(Histogram * h, int censor, float high_hint)
       /* Do an ML fit
        */
       if (censor) {
-	if (! EVDCensoredFit(x, y, hsize, z, (float) lowbound, &mu, &lambda))
+	if (! EVDCensoredFit(x, y, hsize, z, (float) lowbound, &mu, &lambda)) {
+	  warn("On iteration %d, unable to make maxlikehood evd fit with censor",iteration);
 	  goto FITFAILED;
-      } else  
-	if (! EVDMaxLikelyFit(x, y, hsize, &mu, &lambda))
+	}
+      } else {
+	if (! EVDMaxLikelyFit(x, y, hsize, &mu, &lambda)) {
+	  warn("On iteration %d, unable to make maxlikehood evd fit without censor",iteration);
 	  goto FITFAILED;
+	}
+      }
+
 
       /* Find the Eval = 1 point as a new highbound;
        * the total number of samples estimated to "belong" to the EVD is n+z  
@@ -524,10 +554,10 @@ FITFAILED:
  * Arg:         lowbound [UNKN ] low bound of the histogram that was fit [float]
  * Arg:        highbound [UNKN ] high bound of histogram that was fit [float]
  * Arg:            wonka [UNKN ] fudge factor; fraction of hits estimated to be "EVD-like" [float]
- * Arg:         ndegrees [UNKN ] extra degrees of freedom to subtract in X^2 test: [int]
+ * Arg:         ndegrees [UNKN ] extra degrees of freedom to subtract in chi2 test: [int]
  *
  */
-# line 673 "histogram.dy"
+# line 702 "histogram.dy"
 void ExtremeValueSetHistogram(Histogram * h, float mu, float lambda, float lowbound, float highbound, float wonka, int ndegrees)
 {
   int   sc;
@@ -592,7 +622,7 @@ void ExtremeValueSetHistogram(Histogram * h, float mu, float lambda, float lowbo
  * Return [UNKN ]  if fit is judged to be valid else 0 if fit is invalid (too few seqs.)            [int]
  *
  */
-# line 748 "histogram.dy"
+# line 777 "histogram.dy"
 int GaussianFitHistogram(Histogram * h, float high_hint)
 {
   float sum;
@@ -682,7 +712,7 @@ int GaussianFitHistogram(Histogram * h, float high_hint)
  * Arg:          sd [UNKN ] Undocumented argument [float]
  *
  */
-# line 842 "histogram.dy"
+# line 871 "histogram.dy"
 void GaussianSetHistogram(Histogram * h, float mean, float sd)
 {
   int   sc;
@@ -751,7 +781,7 @@ void GaussianSetHistogram(Histogram * h, float mean, float sd)
  * Return [UNKN ]  Undocumented return value [double]
  *
  */
-# line 913 "histogram.dy"
+# line 942 "histogram.dy"
 double EVDDensity(float x, float mu, float lambda)
 {
   return (lambda * exp(-1. * lambda * (x - mu) 
@@ -769,7 +799,7 @@ double EVDDensity(float x, float mu, float lambda)
  * Return [UNKN ]  Undocumented return value [double]
  *
  */
-# line 933 "histogram.dy"
+# line 962 "histogram.dy"
 double EVDDistribution(float x, float mu, float lambda)
 {
   return (exp(-1. * exp(-1. * lambda * (x - mu))));
@@ -786,7 +816,7 @@ double EVDDistribution(float x, float mu, float lambda)
  * Return [UNKN ]  P(S>x) [double]
  *
  */
-# line 959 "histogram.dy"
+# line 988 "histogram.dy"
 double ExtremeValueP(float x, float mu, float lambda)
 {
   double y;
@@ -809,7 +839,7 @@ double ExtremeValueP(float x, float mu, float lambda)
  * Return [UNKN ]  P(S>x) for database of size N [double]
  *
  */
-# line 989 "histogram.dy"
+# line 1018 "histogram.dy"
 double ExtremeValueP2(float x, float mu, float lambda, int N)
 {
   double y;
@@ -830,7 +860,7 @@ double ExtremeValueP2(float x, float mu, float lambda, int N)
  * Return [UNKN ]  E(S>x) for database of size N [double]
  *
  */
-# line 1017 "histogram.dy"
+# line 1046 "histogram.dy"
 double ExtremeValueE(float x, float mu, float lambda, int N)
 {
   return (double)N * ExtremeValueP(x,mu,lambda);
@@ -847,7 +877,7 @@ double ExtremeValueE(float x, float mu, float lambda, int N)
  * Return [UNKN ]  Undocumented return value [float]
  *
  */
-# line 1039 "histogram.dy"
+# line 1068 "histogram.dy"
 float EVDrandom(float mu, float lambda)
 {
   float p = 0.0;
@@ -876,7 +906,7 @@ float EVDrandom(float mu, float lambda)
  * Arg:        *ret_df [UNKN ] Undocumented argument [float]
  *
  */
-# line 1078 "histogram.dy"
+# line 1107 "histogram.dy"
 void Lawless416(float *x, int *y, int n, float lambda, float *ret_f, float *ret_df)
 {
 
@@ -926,7 +956,7 @@ void Lawless416(float *x, int *y, int n, float lambda, float *ret_f, float *ret_
  * Arg:        *ret_df [UNKN ] Undocumented argument [float]
  *
  */
-# line 1141 "histogram.dy"
+# line 1170 "histogram.dy"
 void Lawless422(float *x, int *y, int n, int z, float c,float lambda, float *ret_f, float *ret_df)
 {
   double esum;			/* \sum e^(-lambda xi)      + z term    */
@@ -981,7 +1011,7 @@ void Lawless422(float *x, int *y, int n, int z, float c,float lambda, float *ret
  * Return [UNKN ]  on success; 0 on any failure [int]
  *
  */
-# line 1209 "histogram.dy"
+# line 1238 "histogram.dy"
 int EVDMaxLikelyFit(float *x, int *c, int n, float *ret_mu, float *ret_lambda)
 {
   float  lambda, mu;
@@ -1096,7 +1126,7 @@ int EVDMaxLikelyFit(float *x, int *c, int n, float *ret_mu, float *ret_lambda)
  * Return [UNKN ]  Undocumented return value [int]
  *
  */
-# line 1337 "histogram.dy"
+# line 1366 "histogram.dy"
 int EVDCensoredFit(float *x, int *y, int n, int z, float c,float *ret_mu, float *ret_lambda)
 {
   float  lambda, mu;
@@ -1210,7 +1240,7 @@ int EVDCensoredFit(float *x, int *y, int n, int z, float c,float *ret_mu, float 
  * Return [UNKN ]  on success, 0 on failure. [int]
  *
  */
-# line 1455 "histogram.dy"
+# line 1484 "histogram.dy"
 int Linefit(float *x, float *y, int N, float *ret_a, float *ret_b, float *ret_r) 
 {				
   float xavg, yavg;
@@ -1258,7 +1288,7 @@ static int sre_randseed = 666;	/* default seed for sre_random()   */
  * Return [UNKN ]  Undocumented return value [float]
  *
  */
-# line 1524 "histogram.dy"
+# line 1553 "histogram.dy"
 float sre_random(void)
 {
   static long  rnd;
@@ -1294,7 +1324,7 @@ float sre_random(void)
  * Return [UNKN ]  Undocumented return value [double]
  *
  */
-# line 1580 "histogram.dy"
+# line 1609 "histogram.dy"
 double IncompleteGamma(double a, double x)
 {
   int iter;			/* iteration counter */
@@ -1391,7 +1421,7 @@ double IncompleteGamma(double a, double x)
  * Return [UNKN ]  Undocumented return value [float]
  *
  */
-# line 1686 "histogram.dy"
+# line 1715 "histogram.dy"
 float Gammln(float x)
 {
   int i;
@@ -1432,7 +1462,7 @@ float Gammln(float x)
 }
 
 
-# line 1388 "histogram.c"
+# line 1416 "histogram.c"
 /* Function:  hard_link_Histogram(obj)
  *
  * Descrip:    Bumps up the reference count of the object

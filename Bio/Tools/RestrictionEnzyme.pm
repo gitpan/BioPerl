@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Tools::RestrictionEnzyme.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 3 June 1997
-# REVISION: $Id: RestrictionEnzyme.pm,v 1.1.1.1 1998/12/11 15:24:23 birney Exp $
+# REVISION: $Id: RestrictionEnzyme.pm,v 1.2 1999/04/03 01:52:21 sac Exp $
 # STATUS  : Alpha
 #            
 # MODIFIED: 
@@ -33,7 +33,7 @@ use vars qw ($ID $VERSION @RE_available $Revision);
 
 $ID = 'Bio::Tools::RestrictionEnzyme';
 $VERSION = 0.04;
-$Revision = '$Id: RestrictionEnzyme.pm,v 1.1.1.1 1998/12/11 15:24:23 birney Exp $';  #'
+$Revision = '$Id: RestrictionEnzyme.pm,v 1.2 1999/04/03 01:52:21 sac Exp $';  #'
 
 # Generated from REBASE version 802 (strider format), dated Jan 29 98
 # by rebase2perl.pl (JA Feb 98). Merged with previous list by Ewan, Nov 1998
@@ -351,17 +351,17 @@ sub _initialize {
     my $make = $self->SUPER::_initialize(%param);
 
     my (%data);
-    
+    my $name = $self->name;
+
     if($make eq 'custom') {
-	%data = $self->_make_custom($param{-NAME}); 
+	%data = $self->_make_custom($name); 
     } else {
-	%data = $self->_make_standard($param{-NAME});
+	%data = $self->_make_standard($name);
     }
     $self->{'_seq'} = new Bio::Seq(%data, 
-				      -STRICT  =>$self->strict, 
-				      -VERBOSE =>$self->verbose,
-				      );
-
+				   -STRICT  =>$self->strict, 
+				   -VERBOSE =>$self->verbose,
+				  );
     $make;
 }
 
@@ -386,6 +386,8 @@ sub _make_standard {
 #------------------
     my($self, $name) = @_;
 
+    $name =~ s/^\s+|\s+$//g;
+ 
     $self->is_available($name) || 
 	$self->throw("Unavailable or undefined enzyme: $name (Note: CASE SENSITIVE)",
 		     "Currently available enzymes: \n@RE_available\n");

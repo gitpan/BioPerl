@@ -1,11 +1,11 @@
-#!/usr/local/bin/perl -w
+#!/usr/bin/perl -w
 
 #---------------------------------------------------------------------------
 # PROGRAM : parse_positions.pl
 # PURPOSE : To extract identical + conserved positions for a hit.
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 12 Jun 1998
-# REVISION: $Id: parse_positions.pl,v 1.1.1.1 1998/12/11 15:24:33 birney Exp $
+# REVISION: $Id: parse_positions.pl,v 1.2 1999/02/27 12:28:06 sac Exp $
 # WEBSITE : http://bio.perl.org/Projects/Blast/
 # USAGE   : parse.pl -h
 # EXAMPLES: parse.pl -eg

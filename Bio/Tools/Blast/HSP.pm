@@ -3,7 +3,7 @@
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : March 1996
 # STATUS  : Alpha
-# REVISION: $Id: HSP.pm,v 1.2.2.2 1999/02/05 18:56:27 sac Exp $
+# REVISION: $Id: HSP.pm,v 1.5 1999/03/15 11:14:57 sac Exp $
 #
 # For the latest version and documentation, visit the distribution site:
 #    http://genome-www.stanford.edu/perlOOP/bioperl/blast/
@@ -27,8 +27,8 @@ use Bio::Root::Object ();
 use strict;
 use vars qw($ID $VERSION $GAP_SYMBOL @SCORE_CUTOFFS $Revision);
 $ID       = 'Bio::Tools::Blast::HSP';
-$VERSION  = 0.074;
-$Revision = '$Id: HSP.pm,v 1.2.2.2 1999/02/05 18:56:27 sac Exp $';  #'
+$VERSION  = 0.080;
+$Revision = '$Id: HSP.pm,v 1.5 1999/03/15 11:14:57 sac Exp $';  #'
 
 $GAP_SYMBOL    = '-';          # Need a more general way to handle gap symbols.
 @SCORE_CUTOFFS = ( 100, 30 );  # Bit score cutoffs (see homol_score()).
@@ -53,7 +53,6 @@ for a description of constructor parameters.
     $hspObj = eval{ new Bio::Tools::Blast::HSP(-DATA    =>\@hspData, 
 					       -PARENT  =>$sbjct_object, 
 					       -NAME    =>$hspCount,
-					       -GAPPED  =>1,
  		                               -PROGRAM =>'TBLASTN',
 					       );
 		};
@@ -138,7 +137,7 @@ Steve A. Chervitz, sac@genome.stanford.edu
 
 =head1 VERSION
 
-Bio::Tools::Blast::HSP.pm, 0.074
+Bio::Tools::Blast::HSP.pm, 0.080
 
 =head1 SEE ALSO
 
@@ -202,7 +201,6 @@ for documentation purposes only.
            :      -DATA    => array ref containing raw data for one HSP.
            :      -PARENT  => Sbjct.pm object ref.
            :      -NAME    => integer (1..n).
-           :      -GAPPED  => boolean (gapped alignments?).
            :      -PROGRAM => string ('TBLASTN', 'BLASTP', etc.).
 
 See Also   : L<_set_data>(), B<Bio::Root::Object::new()>, B<Bio::Tools::Blast::Sbjct::_set_hsps()>
@@ -218,7 +216,7 @@ sub _initialize {
 
     # The gapped and program booleans may be needed after the HSP object
     # is built.
-    $self->{'_gapped'} = $param{-GAPPED} || 0;
+#    $self->{'_gapped'} = $param{-GAPPED} || 0;
     $self->{'_prog'} = $param{-PROGRAM} || 0;  
     $self->_set_data( @{$param{-DATA}} );
 }
@@ -271,7 +269,7 @@ sub _set_data {
 
 	if( $line =~ /^ ?Score/ ) {
 	    $self->_set_score_stats( $line );
-	} elsif( $line =~ /^ ?Identities/ ) {
+	} elsif( $line =~ /^ ?(Identities|Positives|Strand)/ ) {
 	    $self->_set_match_stats( $line );
 	} elsif( $line =~ /^ ?Frame = ([\d+-]+)/ ) {
 	    # Version 2.0.8 has Frame information on a separate line.
@@ -299,6 +297,11 @@ sub _set_data {
 
     # Storing the match list in case it is needed later.
     $self->{'_matchList'} = \@matchList;
+
+    if(!$self->{'_numIdentical'}) {
+      $self->throw("Can't parse match statistics.",
+		   "Possibly a new or unrecognized Blast format.");
+    }
 
     if(!scalar @queryList or !scalar @sbjctList) {
         $self->throw("Can't find query or sbjct alignment lines.",
@@ -399,17 +402,21 @@ sub _set_match_stats {
 #--------------------
     my ($self, $data) = @_;
 
-    if($data =~ m!Identities = (\d+)/(\d+).+?, Positives = (\d+)/(\d+)!) {
-	# blast1 or 2 format
-	$self->{'_numIdentical'} = $1;
-	$self->{'_totalLength'}  = $2;
-	$self->{'_numConserved'} = $3;
-
-    } else {
-	$self->throw("Can't parse match statistics: unrecognized format.", "$data");
+    if($data =~ m!Identities = (\d+)/(\d+)!) {
+      # blast1 or 2 format
+      $self->{'_numIdentical'} = $1;
+      $self->{'_totalLength'}  = $2;
     }
-
-    if($data =~ m!Frame = ([\d+-]+)!) { $self->{'_frame'} = $1; }
+    
+    if($data =~ m!Positives = (\d+)/(\d+)!) {
+      # blast1 or 2 format
+      $self->{'_numConserved'} = $1;
+      $self->{'_totalLength'}  = $2;
+    }
+    
+    if($data =~ m!Frame = ([\d+-]+)!) { 
+      $self->{'_frame'} = $1; 
+    }
 
     # Strand data is not always present in this line.
     # _set_seq() will also set strand information.
@@ -534,11 +541,12 @@ sub _set_seq {
     } 
 
     ## Count number of gaps in each seq. Only need to do this for gapped Blasts.
-    if($self->{'_gapped'}) {
+#    if($self->{'_gapped'}) {
 	my $seqstr = join('', @sequence);
 	$seqstr =~ s/\s//g;
-	$self->{$seqType.'Gaps'} = CORE::length($seqstr) - $self->{$seqType.'Length'};
-    }
+        my $num_gaps = CORE::length($seqstr) - $self->{$seqType.'Length'};
+	$self->{$seqType.'Gaps'} = $num_gaps if $num_gaps > 0;
+#    }
 }
 
 
@@ -880,11 +888,11 @@ sub gaps {
     $seqType  ||= (wantarray ? 'list' : 'total');
 
     if($seqType =~ /list|array/i) {
-	return ($self->{'_queryGaps'}, $self->{'_sbjctGaps'});
+	return (($self->{'_queryGaps'} || 0), ($self->{'_sbjctGaps'} || 0));
     }
 
     if($seqType eq 'total') {
-	return $self->{'_queryGaps'} + $self->{'_sbjctGaps'};
+	return ($self->{'_queryGaps'} + $self->{'_sbjctGaps'}) || 0;
     } else {
 	## Sensitive to member name format.
 	$seqType = "_\L$seqType\E";
@@ -954,7 +962,8 @@ sub matches {
 
 	} elsif (($self->{'_prog'} eq 'BLASTX') and ($seqType eq 'query'))
 	{
-	    ## ML: does BLASTX also need special handling?
+	    $seq = substr($self->seq_str('match'),
+			  int(($beg-$start)/3), int(($end-$beg+1)/3));
 	} else {
 	    $seq = substr($self->seq_str('match'), 
 			  $beg-$start, ($end-$beg));

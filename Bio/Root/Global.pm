@@ -4,7 +4,7 @@
 #           many different modules and scripts.
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 3 Sep 1996
-# REVISION: $Id: Global.pm,v 1.1.1.1.2.1 1999/02/02 10:03:28 sac Exp $
+# REVISION: $Id: Global.pm,v 1.4 1999/04/06 11:14:11 sac Exp $
 #
 # INSTALLATION:
 #   This module is included with the central Bioperl distribution:
@@ -31,7 +31,7 @@
 package	 Bio::Root::Global;
 
 BEGIN {
-    use vars qw($CGI);
+    use vars qw($CGI $TIMEOUT_SECS);
 
     # $CGI is a boolean to indicate if the script is running as a CGI.
     # Useful for conditionally producing HTML-formatted messages
@@ -44,21 +44,21 @@ use Exporter ();
 use vars qw($BASE_YEAR @DAYS @MONTHS);
 
 @ISA       = qw( Exporter );
-@EXPORT_OK = qw($AUTHORITY 
+@EXPORT_OK = qw($AUTHORITY $NEWLINE
 		$DEBUG $MONITOR $TESTING 
 		$DONT_WARN $WARN_ON_FATAL $FATAL_ON_WARN $RECORD_ERR
-		$STRICTNESS $VERBOSITY
+		$STRICTNESS $VERBOSITY $TIMEOUT_SECS
 		$CGI $GLOBAL 
-		$BASE_YEAR %ROMAN_NUMS @MONTHS @DAYS
+		$BASE_YEAR %ROMAN_NUMS @MONTHS @DAYS 
 		&roman2int &debug &monitor &testing &dont_warn &record_err
 		&warn_on_fatal &fatal_on_warn &strictness &verbosity
 		);
 
 %EXPORT_TAGS = (
 		
-		std   =>[qw($DEBUG $MONITOR $TESTING 
+		std   =>[qw($DEBUG $MONITOR $TESTING $NEWLINE
 			    $DONT_WARN $WARN_ON_FATAL $FATAL_ON_WARN $RECORD_ERR
-			    $STRICTNESS $VERBOSITY			    
+			    $STRICTNESS $VERBOSITY 
 			    &debug &monitor &testing &dont_warn 
 			    &warn_on_fatal &fatal_on_warn &record_err
 			    &strictness &verbosity
@@ -68,7 +68,7 @@ use vars qw($BASE_YEAR @DAYS @MONTHS);
 
 		devel =>[qw($DEBUG $MONITOR $TESTING $DONT_WARN 
 			    $WARN_ON_FATAL $FATAL_ON_WARN $RECORD_ERR
-			    $STRICTNESS $VERBOSITY			    
+			    $STRICTNESS $VERBOSITY $NEWLINE		    
 			    &debug &monitor &testing &dont_warn 
 			    &strictness &verbosity
 			    &warn_on_fatal &fatal_on_warn)], 
@@ -96,8 +96,10 @@ $FATAL_ON_WARN = 0;
 $RECORD_ERR    = 0;
 $STRICTNESS    = 0;
 $VERBOSITY     = 0;
+$TIMEOUT_SECS  = 30;  # Number of seconds to wait for input in I/O functions.
 
 $BASE_YEAR = 1900;
+$NEWLINE   = $ENV{'NEWLINE'} || undef;
 
 %ROMAN_NUMS  = ('1'=>'I',    '2'=>'II',    '3'=>'III',    '4'=>'IV',    '5'=>'V',
 		'6'=>'VI',   '7'=>'VII',   '8'=>'VIII',   '9'=>'IX',   '10'=>'X',

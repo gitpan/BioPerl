@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -w
+#!/usr/bin/perl -w
 
 #---------------------------------------------------------------------------
 # PROGRAM : html.pl
@@ -6,7 +6,7 @@
 #           Bio::Tools::Blast.pm module.
 # AUTHOR  : Steve A. Chervitz
 # CREATED : 14 Apr 1998
-# REVISION: $Id: html.pl,v 1.1.1.1.2.1 1999/02/04 16:24:31 sac Exp $
+# REVISION: $Id: html.pl,v 1.2 1999/02/27 12:28:04 sac Exp $
 # WEBSITE : http://bio.perl.org/Projects/Blast/
 # USAGE   : html.pl -h
 # EXAMPLES: html.pl -eg

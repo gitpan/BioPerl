@@ -3,7 +3,7 @@
 # PURPOSE : To provide a base class for different sequence analysis tools.
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 27 Mar 1998
-# REVISION: $Id: SeqAnal.pm,v 1.1.1.1 1998/12/11 15:24:23 birney Exp $
+# REVISION: $Id: SeqAnal.pm,v 1.3 1999/04/06 11:20:47 sac Exp $
 # STATUS  : Alpha
 #
 # For documentation, run this module through pod2html 
@@ -379,10 +379,11 @@ sub _set_db_stats {
 #-------------------
     my ($self, %param) = @_;
 
-    $self->{'_db'}        = $param{-NAME}    || '';
-    $self->{'_dbRelease'} = $param{-RELEASE} || '';
-    ($self->{'_dbLetters'} = $param{-LETTERS} || 0)  =~ s/,//g;
-    ($self->{'_dbSeqs'}    = $param{-SEQS}    || 0) =~ s/,//g;
+    $self->{'_db'}        ||= $param{-NAME}    || '';
+    $self->{'_dbRelease'}   = $param{-RELEASE} || '';
+    ($self->{'_dbLetters'}  = $param{-LETTERS} || 0)  =~ s/,//g;
+    ($self->{'_dbSeqs'}     = $param{-SEQS}    || 0) =~ s/,//g;
+    
 }
 
 
@@ -691,7 +692,7 @@ sub _display_stats {
 #--------------------
     my( $self, $OUT ) = @_;
     
-    printf( $OUT "%-15s: %s\n", "QUERY NAME", $self->query ||'UNKNOWN' );
+    printf( $OUT "\n%-15s: %s\n", "QUERY NAME", $self->query ||'UNKNOWN' );
     printf( $OUT "%-15s: %s\n", "QUERY DESC", $self->query_desc || 'UNKNOWN');
     printf( $OUT "%-15s: %s\n", "LENGTH", $self->length || 'UNKNOWN');
     printf( $OUT "%-15s: %s\n", "FILE", $self->file || 'STDIN');

@@ -7,7 +7,7 @@
 #           nucleotide or peptide sequences).
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 28 Aug 1997
-# REVISION: $Id: seq_pattern.pl,v 1.1.1.1 1998/12/11 15:24:32 birney Exp $
+# REVISION: $Id: seq_pattern.pl,v 1.2 1999/02/27 12:28:02 sac Exp $
 # USAGE   : seq_pattern.pl -h
 # COMMENTS: 
 #    This is a driver script for the Bio::Tools::SeqPattern.pm Bioperl module
@@ -30,7 +30,7 @@
 #
 #-----------------------------------------------------------------------------
 
-use lib "/home/steve/perl/lib";
+use lib "/home/steve/perl/bioperl";
 use Bio::Tools::SeqPattern ();
 use Bio::Root::Global qw(:std);
 use Getopt::Std;
