@@ -4,7 +4,7 @@
 # PURPOSE  : Simple driver for Bio::Seq revcom and translate
 # AUTHOR   : Ewan Birney birney@sanger.ac.uk 
 # CREATED  : Tue Oct 27 1998
-# REVISION : $Id: rev_and_trans.pl,v 1.2 1999/02/27 12:28:01 sac Exp $
+# REVISION : $Id: rev_and_trans.pl,v 1.2.12.1 2000/09/17 12:17:25 birney Exp $
 #
 # INSTALLATION
 #    If you have installed bioperl using the standard
@@ -15,8 +15,9 @@
 #    containing your Bioperl modules.
 #
 
-use lib "/nfs/disk21/birney/prog/bioperl/Bio";
+
 use Bio::Seq;
+use Bio::SeqIO;
 
 # new sequence from raw memory...
 # it is *very* important to get the type right so it
@@ -26,19 +27,21 @@ $seq = Bio::Seq->new ( -id => "myseq",
 		      -seq => "CGCCGAAGAAGCATCGTTAAAGTCTCTCTTCACCCTGCCGTCATGTCTAAGTCAGAGTCTCCT",
 		      -type => 'Dna');
 
+$seqout = Bio::SeqIO->new('-format' => 'fasta', -fh => \*STDOUT);
+
 # make a reverse complement sequence
 
 $rev = $seq->revcom();
 
 # the actual sequence is here
 
-$actual_bases = $rev->str();
+$actual_bases = $rev->seq();
 
 print "Reversed sequence as a string is [$actual_bases]\n";
 
 # we could also write it as fasta formatted output
 
-print $rev->out_fasta();
+$seqout->write_seq($rev);
 
 # make a translation
 
@@ -46,5 +49,5 @@ $trans = $seq->translate();
 
 print "Translated sequence!\n";
 
-print $trans->out_fasta();
+$seqout->write_seq($trans);
 

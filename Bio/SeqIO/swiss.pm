@@ -1,5 +1,3 @@
-
-
 #
 # BioPerl module for Bio::SeqIO::swissprot
 #
@@ -33,7 +31,6 @@ file databases.
 
 There is alot of flexibility here about how to dump things which I need
 to document fully.
-
 
 =head2 Optional functions
 
@@ -69,9 +66,9 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
-  vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+   bioperl-l@bioperl.org             - General discussion
+   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
+   http://bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -94,9 +91,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
-
 # Let the code begin...
-
 
 package Bio::SeqIO::swiss;
 use vars qw(@ISA);
@@ -150,7 +145,6 @@ sub _initialize {
  return $make; # success - we hope!
 }
 
-
 =head2 next_seq
 
  Title   : next_seq
@@ -158,7 +152,6 @@ sub _initialize {
  Function: returns the next sequence in the stream
  Returns : Bio::Seq object
  Args    :
-
 
 =cut
 
@@ -320,10 +313,9 @@ sub next_seq {
        s/[^A-Za-z]//g;
        $seqc .= $_;
    }
-   $pseq = Bio::PrimarySeq->new(-seq => $seqc , -id => $name, -desc => $desc);
-   $seq->primary_seq($pseq);
+   $seq->seq($seqc);
+   $seq->desc($desc);
    return $seq;
-
 }
 
 =head2 write_seq
@@ -333,7 +325,6 @@ sub next_seq {
  Function: writes the $seq object (must be seq) to the stream
  Returns : 1 for success and 0 for error
  Args    : Bio::Seq
-
 
 =cut
 
@@ -347,6 +338,14 @@ sub write_seq {
    if( ! ref $seq || ! $seq->isa('Bio::SeqI') ) {
        $self->warn(" $seq is not a SeqI compliant module. Attempting to dump, but may fail!");
    }
+
+   # FIXME the implementation here doesn't print all the information correctly.
+   # Tell people in order to avoid being flooded by bug reports -- watch out
+   # for the 0.7 release if you indeed find the printed entries incorrect
+   $self->warn("SwissProt printing facility incomplete yet -- ".
+	       "printed entries may be misformatted or missing information.\n".
+	       "Use the CVS main development trunk or watch out for ".
+	       "BioPerl 0.7 if you need SwissProt printing.");
 
    my $i;
    my $str = $seq->seq;
@@ -374,7 +373,16 @@ sub write_seq {
    if( $self->_id_generation_func ) {
        $temp_line = &{$self->_id_generation_func}($seq);
    } else {
-       $temp_line = sprintf ("%s_$div    STANDARD;       $mol;   %d AA.",$seq->id(),$len);
+       #$temp_line = sprintf ("%10s     STANDARD;      %3s;   %d AA.",
+       #		     $seq->primary_id()."_".$div,$mol,$len);
+       # Reconstructing the ID relies heavily upon the input source having
+       # been in a format that is parsed as this routine expects it -- that is,
+       # by this module itself. This is bad, I think, and immediately breaks
+       # if e.g. the Bio::DB::GenPept module is used as input.
+       # Hence, switch to display_id(); _every_ sequence is supposed to have
+       # this. HL 2000/09/03
+       $temp_line = sprintf ("%10s     STANDARD;      %3s;   %d AA.",
+			     $seq->display_id(),$mol,$len);
    } 
 
    $self->_print( "ID   $temp_line\n");   
@@ -537,7 +545,6 @@ sub write_seq {
  Returns : 
  Args    :
 
-
 =cut
 
 sub _print_swissprot_FTHelper {
@@ -548,7 +555,6 @@ sub _print_swissprot_FTHelper {
 
 }
 
-
 =head2 _read_swissprot_References
 
  Title   : _read_swissprot_References
@@ -557,7 +563,6 @@ sub _print_swissprot_FTHelper {
  Example :
  Returns : 
  Args    :
-
 
 =cut
 
@@ -611,7 +616,6 @@ sub _read_swissprot_References{
    $$buffer = $_;
    return @refs;
 }
-
 
 =head2 _read_swissprot_Species
 
@@ -687,7 +691,6 @@ sub _read_swissprot_Species {
  Returns : value of _filehandle
  Args    : newvalue (optional)
 
-
 =cut
 
 # inherited from SeqIO.pm ! HL 05/11/2000
@@ -700,7 +703,6 @@ sub _read_swissprot_Species {
  Example :
  Returns : Bio::SeqIO::FTHelper object 
  Args    : filehandle and reference to a scalar
-
 
 =cut
 
@@ -752,7 +754,6 @@ sub _read_FTHelper_swissprot {
     return $out;
 }
 
-
 =head2 _write_line_swissprot
 
  Title   : _write_line_swissprot
@@ -761,7 +762,6 @@ sub _read_FTHelper_swissprot {
  Example :
  Returns : 
  Args    :
-
 
 =cut
 
@@ -796,7 +796,6 @@ sub _write_line_swissprot{
  Example :
  Returns : nothing
  Args    : file handle, first header, second header, text-line, regex for line breaks, total line length
-
 
 =cut
 
@@ -834,7 +833,6 @@ sub _write_line_swissprot_regex {
  Returns : value of _post_sort
  Args    : newvalue (optional)
 
-
 =cut
 
 sub _post_sort{
@@ -854,7 +852,6 @@ sub _post_sort{
  Function: 
  Returns : value of _show_dna
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -876,7 +873,6 @@ sub _show_dna{
  Returns : value of _id_generation_func
  Args    : newvalue (optional)
 
-
 =cut
 
 sub _id_generation_func{
@@ -896,7 +892,6 @@ sub _id_generation_func{
  Function: 
  Returns : value of _ac_generation_func
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -918,7 +913,6 @@ sub _ac_generation_func{
  Returns : value of _sv_generation_func
  Args    : newvalue (optional)
 
-
 =cut
 
 sub _sv_generation_func{
@@ -939,7 +933,6 @@ sub _sv_generation_func{
  Returns : value of _kw_generation_func
  Args    : newvalue (optional)
 
-
 =cut
 
 sub _kw_generation_func{
@@ -954,8 +947,4 @@ sub _kw_generation_func{
 
 1;
     
-
-
-
-
 

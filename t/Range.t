@@ -1,5 +1,5 @@
 ## Bioperl Test Harness Script for Modules
-## $Id: Range.t,v 1.2 1999/05/20 12:54:30 mrp Exp $
+## $Id: Range.t,v 1.2.6.1 2000/09/04 17:00:09 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -38,12 +38,12 @@ print "ok 1\n";    # 1st test passes.
 
 my $range = Bio::Range->new(-start=>10,
                             -end=>20,
-			    -strand=>"+1");
+			    -strand=>1);
 print "ok 2\n"; 
 
 my $range2 = Bio::Range->new(-start=>15,
                              -end=>25,
-			     -strand=>"+1");
+			     -strand=>1);
 
 print "ok 3\n";
 

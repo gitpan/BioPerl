@@ -1,4 +1,3 @@
-
 #
 # BioPerl module for Bio::DB::AbstractSeq
 #
@@ -12,7 +11,7 @@
 
 =head1 NAME
 
-Bio::Index::AbstractSeq - Base class for AbstractSeq's
+Bio::Index::AbstractSeq - Base class for AbstractSeqs
 
 =head1 SYNOPSIS
 
@@ -41,9 +40,9 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
-  vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+   bioperl-l@bioperl.org             - General discussion
+   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
+   http://bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -73,9 +72,7 @@ not necessarily sequence files).
 
 =cut
 
-
-# Let's begin the code ...
-
+# Lets begin the code ...
 
 package Bio::Index::AbstractSeq;
 use vars qw(@ISA);
@@ -84,7 +81,6 @@ use strict;
 use Bio::SeqIO::MultiFile;
 use Bio::Index::Abstract;
 use Bio::DB::SeqI;
-
 
 @ISA = qw(Bio::Index::Abstract Bio::DB::SeqI);
 
@@ -113,7 +109,6 @@ sub _initialize {
  Returns : 
  Args    :
 
-
 =cut
 
 sub _file_format {
@@ -129,7 +124,8 @@ sub _file_format {
   Usage   : $index->fetch( $id )
   Function: Returns a Bio::Seq object from the index
   Example : $seq = $index->fetch( 'dJ67B12' )
-  Returns : Bio::Seq object
+  Returns : Bio::Seq object, or throws an exception
+            if the ID given is not in the index.
   Args    : ID
 
 =cut
@@ -150,22 +146,26 @@ sub fetch {
         seek($fh, $begin, 0);
 	
 	$seq = $seqio->next_seq();
+    } else {
+        $self->throw("No record found for '$id'");
     }
 
     # we essentially assumme that the primary_id for the database
     # is the display_id
-    $seq->primary_id($seq->display_id());
+    $seq->primary_id($seq->display_id()) if( defined $seq && ref($seq) &&
+					     $seq->isa('Bio::PrimarySeqI') );
 
     return $seq;
 }
 
 =head2 _get_SeqIO_object
 
-  Title   : fetch
+  Title   : _get_SeqIO_object
   Usage   : $index->_get_SeqIO_object( $file )
   Function: Returns a Bio::SeqIO object for the file
   Example : $seq = $index->_get_SeqIO_object( 0 )
-  Returns : Bio::SeqIO object
+  Returns : Bio::SeqIO object or throws an exception
+             if the ID given is not in the index.
   Args    : File number (an integer)
 
 =cut
@@ -192,7 +192,6 @@ sub _get_SeqIO_object {
  Returns : new Bio::Seq object
  Args    : string represents the id
 
-
 =cut
 
 sub get_Seq_by_id {
@@ -210,7 +209,6 @@ sub get_Seq_by_id {
  Returns : new Bio::Seq object
  Args    : string represents the accession number
 
-
 =cut
 
 sub get_Seq_by_acc {
@@ -227,7 +225,6 @@ sub get_Seq_by_acc {
            which provides a single method, next_primary_seq
  Returns : Bio::DB::SeqStreamI
  Args    : none
-
 
 =cut
 
@@ -259,7 +256,6 @@ sub get_PrimarySeq_stream {
  Returns : an array of strings
  Args    : none
 
-
 =cut
 
 sub get_all_primary_ids {
@@ -270,7 +266,7 @@ sub get_all_primary_ids {
    # accession number and name. 
 
    # We could take two options
-   # here - loop over the database, returnin g only one copy of each
+   # here - loop over the database, returning only one copy of each
    # id that points to the same byte position, or we rely on semantics
    # of accession numbers.
 
@@ -279,13 +275,17 @@ sub get_all_primary_ids {
 
     my( %bytepos );
    while (my($id, $rec) = each %$db) {
-       my ($file, $begin, $end) = $self->unpack_record( $rec );
-       $bytepos{$begin} = $id;
+       if( $id =~ /^__/ ) {
+           # internal info
+           next;
+       }
+       my ($file, $begin) = $self->unpack_record( $rec );
+       
+       $bytepos{"$file:$begin"} = $id;
    }
 
    return values %bytepos;
 }
-
 
 =head2 get_Seq_by_primary_id
 
@@ -302,7 +302,6 @@ sub get_all_primary_ids {
  Returns : A Bio::Seq object
  Args    : primary id (as a string)
  Throws  : "acc does not exist" exception
-
 
 =cut
 

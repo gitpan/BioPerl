@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Tools::Sigcleave.pm
 # AUTHOR  : Chris Dagdigian, dag@sonsorol.org
 # CREATED : Jan 28 1999
-# REVISION: $Id: Sigcleave.pm,v 1.9 2000/02/14 13:37:59 birney Exp $
+# REVISION: $Id: Sigcleave.pm,v 1.9.2.1 2000/09/15 08:24:24 jgrg Exp $
 #            
 # Copyright (c) 1997-9 bioperl, Chris Dagdigian and others. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
@@ -106,8 +106,6 @@ meet the threshold limit. This is the slightly different from the behaviour of
 the 8.1 EGCG sigcleave program which will report the highest of the under-threshold
 results if nothing else is found.
 
-
-
 Example of pretty_print output:
 
 	SIGCLEAVE of sigtest from: 1 to 146
@@ -126,7 +124,6 @@ Example of pretty_print output:
 	 Sequence:  CSRQLFGWLFCKV-HPGAIVFVILAAMSIQGSANLQTQWKSTASLALET
          	   | (signal)    | (mature peptide)
            	99            112
-
 
 =head1 USAGE
 
@@ -164,7 +161,7 @@ Chris Dagdigian, dag@sonsorol.org  & others
 
 =head1 VERSION
 
-Bio::Tools::Sigcleave.pm, $Id: Sigcleave.pm,v 1.9 2000/02/14 13:37:59 birney Exp $
+Bio::Tools::Sigcleave.pm, $Id: Sigcleave.pm,v 1.9.2.1 2000/09/15 08:24:24 jgrg Exp $
 
 =head1 COPYRIGHT
 
@@ -188,7 +185,6 @@ The following documentation describes the various functions
 contained in this module. Some functions are for internal 
 use and are not meant to be called by the user; they are 
 preceded by an underscore ("_").
-
 
 =cut
 
@@ -253,13 +249,9 @@ foreach $i (keys %WeightTable)
      }
  }
 
-
-
-
 #####################################################################################
 ##                                 CONSTRUCTOR                                     ##
 #####################################################################################
-
 
 =head1 _initialize
 
@@ -302,7 +294,6 @@ sub _initialize {
     $self->_Analyze;
     $make;
 }
-
 
 =head1 _Analyze
 
@@ -381,8 +372,6 @@ for($seqPos = $seqBegin; $seqPos < $seqEnd; $seqPos++)
   $self->{"signal_scores"} = { %signals };
 }
 
-
-
 =head1 threshold
 
  Title     : threshold
@@ -405,8 +394,6 @@ sub threshold {
 my $self = shift;
 return $self->{threshold};
 }
-
-
 
 =head1 signals
 
@@ -439,8 +426,6 @@ my $position;
 
 return %results;
 }
-
-
 
 =head1 pretty_print
 
@@ -500,19 +485,10 @@ if($hitcount > 0) {
 $output;
 }
 
-
 1;
 __END__
-
 
 #########################################################################
 #  End of class 
 #########################################################################
-
-
-
-
-
-
-
 

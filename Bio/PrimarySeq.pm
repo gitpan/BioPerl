@@ -1,4 +1,3 @@
-
 #
 # bioperl module for Bio::PrimarySeq
 #
@@ -48,7 +47,7 @@ Bio::PrimarySeq - Bioperl lightweight Sequence Object
 
 =head1 DESCRIPTION
 
-PrimaySeq is a lightweight Sequence object, storing little more than
+PrimarySeq is a lightweight Sequence object, storing little more than
 the sequence, its name, a computer useful unique name. It does not
 contain sequence features or other information.  To have a sequence
 with sequence features you should use the Seq object which uses this
@@ -123,9 +122,9 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
-  vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+   bioperl-l@bioperl.org             - General discussion
+   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
+   http://bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -148,9 +147,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
-
 # Let the code begin...
-
 
 package Bio::PrimarySeq;
 use vars qw(@ISA);
@@ -160,7 +157,6 @@ use strict;
 
 use Bio::Root::Object;
 use Bio::PrimarySeqI;
-
 
 @ISA = qw(Bio::Root::Object Bio::PrimarySeqI);
 
@@ -225,7 +221,6 @@ sub seq {
        $obj->{'seq'} = $value;
        $obj->_guess_type();
     }
-   my $v = $obj->{'seq'};
    return $obj->{'seq'};
 }
 
@@ -239,7 +234,6 @@ sub seq {
  Returns : a string
  Args    :
 
-
 =cut
 
 sub subseq {
@@ -249,16 +243,38 @@ sub subseq {
        $self->throw("in subseq, start [$start] has to be greater than end [$end]");
    }
 
-   if( $start <= 0 || $end > $self->length ) {
-       $self->throw("You have to have start positive and length less than the total length of sequence");
+   if( $start <= 0 ) {
+       $self->throw("Can't get subseq: Start must be positive (start = $start)");
+   }
+
+   my $len = $self->length;
+   if( $end > $len ) {
+       $self->throw("Can't get subseq: End must be less than the total length of sequence: (end = $end, length = $len)");
    }
 
    # remove one from start, and then length is end-start
 
    $start--;
 
-   return substr $self->seq, $start, ($end-$start);
+   return substr $self->{'seq'}, $start, ($end-$start);
 
+}
+
+=head2 length
+
+ Title   : length
+ Usage   : $len = $seq->length()
+ Function:
+ Example :
+ Returns : integer representing the length of the sequence.
+ Args    :
+
+=cut
+
+sub length {
+   my ($self)= @_;
+
+   return CORE::length($self->{'seq'});
 }
 
 =head2 display_id
@@ -279,7 +295,6 @@ sub subseq {
  Returns : A string
  Args    : None
 
-
 =cut
 
 sub display_id {
@@ -290,7 +305,6 @@ sub display_id {
     return $obj->{'display_id'};
 
 }
-
 
 =head2 accession_number
 
@@ -311,17 +325,15 @@ sub display_id {
 =cut
 
 sub accession_number {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'accession_number'} = $value;
-  }
-   if( ! exists $obj->{'accession_number'} ) {
-       return "unknown";
-   } 
-   return $obj->{'accession_number'};
-
+    my ($obj,$value) = @_;
+    if( defined $value) {
+	$obj->{'accession_number'} = $value;
+    }
+    if( ! exists $obj->{'accession_number'} ) {
+	return "unknown";
+    } 
+    return $obj->{'accession_number'};
 }
-
 
 =head2 primary_id
 
@@ -351,7 +363,6 @@ sub primary_id {
 
 }
 
-
 =head2 moltype
 
  Title   : moltype
@@ -366,7 +377,6 @@ sub primary_id {
            make a call of the type - if there is no type specified it
            has to guess.
  Args    : none
-
 
 =cut
 
@@ -396,7 +406,6 @@ BEGIN {
  Returns : value of desc
  Args    : newvalue (optional)
 
-
 =cut
 
 sub desc {
@@ -416,7 +425,6 @@ sub desc {
  Example :
  Returns : 
  Args    :
-
 
 =cut
 
@@ -469,7 +477,6 @@ implemented on Bio::PrimarySeqI
  Returns : a fresh Bio::SeqI implementing object
  Args    :
 
-
 =cut
 
 =head1 Internal methods
@@ -487,14 +494,13 @@ These are internal methods to PrimarySeq
  Returns : 
  Args    :
 
-
 =cut
 
 sub _guess_type {
    my ($self) = @_;
    my ($str,$str2,$total,$atgc,$u,$type);
 
-   $str = $self->seq();
+   $str = $self->{'seq'};
    $str =~ s/\-\.//g;
 
    $total = CORE::length($str);
@@ -511,7 +517,6 @@ sub _guess_type {
    
    $u = CORE::length($str) - CORE::length($str2);
 
-
    if( ($atgc / $total) > 0.85 ) {
        $type = 'dna';
    } elsif( (($atgc + $u) / $total) > 0.85 ) {
@@ -524,18 +529,5 @@ sub _guess_type {
 
 }
 
-
-
 1;
-
-
-
-
-
-
-
-
-
-
-
 

@@ -13,7 +13,7 @@ use strict;
 # PACKAGE  : Bar.pm
 # PURPOSE  : Dummy object for testing Bio::Root::Object.pm and Bio::Root::Err.pm.
 # AUTHOR   : Steve A. Chervitz (sac@genome.stanford.edu)
-# REVISION : $Id: Bar.pm,v 1.1.1.1 1998/12/11 15:24:35 birney Exp $
+# REVISION : $Id: Bar.pm,v 1.1.1.1.14.1 2000/09/15 08:24:25 jgrg Exp $
 #----------------------------------------------------------------------
 
 ####################################
@@ -83,11 +83,6 @@ sub _display_stats {
     print $OUT "\n";
 }
 
-
 ######################################
 1;
-
-
-
-
 

@@ -1,5 +1,3 @@
-
-
 #
 # BioPerl module for Bio::SeqIO::EMBL
 #
@@ -71,9 +69,9 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
-  vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+   bioperl-l@bioperl.org             - General discussion
+   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
+   http://bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -96,9 +94,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
-
 # Let the code begin...
-
 
 package Bio::SeqIO::embl;
 use vars qw(@ISA);
@@ -107,7 +103,6 @@ use Bio::Seq;
 use Bio::SeqIO::FTHelper;
 use Bio::SeqFeature::Generic;
 use Bio::Species;
-
 
 # Object preamble - inheriets from Bio::Root::Object
 
@@ -152,7 +147,6 @@ sub _initialize {
  return $make; # success - we hope!
 }
 
-
 =head2 next_seq
 
  Title   : next_seq
@@ -161,14 +155,12 @@ sub _initialize {
  Returns : Bio::Seq object
  Args    :
 
-
 =cut
 
 sub next_seq {
    my ($self,@args) = @_;
    my ($pseq,$c,$line,$name,$desc,$acc,$seqc,$mol,$div, $date, $comment, @date_arr);
    my $seq = Bio::Seq->new();
-
 
    $line = $self->_readline;   # This needs to be before the first eof() test
 
@@ -185,23 +177,20 @@ sub next_seq {
        return undef; # end of file
    }
    $line =~ /^ID\s+\S+/ || $self->throw("EMBL stream with no ID. Not embl in my book");
-   $line =~ /^ID\s+(\S+)\s+\S+\; (.+)\; (\S+)/;
+   $line =~ /^ID\s+(\S+)\s+\S+\;\s+(\S+)\;\s+(\S+)\;/;
    $name = $1;
+   $mol = $2;
+   $div = $3;
    if(! $name) {
        $name = "unknown id";
    }
     # this is important to have the id for display in e.g. FTHelper, otherwise
     # you won't know which entry caused an error
    $seq->display_id($name);
-   $mol= $2;
-   $mol =~ s/\;//;
-   if ($mol) {
+   if($mol) {
        $seq->molecule($mol);
    }
-   
-   if ($3) {
-       $div = $3;
-       $div =~ s/\;//;
+   if ($div) {
        $seq->division($div);
    }
    
@@ -225,7 +214,7 @@ sub next_seq {
        if( /^AC\s+(\S+);?/ ) {
 	   $acc = $1;
 	   $acc =~ s/\;//;
-	   $seq->accession($acc);
+	   $seq->accession_number($acc);
        }
        
        #version number
@@ -236,9 +225,9 @@ sub next_seq {
        }
 
        #date (NOTE: takes last date line)
-       if( /^DT\s+(\S+)/ ) {
+       if( /^DT\s+(.+)$/ ) {
 	   my $date = $1;
-	   $date =~ s/\;//;
+	   $date =~ s/\;$//;
 	   $seq->add_date($date);
        }
        
@@ -288,21 +277,24 @@ sub next_seq {
        # Get next line.
        $buffer = $self->_readline;
    }
+    $seq->desc($desc);
 
    while( defined ($_ = $self->_readline) ) {
-       /FT   \w/ && last;
+       /^FT   \w/ && last;
+       /^SQ / && last;
    }
    $buffer = $_;
       
-   FEATURE_TABLE :   
-   until( !defined ($buffer) ) {
-       my $ftunit = $self->_read_FTHelper_EMBL(\$buffer);
-       # process ftunit
-       $ftunit->_generic_seqfeature($seq);
+   if (defined($buffer) && $buffer =~ /^FT /) {
+     until( !defined ($buffer) ) {
+	 my $ftunit = $self->_read_FTHelper_EMBL(\$buffer);
+	 # process ftunit
+	 $ftunit->_generic_seqfeature($seq);
 
-       if( $buffer !~ /^FT/ ) {
-	   last;
-       }
+	 if( $buffer !~ /^FT/ ) {
+	     last;
+	 }
+     }
    }
 	
    if( $buffer !~ /^SQ/  ) {
@@ -319,8 +311,7 @@ sub next_seq {
        $seqc .= $_;
    }
 
-   $pseq = Bio::PrimarySeq->new(-seq => $seqc , -id => $name, -desc => $desc);
-   $seq->primary_seq($pseq);
+   $seq->seq($seqc);
    return $seq;
 }
 
@@ -331,7 +322,6 @@ sub next_seq {
  Function: writes the $seq object (must be seq) to the stream
  Returns : 1 for success and 0 for error
  Args    : Bio::Seq
-
 
 =cut
 
@@ -377,8 +367,8 @@ sub write_seq {
         my( $acc );
         if( my $func = $self->_ac_generation_func ) {
             $acc = &{$func}($seq);
-        } elsif( $seq->can('accession')) {
-            $acc = $seq->accession;
+        } elsif( $seq->can('accession_number')) {
+            $acc = $seq->accession_number;
         }
         if (defined $acc) {
             $self->_print("AC   $acc;\n",
@@ -468,11 +458,12 @@ sub write_seq {
 	    }
 	    
 	    if (my $med = $ref->medline) {
-		$self->_print( "RX   MEDLINE; $med\n");
+		$self->_print( "RX   MEDLINE; $med.\n");
 	    }
 	    
 	    $self->_write_line_EMBL_regex("RA   ", "RA   ", 
-					  $ref->authors,  '\s+|$', 80);       
+					  $ref->authors . ";",
+					  '\s+|$', 80);
 
            # If there is no title to the reference, it appears
            # as a single semi-colon.  All titles must end in
@@ -605,7 +596,6 @@ sub write_seq {
  Returns : 
  Args    :
 
-
 =cut
 
 sub _print_EMBL_FTHelper {
@@ -615,7 +605,6 @@ sub _print_EMBL_FTHelper {
    if( ! ref $fth || ! $fth->isa('Bio::SeqIO::FTHelper') ) {
        $fth->warn("$fth is not a FTHelper class. Attempting to print, but there could be tears!");
    }
-
 
    #$self->_print( "FH   Key             Location/Qualifiers\n");
    #$self->_print( sprintf("FT   %-15s  %s\n",$fth->key,$fth->loc));
@@ -649,7 +638,6 @@ sub _print_EMBL_FTHelper {
  Returns : 
  Args    :
 
-
 =cut
 
 sub _read_EMBL_References {
@@ -673,10 +661,18 @@ sub _read_EMBL_References {
        /^R/ || last;
        /^RP   (\d+)-(\d+)/ && do {$b1=$1;$b2=$2;};
        /^RX   MEDLINE;\s+(\d+)/ && do {$med=$1};
-       /^RA   (.*)/ && do { $au .= $1;   next;};
-       /^RT   (.*)/ && do { $title .= $1; next;};
-       /^RL   (.*)/ && do { $loc .= $1; next;};
-       /^RC   (.*)/ && do { $com .= $1; next;};
+       /^RA   (.*)/ && do {
+	   $au = $self->_concatenate_lines($au,$1); next;
+       };
+       /^RT   (.*)/ && do {
+	   $title = $self->_concatenate_lines($title,$1); next;
+       };
+       /^RL   (.*)/ && do {
+	   $loc = $self->_concatenate_lines($loc,$1); next;
+       };
+       /^RC   (.*)/ && do {
+	   $com = $self->_concatenate_lines($com,$1); next;
+       };
    }
    
    my $ref = new Bio::Annotation::Reference;
@@ -696,7 +692,6 @@ sub _read_EMBL_References {
    
    return @refs;
 }
-
 
 =head2 _read_EMBL_Species
 
@@ -805,7 +800,6 @@ sub _read_EMBL_DBLink {
  Returns : value of _filehandle
  Args    : newvalue (optional)
 
-
 =cut
 
 sub _filehandle{
@@ -825,7 +819,6 @@ sub _filehandle{
  Example :
  Returns : Bio::SeqIO::FTHelper object 
  Args    : filehandle and reference to a scalar
-
 
 =cut
 
@@ -930,7 +923,6 @@ sub _read_FTHelper_EMBL {
  Returns : 
  Args    :
 
-
 =cut
 
 sub _write_line_EMBL {
@@ -964,7 +956,6 @@ sub _write_line_EMBL {
  Example :
  Returns : nothing
  Args    : file handle, first header, second header, text-line, regex for line breaks, total line length
-
 
 =cut
 
@@ -1005,7 +996,6 @@ sub _write_line_EMBL_regex {
  Returns : value of _post_sort
  Args    : newvalue (optional)
 
-
 =cut
 
 sub _post_sort{
@@ -1025,7 +1015,6 @@ sub _post_sort{
  Function: 
  Returns : value of _show_dna
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -1047,7 +1036,6 @@ sub _show_dna{
  Returns : value of _id_generation_func
  Args    : newvalue (optional)
 
-
 =cut
 
 sub _id_generation_func{
@@ -1067,7 +1055,6 @@ sub _id_generation_func{
  Function: 
  Returns : value of _ac_generation_func
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -1089,7 +1076,6 @@ sub _ac_generation_func{
  Returns : value of _sv_generation_func
  Args    : newvalue (optional)
 
-
 =cut
 
 sub _sv_generation_func{
@@ -1110,7 +1096,6 @@ sub _sv_generation_func{
  Returns : value of _kw_generation_func
  Args    : newvalue (optional)
 
-
 =cut
 
 sub _kw_generation_func{
@@ -1125,8 +1110,4 @@ sub _kw_generation_func{
 
 1;
     
-
-
-
-
 

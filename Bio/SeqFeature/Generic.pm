@@ -1,4 +1,3 @@
-
 #
 # BioPerl module for Bio::SeqFeature::Generic
 #
@@ -30,8 +29,6 @@ Bio::SeqFeature::Generic - Generic SeqFeature
    # add it to an annotated sequence
 
    $annseq->add_SeqFeature($feat);
-
-
 
 =head1 DESCRIPTION
 
@@ -83,9 +80,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
-
 # Let the code begin...
-
 
 package Bio::SeqFeature::Generic;
 use vars qw(@ISA);
@@ -95,7 +90,6 @@ use strict;
 
 use Bio::Root::Object;
 use Bio::SeqFeatureI;
-
 
 @ISA = qw(Bio::Root::Object Bio::SeqFeatureI);
 # new() is inherited from Bio::Root::Object
@@ -125,21 +119,20 @@ sub _initialize {
   $gff_string && $self->_from_gff_string($gff_string);
   $start && $self->start($start);
   $end   && $self->end($end);
-  $strand && $self->strand($strand);
+  defined($strand) && $self->strand($strand);
   $primary && $self->primary_tag($primary);
   $source  && $self->source_tag($source);
   $frame   && $self->frame($frame);
   $score   && $self->score($score);
   $tag     && do {
       foreach my $t ( keys %$tag ) {
-	  $self->has_tag($t,$tag->{$t});
+	  $self->add_tag_value($t,$tag->{$t});
       }
   };
 
   # set stuff in self from @args
   return $make; # success - we hope!
 }
-
 
 =head2 start
 
@@ -149,7 +142,6 @@ sub _initialize {
  Function: Get/set on the start coordinate of the feature
  Returns : integer
  Args    : none
-
 
 =cut
 
@@ -161,6 +153,11 @@ sub start {
        if ( $value !~ /^\-?\d+/ ) {
 	   $self->throw("$value is not a valid start");
        }
+
+       if( defined $self->entire_seq && $value > $self->entire_seq->length ) {
+	   $self->throw("Cannot set start ($value) greater than sequence length");
+       }
+
        $self->{'_gsf_start'} = $value
    }
 
@@ -176,7 +173,6 @@ sub start {
  Returns : integer
  Args    : none
 
-
 =cut
 
 sub end {
@@ -187,6 +183,11 @@ sub end {
        if ( $value !~ /^\-?\d+/ ) {
 	   $self->throw("$value is not a valid end");
        }
+
+       if( defined $self->entire_seq && $value > $self->entire_seq->length ) {
+	   $self->throw("Cannot set end ($value) greater than sequence length");
+       }
+
        $self->{'_gsf_end'} = $value
    }
 
@@ -202,7 +203,6 @@ sub end {
  Returns :
  Args    :
 
-
 =cut
 
 sub length {
@@ -210,7 +210,6 @@ sub length {
 
    return $self->end - $self->start +1;
 }
-
 
 =head2 strand
 
@@ -220,7 +219,6 @@ sub length {
  Function: get/set on strand information, being 1,-1 or 0
  Returns : -1,1 or 0
  Args    : none
-
 
 =cut
 
@@ -233,8 +231,8 @@ sub strand {
        if ( $value eq '-' ) { $value = -1; }
        if ( $value eq '.' ) { $value = 0; }
 
-       if ( $value != -1 && $value != 1 && $value != 0 ) {
-	   $self->throw("$value is not a valid strand info");
+       if ( $value !~ /^-?[01]$/ ) {
+	   $self->throw("'$value' is not a valid strand");
        }
        $self->{'_gsf_strand'} = $value
    }
@@ -250,7 +248,6 @@ sub strand {
  Function: get/set on score information
  Returns : float
  Args    : none if get, the new value if set
-
 
 =cut
 
@@ -277,7 +274,6 @@ sub score {
  Returns : 0,1,2
  Args    : none if get, the new value if set
 
-
 =cut
 
 sub frame {
@@ -302,7 +298,6 @@ sub frame {
  Returns : An array
  Args    : none
 
-
 =cut
 
 sub sub_SeqFeature {
@@ -326,7 +321,6 @@ sub sub_SeqFeature {
            subFeature
  Returns : nothing
  Args    : An object which has the SeqFeatureI interface
-
 
 =cut
 
@@ -371,7 +365,6 @@ sub add_sub_SeqFeature{
  Returns : none
  Args    : none
 
-
 =cut
 
 sub flush_sub_SeqFeature {
@@ -379,7 +372,6 @@ sub flush_sub_SeqFeature {
 
    $self->{'_gsf_sub_array'} = []; # zap the array implicitly.
 }
-
 
 =head2 primary_tag
 
@@ -390,7 +382,6 @@ sub flush_sub_SeqFeature {
            eg 'exon'
  Returns : a string
  Args    : none
-
 
 =cut
 
@@ -412,7 +403,6 @@ sub primary_tag {
  Returns : a string
  Args    : none
 
-
 =cut
 
 sub source_tag {
@@ -433,7 +423,6 @@ sub source_tag {
            and FALSE otherwise.
  Args    : The name of a tag
 
-
 =cut
 
 sub has_tag {
@@ -449,7 +438,6 @@ sub has_tag {
  Returns : TRUE on success
  Args    : tag (string) and value (any scalar)
 
-
 =cut
 
 sub add_tag_value {
@@ -462,7 +450,6 @@ sub add_tag_value {
    push(@{$self->{'_gsf_tag_hash'}->{$tag}},$value);
 }
 
-
 =head2 each_tag_value
 
  Title   : each_tag_value
@@ -471,7 +458,6 @@ sub add_tag_value {
            under a particular tag.
  Returns : A list of scalars
  Args    : The name of the tag
-
 
 =cut
 
@@ -484,7 +470,6 @@ sub each_tag_value {
    return @{$self->{'_gsf_tag_hash'}->{$tag}};
 }
 
-
 =head2 all_tags
 
  Title   : all_tags
@@ -492,7 +477,6 @@ sub each_tag_value {
  Function: Get a list of all the tags in a feature
  Returns : An array of tag names
  Args    : none
-
 
 =cut
 
@@ -502,7 +486,6 @@ sub all_tags {
    return keys %{$self->{'_gsf_tag_hash'}};
 }
 
-
 =head2 remove_tag
 
  Title   : remove_tag
@@ -510,7 +493,6 @@ sub all_tags {
  Function: removes a tag from this feature
  Returns : nothing
  Args    : tag (string)
-
 
 =cut
 
@@ -534,7 +516,6 @@ sub remove_tag {
  Example :
  Returns :
  Args    :
-
 
 =cut
 
@@ -565,7 +546,6 @@ sub attach_seq {
  Returns :
  Args    :
 
-
 =cut
 
 sub seq {
@@ -583,7 +563,6 @@ sub seq {
    # the entire sequence out here.
 
    my $seq = $self->{'_gsf_seq'}->trunc($self->start(), $self->end());
-
 
    if ( $self->strand == -1 ) {
 
@@ -605,7 +584,6 @@ sub seq {
  Returns :
  Args    :
 
-
 =cut
 
 sub entire_seq {
@@ -613,7 +591,6 @@ sub entire_seq {
 
    return $self->{'_gsf_seq'};
 }
-
 
 =head2 seqname
 
@@ -629,7 +606,6 @@ sub entire_seq {
            feature was found.
  Returns : value of seqname
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -652,7 +628,6 @@ sub seqname {
  Example :
  Returns :
  Args    :
-
 
 =cut
 
@@ -681,7 +656,6 @@ sub slurp_gff_file {
  Example :
  Returns :
  Args    :
-
 
 =cut
 
@@ -726,7 +700,6 @@ sub _from_gff_string {
  Returns :
  Args    :
 
-
 =cut
 
 sub _parse {
@@ -734,6 +707,4 @@ sub _parse {
 
    return $self->{'_parse_h'};
 }
-
-
 

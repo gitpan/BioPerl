@@ -1,4 +1,3 @@
-
 #
 # BioPerl module for Bio::Annotation::Reference
 #
@@ -52,9 +51,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
-
 # Let the code begin...
-
 
 package Bio::Annotation::Reference;
 use vars qw(@ISA);
@@ -64,7 +61,6 @@ use strict;
 
 use Bio::Annotation::DBLink;
 
-
 @ISA = qw(Bio::Annotation::DBLink);
 # new() is inherited from Bio::Root::Object
 
@@ -73,7 +69,7 @@ use Bio::Annotation::DBLink;
 sub _initialize {
   my($self,@args) = @_;
 
-  my $make = $self->SUPER::_initialize;
+  my $make = $self->SUPER::_initialize(@args);
 
 # set stuff in self from @args
  return $make; # success - we hope!
@@ -87,7 +83,6 @@ sub _initialize {
  Example : 
  Returns : value of authors
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -109,7 +104,6 @@ sub authors{
  Returns : value of location
  Args    : newvalue (optional)
 
-
 =cut
 
 sub location{
@@ -129,7 +123,6 @@ sub location{
  Example : 
  Returns : value of title
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -151,7 +144,6 @@ sub title{
  Returns : value of medline
  Args    : newvalue (optional)
 
-
 =cut
 
 sub medline{
@@ -163,27 +155,6 @@ sub medline{
 
 }
 
-=head2 comment
-
- Title   : comment
- Usage   : $obj->comment($newval)
- Function: 
- Example : 
- Returns : value of comment
- Args    : newvalue (optional)
-
-
-=cut
-
-sub comment{
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'comment'} = $value;
-    }
-    return $obj->{'comment'};
-
-}
-
 =head2 database
 
  Title   : database
@@ -192,7 +163,6 @@ sub comment{
  Example :
  Returns : 
  Args    :
-
 
 =cut
 
@@ -211,15 +181,13 @@ sub database{
  Returns : 
  Args    :
 
-
 =cut
 
 sub primary_id{
-   my ($self) = @_;
+   my ($self, @args) = @_;
 
-   return $self->medline();
+   return $self->medline(@args);
 }
-
 
 =head2 start
 
@@ -229,7 +197,6 @@ sub primary_id{
  Example : 
  Returns : value of start
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -250,7 +217,6 @@ sub start{
  Returns : value of end
  Args    : newvalue (optional)
 
-
 =cut
 
 sub end{
@@ -266,12 +232,10 @@ sub end{
 
  Title   : rp
  Usage   : $self->rp($newval)
- Function: Gives the RP line. No attempt is made to parse this line, unless it indicates
-           start and end reference bases
+ Function: Gives the RP line. No attempt is made to parse this line.
  Example : 
  Returns : value of rp
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -284,15 +248,5 @@ sub rp{
 
 }
 
-
 1;
-
-
-
-
-
-
-
-
-
 

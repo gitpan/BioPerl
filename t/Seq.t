@@ -1,5 +1,5 @@
 ## Bioperl Test Harness Script for Modules
-## $Id: Seq.t,v 1.10 2000/03/20 17:24:23 birney Exp $
+## $Id: Seq.t,v 1.10.2.3 2000/09/01 11:57:25 birney Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -18,12 +18,13 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..9\n"; 
+BEGIN { $| = 1; print "1..11\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
 use lib '../';
 use Bio::Seq;
+use Bio::SeqFeature::Generic;
 
 $loaded = 1;
 print "ok 1\n";    # 1st test passes.
@@ -91,3 +92,21 @@ if( $seq->id() ne 'something' || $seq->accession_number ne 'accnum' ) {
   print "ok 9\n";
 }
 
+my $subseq = $seq->subseq(5, 9);
+
+if( $seq->subseq(5, 9) ne 'tggcg') {
+    print "not ok 10\n";
+    print "subseq(5,9) was ",$seq->subseq(5,9), " when I expected tggcg\n";
+} else {
+  print "ok 10\n";
+}
+
+my $newfeat = Bio::SeqFeature::Generic->new( -start => 10,
+					     -end => 12,
+						-primary => 'silly',
+						-source => 'stuff');
+
+
+$seq->add_SeqFeature($newfeat);
+
+print "ok 11\n";

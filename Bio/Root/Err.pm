@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Err.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 22 July 1996
-# REVISION: $Id: Err.pm,v 1.3 2000/03/15 11:23:20 jgrg Exp $
+# REVISION: $Id: Err.pm,v 1.3.2.2 2000/09/15 08:24:17 jgrg Exp $
 # STATUS  : Alpha
 # 
 # For documentation, run this module through pod2html 
@@ -39,7 +39,6 @@ $VERSION = 0.041;
 			       TECH=>1, STACK=>1 );
 
 @Bio::Root::Err::ERR_TYPES = qw(WARNING EXCEPTION FATAL);
-
 
 ## MAIN POD DOCUMENTATION:
 
@@ -140,11 +139,9 @@ A demo script that illustrates working with Bio::Root::Err objects is available 
 
     http://bio.perl.org/Core/Examples/Root_object/error.pl
 
-
 =head1 DEPENDENCIES
 
 Bio::Root::Err.pm inherits from B<Bio::Root::Object.pm> and B<Bio::Root::Vector.pm>.
-
 
 =head1 FEEDBACK
 
@@ -154,9 +151,9 @@ User feedback is an integral part of the evolution of this and other Bioperl mod
 Send your comments and suggestions preferably to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-    vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
-    vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
-    http://bio.perl.org/MailList.html             - About the mailing lists
+   bioperl-l@bioperl.org             - General discussion
+   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
+   http://bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -175,7 +172,6 @@ See the L<FEEDBACK> section for where to send bug reports and comments.
 =head1 VERSION
 
 Bio::Root::Err.pm, 0.041
-
 
 =head1 SEE ALSO
 
@@ -232,11 +228,9 @@ for documentation purposes only.
 
 =cut
 
-
 ########################################################
 #                CONSTRUCTOR                           #
 ########################################################
-
 
 =head2 _initialize
 
@@ -301,8 +295,6 @@ sub _initialize {
 ##                                  ACCESSORS                                      ##
 #####################################################################################
 
-
-
 =head2 _set_clone
 
  Usage     : n/a; internal method used by _initialize()
@@ -328,7 +320,6 @@ sub _set_clone {
     $self->{'_context'} = $obj->{'_context'};
 #    $self->clone_vector($obj);
 }
-
 
 =head2 _build_from_string
 
@@ -387,7 +378,6 @@ sub _build_from_string {
     $rebuilt;
 }
 
-
 =head2 _has_err
 
  Usage     : n/a; internal method called by _build_from_string()
@@ -421,7 +411,6 @@ sub _has_err {
     0;
 }
 
-
 =head2 _set_type
 
  Usage     : n/a; internal method
@@ -448,8 +437,6 @@ sub _set_type {
 
 #    print "type = $self->{'_type'} for $self";<STDIN>;
 }
-
-
 
 =head2 _set_list_data
 
@@ -497,7 +484,6 @@ sub _set_list_data {
     }
 }
 
-
 =head2 _set_context
 
  Usage     : n/a; internal method used by set().
@@ -536,8 +522,6 @@ sub _set_context {
 #    <STDIN>;
 }
 
-
-
 =head2 set
 
  Usage     : $err->set( $member, $data );
@@ -567,7 +551,6 @@ sub set {
     }
 }
 
-
 =head2 msg
 
  Usage     : $message = $err->msg;
@@ -579,11 +562,9 @@ See Also   : L<get>(), L<string>()
 
 =cut
 
-
 #-------
 sub msg   { my($self,$delimiter) = @_; $self->get('msg',$delimiter); }
 #-------
-
 
 =head2 type
 
@@ -599,7 +580,6 @@ See Also   : L<get>(), L<string>()
 #--------
 sub type { my($self,$delimiter) = @_; $self->get('type',$delimiter); }
 #--------
-
 
 =head2 note
 
@@ -617,7 +597,6 @@ See Also   : L<get>(), L<string>()
 sub note  { my($self,$delimiter) = @_; $self->get('note',$delimiter); }
 #---------
 
-
 =head2 tech
 
  Usage     : $tech = $err->tech;
@@ -633,8 +612,6 @@ See Also   : L<get>(), L<string>()
 #------------
 sub tech  { my($self,$delimiter) = @_; $self->get('tech',$delimiter); }
 #------------
-
-
 
 =head2 stack
 
@@ -652,8 +629,6 @@ See Also   : L<get>(), L<string>()
 sub stack { my($self,$delimiter) = @_; $self->get('stack',$delimiter); }
 #----------
 
-
-
 =head2 context
 
  Usage     : $context = $err->context;
@@ -669,8 +644,6 @@ See Also   : L<get>(), L<string>()
 #------------
 sub context { my($self,$delimiter) = @_; $self->get('context',$delimiter); }
 #------------
-
-
 
 =head2 get
 
@@ -715,8 +688,6 @@ sub get {
     wantarray ? @out : join('',@out);
 }
 
-
-
 =head2 _get_list_data
 
  Usage     : n/a; internal method used by get()
@@ -738,8 +709,6 @@ sub _get_list_data {
     return if !defined $self->{$member};
     join( $delimiter, @{$self->{$member}} );
 }
-
-
 
 =head2 get_all
 
@@ -791,7 +760,6 @@ sub get_all {
 ##                              INSTANCE METHODS                                   ##
 #####################################################################################
 
-
 =head2 _add_note
 
  Usage     : n/a; internal method called by _add_list_data()
@@ -835,7 +803,6 @@ sub _add_tech {
     }
 }
 
-
 =head2 _add_list_data
 
  Usage     : n/a; called by _set_list_data()
@@ -857,8 +824,6 @@ sub _add_list_data {
     }
 }
 
-
-
 =head2 print
 
  Usage     : $err->print;
@@ -879,7 +844,6 @@ sub print {
 #    print $OUT $self->string(%param); 
     print $self->string(%param); 
 }
-
 
 =head2 string
 
@@ -946,8 +910,6 @@ sub string {
     $out;
 }
 
-
-
 =head2 is_fatal
 
  Usage     : $err->is_fatal;
@@ -964,7 +926,6 @@ sub is_fatal { my $self = shift; $self->{'_type'} eq 'FATAL'; }
 #####################################################################################
 ##                                CLASS METHODS                                    ##
 #####################################################################################
-
 
 =head2 throw
 
@@ -984,7 +945,7 @@ sub is_fatal { my $self = shift; $self->{'_type'} eq 'FATAL'; }
            : This method is an alternative to Bio::Root::Object::throw()
            : and is not as well developed or documented as that method.
 
-See Also   : L<warning>(), B<Bio::Root::Object::throw()>, B<Bio::Root::Global::strictness()
+See Also   : L<warning>(), B<Bio::Root::Object::throw()>, B<Bio::Root::Global::strictness()>
 
 =cut
 
@@ -1012,7 +973,6 @@ sub throw {
 
     0;
 }
-
 
 =head2 warning
 
@@ -1062,7 +1022,6 @@ sub warning {
 
     0;
 }
-
 
 =head2 format_stack_entry
 
@@ -1134,7 +1093,6 @@ all or some of the following fields:
         
  _stack    List reference. Stack trace: list of "class::method(line number)" strings.
         
-
 
 =cut
 

@@ -1,4 +1,3 @@
-## $Id: pSW.pm,v 1.5 2000/03/15 11:23:21 jgrg Exp $
 
 #
 # BioPerl module for Bio::Tools::pSW
@@ -87,9 +86,9 @@ User feedback is an integral part of the evolution of this and other Bioperl mod
 Send your comments and suggestions preferably to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-    vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
-    vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
-    http://bio.perl.org/MailList.html             - About the mailing lists
+   bioperl-l@bioperl.org             - General discussion
+   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
+   http://bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -109,9 +108,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
-
 # Let the code begin...
-
 
 package Bio::Tools::pSW;
 use vars qw(@ISA);
@@ -120,7 +117,6 @@ no strict ( 'refs');
 
 use Bio::Tools::AlignFactory;
 use Bio::SimpleAlign;
-
 
 @ISA = qw(Bio::Tools::AlignFactory);
 
@@ -134,15 +130,12 @@ BEGIN {
     }
 }
 
-
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
 
 sub _initialize {
   my($self,@p) = @_;
-
-
 
   my($matrix,$gap,$ext) = $self->_rearrange([qw(MATRIX
 						GAP
@@ -176,7 +169,6 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
-
 =head2 pairwise_alignment
 
  Title   : pairwise_alignment
@@ -184,7 +176,6 @@ sub _initialize {
  Function: Makes a SimpleAlign object from two sequences
  Returns : A SimpleAlign object
  Args    :
-
 
 =cut
 
@@ -195,13 +186,12 @@ sub pairwise_alignment{
     $self->set_memory_and_report();
     # create engine objects 
 
-    $t1  = &Bio::Ext::Align::new_Sequence_from_strings($seq1->id(),$seq1->str());
-    $t2  = &Bio::Ext::Align::new_Sequence_from_strings($seq2->id(),$seq2->str());
+    $t1  = &Bio::Ext::Align::new_Sequence_from_strings($seq1->id(),$seq1->seq());
+    $t2  = &Bio::Ext::Align::new_Sequence_from_strings($seq2->id(),$seq2->seq());
     $aln = &Bio::Ext::Align::Align_Sequences_ProteinSmithWaterman($t1,$t2,$self->{'matrix'},-$self->gap,-$self->ext);
     if( ! defined $aln || $aln == 0 ) {
 	$self->throw("Unable to build an alignment");
     }
-
 
     # free sequence engine objects
 
@@ -212,8 +202,8 @@ sub pairwise_alignment{
 
     # we are going to need the sequences as arrays for convience
 
-    @str1 = $seq1->seq();
-    @str2 = $seq2->seq();
+    @str1 = split(//, $seq1->seq());
+    @str2 = split(//, $seq2->seq());
 
     # get out start points
 
@@ -262,17 +252,17 @@ sub pairwise_alignment{
 
     $tstr = join('',@ostr1);
     $tid = $seq1->id();
-    $out->addSeq(Bio::Seq->new( -seq=> $tstr,
-			       -start => $start1,
-			       -end   => $end1,
-			       -id=>$tid ));
+    $out->addSeq(Bio::LocatableSeq->new( -seq=> $tstr,
+					 -start => $start1,
+					 -end   => $end1,
+					 -id=>$tid ));
 
     $tstr = join('',@ostr2);
     $tid = $seq2->id();
-    $out->addSeq(Bio::Seq->new( -seq=> $tstr,
-			       -start => $start2,
-			       -end => $end2,
-			       -id=> $tid ));
+    $out->addSeq(Bio::LocatableSeq->new( -seq=> $tstr,
+					 -start => $start2,
+					 -end => $end2,
+					 -id=> $tid ));
 
     # give'm back the alignment
 
@@ -292,9 +282,9 @@ sub align_and_show {
 
     $self->set_memory_and_report();
 
-    $t1  = &Bio::Ext::Align::new_Sequence_from_strings($seq1->id(),$seq1->str());
+    $t1  = &Bio::Ext::Align::new_Sequence_from_strings($seq1->id(),$seq1->seq());
 
-    $t2  = &Bio::Ext::Align::new_Sequence_from_strings($seq2->id(),$seq2->str());
+    $t2  = &Bio::Ext::Align::new_Sequence_from_strings($seq2->id(),$seq2->seq());
     $aln = &Bio::Ext::Align::Align_Sequences_ProteinSmithWaterman($t1,$t2,$self->{'matrix'},-$self->gap,-$self->ext);
     if( ! defined $aln || $aln == 0 ) {
 	$self->throw("Unable to build an alignment");
@@ -334,8 +324,6 @@ sub matrix {
     $self->{'matrix'} = $temp;
 }
 
-
-
 =head2 gap
 
  Title     : gap
@@ -360,7 +348,6 @@ sub gap {
     }
     return $self->{'gap'};
 }
-
 
 =head2 ext
 

@@ -34,9 +34,9 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
-  vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+   bioperl-l@bioperl.org             - General discussion
+   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
+   http://bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -51,7 +51,6 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 
 Email: birney@sanger.ac.uk
        lstein@cshl.org
-
 
 =head1 APPENDIX
 
@@ -104,11 +103,20 @@ sub next_seq {
 sub next_primary_seq {
   my( $self, $as_next_seq ) = @_;
   local $/ = '>';
-  
+
   return unless my $entry = $self->_readline;
 
   if ($entry eq '>')  {  # very first one
-      return unless $entry = $self->_readline;
+    return unless $entry = $self->_readline;
+  }
+  my $next_rec = $entry;
+  while( $next_rec =~ /(^|.)>$/) {
+      # Jason applying HL's patch from 25/05/2000 
+      # (on 02/10/2000)
+      # a greater sign not preceded by a newline indicates that there is a
+      # '>' within the description, so we need more to complete the record
+      return unless defined($next_rec = $self->_readline());
+      $entry .= $next_rec;  
   }
 
   my ($top,$sequence) = $entry =~ /^(.+?)\n([^>]+)/s
@@ -142,7 +150,6 @@ sub next_primary_seq {
  Returns : 1 for success and 0 for error
  Args    : Bio::Seq object
 
-
 =cut
 
 sub write_seq {
@@ -150,9 +157,9 @@ sub write_seq {
    foreach my $seq (@seq) {
      my $str = $seq->seq;
      my $top = $seq->id();
-     if (my $desc = $seq->desc()) {
+     if ($seq->can('desc') and my $desc = $seq->desc()) {
 	 $desc =~ s/\n//g;
-	 $top .= " $desc";
+        $top .= " $desc";
      }
      $str=~ s/(.{1,60})/$1\n/g;
      $self->_print (">",$top,"\n",$str) or return;

@@ -1,4 +1,4 @@
-
+# $Id: RootI.pm,v 1.3.2.3 2000/09/15 08:24:18 jgrg Exp $
 #
 # BioPerl module for Bio::Root::RootI
 #
@@ -51,9 +51,7 @@ methods. Internal methods are usually preceded with a _
 
 =cut
 
-
 # Let the code begin...
-
 
 package Bio::Root::RootI;
 use vars qw(@ISA);
@@ -115,7 +113,6 @@ sub throw {
     } else {
 	$verbosity = 0;
     }
-
 
     if($verbosity < 0) {
 	# Low verbosity: no stack trace.
@@ -189,6 +186,32 @@ sub warn {
 	print STDERR $self->_set_warning(@param)->string(-SHOW=>'msgnotech', -CURRENT=>1);
     }
     0;
+}
+
+=head2 _set_warning
+
+ Purpose   : To record data regarding recoverable error conditions.
+ Usage     : n/a; called automatically by Bio::Root::Object::warn() 
+ Arguments : Arguments passed as-is to _set_err().
+ Comments  : An object with a warning should be considered 
+           : completely operational, so use this type of error sparingly. 
+           : These errors are intended for problem conditions which:
+           :  1. Don't destroy the basic functionality of the object.
+           :  2. Might be of incidental interest to the user.
+           :  3. Are of interest to the programmer but not the end user.
+
+See also   : L<warn>(), L<_set_err>(), L<err>()
+
+=cut
+
+#-----------------'
+sub _set_warning {  
+#-----------------
+    my( $self, @data ) = @_;  
+    
+    my $err = $self->_set_err(@data, -STACK_NUM=>4);
+    $err->last->set('type','WARNING');
+    $self->_set_err_state($err);
 }
 
 =head2 _set_err
@@ -348,7 +371,51 @@ sub _set_err {
     return $err;
 }
 
+=head2 _set_err_state
 
+ Usage     : n/a; called automatically by _set_err()
+ Purpose   : Sets the {'_errState'} data member to one of @Bio::Root::Err::ERR_TYPES.
+           : This method is called after setting a new error with _set_err().
+ Returns   : An Err.pm object (the current {'_err'} data member)
+ Argument  : An Err.pm object (the one jsut created by _set_err()).
+ Comments  : Modifications to state are permitted only if the object:
+           :   1. has only one error, OR
+           :   2. has multiple errors and none of those errors are fatal.
+           : This prevents an object from setting its state to warning
+           : if it already has a fatal error.
+           :
+           : The unfatal() method circumvents this method since the conditions
+           : under which unfatal() is called are different. _set_err_state() is
+           : only called when setting new errors.
+
+See also   : L<_set_err>(), L<_set_warning>() 
+
+=cut
+
+#--------------------
+sub _set_err_state {  
+#--------------------
+    my( $self, $err ) = @_;
+    my @state = ();
+    
+    require Bio::Root::Err; import Bio::Root::Err qw(:data);
+    
+    my $data = $err->type || 'EXCEPTION';
+
+    if($self->{'_errState'} and $self->{'_errState'} !~ /EXCEPTION|FATAL/) {
+	
+	my @err_types = @Bio::Root::Err::ERR_TYPES; # prevents warnings
+	if( @state = grep /$data/i, @Bio::Root::Err::ERR_TYPES ) {
+	    $self->{'_errState'} = $state[0];
+	} else {
+	    $self->{'_errState'} = 'UNKNOWN STATE';
+	}
+    }
+    #$DEBUG and do{ print STDERR "$ID: Setting state to $self->{'_errState'} (arg=$data)\n"; <STDIN>; };
+
+#    $self->{'_err'}->last;
+    return $err;
+}
 
 =head2 stack_trace
 
@@ -414,8 +481,6 @@ sub stack_trace {
     wantarray ? @data : \@data;
 }
 
-
-
 =head2 _rearrange
 
  Usage     : $object->_rearrange( array_ref, list_of_arguments)
@@ -478,9 +543,17 @@ sub _rearrange {
 #----------------
     my($self,$order,@param) = @_;
     
-    # If there are no parameters, we simply wish to return
-    # an empty array which is the size of the @{$order} array.
-    return ('') x $#{$order} unless @param;
+    # JGRG -- This is wrong, because we don't want
+    # to assign empty string to anything, and this
+    # code is actually returning an array 1 less
+    # than the length of @param:
+
+    ## If there are no parameters, we simply wish to return
+    ## an empty array which is the size of the @{$order} array.
+    #return ('') x $#{$order} unless @param;
+    
+    # ...all we need to do is return an empty array:
+    return unless @param;
     
     # If we've got parameters, we need to check to see whether
     # they are named or simply listed. If they are listed, we
@@ -525,8 +598,4 @@ sub _rearrange {
 }
 
 1;
-
-
-
-
 

@@ -1,4 +1,3 @@
-
 # WHEN IN DOUBT, ALWAYS CHECK THE FOLLOWING URL FOR THE NEWEST VERSION:
 # http://www.techfak.uni-bielefeld.de/bcd/Perl/Bio/welcome.html
 
@@ -8,7 +7,7 @@ use strict;
 use vars qw ($VERSION $Revision);
 
 $VERSION    = 1.010; # bio.perl.org Version;
-$Revision   = '$Id: UnivAln.pm,v 1.5 2000/03/15 11:23:20 jgrg Exp $';
+$Revision   = '$Id: UnivAln.pm,v 1.5.2.3 2000/10/02 15:20:59 jason Exp $';
 
 # Disclaimer from Georg Fuellen:
 # UnivAln is now under the CVS system. Georg Fuellen is currently 
@@ -182,7 +181,7 @@ error messages included in the file univaln.t2_expected_errors -- these are OK.
 
 If you wish that the module uses Don Gilbert's readseq package for sequence
 format conversion (Version 1 Feb 1993), you can set the environment variable 
-`READSEQ_DIR'" appropriately. (Currently, only ``fasta'' and ``raw'' format 
+`READSEQ_DIR'  appropriately. (Currently, only ``fasta'' and ``raw'' format 
 are supported directly by UnivAln.pm.) 
 Then, the program detects and uses `readseq' automatically, if it is in the
 specified directory (the default directory is ``./''). Modifying the
@@ -729,7 +728,6 @@ more efficiently in a PDL (Perl Data Language) array.
                     functions) should make the modification to the object
                     itself, and just return true on success. (See inplace().)
 
-
 Some more helpful comments...
 In Perl, false is 0 or "", true is everything else.
 Not all internal functions have a POD/HTML documentation.
@@ -788,7 +786,6 @@ Copyright (c) 1996, 1997, 1998 Georg Fuellen. All Rights Reserved.
 Some pieces of the code were contributed by Steven E. Brenner, 
 Richard Resnick and Chris Dagdigian. Thanks !!!!
 
-
 =head1 FEEDBACK
 
 =head2 Mailing Lists 
@@ -797,9 +794,9 @@ User feedback is an integral part of the evolution of this and other Bioperl mod
 Send your comments and suggestions preferably to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-    vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
-    vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
-    http://bio.perl.org/MailList.html             - About the mailing lists
+   bioperl-l@bioperl.org             - General discussion
+   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
+   http://bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -926,6 +923,7 @@ intended for internal use only: Use them only if you know what you're
 doing :-)
 
 =cut
+#'
 
 use Exporter;
 use vars qw( @ISA  @EXPORT @EXPORT_OK );
@@ -1095,7 +1093,6 @@ sub new {
   return $self;
 }
 
-
 =head2 _initialize()
 
  Usage    : n/a (internal function)
@@ -1142,7 +1139,7 @@ sub _initialize {
   $self->{descffmt} = $UnivAlnForm{"unknown"};
   $self->{inplace} = 0;
 
-  if (!defined(@p) || scalar(@p) == 0) {
+  if (!@p ) {
     return undef;
   }
     # some operations will not work on ``empty'' placeholder objects
@@ -1197,8 +1194,6 @@ sub _initialize {
 
   return 1;
 }
-
-
 
 =head2 _rearrange()
 
@@ -1346,7 +1341,6 @@ sub _rowbounds {
   #return $self->_rownorm($rowindices2);
 }
 
-
 =head2 _colbounds()
 
  Usage    : $corrected_bounds = $aln->_colbounds($uncorrected_bounds);
@@ -1432,7 +1426,6 @@ sub _colbounds {
   return $colindices2;
   #return $self->_colnorm($colindices2);
 }
-
 
     # normalize by substracting the first row index (offset)
 sub _rownorm {
@@ -1529,7 +1522,6 @@ sub _fixbounds {
 
 =cut
 
-
 sub _select {
   my $self = shift;
   my $array = $self->{'seqs'};
@@ -1573,7 +1565,6 @@ sub _arys {
   return $self->_select($rrowsel,$rcolsel);
 }
 
-
 # convert (array of references to arrays of characters) into (multiline string)
 sub _stringify_spaced {
   my ($seqref,$seqs);
@@ -1606,7 +1597,6 @@ sub _stringify {
   return $seqs;
 }
 
-
 =head2 _strs()
 
  Usage    : $alnSlice = $aln->_strs([$row1,$row2,$rowx],[col1,$col2,$colx])
@@ -1622,7 +1612,6 @@ sub _strs {
   my($self) = shift;
   return _stringify($self->_arys(@_));
 }
-
 
 =head2 seqs()
 
@@ -1720,7 +1709,6 @@ sub aln {
   return bless \%copy, ref($self);
 }
 
-
 =head2 _map_r()
 
  Usage    : n/a (internal function)
@@ -1750,7 +1738,6 @@ sub _map_r {
   } 
   return @results;
 }
-
 
 =head2 _map_c()
 
@@ -1804,7 +1791,6 @@ sub _map_c {
   }
   return @results;
 }
-
 
 =head2 map_r()
 
@@ -1861,7 +1847,6 @@ sub map_c {
 
   return $self->_map_c($colf,$rcolsel2);
 }
-
 
 # Using closures; The following functions are the templates.
 
@@ -2464,7 +2449,7 @@ sub _seqs {
                # by class ``UNIVERSAL'' to test whether
                # the object passed to us is usable, i.e. has methods ary(), etc
                    ##print "\nWriting sequence[$rrowsel2->[$counter] || $counter] ",$seq->ary;
-           $self->{'seqs'}[$index] = [ $seq->ary() ];
+           $self->{'seqs'}[$index] = [ split(//, $seq->seq()) ];
            $self->{'row_ids'}[$index] = $seq->id();
            $self->{'row_descs'}[$index] = $seq->desc();
         } else {
@@ -2491,9 +2476,6 @@ sub _seqs {
   return $oseqs;
 }
 
-
-
-
 =head2 id()
 
  Usage    : $aln_id = $aln->id();
@@ -2503,7 +2485,6 @@ sub _seqs {
  Argument : sequence string with no whitespace
 
 =cut
-
 
 sub id {
   my($self) = shift;
@@ -2521,7 +2502,6 @@ sub id {
   return $oid;
 }
 
-
 =head2 desc()
 
  Usage    : $aln_desc = $aln->desc();
@@ -2532,7 +2512,6 @@ sub id {
 
 =cut
 
-
 sub desc {
   my($self) = shift;
   my($ndesc) = @_;
@@ -2542,8 +2521,6 @@ sub desc {
 
   return $odesc;
 }
-
-
 
 =head2 names()
 
@@ -2576,7 +2553,6 @@ sub names {
 
   return $onames;
 }
-
 
 =head2 row_ids()
 
@@ -2681,7 +2657,6 @@ sub numbering {
   return $onumbering;
 }
 
-
 sub _type {
   my($self) = shift;
   my($ntype) = @_;
@@ -2702,7 +2677,6 @@ sub _type {
   return @{$otype};
 }
 
-
 sub samelength {
   my($self) = shift;
   my($ntype) = @_;
@@ -2712,7 +2686,6 @@ sub samelength {
 
   return $otype;
 }
-
 
 =head2 type()
 
@@ -2750,7 +2723,6 @@ sub type {
 
 =cut
 
-
 sub ffmt {
   my($self) = shift;
   my($nffmt) = @_;
@@ -2768,7 +2740,6 @@ sub ffmt {
   return $FormUnivAln[$offmt];  # return acronym, not number code
 }
 
-
 sub descffmt {
   my($self) = shift;
   my($ndescffmt) = @_;
@@ -2785,7 +2756,6 @@ sub descffmt {
 
   return $FormUnivAln[$odescffmt];  # return acronym, not number code
 }
-
 
 =head2 inplace()
 
@@ -2813,7 +2783,6 @@ sub inplace {
   return $oinplace;
 }
 
-
 =head2 width()
 
  Usage    : $width = $aln->width();
@@ -2834,7 +2803,6 @@ sub width {
   }
 }
 
-
 =head2 height()
 
  Usage    : $height = $aln->height();
@@ -2850,7 +2818,6 @@ sub height {
     return scalar( @{ $self->{'seqs'} });
   }
 }
-
 
 # Functions having to do with file formats, parsing,
 # formatting, and so on.
@@ -2900,7 +2867,6 @@ sub alphabet_check {
   @Bio::UnivAln::alph = @{$UnivAlnAlphs{$UnivAlnType{$self->type()}."Mg"}};
   return $self->map_r(\&_alphabet_check_array,$rrowsel);  
 }
-
 
 =head2 _file_read()
 
@@ -2970,7 +2936,6 @@ sub parse_bad {
   $self->_parse_bad(@_);
 }
 
-
 =head2 _parse()
 
  Usage    : $aln->_parse($ent,[$ffmt]);
@@ -2982,7 +2947,6 @@ sub parse_bad {
             Note that ``raw'' is not estimated in a reliable way by readseq
             if readseq is installed; I presume it is then estimated only if
             the sequence(s) are longer than 111 basepairs
-
 
 =cut
 
@@ -3011,7 +2975,6 @@ sub _parse {
 
   return 1;
 }
-
 
 =head2 _parse_unknown()
 
@@ -3052,8 +3015,6 @@ sub _parse_unknown {
 
   return 1;
 }
-
-
 
 =head2 _parse_bad()
 
@@ -3121,7 +3082,6 @@ sub _parse_clustal {
   return $msg;
 }
 
-
 =head2 _parse_raw()
 
  Usage    : $aln->_parse_raw;
@@ -3142,8 +3102,6 @@ sub _parse_raw {
 
   return 1;
 }
-
-
 
 =head2 _parse_fasta()
 
@@ -3191,7 +3149,6 @@ sub _parse_fasta {
 }
 
 # Functions having to do with file formats, and OUTPUT
-
 
 =head2 copy()
 
@@ -3257,8 +3214,6 @@ sub layout {
   }
 }
 
-
-
 =head2 out_bad()
 
  Usage    : $aln->out_bad;
@@ -3274,9 +3229,6 @@ sub out_bad {
   carp "Can't write alignment format $self->{\"ffmt\"}";
   return undef;
 }
-
-
-
 
 =head2 out_raw()
 
@@ -3345,7 +3297,6 @@ sub out_raw2 {
   return $seqs;
 }
 
-
 =head2 out_fasta()
 
  Usage    : $aln->out_fasta;
@@ -3413,7 +3364,6 @@ sub out_fasta {
   return $seqs;
 }
 
-
 sub catch {
   print "Caught internal error";
 }
@@ -3431,9 +3381,6 @@ sub col {
 
   return wantarray ? @col : _stringify(@col);
 }
-
-
-
 
 +increment version number + revision history
 diff t/univaln.t2 ~/Bcd/Perl/Bio/Bio/t/univaln.t

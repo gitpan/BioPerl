@@ -1,4 +1,5 @@
-
+#
+# $Id: Annotation.pm,v 1.5.2.2 2000/09/20 12:40:45 pvh Exp $
 #
 # BioPerl module for Bio::Annotation
 #
@@ -24,13 +25,12 @@ Bio::Annotation - A generic object for annotations
 
     foreach $comment ( $ann->each_Comment ) {
        # $comment is a Bio::Annotation::Comment object
-          print "Comment: ", $comment->text(), "\n"
-       }
+       print "Comment: ", $comment->text(), "\n";
     }
 
     foreach $link ( $ann->each_DBLink ) {
        # link is a Bio::Annotation::DBLink object
-       print "Link to ",$link->primary_id, " in database", $link->db "\n";
+       print "Link to ",$link->primary_id, " in database", $link->database "\n";
     }
 
     foreach $ref ( $ann->each_Reference ) {
@@ -70,10 +70,30 @@ It does not have the following abilities
        This should be a property of whatever database this
        object comes from
 
+=head1 FEEDBACK
 
-=head1 CONTACT
+=head2 Mailing Lists
 
-Mail birney@sanger.ac.uk with any queries
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
+
+  bioperl-l@bioperl.org          - General discussion
+  http://bio.perl.org/MailList.html             - About the mailing lists
+
+=head2 Reporting Bugs
+
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via email
+or the web:
+
+  bioperl-bugs@bio.perl.org
+  http://bio.perl.org/bioperl-bugs/
+
+
+=head1 AUTHOR - Ewan Birney 
+
+Email birney@ebi.ac.uk
 
 =head1 APPENDIX
 
@@ -166,7 +186,7 @@ sub gene_name{
 =head2 add_Reference
 
  Title   : add_Reference
- Usage   : $self->add_Reference($ref)
+ Usage   : $self->add_Reference($ref1[,$ref2,...])
  Function: adds a reference object
  Example :
  Returns : 
@@ -258,6 +278,9 @@ sub each_Comment{
 
 sub add_DBLink{
    my ($self,$com) = @_;
+   if( ! $com->isa('Bio::Annotation::DBLink') ) {
+       $self->throw("Is not a link object but a  [$com]");
+   }
    push(@{$self->{'link'}},$com);
 }
 

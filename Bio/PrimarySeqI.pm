@@ -1,4 +1,3 @@
-
 #
 # BioPerl module for Bio::PrimarySeqI
 #
@@ -42,9 +41,7 @@ Bio::PrimarySeqI - Interface definition for a Bio::PrimarySeq
 
     $trunc = $obj->trunc(12,50);
     
-    # $rev and $trunc are Bio::PrimaySeqI compliant objects
-
-
+    # $rev and $trunc are Bio::PrimarySeqI compliant objects
 
 =head1 DESCRIPTION
 
@@ -52,20 +49,19 @@ This object defines an abstract interface to basic sequence
 information. PrimarySeq is an object just for the sequence and its
 name(s), nothing more. Seq is the larger object complete with
 features. There is a pure perl implementation of this in
-Bio::PrimaySeq. If you just want to use Bio::PrimaySeq objects, then
+Bio::PrimarySeq. If you just want to use Bio::PrimarySeq objects, then
 please read that module first. This module defines the interface, and
 is of more interest to people who want to wrap their own Perl
 Objects/RDBs/FileSystems etc in way that they "are" bioperl sequence
 objects, even though it is not using Perl to store the sequence etc.
 
-
 This interface defines what bioperl consideres necessary to "be" a
 sequence, without providing an implementation of this. (An
-implementation is provided in Bio::PrimaySeq). If you want to provide
+implementation is provided in Bio::PrimarySeq). If you want to provide
 a Bio::PrimarySeq 'compliant' object which in fact wraps another
 object/database/out-of-perl experience, then this is the correct thing
 to wrap, generally by providing a wrapper class which would inheriet
-from your object and this Bio::PrimaySeqI interface. The wrapper class
+from your object and this Bio::PrimarySeqI interface. The wrapper class
 then would have methods lists in the "Implementation Specific
 Functions" which would provide these methods for your object.
 
@@ -78,9 +74,9 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
-  vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+   bioperl-l@bioperl.org             - General discussion
+   bioperl-guts-l@bioperl.org        - Automated bug and CVS messages
+   http://bioperl.org/MailList.shtml - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -103,9 +99,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
-
 # Let the code begin...
-
 
 package Bio::PrimarySeqI;
 use vars qw(@ISA);
@@ -130,7 +124,7 @@ define.
            but implementations are suggested to keep an open mind about
            case (some users... want mixed case!)
  Returns : A scalar
-
+ Status  : Virtual
 
 =cut
 
@@ -156,7 +150,7 @@ sub seq {
 
  Returns : a string
  Args    :
-
+ Status  : Virtual
 
 =cut
 
@@ -192,7 +186,7 @@ sub subseq{
            legacy/convience issues
  Returns : A string
  Args    : None
-
+ Status  : Virtual
 
 =cut
 
@@ -206,7 +200,6 @@ sub display_id {
    }
 
 }
-
 
 =head2 accession_number
 
@@ -223,7 +216,7 @@ sub display_id {
            "unknown".
  Returns : A string
  Args    : None
-
+ Status  : Virtual
 
 =cut
 
@@ -231,14 +224,12 @@ sub accession_number {
    my ($self,@args) = @_;
 
    if( $self->can('throw') ) {
-       $self->throw("Bio::PrimarySeqI definition of seq - implementing class did not provide this method");
+       $self->throw("Bio::PrimarySeqI definition of accession number - implementing class did not provide this method");
    } else {
-       confess("Bio::PrimarySeqI definition of seq - implementing class did not provide this method");
+       confess("Bio::PrimarySeqI definition of accession number - implementing class did not provide this method");
    }
 
 }
-
-
 
 =head2 primary_id
 
@@ -253,7 +244,7 @@ sub accession_number {
            a stringified memory location.
  Returns : A string
  Args    : None
-
+ Status  : Virtual
 
 =cut
 
@@ -267,7 +258,6 @@ sub primary_id {
    }
 
 }
-
 
 =head2 can_call_new
 
@@ -289,7 +279,6 @@ sub primary_id {
  Example :
  Returns : 1 or 0
  Args    :
-
 
 =cut
 
@@ -315,7 +304,7 @@ sub can_call_new{
            make a call of the type - if there is no type specified it
            has to guess.
  Args    : none
-
+ Status  : Virtual
 
 =cut
 
@@ -327,7 +316,6 @@ sub moltype{
    } else {
        confess("Bio::PrimarySeqI definition of seq - implementing class did not provide this method");
    }
-
 
 }
 
@@ -368,7 +356,6 @@ framework), they are encouraged to override these methods
 
  Returns : A new (fresh) Bio::PrimarySeqI object
  Args    : none
-
 
 =cut
 
@@ -445,7 +432,6 @@ sub revcom{
  Returns : a fresh Bio::PrimarySeqI implementing object
  Args    :
 
-
 =cut
 
 sub trunc{
@@ -484,11 +470,9 @@ sub trunc{
 			    '-moltype' => $self->moltype
 			    );
    }
-   
 
    return $out;
 }
-
 
 =head2 translate
 
@@ -502,22 +486,27 @@ sub trunc{
            The resulting translation is identical to EMBL/TREMBL database 
            translations.
 
+           Note: if you set $dna_seq_obj->verbose(1) you will get
+           a warning if the first codon is not a valid initator.
+
  Returns : A Bio::PrimarySeqI implementing object
  Args    : character for terminator (optional) defaults to '*'
            character for unknown amino acid (optional) defaults to 'X'
            frame (optional) valid values 0, 1, 3, defaults to 0
            codon table id (optional) defaults to 1
+           Final argument set to 1 means do not edit amino terminal codon
+
+         Ok. We screwed up here. The main trunk is now ahead of this with
+         a cleaner interface EB.
 
 =cut
 
-
 sub translate {
   my($self) = shift;
-  my($stop, $unknown, $frame, $tableid) = @_;
+  my($stop, $unknown, $frame, $tableid,$no_amino_edit) = @_;
   my($i, $len, $output) = (0,0,'');
   my($codon)   = "";
   my $aa;
-
 
   ## User can pass in symbol for stop and unknown codons
   unless(defined($stop) and $stop ne '')    { $stop = "*"; }
@@ -561,6 +550,15 @@ sub translate {
       chop $output;
   }
 
+  # if the initiator codon is not ATG, the amino acid needs to changed into M
+  # checking to see whether the person really wanted to do this or not.
+  if ( !defined $no_amino_edit && substr($output,0,1) ne 'M' ) {
+      if ($codonTable->is_start_codon(substr($seq, 0, 3)) ) {
+	  $output = 'M'. substr($output,1);
+      } else {
+	  $self->warn('Not using a valid initiator codon!') if $self->verbose;
+      }      
+  }
 
   my($out,$id);
   $id = $self->id();
@@ -584,7 +582,6 @@ sub translate {
 
 }
 
-
 =head2 translate_old
 
  Title   : translate_old
@@ -600,7 +597,6 @@ sub translate {
  HL: delete this method when confident that the new translate works!
 
 =cut
-
 
 sub translate_old {
   my($self) = shift;
@@ -680,7 +676,6 @@ sub translate_old {
 
 }
 
-
 =head2 id
 
  Title   : id
@@ -689,7 +684,6 @@ sub translate_old {
  Example :
  Returns : 
  Args    :
-
 
 =cut
 
@@ -705,16 +699,20 @@ sub  id {
  Usage   : $len = $seq->length()
  Function:
  Example :
- Returns : 
+ Returns : integer representing the length of the sequence.
  Args    :
-
+ Status  : Virtual
 
 =cut
 
 sub  length {
    my ($self)= @_;
 
-   return CORE::length($self->seq());
+   if( $self->can('throw') ) {
+       $self->throw("Bio::PrimarySeqI definition of length - implementing class did not provide this method");
+   } else {
+       confess("Bio::PrimarySeqI definition of length - implementing class did not provide this method");
+   }
 }
 
 =head1 Methods for Backward Compatibility
@@ -733,7 +731,6 @@ the old system.
  Example :
  Returns : 
  Args    :
-
 
 =cut
 
@@ -759,7 +756,6 @@ sub str{
  Example :
  Returns : 
  Args    :
-
 
 =cut
 
@@ -789,7 +785,6 @@ sub ary{
  Returns : 
  Args    :
 
-
 =cut
 
 sub getseq{
@@ -811,7 +806,6 @@ sub getseq{
  Returns : 
  Args    :
 
-
 =cut
 
 sub setseq {
@@ -832,7 +826,6 @@ sub setseq {
  Example :
  Returns :
  Args    :
-
 
 =cut
 
@@ -858,7 +851,6 @@ sub type{
  Example :
  Returns : 
  Args    :
-
 
 =cut
 
@@ -914,13 +906,13 @@ sub GCG_checksum {
     my $checksum = 0;
     my $char;
 
-
     $seq = $self->seq();
+    $seq =~ s/[\.\-]//g;
     $seq =~ tr/a-z/A-Z/;
 
-    foreach $char ( split(/[\.\-]*/, $seq)) {
+    foreach $char ( split(//, $seq)) {
 	$index++;
-	$checksum += ($index * (unpack("c",$char)));
+	$checksum += ($index * (unpack("c",$char) || 0) );
 	if( $index ==  57 ) {
 	    $index = 0;
 	}
@@ -943,21 +935,20 @@ need to implement these functions
  Returns : 
  Args    :
 
-
 =cut
 
 sub _attempt_to_load_Seq{
    my ($self) = @_;
 
-   if( $main::{'Bio::PrimaySeq'} ) {
+   if( $main::{'Bio::PrimarySeq'} ) {
        return 1;
    } else {
        eval {
-	   require "Bio::PrimaySeq";
+	   require Bio::PrimarySeq;
        };
        if( $@ ) {
 	   if( $self->can('throw') ) {
-	       $self->throw("Bio::PrimaySeq could not be loaded for $self\nThis indicates that you are usnig Bio::PrimarySeqI without Bio::PrimarySeq loaded and without providing a complete solution\nThe most likely problem is that there has been a misconfiguration of the bioperl environment\nActual exception\n\n$@\n");
+	       $self->throw("Bio::PrimarySeq could not be loaded for $self\nThis indicates that you are using Bio::PrimarySeqI without Bio::PrimarySeq loaded and without providing a complete solution\nThe most likely problem is that there has been a misconfiguration of the bioperl environment\nActual exception\n\n$@\n");
 	   } else {
 	       confess("Bio::PrimarySeq could not be loaded for $self\nThis indicates that you are usnig Bio::PrimarySeqI without Bio::PrimarySeq loaded and without providing a complete solution\nThe most likely problem is that there has been a misconfiguration of the bioperl environment\nActual exception\n\n$@\n");
 	   }
@@ -968,9 +959,5 @@ sub _attempt_to_load_Seq{
    
 }
 
-
-
-
 1;
-
 

@@ -47,7 +47,7 @@ So, in summary:
   print join(', ', $range->union($r2), "\n";
   print join(', ', $range->intersection($r2), "\n";
   print $range->overlaps($r2), "\n";
-  print $range->contains($r2), "
+  print $range->contains($r2), "\n";
 
 =head1 FEEDBACK
 
@@ -230,7 +230,7 @@ sub length {
 
 sub toString {
   my $self = shift;
-  return  "(" . $self->start() . "," . $self->end() . ")";
+  return  "(${\$self->start}, ${\$self->end}) strand=${\$self->strand}";
 }
 
 =head1 Boolean Methods
