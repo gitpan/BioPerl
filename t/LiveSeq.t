@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: LiveSeq.t,v 1.8.2.1 2001/04/03 15:22:38 heikki Exp $
+## $Id: LiveSeq.t,v 1.14 2002/01/08 01:20:46 jason Exp $
 # Created: Thu Dec 14 13:57:04 GMT 2000
 # By Joseph A.L. Insana, <insana@ebi.ac.uk>
 #
@@ -8,6 +8,8 @@
 # `make test'. After `make install' it should work as `perl test.t'
 
 use strict;
+use vars qw($NUMTESTS);
+my $error;
 BEGIN {     
     # to handle systems with no installed Test module
     # we include the t dir (where a copy of Test.pm is located)
@@ -17,26 +19,40 @@ BEGIN {
 	use lib 't';
     }
     use Test;
-    plan tests => 48; 
+    $NUMTESTS = 48;
+    plan tests => $NUMTESTS;
+    $error = 0;
+    eval { require 'IO/String.pm' };
+    if( $@ ) {
+	print STDERR "IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping tests.\n";
+	for( 1..$NUMTESTS ) {
+	    skip("IO::String not installed",1);
+	}
+	$error = 1; 
+    }
 }
 
-use Bio::LiveSeq::IO::BioPerl;
-use Bio::Root::IO;
+if( $error ==  1 ) {
+    exit(0);
+}
+
+require Bio::LiveSeq::IO::BioPerl;
+require Bio::Root::IO;
 
 ok(1);
 
 my $loader=Bio::LiveSeq::IO::BioPerl->load(-db=>"EMBL", 
-					   -file=>Bio::Root::IO->catfile("t","factor7.embl"));
+					   -file=>Bio::Root::IO->catfile("t","data","factor7.embl"));
 ok $loader;
 my $gene=$loader->gene2liveseq(-gene_name => "factor7");
 ok $gene;
 ok ref($gene), "Bio::LiveSeq::Gene";
 ok $gene->name, "factor7";
-ok $gene->get_DNA->moltype, "dna";
+ok $gene->get_DNA->alphabet, "dna";
 ok $gene->get_DNA->display_id, "HSCFVII";
 ok $gene->get_DNA->accession_number, "J02933";
 ok $gene, $gene->get_DNA->gene;
-ok $gene->get_DNA->description, "Human blood coagulation factor VII gene, complete cds.";
+ok $gene->get_DNA->desc, "Human blood coagulation factor VII gene, complete cds.";
 ok $gene->get_DNA->source, "Homo sapiens";
 ok $gene->get_DNA->start, 1;
 ok $gene->get_DNA->end, 12850;
@@ -50,10 +66,10 @@ my @exons   = @{$gene->get_Exons};
 my @introns = @{$gene->get_Introns};
 ok scalar(@exons), 9;
 ok scalar(@introns), 8;
-ok $introns[4]->description, "Intron D";
+ok $introns[4]->desc, "Intron D";
 ok $introns[4]->start, 6592;
 ok $introns[4]->end, 8306;
-ok $exons[1]->description, "optional";
+ok $exons[1]->desc, "optional";
 ok $exons[4]->end, 6591;
 
 my $transcript  = $gene->get_Transcripts->[0];

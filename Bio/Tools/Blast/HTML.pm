@@ -1,10 +1,10 @@
 #-------------------------------------------------------------------------------
 # PACKAGE : Bio::Tools::Blast::HTML.pm
 # PURPOSE : To encapsulate code for HTML formatting BLAST reports.
-# AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
+# AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 28 Apr 1998
 # STATUS  : Alpha
-# REVISION: $Id: HTML.pm,v 1.8.2.1 2001/03/03 08:28:59 heikki Exp $
+# REVISION: $Id: HTML.pm,v 1.11 2002/01/25 09:06:32 sac Exp $
 # 
 # For the latest version and documentation, visit the distribution site:
 #    http://bio.perl.org/Projects/Blast/
@@ -18,7 +18,7 @@
 #   modify the regexps in _markup_report() to accomodate the format of
 #   your reports.
 #
-# Copyright (c) 1996-98 Steve A. Chervitz. All Rights Reserved.
+# Copyright (c) 1996-98 Steve Chervitz. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
 #           modify it under the same terms as Perl itself.
 #-------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ use vars qw( @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS
 %EXPORT_TAGS = ( std => [qw(&get_html_func  &strip_html)] );
 
 $ID = 'Bio::Tools::Blast::HTML';
-$Revision = '$Id: HTML.pm,v 1.8.2.1 2001/03/03 08:28:59 heikki Exp $';  #'
+$Revision = '$Id: HTML.pm,v 1.11 2002/01/25 09:06:32 sac Exp $';  #'
 
 my $_set_markup = 0;
 my $_gi_link = '';
@@ -63,7 +63,7 @@ formatting Blast reports
 
     # Now as each line of the report is read, pass it to &$func($line).
 
-See L<get_html_func>() for details.
+See L<get_html_func()|get_html_func> for details.
 Also see B<Bio::Tools::Blast::to_html> for an example of usage.
 
 
@@ -73,7 +73,7 @@ Also see B<Bio::Tools::Blast::to_html> for an example of usage.
 
     &strip_html(\$blast_report_string)
 
-See L<strip_html>() for details.
+See L<strip_html()|strip_html> for details.
 
 
 =head1 INSTALLATION
@@ -105,7 +105,7 @@ links in the Blast report to specific databases.
 The greatest dependency comes from the dynamic state of the web. URLs
 are are likely to change in the future, so all links cannot be
 guaranteed to work indefinitely.  Feel free to report broken or
-incorrect database links (L<FEEDBACK>). Thanks!
+incorrect database links (L<FEEDBACK | FEEDBACK>). Thanks!
 
 =head1 SEE ALSO
 
@@ -138,11 +138,11 @@ via email or the web:
 
 =head1 AUTHOR
 
-Steve A. Chervitz, sac@genome.stanford.edu
+Steve Chervitz, E<lt>sac@bioperl.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright (c) 1998-2000 Steve A. Chervitz. All Rights Reserved.
+Copyright (c) 1998-2000 Steve Chervitz. All Rights Reserved.
 This module is free software; you can redistribute it and/or 
 modify it under the same terms as Perl itself.
 
@@ -319,7 +319,7 @@ sub get_html_func {
  Returns   : n/a
  Comments  : These items need be set only once. 
 
-See Also   : L<get_html_func>()
+See Also   : L<get_html_func()|get_html_func>
 
 =cut
 
@@ -349,7 +349,7 @@ sub _set_markup_data {
            : understandable terms. At present, it only recognizes
            : databases used locally at SGD. 
 
-See Also   : L<get_html_func>()
+See Also   : L<get_html_func()|get_html_func>
 
 =cut
 
@@ -425,7 +425,7 @@ sub _markup_database {
            : Some links may fail as a result of the dynamic nature of the web.
            : Hypertext links are not added to hits without database ids.
 
-See Also   : L<get_html_func>(), B<Bio::Tools::WWW.pm>, L<strip_html>()
+See Also   : L<get_html_func()|get_html_func>, B<Bio::Tools::WWW.pm>, L<strip_html>()
 
 =cut
 
@@ -611,7 +611,7 @@ sub _markup_report {
  Purpose   : Get a special alert for BLAST reports against all of GenBank/EMBL.
  Returns   : string with HTML
 
-See Also   : L<get_html_func>()
+See Also   : L<get_html_func()|get_html_func>
 
 =cut
 
@@ -655,7 +655,7 @@ QQ_REF_QQ
  Purpose   : Get a special alert for BLAST reports against all of GenBank/EMBL.
  Returns   : string with HTML
 
-See Also   : L<get_html_func>()
+See Also   : L<get_html_func()|get_html_func>
 
 =cut
 

@@ -1,4 +1,4 @@
-# $Id: flat.pm,v 1.6.2.3 2001/06/21 15:36:06 heikki Exp $
+# $Id: flat.pm,v 1.11 2001/10/22 08:22:57 heikki Exp $
 # BioPerl module for Bio::Variation::IO::flat
 #
 # Cared for by Heikki Lehvaslaiho <Heikki@ebi.ac.uk>
@@ -70,7 +70,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Variation::IO::flat;
-my $version=1.0;
+my $VERSION=1.0;
 use vars qw(@ISA);
 use strict;
 
@@ -117,20 +117,20 @@ sub next {
 
     $entry =~ /\s*ID\s+\S+/ || $self->throw("We do need an ID!");
 
-    my ($id, $offset, $moltype) = $entry =~ /\s*ID +([^:]+)..(\d+)[^\)]*.\[?([cg])?/
+    my ($id, $offset, $alphabet) = $entry =~ /\s*ID +([^:]+)..(\d+)[^\)]*.\[?([cg])?/
 	or $self->throw("Can't parse ID line");
 #    $self->throw("$1|$2|$3");
     my $h =Bio::Variation::SeqDiff->new(-id         => $id,
-					  -offset     => $offset,
+					-offset     => $offset,
 					  );
-    if ($moltype) { 
-	if ($moltype eq 'g') {
-	    $moltype = 'dna';
+    if ($alphabet) { 
+	if ($alphabet eq 'g') {
+	    $alphabet = 'dna';
 	} 
-	elsif ($moltype eq 'c') {
-	    $moltype = 'rna';
+	elsif ($alphabet eq 'c') {
+	    $alphabet = 'rna';
 	}
-	$h->moltype($moltype);
+	$h->alphabet($alphabet);
     }
     #
     # DNA 
@@ -456,7 +456,7 @@ sub write {
 			     $text .= $mut->start;
 			 }
 
-			 if ($h->moltype && $h->moltype eq 'dna') {
+			 if ($h->alphabet && $h->alphabet eq 'dna') {
 			     $tmp = $mut->start + $h->offset;
 			     $tmp-- if $tmp <= 0;
 			     $mut->start < 1 && $tmp++; 
@@ -569,7 +569,7 @@ sub write {
 			     $text .= $mut->start;
 			 }
 
-			 if ($h->moltype && $h->moltype eq 'rna') {
+			 if ($h->alphabet && $h->alphabet eq 'rna') {
 			     $tmp = $mut->start + $h->offset;
 			     $tmp-- if $tmp <= 0;
 			     #$mut->start < 1 && $tmp++;			     

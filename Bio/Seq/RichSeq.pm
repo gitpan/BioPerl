@@ -1,4 +1,4 @@
-# $Id: RichSeq.pm,v 1.5.2.1 2001/06/01 20:32:15 jason Exp $
+# $Id: RichSeq.pm,v 1.7 2001/06/29 20:43:51 jason Exp $
 #
 # BioPerl module for Bio::Seq::RichSeq
 #
@@ -95,10 +95,47 @@ sub new {
     # standard new call..
     my($caller,@args) = @_;
     my $self = $caller->SUPER::new(@args);
-
-    $self->{'_date'} = [];
+    
+    $self->{'_dates'} = [];
     $self->{'_secondary_accession'} = [];
 
+    my ($dates, $xtra, $sv,
+	$keywords, $pid, $mol, 
+	$division ) = $self->_rearrange([qw(DATES 
+					   SECONDARY_ACCESSIONS
+					   SEQ_VERSION 
+					   KEYWORDS
+					   PID
+					   MOLECULE
+					   DIVISION
+					   )],
+				   @args);
+    defined $division && $self->division($division);
+    defined $mol && $self->molecule($mol);
+    defined $keywords && $self->keywords($keywords);
+    defined $sv && $self->seq_version($sv);
+    defined $pid && $self->pid($pid);
+
+    if( defined $dates ) {
+	if( ref($dates) =~ /array/i ) {
+	    foreach ( @$dates) {
+		$self->add_date($_);
+	    } 
+	} else { 
+	    $self->add_date($dates);
+	}
+    }
+
+    if( defined $xtra ) {
+	if( ref($xtra) =~ /array/i ) {
+	    foreach ( @$xtra) {
+		$self->add_secondary_accession($_);
+	    } 
+	} else { 
+	    $self->add_secondary_accession($xtra);
+	}
+    }
+    
     return $self;
 }
 
@@ -158,9 +195,9 @@ sub molecule {
 =cut
 
 sub add_date {
-   my ($self) = shift;
-   foreach my $dt ( @_ ) {
-       push(@{$self->{'_date'}},$dt);
+   my ($self,@dates) = @_;
+   foreach my $dt ( @dates ) {
+       push(@{$self->{'_dates'}},$dt);
    }
 }
 
@@ -177,9 +214,8 @@ sub add_date {
 =cut
 
 sub get_dates{
-   my ($self,@args) = @_;
-   return @{$self->{'_date'}}; 
-
+   my ($self) = @_;
+   return @{$self->{'_dates'}}; 
 }
 
 

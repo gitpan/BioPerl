@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-##$Id: OddCodes.t,v 1.4 2001/03/01 11:23:22 lapp Exp $
+##$Id: OddCodes.t,v 1.5 2001/10/22 08:22:58 heikki Exp $
 
 use strict;
 
@@ -23,7 +23,7 @@ ok 1;
 my ($seqobj, $oddcode_obj);
 
 $seqobj = Bio::PrimarySeq->new('-seq'=>'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-			       '-moltype'=>'protein', 
+			       '-alphabet'=>'protein', 
 			       '-id'=>'test');
 $oddcode_obj  =  Bio::Tools::OddCodes->new('-seq' => $seqobj);
 

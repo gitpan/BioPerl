@@ -1,4 +1,4 @@
-# $Id: stockholm.pm,v 1.5.2.1 2001/05/25 12:32:25 heikki Exp $
+# $Id: stockholm.pm,v 1.8 2002/02/13 15:32:54 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::stockholm
 
@@ -83,7 +83,7 @@ sub next_aln {
     # Of particular interest are the '#=GF <name/st-ed> AC <accession>'
     # lines, which give accession numbers for each segment
 
-    my $aln =  Bio::SimpleAlign->new();
+    my $aln =  Bio::SimpleAlign->new(-source => 'stockholm');
 
     while( defined($entry = $self->_readline) ) {
         $entry !~ /\w+/ && next;
@@ -139,7 +139,7 @@ sub next_aln {
 
 			    );
 
-       $aln->addSeq($seq);
+       $aln->add_seq($seq);
 
    }
 

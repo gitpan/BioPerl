@@ -55,8 +55,9 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::Annotation::DBLink;
+use Bio::AnnotationI;
 
-@ISA = qw(Bio::Annotation::DBLink);
+@ISA = qw(Bio::AnnotationI Bio::Annotation::DBLink);
 
 =head2 new
 
@@ -97,6 +98,66 @@ sub new{
 
     return $self;
 }
+
+
+=head2 AnnotationI implementing functions
+
+=cut
+
+=head2 as_text
+
+ Title   : as_text
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub as_text{
+   my ($self) = @_;
+
+   # this could get out of hand!
+   return "Reference: ".$self->title;
+}
+
+
+=head2 hash_tree
+
+ Title   : hash_tree
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub hash_tree{
+   my ($self) = @_;
+   
+   my $h = {};
+   $h->{'title'}   = $self->title;
+   $h->{'authors'} = $self->authors;
+   $h->{'location'} = $self->location;
+   if( defined $self->start ) {
+       $h->{'start'}   = $self->start;
+   }
+   if( defined $self->end ) {
+       $h->{'end'} = $self->end;
+   }
+   $h->{'medline'} = $self->medline;
+
+   return $h;
+}
+
+=head2 Specific accessors for References
+
+=cut
+
 
 =head2 start
 
@@ -318,7 +379,69 @@ sub optional_id{
    return $self->pubmed(@args);
 }
 
+=head2 publisher
+
+ Title   : publisher
+ Usage   : $self->publisher($newval)
+ Function: Gives the publisher line. No attempt is made to parse the publisher line
+ Example : 
+ Returns : value of publisher
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub publisher {
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'publisher'} = $value;
+   }
+   return $self->{'publisher'};
+}
+
+
+=head2 editors
+
+ Title   : editors
+ Usage   : $self->editors($newval)
+ Function: Gives the editors line. No attempt is made to parse the editors line
+ Example : 
+ Returns : value of editors
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub editors {
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'editors'} = $value;
+   }
+   return $self->{'editors'};
+}
+
+
+=head2 encoded_ref
+
+ Title   : encoded_ref
+ Usage   : $self->encoded_ref($newval)
+ Function: Gives the encoded_ref line. No attempt is made to parse the encoded_ref line
+ 	(this is added for reading PDB records (REFN record), where this contains
+	 ISBN/ISSN/ASTM code)
+ Example : 
+ Returns : value of encoded_ref
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub encoded_ref {
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'encoded_ref'} = $value;
+   }
+   return $self->{'encoded_ref'};
+}
+
 
 1;
-
-

@@ -3,8 +3,8 @@
 #---------------------------------------------------------
 # PROGRAM  : utilities.pl
 # PURPOSE  : A minimal demo script for the Bio::Root::Utilities.pm module.
-# AUTHOR   : Steve A. Chervitz (sac@genome.stanford.edu)
-# REVISION : $Id: utilities.pl,v 1.2 1999/02/27 12:28:10 sac Exp $
+# AUTHOR   : Steve Chervitz (sac@bioperl.org)
+# REVISION : $Id: utilities.pl,v 1.3 2002/01/11 08:05:40 sac Exp $
 #
 # Installation: 
 #   Edit the use lib line to point at your Bioperl lib

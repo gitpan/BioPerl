@@ -4,9 +4,9 @@
 # PROGRAM : html.pl
 # PURPOSE : To produce HTML-formated version of report using the 
 #           Bio::Tools::Blast.pm module.
-# AUTHOR  : Steve A. Chervitz
+# AUTHOR  : Steve Chervitz
 # CREATED : 14 Apr 1998
-# REVISION: $Id: html.pl,v 1.2 1999/02/27 12:28:04 sac Exp $
+# REVISION: $Id: html.pl,v 1.3 2002/01/11 08:05:38 sac Exp $
 # WEBSITE : http://bio.perl.org/Projects/Blast/
 # USAGE   : html.pl -h
 # EXAMPLES: html.pl -eg

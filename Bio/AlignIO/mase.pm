@@ -1,4 +1,4 @@
-# $Id: mase.pm,v 1.4.2.1 2001/05/25 10:07:13 heikki Exp $
+# $Id: mase.pm,v 1.7 2002/02/13 15:32:54 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::mase
 
@@ -83,7 +83,7 @@ sub next_aln {
     my $count = 0;
     my $seq_residues;
 
-    my $aln =  Bio::SimpleAlign->new();
+    my $aln =  Bio::SimpleAlign->new(-source => 'mase');
 
 
     while( $entry = $self->_readline) {
@@ -120,7 +120,7 @@ sub next_aln {
 			    );
 
 
-       $aln->addSeq($add);
+       $aln->add_seq($add);
 
 
 #  If $end <= 0, we have either reached the end of

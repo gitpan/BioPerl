@@ -3,9 +3,9 @@
 #---------------------------------------------------------------------------
 # PROGRAM : parse_blast.pl
 # PURPOSE : To demonstrate parsing features of the Bio::Tools::Blast.pm module.
-# AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
+# AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 3 Feb 1998
-# REVISION: $Id: parse_blast.pl,v 1.8 2000/03/22 10:20:11 sac Exp $
+# REVISION: $Id: parse_blast.pl,v 1.9 2002/01/11 08:05:38 sac Exp $
 # WEBSITE : http://bio.perl.org/Projects/Blast/
 # USAGE   : parse_blast.pl -h
 # EXAMPLES: parse_blast.pl -eg

@@ -16,9 +16,9 @@ BEGIN {
 # LIBRARY      : blast_config.pl
 # PURPOSE      : To provide a set of standard functions & command-line options 
 #                processing for working with Bio::Tools::Blast.pm objects.
-# AUTHOR       : Steve A. Chervitz (sac@genome.stanford.edu)
+# AUTHOR       : Steve Chervitz (sac@bioperl.org)
 # CREATED      : 15 May 1998
-# REVISION     : $Id: blast_config.pl,v 1.7.2.1 2001/05/30 21:31:26 sac Exp $
+# REVISION     : $Id: blast_config.pl,v 1.10 2002/01/11 08:05:38 sac Exp $
 # WEBSITE      : http://bio.perl.org/Projects/Blast/
 # INSTALLATION : Edit $INSTALL_PATH to point to the directory containing
 #                your Bioperl modules (the Bio/ directory).

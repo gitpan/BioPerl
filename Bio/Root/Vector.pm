@@ -1,8 +1,8 @@
 #-----------------------------------------------------------------------------
 # PACKAGE : Bio::Root::Vector.pm
-# AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
+# AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 15 April 1997
-# REVISION: $Id: Vector.pm,v 1.4.2.2 2001/06/21 15:36:04 heikki Exp $
+# REVISION: $Id: Vector.pm,v 1.8 2002/01/23 11:30:22 heikki Exp $
 # STATUS  : Alpha
 #
 # WARNING: This is considered an experimental module.
@@ -16,7 +16,7 @@
 #    0.023, 20 Jul 1998, sac:
 #      * Improved memory management (_destroy_master()).
 #
-#   Copyright (c) 1997 Steve A. Chervitz. All Rights Reserved.
+#   Copyright (c) 1997 Steve Chervitz. All Rights Reserved.
 #             This module is free software; you can redistribute it and/or
 #             modify it under the same terms as Perl itself.
 #-----------------------------------------------------------------------------
@@ -28,9 +28,9 @@ use Bio::Root::Object ();
 
 # @ISA = qw(Bio::Root::Object);  # Eventually perhaps...
 
-use vars qw($ID $version);
+use vars qw($ID $VERSION);
 $ID = 'Bio::Root::Vector';
-$version = 0.04;
+$VERSION = 0.04;
 
 use strict;
 my @SORT_BY = ('rank','name');
@@ -51,7 +51,7 @@ that provides a constructor (e.g., B<Bio::Root::Object.pm>).
 The Vector provides a set of methods that can then be used for managing
 sets of objects.
 
-See L<USAGE>.
+See L<the USAGE section | USAGE>.
 
 =head1 INSTALLATION
 
@@ -128,11 +128,11 @@ their resolution. Bug reports can be submitted via email or the web:
     bioperl-bugs@bio.perl.org
     http://bio.perl.org/bioperl-bugs/
 
-=head1 AUTHOR
+=head1 AUTHOR 
 
-Steve A. Chervitz, sac@genome.stanford.edu
+Steve Chervitz  E<lt>sac@bioperl.orgE<gt>
 
-See the L<FEEDBACK> section for where to send bug reports and comments.
+See L<the FEEDBACK section | FEEDBACK> for where to send bug reports and comments.
 
 =head1 VERSION
 
@@ -168,7 +168,7 @@ Database:
 
 =head1 COPYRIGHT
 
-Copyright (c) 1996-98 Steve A. Chervitz. All Rights Reserved.
+Copyright (c) 1996-98 Steve Chervitz. All Rights Reserved.
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 

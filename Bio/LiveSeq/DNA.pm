@@ -1,4 +1,4 @@
-# $Id: DNA.pm,v 1.4.2.5 2001/06/22 10:40:02 heikki Exp $
+# $Id: DNA.pm,v 1.9 2001/10/22 08:22:51 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::DNA
 #
@@ -43,7 +43,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::DNA;
-$version=1.4;
+$VERSION=1.4;
 
 # Version history:
 # Mon Mar 20 19:21:22 GMT 2000 v.1.0 begun
@@ -53,8 +53,8 @@ $version=1.4;
 # Wed Mar 28 17:01:59 BST 2001 v 1.4 changed croaks into throw
 
 use strict;
-use vars qw($version @ISA);
-use Bio::LiveSeq::SeqI; # uses SeqI, inherits from it
+use vars qw($VERSION @ISA);
+use Bio::LiveSeq::SeqI 3.2; # uses SeqI, inherits from it
 @ISA=qw(Bio::LiveSeq::SeqI);
 
 =head2 new
@@ -88,7 +88,7 @@ sub new {
     $obj->throw("$class not initialized properly");
   }
 
-  $obj->{'moltype'}='dna'; # set moltype default
+  $obj->{'alphabet'}='dna'; # set alphabet default
   $obj->{'strand'}=1; # set strand default = 1
   $obj->{'seq'}=$obj; # set seq field to itself
 

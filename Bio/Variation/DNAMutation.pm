@@ -1,4 +1,4 @@
-# $Id: DNAMutation.pm,v 1.4.2.4 2001/06/21 15:36:05 heikki Exp $
+# $Id: DNAMutation.pm,v 1.9 2002/02/18 17:17:25 bosborne Exp $
 #
 # BioPerl module for Bio::Variation::DNAMutation
 #
@@ -43,11 +43,12 @@ Bio::Variation::DNAMutation - DNA level mutation class
 
 The instantiable class Bio::Variation::DNAMutation describes basic
 sequence changes in genomic DNA level. It uses methods defined in
-superclass L<Bio::Variation::VariantI>.
+superclass Bio::Variation::VariantI. See L<Bio::Variation::VariantI>
+for details.
 
 If the variation described by a DNAMutation object is transcibed, link
-the corresponding L<Bio::Variation::RNAChange> object to it using
-method RNAChange().
+the corresponding Bio::Variation::RNAChange object to it using
+method RNAChange(). See L<Bio::Variation::RNAChange> for more information.
 
 =head1 FEEDBACK
 
@@ -90,7 +91,7 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Variation::DNAMutation;
-my $version=1.0;
+my $VERSION=1.0;
 use vars qw(@ISA);
 use strict;
 
@@ -348,12 +349,12 @@ sub sysname {
 	$self->warn('Mutation start position is not defined') 
 	    if not defined $self->start;
 	my $sysname = '';
-	# show the moltype only if $self->SeqDiff->moltype is set;
+	# show the alphabet only if $self->SeqDiff->alphabet is set;
 	my $mol = '';
-	if ($self->SeqDiff->moltype && $self->SeqDiff->moltype eq 'dna') {
+	if ($self->SeqDiff->alphabet && $self->SeqDiff->alphabet eq 'dna') {
 	    $mol = 'g.';
 	}
-	elsif ($self->SeqDiff->moltype && $self->SeqDiff->moltype eq 'rna') {
+	elsif ($self->SeqDiff->alphabet && $self->SeqDiff->alphabet eq 'rna') {
 	    $mol = 'c.';
 	}
 	my $sep;

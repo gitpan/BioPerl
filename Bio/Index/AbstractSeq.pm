@@ -1,4 +1,4 @@
-# $Id: AbstractSeq.pm,v 1.13.2.1 2001/03/02 22:47:56 heikki Exp $
+# $Id: AbstractSeq.pm,v 1.15 2001/12/09 17:35:16 jason Exp $
 #
 # BioPerl module for Bio::DB::AbstractSeq
 #
@@ -136,9 +136,10 @@ sub fetch {
         
         # Get the (possibly cached) SeqIO object
         my $seqio = $self->_get_SeqIO_object( $file );
-        my $fh = $seqio->_filehandle();
+        my $fh = $seqio->_fh();
 
         # move to start of record
+	$begin-- if( $^O =~ /mswin/i); # workaround for Win DB_File bug
         seek($fh, $begin, 0);
 	
 	$seq = $seqio->next_seq();

@@ -1,14 +1,14 @@
 #-----------------------------------------------------------------------------
 # PACKAGE : Bio::Root::Err.pm
-# AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
+# AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 22 July 1996
-# REVISION: $Id: Err.pm,v 1.9.2.2 2001/06/21 15:36:03 heikki Exp $
+# REVISION: $Id: Err.pm,v 1.12 2002/01/18 08:21:17 sac Exp $
 # STATUS  : Alpha
 #
 # For documentation, run this module through pod2html
 # (preferably from Perl v5.004 or better).
 #
-# Copyright (c) 1996-8 Steve A. Chervitz. All Rights Reserved.
+# Copyright (c) 1996-8 Steve Chervitz. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or
 #           modify it under the same terms as Perl itself.
 #           Retain this notice and note any modifications made.
@@ -31,9 +31,9 @@ use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 		 std  => [qw(&throw &warning)]
 		);
 
-use vars qw($ID $version);
+use vars qw($ID $VERSION);
 $ID = 'Bio::Root::Err';
-$version = 0.041;
+$VERSION = 0.041;
 
 %Bio::Root::Err::ERR_FIELDS = (TYPE=>1, MSG=>1, NOTE=>1, CONTEXT=>1,
 			       TECH=>1, STACK=>1 );
@@ -72,7 +72,7 @@ To use the L<throw>() method directly:
 
 The C<$object_ref> argument should be a reference to a Bio::Root::Object.pm.
 
-See also L<USAGE>.
+See also L<the USAGE section | USAGE>.
 
 =head1 INSTALLATION
 
@@ -165,11 +165,11 @@ their resolution. Bug reports can be submitted via email or the web:
     bioperl-bugs@bio.perl.org
     http://bio.perl.org/bioperl-bugs/
 
-=head1 AUTHOR
+=head1 AUTHOR Steve Chervitz
 
-Steve A. Chervitz, sac@genome.stanford.edu
+Email sac@bioperl.org
 
-See the L<FEEDBACK> section for where to send bug reports and comments.
+See L<the FEEDBACK section | FEEDBACK> section for where to send bug reports and comments.
 
 =head1 VERSION
 
@@ -204,7 +204,7 @@ Chris Dagdigian, Georg Fuellen, and Steven Brenner.
 
 =head1 COPYRIGHT
 
-Copyright (c) 1996-8 Steve A. Chervitz. All Rights Reserved.
+Copyright (c) 1996-8 Steve Chervitz. All Rights Reserved.
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 

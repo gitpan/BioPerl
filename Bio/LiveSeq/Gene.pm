@@ -1,4 +1,4 @@
-# $Id: Gene.pm,v 1.8.2.6 2001/06/22 10:40:02 heikki Exp $
+# $Id: Gene.pm,v 1.13 2001/06/18 08:27:53 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::Gene
 #
@@ -42,7 +42,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::Gene;
-$version=2.3;
+$VERSION=2.3;
 
 # Version history:
 # Tue Apr  4 15:22:41 BST 2000 v 1.0 begun
@@ -59,8 +59,8 @@ $version=2.3;
 
 use strict;
 use Carp;
-use vars qw($version @ISA);
-use Bio::LiveSeq::Prim_Transcript; # needed to create maxtranscript obj
+use vars qw($VERSION @ISA);
+use Bio::LiveSeq::Prim_Transcript 1.0; # needed to create maxtranscript obj
 
 #use Bio::LiveSeq::SeqI 2.11; # uses SeqI, inherits from it
 #@ISA=qw(Bio::LiveSeq::SeqI);

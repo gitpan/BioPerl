@@ -4,9 +4,9 @@
 # PROGRAM : print_blasts.pl
 # PURPOSE : To print a set of Blast reports, generating a STDOUT stream
 #           to be used as input by parse_stream.pl
-# AUTHOR  : Steve A. Chervitz
+# AUTHOR  : Steve Chervitz
 # CREATED : 20 Apr 1998
-# REVISION: $Id: print_blasts.pl,v 1.2 2000/05/15 07:54:47 sac Exp $
+# REVISION: $Id: print_blasts.pl,v 1.3 2002/01/11 08:05:38 sac Exp $
 # USAGE   : print_blasts.pl -h
 #
 #           For modest numbers of reports, use the command line instead of 

@@ -1,4 +1,4 @@
-# $Id: clustalw.pm,v 1.5 2001/01/07 16:52:37 birney Exp $
+# $Id: clustalw.pm,v 1.13 2002/02/13 15:32:54 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::clustalw
 
@@ -25,16 +25,26 @@ Do not use this module directly.  Use it via the Bio::AlignIO class.
 
 =head1 DESCRIPTION
 
-This object can transform Bio::SimpleAlign objects to and from clustalw flat
+This object can transform Bio::Align::AlignI objects to and from clustalw flat
 file databases.
 
 =head1 FEEDBACK
 
+=head2 Mailing Lists
+
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
+
+  bioperl-l@bioperl.org               - General discussion
+  http://bio.perl.org/MailList.html   - About the mailing lists
+
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via email
+or the web:
 
   bioperl-bugs@bio.perl.org
   http://bio.perl.org/bioperl-bugs/
@@ -54,20 +64,50 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::AlignIO::clustalw;
-use vars qw(@ISA);
+use vars qw(@ISA $LINELENGTH);
 use strict;
 
 use Bio::AlignIO;
 use Bio::LocatableSeq;
+use Bio::SimpleAlign; # to be Bio::Align::Simple
+
+BEGIN { 
+    $LINELENGTH = 60;
+}
 
 @ISA = qw(Bio::AlignIO);
+
+
+=head2 new
+
+ Title   : new
+ Usage   : $alignio = new Bio::AlignIO(-format => 'clustalw', 
+				       -file => 'filename');
+ Function: returns a new Bio::AlignIO object to handle clustalw files
+ Returns : Bio::AlignIO::clustalw object
+ Args    : -verbose => verbosity setting (-1,0,1,2)
+           -file    => name of file to read in or with ">" - writeout
+           -fh      => alternative to -file param - provide a filehandle 
+                       to read from/write to 
+           -format  => type of Alignment Format to process
+           -percentages => (clustalw only) display a percentage of identity
+                           in each line of the alignment.
+
+=cut
+
+sub _initialize {
+    my ($self, @args) = @_;
+    $self->SUPER::_initialize(@args);
+    my ($percentages) = $self->_rearrange([qw(PERCENTAGES)], @args);
+    defined $percentages && $self->percentages($percentages);
+}
 
 =head2 next_aln
 
  Title   : next_aln
  Usage   : $aln = $stream->next_aln()
  Function: returns the next alignment in the stream
- Returns : SimpleAlign object
+ Returns : Bio::Align::AlignI object
  Args    : NONE
 
 =cut
@@ -81,10 +121,10 @@ sub next_aln {
 	$self->warn("trying to parse a file which does not start with a CLUSTAL header");
     }
     my %alignments;
-    my $aln =  Bio::SimpleAlign->new();
+    my $aln =  Bio::SimpleAlign->new(-source => 'clustalw');
     my $order = 0;
     my %order;
-
+    $self->{_lastline} = '';
     while( defined ($_ = $self->_readline) ) {
 	next if ( /^\s+$/ );	
 
@@ -94,8 +134,8 @@ sub next_aln {
 	    ($seqname,$aln_line) = ("$1:$2-$3",$4);
 	} elsif( /^(\S+)\s+([A-Z\-]+)\s*$/ ) {
 	    ($seqname,$aln_line) = ($1,$2);
-	} else { next }
-
+	} else { $self->{_lastline} = $_; next }
+	
 	if( !exists $order{$seqname} ) {
 	    $order{$seqname} = $order++;
 	}
@@ -116,13 +156,11 @@ sub next_aln {
 					 '-id'    => $sname,
 					 '-start' => $start,
 					 '-end'   => $end);
-	$aln->addSeq($seq);
+	$aln->add_seq($seq);
     }
     undef $aln if( !defined $end || $end <= 0);
     return $aln;
 }
-
-
 
 =head2 write_aln
 
@@ -130,45 +168,89 @@ sub next_aln {
  Usage   : $stream->write_aln(@aln)
  Function: writes the clustalw-format object (.aln) into the stream
  Returns : 1 for success and 0 for error
- Args    : Bio::SimpleAlign object
+ Args    : Bio::Align::AlignI object
 
 
 =cut
 
 sub write_aln {
-   my ($self,@aln) = @_;
-   my ($count,$length,$seq,@seq,$tempcount);
+    my ($self,@aln) = @_;
+    my ($count,$length,$seq,@seq,$tempcount);
+    foreach my $aln (@aln) {
+	if( ! $aln || ! $aln->isa('Bio::Align::AlignI')  ) { 
+	    $self->warn("Must provide a Bio::Align::AlignI object when calling write_aln");
+	    next;
+	}
+	my $matchline = $aln->match_line;
+    
+	$self->_print (sprintf("CLUSTAL W(1.81) multiple sequence alignment\n\n\n")) or return;
 
-   foreach my $aln (@aln) {
-
-    $self->_print (sprintf("CLUSTAL W(1.4) multiple sequence alignment\n\n\n")) or return;
-
-    $length = $aln->length_aln();
-    $count = $tempcount = 0;
-    @seq = $aln->eachSeq();
-
-    while( $count < $length ) {
+	$length = $aln->length();
+	$count = $tempcount = 0;
+	@seq = $aln->each_seq();
+	my $max = 22;
 	foreach $seq ( @seq ) {
+	    $max = length ($aln->displayname($seq->get_nse())) 
+		if( length ($aln->displayname($seq->get_nse())) > $max );
+	}
+	while( $count < $length ) {
+	    foreach $seq ( @seq ) {
 #
 #  Following lines are to suppress warnings
 #  if some sequences in the alignment are much longer than others.
-	   my $substring;
-           my $seqchars = $seq->seq();
-	SWITCH: {
-		if (length($seqchars) >= ($count + 50)) {
-			$substring = substr($seqchars,$count,50); last SWITCH; }
-		if (length($seqchars) >= $count) {
-			$substring = substr($seqchars,$count); last SWITCH; }
-                $substring = "";
-	}
 
-	   $self->_print (sprintf("%-22s %s\n",$aln->get_displayname($seq->get_nse()),$substring)) or return;
+		my ($substring);
+		my $seqchars = $seq->seq();		
+	      SWITCH: {
+		  if (length($seqchars) >= ($count + $LINELENGTH)) {
+		      $substring = substr($seqchars,$count,$LINELENGTH); 
+		      last SWITCH; 
+		  } elsif (length($seqchars) >= $count) {
+		      $substring = substr($seqchars,$count); 
+		      last SWITCH; 
+		  }
+		  $substring = "";
+	      }
+		
+		$self->_print (sprintf("%-".$max."s %s\n",
+				       $aln->displayname($seq->get_nse()),
+				       $substring)) or return;
+	    }		
+	    
+	    my $linesubstr = substr($matchline, $count,$LINELENGTH);
+	    my $percentages = '';
+	    if( $self->percentages ) {
+		my ($strcpy) = ($linesubstr);
+		my $count = ($strcpy =~ tr/\*//);
+		$percentages = sprintf("\t%d%%", 100 * ($count / length($linesubstr)));
+	    }
+	    $self->_print (sprintf("%-".$max."s %s%s\n", '', $linesubstr,
+				   $percentages));	    
+	    $self->_print (sprintf("\n\n")) or return;
+	    $count += $LINELENGTH;
 	}
-	$self->_print (sprintf("\n\n")) or return;
-	$count += 50;
     }
-   }
-   return 1;
+    return 1;
+}
+
+=head2 percentages
+
+ Title   : percentages
+ Usage   : $obj->percentages($newval)
+ Function: Set the percentages flag - whether or not to show percentages in 
+           each output line
+ Returns : value of percentages
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub percentages { 
+    my ($self,$value) = @_; 
+    if( defined $value) {
+	$self->{'_percentages'} = $value; 
+    } 
+    return $self->{'_percentages'}; 
 }
 
 1;

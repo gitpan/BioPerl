@@ -1,4 +1,4 @@
-# $Id: SearchDist.pm,v 1.13.2.1 2001/03/02 22:47:54 heikki Exp $
+# $Id: SearchDist.pm,v 1.15 2001/11/20 02:09:28 lstein Exp $
 
 #
 # BioPerl module for Bio::SearchDist
@@ -102,7 +102,7 @@ package Bio::SearchDist;
 use vars qw(@ISA);
 use strict;
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
 
 BEGIN {
     eval {
@@ -116,7 +116,7 @@ print $@;
 }
 
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::Root::Root);
 
 sub new {
   my($class,@args) = @_;

@@ -2,7 +2,7 @@
 ## Bioperl Test Harness Script for Modules
 ##
 # CVS Version
-# $Id: SimilarityPair.t,v 1.3 2001/02/26 20:45:37 lapp Exp $
+# $Id: SimilarityPair.t,v 1.4.2.1 2002/03/10 17:26:53 jason Exp $
 
 
 # Before `make install' is performed this script should be runnable with
@@ -24,20 +24,21 @@ BEGIN {
 }
 use Bio::Seq;
 use Bio::SeqFeature::SimilarityPair;
-use Bio::Tools::Blast;
+use Bio::SearchIO;
 use Bio::SeqIO;
 use Bio::Root::IO;
 
 # test SimilarityPair
 
 my $seq = (new Bio::SeqIO('-format' => 'fasta',
-			  '-file' => Bio::Root::IO->catfile("t","AAC12660.fa")))->next_seq();
+			  '-file' => Bio::Root::IO->catfile("t","data","AAC12660.fa")))->next_seq();
 ok defined( $seq) && $seq->isa('Bio::SeqI');
-my $blast = new Bio::Tools::Blast('-file'=>Bio::Root::IO->catfile("t","blast.report"), '-parse'=>1);
-ok defined ($blast) && $blast->isa('Bio::Tools::Blast');
-my $hit = $blast->hit;
-ok defined ($hit) && $hit->isa('Bio::Tools::Blast::Sbjct'), 1, ' hit is ' . ref($hit);
-my $sim_pair = Bio::SeqFeature::SimilarityPair->from_searchResult($hit);
+my $blast = new Bio::SearchIO('-file'=>Bio::Root::IO->catfile("t","data","blast.report"), '-format' => 'blast');
+ok defined ($blast) && $blast->isa('Bio::SearchIO');
+my $r = $blast->next_result;
+my $hit = $r->next_hit;
+ok defined ($hit) && $hit->isa('Bio::Search::Hit::HitI'), 1, ' hit is ' . ref($hit);
+my $sim_pair = $hit->next_hsp;
 ok defined($sim_pair) && $sim_pair->isa('Bio::SeqFeatureI');
 $seq->add_SeqFeature($sim_pair);
 ok $seq->all_SeqFeatures() == 1;

@@ -1,4 +1,4 @@
-# $Id: GeneStructureI.pm,v 1.3.2.1 2001/03/03 08:28:56 heikki Exp $
+# $Id: GeneStructureI.pm,v 1.6 2001/11/24 21:49:24 jason Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::GeneStructureI
 #
@@ -70,23 +70,6 @@ use Bio::SeqFeatureI;
 
 @ISA = qw(Bio::SeqFeatureI);
 
-# utility method Prints out a method like: 
-# Abstract method stop defined in interface Bio::LocationI not
-# implemented by package You::BadLocation
-
-sub _abstractDeath {
-    my $self = shift;
-    my $package = ref $self;
-    my $caller = (caller)[1];
-  
-    my $msg = "Abstract method '$caller' defined in interface Bio::SeqFeature::Gene::GeneStructureI but not implemented by package $package";
-    if( $self->can('throw') ) {
-	$self->throw($msg);
-    } else {
-	confess($msg);
-    }
-}
-
 =head2 transcripts
 
  Title   : transcripts()
@@ -106,7 +89,7 @@ sub _abstractDeath {
 sub transcripts {
     my ($self) = @_;
 
-    $self->_abstractDeath();
+    $self->_abstractDeath('transcripts');
 }
 
 =head2 promoters
@@ -128,7 +111,7 @@ sub transcripts {
 sub promoters {
     my ($self) = @_;
 
-    $self->_abstractDeath();
+    $self->_abstractDeath('promotors');
 }
 
 =head2 exons
@@ -154,7 +137,7 @@ sub promoters {
 sub exons {
     my ($self, $type) = @_;
 
-    $self->_abstractDeath();
+    $self->_abstractDeath('exons');
 }
 
 =head2 introns
@@ -172,7 +155,7 @@ sub exons {
 sub introns {
     my ($self) = @_;
 
-    $self->_abstractDeath();    
+    $self->_abstractDeath('introns');    
 }
 
 =head2 poly_A_sites
@@ -190,7 +173,7 @@ sub introns {
 sub poly_A_sites {
     my ($self) = @_;
 
-    $self->_abstractDeath();
+    $self->_abstractDeath('poly_A_sites');
 }
 
 =head2 utrs
@@ -212,7 +195,11 @@ sub poly_A_sites {
 sub utrs {
     my ($self) = @_;
 
-    $self->_abstractDeath();
+    $self->_abstractDeath('utrs');
 }
 
 1;
+
+
+
+

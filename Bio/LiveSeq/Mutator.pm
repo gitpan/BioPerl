@@ -1,4 +1,4 @@
-# $Id: Mutator.pm,v 1.8.2.10 2001/08/07 14:24:16 heikki Exp $
+# $Id: Mutator.pm,v 1.24 2002/02/18 17:17:23 bosborne Exp $
 #
 # bioperl module for Bio::LiveSeq::Mutator
 #
@@ -31,9 +31,10 @@ Bio::LiveSeq::Mutator - Package mutating LiveSequences
 
 =head1 DESCRIPTION
 
-  This class mutates L<Bio::LiveSeq::Gene> objects and returns a
-  L<Bio::Variation::SeqDiff> object. Mutations are described as
-  L<Bio::LiveSeq::Mutation> objects.
+This class mutates Bio::LiveSeq::Gene objects and returns a
+Bio::Variation::SeqDiff object. Mutations are described as
+Bio::LiveSeq::Mutation objects. See L<Bio::LiveSeq::Gene>,
+L<Bio::Variation::SeqDiff>, and L<Bio::LiveSeq::Mutation> for details.
 
 =head1 FEEDBACK
 
@@ -78,19 +79,20 @@ package Bio::LiveSeq::Mutator;
 use vars qw(@ISA);
 use strict;
 
-use vars qw($version @ISA);
+use vars qw($VERSION @ISA);
 use Bio::Variation::SeqDiff;
 use Bio::Variation::DNAMutation;
 use Bio::Variation::RNAChange;
 use Bio::Variation::AAChange;
 use Bio::Variation::Allele;
+use Bio::LiveSeq::Mutation;
 
 #use integer;
 # Object preamble - inheritance
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
 
-@ISA = qw( Bio::Root::RootI );
+@ISA = qw( Bio::Root::Root );
 
 sub new {
     my($class,@args) = @_;
@@ -122,11 +124,13 @@ sub new {
  Function:
 
            Returns or sets the link-reference to a
-           L<Bio::LiveSeq::Gene> object. If no value has ben set, it
+           Bio::LiveSeq::Gene object. If no value has ben set, it
            will return undef
 
  Returns : an object reference  or undef
- Args    : a L<Bio::LiveSeq::Gene>
+ Args    : a Bio::LiveSeq::Gene
+
+See L<Bio::LiveSeq::Gene> for more information.
 
 =cut
 
@@ -185,10 +189,12 @@ sub numbering {
 
  Title   : add_Mutation
  Usage   : $self->add_Mutation($ref)
- Function: adds a L<Bio::Liveseq::Mutation> object
+ Function: adds a Bio::LiveSeq::Mutation object
  Example :
  Returns :
- Args    : a L<Bio::Liveseq::Mutation>
+ Args    : a Bio::LiveSeq::Mutation
+
+See L<Bio::LiveSeq::Mutation> for more information.
 
 =cut
 
@@ -214,11 +220,12 @@ sub add_Mutation{
 
  Title   : each_Mutation
  Usage   : foreach $ref ( $a->each_Mutation )
- Function: gets an array of L<Bio::Liveseq::Mutation> objects
+ Function: gets an array of Bio::LiveSeq::Mutation objects
  Example :
  Returns : array of Mutations
  Args    :
 
+See L<Bio::LiveSeq::Mutation> for more information.
 
 =cut
 
@@ -344,7 +351,9 @@ sub RNA {
            If the value is not set, it will return undef.
            Internal method.
 
- Returns : an L<Bio::Variation::DNAMutation> or undef
+ Returns : a Bio::Variation::DNAMutation object or undef
+
+See L<Bio::Variation::DNAMutation> for more information.
 
 =cut
 
@@ -379,7 +388,9 @@ sub dnamut {
            If the value is not set, it will return undef.
            Internal method.
 
- Returns : an L<Bio::Variation::RNAChange> or undef
+ Returns : a Bio::Variation::RNAChange object or undef
+
+See L<Bio::Variation::RNAChange> for more information.
 
 =cut
 
@@ -414,7 +425,9 @@ sub rnachange {
            If the value is not set, it will return undef.
            Internal method.
 
- Returns : an L<Bio::Variation::AAChange> or undef
+ Returns : a Bio::Variation::AAChange object or undef
+
+See L<Bio::Variation::AAChange> for more information.
 
 =cut
 
@@ -449,7 +462,9 @@ sub aachange {
            If the value is not set, it will return undef.
            Internal method.
 
- Returns : an array of L<Bio::LiveSeq::Exon> objects or undef
+ Returns : an array of Bio::LiveSeq::Exon objects or undef
+
+See L<Bio::LiveSeq::Exon> for more information.
 
 =cut
 
@@ -466,7 +481,153 @@ sub exons {
   }
 }
 
+=head2 change_gene_with_alignment
 
+ Title   : change_gene_with_alignment
+ Usage   : $results=$mutate->change_gene_with_alignment($aln);
+
+ Function:
+
+           Returns a Bio::Variation::SeqDiff object containing the
+           results of the changes in the alignment. The alignment has
+           to be pairwise and have one sequence named 'QUERY', the
+           other one is assumed to be a part of the sequence from
+           $gene.
+
+           This method offers a shortcut to change_gene and
+           automates the creation of Bio::LiveSeq::Mutation objects.
+           Use it with almost identical sequnces, e.g. to locate a SNP.
+
+ Args    : Bio::SimpleAlign object representing a short local alignment
+ Returns : Bio::Variation::SeqDiff object or 0 on error
+
+See L<Bio::LiveSeq::Mutation>, L<Bio::SimpleAlign>, and
+L<Bio::Variation::SeqDiff>  for more information.
+
+=cut
+
+sub change_gene_with_alignment {
+    my ($self, $aln) = @_;
+
+    #
+    # Sanity checks
+    #
+
+    $self->throw("Argument is not a Bio::SimpleAlign object but a [$aln]")
+	unless $aln->isa('Bio::SimpleAlign');
+    $self->throw("'Pairwise alignments only, please") 
+	if $aln->no_sequences != 2;
+
+    # find out the order the two sequences are given
+    my $queryseq_pos = 1; #default
+    my $refseq_pos = 2;
+    unless ($aln->get_seq_by_pos(1)->id eq 'QUERY') {
+	carp('Query sequence has to be named QUERY') 
+	    if $aln->get_seq_by_pos(2)->id ne 'QUERY';
+	$queryseq_pos = 2; # alternative
+	$refseq_pos = 1;
+    }
+
+    # trim the alignment
+    my $start =  $aln->column_from_residue_number('QUERY', 1);
+    my $end =  $aln->column_from_residue_number('QUERY', 
+						$aln->get_seq_by_pos($queryseq_pos)->end );
+    
+    my $aln2 = $aln->slice($start, $end);
+
+    #
+    # extracting mutations
+    #
+
+    my $cs = $aln2->consensus_string(51);
+    my $queryseq = $aln2->get_seq_by_pos($queryseq_pos);
+    my $refseq = $aln2->get_seq_by_pos($refseq_pos);
+
+    while ( $cs =~ /(\?+)/g) {
+	# pos in local coordinates
+	my $pos = pos($cs) - length($1) + 1;
+	my $mutation = create_mutation($self, 
+				       $refseq, 
+				       $queryseq, 
+				       $pos, 
+				       CORE::length($1)
+				       );
+	# reset pos to refseq coordinates
+	$pos +=  $refseq->start - 1;
+	$mutation->pos($pos);
+
+        $self->add_Mutation($mutation);
+    }
+    return $self->change_gene();
+}
+
+=head2 create_mutation
+
+ Title   : create_mutation
+ Usage   : 
+ Function:
+
+           Formats sequence differences from two sequences into
+           Bio::LiveSeq::Mutation objects which can be applied to a
+           gene.
+
+           To keep it generic, sequence arguments need not to be
+           Bio::LocatableSeq. Coordinate change to parent sequence
+           numbering needs to be done by the calling code.
+
+           Called from change_gene_with_alignment
+
+ Args    : Bio::PrimarySeqI inheriting object for the reference sequence
+           Bio::PrimarySeqI inheriting object for the query sequence
+           integer for the start position of the local sequence difference
+           integer for the length of the sequence difference
+ Returns : Bio::LiveSeq::Mutation object 
+
+=cut
+
+sub create_mutation {
+    my ($self, $refseq, $queryseq, $pos, $len) = @_;
+    
+    $self->throw("Is not a Bio::PrimarySeqI object but a [$refseq]") 
+	unless $refseq->isa('Bio::PrimarySeqI');
+    $self->throw("Is not a Bio::PrimarySeqI object but a [$queryseq]") 
+	unless $queryseq->isa('Bio::PrimarySeqI');
+    $self->throw("Position is not a positive integer but [$pos]") 
+	unless $pos =~ /^\+?\d+$/;
+    $self->throw("Length is not a positive integer but [$len]") 
+	unless $len =~ /^\+?\d+$/;
+
+    my $mutation;
+    my $refstring = $refseq->subseq($pos, $pos + $len - 1);
+    my $varstring = $queryseq->subseq($pos, $pos + $len - 1);
+    
+    if ($len == 1 and $refstring =~ /[^\.\-\*\?]/ and 
+	$varstring  =~ /[^\.\-\*\?]/ ) { #point
+	$mutation = new Bio::LiveSeq::Mutation (-seq => $varstring,
+						-pos => $pos,
+						);
+    }
+    elsif ( $refstring =~ /^[^\.\-\*\?]+$/ and 
+	    $varstring  !~ /^[^\.\-\*\?]+$/ ) { # deletion
+	$mutation = new Bio::LiveSeq::Mutation (-pos => $pos,
+						-len => $len
+						);
+    }
+    elsif ( $refstring !~ /^[^\.\-\*\?]+$/ and 
+	    $varstring  =~ /^[^\.\-\*\?]+$/ ) { # insertion
+	$mutation = new Bio::LiveSeq::Mutation (-seq => $varstring,
+						-pos => $pos,
+						-len => 0
+						);
+    } else { # complex
+	$mutation = new Bio::LiveSeq::Mutation (-seq => $varstring,
+						-pos => $pos,
+						-len => $len
+						);
+    }
+    
+    return $mutation;
+}
 
 =head2 change_gene
 
@@ -530,7 +691,7 @@ sub change_gene {
     my $refseq; # will hold Bio::LiveSeq:Transcript object or Bio::LiveSeq::DNA
 
     # 'gene' eq 'coding' if reference sequence is cDNA
-    $self->numbering ('coding') if $self->gene->get_DNA->moltype eq 'rna' and $self->numbering eq 'gene';
+    $self->numbering ('coding') if $self->gene->get_DNA->alphabet eq 'rna' and $self->numbering eq 'gene';
 
     if ($self->numbering =~ /(coding)( )?(\d+)?/ ) {
 	$self->numbering($1);
@@ -550,7 +711,7 @@ sub change_gene {
     # Recording the state: SeqDiff object creation  ?? transcript no.??
     #
     my $seqDiff = Bio::Variation::SeqDiff->new();
-    $seqDiff->moltype($self->gene->get_DNA->moltype);
+    $seqDiff->alphabet($self->gene->get_DNA->alphabet);
     $seqDiff->numbering($self->numbering);
     my ($DNAobj, $RNAobj);
     if ($refseq->isa("Bio::LiveSeq::Transcript")) {
@@ -714,12 +875,14 @@ sub _mutationpos2label {
  Function:
 
            Stores DNA level mutation attributes before mutation into
-           L<Bio::Variation::DNAMutation> object.  Links it to SeqDiff
+           Bio::Variation::DNAMutation object.  Links it to SeqDiff
            object.
 
  Example :
- Returns : L<Bio::Variation::DNAMutation> object
- Args    : L<Bio::Variation::SeqDiff> object
+ Returns : Bio::Variation::DNAMutation object
+ Args    : Bio::Variation::SeqDiff object
+
+See L<Bio::Variation::DNAMutation> and L<Bio::Variation::SeqDiff>.
 
 =cut
 
@@ -957,14 +1120,17 @@ sub _rnaAffected {
  Function:
 
            Stores RNA and AA level mutation attributes before mutation
-           into L<Bio::Variation::RNAChange> and
-           L<Bio::Variation::AACange> objects.  Links them to
+           into Bio::Variation::RNAChange and
+           Bio::Variation::AAChange objects.  Links them to
            SeqDiff object.
 
  Example :
  Returns :
- Args    : L<Bio::Variation::SeqDiff> object
-           L<Bio::Variation::DNAMutation> object
+ Args    : Bio::Variation::SeqDiff object
+           Bio::Variation::DNAMutation object
+
+See L<Bio::Variation::RNAChange>, L<Bio::Variation::RNAChange>,
+L<Bio::Variation::SeqDiff>, and L<Bio::Variation::DNAMutation>.
 
 =cut
 
@@ -1089,13 +1255,16 @@ sub _set_effects {
  Function:
 
            Stores RNA change attributes before mutation
-           into L<Bio::Variation::RNAChange object.  Links it to
+           into Bio::Variation::RNAChange object.  Links it to
            SeqDiff object.
 
  Example :
  Returns :
- Args    : L<Bio::Variation::SeqDiff> object
-           L<Bio::Variation::DNAMutation> object
+ Args    : Bio::Variation::SeqDiff object
+           Bio::Variation::DNAMutation object
+
+See L<Bio::Variation::RNAChange>, L<Bio::Variation::SeqDiff> and
+L<Bio::Variation::DNAMutation> for details.
 
 =cut
 
@@ -1164,26 +1333,26 @@ sub _post_mutation {
 	#$seqDiff->add_Variant($self->rnachange);
 
 	my $aachange=$self->aachange;
-	 my ($AAobj,$aa_start_prelabel,$aa_start,$mut_translation);
-	 $AAobj=$self->RNA->get_Translation;
-	 $aa_start_prelabel=$aachange->start;
-	 $aa_start=$AAobj->position($self->RNA->label(2,$aa_start_prelabel));
-	 $aachange->start($aa_start);
-	 $mut_translation=$AAobj->seq;
+	my ($AAobj,$aa_start_prelabel,$aa_start,$mut_translation);
+	$AAobj=$self->RNA->get_Translation;
+	$aa_start_prelabel=$aachange->start;
+	$aa_start=$AAobj->position($self->RNA->label(2,$aa_start_prelabel));
+	$aachange->start($aa_start);
+	$mut_translation=$AAobj->seq;
+	
+	# this now takes in account possible preinsertions
+	my $aa_m = Bio::Variation::Allele->new;
+	$aa_m->seq(substr($mut_translation,$aa_start-1)) if substr($mut_translation,$aa_start-1);
+	$aachange->allele_mut($aa_m);
+	$aachange->add_Allele($aa_m);
+	#$aachange->allele_mut(substr($mut_translation,$aa_start-1));
+	#$aachange->allele_mut($mut_translation);
+	my ($rlenori, $rlenmut);
+	$rlenori = CORE::length($aachange->RNAChange->allele_ori->seq);
+	$rlenmut = CORE::length($aachange->RNAChange->allele_mut->seq);
+	#point mutation
 
-	 # this now takes in account possible preinsertions
-	 my $aa_m = Bio::Variation::Allele->new;
-	 $aa_m->seq(substr($mut_translation,$aa_start-1)) if substr($mut_translation,$aa_start-1);
-	 $aachange->allele_mut($aa_m);
-	 $aachange->add_Allele($aa_m);
-	 #$aachange->allele_mut(substr($mut_translation,$aa_start-1));
-	 #$aachange->allele_mut($mut_translation);
-	 my ($rlenori, $rlenmut);
-	 $rlenori = CORE::length($aachange->RNAChange->allele_ori->seq);
-	 $rlenmut = CORE::length($aachange->RNAChange->allele_mut->seq);
-	 #point mutation
-
-	 if ($rlenori == 1 and $rlenmut == 1 and $aachange->allele_ori->seq ne '*') {
+	if ($rlenori == 1 and $rlenmut == 1 and $aachange->allele_ori->seq ne '*') {
 	     my $alleleseq;
 	     if ($aachange->allele_mut->seq) {
 		 $alleleseq = substr($aachange->allele_mut->seq, 0, 1);

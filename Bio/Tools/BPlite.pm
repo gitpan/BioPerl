@@ -1,4 +1,4 @@
-# $Id: BPlite.pm,v 1.14.2.6 2001/08/19 12:00:14 roger Exp $
+# $Id: BPlite.pm,v 1.32 2002/01/04 14:50:27 jason Exp $
 ##############################################################################
 # Bioperl module Bio::Tools::BPlite
 ##############################################################################
@@ -17,41 +17,39 @@ Bio::Tools::BPlite - Lightweight BLAST parser
  use Bio::Tools::BPlite;
  my $report = new Bio::Tools::BPlite(-fh=>\*STDIN);
 
- {
- $report->query;
- $report->database;
- while(my $sbjct = $report->nextSbjct) {
-     $sbjct->name;
-     while (my $hsp = $sbjct->nextHSP) {
-         $hsp->score;
-         $hsp->bits;
-         $hsp->percent;
-         $hsp->P;
-         $hsp->match;
-         $hsp->positive;
-         $hsp->length;
-	 $hsp->querySeq;
-	 $hsp->sbjctSeq;
-	 $hsp->homologySeq;
-	 $hsp->query->start;
-	 $hsp->query->end;
-	 $hsp->subject->start;
-	 $hsp->subject->end;
-	 $hsp->subject->seqname;
-	 $hsp->subject->overlaps($exon);
-     }
- }
+  {
+    $report->query;
+    $report->database;
+    while(my $sbjct = $report->nextSbjct) {
+	$sbjct->name;
+	while (my $hsp = $sbjct->nextHSP) {
+	    $hsp->score;
+	    $hsp->bits;
+	    $hsp->percent;
+	    $hsp->P;
+	    $hsp->match;
+	    $hsp->positive;
+	    $hsp->length;
+	    $hsp->querySeq;
+	    $hsp->sbjctSeq;
+	    $hsp->homologySeq;
+	    $hsp->query->start;
+	    $hsp->query->end;
+	    $hsp->hit->start;
+	    $hsp->hit->end;
+	    $hsp->hit->seqname;
+	    $hsp->hit->overlaps($exon);
+	}
+    }
 
- # the following line takes you to the next report in the stream/file
- # it will return 0 if that report is empty,
- # but that is valid for an empty blast report.
- # Returns -1 for EOF.
+    # the following line takes you to the next report in the stream/file
+    # it will return 0 if that report is empty,
+    # but that is valid for an empty blast report.
+    # Returns -1 for EOF.
 
- last if ($report->_parseHeader == -1));
-
- redo
-
- }
+    last if ($report->_parseHeader == -1);
+    redo;
+  }
 
 
 =head1 DESCRIPTION
@@ -90,7 +88,6 @@ thinking about it is that a subject is a gene and HSPs are the exons. Subjects
 have one attribute (name) and one method (nextHSP).
 
  $sbjct->name;    # access to the subject name
- "$sbjct";        # overloaded to return name
  $sbjct->nextHSP; # gets the next HSP from the sbjct
  while(my $hsp = $sbjct->nextHSP) {
      # canonical form is again a while loop
@@ -122,25 +119,19 @@ contain the alignment sequences from the blast report.
  $hsp->query->start;
  $hsp->query->end;
  $hsp->query->seqname;
- $hsp->subject->primary_tag; # "similarity"
- $hsp->subject->source_tag;  # "BLAST"
- $hsp->subject->start;
- $hsp->subject->end;
+ $hsp->hit->primary_tag; # "similarity"
+ $hsp->hit->source_tag;  # "BLAST"
+ $hsp->hit->start;
+ $hsp->hit->end;
  ...
- "$hsp"; # overloaded for query->start..query->end bits
-
-I've included a little bit of overloading for double quote variable
-interpolation convenience. A subject will return its name and an HSP will
-return its query-E<gt>start, query-E<gt>end, and bits in the alignment. Feel free 
-to modify this to whatever is most frequently used by you.
 
 So a very simple look into a BLAST report might look like this.
 
  my $report = new Bio::Tools::BPlite(-fh=>\*STDIN);
  while(my $sbjct = $report->nextSbjct) {
-     print "$sbjct\n";
+     print ">",$sbjct->name,"\n";
      while(my $hsp = $sbjct->nextHSP) {
-	 	print "\t$hsp\n";
+	 	print "\t",$hsp->start,"..",$hsp->end," ",$hsp->bits,"\n";
      }
  }
 
@@ -164,6 +155,10 @@ Lorenz Pollak (lorenz@ist.org, bioperl port)
 This software was developed at the Genome Sequencing Center at Washington
 Univeristy, St. Louis, MO.
 
+=head1 CONTRIBUTORS
+
+Jason Stajich, jason@cgt.mc.duke.edu
+
 =head1 COPYRIGHT
 
 Copyright (C) 1999 Ian Korf. All Rights Reserved.
@@ -174,19 +169,18 @@ This software is provided "as is" without warranty of any kind.
 
 =cut
 
-#'
 package Bio::Tools::BPlite;
 
 use strict;
 use vars qw(@ISA);
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
 use Bio::Root::IO;
 use Bio::Tools::BPlite::Sbjct; # we want to use Sbjct
 use Bio::SeqAnalysisParserI;
 use Symbol;
 
-@ISA = qw(Bio::Root::RootI Bio::SeqAnalysisParserI Bio::Root::IO);
+@ISA = qw(Bio::Root::Root Bio::SeqAnalysisParserI Bio::Root::IO);
 
 # new comes from a RootI now
 
@@ -207,7 +201,6 @@ sub new {
   # initialize IO
   $self->_initialize_io(@args);
 
-  $self->{'LASTLINE'} = "";
   $self->{'QPATLOCATION'} = [];  # Anonymous array of query pattern locations for PHIBLAST
 
   if ($self->_parseHeader) {$self->{'REPORT_DONE'} = 0} # there are alignments
@@ -323,18 +316,21 @@ sub database {shift->{'DATABASE'}}
 
 sub nextSbjct {
   my ($self) = @_;
+  
   $self->_fastForward or return undef;
   
   #######################
   # get all sbjct lines #
   #######################
-  my $def = $self->{'LASTLINE'};
-  my $FH = $self->_fh();
-  while(<$FH>) {
+  my $def = $self->_readline();  
+  while(defined ($_ = $self->_readline() ) ) {
     if    ($_ !~ /\w/)            {next}
     elsif ($_ =~ /Strand HSP/)    {next} # WU-BLAST non-data
-    elsif ($_ =~ /^\s{0,2}Score/) {$self->{'LASTLINE'} = $_; last}
-    elsif ($_ =~ /^Parameters|^\s+Database:|^\s+Posted date:/) {$self->{'LASTLINE'} = $_; last}
+    elsif ($_ =~ /^\s{0,2}Score/) {$self->_pushback($_); last}
+    elsif ($_ =~ /^Parameters|^\s+Database:|^\s+Posted date:/) {
+	$self->_pushback($_); 
+	last;
+    }
     else                          {$def .= $_}
   }
   $def =~ s/\s+/ /g;
@@ -349,9 +345,7 @@ sub nextSbjct {
   ####################
   my $sbjct = new Bio::Tools::BPlite::Sbjct('-name'=>$def,
 					    '-length'=>$length,
-                                            '-fh'=>$self->_fh(), 
-					    '-lastline'=>$self->{'LASTLINE'}, 
-					    '-parent'=>$self);
+                                            '-parent'=>$self);
   return $sbjct;
 }
 
@@ -359,60 +353,73 @@ sub nextSbjct {
 
 sub _parseHeader {
   my ($self) = @_;
-  my $FH = $self->_fh();
-  # normally, _parseHeader will break out of the parse as soon as it reaches a new Subject (i.e. the first one after the header)
-  # if you call _parseHeader twice in a row, with nothing in between, all you accomplish is a ->nextSubject call..
-  # so we need a flag to indicate that we have *entered* a header, before we are allowed to leave it!
-  my $header_flag = 0;	# here is the flag/  It is "false" at first, and is set to "true" when any valid header element is encountered
+
+  # normally, _parseHeader will break out of the parse as soon as it
+  # reaches a new Subject (i.e. the first one after the header) if you
+  # call _parseHeader twice in a row, with nothing in between, all you
+  # accomplish is a ->nextSubject call..  so we need a flag to
+  # indicate that we have *entered* a header, before we are allowed to
+  # leave it!
+
+  my $header_flag = 0; # here is the flag/ It is "false" at first, and
+                       # is set to "true" when any valid header element
+                       # is encountered
+
   $self->{'REPORT_DONE'} = 0;  # reset this bit for a new report
-  while(<$FH>) {
-    if ($_ =~ /^Query=(?:\s+([^\(]+))?/) {
-      $header_flag = 1;   # valid header element found
-      my $query = $1;
-      while(<$FH>) {
-        last if $_ !~ /\S/;
-		$query .= $_;
+  while(defined($_ = $self->_readline() ) ) {
+      s/\(\s*\)//;
+      if ($_ =~ /^Query=(?:\s+([^\(]+))?/) {
+	  $header_flag = 1;	# valid header element found
+	  my $query = $1;
+	  while( defined($_ = $self->_readline() ) ) {
+	      if( $_ =~ /^Database/ ) { $self->_pushback($_); last; }
+	      $query .= $_;
+	  }
+	  $query =~ s/\s+/ /g;
+	  $query =~ s/^>//;
+
+	  my $length = 0;
+	  if( $query =~ /\(([\d,]+)\s+\S+\)\s*$/ ) {      
+	      $length = $1;
+	      $length =~ s/,//g;
+	  } else { 
+	      $self->debug("length is 0 for '$query'\n");
+	  }
+	  $self->{'QUERY'} = $query;
+	  $self->{'LENGTH'} = $length;
       }
-      $query =~ s/\s+/ /g;
-      $query =~ s/^>//;
-      $query =~ /\((\d+)\s+\S+\)\s*$/;
-      my $length = $1;
-      $self->{'QUERY'} = $query;
-      $self->{'LENGTH'} = $length;
-    }
-    elsif ($_ =~ /^(<b>)?(T)?BLAST([NPX])\s+([\d\.]+)\s+(\[\w-\])/) { $self->{'BLAST_TYPE'} = "$1BLAST$2"}   # BLAST report type - not a valid header element
-    elsif ($_ =~ /^Database:\s+(.+)/) {$header_flag = 1;$self->{'DATABASE'} = $1}   # valid header element found
-    elsif ($_ =~ /^\s*pattern\s+(\S+).*position\s+(\d+)\D/) {   
-# For PHIBLAST reports
-		$header_flag = 1;    # valid header element found
-		$self->{'PATTERN'} = $1;
-		push (@{$self->{'QPATLOCATION'}}, $2);
-#			$self->{'QPATLOCATION'} = $2;
-    } 
-    elsif (($_ =~ /^>/) && ($header_flag==1)) {$self->{'LASTLINE'} = $_; return 1} # only leave if we have actually parsed a valid header!
-    elsif (($_ =~ /^Parameters|^\s+Database:/) && ($header_flag==1)) {  # if we entered a header, and saw nothing before the stats at the end, then it was empty
-      $self->{'LASTLINE'} = $_;
-      return 0; # there's nothing in the report
-    }
+      elsif ($_ =~ /^(<b>)?(T?BLAST[NPX])\s+([\w\.-]+)\s+(\[[\w-]*\])/) { 
+	  $self->{'BLAST_TYPE'} = $2; 
+	  $self->{'BLAST_VERSION'} = $3;
+      }				# BLAST report type - not a valid header element # JB949
+      elsif ($_ =~ /^Database:\s+(.+)/) {$header_flag = 1;$self->{'DATABASE'} = $1} # valid header element found
+      elsif ($_ =~ /^\s*pattern\s+(\S+).*position\s+(\d+)\D/) {   
+	  # For PHIBLAST reports
+	  $header_flag = 1;	# valid header element found
+	  $self->{'PATTERN'} = $1;
+	  push (@{$self->{'QPATLOCATION'}}, $2);
+      } 
+      elsif (($_ =~ /^>/) && ($header_flag==1)) {$self->_pushback($_); return 1} # only leave if we have actually parsed a valid header!
+      elsif (($_ =~ /^Parameters|^\s+Database:/) && ($header_flag==1)) { # if we entered a header, and saw nothing before the stats at the end, then it was empty
+	  $self->_pushback($_);
+	  return 0;		# there's nothing in the report
+      }
   }
   return -1; # EOF
 }
+
 sub _fastForward {
     my ($self) = @_;
     return 0 if $self->{'REPORT_DONE'}; # empty report
-    return 0 if $self->{'LASTLINE'} =~ /^Parameters|^\s+Database:|^\s+Posted date:/;
-	return 1 if $self->{'LASTLINE'} =~ /^>/;
-
-    my $FH = $self->_fh();
-    my $capture;
-    while(<$FH>) {
-	if ($_ =~ /^>|^Parameters|^\s+Database:|^\s+Posted date:/) {
-	    $self->{'LASTLINE'} = $_;
+    while(defined( $_ = $self->_readline() ) ) {
+	if ($_ =~ /^Parameters|^\s+Database:|^\s+Posted date:/) {
+	    return 0;
+	} elsif( $_ =~ /^>/ ) {
+	    $self->_pushback($_);	
 	    return 1;
 	}
     }
-
-    $self->warn("Possible error while parsing BLAST report!");
+    $self->warn("Possible error (1) while parsing BLAST report!");
 }
 
 1;

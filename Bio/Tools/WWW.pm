@@ -1,9 +1,9 @@
 #-----------------------------------------------------------------------------
 # PACKAGE : Bio::Tools::WWW.pm
 # PURPOSE : To encapsulate commonly used URLs for web key websites in bioinformatics.
-# AUTHOR  : Steve A. Chervitz
+# AUTHOR  : Steve Chervitz
 # CREATED : 27 Aug 1996 
-# REVISION: $Id: WWW.pm,v 1.4.2.2 2001/06/21 15:36:05 heikki Exp $
+# REVISION: $Id: WWW.pm,v 1.8 2002/01/11 08:05:35 sac Exp $
 #
 # For documentation, run this module through pod2html 
 # (preferably from Perl v5.004 or better).
@@ -18,19 +18,19 @@
 
 package	 Bio::Tools::WWW;
 use strict;  
-use Bio::Root::RootI;
+use Bio::Root::Root;
 use Exporter      ();
-use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS $ID $version $BioWWW $Revision 
+use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS $ID $VERSION $BioWWW $Revision 
 	    $AUTHORITY);
 $AUTHORITY = 'nobody@localhost';
-@ISA         = qw( Bio::Root::RootI Exporter);
+@ISA         = qw( Bio::Root::Root Exporter);
 @EXPORT_OK   = qw($BioWWW);
 %EXPORT_TAGS = ( obj => [qw($BioWWW)],
 		 std => [qw($BioWWW)]);
 
 $ID = 'Bio::Tools::WWW';
-$version = 0.014;
-$Revision = '$Id: WWW.pm,v 1.4.2.2 2001/06/21 15:36:05 heikki Exp $'; #'
+$VERSION = 0.014;
+$Revision = '$Id: WWW.pm,v 1.8 2002/01/11 08:05:35 sac Exp $'; #'
 
 ## Static object.
 $BioWWW = {};
@@ -148,7 +148,7 @@ their resolution. Bug reports can be submitted via email or the web:
 
 =head1 AUTHOR
 
-Steve A. Chervitz, sac@genome.stanford.edu
+Steve Chervitz, sac@bioperl.org
 
 =head1 VERSION
 
@@ -156,7 +156,7 @@ Bio::Tools::WWW.pm, 0.014
 
 =head1 COPYRIGHT
 
-Copyright (c) 1996-98 Steve A. Chervitz. All Rights Reserved.
+Copyright (c) 1996-98 Steve Chervitz. All Rights Reserved.
 This module is free software; you can redistribute it and/or 
 modify it under the same terms as Perl itself.
 

@@ -1,4 +1,4 @@
-# $Id: msf.pm,v 1.5.2.1 2001/05/25 12:09:02 heikki Exp $
+# $Id: msf.pm,v 1.11 2002/02/13 15:32:54 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::msf
 
@@ -54,14 +54,18 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::AlignIO::msf;
-use vars qw(@ISA);
+use vars qw(@ISA %valid_type);
 use strict;
 
 use Bio::AlignIO;
 use Bio::SeqIO::gcg; # for GCG_checksum()
+use Bio::SimpleAlign;
 
 @ISA = qw(Bio::AlignIO);
 
+BEGIN {
+    %valid_type = qw( dna N rna N protein P );
+}
 
 =head2 next_aln
 
@@ -71,7 +75,7 @@ use Bio::SeqIO::gcg; # for GCG_checksum()
           It reads all non whitespace characters in the alignment
           area. For MSFs with weird gaps (eg ~~~) map them by using
           $al->map_chars('~','-')
- Returns : SimpleAlign object
+ Returns : Bio::Align::AlignI object
  Args    : NONE
 
 =cut
@@ -81,7 +85,7 @@ sub next_aln {
     my $entry;
     my (%hash,$name,$str,@names,$seqname,$start,$end,$count,$seq);
 
-    my $aln =  Bio::SimpleAlign->new();
+    my $aln =  Bio::SimpleAlign->new(-source => 'gcg' );
 
 
     while( $entry = $self->_readline) {
@@ -125,12 +129,12 @@ sub next_aln {
        }
 
        $seq = new Bio::LocatableSeq('-seq'=>$hash{$name},
-			   '-id'=>$seqname,
-			   '-start'=>$start,
-			   '-end'=>$end,
-			   );
+				    '-id'=>$seqname,
+				    '-start'=>$start,
+				    '-end'=>$end,
+				    );
 
-       $aln->addSeq($seq);
+       $aln->add_seq($seq);
 
 
 #  If $end <= 0, we have either reached the end of
@@ -152,8 +156,9 @@ sub next_aln {
  Title   : write_aln
  Usage   : $stream->write_aln(@aln)
  Function: writes the $aln object into the stream in MSF format
+           Sequence type of the alignment is determined by the first sequence.
  Returns : 1 for success and 0 for error
- Args    : Bio::SimpleAlign object
+ Args    : Bio::Align::AlignI object
 
 
 =cut
@@ -165,69 +170,72 @@ sub write_aln {
     my $count = 0;
     my $maxname;
     my ($length,$date,$name,$seq,$miss,$pad,%hash,@arr,$tempcount,$index);
-
-  foreach my $aln (@aln) {
-
-    $date = localtime(time);
-    $msftag = "MSF";
-    $type = "P";
-    $maxname = $aln->maxnse_length();
-    $length  = $aln->length_aln();
-    $name = $aln->id();
-    if( !defined $name ) {
-	$name = "Align";
-    }
-
-
-   $self->_print (sprintf("\n%s   MSF: %d  Type: P  %s  Check: 00 ..\n\n",$name,$aln->no_sequences,$date));
-
-
-      foreach $seq ( $aln->eachSeq() ) {
+    foreach my $aln (@aln) {
+	if( ! $aln || ! $aln->isa('Bio::Align::AlignI')  ) { 
+	    $self->warn("Must provide a Bio::Align::AlignI object when calling write_aln");
+	    next;
+	}
+	$date = localtime(time);
+	$msftag = "MSF";
+	$type = $valid_type{$aln->get_seq_by_pos(1)->alphabet};
+	$maxname = $aln->maxdisplayname_length();
+	$length  = $aln->length();
+	$name = $aln->id();
+	if( !defined $name ) {
+	    $name = "Align";
+	}
 
 
-	$name = $aln->get_displayname($seq->get_nse());
-	$miss = $maxname - length ($name);
-	$miss += 2;
-	$pad  = " " x $miss;
+	$self->_print (sprintf("\n%s   MSF: %d  Type: %s  %s  Check: 00 ..\n\n", 
+			       $name,  $aln->no_sequences, $type, $date));
 
-	$self->_print (sprintf(" Name: %s%sLen:    %d  Check:  %d  Weight:  1.00\n",$name,$pad,length $seq->seq(), Bio::SeqIO::gcg->GCG_checksum($seq)));
-	
-	$hash{$name} = $seq->seq();
-	push(@arr,$name);
-    }
+
+	foreach $seq ( $aln->each_seq() ) {
+
+
+	    $name = $aln->displayname($seq->get_nse());
+	    $miss = $maxname - length ($name);
+	    $miss += 2;
+	    $pad  = " " x $miss;
+
+	    $self->_print (sprintf(" Name: %s%sLen:    %d  Check:  %d  Weight:  1.00\n",$name,$pad,length $seq->seq(), Bio::SeqIO::gcg->GCG_checksum($seq)));
+
+	    $hash{$name} = $seq->seq();
+	    push(@arr,$name);
+	}
     	# ok - heavy handed, but there you go.
     	#
     	$self->_print ("\n//\n\n\n");
 
     	while( $count < $length ) {	
-		# there is another block to go!
-	   foreach $name  ( @arr ) {
-	    	$self->_print (sprintf("%20s  ",$name));
-	
+	    # there is another block to go!
+	    foreach $name  ( @arr ) {
+	    	$self->_print (sprintf("%-20s  ",$name));
+
 	    	$tempcount = $count;
 	    	$index = 0;
 	    	while( ($tempcount + 10 < $length) && ($index < 5)  ) {
-		
-			$self->_print (sprintf("%s ",substr($hash{$name},$tempcount,10)));
-				
-			$tempcount += 10;
-			$index++;
+
+		    $self->_print (sprintf("%s ",substr($hash{$name},$tempcount,10)));
+
+		    $tempcount += 10;
+		    $index++;
 	    	}	    	#
 	    	# ok, could be the very last guy ;)
 	    	#
 	    	if( $index < 5) {
-			# space to print!
-			#
-			$self->_print (sprintf("%s ",substr($hash{$name},$tempcount)));
-			$tempcount += 10;
+		    # space to print!
+		    #
+		    $self->_print (sprintf("%s ",substr($hash{$name},$tempcount)));
+		    $tempcount += 10;
 	    	}
 	    	$self->_print ("\n");
-  	   }
-	    	$self->_print ("\n\n");
-		$count = $tempcount;
+	    }
+	    $self->_print ("\n\n");
+	    $count = $tempcount;
     	}     			
-      }
-   return 1;
+    }
+    return 1;
 }
 
 1;

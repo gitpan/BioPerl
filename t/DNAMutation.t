@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: DNAMutation.t,v 1.5.2.1 2001/04/01 17:56:28 heikki Exp $
+## $Id: DNAMutation.t,v 1.6 2001/04/01 17:54:59 heikki Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'

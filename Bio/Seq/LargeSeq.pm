@@ -1,4 +1,4 @@
-# $Id: LargeSeq.pm,v 1.5.2.1 2001/03/02 22:48:00 heikki Exp $
+# $Id: LargeSeq.pm,v 1.10 2001/12/10 16:10:22 heikki Exp $
 #
 # BioPerl module for Bio::Seq::LargeSeq
 #
@@ -111,10 +111,31 @@ sub trunc {
 				  '-display_id' => $self->display_id,
 				  '-accession_number' => $self->accession_number,
 				  '-desc' => $self->desc,
-				  '-moltype' => $self->moltype,
+				  '-alphabet' => $self->alphabet,
 				  -primaryseq => 
 				  $self->primary_seq->trunc($s,$e));
 
+}
+
+=head2 Bio::Seq::LargePrimarySeq methods
+
+=cut
+
+=head2 add_sequence_as_string
+
+ Title   : add_sequence_as_string
+ Usage   : $seq->add_sequence_as_string("CATGAT");
+ Function: Appends additional residues to an existing LargePrimarySeq object.  
+           This allows one to build up a large sequence without storing
+           entire object in memory.
+ Returns : Current length of sequence
+ Args    : string to append
+
+=cut
+
+sub add_sequence_as_string {
+    my ($self,$str) = @_;
+    return $self->primary_seq->add_sequence_as_string($str);
 }
 
 1;

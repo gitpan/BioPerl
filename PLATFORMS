@@ -1,4 +1,4 @@
-# $Id: PLATFORMS,v 1.7.2.3 2001/11/04 17:26:39 jason Exp $
+# $Id: PLATFORMS,v 1.13.2.2 2002/03/18 16:30:38 jason Exp $
 
 Perl general comments:
 
@@ -10,24 +10,30 @@ Perl general comments:
           versions of HTML::Parser.
 
 	o DB.t has intermittent time-out failures (which will most
-	  likely cause tests 3 and/or 27 to fail)
+	  likely cause tests 3 and/or 27 to fail).
 
 	o Index.t will fail if you have an out-of-date DBM file
-	  installation
+	  installation.
 
 
 Tested systems & OS Specific Comments or Warnings
 ==================================================
 
+Machine : RedHat Linux 7.2 i686
+Compiler: cc
+Perl    : 5.004-5.6.1
+Comments: XML::Writer tests fails (segfault), but do an install/force anyways
+	  and all will work.
+
 Machine : Linux i386
 Compiler: cc
-Perl    : 5.004-5.6.0
+Perl    : 5.004-5.6.1
 Comments: none
 
 Machine : Digital Unix
 Compiler: cc
 Perl    : 5.004
-Comments: Failure on GDB.t, possibly due to LWP issues
+Comments: Failure on GDB.t, possibly due to LWP cissues
 
 Machine : OpenBSD 2.8 i386
 Compiler: cc
@@ -37,7 +43,7 @@ Comments: none
 Machine : Solaris 2.8 UltraSparc
 Compiler: gcc
 Perl    : 5.6.0
-Comments: none
+Comments: The t/flat.t test may report errors being unable to remove a temp directory, these can be safely ignored although an uncessary directory t/tmp may get created as result of this test.
 
 Machine : FreeBSD 4.2 i386
 Compiler: gcc
@@ -54,17 +60,26 @@ Comments: Some warnings about <HANDLE> which can be safely
 
 Machine : Win32, WinNT i386
 Compiler: --
-Perl    : ActiveState Perl 5.6
-Comments: Likely failure of Index.t (i.e., the modules in Bio/Index/),
+Perl    : ActiveState Perl 5.6, 5.5.1
+Comments: Be sure that the module DB_File is installed and up-to-date 
+	  to allow Bio::Index modules to work properly. 
           File::Temp potentially broken (causing at least BPpsilite to fail)
+	  Installing ppm's IO-stringy and IO-String and File-Temp are 
+	  necessary as well.
 	  See http://bioperl.org/Core/windows-bioperl.html for more info on 
 	  installing on Windows.
-
+	
 Machine : MacOS
 Compiler: --
-Perl    : MacPerl 5.004
+Perl    : MacPerl
 Comments: Issues and possible ways to fix them summarized by Todd Richmond
-          at http://bioperl.org/Core/mac-bioperl.html
+          on the bioperl.org Wiki.
 
 
+Machine : MacOS X
+Compiler: gcc
+Perl    : 5.6.0
+Comments: Steve Cannon has made available Bioperl OS X installation
+	  directions and notes online at the following URL:
+	  http://www.tc.umn.edu/~cann0010/Bioperl_OSX_install.html
 

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: Chain.pm,v 1.9.2.3 2001/06/21 15:36:02 heikki Exp $
+# $Id: Chain.pm,v 1.12 2001/06/18 08:27:53 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::Chain
 #
@@ -101,7 +101,7 @@ package Bio::LiveSeq::Chain;
 # Tue Dec 12 16:28:45 GMT 2000 v 2.7 rewritten comments to methods in pod style
 
 #
-$version=2.7;
+$VERSION=2.7;
 #
 # TODO_list:
 # **** cleanup code

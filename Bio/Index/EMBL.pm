@@ -1,4 +1,4 @@
-# $Id: EMBL.pm,v 1.17.2.2 2001/06/21 15:36:01 heikki Exp $
+# $Id: EMBL.pm,v 1.19 2001/05/16 14:57:37 heikki Exp $
 #
 # BioPerl module for Bio::Index::Abstract
 #
@@ -87,7 +87,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::Index::EMBL;
 
-use vars qw($version @ISA);
+use vars qw($VERSION @ISA);
 use strict;
 
 use Bio::Index::AbstractSeq;
@@ -105,11 +105,11 @@ sub _type_stamp {
 #
 
 BEGIN {
-    $version = 0.1;
+    $VERSION = 0.1;
 }
 
 sub _version {
-    return $version;
+    return $VERSION;
 }
 
 =head2 _index_file

@@ -1,4 +1,4 @@
-# $Id: SeqDiff.pm,v 1.7.2.5 2001/06/21 15:36:05 heikki Exp $
+# $Id: SeqDiff.pm,v 1.13 2002/02/18 17:17:25 bosborne Exp $
 # bioperl module for Bio::Variation::SeqDiff
 #
 # Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
@@ -19,7 +19,7 @@ Bio::Variation::SeqDiff - Container class for mutation/variant descriptions
 
   $seqDiff = Bio::Variation::SeqDiff->new (
                                            -id => $M20132,
-					   -moltype => 'rna',
+					   -alphabet => 'rna',
                                            -gene_symbol => 'AR'
                                            -chromosome => 'X',
                                            -numbering => 'coding'
@@ -30,22 +30,24 @@ Bio::Variation::SeqDiff - Container class for mutation/variant descriptions
 
 =head1 DESCRIPTION
 
-SeqDiff stores L<Bio::Variation::VariantI> object references and
+SeqDiff stores Bio::Variation::VariantI object references and
 descriptive information common to all changes in a sequence. Mutations
 are understood to be any kind of sequence markers and are expected to
-occur in the same chromosome.
+occur in the same chromosome. See L<Bio::Variation::VariantI> for details.
 
 The methods of SeqDiff are geared towards describing mutations in
-human genes using gene-based coordiante system where 'A' of the
+human genes using gene-based coordinate system where 'A' of the
 initiator codon has number 1 and the one before it -1. This is
 according to conventions of human genetics.
 
 There will be class Bio::Variation::Genotype to describe markers in
 different chromosomes and diploid genototypes.
 
-Classes implementing L<Bio::Variation::VariantI>
-interface are L<Bio::Variation::DNAMutation>,
-L<Bio::Variation::RNAChange> and L<Bio::Variation::AAChange>.
+Classes implementing Bio::Variation::VariantI interface are 
+Bio::Variation::DNAMutation, Bio::Variation::RNAChange, and
+Bio::Variation::AAChange. See L<Bio::Variation::VariantI>,
+L<Bio::Variation::DNAMutation>, L<Bio::Variation::RNAChange>, and
+L<Bio::Variation::AAChange> for more information.
 
 Variant objects can be added using two ways: an array passed to the
 constructor or as individual Variant objects with add_Variant
@@ -91,15 +93,15 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Variation::SeqDiff;
-my $version=1.0;
+my $VERSION=1.0;
 
 use strict;
-use vars qw($version @ISA);
-use Bio::Root::RootI;
+use vars qw($VERSION @ISA);
+use Bio::Root::Root;
 use Bio::Tools::CodonTable;
 use Bio::PrimarySeq;
 
-@ISA = qw( Bio::Root::RootI );
+@ISA = qw( Bio::Root::Root );
 
 
 =head2 new
@@ -119,7 +121,7 @@ sub new {
     bless $self, $class;
 
     my($id, $sysname, $trivname, $chr, $gene_symbol, 
-       $desc, $moltype, $numbering, $offset, $rna_offset, $rna_id, $cds_end,
+       $desc, $alphabet, $numbering, $offset, $rna_offset, $rna_id, $cds_end,
        $dna_ori, $dna_mut, $rna_ori, $rna_mut, $aa_ori, $aa_mut
        #@variants, @genes
        ) =
@@ -129,7 +131,7 @@ sub new {
 				 CHR
 				 GENE_SYMBOL
 				 DESC
-				 MOLTYPE
+				 ALPHABET
 				 NUMBERING
 				 OFFSET
 				 RNA_OFFSET
@@ -151,7 +153,7 @@ sub new {
     $chr       && $self->chromosome($chr);  
     $gene_symbol && $self->gene_symbol($chr);
     $desc      && $self->description($desc);
-    $moltype   && $self->moltype($moltype);
+    $alphabet   && $self->alphabet($alphabet);
     $numbering && $self->numbering($numbering);
     $offset    && $self->offset($offset);   
     $rna_offset && $self->rna_offset($rna_offset);   
@@ -380,10 +382,10 @@ sub description {
 }
 
 
-=head2 moltype
+=head2 alphabet
 
- Title   : moltype
- Usage   : if( $obj->moltype eq 'dna' ) { /Do Something/ }
+ Title   : alphabet
+ Usage   : if( $obj->alphabet eq 'dna' ) { /Do Something/ }
  Function: Returns the type of primary reference sequence being one of 
            'dna', 'rna' or 'protein'. This is case sensitive.
 
@@ -393,19 +395,19 @@ sub description {
 
 =cut
 
-sub moltype {
+sub alphabet {
    my ($self,$value) = @_;
    my %type = (dna => 1,
 	       rna => 1,
 	       protein => 1);
    if( defined $value ) {
        if ($type{$value}) {
-	   $self->{'moltype'} = $value;
+	   $self->{'alphabet'} = $value;
        } else {
-	   $self->throw("$value is not valid moltype value!");
+	   $self->throw("$value is not valid alphabet value!");
        }
    }
-   return $self->{'moltype'};
+   return $self->{'alphabet'};
 }
 
 
@@ -655,7 +657,9 @@ sub each_Variant{
 
  Example : 
  Returns : 1 when succeeds, 0 for failure.
- Args    : L<Bio::LiveSeq::Gene> object
+ Args    : Bio::LiveSeq::Gene object
+
+See L<Bio::LiveSeq::Gene> for more information.
 
 =cut
 
@@ -862,11 +866,13 @@ sub aa_mut {
  Function: 
 
 	    Returns the any original or mutated sequences as a
-	    L<Bio::PrimarySeq> object. 
+	    Bio::PrimarySeq object.
 
  Example : 
- Returns : L<Bio::PrimarySeq> object for the requested sequence
+ Returns : Bio::PrimarySeq object for the requested sequence
  Args    : string, method name for the sequence requested
+
+See L<Bio::PrimarySeq> for more information.
 
 =cut
 
@@ -878,15 +884,15 @@ sub seqobj {
   $valid_obj{$value} ||
       $self->throw("Sequence type '$value' is not a valid type (".
                   join(',', map "'$_'", sort keys %valid_obj) .") lowercase");
-  my ($moltype) = $value =~ /([^_]+)/;
+  my ($alphabet) = $value =~ /([^_]+)/;
   my $id =  $self->id;
   $id =  $self->rna_id if $self->rna_id;
-  $moltype = 'protein' if $moltype eq 'aa';
+  $alphabet = 'protein' if $alphabet eq 'aa';
   $out = Bio::PrimarySeq->new
       ( '-seq' => $self->{$value},
 	'-display_id'  => $id,
 	'-accession_number' => $self->id,
-	'-moltype' => $moltype
+	'-alphabet' => $alphabet
 	) if   $self->{$value} ;
   return $out;
 }

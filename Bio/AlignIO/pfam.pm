@@ -1,4 +1,4 @@
-# $Id: pfam.pm,v 1.4 2001/01/03 17:56:43 jason Exp $
+# $Id: pfam.pm,v 1.6 2002/02/13 15:32:54 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::pfam
 
@@ -82,7 +82,7 @@ sub next_aln {
     my $acc;
     my %names;
 
-    my $aln =  Bio::SimpleAlign->new();
+    my $aln =  Bio::SimpleAlign->new(-source => 'pfam');
 
     while( $entry = $self->_readline) {
 	chomp $entry;
@@ -104,7 +104,7 @@ sub next_aln {
 			    '-end'=>$end,
 			    );
 
-	$aln->addSeq($add);
+	$aln->add_seq($add);
 	
     }
 
@@ -137,8 +137,8 @@ sub write_aln {
       my ($maxn);
       $maxn = $aln->maxdisplayname_length();
 
-      foreach $seq ( $aln->eachSeq() ) {
-	  $namestr = $aln->get_displayname($seq->get_nse());
+      foreach $seq ( $aln->each_seq() ) {
+	  $namestr = $aln->displayname($seq->get_nse());
 	  $add = $maxn - length($namestr) + 2;
 	  $namestr .= " " x $add;
 	  $self->_print (sprintf("%s  %s\n",$namestr,$seq->seq())) or return;

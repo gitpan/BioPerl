@@ -1,4 +1,4 @@
-# $Id: Generic.pm,v 1.46.2.3 2001/05/29 22:28:07 jason Exp $
+# $Id: Generic.pm,v 1.56 2002/03/01 10:22:47 birney Exp $
 #
 # BioPerl module for Bio::SeqFeature::Generic
 #
@@ -64,7 +64,7 @@ some extra piece of information, you can use the tag system to easily
 store and then retrieve information.
 
 The tag system can be written in/out of GFF format, and also into EMBL
-format via AnnSeqIO::EMBL.
+format via the SeqIO system
 
 =head1 FEEDBACK
 
@@ -116,21 +116,22 @@ package Bio::SeqFeature::Generic;
 use vars qw(@ISA);
 use strict;
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
 use Bio::SeqFeatureI;
 use Bio::Annotation;
 use Bio::Location::Simple;
 use Bio::Tools::GFF;
+#use Tie::IxHash;
 
-@ISA = qw(Bio::Root::RootI Bio::SeqFeatureI);
+@ISA = qw(Bio::Root::Root Bio::SeqFeatureI);
 
 sub new {
     my ( $caller, @args) = @_;   
     my ($self) = $caller->SUPER::new(@args); 
 
-    $self->{'_gsf_tag_hash'} = {};
-    $self->{'_gsf_sub_array'} = [];
-    $self->{'_parse_h'} = {};
+    $self->{'_parse_h'}       = {};
+    $self->{'_gsf_tag_hash'}  = {};
+#    tie %{$self->{'_gsf_tag_hash'}}, "Tie::IxHash";
     my ($start, $end, $strand, $primary, $source, $frame, 
 	$score, $tag, $gff_string, $gff1_string, $seqname, $annot, $location) =
 	    $self->_rearrange([qw(START
@@ -153,20 +154,30 @@ sub new {
 	$self->gff_format(Bio::Tools::GFF->new('-gff_version' => 1));
 	$self->_from_gff_stream($gff1_string);
     };
-    $primary         && $self->primary_tag($primary);
-    $source          && $self->source_tag($source);
-    defined $start   && $self->start($start);
-    defined $end     && $self->end($end);
-    defined $strand  && $self->strand($strand);
-    defined $frame   && $self->frame($frame);
-    $score           && $self->score($score);
-    $seqname         && $self->seqname($seqname);
-    $annot           && $self->annotation($annot);
-    $tag             && do {
+    $primary        && $self->primary_tag($primary);
+    $source         && $self->source_tag($source);
+    defined $start  && $self->start($start);
+    defined $end    && $self->end($end);
+    defined $strand && $self->strand($strand);
+    defined $frame  && $self->frame($frame);
+    $score          && $self->score($score);
+    $seqname        && $self->seqname($seqname);
+    $annot          && $self->annotation($annot);
+    $tag            && do {
 	foreach my $t ( keys %$tag ) {
 	    $self->add_tag_value($t,$tag->{$t});
 	}
     };
+    return $self;
+}
+
+
+sub direct_new {
+    my ( $class) = @_;   
+    my ($self) = {};
+
+    bless $self,$class;
+
     return $self;
 }
 
@@ -183,21 +194,20 @@ sub new {
 =cut
 
 sub location {
-   my ($self,$value) = @_;  
+    my($self, $value ) = @_;  
 
-   # guarantees a real location object is returned every time
-   if( defined($value) || !exists($self->{'_location'}) ) {
-       if(defined($value)) {
-	   if(! $value->isa('Bio::LocationI')) {
-	       $self->throw("object $value pretends to be a location but ".
-			    "does not implement Bio::LocationI");
-	   }
-       } else {
-	   $value = Bio::Location::Simple->new();
-       }
-       $self->{'_location'} = $value;
-   }
-   return $self->{'_location'};
+    if (defined($value)) {
+        unless (ref($value) and $value->isa('Bio::LocationI')) {
+	    $self->throw("object $value pretends to be a location but ".
+			 "does not implement Bio::LocationI");
+        }
+        $self->{'_location'} = $value;
+    }
+    elsif (! $self->{'_location'}) {
+        # guarantees a real location object is returned every time
+        $self->{'_location'} = Bio::Location::Simple->new();
+    }
+    return $self->{'_location'};
 }
 
 
@@ -331,8 +341,13 @@ sub frame {
 =cut
 
 sub sub_SeqFeature {
-   my ($self) = @_;   
-   return @{$self->{'_gsf_sub_array'}};
+    my ($self) = @_;
+
+    if ($self->{'_gsf_sub_array'}) {
+        return @{$self->{'_gsf_sub_array'}};
+    } else {
+        return;
+    }
 }
 
 =head2 add_sub_SeqFeature
@@ -356,21 +371,22 @@ sub sub_SeqFeature {
 
 #'
 sub add_sub_SeqFeature{
-   my ($self,$feat,$expand) = @_;
+    my ($self,$feat,$expand) = @_;
 
-   if ( !$feat->isa('Bio::SeqFeatureI') ) {
-       $self->warn("$feat does not implement Bio::SeqFeatureI. Will add it anyway, but beware...");
-   }
+    if ( !$feat->isa('Bio::SeqFeatureI') ) {
+        $self->warn("$feat does not implement Bio::SeqFeatureI. Will add it anyway, but beware...");
+    }
 
-   if($expand && ($expand eq 'EXPAND')) {
-       $self->_expand_region($feat);
-   } else {
-       if ( !$self->contains($feat) ) {
-	   $self->throw("$feat is not contained within parent feature, and expansion is not valid");
-       }
-   }
+    if($expand && ($expand eq 'EXPAND')) {
+        $self->_expand_region($feat);
+    } else {
+        if ( !$self->contains($feat) ) {
+	    $self->throw("$feat is not contained within parent feature, and expansion is not valid");
+        }
+    }
 
-   push(@{$self->{'_gsf_sub_array'}},$feat);
+    $self->{'_gsf_sub_array'} ||= [];
+    push(@{$self->{'_gsf_sub_array'}},$feat);
 
 }
 
@@ -452,8 +468,8 @@ sub source_tag {
 =cut
 
 sub has_tag {
-   my ($self, $tag) = (shift, shift);
-   return exists $self->{'_gsf_tag_hash'}->{$tag};
+    my ($self, $tag) = @_;
+    return exists $self->{'_gsf_tag_hash'}->{$tag};
 }
 
 =head2 add_tag_value
@@ -467,13 +483,9 @@ sub has_tag {
 =cut
 
 sub add_tag_value {
-   my ($self, $tag, $value) = @_;
-
-   if ( !defined $self->{'_gsf_tag_hash'}->{$tag} ) {
-       $self->{'_gsf_tag_hash'}->{$tag} = [];
-   }
-
-   push(@{$self->{'_gsf_tag_hash'}->{$tag}},$value);
+    my ($self, $tag, $value) = @_;    
+    $self->{'_gsf_tag_hash'}->{$tag} ||= [];
+    push(@{$self->{'_gsf_tag_hash'}->{$tag}},$value);
 }
 
 
@@ -491,6 +503,7 @@ sub add_tag_value {
 
 sub each_tag_value {
    my ($self, $tag) = @_;
+   if( ! defined $tag ) { return (); }
    if ( ! exists $self->{'_gsf_tag_hash'}->{$tag} ) {
        $self->throw("asking for tag value that does not exist $tag");
    }
@@ -511,9 +524,8 @@ sub each_tag_value {
 =cut
 
 sub all_tags {
-   my ($self, @args) = @_;
-
-   return keys %{$self->{'_gsf_tag_hash'}};
+   my ($self, @args) = @_;   
+   return keys %{ $self->{'_gsf_tag_hash'}};
 }
 
 
@@ -534,8 +546,8 @@ sub remove_tag {
    if ( ! exists $self->{'_gsf_tag_hash'}->{$tag} ) {
        $self->throw("trying to remove a tag that does not exist: $tag");
    }
-
    delete $self->{'_gsf_tag_hash'}->{$tag};
+   return 1;
 }
 
 =head2 attach_seq
@@ -762,7 +774,7 @@ sub slurp_gff_file {
        die "Must have a filehandle";
    }
 
-   Bio::Root::RootI->warn("deprecated method slurp_gff_file() called in Bio::SeqFeature::Generic. Use Bio::Tools::GFF instead.");
+   Bio::Root::Root->warn("deprecated method slurp_gff_file() called in Bio::SeqFeature::Generic. Use Bio::Tools::GFF instead.");
   
    while(<$f>) {
 
@@ -815,7 +827,6 @@ sub _from_gff_string {
 
 sub _expand_region {
     my ($self, $feat) = @_;
-
     if(! $feat->isa('Bio::SeqFeatureI')) {
 	$self->warn("$feat does not implement Bio::SeqFeatureI");
     }

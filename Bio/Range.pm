@@ -1,4 +1,4 @@
-# $Id: Range.pm,v 1.11.2.1 2001/03/02 22:47:54 heikki Exp $
+# $Id: Range.pm,v 1.13.2.1 2002/03/15 14:40:01 heikki Exp $
 #
 # BioPerl module for Bio::Range
 #
@@ -14,6 +14,16 @@
 =head1 NAME
 
 Bio::Range - Pure perl RangeI implementation
+
+=head1 SYNOPSIS
+
+  $range = new Bio::Range(-start=>10, -end=>30, -strand=>+1);
+  $r2 = new Bio::Range(-start=>15, -end=>200, -strand=>+1);
+
+  print join(', ', $range->union($r2), "\n";
+  print join(', ', $range->intersection($r2), "\n";
+  print $range->overlaps($r2), "\n";
+  print $range->contains($r2), "\n";
 
 =head1 DESCRIPTION
 
@@ -31,16 +41,6 @@ So, in summary:
   length = end - start + 1
   end >= start
   strand = (-1 | 0 | +1)
-
-=head1 SYNOPSIS
-
-  $range = new Bio::Range(-start=>10, -end=>30, -strand=>+1);
-  $r2 = new Bio::Range(-start=>15, -end=>200, -strand=>+1);
-
-  print join(', ', $range->union($r2), "\n";
-  print join(', ', $range->intersection($r2), "\n";
-  print $range->overlaps($r2), "\n";
-  print $range->contains($r2), "\n";
 
 =head1 FEEDBACK
 
@@ -79,11 +79,11 @@ use strict;
 use Carp;
 use integer;
 use Bio::RangeI;
-use Bio::Root::RootI;
+use Bio::Root::Root;
 
 use vars qw(@ISA);
 
-@ISA = qw(Bio::Root::RootI Bio::RangeI);
+@ISA = qw(Bio::Root::Root Bio::RangeI);
 
 =head1 Constructors
 

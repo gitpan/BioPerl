@@ -1,6 +1,6 @@
 
 #
-# $Id: GenBank.pm,v 1.4.2.2 2001/06/21 15:36:01 heikki Exp $
+# $Id: GenBank.pm,v 1.7 2001/12/13 23:09:00 jason Exp $
 #
 # BioPerl module for Bio::Index::Abstract
 #
@@ -22,7 +22,7 @@ Bio::Index::GenBank - Interface for indexing (multiple) GenBank
     use Bio::Index::GenBank;
 
     my $Index_File_Name = shift;
-    my $inx = Bio::Index::GenBank->new('-filename' => $Index_File_Name,
+    my $inx = Bio::Index::GenBank->new('-filename' => $Index_File_Name, 
 				       '-write_flag' => 'WRITE');
     $inx->make_index(@ARGV);
 
@@ -86,7 +86,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::Index::GenBank;
 
-use vars qw($version @ISA);
+use vars qw($VERSION @ISA);
 use strict;
 
 use Bio::Index::AbstractSeq;
@@ -104,11 +104,11 @@ sub _type_stamp {
 #
 
 BEGIN {
-    $version = 0.1;
+    $VERSION = 0.1;
 }
 
 sub _version {
-    return $version;
+    return $VERSION;
 }
 
 =head2 _index_file
@@ -158,8 +158,9 @@ sub _index_file {
 	    foreach my $acc (@accs) {
 		if( $acc ne $id ) {
 		    $self->add_record($acc, $i, $begin);
-		}
+		}		
 	    }
+	    @accs = ();
 	} elsif (/^LOCUS\s+(\S+)/) {
 	    $id = $1;
 	    # not sure if I like this. Assummes tell is in bytes.
@@ -168,6 +169,12 @@ sub _index_file {
 	    
 	} elsif (/^ACCESSION(.*)/) { # ignore ? if there.
 	    @accs = ($1 =~ /\s*(\S+)/g);
+	} elsif( /^VERSION(.*)/) {
+	    my $a = $1;
+	    $a =~ s/^\s+//;
+	    $a =~ s/\s+$//;
+	    $a =~ s/GI\://;
+	    push @accs, split(/\s+/,$a);
 	} else {
 	    # do nothing
 	}

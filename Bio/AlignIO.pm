@@ -1,4 +1,4 @@
-# $Id: AlignIO.pm,v 1.7.2.3 2001/05/16 11:05:43 heikki Exp $
+# $Id: AlignIO.pm,v 1.20 2002/02/18 17:17:23 bosborne Exp $
 #
 # BioPerl module for Bio::AlignIO
 #
@@ -46,9 +46,11 @@ or
 
 =head1 DESCRIPTION
 
-Bio::AlignIO is a handler module for the formats in the AlignIO set (eg,
-Bio::AlignIO::fasta). It is the officially sanctioned way of getting at
-the alignment objects, which most people should use.
+Bio::AlignIO is a handler module for the formats in the AlignIO set
+(eg, Bio::AlignIO::fasta). It is the officially sanctioned way of
+getting at the alignment objects, which most people should use. The
+resulting alignment is a Bio::Align::AlignI compliant object. See
+L<Bio::Align::AlignI> for more information.
 
 The idea is that you request a stream object for a particular format.
 All the stream objects have a notion of an internal file that is read
@@ -69,8 +71,8 @@ also
    $stream->type() # returns 'INPUT' or 'OUTPUT'
 
 As an added bonus, you can recover a filehandle that is tied to the
-AlignIO object, allowing you to use the standard E<lt>E<gt> and print operations
-to read and write sequence objects:
+AlignIO object, allowing you to use the standard E<lt>E<gt> and print
+operations to read and write sequence objects:
 
     use Bio::AlignIO;
 
@@ -101,16 +103,21 @@ This makes the simplest ever reformatter
 
 AlignIO.pm is patterned on the module SeqIO.pm and shares most the
 SeqIO.pm features.  One significant difference currently is that
-AlignIO.pm only handles IO for a single alignment at a time (SeqIO.pm
-handles IO for multiple sequences in a single stream.)  The principal
-reason for this is that whereas simultaneously handling multiple
-sequences is a common requirement, simultaneous handling of multiple
-alignments is not. Capability for IO for more than one multiple
-alignment (which may be of use for certain applications such as IO for
-Pfam libraries) may be included in the future.  For this reason we
-keep the name "next_aln()" for the alignment input routine, even
-though currently only one alignment is read (or written) at a time and
-the name "read_aln()" might be more appropriate.
+AlignIO.pm usually handles IO for only a single alignment at a time
+(SeqIO.pm handles IO for multiple sequences in a single stream.)  The
+principal reason for this is that whereas simultaneously handling
+multiple sequences is a common requirement, simultaneous handling of
+multiple alignments is not. The only current exception is format
+"bl2seq" which parses results of the Blast bl2seq program and which
+may produce several alignment pairs.  This set of alignment pairs can
+be read using multiple calls to next_aln.
+
+Capability for IO for more than one multiple alignment - other than
+for bl2seq format -(which may be of use for certain applications such
+as IO for Pfam libraries) may be included in the future.  For this
+reason we keep the name "next_aln()" for the alignment input routine,
+even though in most cases only one alignment is read (or written) at a
+time and the name "read_aln()" might be more appropriate.
 
 =head1 CONSTRUCTORS
 
@@ -121,8 +128,8 @@ the name "read_aln()" might be more appropriate.
    $seqIO = Bio::AlignIO->new(-format => $format);
 
 The new() class method constructs a new Bio::AlignIO object.  The
-returned object can be used to retrieve or print BioAlign objects. new()
-accepts the following parameters:
+returned object can be used to retrieve or print BioAlign
+objects. new() accepts the following parameters:
 
 =over 4
 
@@ -163,11 +170,14 @@ Specify the format of the file.  Supported formats include:
    clustalw    clustalw (.aln) format
    msf         msf (GCG) format
    mase        mase (seaview) format
+   bl2seq      Bl2seq Blast output
+   nexus       Swofford et al NEXUS format
+   pfam        Pfam sequence alignment format
+   phylip      Felsenstein's PHYLIP format
 
 Currently only those formats which were implemented in SimpleAlign.pm
 have been incorporated in AlignIO.pm.  Specifically, mase, stockholm
-and prodom have only been implemented for input. Clustalw format has only
-been implemented for output.
+and prodom have only been implemented for input.
 
 If no format is specified and a filename is given, then the module
 will attempt to deduce it from the filename.  If this is unsuccessful,
@@ -235,6 +245,10 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 
 Email: schattner@alum.mit.edu
 
+=head1 CONTRIBUTORS
+
+Jason Stajich, jason@bioperl.org
+
 =head1 APPENDIX
 
 The rest of the documentation details each of the object
@@ -242,20 +256,19 @@ methods. Internal methods are usually preceded with a _
 
 =cut
 
-# Let the code begin...
+# 'Let the code begin...
 
 package Bio::AlignIO;
 
 use strict;
 use vars qw(@ISA);
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
 use Bio::Seq;
 use Bio::LocatableSeq;
 use Bio::SimpleAlign;
-use Symbol();
-
-@ISA = qw(Bio::Root::RootI);
+use Bio::Root::IO;
+@ISA = qw(Bio::Root::Root Bio::Root::IO);
 
 =head2 new
 
@@ -341,20 +354,7 @@ sub fh {
 sub _initialize {
   my($self,@args) = @_;
 
-  my ($file,$fh) = $self->_rearrange([qw(FILE
-					 FH
-					 )],
-				     @args,
-				     );
-  if( defined $file and defined $fh ) {
-      $self->throw("Providing both a file and a filehandle for reading from - only one please!");
-  }
-
-  if( defined $file and $file ne '' ) {
-      $fh = Symbol::gensym();
-      open ($fh,$file) || $self->throw("Could not open $file for Fasta stream reading $!");
-  }
-  $self->_filehandle($fh) if( defined $fh);
+  $self->_initialize_io(@args);
   1;
 }
 
@@ -398,7 +398,7 @@ END
  Title   : next_aln
  Usage   : $aln = stream->next_aln
  Function: reads the next $aln object from the stream
- Returns : a Bio::Seq sequence object
+ Returns : a Bio::Align::AlignI compliant object
  Args    : 
 
 =cut
@@ -423,79 +423,6 @@ sub write_aln {
     $self->throw("Sorry, you cannot write to a generic Bio::AlignIO object.");
 }
 
-
-=head2 close
-
- Title   : close
- Usage   : $seqio->close()
- Function: Closes the file handle associated with this seqio system
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub close{
-   my ($self,@args) = @_;
-
-   $self->{'_filehandle'} = undef;
-}
-
-
-=head2 _print
-
- Title   : _print
- Usage   : $obj->_print(@lines)
- Function: 
- Example : 
- Returns : writes output
-
-=cut
-
-sub _print {
-  my $self = shift;
-  my $fh = $self->_filehandle || \*STDOUT;
-  print $fh @_;
-}
-
-=head2 _readline
-
- Title   : _readline
- Usage   : $obj->_readline($newval)
- Function: 
- Example : 
- Returns : reads a line of input
-
-=cut
-
-sub _readline {
-  my $self = shift;
-  my $fh = $self->_filehandle;
-  my $line = defined($fh) ? <$fh> : <>;
-  return $line;
-}
-
-=head2 _filehandle
-
- Title   : _filehandle
- Usage   : $obj->_filehandle($newval)
- Function: 
- Example : 
- Returns : value of _filehandle
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _filehandle {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-       $obj->{'_filehandle'} = $value;
-   }
-   return $obj->{'_filehandle'};
-}
-
 =head2 _guess_format
 
  Title   : _guess_format
@@ -511,21 +438,22 @@ sub _guess_format {
    my $class = shift;
    return unless $_ = shift;
    return 'fasta'   if /\.(fasta|fast|seq|fa|fsa|nt|aa)$/i;
-   return 'msf'     if /\.msf$/i;
-   return 'pfam'     if /\.(pfam|pfm)$/i;
-   return 'selex'     if /\.(selex|slx|selx|slex|sx)$/i;
-   return 'embl'    if /\.(embl|ebl|emb)$/i;
+   return 'msf'     if /\.(msf|pileup)$/i;
+   return 'pfam'    if /\.(pfam|pfm)$/i;
+   return 'selex'   if /\.(selex|slx|selx|slex|sx)$/i;
+   return 'phylip'  if /\.(phylip|phlp|phyl|phy|phy|ph)$/i;
+   return 'nexus'   if /\.(nexus|nex)$/i;
+   return 'mega'    if( /\.(meg|mega)$/i );
 }
 
 sub DESTROY {
     my $self = shift;
-
     $self->close();
 }
 
 sub TIEHANDLE {
   my $class = shift;
-  return bless {alignio => shift},$class;
+  return bless {'alignio' => shift},$class;
 }
 
 sub READLINE {

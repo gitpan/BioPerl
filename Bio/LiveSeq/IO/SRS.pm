@@ -1,4 +1,4 @@
-# $Id: SRS.pm,v 1.4.2.3 2001/06/21 15:36:03 heikki Exp $
+# $Id: SRS.pm,v 1.7 2001/06/18 08:27:55 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::IO::SRS
 #
@@ -63,7 +63,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::IO::SRS;
-$version=2.4;
+$VERSION=2.4;
 
 # Version history:
 # Wed Apr  5 13:06:43 BST 2000 v 1.0 restarted as a child of Loader.pm
@@ -81,7 +81,7 @@ $version=2.4;
 
 use strict;
 use Carp qw(cluck croak carp);
-use vars qw($version @ISA);
+use vars qw($VERSION @ISA);
 use lib $ENV{SRSEXE};
 use srsperl;
 use Bio::Tools::CodonTable; # for novelaasequence2gene

@@ -1,4 +1,4 @@
-# $Id: Simple.pm,v 1.6.2.7 2001/11/01 00:59:08 jason Exp $
+# $Id: Simple.pm,v 1.20 2002/03/08 20:00:00 jason Exp $
 #
 # BioPerl module for Bio::Location::Simple
 # Cared for by Jason Stajich <jason@chg.mc.duke.edu>
@@ -66,34 +66,39 @@ package Bio::Location::Simple;
 use vars qw(@ISA);
 use strict;
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
 use Bio::LocationI;
 
 
-@ISA = qw(Bio::Root::RootI Bio::LocationI);
+@ISA = qw(Bio::Root::Root Bio::LocationI);
 
 sub new { 
     my ($class, @args) = @_;
-    my $self = $class->SUPER::new(@args);
+    my $self = {};
 
-    my ($start,$end,$strand,$seqid) = $self->_rearrange([qw(START 
+    bless $self,$class;
+
+    my ($v,$start,$end,$strand,$seqid) = $self->_rearrange([qw(VERBOSE
+							       START 
 							    END 
 							    STRAND
 							    SEQID)],@args);
+    defined $v && $self->verbose($v);
     defined $strand && $self->strand($strand);
     defined $start  && $self->start($start);
     defined $end    && $self->end($end);
     if( defined $self->start && defined $self->end &&
 	$self->start > $self->end ) {
 	$self->warn("When building a location start ($start) is expected to be less than end ($end), however it was not was not. Switching start and end and setting strand to -1");
+
 	$self->strand(-1);
 	my $e = $self->end;
 	my $s = $self->start;
 	$self->start($e);
 	$self->end($s);
     }
+    $seqid          && $self->seq_id($seqid);
 
-    $seqid && $self->seq_id($seqid);
     return $self;
 }
 
@@ -110,7 +115,6 @@ sub new {
 
 sub start {
   my ($self, $value) = @_;
-
   $self->min_start($value) if( defined $value );
   return $self->SUPER::start();
 }
@@ -180,7 +184,7 @@ sub strand {
 
 sub length {
    my ($self) = @_;
-   return abs($self->end() - $self->start() ) + 1;
+   return abs($self->end() - $self->start()) + 1;
 }
 
 =head2 min_start
@@ -295,7 +299,6 @@ sub end_pos_type {
     return 'EXACT';
 }
 
-
 =head2 location_type
 
   Title   : location_type
@@ -322,7 +325,7 @@ sub location_type {
 
 =cut
 
-sub is_remote{
+sub is_remote {
    my $self = shift;
    if( @_ ) {
        my $value = shift;
@@ -353,6 +356,34 @@ sub to_FTstring {
 	$str = sprintf("complement(%s)", $str);
     }
     return $str;
+}
+
+
+sub trunc {
+  my ($self,$start,$end,$relative_ori) = @_;
+
+  
+  my $newstart  = $self->start - $start+1;
+  my $newend    = $self->end   - $start+1;
+  my $newstrand = $relative_ori * $self->strand;
+
+  my $out;
+  if( $newstart < 1 || $newend > ($end-$start+1) ) {
+    $out = Bio::Location::Simple->new();
+    $out->start($self->start);
+    $out->end($self->end);
+    $out->strand($self->strand);
+    $out->seq_id($self->seqid);
+    $out->is_remote(1);
+  } else {
+    $out = Bio::Location::Simple->new();
+    $out->start($newstart);
+    $out->end($newend);
+    $out->strand($newstrand);
+    $out->seq_id();
+  }
+
+  return $out;
 }
 
 1;

@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-##$Id: SeqUtils.t,v 1.3 2001/01/25 22:13:40 jason Exp $
+##$Id: SeqUtils.t,v 1.8 2001/12/14 13:37:35 heikki Exp $
 
 use strict;
 
@@ -13,7 +13,7 @@ BEGIN {
 	use lib 't';
     }
     use Test;
-    plan tests => 9;
+    plan tests => 17;
 }
 
 use Bio::PrimarySeq;
@@ -30,7 +30,7 @@ $ascii3 =
     'AlaAsxCysAspGluPheGlyHisIleXaaLysLeuMetAsnXaaProGlnArgSerThrSelValTrpXaaTyrGlx';
 
 $seq = Bio::PrimarySeq->new('-seq'=> $ascii,
-			       '-moltype'=>'protein', 
+			       '-alphabet'=>'protein', 
 			       '-id'=>'test');
 
 # one letter amino acid code to three letter code
@@ -48,7 +48,42 @@ ok (Bio::SeqUtils->seq3($seq, '-', ':'),
     'Ala:Ser:Asp:Ter:Lys:Xaa:Xaa:Lys:Ter');
 
 # three letter amino acid code to one letter code
-ok (Bio::SeqUtils->seq3in($seq, 'AlaXaaCysAspGlu')), 
+ok (Bio::SeqUtils->seq3in($seq, 'AlaPYHCysAspGlu')), 
 ok  $seq->seq, 'AXCDE';
-ok (Bio::SeqUtils->seq3in($seq, $ascii3)->seq, $ascii_aa)
+ok (Bio::SeqUtils->seq3in($seq, $ascii3)->seq, $ascii_aa);
 #ok ();
+
+#
+# Tests for multiframe translations
+#
+
+$seq = Bio::PrimarySeq->new('-seq'=> 'agctgctgatcggattgtgatggctggatggcttgggatgctgg',
+			    '-alphabet'=>'dna', 
+			    '-id'=>'test2');
+
+my @a = $util->translate_3frames($seq);
+ok scalar @a, 3;
+#foreach $a (@a) {
+#    print 'ID: ', $a->id, ' ', $a->seq, "\n";
+#} 
+
+@a = $util->translate_6frames($seq);
+ok scalar @a, 6;
+#foreach $a (@a) {
+#    print 'ID: ', $a->id, ' ', $a->seq, "\n";
+#} 
+
+# test for valid AA return
+my @valid_aa = sort Bio::SeqUtils->valid_aa;
+ok(@valid_aa, 24);
+ok ($valid_aa[1], 'B');
+@valid_aa = sort Bio::SeqUtils->valid_aa(1);
+
+ok(@valid_aa, 24);
+ok ($valid_aa[1], 'Ala');
+
+my %valid_aa = Bio::SeqUtils->valid_aa(2);
+
+ok($valid_aa{'C'}, 'Cys');
+ok( $valid_aa{'Cys'}, 'C');
+

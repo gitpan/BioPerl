@@ -1,8 +1,7 @@
-
 #
-# $Id: Fasta.pm,v 1.14.2.2 2001/06/21 15:36:01 heikki Exp $
+# $Id: Fasta.pm,v 1.18 2001/12/06 22:03:11 jason Exp $
 #
-# BioPerl module for Bio::Index::Abstract
+# BioPerl module for Bio::Index::Fasta
 #
 # Cared for by James Gilbert <jgrg@sanger.ac.uk>
 #
@@ -88,7 +87,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::Index::Fasta;
 
-use vars qw($version @ISA);
+use vars qw($VERSION @ISA);
 use strict;
 
 use Bio::Index::AbstractSeq;
@@ -102,11 +101,11 @@ use Bio::Seq;
 #
 
 BEGIN { 
-    $version = 0.2;
+    $VERSION = 0.2;
 }
 
 sub _version {
-    return $version;
+    return $VERSION;
 }
 
 =head2 _file_format
@@ -145,7 +144,6 @@ sub _index_file {
     
     my( $begin,     # Offset from start of file of the start
                     # of the last found record.
-        @id_list,   # List of ids from last record
         );
 
     $begin = 0;
@@ -159,9 +157,9 @@ sub _index_file {
         if (/^>/) {
             # $begin is the position of the first character after the '>'
             my $begin = tell(FASTA) - length( $_ ) + 1;
-
+	    
             foreach my $id (&$id_parser($_)) {
-                $self->add_record($id, $i, $begin);
+		$self->add_record($id, $i, $begin);
             }
         }
     }
@@ -221,6 +219,3 @@ sub default_id_parser {
 }
 
 1;
-
-
-

@@ -4,7 +4,7 @@
 # PURPOSE  : Simple driver for Bio::SimpleAlign
 # AUTHOR   : Ewan Birney birney@sanger.ac.uk 
 # CREATED  : Tue Oct 27 1998
-# REVISION : $Id: simplealign.pl,v 1.2.14.1 2001/03/30 07:42:00 lapp Exp $
+# REVISION : $Id: simplealign.pl,v 1.3 2001/03/05 23:42:17 peter Exp $
 #
 # INSTALLATION
 #    If you have installed bioperl using the standard

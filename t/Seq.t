@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Seq.t,v 1.19 2001/01/25 22:13:40 jason Exp $
+## $Id: Seq.t,v 1.23 2002/01/06 18:50:51 birney Exp $
 
 use strict;
 
@@ -14,10 +14,11 @@ BEGIN {
     }
     use Test;
 
-    plan tests => 26;
+    plan tests => 38;
 }
 
 use Bio::Seq;
+use Bio::Seq::RichSeq;
 use Bio::SeqFeature::Generic;
 use Bio::Annotation;
 use Bio::Species;
@@ -25,7 +26,7 @@ ok(1);
 
 my $seq = Bio::Seq->new(-seq=>'ACTGTGGCGTCAACT',
                         -desc=>'Sample Bio::Seq object',
-			-moltype => 'dna' );
+			-alphabet => 'dna' );
 ok $seq;
 
 my $trunc = $seq->trunc(1,4);
@@ -40,9 +41,9 @@ ok $seq = Bio::Seq->new(-seq=>'actgtggcgtcaact',
 		     -desc=>'Sample Bio::Seq object',
 		     -display_id => 'something',
 		     -accession_number => 'accnum',
-		     -moltype => 'dna' );
+		     -alphabet => 'dna' );
 
-ok uc $seq->moltype, 'DNA' , 'moltype was ' .$seq->moltype();
+ok uc $seq->alphabet, 'DNA' , 'alphabet was ' .$seq->alphabet();
 
 # basic methods
 
@@ -119,7 +120,7 @@ foreach my $frame (@frames) {
     $string .= $seq->translate(undef, undef, $frame)->seq;
     $string .= $seq->revcom->translate(undef, undef, $frame)->seq;
 }
-ok $string, 'MW*LPHCGXYHXVVTT';
+ok $string, 'MW*LPHCGYHVVTT';
 
 #Translating with all codon tables using method defaults
 $string = '';
@@ -134,7 +135,33 @@ $seq->seq('atgtggtaataa');
 eval {
     $seq->translate(undef, undef, undef, undef, 'CDS' , 'throw');
 };
-ok $@ ;
+ok ($@ =~ /EX/) ;
 
 $seq->seq('atgtggtaataa');
-ok $seq->translate('J', '-',)->seq, 'MWJJ';
+ok( $seq->translate('J', '-',)->seq, 'MWJJ');
+
+# tests for RichSeq
+my $richseq = Bio::Seq::RichSeq->new( -seq => 'atgtggtaataa',
+				      -accession_number => 'AC123',
+				      -alphabet => 'rna',
+				      -molecule => 'mRNA',		
+				      -id => 'id1',
+				      -dates => [ '2001/1/1' ],
+				      -pid => '887821',
+				      -keywords => 'JUNK1 JUNK2',
+				      -division => 'Fungi',
+				      -secondary_accessions => 'AC1152' );
+				 
+ok ($richseq);
+ok ($richseq->seq, 'atgtggtaataa');
+ok ($richseq->display_id, 'id1');
+ok (($richseq->get_dates)[0], '2001/1/1');
+ok (($richseq->get_secondary_accessions)[0], 'AC1152');
+ok ($richseq->accession_number, 'AC123');
+ok ($richseq->alphabet, 'rna');
+ok ($richseq->molecule, 'mRNA');
+ok ($richseq->pid, 887821);
+ok ($richseq->division, 'Fungi');
+ok ($richseq->keywords, 'JUNK1 JUNK2');
+$richseq->seq_version('2');
+ok ($richseq->seq_version, 2);

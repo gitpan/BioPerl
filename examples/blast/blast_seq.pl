@@ -9,9 +9,9 @@
 #---------------------------------------------------------------------------
 # PROGRAM  : blast_seq.pl
 # PURPOSE  : To submit a set of sequence for Blast analysis and parse the results.
-# AUTHOR   : Steve A. Chervitz
+# AUTHOR   : Steve Chervitz
 # CREATED  : 15 May 1998
-# REVISION : $Id: blast_seq.pl,v 1.6 2000/05/15 08:58:51 sac Exp $
+# REVISION : $Id: blast_seq.pl,v 1.7 2002/01/11 08:05:38 sac Exp $
 # WEBSITE  : http://bio.perl.org/Projects/Blast/
 # USAGE    : blast_seq.pl -h
 # EXAMPLES : blast_seq.pl -eg

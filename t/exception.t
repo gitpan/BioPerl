@@ -1,7 +1,7 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: exception.t,v 1.4 2001/01/25 22:13:40 jason Exp $
+# $Id: exception.t,v 1.5 2001/11/23 23:11:46 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -18,12 +18,12 @@ BEGIN {
     use Test;
 
     plan tests => 2 }
-use Bio::Root::RootI;
+use Bio::Root::Root;
 
 ok(1);
 package MyObject;
 use vars qw(@ISA);
-@ISA = qw (Bio::Root::RootI);
+@ISA = qw (Bio::Root::Root);
 
 package main;
 

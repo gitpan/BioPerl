@@ -1,13 +1,13 @@
 #-----------------------------------------------------------------------------
 # PACKAGE : Bio::Root::Xref.pm
-# AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
+# AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 8 May 1997
-# REVISION: $Id: Xref.pm,v 1.3.2.3 2001/06/21 15:36:04 heikki Exp $
+# REVISION: $Id: Xref.pm,v 1.8 2002/01/23 11:30:22 heikki Exp $
 # STATUS  : Pre-Alpha 
 #
 # WARNING: This is considered an experimental module.
 #
-# Copyright (c) 1997-8 Steve A. Chervitz. All Rights Reserved.
+# Copyright (c) 1997-8 Steve Chervitz. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
 #           modify it under the same terms as Perl itself.
 #-----------------------------------------------------------------------------
@@ -20,9 +20,9 @@ use Bio::Root::Vector ();
 
 @Bio::Root::Xref::ISA = qw( Bio::Root::Vector Bio::Root::Object );
 
-use vars qw($ID $version);
+use vars qw($ID $VERSION);
 $ID = 'Bio::Root::Xref';
-$version = 0.01;
+$VERSION = 0.01;
 
 ## POD Documentation:
 
@@ -101,11 +101,11 @@ their resolution. Bug reports can be submitted via email or the web:
     bioperl-bugs@bio.perl.org                   
     http://bio.perl.org/bioperl-bugs/           
 
-=head1 AUTHOR
+=head1 AUTHOR 
 
-Steve A. Chervitz, sac@genome.stanford.edu
+Steve Chervitz E<lt>sac@bioperl.orgE<gt>
 
-See the L<FEEDBACK> section for where to send bug reports and comments.
+See L<the FEEDBACK section | FEEDBACK> for where to send bug reports and comments.
 
 =head1 VERSION
 
@@ -113,7 +113,7 @@ Bio::Root::Xref.pm, 0.01 pre-alpha
 
 =head1 COPYRIGHT
 
-Copyright (c) 1997-8 Steve A. Chervitz. All Rights Reserved.
+Copyright (c) 1997-8 Steve Chervitz. All Rights Reserved.
 This module is free software; you can redistribute it and/or 
 modify it under the same terms as Perl itself.
 

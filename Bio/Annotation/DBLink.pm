@@ -1,4 +1,4 @@
-
+# $Id: DBLink.pm,v 1.8 2001/11/20 02:09:29 lstein Exp $
 #
 # BioPerl module for Bio::Annotation::Link
 #
@@ -18,7 +18,7 @@ Bio::Annotation::DBLink - DESCRIPTION of Object
 
    $link1 = new Bio::Annotation::DBLink(-database => 'TSC',
                                         -primary_id => 'TSC0000030'
-				     );
+					);
 
    #or 
 
@@ -35,9 +35,9 @@ Bio::Annotation::DBLink - DESCRIPTION of Object
 Provides an object which represents a link from one onbject to something
 in another database without proscribing what is in the other database
 
-=head1 CONTACT
+=head1 AUTHOR - Ewan Birney
 
-Describe contact details here
+Ewan Birney - birney@ebi.ac.uk
 
 =head1 APPENDIX
 
@@ -49,14 +49,14 @@ methods. Internal methods are usually preceded with a _
 
 # Let the code begin...
 
-
 package Bio::Annotation::DBLink;
 use vars qw(@ISA);
 use strict;
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
+use Bio::AnnotationI;
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::AnnotationI Bio::Root::Root);
 
 
 sub new {
@@ -79,6 +79,61 @@ sub new {
   return $self;
 }
 
+=head2 AnnotationI implementing functions
+
+=cut
+
+=head2 as_text
+
+ Title   : as_text
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub as_text{
+   my ($self) = @_;
+
+   return "Direct database link to ".$self->primary_id." in database ".$self->database;
+}
+
+=head2 hash_tree
+
+ Title   : hash_tree
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub hash_tree{
+   my ($self) = @_;
+   
+   my $h = {};
+   $h->{'database'}   = $self->database;
+   $h->{'primary_id'} = $self->primary_id;
+   if( defined $self->optional_id ) {
+       $h->{'optional_id'} = $self->optional_id;
+   }
+   if( defined $self->comment ) {
+       # we know that comments have hash_tree methods
+       $h->{'comment'} = $self->comment;
+   }
+
+   return $h;
+}
+
+=head2 Specific accessors for DBLinks
+
+=cut
+
 =head2 database
 
  Title   : database
@@ -88,7 +143,6 @@ sub new {
  Example : 
  Returns : value of database
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -113,7 +167,6 @@ sub database{
  Example : 
  Returns : value of primary_id
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -141,8 +194,9 @@ sub primary_id{
  Returns : value of optional_id
  Args    : newvalue (optional)
 
-
 =cut
+
+#'
 
 sub optional_id{
    my ($self,$value) = @_;
@@ -163,16 +217,14 @@ sub optional_id{
  Returns : value of comment (Bio::Annotation::Comment)
  Args    : newvalue (optional)
 
-
 =cut
 
-sub comment{
+sub comment {
    my ($self,$value) = @_;
    if( defined $value) {
       $self->{'comment'} = $value;
     }
     return $self->{'comment'};
-
 }
 
 1;

@@ -1,4 +1,4 @@
-# $Id: MZEF.pm,v 1.6.2.1 2001/03/03 08:28:58 heikki Exp $
+# $Id: MZEF.pm,v 1.7 2001/05/16 14:57:44 heikki Exp $
 #
 # BioPerl module for Bio::Tools::MZEF
 #

@@ -1,5 +1,5 @@
 
-# $Id: Ace.pm,v 1.7.2.2 2001/06/18 16:00:26 dag Exp $
+# $Id: Ace.pm,v 1.9 2001/06/18 15:53:42 dag Exp $
 #
 # BioPerl module for Bio::DB::Ace
 #

@@ -1,4 +1,4 @@
-# $Id: AnalysisResult.pm,v 1.7 2001/02/26 11:19:44 lapp Exp $
+# $Id: AnalysisResult.pm,v 1.11 2002/01/22 17:28:56 sac Exp $
 #
 # BioPerl module for Bio::Tools::AnalysisResult
 #
@@ -43,9 +43,10 @@ a result. The query is e.g. a sequence, and a subject is either a sequence,
 too, or a database of sequences. 
 
 This module also implements the Bio::SeqAnalysisParserI interface, and thus
-can be used wherever such an object fits. See L<Bio::SeqAnalysisParserI>.
-Developers will find a ready-to-use L<parse>() method, but need to implement 
-next_feature() in an inheriting class. Support for initialization with input
+can be used wherever such an object fits. 
+See L<Bio::SeqAnalysisParserI|Bio::SeqAnalysisParserI>.
+Developers will find a ready-to-use B<parse()> method, but need to implement 
+B<next_feature()> in an inheriting class. Support for initialization with input
 file names and reading from streams is also ready to use.
 
 Note that this module does not provide support for B<running> an analysis.
@@ -92,11 +93,13 @@ package Bio::Tools::AnalysisResult;
 use vars qw(@ISA);
 use strict;
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
 use Bio::Root::IO;
 use Bio::SeqAnalysisParserI;
+use Bio::AnalysisResultI;
 
-@ISA = qw(Bio::Root::RootI Bio::SeqAnalysisParserI Bio::Root::IO);
+@ISA = qw(Bio::Root::Root Bio::SeqAnalysisParserI 
+	Bio::AnalysisResultI Bio::Root::IO);
 
 sub new {
     my ($class, @args) = @_;
@@ -122,7 +125,7 @@ sub _initialize {
            leading underscore in its name.
 
            Performs initialization or reset of the state of this object. The
-           difference to L<_initialize>() is that it may be called at any time,
+           difference to _initialize() is that it may be called at any time,
            and repeatedly within the lifetime of this object. B<Note, however,
            that this is potentially dangerous in a multi-threading
            environment. In general, calling this method twice is discouraged
@@ -139,7 +142,7 @@ sub _initialize {
            discarding any unread input, and the actual input itself, followed
            by setting the new input.
 
-           The argument syntax is the same as for L<new>() and L<_initialize>(),
+           The argument syntax is the same as for L<new()|new> and L<_initialize()|_initialize>,
            i.e., named parameters following the -name=>$value convention.
            The following parameters are dealt with by the implementation
            provided here:

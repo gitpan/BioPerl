@@ -4,18 +4,16 @@
 # PURPOSE  : Demonstrate possible uses of Bio::Tools::StandAloneBlast.pm
 # AUTHOR   : Peter Schattner schattner@alum.mit.edu
 # CREATED  : Nov 01 2000
-# REVISION : $Id: standaloneblast.pl,v 1.3 2000/12/17 21:10:41 jason Exp $
+# REVISION : $Id: standaloneblast.pl,v 1.4 2001/06/02 21:17:20 peter Exp $
 #
 # INSTALLATION
 #
 
 # You will need to enable Blast to find the Blast program. This can be done
-# in (at least) three ways:
-#  1. Modify your $PATH variable to include your Blast directory as in (for Linux):
-#	export PATH=$PATH:/home/peter/blast   or
-#  2. define an environmental variable blastDIR:
+# in (at least) two ways:
+#  1. define an environmental variable blastDIR:
 #	export BLASTDIR=/home/peter/blast   or
-#  3. include a definition of an environmental variable BLASTDIR in every script that will
+#  2. include a definition of an environmental variable BLASTDIR in every script that will
 #     use StandAloneBlast.pm.
 #	BEGIN {$ENV{BLASTDIR} = '/home/peter/blast/'; }
 #

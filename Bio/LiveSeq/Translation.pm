@@ -1,4 +1,4 @@
-# $Id: Translation.pm,v 1.4.2.7 2001/06/22 10:40:02 heikki Exp $
+# $Id: Translation.pm,v 1.11 2001/10/22 08:22:51 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::Translation
 #
@@ -45,7 +45,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::Translation;
-$version=1.8;
+$VERSION=1.8;
 
 # Version history:
 # Thu Mar 23 14:41:52 GMT 2000 v.1.0 begun
@@ -66,8 +66,9 @@ $version=1.8;
 
 use strict;
 #use Carp qw(croak carp cluck);
-use vars qw($version @ISA);
-use Bio::LiveSeq::SeqI; # uses SeqI, inherits from it
+use vars qw($VERSION @ISA);
+use Bio::LiveSeq::SeqI 3.2; # uses SeqI, inherits from it
+use Bio::PrimarySeq;
 @ISA=qw(Bio::LiveSeq::Transcript ); 
 
 
@@ -108,7 +109,7 @@ sub new {
   $obj->{'strand'}=$strand;
   $obj->{'seq'}=$seq;
   $obj->{'transcript'}=$transcript;
-  $obj->{'moltype'}="protein";
+  $obj->{'alphabet'}="protein";
 
   $transcript->{'translation'}=$obj;# set the Translation ref into its Transcript
   return $obj;
@@ -153,7 +154,8 @@ sub labelchange {
 sub transl_seq {
   my $self=shift;
   my $transcript=$self->get_Transcript;
-  my $translation=$transcript->translate;
+  my $translation=$transcript->translate(undef, undef, undef, 
+					 $self->translation_table)->seq;
   return $translation;
 }
 
@@ -162,14 +164,19 @@ sub seq {
   my $self=shift;
   my $proteinseq;
   my $transcript=$self->get_Transcript;
-  my $translation=$transcript->translate;
+  my $translation=$transcript->translate(undef, undef, undef, 
+					 $self->translation_table)->seq;
   my $stop_pos=index($translation,"*");
   if ($stop_pos == -1) { # no stop present, continue downstream
     my $downstreamseq=$transcript->downstream_seq();
     #carp "the downstream is: $downstreamseq"; # debug
     my $cdnaseq=$transcript->seq();
-    my $extendedseq=$cdnaseq.$downstreamseq;
-    $translation=$transcript->translate_string($extendedseq);
+    my $extendedseq = new Bio::PrimarySeq(-seq => "$cdnaseq$downstreamseq",
+					  -alphabet => 'dna'
+					  );
+
+    $translation=$extendedseq->translate(undef, undef, undef, 
+					 $self->translation_table)->seq;
     #carp "the new translation is: $translation"; # debug
     $stop_pos=index($translation,"*");
     if ($stop_pos == -1) { # still no stop present, return warning

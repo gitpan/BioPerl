@@ -1,8 +1,8 @@
-# $Id: WebDBSeqI.pm,v 1.7.2.4 2001/05/31 17:30:21 jason Exp $
+# $Id: WebDBSeqI.pm,v 1.13.2.1 2002/03/13 16:37:05 jason Exp $
 #
 # BioPerl module for Bio::DB::WebDBSeqI
 #
-# Cared for by Jason Stajich <jason@chg.mc.duke.edu>
+# Cared for by Jason Stajich <jason@bioperl.org>
 #
 # Copyright Jason Stajich
 #
@@ -23,6 +23,9 @@ Bio::DB::WebDBSeqI - Object Interface to generalize Web Databases
    my $seq = $db->get_Seq_by_id('ROA1_HUMAN')
 
 =head1 DESCRIPTION
+
+
+
 
 Provides core set of functionality for connecting to a web based
 database for retriving sequences.
@@ -85,6 +88,7 @@ use HTTP::Request::Common;
 use HTTP::Response;
 use File::Spec;
 use IO::String;
+use Bio::Root::Root;
 
 @ISA = qw(Bio::DB::RandomAccessI);
 
@@ -159,6 +163,43 @@ sub get_Seq_by_acc {
    return $seqio->next_seq();
 }
 
+=head2 get_Seq_by_gi
+
+ Title   : get_Seq_by_gi
+ Usage   : $seq = $db->get_Seq_by_gi('405830');
+ Function: Gets a Bio::Seq object by gi number
+ Returns : A Bio::Seq object
+ Args    : gi number (as a string)
+ Throws  : "gi does not exist" exception
+
+=cut
+
+sub get_Seq_by_gi {
+   my ($self,$seqid) = @_;
+   my $seqio = $self->get_Stream_by_gi($seqid);
+   $self->throw("gi does not exist") if( !defined $seqio );
+   return $seqio->next_seq();
+}
+
+=head2 get_Seq_by_version
+
+ Title   : get_Seq_by_version
+ Usage   : $seq = $db->get_Seq_by_version('X77802.1');
+ Function: Gets a Bio::Seq object by sequence version
+ Returns : A Bio::Seq object
+ Args    : accession.version (as a string)
+ Throws  : "acc.version does not exist" exception
+
+=cut
+
+sub get_Seq_by_version {
+   my ($self,$seqid) = @_;
+   $self->throw("Implementing class should define this method!"); 
+   my $seqio = $self->get_Stream_by_version($seqid);
+   $self->throw("accession.version does not exist") if( !defined $seqio );
+   return $seqio->next_seq();
+}
+
 # implementing class must define these
 
 =head2 get_request
@@ -192,7 +233,7 @@ sub get_request {
 =cut
 
 sub get_Stream_by_id {
-    my ($self, $ids) = @_;        
+    my ($self, $ids) = @_;
     return $self->get_seq_stream('-uids' => $ids, '-mode' => 'single');
 }
 
@@ -211,6 +252,42 @@ sub get_Stream_by_id {
 sub get_Stream_by_acc {
     my ($self, $ids ) = @_;
     return $self->get_seq_stream('-uids' => $ids, '-mode' => 'single');
+}
+
+
+=head2 get_Stream_by_gi
+
+  Title   : get_Stream_by_gi
+  Usage   : $seq = $db->get_Seq_by_gi([$gi1, $gi2]);
+  Function: Gets a series of Seq objects by gi numbers
+  Returns : a Bio::SeqIO stream object
+  Args    : $ref : a reference to an array of gi numbers for
+                   the desired sequence entries
+  Note    : For GenBank, this just calls the same code for get_Stream_by_id()
+
+=cut
+
+sub get_Stream_by_gi {
+    my ($self, $ids ) = @_;
+    return $self->get_seq_stream('-uids' => $ids, '-mode' => 'gi');
+}
+
+=head2 get_Stream_by_version
+
+  Title   : get_Stream_by_version
+  Usage   : $seq = $db->get_Seq_by_version([$version1, $version2]);
+  Function: Gets a series of Seq objects by accession.versions
+  Returns : a Bio::SeqIO stream object
+  Args    : $ref : a reference to an array of accession.version strings for
+                   the desired sequence entries
+  Note    : For GenBank, this is implemeted in NCBIHelper
+
+=cut
+
+sub get_Stream_by_version {
+    my ($self, $ids ) = @_;
+    $self->throw("Implementing class should define this method!"); 
+    return $self->get_seq_stream('-uids' => $ids, '-mode' => 'version'); # how it should work
 }
 
 =head2 default_format
@@ -281,26 +358,26 @@ sub get_seq_stream {
 	my ( $fh, $tmpfile) = $self->io()->tempfile( DIR => $dir );
 	close $fh;
 	my ($resp) = $self->_request($request, $tmpfile);		
-	if( ! -e $tmpfile || -z $tmpfile || ! $resp->is_success ) {
+	if( ! -e $tmpfile || -z $tmpfile || ! $resp->is_success() ) {
             $self->throw("WebDBSeqI Error - check query sequences!\n");
 	}
 	$self->postprocess_data('type' => 'file',
 				'location' => $tmpfile);	
 	# this may get reset when requesting batch mode
-	($rformat,$ioformat) = $self->request_format();	
+	($rformat,$ioformat) = $self->request_format();
 	if( $self->verbose > 0 ) {
 	    open(ERR, "<$tmpfile");
-	    while(<ERR>) { print STDERR;}
+	    while(<ERR>) { $self->debug($_);}
 	} 
 	$stream = new Bio::SeqIO('-format' => $ioformat,
 				 '-file'   => $tmpfile);
     } elsif( $self->retrieval_type =~ /io_string/i ) {
 	my ($resp) = $self->_request($request);
-        my $content = $resp->content_ref;	
-	if( ! $resp->is_success  || length(${$resp->content_ref()}) == 0 ) {
-	    $self->throw("WebDBSeqI Error - check query sequences!\n".
-			 ${$content}. "\n" );		    
-	}  
+        my $content = $resp->content_ref;
+	$self->debug( "content is $$content\n");
+	if( ! $resp->is_success() || length(${$resp->content_ref()}) == 0 ) {
+	    $self->throw("WebDBSeqI Error - check query sequences!\n");	
+        }  
 	($rformat,$ioformat) = $self->request_format();
 	$self->postprocess_data('type'=> 'string',
 				'location' => $content);
@@ -326,10 +403,10 @@ sub get_seq_stream {
 =cut
 
 sub url_base_address {
-    my ($self, $value) = @_;
-    if( defined $value ) {
-	$self->{'_baseaddress'} = $value;
-    }    
+    my $self = shift;
+    my $d = $self->{'_baseaddress'};
+    $self->{'_baseaddress'} = shift if @_;
+    $d;
 }
 
 

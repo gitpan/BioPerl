@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.6.2.4 2001/09/14 08:01:40 heikki Exp $
+# $Id: IO.pm,v 1.10 2001/08/16 08:40:04 heikki Exp $
 #
 # BioPerl module for Bio::Variation::IO
 #
@@ -229,7 +229,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Variation::IO;
-my $version=1.0;
+my $VERSION=1.0;
 
 use strict;
 use vars '@ISA';
@@ -329,7 +329,7 @@ sub next_seq {
 
 sub write {
     my ($self, $seq) = @_;
-    $self->throw("Sorry, you cannot write from generic Bio::Variation::IO object.");
+    $self->throw("Sorry, you cannot write to a generic Bio::Variation::IO object.");
 }
 
 sub write_seq {

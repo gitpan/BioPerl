@@ -3,9 +3,9 @@
 #----------------------------------------------------------------
 # PROGRAM  : io.pl
 # PURPOSE  : To demonstrate passing filehandles between objects.
-# AUTHOR   : Steve A. Chervitz (sac@genome.stanford.edu)
+# AUTHOR   : Steve Chervitz (sac@bioperl.org)
 # CREATED  : 21 Mar 1997
-# REVISION : $Id: io.pl,v 1.1.1.1 1998/12/11 15:24:35 birney Exp $
+# REVISION : $Id: io.pl,v 1.2 2002/01/11 08:05:40 sac Exp $
 # INSTALLATION
 #    Edit the use lib "...." line to point the directory
 #    containing your Bioperl modules.

@@ -1,7 +1,7 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: Tools.t,v 1.6 2001/03/01 11:22:26 lapp Exp $
+# $Id: Tools.t,v 1.7 2001/04/30 15:12:33 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -27,7 +27,7 @@ use Bio::Tools::SeqStats;
 use Bio::Root::IO;
 
 ok(1);
-my $str = Bio::SeqIO->new(-file=> Bio::Root::IO->catfile("t","multifa.seq"), '-format' => 'Fasta');
+my $str = Bio::SeqIO->new(-file=> Bio::Root::IO->catfile("t","data","multifa.seq"), '-format' => 'Fasta');
 my $seqobj= $str->next_seq();
 ok $seqobj;
 

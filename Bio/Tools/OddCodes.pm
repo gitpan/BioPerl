@@ -1,4 +1,4 @@
-#$Id: OddCodes.pm,v 1.5.2.2 2001/06/18 12:41:53 heikki Exp $
+#$Id: OddCodes.pm,v 1.9 2001/11/20 02:09:40 lstein Exp $
 #-----------------------------------------------------------------------------
 # PACKAGE    : OddCodes.pm
 # PURPOSE    : To write amino acid sequences in alternative alphabets
@@ -41,7 +41,7 @@ or:
 
 	my $seqobj = Bio::PrimarySeq->new
               (-seq=>'[cut and paste a sequence here]', 
-               -moltype = 'protein', 
+               -alphabet = 'protein', 
                -id = 'test');
 	my $oddcode_obj  =  Bio::Tools::OddCodes->new(-seq => $seqobj);
 
@@ -112,9 +112,9 @@ package Bio::Tools::OddCodes;
 use vars qw(@ISA);
 use strict;
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::Root::Root);
 
 
 sub new 

@@ -1,4 +1,4 @@
-# $Id: NarrowestCoordPolicy.pm,v 1.3.2.1 2001/03/02 22:47:59 heikki Exp $
+# $Id: NarrowestCoordPolicy.pm,v 1.5 2001/11/20 02:09:33 lstein Exp $
 #
 # BioPerl module for Bio::Location::NarrowestCoordPolicy
 #
@@ -66,10 +66,10 @@ package Bio::Location::NarrowestCoordPolicy;
 use vars qw(@ISA);
 use strict;
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
 use Bio::Location::CoordinatePolicyI;
 
-@ISA = qw(Bio::Root::RootI Bio::Location::CoordinatePolicyI);
+@ISA = qw(Bio::Root::Root Bio::Location::CoordinatePolicyI);
 
 sub new { 
     my ($class, @args) = @_;

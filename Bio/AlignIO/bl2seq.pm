@@ -1,4 +1,4 @@
-# $Id: bl2seq.pm,v 1.6 2001/02/19 23:11:39 jason Exp $
+# $Id: bl2seq.pm,v 1.11 2002/02/13 15:32:54 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::bl2seq
 
@@ -115,13 +115,31 @@ use Bio::Tools::BPbl2seq;
 sub next_aln {
     my $self = shift;
     my ($start,$end,$name,$seqname,$seq,$seqchar);
-    my $aln =  Bio::SimpleAlign->new();
-    my $bl2seqobj = Bio::Tools::BPbl2seq->new(-fh => $self->_filehandle);
+    my $aln =  Bio::SimpleAlign->new(-source => 'bl2seq');
+    $self->{'bl2seqobj'} =
+    	$self->{'bl2seqobj'} || Bio::Tools::BPbl2seq->new(-fh => $self->_fh);
+    my $bl2seqobj = $self->{'bl2seqobj'};
+    my $hsp =   $bl2seqobj->next_feature;
+    $seqchar = $hsp->querySeq;
+    $start = $hsp->query->start;
+    $end = $hsp->query->end;
+    $seqname = 'Query-sequence';    # Query name not present in bl2seq report
 
-    $seqchar = $bl2seqobj->querySeq;
-    $start = $bl2seqobj->query->start;
-    $end = $bl2seqobj->query->end;
-    $seqname = $bl2seqobj->query->seqname;
+#    unless ($seqchar && $start && $end  && $seqname) {return 0} ;	
+    unless ($seqchar && $start && $end ) {return 0} ;	
+
+    $seq = new Bio::LocatableSeq('-seq'=>$seqchar,
+				 '-id'=>$seqname,
+				 '-start'=>$start,
+				 '-end'=>$end,
+				 );
+
+    $aln->add_seq($seq);
+
+    $seqchar = $hsp->sbjctSeq;
+    $start = $hsp->hit->start;
+    $end = $hsp->hit->end;
+    $seqname = $bl2seqobj->sbjctName;
 
     unless ($seqchar && $start && $end  && $seqname) {return 0} ;	
 
@@ -131,22 +149,7 @@ sub next_aln {
 				 '-end'=>$end,
 				 );
 
-    $aln->addSeq($seq);
-
-    $seqchar = $bl2seqobj->sbjctSeq;
-    $start = $bl2seqobj->subject->start;
-    $end = $bl2seqobj->subject->end;
-    $seqname = $bl2seqobj->subject->seqname;
-
-    unless ($seqchar && $start && $end  && $seqname) {return 0} ;	
-
-    $seq = new Bio::LocatableSeq('-seq'=>$seqchar,
-				 '-id'=>$seqname,
-				 '-start'=>$start,
-				 '-end'=>$end,
-				 );
-
-    $aln->addSeq($seq);
+    $aln->add_seq($seq);
 
     return $aln;
 

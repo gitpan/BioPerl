@@ -1,4 +1,4 @@
-# $Id: prodom.pm,v 1.4 2001/01/03 17:56:43 jason Exp $
+# $Id: prodom.pm,v 1.6 2002/02/13 15:32:54 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::prodom
 
@@ -76,10 +76,7 @@ sub next_aln {
     my $entry;
     my ($acc, $fake_id, $start, $end, $seq, $add, %names);
 
-
-
-    my $aln =  Bio::SimpleAlign->new();
-
+    my $aln =  Bio::SimpleAlign->new(-source => 'prodom');
 
     while( $entry = $self->_readline) {
 
@@ -101,7 +98,7 @@ sub next_aln {
 			       '-end'=>$end,
 			       );
 	
-	   $aln->addSeq($add);
+	   $aln->add_seq($add);
        }
        elsif ($entry =~ /^CO/) {
 	   # the consensus line marks the end of the alignment part of the entry

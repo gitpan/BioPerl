@@ -1,4 +1,4 @@
-# $Id: largefasta.pm,v 1.5.2.3 2001/09/01 20:35:40 jason Exp $
+# $Id: largefasta.pm,v 1.10 2002/02/18 17:17:25 bosborne Exp $
 # BioPerl module for Bio::SeqIO::largefasta
 #
 # Cared for by Jason Stajich
@@ -24,16 +24,17 @@ This object can transform Bio::Seq objects to and from fasta flat
 file databases.
 
 This module handles very large sequence files by using the
-L<Bio::Seq::LargePrimarySeq> module to store all the sequence data in
+Bio::Seq::LargePrimarySeq module to store all the sequence data in
 a file.  This can be a problem if you have limited disk space on your
 computer because this will effectively cause 2 copies of the sequence
 file to reside on disk for the life of the
-L<Bio::Seq::LargePrimarySeq> object.  The default location for this is
+Bio::Seq::LargePrimarySeq object.  The default location for this is
 specified by the L<File::Spec>-E<gt>tmpdir routine which is usually /tmp
 on UNIX.  If a sequence file is larger than the swap space (capacity
 of the /tmp dir) this could cause problems for the machine.  It is
 possible to set the directory where the temporary file is located by
-adding the following line to your code BEFORE calling next_seq.
+adding the following line to your code BEFORE calling next_seq. See
+L<Bio::Seq::LargePrimarySeq> for more information.
 
     $Bio::Seq::LargePrimarySeq::DEFAULT_TEMP_DIR = 'newdir';
 
@@ -114,7 +115,7 @@ sub next_primary_seq {
   my ($id,$fulldesc,$entry);
   my $count = 0;
   my $seen = 0;
-  while( defined ($entry = $self->_readline) ) {      
+  while( defined ($entry = $self->_readline) ) {
       if( $seen == 1 && $entry =~ /^\s*>/ ) {
 	  $self->_pushback($entry);
 	  return $largepseq;

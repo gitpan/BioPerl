@@ -1,6 +1,6 @@
 #-*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: CodonTable.t,v 1.10 2001/01/25 22:13:40 jason Exp $
+## $Id: CodonTable.t,v 1.14 2002/01/06 18:50:51 birney Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -16,14 +16,14 @@ BEGIN {
     }
     use Test;
 
-    plan tests => 28;
+    plan tests => 30;
 }
 use Bio::Tools::CodonTable;
 use vars qw($DEBUG);
 ok(1);
 
 # create a table object by giving an ID
-
+$DEBUG = 0;
 my $myCodonTable = Bio::Tools::CodonTable -> new ( -id => 16);
 ok defined $myCodonTable;
 ok $myCodonTable->isa('Bio::Tools::CodonTable');
@@ -42,6 +42,13 @@ ok $myCodonTable->name(), 'Euplotid Nuclear';
 # translate codons
 $myCodonTable->id(1);
 
+eval {
+    $myCodonTable->translate();
+};
+ok ($@ =~ /EX/) ;
+
+ok $myCodonTable->translate(''), '';
+
 my @ii  = qw(ACT acu ATN gt ytr sar);
 my @res = qw(T   T   X   V  L   Z  );
 my $test = 1;
@@ -52,8 +59,7 @@ for my $i (0..$#ii) {
 	last ;
     }
 }
-ok $test;
-
+ok ($test);
 ok $myCodonTable->translate('ag'), '';
 ok $myCodonTable->translate('jj'), '';
 ok $myCodonTable->translate('jjg'), 'X';
@@ -126,7 +132,7 @@ ok $test;
 $myCodonTable->id(1);
 
 ok $myCodonTable->is_start_codon('ATG');  
-ok $myCodonTable->is_start_codon('GGH'), 0;
+ok( $myCodonTable->is_start_codon('GGH'), 0);
 ok $myCodonTable->is_start_codon('HTG');
 ok $myCodonTable->is_start_codon('CCC'), 0;
 

@@ -1,4 +1,4 @@
-# $Id: FuzzyLocationI.pm,v 1.11.2.1 2001/03/02 22:47:58 heikki Exp $
+# $Id: FuzzyLocationI.pm,v 1.15 2002/01/08 01:25:31 jason Exp $
 #
 # BioPerl module for Bio::Location::FuzzyLocationI
 # Cared for by Jason Stajich <jason@chg.mc.duke.edu>
@@ -71,39 +71,26 @@ use Carp;
 
 @ISA = qw(Bio::LocationI);
 
-# utility method Prints out a method like: 
-# Abstract method stop defined in interface Bio::LocationI not
-# implemented by package You::BadLocation
+=head1 LocationI methods
 
-sub _abstractDeath {
-  my $self = shift;
-  my $package = ref $self;
-  my $caller = (caller)[1];
-  
-  my $msg = "Abstract method '$caller' defined in interface Bio::ComplexLocationI but not implemented by package $package";
-  if( $self->can('throw') ) {
-      $self->throw($msg);
-  } else {
-      confess($msg);
-  }
-}
-
-=head2 loc_type
+=head2 location_type
 
   Title   : loc_type
-  Usage   : my $location_type = $location->loc_type();
+  Usage   : my $location_type = $location->location_type();
   Function: Get location type encoded as text
   Returns : string ('EXACT', 'WITHIN', 'BETWEEN')
   Args    : none
 
 =cut
 
-sub loc_type {
+sub location_type {
     my ($self) = @_;
-    $self->_abstractDeath();
+    $self->throw_not_implemented();
 }
 
-=head1 LocationI methods
+=head1 Bio::LocationI methods
+
+Bio::LocationI methods follow
 
 =head2 min_start
 

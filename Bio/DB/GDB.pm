@@ -1,4 +1,4 @@
-# $Id: GDB.pm,v 1.6.2.2 2001/11/01 00:57:15 jason Exp $
+# $Id: GDB.pm,v 1.10 2001/11/20 02:09:29 lstein Exp $
 #
 # BioPerl module for Bio::DB::GenBank
 #
@@ -71,14 +71,14 @@ preceded with a _
 
 package Bio::DB::GDB;
 use strict;
-use Bio::Root::RootI;
+use Bio::Root::Root;
 use LWP::UserAgent;
 use HTTP::Request::Common;
 use HTML::Parser;
 
 use vars qw(@ISA $BASEADDRESS %PARAMSTRING $MODVERSION);
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::Root::Root);
 
 $MODVERSION = '0.01';
 $BASEADDRESS = 'http://www.gdb.org/gdb-bin/genera/genera/hgd/GenomicSegment';

@@ -1,6 +1,6 @@
 
 #
-# $Id: Abstract.pm,v 1.31.2.2 2001/06/18 08:26:53 heikki Exp $
+# $Id: Abstract.pm,v 1.39 2001/12/13 23:08:36 jason Exp $
 #
 # BioPerl module for Bio::Index::Abstract
 #
@@ -80,11 +80,11 @@ use vars qw( $TYPE_AND_VERSION_KEY
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
 use Bio::Root::IO;
 use Symbol();
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::Root::Root);
 
 # Generate accessor methods for simple object fields
 BEGIN {
@@ -129,14 +129,18 @@ sub new {
     my($class, @args) = @_;
     my $self = $class->SUPER::new(@args);
 
-    my( $filename, $write_flag, $dbm_package ) =
+    my( $filename, $write_flag, $dbm_package, $cachesize, $ffactor ) =
         $self->_rearrange([qw(FILENAME 
 			      WRITE_FLAG
 			      DBM_PACKAGE
+				  CACHESIZE
+				  FFACTOR
 			      )], @args);
     
     # Store any parameters passed
     $self->filename($filename)       if $filename;
+    $self->cachesize($cachesize)     if $cachesize;
+    $self->ffactor($ffactor)     	 if $ffactor;
     $self->write_flag($write_flag)   if $write_flag;
     $self->dbm_package($dbm_package) if $dbm_package;
 
@@ -195,22 +199,21 @@ sub dbm_package {
     my( $self, $value ) = @_;
     my $to_require = 0;
     if( $value || ! $self->{'_dbm_package'} ) {
-	my $type = $value || $USE_DBM_TYPE || 'DB_File';	
-	if( $type =~ /DB_File/i ) {
-	    eval { 
-		require DB_File;
-		DB_File->import('$DB_HASH');
-	    };
-	    $type = ( $@ ) ? 'SDBM_File' : 'DB_File';
-	} 	
-	if( $type ne 'DB_File' ) {
-	    eval { require "$type.pm"; };
-	    $self->throw($@) if( $@ );
-	}
-	$self->{'_dbm_package'} = $type;
-	if( ! defined $USE_DBM_TYPE ) {
-	    $USE_DBM_TYPE = $self->{'_dbm_package'};
-	}	
+		my $type = $value || $USE_DBM_TYPE || 'DB_File';	
+		if( $type =~ /DB_File/i ) {
+	    	eval { 
+				require DB_File;
+	    	};
+	    	$type = ( $@ ) ? 'SDBM_File' : 'DB_File';
+		} 	
+		if( $type ne 'DB_File' ) {
+	    	eval { require "$type.pm"; };
+	    	$self->throw($@) if( $@ );
+		}
+		$self->{'_dbm_package'} = $type;
+		if( ! defined $USE_DBM_TYPE ) {
+	    	$USE_DBM_TYPE = $self->{'_dbm_package'};
+		}	
     } 
     return $self->{'_dbm_package'};
 }
@@ -294,6 +297,48 @@ sub get_stream {
 }
 
 
+=head2 cachesize
+
+  Usage   : $index->cachesize(1000000)
+  Function: Sets the dbm file cache size for the index.
+  	    Needs to be set before the DBM file gets opened.
+  Example : $index->cachesize(1000000)
+  Returns : size of the curent cache
+
+=cut
+
+sub cachesize {
+    my( $self, $size ) = @_;
+
+	if(defined $size){
+		$self->{'_cachesize'} = $size;
+	}
+	return ( $self->{'_cachesize'} );
+	
+}
+
+
+=head2 ffactor
+
+  Usage   : $index->ffactor(1000000)
+  Function: Sets the dbm file fill factor.
+  			Needs to be set before the DBM file gets opened.
+
+  Example : $index->ffactor(1000000)
+  Returns : size of the curent cache
+
+=cut
+
+sub ffactor {
+    my( $self, $size ) = @_;
+
+	if(defined $size){
+		$self->{'_ffactor'} = $size;
+	}
+	return ( $self->{'_ffactor'} );
+	
+}
+
 
 =head2 open_dbm
 
@@ -333,7 +378,16 @@ sub open_dbm {
     
     # Open the dbm file
     if ($dbm_type eq 'DB_File') {
-        tie( %$db, $dbm_type, $filename, $mode_flags, 0644, $DB_HASH )
+		my $hash_inf = DB_File::HASHINFO->new();
+		my $cache = $self->cachesize();
+		my $ffactor = $self->ffactor();
+		if ($cache){
+			$hash_inf->{'cachesize'} = $cache;
+		}
+		if ($ffactor){
+			$hash_inf->{'ffactor'} = $ffactor;
+		}
+        tie( %$db, $dbm_type, $filename, $mode_flags, 0644, $hash_inf )
             or $self->throw("Can't open '$dbm_type' dbm file '$filename' : $!");
     } else {
         tie( %$db, $dbm_type, $filename, $mode_flags, 0644 )
@@ -489,7 +543,7 @@ sub _check_file_sizes {
 sub make_index {
     my($self, @files) = @_;
     my $count = 0;
-
+	my $recs = 0;
     # blow up if write flag is not set. EB fix
 
     if( !defined $self->write_flag ) {
@@ -506,13 +560,13 @@ sub make_index {
 	} else { 
 	    if(  $^O =~ /MSWin/i ) {
 		($files[$i] =~ m|^[A-Za-z]:/|) || 
-		    $self->throw("File name not fully qualified : $files[$i]");
+		    $self->throw("Not an absolute file path '$files[$i]'");
 	    } else {
 		($files[$i] =~ m|^/|) || 
-		    $self->throw("File name not fully qualified : $files[$i]"); 
+		    $self->throw("Not an absolute file path '$files[$i]'"); 
 	    }
 	}
-        $self->throw("File does not exist: $files[$i]")   unless -e $files[$i];
+        $self->throw("File does not exist '$files[$i]'")   unless -e $files[$i];
     }
 
     # Add each file to the index
@@ -547,7 +601,7 @@ sub make_index {
 	warn "Indexing file $file\n" if( $self->verbose > 0);
 
 	# this is supplied by the subclass and does the serious work
-        $self->_index_file( $file, $i ); # Specific method for each type of index
+        $recs += $self->_index_file( $file, $i ); # Specific method for each type of index
 
 
         # Save file name and size for this index
@@ -563,7 +617,7 @@ sub make_index {
 	
 
     }
-    return $count;
+    return ($count, $recs);
 }
 
 =head2 _filename
@@ -696,6 +750,34 @@ sub unpack_record {
     my( $self, @args ) = @_;
     return split /\034/, $args[0];
 }
+
+=head2 count_records
+
+ Title   : count_records
+ Usage   : $recs = $seqdb->count_records()
+ Function: return count of all recs in the index 
+ Example :
+ Returns : a scalar
+ Args    : none
+
+
+=cut
+
+sub count_records {
+   my ($self,@args) = @_;
+   my $db = $self->db;
+   my $c = 0;
+   while (my($id, $rec) = each %$db) {
+       if( $id =~ /^__/ ) {
+           # internal info
+           next;
+       }
+		$c++;
+   }
+
+   return ($c);
+}
+
 
 =head2 DESTROY
 

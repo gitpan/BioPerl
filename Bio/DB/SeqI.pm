@@ -1,6 +1,6 @@
 
 #
-# $Id: SeqI.pm,v 1.3.2.2 2001/06/22 14:56:21 jason Exp $
+# $Id: SeqI.pm,v 1.6 2001/07/27 21:00:04 jason Exp $
 #
 # BioPerl module for Bio::DB::SeqI.pm
 #
@@ -40,23 +40,23 @@ Abstract interface for a sequence database
 
 User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
-of the Bioperl mailing lists.  Your participation is much appreciated.
+of the Bioperl mailing lists. Your participation is much appreciated.
 
   bioperl-l@bioperl.org              - General discussion
-  http://bio.perl.org/MailList.html  - About the mailing lists
+  http://bioperl.org/MailList.shtml  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+ the bugs and their resolution.
+ Bug reports can be submitted via email or the web:
 
-  bioperl-bugs@bioperl.org
+  bioperl-bugs@bio.perl.org
   http://bio.perl.org/bioperl-bugs/
 
 =head1 AUTHOR - Ewan Birney
 
-Email E<lt>birney@ebi.ac.ukE<gt>
+Email birney@ebi.ac.uk
 
 Describe contact details here
 
@@ -111,11 +111,10 @@ use Bio::DB::RandomAccessI;
 
  Title   : get_PrimarySeq_stream
  Usage   : $stream = get_PrimarySeq_stream
- Function: Makes a Bio::DB::SeqStreamI compliant object
-           which provides a single method, next_primary_seq
- Returns : Bio::DB::SeqStreamI
+ Function: Makes a Bio::SeqIO compliant object
+           which provides a single method, next_seq
+ Returns : Bio::SeqIO
  Args    : none
-
 
 =cut
 

@@ -1,4 +1,4 @@
-# $Id: NCBIHelper.pm,v 1.4.2.1 2001/03/22 17:48:24 lapp Exp $
+# $Id: NCBIHelper.pm,v 1.15.2.1 2002/03/13 16:37:05 jason Exp $
 #
 # BioPerl module for Bio::DB::NCBIHelper
 #
@@ -62,7 +62,7 @@ web:
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@chg.mc.duke.edu
+Email jason@bioperl.org
 
 =head1 APPENDIX
 
@@ -76,17 +76,28 @@ preceded with a _
 
 package Bio::DB::NCBIHelper;
 use strict;
-use vars qw(@ISA $HOSTBASE %CGILOCATION %FORMATMAP $DEFAULTFORMAT);
+use vars qw(@ISA $HOSTBASE %CGILOCATION %FORMATMAP 
+	    $DEFAULTFORMAT $MAX_ENTRIES);
 
 use Bio::DB::WebDBSeqI;
 use HTTP::Request::Common;
+use Bio::Root::IO;
+use Bio::DB::RefSeq;
+use Bio::Root::Root;
 
-@ISA = qw(Bio::DB::WebDBSeqI);
+@ISA = qw(Bio::DB::WebDBSeqI Bio::Root::Root);
 
-BEGIN { 	    
+BEGIN {
+    $MAX_ENTRIES = 19000;
     $HOSTBASE = 'http://www.ncbi.nlm.nih.gov';
-    %CGILOCATION = ( 'batch' => '/cgi-bin/Entrez/qserver.cgi',
-		     'single'=> '/entrez/utils/qmap.cgi' );
+    %CGILOCATION = ( 
+		     'batch'  => '/htbin-post/Entrez/query',
+# new style only returns HTML #'batch'  => '/entrez/batchentrez.cgi',
+# old style	              #'batch' => '/cgi-bin/Entrez/qserver.cgi/result',
+		     'single' => '/htbin-post/Entrez/query',
+		     'version'=> '/htbin-post/Entrez/girevhist',
+		     'gi'     => '/htbin-post/Entrez/query');
+
     %FORMATMAP = ( 'genbank' => 'genbank',
 		   'genpept' => 'genbank',
 		   'fasta'   => 'fasta' );
@@ -98,7 +109,9 @@ BEGIN {
 
 sub new {
     my ($class, @args ) = @_;
-    return $class->SUPER::new(@args);
+    my $self = $class->SUPER::new(@args);
+    
+    return $self;
 }
 
 
@@ -155,40 +168,47 @@ sub get_request {
 	$self->throw("must specify a valid retrival mode 'single' or 'batch' not '$mode'") 
     }
     my $url = $HOSTBASE . $CGILOCATION{$mode};
-
     if( !defined $uids ) {
 	$self->throw("Must specify a value for uids to query");
     }
 
-    if( ref($uids) =~ /array/i ) {
-	$uids = join(",", @$uids);
+    if ($mode eq 'version') {
+	$params{'val'} = $uids;
+    } else {
+	if( ref($uids) =~ /array/i ) {
+	    $uids = join("+", @$uids);
+	}
+	$params{'term'} = $uids;
     }
-    $params{'uid'} = $uids;
+
     if( $mode eq 'batch' ) {
 	# has to be genbank at this point in time
-	my $sformat = $format;
-	if( $self->default_format !~ /$format/i ) {
-	    $self->warn("must reset format to ". $self->default_format. 
-			" for batch retrieval mode\n".
-			"the only format supported by NCBI batch mode");
-	    ($format) = $self->request_format($self->default_format);
-	}
-	$params{'format'} = $format;
-	my $querystr = '?' . join("&", map { "$_=$params{$_}" } keys %params);
-	print STDERR "url is ", $HOSTBASE . 
-	    $CGILOCATION{$mode} . $querystr, "\n"
-	    unless ( $self->verbose == 0 ); 	
-	return POST ( $url, \%params );
-    } elsif( $mode eq 'single' ) {
+#	my $sformat = $format;
+#	if( $self->default_format !~ /$format/i ) {
+#	    $self->warn("must reset format to ". $self->default_format. 
+#			" for batch retrieval mode\n".
+#			"the only format supported by NCBI batch mode");
+#	    ($format) = $self->request_format($self->default_format);
+#	}
+#	
 	$params{'dopt'} = $format;
 	my $querystr = '?' . join("&", map { "$_=$params{$_}" } keys %params);
-	print STDERR "url is ", $url . $querystr, "\n"
-	    unless ( $self->verbose == 0 );	
+	$self->debug("url is $url$querystr \n");
+	return GET $url . $querystr;
+    } elsif( $mode eq 'single' || $mode eq 'gi') {
+	$params{'dopt'} = $format;
+	my $querystr = '?' . join("&", map { "$_=$params{$_}" } keys %params);
+	$self->debug("url is $url$querystr \n");
+	return GET $url . $querystr;
+    } elsif( $mode eq 'version') {
+	my $querystr = '?' . join("&", map { "$_=$params{$_}" } keys %params);
+	$self->debug("url is $url$querystr \n");
 	return GET $url . $querystr;
     }  else { 
 	return undef;
     }
 }
+
 
 =head2 get_Stream_by_batch
 
@@ -233,36 +253,98 @@ sub postprocess_data {
     if( !defined $type || $type eq '' || !defined $location) {
 	return;
     } elsif( $type eq 'STRING' ) {
-	$data = ${$location}; 
+	$data = $$location; 
     } elsif ( $type eq 'FILE' ) {
 	open(TMP, $location) or $self->throw("could not open file $location");
 	my @in = <TMP>;
 	close TMP;
 	$data = join("", @in);
     }
-    my ($format) = $self->request_format();    
-    if( $format =~ /fasta/i ) {
-	$data =~ s/^[\s\S]+<dd>([\s\S]+)<pre>/$1/i;
-    } else { 
-       # remove everything before <PRE>
-       $data =~ s/^[\s\S]+<pre>//i;
+    my @final;
+    my $s = 0;
+    my $p = 0;
+    while( ($s = index($data,'<pre>',$p)) > $p &&
+	   $s > 0 ) {
+	$s+=5;
+	my $e = index($data,'</pre>',$s);
+	push @final, substr($data,$s,$e-$s);
+	$p = $s;
     }
-    # remove everything after </PRE>
-    $data =~ s/<\/pre>[\s\S]+$//i;
-
+    
+    $data = join("\n",@final);
     # transform links to appropriate descriptions
-    $data =~ s/<a href=.+>(\S+)<\/a\>/$1/ig;
-    # fix gt and lt
-    $data =~ s/&gt;/>/ig;
-    $data =~ s/&lt;/</ig;
-    if( $type eq 'FILE'  ) {
-	open(TMP, ">$location") or $self->throw("could overwrite file $location");
-	print TMP $data;
-	close TMP;
-    } elsif ( $type eq 'STRING' ) {
-	${$args{'location'}} = $data;
+    if ($data =~ /\nCONTIG\s+/) {
+	$self->warn("CONTIG found. GenBank get_Stream_by_batch about to run."); 
+    	my(@batch,@accession,%accessions,@location,$id,
+	   $contig,$stream,$aCount,$cCount,$gCount,$tCount);
+    	my $gb = new Bio::DB::GenBank();
+
+    	# process GenBank CONTIG join(...) into two arrays
+    	$data =~ /(?:CONTIG\s+join\()((?:.+\n)+)(?:\/\/)/;
+    	$contig = $1;
+    	$contig =~ s/\n|\)//g;
+	foreach (split /,/,$contig){
+	    if (/>(.+)<.+>:(.+)/) {
+		($id) = split /\./, $1;
+		if (!$accessions{$id}) { push @batch, $id; }
+		push @accession, $id;
+		push @location, $2;
+		$accessions{$id}->{'count'}++;
+	    }
+	}
+
+	# grab multiple sequnces by batch and join based location variable
+	#$stream = $gb->get_Stream_by_batch(\@accession);
+	$stream = $gb->get_Stream_by_batch(\@batch);
+	$contig = "";
+
+	for (my $i = 0; $i < @accession; $i++) {
+	    my $seq;
+	    if ($accessions{$accession[$i]}->{'seq'} ne '') {
+				# retrieve stored sequence
+				#my $seq =  $accessions{$accession[$i]}->{'seq'}   ;
+		$seq = Bio::Seq::RichSeq->new(-seq => $accessions{$accession[$i]}->{'seq'});
+	    } else {
+				# seq not cached, get next sequence
+		$seq = $stream->next_seq();
+		if ($accessions{$accession[$i]}->{'count'} > 1) {
+		    # cache sequence for later use
+		    $accessions{$accession[$i]}->{'seq'} = $seq->seq();
+		}
+	    }
+	    my($start,$end) = split(/\.\./, $location[$i]);
+	    $contig .= $seq->subseq($start,$end);
+	}
+
+	# count number of each letter in sequence
+	$aCount = () = $contig =~ /a/ig;
+	$cCount = () = $contig =~ /c/ig;
+	$gCount = () = $contig =~ /g/ig;
+	$tCount = () = $contig =~ /t/ig;
+
+	# remove everything after and including CONTIG
+	$data =~ s/(CONTIG[\s\S]+$)//i;
+
+		    # build ORIGIN part of data file using sequence and counts
+		    $data .= "BASE COUNT     $aCount a   $cCount c   $gCount g   $tCount t\n";
+		    $data .= "ORIGIN      \n";
+		    $data .= "$contig\n//";
+		}
+	else {
+	    $data =~ s/<a href=.+>(\S+)<\/a\>/$1/ig;
+	}
+
+	# fix gt and lt
+	$data =~ s/&gt;/>/ig;
+	$data =~ s/&lt;/</ig;
+	if( $type eq 'FILE'  ) {
+	    open(TMP, ">$location") or $self->throw("could overwrite file $location");
+	    print TMP $data;
+	    close TMP;
+	} elsif ( $type eq 'STRING' ) {
+	    ${$args{'location'}} = $data;
     }
-    print STDERR "format is ", $self->request_format(), "data is $data\n" if( $self->verbose > 1 );
+    $self->debug("format is ". $self->request_format(). " data is $data\n");
 }
 
 
@@ -283,7 +365,7 @@ sub postprocess_data {
 sub request_format {
     my ($self, $value) = @_;    
     if( defined $value ) {
-	$value = lc $value;
+	$value = lc $value;	
 	if( defined $FORMATMAP{$value} ) {
 	    $self->{'_format'} = [ $value, $FORMATMAP{$value}];
 	} else {
@@ -294,6 +376,126 @@ sub request_format {
     }
     return @{$self->{'_format'}};
 }
+
+
+=head2 get_Seq_by_version
+
+ Title   : get_Seq_by_version
+ Usage   : $seq = $db->get_Seq_by_version('X77802.1');
+ Function: Gets a Bio::Seq object by sequence version
+ Returns : A Bio::Seq object
+ Args    : accession.version (as a string)
+ Throws  : "acc.version does not exist" exception
+
+=cut 
+
+sub get_Seq_by_version {
+    my ($self,$seqid) = @_;  
+    my ($acc, $version) =  $seqid =~ /(\w+).(\d+)/; 
+    $self->throw("Use accesion.version notation, not[$seqid]") if( !defined $version );
+    my $request = $self->get_Stream_by_version($acc);
+    $self->throw("accession [$acc] does not exist") if( !defined $request );
+    my $res = $self->ua->request($request);
+    
+    my $data  = $res->content;
+    $data =~ s/<.*?>/ /gs;
+    my($gi) = $data =~ /\s+(\d+)\s+$version\s+[A-Z][a-z]/;
+    $self->throw("Version number [$version] does not exist for sequence [$acc]") unless $gi;
+    return $self->get_Seq_by_gi($gi);
+}
+
+=head2 get_Stream_by_version
+
+  Title   : get_Stream_by_version
+  Usage   : 
+  Function: DO NOT USE. HACK.
+            Reuses the method defined by the interface file to retrieve
+            a HTML table with all GIs (versions) for a accession number.
+  Returns : a HTTP::Request object
+  Args    : $ref : a reference to an array of accession.version strings for
+                   the desired sequence entries
+
+=cut
+
+sub get_Stream_by_version {
+    my ($self, $ids ) = @_;
+    return $self->_get_version_request('-uids' => $ids, '-mode' => 'version');
+}
+
+
+sub _get_version_request{	# internal method to format a request 
+                                # for a sequence version table
+    my ($self, %qualifiers) = @_;
+    my ($rformat, $ioformat) = $self->request_format();
+    my $seen = 0;
+    foreach my $key ( keys %qualifiers ) {
+	if( $key =~ /format/i ) {
+	    $rformat = $qualifiers{$key};
+	    $seen = 1;
+	}
+    }
+    $qualifiers{'-format'} = $rformat if( !$seen);
+    ($rformat, $ioformat) = $self->request_format($rformat);
+    
+    my $request = $self->get_request(%qualifiers);
+}
+
+
+=head2 Bio::DB::WebDBSeqI methods
+
+Overriding WebDBSeqI method to help newbies to retrieve sequences
+
+=head2 get_Stream_by_acc
+
+  Title   : get_Stream_by_acc
+  Usage   : $seq = $db->get_Seq_by_acc([$acc1, $acc2]);
+  Function: Gets a series of Seq objects by accession numbers
+  Returns : a Bio::SeqIO stream object
+  Args    : $ref : a reference to an array of accession numbers for
+                   the desired sequence entries
+  Note    : For GenBank, this just calls the same code for get_Stream_by_id()
+
+=cut
+
+sub get_Stream_by_acc {
+    my ($self, $ids ) = @_;
+    my $newdb = $self->_check_id($ids);
+    if (defined $newdb && ref($newdb) && $newdb->isa('Bio::DB::RefSeq')) {
+	return $newdb->get_seq_stream('-uids' => $ids, '-mode' => 'single');
+    } else {
+	return $self->get_seq_stream('-uids' => $ids, '-mode' => 'single');
+    }
+}
+
+
+=head2 _check_id
+
+  Title   : _check_id
+  Usage   : 
+  Function: 
+  Returns : A Bio::DB::RefSeq reference or throws
+  Args    : $id(s), $string
+=cut
+
+sub _check_id {
+    my ($self, $ids) = @_;
+
+    # NT contigs can not be retrieved
+    $self->throw("NT_ contigs are whole chromosome files which are not part of regular".
+		 "database distributions. Go to ftp://ftp.ncbi.nih.gov/genomes/.") 
+	if $ids =~ /NT_/;
+
+    # Asking for a RefSeq from EMBL/GenBank
+
+    if ($ids =~ /N._/) {
+	$self->warn("[$ids] is not a normal sequence database but a RefSeq entry.".
+		   " Redirecting the request.\n")
+	    if $self->verbose >= 0;
+	return  new Bio::DB::RefSeq;
+    }
+}
+
+
 
 1;
 __END__

@@ -1,4 +1,4 @@
-# $Id: Range.pm,v 1.3.2.5 2001/06/22 10:40:02 heikki Exp $
+# $Id: Range.pm,v 1.7 2001/06/18 08:27:53 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::Range
 #
@@ -42,7 +42,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::Range;
-$version=1.6;
+$VERSION=1.6;
 
 # Version history:
 # Mon Mar 20 22:21:44 GMT 2000 v 1.0 begun
@@ -55,8 +55,8 @@ $version=1.6;
 # Wed Mar 28 16:47:36 BST 2001 v 1.6 carp -> warn,throw (coded methods in SeqI)
 
 use strict;
-use vars qw($version @ISA);
-use Bio::LiveSeq::SeqI; # uses SeqI, inherits from it
+use vars qw($VERSION @ISA);
+use Bio::LiveSeq::SeqI 3.2; # uses SeqI, inherits from it
 @ISA=qw(Bio::LiveSeq::SeqI);
 
 =head2 new

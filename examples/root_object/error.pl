@@ -4,9 +4,9 @@
 # PROGRAM : error.pl
 # PURPOSE : A basic driver script for testing Object.pm exception handling
 #           using Bio::Root::Object.pm and Bio::Root::Err.pm.
-# AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
+# AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 28 Oct 1996
-# REVISION: $Id: error.pl,v 1.1.1.1 1998/12/11 15:24:35 birney Exp $
+# REVISION: $Id: error.pl,v 1.2 2002/01/11 08:05:40 sac Exp $
 #
 # USAGE   : err.pl >& err.out  # Traps actual exceptions as thrown
 #                              # in addition to reports created by script.

@@ -4,17 +4,16 @@
 # PURPOSE  : Demonstrate possible uses of Bio::Tools::Run::Alignment::Clustalw.pm
 # AUTHOR   : Peter Schattner schattner@alum.mit.edu
 # CREATED  : Oct 06 2000
-# REVISION : $Id: clustalw.pl,v 1.4 2000/12/17 21:10:41 jason Exp $
+# REVISION : $Id: clustalw.pl,v 1.5 2001/06/02 21:17:20 peter Exp $
 #
 # INSTALLATION
 #
 # You will need to have installed clustalw and to ensure that Clustalw.pm can find it.
-# This can be done in (at least) three ways:
-#  1. Modify your $PATH variable to include your clustalw directory as in (for Linux):
+# This can be done in (at least) two ways:
 #	export PATH=$PATH:/home/peter/clustalw1.8   or
-#  2. define an environmental variable CLUSTALDIR:
+#  1. define an environmental variable CLUSTALDIR:
 #	export CLUSTALDIR=/home/peter/clustalw1.8   or
-#  3. include a definition of an environmental variable CLUSTALDIR in every script that will
+#  2. include a definition of an environmental variable CLUSTALDIR in every script that will
 #     use Clustal.pm.
 #	BEGIN {$ENV{CLUSTALDIR} = '/home/peter/clustalw1.8/'; }
 

@@ -1,4 +1,4 @@
-# $Id: ChainI.pm,v 1.4.2.5 2001/06/22 10:40:02 heikki Exp $
+# $Id: ChainI.pm,v 1.8 2001/06/19 16:06:44 jason Exp $
 #
 # bioperl module for Bio::LiveSeq::ChainI
 #
@@ -36,8 +36,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bio.perl.org/MailList.html  - About the mailing lists
+  bioperl-l@bioperl.org             - General discussion
+  http://bio.perl.org/MailList.html - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -45,7 +45,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
-  bioperl-bugs@bioperl.org
+  bioperl-bugs@bio.perl.org
   http://bio.perl.org/bioperl-bugs/
 
 =head1 AUTHOR - Joseph A.L. Insana
@@ -67,7 +67,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::ChainI;
-$version=1.9;
+$VERSION=1.9;
 # Version history:
 # Thu Mar 16 01:38:25 GMT 2000 v.1.4 1st wraparound of methods complete
 #                                    tested with chainseq_asobj_test.pl
@@ -83,7 +83,7 @@ $version=1.9;
 use Carp qw(croak);
 use strict; # this will be moved before when strict enforced in Chain.pm
 
-use Bio::LiveSeq::Chain; # package where all the subroutines are defined
+use Bio::LiveSeq::Chain 2.6; # package where all the subroutines are defined
 
 
 =head2 new

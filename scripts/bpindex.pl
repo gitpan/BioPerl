@@ -89,9 +89,9 @@ email or the web:
   bioperl-bugs@bioperl.org
   http://bioperl.org/bioperl-bugs/
 
-=head1 AUTHOR
+=head1 AUTHOR - Ewan Birney
 
-Ewan Birney, birney@ebi.ac.uk
+Ewan Birney E<lt>birney@ebi.ac.ukE<gt>
 
 =cut
 

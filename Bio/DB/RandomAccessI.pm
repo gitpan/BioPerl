@@ -1,6 +1,6 @@
 # POD documentation - main docs before the code
 #
-# $Id: RandomAccessI.pm,v 1.5 2000/07/31 20:25:00 jason Exp $
+# $Id: RandomAccessI.pm,v 1.10.2.1 2002/03/13 16:37:05 jason Exp $
 #
 
 =head1 NAME
@@ -34,15 +34,17 @@ Ewan Birney originally wrote this class.
 
 =head2 Reporting Bugs
 
-Report bugs to the Bioperl bug tracking system to help us keep track the bugs and 
-their resolution. Bug reports can be submitted via email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution. Bug reports can be submitted via email
+or the web:
 
     bioperl-bugs@bio.perl.org                   
     http://bio.perl.org/bioperl-bugs/           
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -54,55 +56,70 @@ package Bio::DB::RandomAccessI;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::Object
 use Bio::Root::RootI;
-@ISA = qw(Bio::Root::RootI);
+use Bio::Root::Root;
 
-# new() is inherited from Bio::Root::Object
-
-# _initialize is where the heavy stuff will happen when new is called
-
+@ISA = qw(Bio::Root::Root);
 
 =head2 get_Seq_by_id
 
  Title   : get_Seq_by_id
  Usage   : $seq = $db->get_Seq_by_id('ROA1_HUMAN')
  Function: Gets a Bio::Seq object by its name
- Returns : a Bio::Seq object
- Args    : the id (as a string) of a sequence
- Throws  : "id does not exist" exception
-
+ Returns : a Bio::Seq object or undef if not found
+ Args    : the id (as a string) of a sequence,
 
 =cut
 
 sub get_Seq_by_id{
    my ($self,@args) = @_;
-
-   $self->throw("Abstract database call of get_Seq_by_id. Your database has not implemented this method!");
+   $self->throw_not_implemented();
 }
 
 =head2 get_Seq_by_acc
 
  Title   : get_Seq_by_acc
  Usage   : $seq = $db->get_Seq_by_acc('X77802');
+           $seq = $db->get_Seq_by_acc(Locus => 'X77802');
  Function: Gets a Bio::Seq object by accession number
- Returns : A Bio::Seq object
- Args    : accession number (as a string)
- Throws  : "acc does not exist" exception
+ Returns : A Bio::Seq object or undef if not found
+ Args    : accession number (as a string), or a two
+               element list consisting of namespace=>accession
+ Throws  : "more than one sequences correspond to this accession"
+            if the accession maps to multiple primary ids and
+            method is called in a scalar context
 
+NOTE: The two-element form allows you to choose the namespace for the
+accession number.
 
 =cut
 
 sub get_Seq_by_acc{
    my ($self,@args) = @_;
-
-   $self->throw("Abstract database call of get_Seq_by_acc. Your database has not implemented this method!");
+   $self->throw_not_implemented();
 }
+
+
+=head2 get_Seq_by_version
+
+ Title   : get_Seq_by_version
+ Usage   : $seq = $db->get_Seq_by_version('X77802.1');
+ Function: Gets a Bio::Seq object by sequence version
+ Returns : A Bio::Seq object
+ Args    : accession.version (as a string)
+ Throws  : "acc.version does not exist" exception
+
+=cut
+
+
+sub get_Seq_by_version{
+   my ($self,@args) = @_;
+   $self->throw_not_implemented();
+}
+
 
 
 ## End of Package
 
 1;
-
-__END__
 

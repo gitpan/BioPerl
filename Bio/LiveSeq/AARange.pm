@@ -1,4 +1,4 @@
-# $Id: AARange.pm,v 1.5.2.6 2001/06/22 10:40:02 heikki Exp $
+# $Id: AARange.pm,v 1.10 2001/10/22 08:22:49 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::AARange
 #
@@ -90,7 +90,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::AARange;
-$version=1.8;
+$VERSION=1.8;
 
 # Version history:
 # Wed Apr 19 15:10:29 BST 2000 v 1.0 begun
@@ -100,8 +100,8 @@ $version=1.8;
 # Wed Mar 28 16:58:02 BST 2001 v 1.8 carp -> warn,throw (coded methods in SeqI)
 
 use strict;
-use vars qw($version @ISA);
-use Bio::LiveSeq::SeqI; # uses SeqI, inherits from it
+use vars qw($VERSION @ISA);
+use Bio::LiveSeq::SeqI 3.2; # uses SeqI, inherits from it
 @ISA=qw(Bio::LiveSeq::SeqI);
 
 =head2 new
@@ -186,7 +186,7 @@ sub new {
   $self->{'translation'}=$translation;
   $self->{'name'}=$name;
   $self->{'description'}=$description;
-  $self->{'moltype'}="protein";
+  $self->{'alphabet'}="protein";
 
   return $obj;
 }

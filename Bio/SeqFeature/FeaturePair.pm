@@ -1,4 +1,4 @@
-# $Id: FeaturePair.pm,v 1.15.2.1 2001/03/02 22:48:00 heikki Exp $
+# $Id: FeaturePair.pm,v 1.16 2001/05/16 14:57:42 heikki Exp $
 #
 # BioPerl module for Bio::SeqFeature::FeaturePair
 #

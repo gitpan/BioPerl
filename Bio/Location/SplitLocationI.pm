@@ -1,4 +1,4 @@
-# $Id: SplitLocationI.pm,v 1.9.2.1 2001/03/02 22:47:59 heikki Exp $
+# $Id: SplitLocationI.pm,v 1.12 2002/01/08 01:25:31 jason Exp $
 #
 # BioPerl module for Bio::Location::SplitLocationI
 # Cared for by Jason Stajich <jason@chg.mc.duke.edu>
@@ -75,22 +75,6 @@ use Carp;
 
 @ISA = qw(Bio::LocationI);
 
-# utility method Prints out a method like: 
-# Abstract method stop defined in interface Bio::LocationI not
-# implemented by package You::BadLocation
-
-sub _abstractDeath {
-  my $self = shift;
-  my $package = ref $self;
-  my $caller = (caller)[1];
-  
-  my $msg = "Abstract method '$caller' defined in interface Bio::ComplexLocationI but not implemented by package $package";
-  if( $self->can('throw') ) {
-      $self->throw($msg);
-  } else {
-      confess($msg);
-  }
-}
 
 =head2 sub_Location
 
@@ -104,7 +88,7 @@ sub _abstractDeath {
 
 sub sub_Location {
     my ($self,@args) = @_;
-    $self->_abstractDeath;
+    $self->throw_not_implemented();
 }
 
 =head2 splittype
@@ -118,8 +102,8 @@ sub sub_Location {
 =cut
 
 sub splittype {
-    my($self,$value) = @_;
-    $self->_abstractDeath();
+    my($self) = @_;
+    $self->throw_not_implemented();
 }
 
 
@@ -140,10 +124,12 @@ sub splittype {
 
 sub is_single_sequence {
     my ($self) = @_;
-    $self->_abstractDeath();
+    $self->throw_not_implemented();
 }
 
-=head1 LocationI methods
+=head1 Bio::LocationI methods
+
+Bio::LocationI inherited methods follow
 
 =head2 min_start
 

@@ -3,9 +3,9 @@
 #----------------------------------------------------------------
 # PROGRAM : filehandle.pl
 # PURPOSE : To demonstrate passing filehandles between objects.
-# AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
+# AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 21 Mar 1997
-# REVISION: $Id: filehandle.pl,v 1.2 1999/02/27 12:28:10 sac Exp $
+# REVISION: $Id: filehandle.pl,v 1.3 2002/01/11 08:05:40 sac Exp $
 #
 # INSTALLATION
 #    Edit the use lib "...." line to point the directory

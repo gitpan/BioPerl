@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.10.2.2 2001/11/09 13:43:41 avc Exp $
+# $Id: IO.pm,v 1.21 2002/01/09 16:13:03 jason Exp $
 #
 # BioPerl module for Bio::Root::IO
 #
@@ -39,7 +39,7 @@ To use this for your own code you will either want to inherit from
 this module, or instantiate an object for every file or stream you are
 dealing with. In the first case this module will most likely not be
 the first class off which your class inherits; therefore you need to
-call _initialize_io() with the named parameters in order set file
+call _initialize_io() with the named parameters in order to set file
 handle, open file, etc automatically.
 
 Most methods start with an underscore, indicating they are private. In
@@ -49,11 +49,10 @@ want to call them (except those not starting with an underscore).
 
 In addition this module contains a couple of convenience methods for
 cross-platform safe tempfile creation and similar tasks. There are
-some CPAN modules related that may be not be available on all
+some CPAN modules related that may not be available on all
 platforms. At present, File::Spec and File::Temp are attempted. This
-module exports $TEMPFILE and $ROOTDIR, which will always be set,
-$PATHSEP, which will be set if File::Spec fails, and $OPENFLAGS, which
-will be set if either of File::Spec or File::Temp fails.
+module defines $PATHSEP, $TEMPDIR, and $ROOTDIR, which will always be set, 
+and $OPENFLAGS, which will be set if either of File::Spec or File::Temp fails.
 
 =head1 FEEDBACK
 
@@ -93,14 +92,14 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::Root::IO;
-use vars qw(@ISA $FILESPECLOADED $FILETEMPLOADED
-	    $TEMPDIR $PATHSEP $ROOTDIR $OPENFLAGS);
+use vars qw(@ISA $FILESPECLOADED $FILETEMPLOADED $FILEPATHLOADED
+	    $TEMPDIR $PATHSEP $ROOTDIR $OPENFLAGS $VERBOSE);
 use strict;
 
 use Symbol;
-use Bio::Root::RootI;
+use Bio::Root::Root;
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::Root::Root);
 
 my $TEMPCOUNTER;
 
@@ -108,7 +107,27 @@ BEGIN {
     $TEMPCOUNTER = 0;
     $FILESPECLOADED = 0;
     $FILETEMPLOADED = 0;
+    $FILEPATHLOADED = 0;
+    $VERBOSE = 1;
+
     # try to load those modules that may cause trouble on some systems
+    eval { 
+	require File::Path;
+	$FILEPATHLOADED = 1;
+    }; 
+    if( $@ ) {
+	print STDERR "Cannot load File::Path: $@" if( $VERBOSE > 0 );
+	# do nothing
+    }
+    # Try to provide a path separator. Why doesn't File::Spec export this,
+    # or did I miss it?
+    if($^O =~ /mswin/i) {
+	$PATHSEP = "\\";
+    } elsif($^O =~ /macos/i) {
+	$PATHSEP = ":";
+    } else { # unix
+	$PATHSEP = "/";
+    }
     eval {
 	require File::Spec;
 	$FILESPECLOADED = 1;
@@ -127,15 +146,12 @@ BEGIN {
 	    }
 	    if($^O =~ /mswin/i) {
 		$TEMPDIR = 'C:\TEMP' unless $TEMPDIR;
-		$PATHSEP = "\\";
 		$ROOTDIR = 'C:';
 	    } elsif($^O =~ /macos/i) {
 		$TEMPDIR = "" unless $TEMPDIR; # what is a reasonable default on Macs?
-		$PATHSEP = ":";
-		$ROOTDIR = ""; # what is the reasonable
+		$ROOTDIR = ""; # what is reasonable??
 	    } else { # unix
 		$TEMPDIR = "/tmp" unless $TEMPDIR;
-		$PATHSEP = "/";
 		$ROOTDIR = "/";
 	    }
 	    if (!( -d $TEMPDIR && -w $TEMPDIR )) {
@@ -155,7 +171,7 @@ BEGIN {
 	    $OPENFLAGS |= $bit if eval { $bit = &$func(); 1 };
 	}
     }
-};
+}
 
 =head2 new
 
@@ -227,6 +243,7 @@ sub _initialize_io {
 	$fh = Symbol::gensym();
 	open ($fh,$file) ||
 	    $self->throw("Could not open $file for reading: $!");
+	$self->file($file);
     }
     $self->_fh($fh) if $fh; # if not provided, defaults to STDIN and STDOUT
     return 1;
@@ -250,6 +267,26 @@ sub _fh {
 	$obj->{'_filehandle'} = $value;
     }
     return $obj->{'_filehandle'};
+}
+
+=head2 file
+
+ Title   : file
+ Usage   : $obj->file($newval)
+ Function:
+ Example :
+ Returns : value of file
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub file {
+    my ($obj, $value) = @_;
+    if ( defined $value) {
+	$obj->{'_file'} = $value;
+    }
+    return $obj->{'_file'};
 }
 
 =head2 _print
@@ -294,7 +331,7 @@ sub _readline {
     # contents, rather than read from the filehandle
     if(exists($self->{'_readbuffer'})) {
 	$line = $self->{'_readbuffer'};
-	delete $self->{'_readbuffer'};
+	delete $self->{'_readbuffer'};	
     } else {
 	$line = <$fh>;
     }
@@ -322,8 +359,8 @@ sub _pushback {
 =head2 close
 
  Title   : close
- Usage   : $seqio->close()
- Function: Closes the file handle associated with this seqio system
+ Usage   : $io->close()
+ Function: Closes the file handle associated with this IO instance.
  Example :
  Returns :
  Args    :
@@ -338,7 +375,7 @@ sub close {
 }
 
 sub _io_cleanup {
-    my ($self,@args) = @_;
+    my ($self) = @_;
 
     $self->close();
 
@@ -360,14 +397,44 @@ sub _io_cleanup {
 	    print STDERR "going to remove dirs ", 
 	    join(",",  @{$self->{'_rootio_tempdirs'}}), "\n";
 	}
-	foreach ( @{$self->{'_rootio_tempdirs'}} ) {
-	    rmdir($_); 
-	}
+	$self->rmtree( $self->{'_rootio_tempdirs'});
     }
 }
 
+=head2 exists_exe
 
-=head2  tempfile
+ Title   : exists_exe
+ Usage   : $exists = $obj->exists_exe('clustalw');
+           $exists = Bio::Root::IO->exists_exe('clustalw')
+           $exists = Bio::Root::IO::exists_exe('clustalw')
+ Function: Determines whether the given executable exists either as file
+           or within the path environment. The latter requires File::Spec
+           to be installed.
+           On Win32-based system, .exe is automatically appended to the program
+           name unless the program name already ends in .exe.
+ Example :
+ Returns : 1 if the given program is callable as an executable, and 0 otherwise
+ Args    : the name of the executable
+
+=cut
+
+sub exists_exe {
+    my ($self, $exe) = @_;
+    $exe = $self if(!(ref($self) || $exe));
+    $exe .= '.exe' if(($^O =~ /mswin/i) && ($exe !~ /\.(exe|com|bat|cmd)$/i));
+    return $exe if(-e $exe); # full path and exists
+    $exe =~ s/^$PATHSEP//;
+    # Not a full path, or does not exist. Let's see whether it's in the path.
+    if($FILESPECLOADED) {
+	foreach my $dir (File::Spec->path()) {
+	    my $f = Bio::Root::IO->catfile($dir, $exe);	    
+	    return $f if(-e $f );
+	}
+    }    
+    return 0;
+}
+
+=head2 tempfile
 
  Title   : tempfile
  Usage   : my ($handle,$tempfile) = $io->tempfile(); 
@@ -410,7 +477,7 @@ sub tempfile {
 	$file = $self->catfile($dir,
 			       (exists($params{'TEMPLATE'}) ?
 				$params{'TEMPLATE'} :
-				sprintf( "%s-%s-%s",  
+				sprintf( "%s.%s.%s",  
 					 $ENV{USER} || 'unknown', $$, 
 					 $TEMPCOUNTER++)));
 	# taken from File::Temp
@@ -504,6 +571,141 @@ sub catfile {
 	$args[0] = $ROOTDIR;
     }
     return join($PATHSEP, @args);
+}
+
+=head2 rmtree
+
+ Title   : rmtree
+ Usage   : Bio::Root::IO->rmtree($dirname );
+ Function: Remove a full directory tree
+
+           If File::Path exists on your system, this routine will merely
+           delegate to it. Otherwise it runs a local version of that code.
+
+           You should use this method to remove directories which contain 
+           files.
+
+           You can call this method both as a class and an instance method.
+
+ Returns : number of files successfully deleted
+ Args    : roots - rootdir to delete or reference to list of dirs
+
+           verbose - a boolean value, which if TRUE will cause
+                     C<rmtree> to print a message each time it
+                     examines a file, giving the name of the file, and
+                     indicating whether it's using C<rmdir> or
+                     C<unlink> to remove it, or that it's skipping it.
+                     (defaults to FALSE)
+
+           safe - a boolean value, which if TRUE will cause C<rmtree>
+                  to skip any files to which you do not have delete
+                  access (if running under VMS) or write access (if
+                  running under another OS).  This will change in the
+                  future when a criterion for 'delete permission'
+                  under OSs other than VMS is settled.  (defaults to
+                  FALSE)
+
+=cut
+
+# taken straight from File::Path VERSION = "1.0403"
+sub rmtree {
+    my($self,$roots, $verbose, $safe) = @_;
+    if( $FILEPATHLOADED ) { 
+	return File::Path::rmtree ($roots, $verbose, $safe); 
+    }				
+    
+    my $force_writeable = ($^O eq 'os2' || $^O eq 'dos' || $^O eq 'MSWin32'
+		       || $^O eq 'amigaos');
+    my $Is_VMS = $^O eq 'VMS';
+
+    my(@files);
+    my($count) = 0;
+    $verbose ||= 0;
+    $safe ||= 0;
+    if ( defined($roots) && length($roots) ) {
+	$roots = [$roots] unless ref $roots;
+    } else {
+	$self->warn("No root path(s) specified\n");
+	return 0;
+    }
+
+    my($root);
+    foreach $root (@{$roots}) {
+	$root =~ s#/\z##;
+	(undef, undef, my $rp) = lstat $root or next;
+	$rp &= 07777;	# don't forget setuid, setgid, sticky bits
+	if ( -d _ ) {
+	    # notabene: 0777 is for making readable in the first place,
+	    # it's also intended to change it to writable in case we have
+	    # to recurse in which case we are better than rm -rf for 
+	    # subtrees with strange permissions
+	    chmod(0777, ($Is_VMS ? VMS::Filespec::fileify($root) : $root))
+	      or $self->warn("Can't make directory $root read+writeable: $!")
+		unless $safe;
+	    if (opendir(DIR, $root) ){
+		@files = readdir DIR;
+		closedir(DIR);
+	    } else {
+	        $self->warn( "Can't read $root: $!");
+		@files = ();
+	    }
+
+	    # Deleting large numbers of files from VMS Files-11 filesystems
+	    # is faster if done in reverse ASCIIbetical order 
+	    @files = reverse @files if $Is_VMS;
+	    ($root = VMS::Filespec::unixify($root)) =~ s#\.dir\z## if $Is_VMS;
+	    @files = map("$root/$_", grep $_!~/^\.{1,2}\z/s,@files);
+	    $count += $self->rmtree([@files],$verbose,$safe);
+	    if ($safe &&
+		($Is_VMS ? !&VMS::Filespec::candelete($root) : !-w $root)) {
+		print "skipped $root\n" if $verbose;
+		next;
+	    }
+	    chmod 0777, $root
+	      or $self->warn( "Can't make directory $root writeable: $!")
+		if $force_writeable;
+	    print "rmdir $root\n" if $verbose;
+	    if (rmdir $root) {
+		++$count;
+	    }
+	    else {
+		$self->warn( "Can't remove directory $root: $!");
+		chmod($rp, ($Is_VMS ? VMS::Filespec::fileify($root) : $root))
+		    or $self->warn("and can't restore permissions to "
+		            . sprintf("0%o",$rp) . "\n");
+	    }
+	}
+	else {
+
+	    if ($safe &&
+		($Is_VMS ? !&VMS::Filespec::candelete($root)
+		         : !(-l $root || -w $root)))
+	    {
+		print "skipped $root\n" if $verbose;
+		next;
+	    }
+	    chmod 0666, $root
+	      or $self->warn( "Can't make file $root writeable: $!")
+		if $force_writeable;
+	    print "unlink $root\n" if $verbose;
+	    # delete all versions under VMS
+	    for (;;) {
+		unless (unlink $root) {
+		    $self->warn( "Can't unlink file $root: $!");
+		    if ($force_writeable) {
+			chmod $rp, $root
+			    or $self->warn("and can't restore permissions to "
+			            . sprintf("0%o",$rp) . "\n");
+		    }
+		    last;
+		}
+		++$count;
+		last unless $Is_VMS && lstat $root;
+	    }
+	}
+    }
+
+    $count;
 }
 
 1;

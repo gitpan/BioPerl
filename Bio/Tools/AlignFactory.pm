@@ -1,4 +1,4 @@
-# $Id: AlignFactory.pm,v 1.7 2001/02/23 15:19:39 birney Exp $
+# $Id: AlignFactory.pm,v 1.8 2001/11/20 02:09:40 lstein Exp $
 #
 # BioPerl module for Bio::Tools::AlignFactory
 #
@@ -41,8 +41,8 @@ package Bio::Tools::AlignFactory;
 use vars qw(@ISA);
 use strict;
 
-use Bio::Root::RootI;
-@ISA = qw(Bio::Root::RootI);
+use Bio::Root::Root;
+@ISA = qw(Bio::Root::Root);
 
 BEGIN {
     eval {

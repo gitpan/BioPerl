@@ -1,4 +1,4 @@
-# $Id: Domain.pm,v 1.8 2001/02/04 23:19:36 lapp Exp $
+# $Id: Domain.pm,v 1.10 2001/12/14 16:40:19 heikki Exp $
 #
 # BioPerl module for Bio::Tools::HMMER::Domain
 #
@@ -25,20 +25,25 @@ here, so this inherits off Homol SeqFeature. As this code
 originally came from a separate project, there are some backward
 compatibility stuff provided to keep this working with old code.
 
-Don\'t forget this inherits off Bio::SeqFeature, so all your usual
+Don't forget this inherits off Bio::SeqFeature, so all your usual
 nice start/end/score stuff is ready for use.
 
 =head1 CONTACT
 
-Describe contact details here
+Ewan Birney, birney@ebi.ac.uk
+
+=head1 CONTRIBUTORS
+
+Jason Stajich, jason@bioperl.org
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a 
-_
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
+#'
 package Bio::Tools::HMMER::Domain;
 
 use vars qw(@ISA);
@@ -73,8 +78,8 @@ sub new {
  Args    : scalar
 
  Adds an alignment line, mainly for storing the HMMER alignments
-as flat text which can be reguritated. You\'re right. This is *not
-nice* and not the right way to do it.  C\'est la vie.
+as flat text which can be reguritated. You're right. This is *not
+nice* and not the right way to do it.  C'est la vie.
 
 =cut
 
@@ -244,7 +249,6 @@ sub hmmacc{
  Example :
  Returns : 
  Args    :
-
 
 =cut
 

@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: RootI.t,v 1.3 2001/01/25 22:13:40 jason Exp $
+## $Id: RootI.t,v 1.4.2.2 2002/03/11 02:17:39 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -16,13 +16,12 @@ BEGIN {
 	use lib 't';
     }
     use Test;    
-    plan tests => 7;
+    plan tests => 8;
 }
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
 
-my $obj = new Bio::Root::RootI();
-
+my $obj = new Bio::Root::Root();
 ok defined($obj) && $obj->isa('Bio::Root::RootI');
 
 eval { $obj->throw('Testing throw') };
@@ -71,9 +70,13 @@ ok $@ =~ /Testing throw/;# 'verbose(1) throw did not work properly' . $@;
 my @stack = $obj->stack_trace();
 ok scalar @stack, 2;
 
-my $verbobj = new Bio::Root::RootI(-verbose=>1,-strict=>1);
+my $verbobj = new Bio::Root::Root(-verbose=>1,-strict=>1);
 ok $verbobj->verbose(), 1;
 
+$Bio::Root::Root::DEBUG = 1;
+require Bio::SeqIO;
+my $seqio = new Bio::SeqIO;
+ok($seqio->verbose, 1);
 1;
 
 

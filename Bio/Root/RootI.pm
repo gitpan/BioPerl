@@ -1,4 +1,4 @@
-# $Id: RootI.pm,v 1.28.2.3 2001/11/04 17:15:42 jason Exp $
+# $Id: RootI.pm,v 1.47.2.1 2002/03/11 01:44:47 jason Exp $
 #
 # BioPerl module for Bio::Root::RootI
 #
@@ -13,6 +13,8 @@
 # This was refactored to have chained calls to new instead
 # of chained calls to _initialize
 #
+# added debug and deprecated methods --Jason Stajich 2001-10-12
+# 
 
 =head1 NAME
 
@@ -35,18 +37,58 @@ Bio::Root::RootI - Abstract interface to root object code
       print "no exception";
   }
 
+  # Using throw_not_implemented() within a RootI-based interface module:
+
+  package Foo;
+  @ISA = qw( Bio::Root::RootI );
+
+  sub foo {
+      my $self = shift;
+      $self->throw_not_implemented;
+  }
+
+
 =head1 DESCRIPTION
 
-This is just a set of methods which do not assumme B<anything> about the object
+This is just a set of methods which do not assume B<anything> about the object
 they are on. The methods provide the ability to throw exceptions with nice
 stack traces.
 
-This is what should be inherieted by all bioperl compliant interfaces, even
+This is what should be inherited by all bioperl compliant interfaces, even
 if they are exotic XS/CORBA/Other perl systems.
+
+=head2 Using throw_not_implemented()
+
+The method L<throw_not_implemented()|throw_not_implemented> should be
+called by all methods within interface modules that extend RootI so
+that if an implementation fails to override them, an exception will be
+thrown.
+
+For example, say there is an interface module called C<FooI> that
+provides a method called C<foo()>. Since this method is considered
+abstract within FooI and should be implemented by any module claiming to
+implement C<FooI>, the C<FooI::foo()> method should consist of the
+following:
+
+    sub foo {
+    	my $self = shift;
+    	$self->throw_not_implemented;
+    }
+
+So, if an implementer of C<FooI> forgets to implement C<foo()>
+and a user of the implementation calls C<foo()>, a
+B<Bio::Exception::NotImplemented> exception will result.
+
+Unfortunately, failure to implement a method can only be determined at
+run time (i.e., you can't verify that an implementation is complete by
+running C<perl -wc> on it). So it should be standard practice for a test
+of an implementation to check each method and verify that it doesn't
+throw a B<Bio::Exception::NotImplemented>.
 
 =head1 CONTACT
 
-Functions originally from Steve Chervitz. Refactored by Ewan Birney.
+Functions originally from Steve Chervitz. Refactored by Ewan
+Birney. Re-refactored by Lincoln Stein.
 
 =head1 APPENDIX
 
@@ -59,14 +101,14 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Root::RootI;
 
-use vars qw(@ISA $DEBUG $ID $Revision $version $VERBOSITY);
+use vars qw($DEBUG $ID $Revision $VERSION $VERBOSITY);
 use strict;
-#use Bio::Root::Err; # we don't use that any longer, right?
+use Carp 'confess','carp';
 
 BEGIN { 
     $ID        = 'Bio::Root::RootI';
-    $version   = 0.7;
-    $Revision  = '$Id: RootI.pm,v 1.28.2.3 2001/11/04 17:15:42 jason Exp $ ';
+    $VERSION   = 1.0;
+    $Revision  = '$Id: RootI.pm,v 1.47.2.1 2002/03/11 01:44:47 jason Exp $ ';
     $DEBUG     = 0;
     $VERBOSITY = 0;
 }
@@ -74,7 +116,7 @@ BEGIN {
 
 =head2 new
 
- Purpose   : generic intantiation function can be overridden if 
+ Purpose   : generic instantiation function can be overridden if 
              special needs of a module cannot be done in _initialize
 
 =cut
@@ -82,12 +124,11 @@ BEGIN {
 sub new {
     local($^W) = 0;
     my ($caller, @args) = @_;
-    
-    my $class = ref($caller) || $caller; #copied from Conway, OOPerl
-    my $self = bless({}, $class);
+
+    my $self = $caller->_create_object(@args);
 
     my %param = @args;
-    my($verbose) =  ( $param{'-VERBOSE'} || $param{'-verbose'} );
+    my $verbose =  $param{'-VERBOSE'} || $param{'-verbose'};
 
     ## See "Comments" above regarding use of _rearrange().
     $self->verbose($verbose);
@@ -101,6 +142,23 @@ sub _initialize {
     return 1;
 }
 
+=head2 _create_object
+
+ Title   : _create_object()
+ Usage   : $obj->create_object(@args)
+ Function: Abstract method which actually creates the blessed object reference
+ Returns : Blessed object (hashref, arrayref, scalarref)
+ Args    : Implementation-specific
+
+=cut
+
+sub _create_object {
+  my $class = shift;
+  my @args = @_;
+  carp("Use of Bio::Root::RootI is deprecated.  Please use Bio::Root::Root instead");
+  eval "use Bio::Root::Root";
+  return Bio::Root::Root->new(@args);
+}
 
 =head2 throw
 
@@ -165,6 +223,41 @@ sub warn{
     print STDERR $out;
 }
 
+=head2 debug
+
+ Title   : debug
+ Usage   : $obj->debug("This is debugging output");
+ Function: Prints a debugging message when verbose is > 0
+ Returns : none
+ Args    : message string to print to STDERR
+
+=cut
+
+sub debug{
+   my ($self,$msg) = @_;
+   
+   if( $self->verbose > 0 ) { 
+       print STDERR $msg;
+   }   
+}
+
+=head2 deprecated
+
+ Title   : deprecated
+ Usage   : $obj->deprecated("Method X is deprecated");
+ Function: Prints a message about deprecation 
+           unless verbose is < 0 (which means be quiet)
+ Returns : none
+ Args    : Message string to print to STDERR
+
+=cut
+
+sub deprecated{
+   my ($self,$msg) = @_;
+   if( $self->verbose >= 0 ) { 
+       print STDERR $msg, "\n", $self->stack_trace_dump;
+   }
+}
 
 		     
 =head2 verbose
@@ -176,7 +269,7 @@ sub warn{
             0 = standard, small warning
             1 = warning with stack trace
             2 = warning becomes throw
- Returns : nothing
+ Returns : The current verbosity setting (integer between -1 to 2)
  Args    : -1,0,1 or 2
 
 
@@ -184,12 +277,7 @@ sub warn{
 
 sub verbose{
    my ($self,$value) = @_;
-
-   if(ref($self) && (defined $value || ! defined $self->{'_rootI_verbose'}) ) {
-       $value = 0 unless defined $value;
-       $self->{'_rootI_verbose'} = $value;
-   }
-   return (ref($self) ? $self->{'_rootI_verbose'} : $VERBOSITY);
+   $self->_abstractDeath('verbose');
 }
 
 =head2 stack_trace_dump
@@ -279,7 +367,7 @@ sub stack_trace{
            :          first one should be hyphenated.)
  Source    : This function was taken from CGI.pm, written by Dr. Lincoln
            : Stein, and adapted for use in Bio::Seq by Richard Resnick and
-           : then adapted for use in Bio::Root::Object.pm by Steve A. Chervitz.
+           : then adapted for use in Bio::Root::Object.pm by Steve Chervitz.
  Comments  : (SAC)
            : This method may not be appropriate for method calls that are
            : within in an inner loop if efficiency is a concern.
@@ -288,7 +376,7 @@ sub stack_trace{
            :  @param = (-name=>'me', -color=>'blue');
            :  @param = (-NAME=>'me', -COLOR=>'blue');
            :  @param = (-Name=>'me', -Color=>'blue');
-           :  @param = ('me', 'blue');  
+           :  @param = ('me', 'blue');
            : A leading hyphenated argument is used by this function to 
            : indicate that named parameters are being used.
            : Therefore, the ('me', 'blue') list will be returned as-is.
@@ -309,8 +397,6 @@ sub stack_trace{
            : the code is more readable, and there are no method naming conlicts.
            : Regardless of the style, it greatly helps to line
 	   : the parameters up vertically for long/complex lists.
-
-See Also   : L<_initialize>() 
 
 =cut
 
@@ -370,7 +456,7 @@ sub _rearrange {
 #    print "\n_rearrange() after processing:\n";
 #    my $i; for ($i=0;$i<@return_array;$i++) { printf "%20s => %s\n", ${$order}[$i], $return_array[$i]; } <STDIN>;
 
-    return (@return_array);
+    return @return_array;
 }
 
 =head2 _register_for_cleanup
@@ -381,29 +467,154 @@ sub _rearrange {
            and sometimes essential in the case of multiple inheritance for
            classes coming second in the sequence of inheritance.
  Returns : 
- Args    : a reference to a method
+ Args    : a code reference
 
+The code reference will be invoked with the object as the first
+argument, as per a method.  You may register an unlimited number of
+cleanup methods.
 
 =cut
 
 sub _register_for_cleanup {
-    my ($self,$method) = @_;
-    if($method) {
-	if(! exists($self->{'_cleanup_methods'})) {
-	    $self->{'_cleanup_methods'} = [];
-	}
-	push(@{$self->{'_cleanup_methods'}},$method);
+  my ($self,$method) = @_;
+  $self->_abstractDeath('_register_for_cleanup');
+}
+
+=head2 _unregister_for_cleanup
+
+ Title   : _unregister_for_cleanup
+ Usage   : -- internal --
+ Function: Remove a method that has previously been registered to be called
+           at DESTROY time.  If called with a methoda method to be called at DESTROY time.
+           Has no effect if the code reference has not previously been registered.
+ Returns : nothing
+ Args    : a code reference
+
+=cut
+
+sub _unregister_for_cleanup {
+  my ($self,$method) = @_;
+  $self->_abstractDeath('_unregister_for_cleanup');
+}
+
+=head2 _cleanup_methods
+
+ Title   : _cleanup_methods
+ Usage   : -- internal --
+ Function: Return current list of registered cleanup methods.
+ Returns : list of coderefs
+ Args    : none
+
+=cut
+
+sub _cleanup_methods {
+  my $self = shift;
+  carp("Use of Bio::Root::RootI is deprecated.  Please use Bio::Root::Root instead");
+  return;
+}
+
+=head2 throw_not_implemented
+
+ Purpose : Throws a Bio::Root::NotImplemented exception.
+           Intended for use in the method definitions of 
+           abstract interface modules where methods are defined
+           but are intended to be overridden by subclasses.
+ Usage   : $object->throw_not_implemented();
+ Example : sub method_foo { 
+             $self = shift; 
+             $self->throw_not_implemented();
+           }
+ Returns : n/a
+ Args    : n/a
+ Throws  : A Bio::Root::NotImplemented exception.
+           The message of the exception contains
+             - the name of the method 
+             - the name of the interface 
+             - the name of the implementing class 
+
+  	   If this object has a throw() method, $self->throw will be used.
+           If the object doesn't have a throw() method, 
+           Carp::confess() will be used.
+
+
+=cut
+
+#'
+
+sub throw_not_implemented {
+    my $self = shift;
+    my $package = ref $self;
+    my $iface = caller(0);
+    my @call = caller(1);
+    my $meth = $call[3];
+
+    my $message = "Abstract method \"$meth\" is not implemented by package $package.\n" .
+		   "This is not your fault - author of $package should be blamed!\n";
+
+    # Checking if Error.pm is available in case the object isn't decended from
+    # Bio::Root::Root, which knows how to check for Error.pm.
+
+    # EB - this wasn't working and I couldn't figure out!
+    # SC - OK, since most RootI objects will be Root.pm-based,
+    #      and Root.pm can deal with Error.pm. 
+    #      Still, I'd like to know why it wasn't working...
+
+    if( $self->can('throw') ) {
+	 $self->throw( -text  => $message,
+                       -class => 'Bio::Root::NotImplemented');
+    }
+    else {
+	confess $message ;
     }
 }
 
+
+=head2 warn_not_implemented
+
+ Purpose : Generates a warning that a method has not been implemented.
+           Intended for use in the method definitions of 
+           abstract interface modules where methods are defined
+           but are intended to be overridden by subclasses.
+           Generally, throw_not_implemented() should be used,
+           but warn_not_implemented() may be used if the method isn't
+           considered essential and convenient no-op behavior can be 
+           provided within the interface.
+ Usage   : $object->warn_not_implemented( method-name-string );
+ Example : $self->warn_not_implemented( "get_foobar" );
+ Returns : Calls $self->warn on this object, if available.
+           If the object doesn't have a warn() method,
+           Carp::carp() will be used.
+ Args    : n/a
+
+
+=cut
+
+#'
+
+sub warn_not_implemented {
+    my $self = shift;
+    my $package = ref $self;
+    my $iface = caller(0);
+    my @call = caller(1);
+    my $meth = $call[3];
+
+    my $message = "Abstract method \"$meth\" is not implemented by package $package.\n" .
+		   "This is not your fault - author of $package should be blamed!\n";
+
+    if( $self->can('warn') ) {
+        $self->warn( $message );
+    }
+    else {
+	carp $message ;
+    }
+}
+
+
 sub DESTROY {
-    my ($self) = shift;
-    if(ref($self) && $self->isa('HASH') && 
-       exists($self->{'_cleanup_methods'}) 
-       &&  ref($self->{'_cleanup_methods'}) =~ /array/i) {
-	foreach my $method (@{$self->{'_cleanup_methods'}}) {
-	    &$method($self);
-	}
+    my $self = shift;
+    my @cleanup_methods = $self->_cleanup_methods or return;
+    for my $method (@cleanup_methods) {
+      $method->($self);
     }
 }
 

@@ -1,8 +1,8 @@
+# $Id: game.pm,v 1.19 2001/10/22 08:22:53 heikki Exp $
 #
-# BioPerl module for Bio::SeqIO::fasta
+# BioPerl module for Bio::SeqIO::game
 #
 # Cared for by Brad Marshall <bradmars@yahoo.com>
-#         
 #
 # Copyright Ewan Birney & Lincoln Stein & Brad Marshall
 #
@@ -51,6 +51,7 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
+  bioperl-l@bioperl.org        - Technical bioperl discussion
   bioxml-dev@bioxml.org        - Technical discussion - Moderate volume
   bioxml-announce@bioxml.org   - General Announcements - Pretty dead
   http://www.bioxml.org/MailingLists/         - About the mailing lists
@@ -108,8 +109,6 @@ sub _initialize {
   
   # filehandle is stored by superclass _initialize
 }
-
-
 
 =head2 _export_subfeatures
 
@@ -312,7 +311,7 @@ sub next_seq {
     # get the features.
     my $fhandler = Bio::SeqIO::game::featureHandler->new($pseq->id(),
 							 $pseq->length(), 
-							 $pseq->moltype());
+							 $pseq->alphabet());
     $options = {Handler=>$fhandler};
     
     $parser = XML::Parser::PerlSAX->new($options);
@@ -498,7 +497,7 @@ sub write_seq {
      $writer ->startTag([$bxseq, 'seq'], 
       		       [$bxseq, 'id'] => $seq->display_id,
 		       [$bxseq, 'length'] => $seq->length,
-		       [$bxseq, 'type'] => $seq->moltype);
+		       [$bxseq, 'type'] => $seq->alphabet);
     if ($seq->length > 0) {
       $writer ->startTag([$bxseq, 'residues']);
       $writer->characters($seq->seq);

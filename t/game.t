@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: game.t,v 1.11 2001/03/01 19:55:44 birney Exp $
+## $Id: game.t,v 1.15 2002/01/08 01:46:19 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -23,7 +23,7 @@ BEGIN {
     if( $@ ) {
 	print STDERR "XML::Parser::PerlSAX not loaded. This means game test cannot be executed. Skipping\n";
 	foreach ( 1..9 ) {
-	    skip(1,1);
+	    skip('XML::Parser::PerlSAX installed',1);
 	}
        $error = 1;
 	
@@ -35,7 +35,7 @@ BEGIN {
 	if( $@ ) {
 	    print STDERR "game.pm not loaded. This means game test cannot be executed. Skipping\n";
 	    foreach ( 1..9 ) {
-		skip(1,1);
+		skip('game.pm not loaded because XML::Writer not loaded',1);
 	    }
 	    $error = 1;
 	} 
@@ -53,7 +53,7 @@ require XML::Parser::PerlSAX;
 use vars qw($DEBUG);
 use Bio::Root::IO;
 
-my $str = Bio::SeqIO->new('-file'=> Bio::Root::IO->catfile("t","test.game"), 
+my $str = Bio::SeqIO->new('-file'=> Bio::Root::IO->catfile("t","data","test.game"), 
 		       '-format' => 'game');
 ok ($str);
 my $seq = $str->next_primary_seq();
@@ -62,7 +62,7 @@ ok($seq);
 ok ($seq->display_id(), 'AE003417' );
 ok ($seq->id(), 'AE003417' );
 
-my $str2 = Bio::SeqIO->new(-file=> Bio::Root::IO->catfile("t","test.game"), '-format' => 'game');
+my $str2 = Bio::SeqIO->new(-file=> Bio::Root::IO->catfile("t","data","test.game"), '-format' => 'game');
 ok ($str2);
 
 $seq = $str2->next_seq();

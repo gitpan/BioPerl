@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: AAChange.t,v 1.4 2001/01/25 22:13:39 jason Exp $
+## $Id: AAChange.t,v 1.5 2001/08/03 10:11:24 heikki Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -16,7 +16,7 @@ BEGIN {
 	use lib 't';
     }
     use Test;
-    plan tests => 24;
+    plan tests => 25;
 }
 use Bio::Variation::Allele;
 use Bio::Variation::AAChange;
@@ -64,13 +64,15 @@ $obj->add_Allele($a2);
 
 ok $obj->allele_mut->seq, 'A';
 
+ok $obj->similarity_score, 0;
+
 $obj->upStreamSeq('upStreamSeq'); 
 ok $obj->upStreamSeq, 'upStreamSeq';
 
 $obj->dnStreamSeq('dnStreamSeq'); 
 ok $obj->dnStreamSeq, 'dnStreamSeq' ;
 
-ok $obj->label, 'substitution';
+ok $obj->label, 'substitution, conservative';
 
 $obj->status('proven'); 
 ok $obj->status, 'proven';

@@ -1,4 +1,4 @@
-# $Id: TCoffee.pm,v 1.11.2.5 2001/06/20 14:08:26 heikki Exp $
+# $Id: TCoffee.pm,v 1.23.2.1 2002/03/18 14:30:28 jason Exp $
 #
 # BioPerl module for Bio::Tools::Run::Alignment::TCoffee
 #
@@ -501,22 +501,25 @@ use Bio::Seq;
 use Bio::SeqIO;
 use Bio::SimpleAlign;
 use Bio::AlignIO;
-use Bio::Root::RootI;
+use Bio::Root::Root;
 use Bio::Root::IO;
+use Bio::Factory::ApplicationFactoryI;
 
-@ISA = qw(Bio::Root::RootI Bio::Root::IO);
+@ISA = qw(Bio::Root::Root Bio::Root::IO Bio::Factory::ApplicationFactoryI);
 
 # You will need to enable TCoffee to find the tcoffee program. This can be done
-# in (at least) three ways:
-#  1. Modify your $PATH variable to include your tcoffee directory as in (for Linux):
-#	export PATH=$PATH:/home/progs/tcoffee  or
-#  2. define an environmental variable TCOFFEE:
+# in (at least) twp ways:
+#  1. define an environmental variable TCOFFEE:
 #	export TCOFFEEDIR=/home/progs/tcoffee   or
-#  3. include a definition of an environmental variable TCOFFEEDIR in every script that will
+#  2. include a definition of an environmental variable TCOFFEEDIR in every script that will
 #     use Bio::Tools::Run::Alignment::TCoffee.pm.
 #	BEGIN {$ENV{TCOFFEEDIR} = '/home/progs/tcoffee'; }
 
 BEGIN {
+
+    $PROGRAMDIR = $ENV{TCOFFEEDIR} || '';
+    $PROGRAM = Bio::Root::IO->catfile($PROGRAMDIR,
+				      't_coffee'.($^O =~ /mswin/i ?'.exe':''));
 
     @TCOFFEE_PARAMS = qw(IN TYPE PARAMETERS DO_NORMALISE EXTEND
 			 DP_MODE KTUPLE NDIAGS DIAG_MODE SIM_MATRIX
@@ -539,9 +542,6 @@ sub new {
     my $self = $class->SUPER::new(@args);
     # to facilitiate tempfile cleanup
     $self->_initialize_io();
-
-    $PROGRAMDIR = $ENV{TCOFFEEDIR} || '';
-    $PROGRAM = Bio::Root::IO->catfile($PROGRAMDIR,'t_coffee');
 
     my ($attr, $value);
     (undef,$TMPOUTFILE) = $self->tempfile();
@@ -579,7 +579,29 @@ sub AUTOLOAD {
 
 
 sub exists_tcoffee {
-    my $returnvalue = (-e $PROGRAM) ;
+    if( my $f = Bio::Root::IO->exists_exe($PROGRAM) ) {
+	$PROGRAM = $f if( -e $f );
+	return 1;
+    }
+    return 0;
+}
+
+=head2  version
+
+ Title   : version
+ Usage   : exit if $prog->version() < 1.8
+ Function: Determine the version number of the program
+ Example :
+ Returns : float or undef
+ Args    : none
+
+=cut
+
+sub version {
+    my ($self) = @_;
+    return undef unless $self->exists_tcoffee;
+    my $string = `t_coffee -quiet=stdout 2>&1`;
+    return ( $string =~ /Version_([\d.]+)/) ? $1 : undef;
 }
 
 =head2  align
@@ -692,20 +714,18 @@ sub _run {
     my $instring = "-in=".join(",", @{$self->{'_in'}});
     my $commandstring = $PROGRAM." $instring".
 	" -output=gcg". " $param_string";
-    # next line is for debugging purposes
-    if( $self->verbose > 0 ) {
-	print "tcoffee command = $commandstring \n";
-    }
+
+    $self->debug( "tcoffee command = $commandstring \n");
 
     my $status = system($commandstring);
-    $self->throw( "TCoffee call crashed: $? \n") if( -z $TMPOUTFILE );
+    $self->throw( "TCoffee call crashed: $? [command $commandstring]\n") if( -z $TMPOUTFILE );
 
     my $outfile = $self->outfile() || $TMPOUTFILE;
 
     # retrieve alignment (Note: MSF format for AlignIO = GCG format of
     # tcoffee)
 
-    my $in  = Bio::AlignIO->new(-file => $outfile, '-format' => 'MSF');
+    my $in  = Bio::AlignIO->new('-file' => $outfile, '-format' => 'MSF');
     my $aln = $in->next_aln();
 
     # Replace file suffix with dnd to find name of dendrogram file(s) to delete
@@ -829,7 +849,7 @@ sub _setparams {
 	$param_string .= " -outfile=$TMPOUTFILE" ;
     }
 
-    if ($self->quiet()) { $param_string .= ' -quiet';}
+    if ($self->quiet() || $self->verbose < 0) { $param_string .= ' -quiet';}
     return $param_string;
 }
 

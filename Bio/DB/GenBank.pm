@@ -1,4 +1,4 @@
-# $Id: GenBank.pm,v 1.35.2.3 2001/04/03 15:22:36 heikki Exp $
+# $Id: GenBank.pm,v 1.43 2002/01/19 22:26:18 jason Exp $
 #
 # BioPerl module for Bio::DB::GenBank
 #
@@ -14,12 +14,20 @@
 # completely reworked by Jason Stajich 2000-12-8
 # to use WebDBSeqI
 
+# Added batch entrez back when determined that new entrez cgi
+# will essentially work (there is a limit to the number of characters in a 
+# GET request so I am not sure how we can get around this).
+# The NCBI Batch Entrez form has changed some and it does not support
+# retrieval of text only data.  Still should investigate POST-ing (tried and
+# failed) a message to the entrez cgi to get around the GET limitations.
+
 =head1 NAME
 
 Bio::DB::GenBank - Database object interface to GenBank
 
 =head1 SYNOPSIS
 
+    use Bio::DB::GenBank;
     $gb = new Bio::DB::GenBank;
 
     $seq = $gb->get_Seq_by_id('MUSIGHBA1'); # Unique ID
@@ -27,6 +35,8 @@ Bio::DB::GenBank - Database object interface to GenBank
     # or ...
 
     $seq = $gb->get_Seq_by_acc('J00522'); # Accession Number
+    $seq = $gb->get_Seq_by_version('J00522.1'); # Accession.version
+    $seq = $gb->get_Seq_by_gi('405830'); # GI Number
 
     # or ... best when downloading very large files, prevents
     # keeping all of the file in memory
@@ -37,8 +47,10 @@ Bio::DB::GenBank - Database object interface to GenBank
 			       -format => 'Fasta');
     my $seqio = $gb->get_Stream_by_acc(['AC013798', 'AC021953'] );
     while( my $clone =  $seqio->next_seq ) {
-      print "cloneid is ", $clone->
+      print "cloneid is ", $clone->display_id, " ", 
+             $clone->accession_number, "\n";
     }
+    # note that get_Stream_by_version is not implemented
 
 =head1 DESCRIPTION
 
@@ -46,8 +58,7 @@ Allows the dynamic retrieval of Sequence objects (Bio::Seq) from the GenBank
 database at NCBI, via an Entrez query.
 
 WARNING: Please do NOT spam the Entrez web server with multiple requests.
-NCBI offers Batch Entrez for this purpose.  Batch Entrez support will likely
-be supported in a future version of DB::GenBank.
+NCBI offers Batch Entrez for this purpose.  
 
 Note that when querying for GenBank accessions starting with 'NT_' you
 will need to call $gb-E<gt>request_format('fasta') beforehand, because in
@@ -55,25 +66,27 @@ GenBank format (the default) the sequence part will be left out (the
 reason is that NT contigs are rather annotation with references to
 clones).
 
+Some work has been done to automatically detect and retrieve whole NT_
+clones when the data is in that format (NCBI RefSeq clones).  More
+testing and feedback from users is needed to achieve a good fit of
+functionality and ease of use.
+
 =head1 FEEDBACK
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the
-evolution of this and other Bioperl modules. Send
-your comments and suggestions preferably to one
-of the Bioperl mailing lists. Your participation
-is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists. Your participation is much appreciated.
 
   bioperl-l@bioperl.org              - General discussion
   http://bioperl.org/MailList.shtml  - About the mailing lists
 
 =head2 Reporting Bugs
 
-Report bugs to the Bioperl bug tracking system to
-help us keep track the bugs and their resolution.
-Bug reports can be submitted via email or the
-web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via email
+or the web:
 
   bioperl-bugs@bio.perl.org
   http://bio.perl.org/bioperl-bugs/
@@ -81,7 +94,7 @@ web:
 =head1 AUTHOR - Aaron Mackey, Jason Stajich
 
 Email amackey@virginia.edu
-Email jason@chg.mc.duke.edu
+Email jason@bioperl.org
 
 =head1 APPENDIX
 
@@ -100,15 +113,38 @@ use Bio::DB::NCBIHelper;
 
 @ISA = qw(Bio::DB::NCBIHelper);
 BEGIN {    
-    %PARAMSTRING = ( 'batch'=> { 'DB'          => 'n',
-				 'REQUEST_TYPE'=> 'LIST_OF_GIS',
-				 'HTML'        => 'FALSE',
-			         'SAVETO'      => 'FALSE',
-				 'NOHEADER'    => 'TRUE' },
-		     'single'=> { 'db'    => 'n',
-				  'form'  => '6',			     
-				  'title' => 'no',			     
-			     }
+    %PARAMSTRING = ( 
+# new stype batch entrez - but only returns HTML
+#		     'batch'  => { 
+#			 'cmd' => 'Retrieve',
+#			 'db'  => 'nucleotide',
+#		     },
+# old style
+#		     'batch'  => { 
+#			 'db' => 'n',
+#			 'FORMAT'  => 0,
+#			 'REQUEST_TYPE' => 'LIST_OF_GIS',
+#			 'ORGNAME'  => '',
+#			 'LIST_ORG' => '(None)',
+#			 'QUERY'    => "",
+#			 'SAVETO'   => 'YES',
+#			 'NOHEADER' => 'YES',
+#		     },
+		     'batch'=>  { 'db'     => 'n',
+				   'form'   => '1',
+				   'title'  => 'no', 
+			       },
+		     'single'=>  { 'db'     => 'n',
+				   'form'   => '1',
+				   'title'  => 'no', 
+			       },
+		     'version'=> { 'pg'     => 'hist',
+				   'type'   => 'acc',
+			       },
+		     'gi' =>     {  'db'    => 'n',
+				    'form'  => '1',
+				    'title' => 'no',
+				}
 		     );
 }
 
@@ -155,6 +191,24 @@ sub get_params {
   Note    : For GenBank, this just calls the same code for get_Seq_by_id()
   Throws  : "id does not exist" exception
 
+=head2 get_Seq_by_gi
+
+ Title   : get_Seq_by_gi
+ Usage   : $seq = $db->get_Seq_by_gi('405830');
+ Function: Gets a Bio::Seq object by gi number
+ Returns : A Bio::Seq object
+ Args    : gi number (as a string)
+ Throws  : "gi does not exist" exception
+
+=head2 get_Seq_by_version
+
+ Title   : get_Seq_by_version
+ Usage   : $seq = $db->get_Seq_by_version('X77802.1');
+ Function: Gets a Bio::Seq object by sequence version
+ Returns : A Bio::Seq object
+ Args    : accession.version (as a string)
+ Throws  : "acc.version does not exist" exception
+
 =head1 Routines implemented by Bio::DB::NCBIHelper
 
 =head2 get_request
@@ -193,6 +247,18 @@ sub get_params {
   Function: Gets a series of Seq objects by accession numbers
   Returns : a Bio::SeqIO stream object
   Args    : $ref : a reference to an array of accession numbers for
+                   the desired sequence entries
+  Note    : For GenBank, this just calls the same code for get_Stream_by_id()
+
+=cut
+
+=head2 get_Stream_by_gi
+
+  Title   : get_Stream_by_gi
+  Usage   : $seq = $db->get_Seq_by_gi([$gi1, $gi2]);
+  Function: Gets a series of Seq objects by gi numbers
+  Returns : a Bio::SeqIO stream object
+  Args    : $ref : a reference to an array of gi numbers for
                    the desired sequence entries
   Note    : For GenBank, this just calls the same code for get_Stream_by_id()
 

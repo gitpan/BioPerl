@@ -1,4 +1,4 @@
-# $Id: selex.pm,v 1.4 2001/01/03 17:56:43 jason Exp $
+# $Id: selex.pm,v 1.6 2002/02/13 15:32:54 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::selex
 
@@ -77,7 +77,7 @@ sub next_aln {
     my $self = shift;
     my $entry;
     my ($start,$end,%align,$name,$seqname,$seq,$count,%hash,%c2name, %accession, $no);
-    my $aln =  Bio::SimpleAlign->new();
+    my $aln =  Bio::SimpleAlign->new(-source => 'selex');
 
     # in selex format, every non-blank line that does not start
     # with '#=' is an alignment segment; the '#=' lines are mark up lines.
@@ -125,7 +125,7 @@ sub next_aln {
 
 			    );
 
-	$aln->addSeq($seq);
+	$aln->add_seq($seq);
 	$count++;
     }
 
@@ -155,8 +155,8 @@ sub write_aln {
     my ($maxn);
   foreach my $aln (@aln) {
     $maxn = $aln->maxdisplayname_length();
-      foreach $seq ( $aln->eachSeq() ) {
-	$namestr = $aln->get_displayname($seq->get_nse());
+      foreach $seq ( $aln->each_seq() ) {
+	$namestr = $aln->displayname($seq->get_nse());
 	$add = $maxn - length($namestr) + 2;
 	$namestr .= " " x $add;
 	$self->_print (sprintf("%s  %s\n",$namestr,$seq->seq())) or return;

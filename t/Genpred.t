@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Genpred.t,v 1.6 2001/02/26 20:45:37 lapp Exp $
+## $Id: Genpred.t,v 1.12 2001/12/06 17:29:52 bosborne Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -15,20 +15,21 @@ BEGIN {
 	use lib 't';
     }
     use Test;
-    plan tests => 17;
+    plan tests => 34;
 }
 
 use Bio::Tools::Genscan;
-use Bio::Tools::MZEF;  # THIS IS STILL TODO!
+use Bio::Tools::Genemark;
+use Bio::Tools::MZEF;  
 use Bio::SeqIO;
 use Bio::Root::IO;
 
 # Genscan report
-my $genscan = Bio::Tools::Genscan->new('-file' => Bio::Root::IO->catfile("t","genomic-seq.genscan"));
+my $genscan = Bio::Tools::Genscan->new('-file' => Bio::Root::IO->catfile("t","data","genomic-seq.genscan"));
 ok $genscan;
 
 # original sequence
-my $seqin = Bio::SeqIO->new('-file' => Bio::Root::IO->catfile("t","genomic-seq.fasta"),
+my $seqin = Bio::SeqIO->new('-file' => Bio::Root::IO->catfile("t","data","genomic-seq.fasta"),
 			    '-format' => "fasta");
 ok $seqin;
 my $seq = $seqin->next_seq();
@@ -47,7 +48,7 @@ while(my $gene = $genscan->next_prediction()) {
 	$fea = ($gene->exons())[0];
 	ok $fea->strand(), -1, 
 	     "strand mismatch (".$fea->strand()." instead of -1)";
-	$fea = $gene->poly_A_site();
+	$fea = ($gene->poly_A_site());
 	ok $fea->score(), 1.05, 
              "score mismatch (".$fea->score()." instead of 1.05)";
     }
@@ -77,11 +78,42 @@ while(my $gene = $genscan->next_prediction()) {
     }
 }
 
+# Genscan report with no genes predicted
+my $null_genscan = Bio::Tools::Genscan->new('-file' => Bio::Root::IO->catfile("t","data","no-genes.genscan"));
+ok $null_genscan;
+my $no_gene = $null_genscan->next_prediction;
+my @exons = $no_gene->exons;
+ok($#exons,-1);
+
 # MZEF report
-my $mzef = Bio::Tools::MZEF->new('-file' => Bio::Root::IO->catfile("t","genomic-seq.mzef"));
+my $mzef = Bio::Tools::MZEF->new('-file' => Bio::Root::IO->catfile("t","data","genomic-seq.mzef"));
 ok $mzef;
 
 my $exon_num = 0;
 my $gene = $mzef->next_prediction();
 
 ok($gene->exons, 23);
+
+# Genemark testing:
+my $genemark = Bio::Tools::Genemark->new('-file' => Bio::Root::IO->catfile("t", "data", "genemark.out"));
+
+my $gmgene = $genemark->next_prediction();
+ok $gmgene->seqname(), "Hvrn.contig8";
+ok $genemark->analysis_date(), "Thu Mar 22 10:25:00 2001";
+
+my $i = 0;
+my @num_exons = (1,5,2,1,9,5,3,2,3,2,1,2,7);
+while($gmgene = $genemark->next_prediction()) {
+    $i++;
+    my @gmexons = $gmgene->exons();
+    ok scalar(@gmexons), $num_exons[$i];
+
+    if($i == 5) {
+	my $gmstart = $gmexons[0]->start();
+	ok $gmstart, 23000;
+
+	my $gmend = $gmexons[0]->end();
+	ok $gmend, 23061;
+    }
+}
+

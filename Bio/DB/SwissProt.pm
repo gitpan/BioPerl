@@ -1,5 +1,5 @@
 #
-# $Id: SwissProt.pm,v 1.8.2.5 2001/06/15 17:51:37 jason Exp $
+# $Id: SwissProt.pm,v 1.16 2002/01/19 03:25:46 jason Exp $
 #
 # BioPerl module for Bio::DB::SwissProt
 #
@@ -34,7 +34,8 @@ Bio::DB::SwissProt - Database object interface to SwissProt retrieval
     # then interchangeably
 
     # choose a different server to query
-    $sp = new Bio::DB::SwissProt('-hostlocation' => 'canada');
+    $sp = new Bio::DB::SwissProt('-servertype' => 'expasy',
+				 '-hostlocation' => 'us');
 
     $seq = $sp->get_Seq_by_id('BOLA_HAEIN'); # SwissProtID
 
@@ -85,8 +86,8 @@ Thanks go to Alexandre Gattiker E<lt>gattiker@isb-sib.chE<gt> of Swiss
 Institute of Bioinformatics for helping point us in the direction of
 the correct expasy scripts and for swissknife references.
 
-Also thanks to Heikki Lehvaslaiho E<lt>heikki@ebi.ac.ukE<lt> for help
-with adding EBI swall server.
+Also thanks to Heikki Lehvaslaiho E<lt>heikki@ebi.ac.ukE<gt> for help with
+adding EBI swall server.
 
 =head1 APPENDIX
 
@@ -101,7 +102,7 @@ package Bio::DB::SwissProt;
 use strict;
 use vars qw(@ISA $MODVERSION %HOSTS $DEFAULTFORMAT $DEFAULTSERVERTYPE);
 
-$MODVERSION = '0.7.1';
+$MODVERSION = '0.8.1';
 use HTTP::Request::Common;
 use Bio::DB::WebDBSeqI;
 
@@ -124,6 +125,7 @@ $DEFAULTFORMAT = 'swissprot';
 		   'taiwan' => 'tw.expasy.org',
 		   'australia' => 'au.expasy.org',
 		   'korea'  => 'kr.expasy.org',
+		   'us'     => 'us.expasy.org',
 	       },
 	       # ick, CGI variables
 	       'jointype' => ' ',
@@ -144,7 +146,7 @@ $DEFAULTFORMAT = 'swissprot';
 	   );
 
 # new modules should be a little more lightweight and
-# should use Bio::Root::RootI
+# should use Bio::Root::Root
 sub new {
     my ($class, @args) = @_;
     my $self = $class->SUPER::new(@args);
@@ -169,6 +171,8 @@ sub new {
 }
 
 =head2 Routines from Bio::DB::RandomAccessI
+
+=cut 
 
 =head2 get_Seq_by_id
 
@@ -236,6 +240,8 @@ sub get_Stream_by_batch {
 }
 
 =head2 Implemented Routines from Bio::DB::WebDBSeqI interface
+
+=cut
 
 =head2 get_request
 
@@ -315,6 +321,8 @@ sub default_format {
 
 =head2 Bio::DB::SwissProt specific routines
  
+=cut 
+
 =head2 servertype
 
  Title   : servertype

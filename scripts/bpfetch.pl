@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+
 =head1 NAME
 
 bpfetch.pl - fetches sequences from bioperl indexed databases
@@ -77,7 +78,6 @@ These modules can be used directly, which is far better than using
 this script as a system call or a pipe to read from. Read the
 source code for bpfetch to see how it is used.
 
-
 =head1 EXTENDING IT
 
 bpfetch uses a number of different modules to provide access to
@@ -94,7 +94,7 @@ obviously).
 
 =head1 FEEDBACK
 
-=head2 Mailing Lists
+=head2 Mailing Lists 
 
 User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
@@ -229,10 +229,10 @@ foreach my $arg ( @ARGV ) {
 		elsif( $db =~ /genpept/i ) {
 		    $dbobj = Bio::DB::GenPept->new();
 		} elsif( $db =~ /embl/i ) {
-		    $dbobj = Bio::DB::EMBL->new();
+                    $dbobj = Bio::DB::EMBL->new();
                 } else {
 		    die "Net database $db not available";
-		}
+		} 
 		last SWITCH;
 	    };
 	    /^ace$/ && do {

@@ -1,4 +1,6 @@
-
+# -*-Perl-*-
+## Bioperl Test Harness Script for Modules
+## $Id: Variation_IO.t,v 1.13 2001/12/14 17:52:44 jason Exp $
 
 use strict;
 use vars qw($NUMTESTS);
@@ -81,7 +83,8 @@ sub io {
     my $count = scalar @entries;
     ok @entries > 0;# "No SeqDiff objects [$count]";
     
-    my $out = Bio::Variation::IO->new( -FILE => "> $o_file", -FORMAT => $o_format);
+    my $out = Bio::Variation::IO->new( -FILE => "> $o_file", 
+				       -FORMAT => $o_format);
     my $out_ok = 1;
     foreach my $e (@entries) {
         $out->write($e) or $out_ok = 0;
@@ -108,9 +111,11 @@ sub io {
 
 
 
-io  (Bio::Root::IO->catfile("t","mutations.dat"), Bio::Root::IO->catfile("t","mutations.out.dat")); #2..6
+io  (Bio::Root::IO->catfile("t","data","mutations.dat"), 
+   Bio::Root::IO->catfile("t","data","mutations.out.dat")); #1..5
 
-io  (Bio::Root::IO->catfile("t","polymorphism.dat"), Bio::Root::IO->catfile("t","polymorphism.out.dat")); #7..11
+io  (Bio::Root::IO->catfile("t","data","polymorphism.dat"), 
+   Bio::Root::IO->catfile("t","data","polymorphism.out.dat")); #6..10
 
 
 eval {
@@ -119,25 +124,29 @@ eval {
 
 if( $@ ) {
     print STDERR
-	"\nThe XML-format conversion requires the CPAN modules ",
-	"XML::Node, XML::Writer, and IO::String to be installed ",
-	"on your system, which they probably aren't. Skipping these tests.\n";
+	 "\nThe XML-format conversion requires the CPAN modules ",
+	 "XML::Twig, XML::Writer, and IO::String to be installed ",
+	 "on your system, which they probably aren't. Skipping these tests.\n";
     for( $Test::ntest..$NUMTESTS) {
-	skip(1, 1,"");
+	 skip("No XML::Twig installed", 1);
     }
     exit(0);
 }
 
 eval {
-	io  (Bio::Root::IO->catfile("t","mutations.xml"), Bio::Root::IO->catfile("t","mutations.out.xml")); #12..16
+    io  (Bio::Root::IO->catfile("t","data","mutations.xml"), 
+	Bio::Root::IO->catfile("t","data","mutations.out.xml")); #10..12
 };
 
 eval {
-	io  (Bio::Root::IO->catfile("t","polymorphism.xml"), Bio::Root::IO->catfile("t","polymorphism.out.xml")); #17..21
+    io  (Bio::Root::IO->catfile("t","data","polymorphism.xml"), 
+	Bio::Root::IO->catfile("t","data","polymorphism.out.xml")); #13..14
 };
 
 
 eval { 
-	io  (Bio::Root::IO->catfile("t","mutations.dat"), Bio::Root::IO->catfile("t","mutations.out.xml")); #22..26
+	 io  (Bio::Root::IO->catfile("t","data","mutations.dat"), 
+	    Bio::Root::IO->catfile("t","data","mutations.out.xml")); #15..25
 };
+
 

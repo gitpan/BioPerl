@@ -1,4 +1,4 @@
-# $Id: LocationI.pm,v 1.7.2.1 2001/03/02 22:47:54 heikki Exp $
+# $Id: LocationI.pm,v 1.11 2002/01/08 01:25:31 jason Exp $
 #
 # BioPerl module for Bio::LocationI
 # Cared for by Jason Stajich <jason@chg.mc.duke.edu>
@@ -74,21 +74,19 @@ BEGIN {
     $coord_policy = Bio::Location::WidestCoordPolicy->new();
 }
 
-# utility method Prints out a method like: 
-# Abstract method stop defined in interface Bio::LocationI not
-# implemented by package You::BadLocation
+=head2 location_type
 
-sub _abstractDeath {
-  my $self = shift;
-  my $package = ref $self;
-  my $caller = (caller)[1];
-  
-  my $msg = "Abstract method '$caller' defined in interface Bio::LocationI but not implemented by package $package";
-  if( $self->can('throw') ) {
-      $self->throw($msg);
-  } else {
-      confess($msg);
-  }
+  Title   : location_type
+  Usage   : my $location_type = $location->location_type();
+  Function: Get location type encoded as text
+  Returns : string ('EXACT', 'WITHIN', 'BETWEEN')
+  Args    : none
+
+=cut
+
+sub location_type { 
+    my ($self,@args) = @_;
+    $self->_abstractDeath('location_type');
 }
 
 =head2 start
@@ -115,7 +113,11 @@ sub _abstractDeath {
 sub start {
     my ($self,@args) = @_;
 
-    $self->_abstractDeath() if @args;
+    # throw if @args means that we don't support updating information
+    # in the interface but will delegate to the coordinate policy object
+    # for interpreting the 'start' value
+
+    $self->throw_not_implemented if @args;
     return $self->coordinate_policy()->start($self);
 }
 
@@ -143,7 +145,10 @@ sub start {
 sub end {
     my ($self,@args) = @_;
 
-    $self->_abstractDeath() if @args;
+    # throw if @args means that we don't support updating information
+    # in the interface but will delegate to the coordinate policy object
+    # for interpreting the 'end' value
+    $self->throw_not_implemented if @args;
     return $self->coordinate_policy()->end($self);
 }
 
@@ -162,7 +167,7 @@ sub end {
 
 sub min_start {
     my($self) = @_;
-    $self->_abstractDeath();
+    $self->throw_not_implemented();
 }
 
 =head2 max_start
@@ -182,7 +187,7 @@ sub min_start {
 
 sub max_start {
     my($self) = @_;
-    $self->_abstractDeath();
+    $self->throw_not_implemented();
 }
 
 =head2 start_pos_type
@@ -203,7 +208,7 @@ sub max_start {
 
 sub start_pos_type {
     my($self) = @_;
-    $self->_abstractDeath();
+    $self->throw_not_implemented();
 }
 
 =head2 min_end
@@ -223,7 +228,7 @@ sub start_pos_type {
 
 sub min_end {
     my($self) = @_;
-    $self->_abstractDeath();
+    $self->throw_not_implemented();
 }
 
 =head2 max_end
@@ -243,7 +248,7 @@ sub min_end {
 
 sub max_end {
     my($self) = @_;
-    $self->_abstractDeath();
+    $self->throw_not_implemented();
 }
 
 =head2 end_pos_type
@@ -264,7 +269,7 @@ sub max_end {
 
 sub end_pos_type {
     my($self) = @_;
-    $self->_abstractDeath();
+    $self->throw_not_implemented();
 }
 
 =head2 seq_id
@@ -343,7 +348,7 @@ sub coordinate_policy {
 
 sub to_FTstring { 
     my($self) = @_;
-    $self->_abstractDeath();
+    $self->throw_not_implemented();
 }
 1;
 

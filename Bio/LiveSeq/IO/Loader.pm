@@ -1,4 +1,4 @@
-# $Id: Loader.pm,v 1.9.2.4 2001/06/22 10:40:03 heikki Exp $
+# $Id: Loader.pm,v 1.15 2001/10/22 08:22:51 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::IO::Loader
 #
@@ -44,7 +44,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::IO::Loader;
-$version=4.44;
+$VERSION=4.44;
 
 # Version history:
 # Wed Feb 16 17:55:01 GMT 2000 0.1a was a general EMBL entry printer with SRS
@@ -94,17 +94,17 @@ $version=4.44;
 
 use strict;
 use Carp qw(cluck croak carp);
-use vars qw($version @ISA);
-use Bio::LiveSeq::DNA;
-use Bio::LiveSeq::Exon;
-use Bio::LiveSeq::Transcript;
-use Bio::LiveSeq::Translation;
-use Bio::LiveSeq::Gene;
-use Bio::LiveSeq::Intron;
-use Bio::LiveSeq::Prim_Transcript;
-use Bio::LiveSeq::Repeat_Region;
-use Bio::LiveSeq::Repeat_Unit;
-use Bio::LiveSeq::AARange;
+use vars qw($VERSION @ISA);
+use Bio::LiveSeq::DNA 1.2;
+use Bio::LiveSeq::Exon 1.0;
+use Bio::LiveSeq::Transcript 2.4;
+use Bio::LiveSeq::Translation 1.4;
+use Bio::LiveSeq::Gene 1.1;
+use Bio::LiveSeq::Intron 1.0;
+use Bio::LiveSeq::Prim_Transcript 1.0;
+use Bio::LiveSeq::Repeat_Region 1.0;
+use Bio::LiveSeq::Repeat_Unit 1.0;
+use Bio::LiveSeq::AARange 1.4;
 use Bio::Tools::CodonTable;
 
 #@ISA=qw(Bio::LiveSeq::); # not useful now
@@ -275,10 +275,10 @@ sub hash2liveseq {
   my $i;
   my @transcripts;
   my $dna=Bio::LiveSeq::DNA->new(-seq => $entry->{'Sequence'} );
-  $dna->moltype(lc($entry->{'Molecule'}));
+  $dna->alphabet(lc($entry->{'Molecule'}));
   $dna->display_id($entry->{'ID'});
   $dna->accession_number($entry->{'AccNumber'});
-  $dna->description($entry->{'Description'});
+  $dna->desc($entry->{'Description'});
   my @cds=@{$entry->{'CDS'}};
   my ($swissacc,$swisshash); my @swisshashes;
   for $i (0..$#cds) {
@@ -361,11 +361,11 @@ sub hash2gene {
 
   # create DNA
   my $dna=Bio::LiveSeq::DNA->new(-seq => $subseq, -offset => $mindna);
-  $dna->moltype(lc($entry->{'Molecule'}));
+  $dna->alphabet(lc($entry->{'Molecule'}));
   $dna->source($entry->{'Organism'});
   $dna->display_id($entry->{'ID'});
   $dna->accession_number($entry->{'AccNumber'});
-  $dna->description($entry->{'Description'});
+  $dna->desc($entry->{'Description'});
 
   my @transcripts=@{$genefeatureshash->{'transcripts'}};
   # create Translations, Transcripts, Exons out of the CDS
@@ -413,7 +413,7 @@ sub hash2gene {
       ($start,$end,$strand)=@{$range};
       $object = Bio::LiveSeq::Exon->new(-seq=>$dna,-start=>$start,-end=>$end,-strand=>$strand);
       if ($object != -1) {
-	$object->description($exondescs[$exoncount]) if defined $exondescs[$exoncount];
+	$object->desc($exondescs[$exoncount]) if defined $exondescs[$exoncount];
 	$exoncount++;
 	push (@exonobjs,$object);
       } else {
@@ -430,7 +430,7 @@ sub hash2gene {
       ($start,$end,$strand)=@{$range};
       $object=Bio::LiveSeq::Intron->new(-seq=>$dna,-start=>$start,-end=>$end,-strand=>$strand);
       if ($object != -1) {
-	$object->description($introndescs[$introncount]);
+	$object->desc($introndescs[$introncount]);
 	$introncount++;
 	push (@intronobjs,$object);
       } else {
@@ -456,7 +456,7 @@ sub hash2gene {
       ($start,$end,$strand)=@{$range};
       $object=Bio::LiveSeq::Repeat_Region->new(-seq=>$dna,-start=>$start,-end=>$end,-strand=>$strand);
       if ($object != -1) {
-	$object->description($repeat_regions_family[$k]);
+	$object->desc($repeat_regions_family[$k]);
 	$k++;
 	push (@repeatregionobjs,$object);
       } else {
@@ -473,7 +473,7 @@ sub hash2gene {
       ($start,$end,$strand)=@{$range};
       $object=Bio::LiveSeq::Repeat_Unit->new(-seq=>$dna,-start=>$start,-end=>$end,-strand=>$strand);
       if ($object != -1) {
-	$object->description($repeat_units_family[$k]);
+	$object->desc($repeat_units_family[$k]);
 	$k++;
 	push (@repeatunitobjs,$object);
       } else {
@@ -552,7 +552,8 @@ sub transexonscreation {
             loader. Mainly used for testing purposes.
   Args    : a hashref containing the SWISSPROT entry datas
   Note    : the hashref can be obtained with a call to the method
-               $loader->get_swisshash()      (only with SRS loader)
+               $loader->get_swisshash()      (only with SRS loader or
+                                              BioPerl via Bio::DB::EMBL.pm)
 	    that takes as argument a string like "SWISS-PROT:P10275" or
 	    from $loader->swissprot2hash() that takes an SRS query string
 	    as its argument (e.g. "swissprot-acc:P10275")
@@ -586,7 +587,7 @@ sub printswissprot {
     for $i (0..$#features) {
       print "|",$features[$i]->{'name'},"|";
       print " at ",$features[$i]->{'location'},": ";
-      print "",$features[$i]->{'description'},"\n";
+      print "",$features[$i]->{'desc'},"\n";
     }
   }
 }
@@ -694,7 +695,7 @@ sub genes {
 sub swisshash2liveseq {
   my ($self,$entry,$translation)=@_;
   my $translength=$translation->length;
-  $translation->description($translation->description . $entry->{'Description'});
+  $translation->desc($translation->desc . $entry->{'Description'});
   $translation->display_id("SWISSPROT:" . $entry->{'ID'});
   $translation->accession_number("SWISSPROT:" . $entry->{'AccNumber'});
   $translation->name($entry->{'Gene'});
@@ -735,7 +736,7 @@ sub swisshash2liveseq {
     #print "Processing SwissProtFeature: $i\n"; # debug
     ($start,$end)=split(/ /,$feature->{'location'});
     # Note: cleavedmet is taken in account for updating numbering
-    $aarangeobj=Bio::LiveSeq::AARange->new(-start => $start+$cleavedmet, -end => $end+$cleavedmet, -name => $feature->{'name'}, -description => $feature->{'description'}, -translation => $translation, -translength => $translength);
+    $aarangeobj=Bio::LiveSeq::AARange->new(-start => $start+$cleavedmet, -end => $end+$cleavedmet, -name => $feature->{'name'}, -desc => $feature->{'desc'}, -translation => $translation, -translength => $translength);
     if ($aarangeobj != -1) {
       push(@aarangeobjects,$aarangeobj);
     }

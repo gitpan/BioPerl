@@ -1,4 +1,4 @@
-# $Id: SeqI.pm,v 1.9.2.9 2001/06/22 10:40:02 heikki Exp $
+# $Id: SeqI.pm,v 1.23 2001/11/24 21:46:27 jason Exp $
 #
 # bioperl module for Bio::LiveSeq::SeqI
 #
@@ -40,8 +40,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bio.perl.org/MailList.html  - About the mailing lists
+  bioperl-l@bioperl.org             - General discussion
+  http://bio.perl.org/MailList.html - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -49,7 +49,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via email
 or the web:
 
-  bioperl-bugs@bioperl.org
+  bioperl-bugs@bio.perl.org
   http://bio.perl.org/bioperl-bugs/
 
 =head1 AUTHOR - Joseph A.L. Insana
@@ -83,7 +83,7 @@ Some note on the terminology/notation of method names:
 # Let the code begin...
 
 package Bio::LiveSeq::SeqI;
-$version=3.3;
+$VERSION=3.3;
 # Version history:
 # Thu Mar 16 18:11:18 GMT 2000 v.1.0 Started implementation, interface/inheritance from ChainI.pm
 # Thu Mar 16 20:05:51 GMT 2000 v 1.2 implemented up to splice_out
@@ -94,7 +94,7 @@ $version=3.3;
 #                                    working on methods defined with Heikki
 # Tue Mar 21 01:37:52 GMT 2000 v 2.1 created strand(), seq()
 # Tue Mar 21 02:43:21 GMT 2000 v 2.11 seq() prints correctly also for exons
-# Wed Mar 22 19:41:45 GMT 2000 v 2.22 translate, moltype, length, all_labels
+# Wed Mar 22 19:41:45 GMT 2000 v 2.22 translate, alphabet, length, all_labels
 # Thu Mar 23 21:03:42 GMT 2000 v 2.3 follows() label() position()
 # Fri Mar 24 18:33:18 GMT 2000 v 2.33 rewritten position(), now works with diverse coordinate_starts
 # Sat Mar 25 06:11:55 GMT 2000 v 2.4 started subseq
@@ -122,11 +122,11 @@ $version=3.3;
 # Wed Apr  4 13:34:29 BST 2001 v 3.3 moved from carp to warn
 
 use strict;
-use vars qw($version @ISA);
-use Bio::LiveSeq::ChainI; # to inherit from it
+use vars qw($VERSION @ISA);
+use Bio::LiveSeq::ChainI 1.9; # to inherit from it
 use Bio::Tools::CodonTable; # for the translate() function
 
-@ISA=qw(Bio::LiveSeq::ChainI); # inherit from ChainI
+@ISA=qw(Bio::Root::Root Bio::LiveSeq::ChainI Bio::PrimarySeqI ); # inherit from ChainI
 
 =head2 seq
 
@@ -790,10 +790,10 @@ sub strand {
   return $self->{'strand'};
 }
 
-=head2 moltype
+=head2 alphabet
 
- Title   : moltype
- Usage   : if( $obj->moltype eq 'dna' ) { /Do Something/ }
+ Title   : alphabet
+ Usage   : if( $obj->alphabet eq 'dna' ) { /Do Something/ }
  Function: Returns the type of sequence being one of
            'dna', 'rna' or 'protein'. This is case sensitive.
 
@@ -804,7 +804,7 @@ sub strand {
 =cut
 
 
-sub moltype {
+sub alphabet {
   my %valid_type = map {$_, 1} qw( dna rna protein );
   my ($self,$value) = @_;
   if (defined $value) {
@@ -812,9 +812,9 @@ sub moltype {
     unless ( $valid_type{$value} ) {
       $self->warn("Molecular type '$value' is not a valid type");
     }
-    $self->{'moltype'} = $value;
+    $self->{'alphabet'} = $value;
   }
-  return $self->{'moltype'};
+  return $self->{'alphabet'};
 }
 
 =head2 coordinate_start
@@ -984,96 +984,96 @@ sub follows {
     return ($self->{'seq'}->is_upstream($firstlabel,$secondlabel));
   }
 }
-
-=head2 translate
-
- Title   : translate
- Usage   : $protein_seq = $obj->translate
- Function: Provides the translation of the DNA sequence
-           using full IUPAC ambiguities in DNA/RNA and amino acid codes.
-
-           The resulting translation is identical to EMBL/TREMBL database 
-           translations.
-
- Returns : a string
- Args    : character for terminator (optional) defaults to '*'
-           character for unknown amino acid (optional) defaults to 'X'
-           frame (optional) valid values 0, 1, 3, defaults to 0
-           codon table id (optional) defaults to 1
-
-=cut
-
-sub translate {
-  my ($self) = shift;
-  return ($self->translate_string($self->seq,@_));
-}
-
-=head2 translate_string
-
- Title   : translate_string
- Usage   : $protein_seq = $obj->translate_string("attcgtgttgatcgatta");
- Function: Like translate, but can be used to translate subsequences after
-           having retrieved them as string.
- Args    : 1st argument is a string. Optional following arguments: like in
-           the translate method
-
-=cut
-
-
-sub translate_string {
-  my($self) = shift;
-  my($seq) = shift;
-  my($stop, $unknown, $frame, $tableid) = @_;
-  my($i, $len, $output) = (0,0,'');
-  my($codon)   = "";
-  my $aa;
-
-
-  ## User can pass in symbol for stop and unknown codons
-  unless(defined($stop) and $stop ne '')    { $stop = "*"; }
-  unless(defined($unknown) and $unknown ne '') { $unknown = "X"; }
-  unless(defined($frame) and $frame ne '') { $frame = 0; }
-
-  ## the codon table ID 
-  if ($self->translation_table) {
-    $tableid = $self->translation_table;
-  }
-  unless(defined($tableid) and $tableid ne '')    { $tableid = 1; }
-
-  ##Error if monomer is "Amino"
-  $self->warn("Can't translate an amino acid sequence.") 
-      if (defined $self->moltype && $self->moltype eq 'protein');
-
-  ##Error if frame is not 0, 1 or 2
-  $self->warn("Valid values for frame are 0, 1, 2, not [$frame].")
-      unless ($frame == 0 or $frame == 1 or $frame == 2);
-
-  #thows a warning if ID is invalid 
-  my $codonTable = Bio::Tools::CodonTable->new( -id => $tableid);
-
-  # deal with frame offset.
-  if( $frame ) {
-      $seq = substr ($seq,$frame);
-  }
-
-  for $codon ( grep { CORE::length == 3 } split(/(.{3})/, $seq) ) {
-      my $aa = $codonTable->translate($codon);
-      if ($aa eq '*') {
-   	   $output .= $stop;
-      }
-      elsif ($aa eq 'X') {
-   	   $output .= $unknown;
-      }
-      else { 
-	  $output .= $aa ;
-      }   
-  }
-  #if( substr($output,-1,1) eq $stop ) {
-  #    chop $output;
-  #}
-
-  return ($output);
-}
+#
+#=head2 translate
+#
+# Title   : translate
+# Usage   : $protein_seq = $obj->translate
+# Function: Provides the translation of the DNA sequence
+#	    using full IUPAC ambiguities in DNA/RNA and amino acid codes.
+#
+#	    The resulting translation is identical to EMBL/TREMBL database 
+#	    translations.
+#
+# Returns : a string
+# Args    : character for terminator (optional) defaults to '*'
+#	    character for unknown amino acid (optional) defaults to 'X'
+#	    frame (optional) valid values 0, 1, 3, defaults to 0
+#	    codon table id (optional) defaults to 1
+#
+#=cut
+#
+#sub translate {
+#  my ($self) = shift;
+#  return ($self->translate_string($self->seq,@_));
+#}
+#
+#=head2 translate_string
+#
+# Title   : translate_string
+# Usage   : $protein_seq = $obj->translate_string("attcgtgttgatcgatta");
+# Function: Like translate, but can be used to translate subsequences after
+#	    having retrieved them as string.
+# Args    : 1st argument is a string. Optional following arguments: like in
+#	    the translate method
+#
+#=cut
+#
+#
+#sub translate_string {
+#  my($self) = shift;
+#  my($seq) = shift;
+#  my($stop, $unknown, $frame, $tableid) = @_;
+#  my($i, $len, $output) = (0,0,'');
+#  my($codon)   = "";
+#  my $aa;
+#
+#
+#  ## User can pass in symbol for stop and unknown codons
+#  unless(defined($stop) and $stop ne '')    { $stop = "*"; }
+#  unless(defined($unknown) and $unknown ne '') { $unknown = "X"; }
+#  unless(defined($frame) and $frame ne '') { $frame = 0; }
+#
+#  ## the codon table ID 
+#  if ($self->translation_table) {
+#    $tableid = $self->translation_table;
+#  }
+#  unless(defined($tableid) and $tableid ne '')    { $tableid = 1; }
+#
+#  ##Error if monomer is "Amino"
+#  $self->warn("Can't translate an amino acid sequence.") 
+#      if (defined $self->alphabet && $self->alphabet eq 'protein');
+#
+#  ##Error if frame is not 0, 1 or 2
+#  $self->warn("Valid values for frame are 0, 1, 2, not [$frame].")
+#      unless ($frame == 0 or $frame == 1 or $frame == 2);
+#
+#  #thows a warning if ID is invalid 
+#  my $codonTable = Bio::Tools::CodonTable->new( -id => $tableid);
+#
+#  # deal with frame offset.
+#  if( $frame ) {
+#      $seq = substr ($seq,$frame);
+#  }
+#
+#  for $codon ( grep { CORE::length == 3 } split(/(.{3})/, $seq) ) {
+#      my $aa = $codonTable->translate($codon);
+#      if ($aa eq '*') {
+#	    $output .= $stop;
+#      }
+#      elsif ($aa eq 'X') {
+#	    $output .= $unknown;
+#      }
+#      else { 
+#	   $output .= $aa ;
+#      }   
+#  }
+#  #if( substr($output,-1,1) eq $stop ) {
+#  #    chop $output;
+#  #}
+#
+#  return ($output);
+#}
 
 =head2 gene
 
@@ -1144,11 +1144,11 @@ sub name {
   }
 }
 
-=head2 description
+=head2 desc
 
- Title   : description
- Usage   : $description = $obj->description;
-         : $description = $obj->description("ABCD");
+ Title   : desc
+ Usage   : $desc = $obj->desc;
+         : $desc = $obj->desc("ABCD");
  Function: Returns or sets the description of the object.
            If there is no description, it will return "unknown";
  Returns : A string
@@ -1156,15 +1156,15 @@ sub name {
 
 =cut
 
-sub description {
+sub desc {
   my ($self,$value) = @_;
   if (defined $value) {
-    $self->{'description'} = $value;
+    $self->{'desc'} = $value;
   }
-  unless (exists $self->{'description'}) {
+  unless (exists $self->{'desc'}) {
     return "unknown";
   } else {
-    return $self->{'description'};
+    return $self->{'desc'};
   }
 }
 
@@ -1225,185 +1225,6 @@ sub delete_Obj {
     }
   }
   return(1);
-}
-
-=head2 verbose
-
- Title   : verbose
- Usage   : $self->verbose(0)
- Function: Sets verbose level for how ->warn behaves
-           -1 = silent: no warning
-            0 = reduced: minimal warnings
-            1 = default: all warnings
-            2 = extended: all warnings + stack trace dump
-            3 = paranoid: a warning becomes a throw and the program dies
-
-           Note: a quick way to set all LiveSeq objects at the same verbosity
-           level is to change the DNA level object, since they all look to
-           that one if their verbosity_level attribute is not set.
-           But the method offers fine tuning possibility by changing the
-           verbose level of each object in a different way.
-
-           So for example, after $loader= and $gene= have been retrieved
-           by a program, the command $gene->verbose(0); would
-           set the default verbosity level to 0 for all objects.
-
- Returns : the current verbosity level
- Args    : -1,0,1,2 or 3
-
-=cut
-
-
-sub verbose {
-  my ($self,$value) = @_;
-  my %valid_values= map {$_, 1} qw(3 2 1 0 -1 );
-  if (defined $value) {
-    if ($valid_values{$value}) {
-      $self->{'verbosity_level'} = $value;
-    } else {
-      $self->warn("LIVESEQ: the verbosity level you are trying to set is not a recognized value. Recognized values: -1 0 1 2 3....");
-    }
-  }
-  unless (exists $self->{'verbosity_level'}) {
-    unless (exists $self->{'seq'}->{'verbosity_level'}) {
-      return (1); # the default verbosity level
-    } else {
-      return $self->{'seq'}->{'verbosity_level'};
-    }
-  } else {
-    return $self->{'verbosity_level'};
-  }
-}
-
-=head2 warn
-
- Title   : warn
- Usage   : $object->warn("Warning message",$ignorable);
- Function: Places a warning. What happens now is down to the
-           verbosity of the object  (value of $obj->verbose) 
-            -1 = silent: no warning
-             0 = reduced: minimal warnings
-             1 = default: all warnings
-             2 = extended: all warnings + stack trace dump
-             3 = paranoid: a warning becomes a throw and the program dies
-
-           If a second argument is given and is 1, then the warning becomes
-           a relatively ignorable one. I.e. it means that warning is one
-           the program can cope with, so at verbose level "0", it wouldn't
-           be printed. At verbose level >1 it will be printed with the rest.
- Example : $obj->warn("Label not found");
- Example : $obj->warn("Starting position not specified, using default start",1);
- Returns : nothing
- Args    : string, boolean
-
-=cut
-
-#'
-sub warn{
-  my ($self,$string,$ignorable) = @_;
-
-  my $verbose = $self->verbose;
-
-  if( $verbose == 3 ) {
-    $self->throw($string);
-  } elsif( $verbose == -1 ) { # ignore all warnings
-    return;
-  } elsif( $verbose == 2 ) {
-    my $out = "---------------- LIVESEQ WARNING -----------------\n".
-    "MSG: ".$string."\n";
-    $out .= $self->stack_trace_dump;
-    
-    print STDERR $out;
-    return;
-  } elsif( $verbose == 1 ) {
-    my $out = "---------------- LIVESEQ WARNING -----------------\n".
-    "MSG: ".$string."\n".
-    "---------------------------------------------------\n";
-    print STDERR $out;
-  } else { # i.e. if verbose == 0, we have to filter some warnings
-
-    if ($ignorable == 1) {
-      return;
-    } else {
-      my $out = "---------------- LIVESEQ WARNING -----------------\n".
-      "MSG: ".$string."\n".
-      "---------------------------------------------------\n";
-      print STDERR $out;
-    }
-  }
-}
-
-=head2 throw
-
- Title   : throw
- Usage   : $obj->throw("throwing exception message")
- Function: Throws an exception, which, if not caught with an eval brace
-           will print the error message, a stack trace dump, and die.
- Returns : nothing
- Args    : A string giving a descriptive error message
-
-=cut
-
-
-sub throw{
-  my ($self,$string) = @_;
-
-  my $std = $self->stack_trace_dump();
-
-  my $out = "---------------- LIVESEQ EXCEPTION ----------------\n".
-   "MSG: ".$string."\n".$std."-------------------------------------------\n";
-  die $out;
-}
-
-sub stack_trace_dump{ # taken from BioPerl's RootI
-  my ($self) = @_;
-
-  my @stack = $self->stack_trace();
-
-  shift @stack;
-  shift @stack;
-  shift @stack;
-
-  my $out;
-  my ($module,$function,$file,$position);
-   
-
-  foreach my $stack ( @stack) {
-    ($module,$file,$position,$function) = @{$stack};
-    $out .= "STACK $function $file:$position\n";
-  }
-
-  return $out;
-}
-
-=head2 stack_trace
-
- Title   : stack_trace
- Usage   : @stack_array_ref= $self->stack_trace
- Function: gives an array to a reference of arrays with stack trace info
-           each coming from the caller(stack_number) call
- Returns : array containing a reference of arrays
- Args    : none
-
-
-=cut
-
-sub stack_trace{ # taken from BioPerl's RootI
-  my ($self) = @_;
-
-  my $i = 0;
-  my @out;
-  my $prev;
-  while( my @call = caller($i++)) {
-    # major annoyance that caller puts caller context as
-    # function name. Hence some monkeying around...
-    $prev->[3] = $call[3];
-    push(@out,$prev);
-    $prev = \@call;
-  }
-  $prev->[3] = 'toplevel';
-  push(@out,$prev);
-  return @out;
 }
 
 1;

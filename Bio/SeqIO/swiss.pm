@@ -1,4 +1,4 @@
-# $Id: swiss.pm,v 1.34.2.9 2001/09/26 14:47:56 jason Exp $
+# $Id: swiss.pm,v 1.48 2002/02/14 18:04:22 jason Exp $
 #
 # BioPerl module for Bio::SeqIO::swiss
 #
@@ -149,7 +149,7 @@ sub next_seq {
    if( !defined $line ) {
        return undef; # end of file
    }
-
+   
    # fixed to allow _DIVISION to be optional for bug #946
    # see bug report for more information
    $line =~ /^ID\s+([^\s_]+)(_([^\s_]+))?\s+([^\s;]+);\s+([^\s;]+);/ 
@@ -161,8 +161,9 @@ sub next_seq {
        $name = $1;
        $seq->division('UNK');       
    }
+   
    $seq->primary_id($1);
-   $seq->moltype('protein');
+   $seq->alphabet('protein');
     # this is important to have the id for display in e.g. FTHelper, otherwise
     # you won't know which entry caused an error
    $seq->display_id($name);
@@ -184,10 +185,16 @@ sub next_seq {
        }
        #Gene name
        elsif(/^GN\s+([^\.]+)/) {
-	   foreach my $gn (split(/ OR /,$1)) {
-	       $seq->annotation->add_gene_name($gn);
-	   }
-       }     
+           # Drop trailing spaces and dots
+           s/[\. ]*$//;  # imported from swiss knife by cjm
+           if (/^GN\s+(.*)/) {
+               foreach my $gn (split(/ OR /,$1)) {
+                   my $sim = Bio::Annotation::SimpleValue->new();
+                   $sim->value($gn);
+                   $seq->annotation->add_Annotation('gene_name',$sim);
+               }
+           }
+       }
        #accession number(s)
        elsif( /^AC\s+(.+)/) {
            $acc_string .= $acc_string ? " $1" : $1;
@@ -216,11 +223,10 @@ sub next_seq {
        # References
        elsif (/^R/) {
 	   my $refs = $self->_read_swissprot_References(\$buffer);
-	   #my $r;
-	   #foreach $r (@$refs)
-	   #{
-	     $seq->annotation->add_Reference(@$refs);
-	   #}
+
+	   foreach my $r (@$refs) {
+	       $seq->annotation->add_Annotation('reference',$r);
+	   }
 	   # now we are one line ahead -- so continue without reading the next
 	   # line   HL 05/11/2000
 	   next;
@@ -242,14 +248,14 @@ sub next_seq {
 	   # note: don't try to process comments here -- they may contain
            # structure. LP 07/30/2000
 	   $commobj->text($comment);
-	   $seq->annotation->add_Comment($commobj);
+	   $seq->annotation->add_Annotation('comment',$commobj);
 	   $comment = "";
 	   # now we are one line ahead -- so continue without reading the next
 	   # line   HL 05/11/2000
 	   next;
        }
        #DBLinks
-       elsif (/^DR\s+(\S+)\; (\S+)\; (\S+)[\;\.](.*)$/) {
+       elsif (/^DR\s+(\S+)\;\s+(\S+)\;\s+(\S+)[\;\.](.*)$/) {
 	   my $dblinkobj =  Bio::Annotation::DBLink->new();
 	   $dblinkobj->database($1);
 	   $dblinkobj->primary_id($2);
@@ -257,10 +263,13 @@ sub next_seq {
 	   my $comment = $4;
 	   if(length($comment) > 0) {
 	       # edit comment to get rid of leading space and trailing dot
-	       $comment = s/^\s*(\S+)\..*/$1/;
-	       $dblinkobj->comment($comment);
+	       if( $comment =~ /^\s*(\S+)\./ ) {
+		   $dblinkobj->comment($1);
+	       } else {
+		   $dblinkobj->comment($comment);
+	       }
 	   }
-	   $seq->annotation->add_DBLink($dblinkobj);
+	   $seq->annotation->add_Annotation('dblink',$dblinkobj);
        }
        #keywords
        elsif( /^KW\s+(.*)$/ ) {
@@ -345,9 +354,9 @@ sub write_seq {
 
    if ( !$seq->can('division') || ! defined ($div = $seq->division()) ) {
        $div = 'UNK';
-   } 
-      
-   if(! $seq->can('moltype') || ! defined ($mol = $seq->moltype) ) {
+   }
+   
+   if( ! $seq->can('alphabet') || ! defined ($mol = $seq->alphabet) ) {
        $mol = 'XXX';
    }
    
@@ -363,6 +372,7 @@ sub write_seq {
        # if e.g. the Bio::DB::GenPept module is used as input.
        # Hence, switch to display_id(); _every_ sequence is supposed to have
        # this. HL 2000/09/03
+       $mol =~ s/protein/PRT/;
        $temp_line = sprintf ("%10s     STANDARD;      %3s;   %d AA.",
 			     $seq->display_id(), $mol, $len);
    }
@@ -391,7 +401,8 @@ sub write_seq {
        # otherwise - cannot print <sigh>
    }
 
-   #Date lines
+   # Date lines
+
    if( $seq->can('get_dates') ) {
        foreach my $dt ( $seq->get_dates() ) {
 	   $self->_write_line_swissprot_regex("DT   ","DT   ",
@@ -403,9 +414,9 @@ sub write_seq {
    $self->_write_line_swissprot_regex("DE   ","DE   ",$seq->desc(),"\\s\+\|\$",80);
 
    #Gene name
-   if ($seq->annotation->can('each_gene_name') && 
-       (my @genes = $seq->annotation->each_gene_name) ) {
-       $self->_print("GN   ",join(' OR ', @genes),"\n");
+   if ($seq->annotation->can('get_Annotations') &&
+       (my @genes = $seq->annotation->get_Annotations('gene_name') ) ) {
+       $self->_print("GN   ",join(' OR ', map { $_->value } @genes),".\n");
    }
    
    # Organism lines
@@ -429,11 +440,14 @@ sub write_seq {
 	if ($spec->organelle) {
 	    $self->_write_line_swissprot_regex("OG   ","OG   ",$spec->organelle,"\; \|\$",80);
 	}
+	if ($spec->ncbi_taxid) {
+	    $self->_print("OX   NCBI_TaxID=".$spec->ncbi_taxid.";\n");
+	}
    }
    
    # Reference lines
    my $t = 1;
-   foreach my $ref ( $seq->annotation->each_Reference() ) {
+   foreach my $ref ( $seq->annotation->get_Annotations('reference') ) {
        $self->_print( "RN   [$t]\n");
 #       if ($ref->start && $ref->end) {
 #	   # changed by jason <jason@chg.mc.duke.edu> on 3/16/00 
@@ -469,15 +483,18 @@ sub write_seq {
 					    $ref->medline.".","\\s\+\|\$",80);
 	 }
        }
-       $self->_write_line_swissprot_regex("RA   ","RA   ",$ref->authors,"\\s\+\|\$",80);
-       $self->_write_line_swissprot_regex("RT   ","RT   ",$ref->title,"\\s\+\|\$",80);
+       my $author = $ref->authors .';' if($ref->authors);
+       my $title = $ref->title .';' if( $ref->title);
+       
+       $self->_write_line_swissprot_regex("RA   ","RA   ",$author,"\\s\+\|\$",80);
+       $self->_write_line_swissprot_regex("RT   ","RT   ",$title,"\\s\+\|\$",80);
        $self->_write_line_swissprot_regex("RL   ","RL   ",$ref->location,"\\s\+\|\$",80);
        $t++;
    }
    
    # Comment lines
 
-   foreach my $comment ( $seq->annotation->each_Comment() ) {
+   foreach my $comment ( $seq->annotation->get_Annotations('comment') ) {
        foreach my $cline (split ("\n", $comment->text)) {
 	 while (length $cline > 74) {
 	   $self->_print("CC   ",(substr $cline,0,74),"\n");
@@ -487,20 +504,20 @@ sub write_seq {
        }
    }
 
-   foreach my $dblink ( $seq->annotation->each_DBLink() ) {
+   foreach my $dblink ( $seq->annotation->get_Annotations('dblink') ) 
+   {
      if (defined($dblink->comment)&&($dblink->comment)) {
-       $self->_print("DR   ",$dblink->database,"; ",$dblink->primary_id,"; ",
-		     $dblink->optional_id,"; ",$dblink->comment,".\n");
+	 $self->_print("DR   ",$dblink->database,"; ",$dblink->primary_id,"; ",
+		       $dblink->optional_id,"; ",$dblink->comment,".\n");
      } elsif($dblink->optional_id) {
-       $self->_print("DR   ",$dblink->database,"; ",$dblink->primary_id,"; ",
-		     $dblink->optional_id,".\n");
+	 $self->_print("DR   ",$dblink->database,"; ",$dblink->primary_id,"; ",
+		       $dblink->optional_id,".\n");
      }
      else {
-	$self->_print("DR   ",$dblink->database,"; ",$dblink->primary_id,"; ",
-		     "-.\n");
-    }
- }
-   
+	 $self->_print("DR   ",$dblink->database,"; ",$dblink->primary_id,"; ",
+		       "-.\n");
+     }
+   }   
 
    # if there, write the kw line
    
@@ -510,7 +527,7 @@ sub write_seq {
    } else {
        if( $seq->can('keywords') ) {
 	 $self->_write_line_swissprot_regex("KW   ","KW   ",
-					    $seq->keywords,"\\s\+\|\$",80);
+					    $seq->keywords,"\\s\+\|\$",80);       
        }
    }
 
@@ -559,8 +576,8 @@ sub write_seq {
    # molecular weight
    my $mw = ${Bio::Tools::SeqStats->get_mol_wt($seq->primary_seq)}[0];
    # checksum
-   # was crc32 checksum, changed it to crc64
-   my $crc64 = $self->_crc64(\$str);
+   # was crc32 checksum, changed it to crc64 
+   my $crc64 = $self->_crc64(\$str); 
    $self->_print( sprintf("SQ   SEQUENCE  %4d AA;  %d MW;  %16s CRC64;\n",
 			  $len,$mw,$crc64));
    $self->_print( "     ");
@@ -661,7 +678,7 @@ sub _crc64{
     my $POLY64REVh = 0xd8000000;
     my @CRCTableh = 256;
     my @CRCTablel = 256;
-    my $initialized;
+    my $initialized;       
     
 
     my $seq = $$sequence;
@@ -699,7 +716,6 @@ sub _crc64{
       
 }
 
-
 =head2 _print_swissprot_FTHelper
 
  Title   : _print_swissprot_FTHelper
@@ -715,29 +731,33 @@ sub _crc64{
 sub _print_swissprot_FTHelper {
    my ($self,$fth,$always_quote) = @_;
    $always_quote ||= 0;
-   my ($start,$end);
+   my ($start,$end) = ('?', '?');
    
    if( ! ref $fth || ! $fth->isa('Bio::SeqIO::FTHelper') ) {
        $fth->warn("$fth is not a FTHelper class. ".
 		  "Attempting to print, but there could be tears!");
    }
 
-   $fth->loc =~ /(\d+)\.\.(\d+)/;
-   $start = $1;
-   $end = $2;
-   # to_FTString only returns one value when start == end,		#JB955
-   # so if no match is found, assume it is both start and end	#JB955
-   if (!$start) { $start = $end = $fth->loc; }					#JB955
+   if( $fth->loc =~ /(\?|\d+)?\.\.(\?|\d+)?/ ) {
+       $start = $1 if defined $1;
+       $end = $2 if defined $2;
+
+       # to_FTString only returns one value when start == end, #JB955
+       # so if no match is found, assume it is both start and end #JB955
+   } else {
+       $start = $end = $fth->loc; 
+   }
+   
    my $desc = "";
    $desc = @{$fth->field->{"description"}}[0]."." 
-     if exists $fth->field->{"description"};
-   
+       if exists $fth->field->{"description"};
    $self->_write_line_swissprot_regex(sprintf("FT   %-8s %6s %6s       ",
-					      substr($fth->key,0,8),$start,$end),
+					      substr($fth->key,0,8),
+					      $start,$end),
 				      "FT                                ",
 				      $desc,'\s+|$',80);
 }
-
+#'
 
 =head2 _read_swissprot_References
 
@@ -823,7 +843,7 @@ sub _read_swissprot_Species {
     my $org;
 
     $_ = $$buffer;
-    my( $sub_species, $species, $genus, $common, @class, $osline );
+    my( $sub_species, $species, $genus, $common, @class, $osline, $ncbi_taxid );
     while (defined( $_ ||= $self->_readline )) {
         if (/^OS\s+((\S+)(?:\s+([^\(]\S*))?(?:\s+([^\(]\S*))?(?:\s+\((.*)\))?.*)/) {
 	    $osline = $1;
@@ -847,6 +867,15 @@ sub _read_swissprot_Species {
         }
 	elsif (/^OG\s+(.*)/) {
 	    $org = $1;
+	}
+	elsif (/^OX\s+(.*)\;/) {
+            my $taxstring = $1;
+            if ($taxstring =~ /NCBI_TaxID=(.*)/) {
+                $ncbi_taxid = $1;
+            }
+            else {
+                $self->throw("$taxstring doesn't look like NCBI_TaxID");
+            }
 	}
         else {
             last;
@@ -875,6 +904,7 @@ sub _read_swissprot_Species {
     $make->common_name( $common      ) if $common;
     $make->sub_species( $sub_species ) if $sub_species;
     $make->organelle  ( $org         ) if $org;
+    $make->ncbi_taxid ( $ncbi_taxid  ) if $ncbi_taxid;
     return $make;
 }
 
@@ -1002,14 +1032,14 @@ sub _write_line_swissprot{
 
 sub _write_line_swissprot_regex {
    my ($self,$pre1,$pre2,$line,$regex,$length) = @_;
-
    
    #print STDOUT "Going to print with $line!\n";
 
    $length || die "Miscalled write_line_swissprot without length. Programming error!";
 
    if( length $pre1 != length $pre2 ) {
-       die "Programming error - cannot called write_line_swissprot_regex with different length pre1 and pre2 tags!";
+       print STDERR "len 1 is ", length $pre1, " len 2 is ", length $pre2, "\n";
+       die "Programming error - cannot called write_line_swissprot_regex with different length \npre1 ($pre1) and \npre2 ($pre2) tags!";
    }
 
    my $subl = $length - (length $pre1) -1 ;

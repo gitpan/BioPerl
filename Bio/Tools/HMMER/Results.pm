@@ -1,4 +1,4 @@
-# $Id: Results.pm,v 1.10.2.4 2001/10/10 02:52:21 jason Exp $
+# $Id: Results.pm,v 1.17 2001/11/20 02:09:41 lstein Exp $
 #
 # Perl Module for HMMResults
 #
@@ -68,13 +68,16 @@ or the web:
 
 =head1 AUTHOR - Ewan Birney
 
-Email birney@sanger.ac.uk
+Email birney@ebi.ac.uk
 
-Describe contact details here
+=head1 CONTRIBUTORS
+
+Jason Stajich, jason@bioperl.org
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -84,14 +87,14 @@ use vars qw(@ISA);
 use Carp;
 use strict;
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
 use Bio::Root::IO;
 use Bio::Tools::HMMER::Domain;
 use Bio::Tools::HMMER::Set;
 use Bio::SeqAnalysisParserI;
 use Symbol;
 
-@ISA = qw(Bio::Root::RootI Bio::SeqAnalysisParserI);
+@ISA = qw(Bio::Root::Root Bio::SeqAnalysisParserI);
 
 sub new {
   my($class,@args) = @_;
@@ -173,6 +176,48 @@ sub number {
    
     @val = @{$self->{'domain'}};
     return scalar @val;
+}
+
+=head2 seqfile
+
+ Title   : seqfile
+ Usage   : $obj->seqfile($newval)
+ Function: 
+ Example : 
+ Returns : value of seqfile
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub seqfile{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'seqfile'} = $value;
+    }
+    return $self->{'seqfile'};
+
+}
+
+=head2 hmmfile
+
+ Title   : hmmfile
+ Usage   : $obj->hmmfile($newval)
+ Function: 
+ Example : 
+ Returns : value of hmmfile
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub hmmfile{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'hmmfile'} = $value;
+    }
+    return $self->{'hmmfile'};
+
 }
 
 =head2 add_Domain
@@ -301,7 +346,6 @@ sub dictate_hmm_acc {
 
 =cut
 
-
 sub write_FT_output {
     my $self = shift;
     my $file = shift;
@@ -331,9 +375,7 @@ sub write_FT_output {
  Args    : sequence cutoff and domain cutoff. in bits score
            if you want one cutoff, simply use same number both places
 
-
 =cut
-
 
 sub filter_on_cutoff {
     my $self = shift;
@@ -362,8 +404,7 @@ sub filter_on_cutoff {
 	    $new->add_Domain($unit);
 	}
 
-    }
-    
+    }    
 }
 
 =head2 write_ascii_out
@@ -659,11 +700,16 @@ sub get_Set {
 sub _parse_hmmpfam {
     my $self = shift;
     my $file = shift;
-    my ($id,$sqfrom,$sqto,$hmmf,$hmmt,$sc,$ev,$unit,$nd,$seq,$name,$seqname,$from,$to,%hash,%acc,$acc);
+    
+    my ($id,$sqfrom,$sqto,$hmmf,$hmmt,$sc,$ev,
+	$unit,$nd,$seq,$name,$seqname,$from,
+	$to,%hash,%acc,$acc);
     my $count = 0;
 
     while(<$file>) {
-	if( /^Query(\s+sequence)?:\s+(\S+)/ ) {
+        if( /^HMM file:\s+(\S+)/ ) { $self->hmmfile($1); next; }
+	elsif( /^Sequence file:\s+(\S+)/ ) { $self->seqfile($1); next }   
+	elsif( /^Query(\s+sequence)?:\s+(\S+)/ ) {
 	    
 	    $seqname = $2;
 	    
@@ -674,6 +720,8 @@ sub _parse_hmmpfam {
 	    %hash = ();
 	    
 	    while(<$file>){
+		if( /Accession:\s+(\S+)/ ) { $seq->accession($1); next }
+		elsif( s/^Description:\s+// ) { chomp; $seq->desc($_); next } 
 		/^Parsed for domains/ && last;
 		
 		# This is to parse out the accession numbers in old Pfam format.
@@ -814,8 +862,8 @@ sub _parse_hmmsearch {
     my $count = 0;
     
     while(<$file>) {
-        /^HMM file:\s+(\S+)/ and do { $hmmfname = $1 };
-	
+        /^HMM file:\s+(\S+)/ and do { $self->hmmfile($1); $hmmfname = $1 };
+	/^Sequence database:\s+(\S+)/ and do { $self->seqfile($1) };
         /^Scores for complete sequences/ && last;
     }
     

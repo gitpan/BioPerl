@@ -1,35 +1,14 @@
-#-----------------------------------------------------------------------------
-# PACKAGE : Bio::Tools::SeqPattern.pm
-# AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
-# CREATED : 28 Aug 1997
-# REVISION: $Id: SeqPattern.pm,v 1.5.2.2 2001/06/21 15:36:05 heikki Exp $
-#            
-# Copyright (c) 1997-8 Steve A. Chervitz. All Rights Reserved.
-#           This module is free software; you can redistribute it and/or 
-#           modify it under the same terms as Perl itself.
-#-----------------------------------------------------------------------------
+# $Id: SeqPattern.pm,v 1.11 2002/02/25 15:30:56 heikki Exp $
+#
+# bioperl module for Bio::Tools::SeqPattern
+#
+# Cared for by  Steve Chervitz  (sac@bioperl.org)
+#
+# Copyright  Steve Chervitz 
+#
+# You may distribute this module under the same terms as perl itself
 
-package Bio::Tools::SeqPattern;
-
-use Bio::Root::RootI;
-@ISA = qw(Bio::Root::RootI);
-use strict;
-use vars qw ($ID $version);
-$ID  = 'Bio::Tools::SeqPattern';
-$version = 0.011;
-
-## These constants may be more appropriate in a Bio::Dictionary.pm 
-## type of class.
-my $PURINES      = 'AG';
-my $PYRIMIDINES  = 'CT';
-my $PHILICS      = 'TSHEDQNKR';
-my $PHOBICS      = 'IFVLWMAGCY';
-my $Regexp_chars = '\w,.\*()\[\]<>\{\}^\$';  # quoted for use in regexps
-
-## Package variables used in reverse complementing.
-my (%Processed_braces, %Processed_asterics);
-
-## POD Documentation:
+# POD documentation - main docs before the code
 
 =head1 NAME
 
@@ -46,15 +25,6 @@ Bio::Tools::SeqPattern.pm - Bioperl object for a sequence pattern or motif
 
     $pat2     = '[VILM]R(GXX){3,2}...[^PG]';
     $pattern2 = new Bio::Tools::SeqPattern(-SEQ =>$pattern, -TYPE =>'Amino'); 
-
-=head1 INSTALLATION
-
-This module is included with the central Bioperl distribution:
-
-   http://bio.perl.org/Core/Latest
-   ftp://bio.perl.org/pub/DIST
-
-Follow the installation instructions included in the README file.
 
 =head1 DESCRIPTION
 
@@ -86,7 +56,7 @@ This makes possible simultaneous pattern matching on both sense and
 anti-sense strands of a query sequence. 
 
 In principle, one could do such a search more inefficiently by testing 
-ainst both sense and anti-sense versions of a sequence. 
+against both sense and anti-sense versions of a sequence. 
 It is entirely equivalent to test a regexp containing both sense and 
 anti-sense versions of the *pattern* against one copy of the sequence.
 The latter approach is much more efficient since:
@@ -102,7 +72,7 @@ for working with biological sequence regular expressions.
 
 Not all patterns have been tested. If you discover a pattern that
 is not handled properly by Bio::Tools::SeqPattern.pm, please
-send me some email (sac@genome.stanford.edu). Thanks.
+send me some email (sac@bioperl.org). Thanks.
 
 =head1 OTHER FEATURES
 
@@ -111,7 +81,6 @@ send me some email (sac@genome.stanford.edu). Thanks.
 This module supports the same set of ambiguity codes for nucleotide 
 sequences as supported by B<Bio::Seq.pm>. These ambiguity codes
 define the behavior or the expand() method.
-Amino acid alphabet support is different from that of Seq.pm (see below).
 
  ------------------------------------------
  Symbol       Meaning      Nucleic Acid
@@ -161,32 +130,32 @@ Amino acid alphabet support is different from that of Seq.pm (see below).
  W        Tryptophan
  Y        Tyrosine
 
- B        Any hydrophobic: IFVLWMAGCY
- Z        Any hydrophilic: TSHEDQNKR
+ B        Aspartic Acid, Asparagine
+ Z        Glutamic Acid, Glutamine
  X        Any amino acid
  .        Any amino acid
 
 
 =head2   Multiple Format Support
 
-Ultimately, this module should be able to build SeqPattern.pm objects objects 
+Ultimately, this module should be able to build SeqPattern.pm objects
 using a variety of pattern formats such as ProSite, Blocks, Prints, GCG, etc.
-Currently, this module only supports patterns using a grep-like syntax. 
+Currently, this module only supports patterns using a grep-like syntax.
 
 =head1 USAGE
 
-A simple demo script is included with the central Bioperl distribution
-(L<INSTALLATION>) and is also available from:
+A simple demo script is included in the examples/ directory of the central
+Bioperl distribution and is also available from:
 
     http://bio.perl.org/Core/Examples/seq_pattern.pl
 
 =head1 SEE ALSO
 
-  Bio::Root::Object.pm    - Base class.
-  Bio::Seq.pm             - Lightweight sequence object.
+L<Bio::Root::Object>   - Base class.
+L<Bio::Seq>            - Lightweight sequence object.
 
-  http://bio.perl.org/Projects/modules.html  - Online module documentation
-  http://bio.perl.org/                       - Bioperl Project Homepage 
+http://bio.perl.org/Projects/modules.html  - Online module documentation
+http://bio.perl.org/                       - Bioperl Project Homepage 
 
 =head1 FEEDBACK
 
@@ -205,14 +174,12 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
-    bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+    bioperl-bugs@bio.perl.org
+    http://bio.perl.org/bioperl-bugs/
 
 =head1 AUTHOR
 
-Steve A. Chervitz, sac@genome.stanford.edu
-
-See the L<FEEDBACK> section for where to send bug reports and comments.
+Steve Chervitz, sac@bioperl.org
 
 =head1 VERSION
 
@@ -220,7 +187,7 @@ Bio::Tools::SeqPattern.pm, 0.011
 
 =head1 COPYRIGHT
 
-Copyright (c) 1997-8 Steve A. Chervitz. All Rights Reserved.
+Copyright (c) 1997-8 Steve Chervitz. All Rights Reserved.
 This module is free software; you can redistribute it and/or 
 modify it under the same terms as Perl itself.
 
@@ -233,8 +200,28 @@ modify it under the same terms as Perl itself.
 ###
 ##
 #'
+# CREATED : 28 Aug 1997
 
 
+package Bio::Tools::SeqPattern;
+
+use Bio::Root::Root;
+@ISA = qw(Bio::Root::Root);
+use strict;
+use vars qw ($ID $VERSION);
+$ID  = 'Bio::Tools::SeqPattern';
+$VERSION = 0.011;
+
+## These constants may be more appropriate in a Bio::Dictionary.pm 
+## type of class.
+my $PURINES      = 'AG';
+my $PYRIMIDINES  = 'CT';
+my $BEE      = 'DN';
+my $ZED      = 'EQ';
+my $Regexp_chars = '\w,.\*()\[\]<>\{\}^\$';  # quoted for use in regexps
+
+## Package variables used in reverse complementing.
+my (%Processed_braces, %Processed_asterics);
 
 #####################################################################################
 ##                                 CONSTRUCTOR                                     ##
@@ -253,7 +240,7 @@ modify it under the same terms as Perl itself.
  Comments  : The process of creating a new SeqPattern.pm object
            : ensures that the pattern string is untained.
 
-See Also   : L<_untaint_pat>(), B<Bio::Root::RootI::new()>, 
+See Also   : B<Bio::Root::Root::new()>, 
              B<Bio::Seq::_initialize()>
 
 =cut
@@ -296,10 +283,8 @@ sub new {
  Argument  : n/a
  Throws    : Exception if the pattern contains invalid characters.
  Comments  : Does not call the superclass method.
-           : Actaully permits any alphanumeric, not just the
+           : Actually permits any alphanumeric, not just the
            : standard genetic alphabet.
-
-See Also   : B<Bio::Seq::alphabet_ok()>, L<_initialize>()
 
 =cut
 
@@ -337,7 +322,7 @@ sub alphabet_ok {
  Throws    : Exception if sequence type is not recognized 
            : (i.e., is not one of [DR]NA, Amino)
 
-See Also   : B<Extended Alphabet Support>, L<_expand_pep>(), L<_exapand_nuc>()
+See Also   : B<Extended Alphabet Support>, L<_expand_pep>(), L<_expand_nuc>()
 
 =cut
 
@@ -376,16 +361,16 @@ sub _expand_pep {
     $pat =~ s/^</\^/;
     $pat =~ s/>$/\$/;
 
-    ## Avoid nested situations: [bmnq] --/--> [[$PHOBICS]mnq]
-    ## Yet correctly deal with: fze[bmnq] ---> f[$PHILICS]e[$PHOBICSmnq]
+    ## Avoid nested situations: [bmnq] --/--> [[$ZED]mnq]
+    ## Yet correctly deal with: fze[bmnq] ---> f[$BEE]e[$ZEDmnq]
     if($pat =~ /\[\w*[BZ]\w*\]/) {
-	$pat =~ s/\[(\w*)B(\w*)\]/\[$1$PHOBICS$2\]/g;
-	$pat =~ s/\[(\w*)Z(\w*)\]/\[$1$PHILICS$2\]/g;
-	$pat =~ s/B/\[$PHOBICS\]/g;
-	$pat =~ s/Z/\[$PHILICS\]/g;
+	$pat =~ s/\[(\w*)B(\w*)\]/\[$1$ZED$2\]/g;
+	$pat =~ s/\[(\w*)Z(\w*)\]/\[$1$BEE$2\]/g;
+	$pat =~ s/B/\[$ZED\]/g;
+	$pat =~ s/Z/\[$BEE\]/g;
     } else {
-	$pat =~ s/B/\[$PHOBICS\]/g;
-	$pat =~ s/Z/\[$PHILICS\]/g;
+	$pat =~ s/B/\[$ZED\]/g;
+	$pat =~ s/Z/\[$BEE\]/g;
     }
     $pat =~ s/\((.)\)/$1/g;  ## Doing these last since:
     $pat =~ s/\[(.)\]/$1/g;  ## Pattern could contain [B] (for example)
@@ -895,6 +880,7 @@ sub type{
 }
 
 1;
+
 __END__
 
 #########################################################################
@@ -909,7 +895,7 @@ Information about the various data members of this module is provided
 for those wishing to modify or understand the code. Two things to bear
 in mind:
 
-=over 4
+=over 2
 
 =item 1 Do NOT rely on these in any code outside of this module. 
 
@@ -940,7 +926,3 @@ to a hash containing all or some of the following fields:
 
 
 =cut
-
-
-
-1;

@@ -1,4 +1,4 @@
-
+# $Id: SeqUtils.pm,v 1.9 2002/02/16 21:16:43 bosborne Exp $
 #
 # BioPerl module for Bio::SeqUtils
 #
@@ -16,30 +16,39 @@ Bio::SeqUtils - Additional methods for PrimarySeq objects
 
 =head1 SYNOPSIS
 
+    use Bio::SeqUtils;
     # get a Bio::PrimarySeqI compliant object, $seq, somehow
     $util = new Bio::SeqUtils;
-    $poplypeptide_3char = $util->seq3($seq);
-    #or
-    $poplypeptide_3char = Bio::SeqUtils->seq3($seq);
+    $polypeptide_3char = $util->seq3($seq);
+    # or
+    $polypeptide_3char = Bio::SeqUtils->seq3($seq);
 
-    #set the sequence string (stored in one char code in the object)
-    Bio::SeqUtils->seq3($seq, $poplypeptide_3char);
+    # set the sequence string (stored in one char code in the object)
+    Bio::SeqUtils->seq3($seq, $polypeptide_3char);
+
+    # translate a sequence in all six frames
+    @seqs = Bio::SeqUtils->translate_6frames($seq);
 
 =head1 DESCRIPTION
 
-This class is a holder of methods that work on L<Bio::PrimarySeqI>
-compliant sequence objects, e.g. L<Bio::PrimarySeq> and
-L<Bio::Seq>. These methods are not part of the L<Bio::PrimarySeqI>
-interface and should in general not essential to the primary function
+This class is a holder of methods that work on Bio::PrimarySeqI-
+compliant sequence objects, e.g. Bio::PrimarySeq and
+Bio::Seq. These methods are not part of the Bio::PrimarySeqI
+interface and should in general not be essential to the primary function
 of sequence objects. If you are thinking of adding essential
 functions, it might be better to create your own sequence class.
+See L<Bio::PrimarySeqI>, L<Bio::PrimarySeq>, and L<Bio::Seq> for more.
 
 The methods take as their first argument a sequence object. It is
 possible to use methods without first creating a SeqUtils object,
 i.e. use it as an anonymous hash.
 
-The first two methodsgive out or read in protein sequences coded in
-three letter IUPAC amino acid codes.
+The first two methods, seq3() and seq3in(), give out or read in protein
+sequences coded in three letter IUPAC amino acid codes.
+
+The next two methods, translate_3frames() and translate_6frames(), wrap
+around the standard translate method to give back an array of three
+forward or all six frame translations.
 
 =head1 FEEDBACK
 
@@ -82,17 +91,16 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::SeqUtils;
-use vars qw(@ISA);
+use vars qw(@ISA %ONECODE %THREECODE);
 use strict;
 use Carp;
-use Bio::Tools::CodonTable;
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::Root::Root);
 # new inherited from RootI
 
-{
+BEGIN {
 
-my  %onecode =
+    %ONECODE =
     ('Ala' => 'A', 'Asx' => 'B', 'Cys' => 'C', 'Asp' => 'D',
      'Glu' => 'E', 'Phe' => 'F', 'Gly' => 'G', 'His' => 'H',
      'Ile' => 'I', 'Lys' => 'K', 'Leu' => 'L', 'Met' => 'M',
@@ -102,7 +110,7 @@ my  %onecode =
      'Sel' => 'U'
      );
 
-my  %threecode =
+    %THREECODE =
     ('A' => 'Ala', 'B' => 'Asx', 'C' => 'Cys', 'D' => 'Asp',
      'E' => 'Glu', 'F' => 'Phe', 'G' => 'Gly', 'H' => 'His',
      'I' => 'Ile', 'K' => 'Lys', 'L' => 'Leu', 'M' => 'Met',
@@ -111,6 +119,7 @@ my  %threecode =
      'Y' => 'Tyr', 'Z' => 'Glx', 'X' => 'Xaa', '*' => 'Ter',
      'U' => 'Sel'
      );
+}
 
 =head2 seq3
 
@@ -119,14 +128,14 @@ my  %threecode =
  Function:
 
            Read only method that returns the amino acid sequence as a
-           string of three letter codes. moltype has to be
+           string of three letter codes. alphabet has to be
            'protein'. Output follows the IUPAC standard plus 'Ter' for
            terminator. Any unknown character, including the default
            unknown character 'X', is changed into 'Xaa'. A noncoded
            aminoacid selenocystein is recognized (Sel, U).
 
  Returns : A scalar
- Args    : character used for stop in the protein seqence optional,
+ Args    : character used for stop in the protein sequence optional,
            defaults to '*' string used to separate the output amino
            acid codes, optional, defaults to ''
 
@@ -137,18 +146,18 @@ sub seq3 {
 
    $seq->isa('Bio::PrimarySeqI') ||
        $self->throw('Not a Bio::PrimarySeqI object but [$self]');
-   $seq->moltype eq 'protein' ||
+   $seq->alphabet eq 'protein' ||
        $self->throw('Not a protein sequence');
 
    if (defined $stop) {
        length $stop != 1 and $self->throw('One character stop needed, not [$stop]');
-       $threecode{$stop} = "Ter";
+       $THREECODE{$stop} = "Ter";
    }
    $sep ||= '';
 
    my $aa3s;
    foreach my $aa  (split //, uc $seq->seq) {
-       $threecode{$aa} and $aa3s .= $threecode{$aa}. $sep, next;
+       $THREECODE{$aa} and $aa3s .= $THREECODE{$aa}. $sep, next;
        $aa3s .= 'Xaa'. $sep;
    }
    $sep and substr($aa3s, -(length $sep), length $sep) = '' ;
@@ -161,19 +170,17 @@ sub seq3 {
  Usage   : $string = Bio::SeqUtils->seq3in($seq, 'MetGlyTer')
  Function:
 
-           Read only method that returns the amino acid sequence as a
-           string of three letter codes. moltype has to be
-           'protein'. Output follows the IUPAC standard plus 'Ter' for
-           terminator. Any unknown character, including the default
-           unknown character 'X', is changed into 'Xaa'
+           Method for in-place changing of the sequence of a
+           Bio::PrimarySeqI sequence object. The three letter amino
+           acid input string is converted into one letter code.  Any
+           unknown character triplet, including the default 'Xaa', is
+           converted into 'X'.
 
  Returns : Bio::PrimarySeq object;
  Args    : character to be used for stop in the protein seqence,
               optional, defaults to '*'
            character to be used for unknown in the protein seqence,
               optional, defaults to 'X'
-           string used to separate the output amino acid codes,
-              optional, defaults to ''
 
 =cut
 
@@ -182,33 +189,130 @@ sub seq3in {
 
    $seq->isa('Bio::PrimarySeqI') ||
        $self->throw('Not a Bio::PrimarySeqI object but [$self]');
-   $seq->moltype eq 'protein' ||
+   $seq->alphabet eq 'protein' ||
        $self->throw('Not a protein sequence');
 
    if (defined $stop) {
        length $stop != 1 and $self->throw('One character stop needed, not [$stop]');
-       $onecode{'Ter'} = $stop;
+       $ONECODE{'Ter'} = $stop;
    }
    if (defined $unknown) {
        length $unknown != 1 and $self->throw('One character stop needed, not [$unknown]');
-       $onecode{'Xaa'} = $unknown;
+       $ONECODE{'Xaa'} = $unknown;
    }
 
    my ($aas, $aa3);
    my $length = (length $string) - 2;
    for (my $i = 0 ; $i < $length ; $i += 3)  {
        $aa3 = substr($string, $i, 3);
-       $onecode{$aa3} and $aas .= $onecode{$aa3}, next;
-       warn("Unknown three letter amino acid code [$aa3] ignored");
+       $ONECODE{$aa3} and $aas .= $ONECODE{$aa3}, next;
+       $aas .= 'X';
    }
    $seq->seq($aas);
    return $seq;
 }
 
+=head2 translate_3frames
+
+ Title   : translate_3frames
+ Usage   : @prots = Bio::SeqUtils->translate_3frames($seq)
+ Function: Translate a nucleotide sequence in three forward frames.
+           The IDs of the sequences are appended with '-0F', '-1F', '-2F'.
+ Returns : An array of seq objects
+ Args    : sequence object
+           same arguments as to Bio::PrimarySeqI::translate
+
+=cut
+
+sub translate_3frames {
+    my ($self, $seq, @args ) = @_;
+    
+    $self->throw('Object [$seq] '. 'of class ['. ref($seq).  ']  can not be translated.')
+	unless $seq->can('translate');
+
+    my ($stop, $unknown, $frame, $tableid, $fullCDS, $throw) = @args;
+    my @seqs;
+    my $f = 0;
+    while ($f != 3) {
+        my $translation = $seq->translate($stop, $unknown,$f,$tableid, $fullCDS, $throw );
+	$translation->id($seq->id. "-". $f. "F");
+	push @seqs, $translation;
+	$f++;
+    }
+
+    return @seqs;
+}
+
+=head2 translate_6frames
+
+ Title   : translate_6frames
+ Usage   : @prots = Bio::SeqUtils->translate_6frames($seq)
+ Function: translate a nucleotide sequence in all six frames
+           The IDs of the sequences are appended with '-0F', '-1F', '-2F',
+           '-0R', '-1R', '-2R'.
+ Returns : An array of seq objects
+ Args    : sequence object
+           same arguments as to Bio::PrimarySeqI::translate
+
+=cut
+
+sub translate_6frames {
+    my ($self, $seq, @args ) = @_;
+    
+    my @seqs = $self->translate_3frames($seq, @args);
+    $seq->seq($seq->revcom->seq);
+    my @seqs2 = $self->translate_3frames($seq, @args);
+    foreach my $seq2 (@seqs2) {
+	my ($tmp) = $seq2->id;
+	$tmp =~ s/F$/R/g;
+	$seq2->id($tmp);
+    }
+    return @seqs, @seqs2;
+}
+
+
+=head2 valid_aa
+
+ Title   : valid_aa
+ Usage   : my @aa = $table->valid_aa
+ Function: Retrieves a list of the valid amino acid codes
+ Returns : array of all the valid amino acid codes
+ Args    : [optional] $code => [0 -> return list of 1 letter aa codes,
+				1 -> return list of 3 letter aa codes,
+				2 -> return associative array of both ]
+
+=cut
+
+sub valid_aa{
+   my ($self,$code) = @_;
+
+   if( ! $code ) { 
+       my @codes;
+       foreach my $c ( sort values %ONECODE ) {
+	   push @codes, $c unless ( $c =~ /[BZX\*]/ );
+       }
+       push @codes, qw(B Z X); # so they are in correct order ?
+       return @codes;
+  } 
+   elsif( $code == 1 ) { 
+       my @codes;
+       foreach my $c ( sort keys %ONECODE ) {
+	   push @codes, $c unless ( $c =~ /(Asx|Glx|Xaa|Ter)/ );
+       }
+       push @codes, ('Asx', 'Glx', '?' );
+       return @codes;
+   }
+   elsif( $code == 2 ) { 
+       my %codes = %ONECODE;
+       foreach my $c ( keys %ONECODE ) {
+	   my $aa = $ONECODE{$c};
+	   $codes{$aa} = $c;
+       }
+       return %codes;
+   } else {
+       $self->warn("unrecognized code in ".ref($self)." method valid_aa()");
+       return ();
+   }
 }
 
 1;
-
-
-
-

@@ -1,4 +1,4 @@
-# $Id: Mutation.pm,v 1.2.2.1 2001/03/02 22:47:57 heikki Exp $
+# $Id: Mutation.pm,v 1.5 2001/11/20 02:09:32 lstein Exp $
 #
 # BioPerl module for Bio::LiveSeq::Mutation
 #
@@ -102,9 +102,9 @@ use strict;
 
 # Object preamble - inheritance
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
 
-@ISA = qw( Bio::Root::RootI );
+@ISA = qw( Bio::Root::Root );
 
 sub new {
     my($class,@args) = @_;

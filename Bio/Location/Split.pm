@@ -1,4 +1,4 @@
-# $Id: Split.pm,v 1.10.2.4 2001/11/01 00:59:08 jason Exp $
+# $Id: Split.pm,v 1.20 2002/03/01 16:35:36 lstein Exp $
 #
 # BioPerl module for Bio::Location::SplitLocation
 # Cared for by Jason Stajich <jason@chg.mc.duke.edu>
@@ -73,14 +73,19 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Location::Split;
-use vars qw(@ISA);
+use vars qw(@ISA @CORBALOCATIONOPERATOR);
 use strict;
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
 use Bio::Location::SplitLocationI;
 use Bio::Location::Simple;
 
 @ISA = qw(Bio::Location::Simple Bio::Location::SplitLocationI );
+
+BEGIN { 
+    # as defined by BSANE 0.03
+    @CORBALOCATIONOPERATOR= ('NONE','JOIN', undef, 'ORDER');  
+}
 
 sub new {
     my ($class, @args) = @_;
@@ -90,10 +95,10 @@ sub new {
     my ( $type, $locations ) = $self->_rearrange([qw(SPLITTYPE 
 						     LOCATIONS)], @args);
     if( defined $locations && ref($locations) =~ /array/i ) {
-	$self->add_subLocation(@$locations);
+	$self->add_sub_Location(@$locations);
     }
     $type = lc ($type);    
-    $self->splittype($type || 'join');
+    $self->splittype($type || 'JOIN');
     return $self;
 }
 
@@ -118,7 +123,6 @@ sub new {
 
 sub sub_Location {
     my ($self, $order) = @_;
-
     $order = 0 unless defined $order;
     if( defined($order) && ($order !~ /^-?\d+$/) ) {
 	$self->throw("value $order passed in to sub_Location is $order, an invalid value");
@@ -126,8 +130,7 @@ sub sub_Location {
     $order = 1 if($order > 1);
     $order = -1 if($order < -1);
 
-    my @sublocs = defined $self->{'_sublocations'} ? 
-	          @{$self->{'_sublocations'}} : ();
+    my @sublocs = defined $self->{'_sublocations'} ? @{$self->{'_sublocations'}} : ();
 
     # return the array if no ordering requested
     return @sublocs if( ($order == 0) || (! @sublocs) );
@@ -148,11 +151,16 @@ sub sub_Location {
 		grep { $_->seq_id() eq $seqid; } @sublocs :
 		@sublocs);
     if(@locs) {
-	if($order == 1) {
-	    @locs = sort { $a->start() <=> $b->start() } @locs;
-	} else { # $order == -1
-	    @locs = sort { $b->end() <=> $a->end() } @locs;
-	}
+      if($order == 1) {
+	# Schwartzian transforms for performance boost
+	@locs = map {$_->[0]}
+	  sort { $a->[1] <=> $b->[1] }
+	    map { [$_=>$_->start] } @locs;
+      } else { # $order == -1
+	@locs = map {$_->[0]}
+	  sort { $b->[1] <=> $a->[1] }
+	    map { [$_=>$_->end] } @locs;
+      }
     }
     # push the rest unsorted
     if($seqid) {
@@ -199,8 +207,8 @@ sub add_sub_Location {
 sub splittype {
     my ($self, $value) = @_;
     if( defined $value || ! defined $self->{'_splittype'} ) {
-	$value = 'join' unless( defined $value );
-	$self->{'_splittype'} = lc ($value);
+	$value = 'JOIN' unless( defined $value );
+	$self->{'_splittype'} = uc ($value);
     }
     return $self->{'_splittype'};
 }
@@ -459,11 +467,13 @@ sub to_FTstring {
 	} 
 	push @strs, $str;
     }    
-
-    my $str = sprintf("%s(%s)",$self->splittype, join(",", @strs));
-    if( $self->strand == -1 ) {
-	$str = sprintf("complement(%s)",$str);
-    }
+       
+    my $str = sprintf("%s(%s)",lc $self->splittype, join(",", @strs));
+# for bug #1074 -- still investigating if this is ever needed
+# --jason
+#    if( $self->strand == -1 ) {
+#	$str = sprintf("complement(%s)",$str);
+#    }
     return $str;
 }
 

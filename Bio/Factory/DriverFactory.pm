@@ -1,4 +1,4 @@
-# $Id: DriverFactory.pm,v 1.4.2.1 2001/03/02 22:47:55 heikki Exp $
+# $Id: DriverFactory.pm,v 1.8 2001/12/14 16:40:14 heikki Exp $
 #
 # BioPerl module for Bio::Factory::DriverFactory
 #
@@ -56,15 +56,14 @@ The rest of the documentation details each of the object methods. Internal metho
 =cut
 
 #'
-
 package Bio::Factory::DriverFactory;
 use strict;
-use Bio::Root::RootI;
+use Bio::Root::Root;
 use Bio::Root::IO;
 
 use vars qw(@ISA %DRIVERS);
 
-@ISA = qw(Bio::Root::RootI); 
+@ISA = qw(Bio::Root::Root); 
 
 BEGIN {
     %DRIVERS = ();

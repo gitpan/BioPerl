@@ -15,13 +15,13 @@ use vars qw($tmpfile);
 use Bio::Root::IO;
 END { unlink $tmpfile; }
 
-$tmpfile = Bio::Root::IO->catfile("t","largefastatest.out");
+$tmpfile = Bio::Root::IO->catfile("t","data","largefastatest.out");
 my $seqio = new Bio::SeqIO('-format'=>'largefasta',
-			   '-file'  =>Bio::Root::IO->catfile("t","genomic-seq.fasta"));
+			   '-file'  =>Bio::Root::IO->catfile("t","data","genomic-seq.fasta"));
 ok defined $seqio, 1, 'cannot instantiate Bio::SeqIO::largefasta';
 
 my $pseq = $seqio->next_seq();
-$pseq->moltype('dna');
+$pseq->alphabet('dna');
 $pseq->desc('this is my description');;
 my $plength = $pseq->length();
 my $last_3 = $pseq->subseq($plength-3,$plength);
@@ -30,7 +30,7 @@ ok defined $pseq, 1, 'could not call next_seq';
 ok $plength > 0, 1, "could not call length, seq was empty";
 ok length($pseq->subseq(100, 299)), 200, 'error in subseq'; 
 ok $pseq->trunc(100,199)->length(), 100, 'error in trunc'; 
-ok $pseq->moltype(), 'dna', 'moltype was ' . $pseq->moltype();
+ok $pseq->alphabet(), 'dna', 'alphabet was ' . $pseq->alphabet();
 ok $pseq->display_id(), 'HSBA536C5',"no display id";
 ok $pseq->accession_number(), 'unknown', "no accession";
 ok $pseq->desc, 'this is my description', 'no description';

@@ -2,7 +2,7 @@
 # PACKAGE : Bio::SeqIO::raw
 # AUTHOR  : Ewan Birney <birney@ebi.ac.uk>
 # CREATED : Feb 16 1999
-# REVISION: $Id: raw.pm,v 1.7 2001/01/30 06:49:14 lapp Exp $
+# REVISION: $Id: raw.pm,v 1.8 2001/10/31 13:11:47 avc Exp $
 #            
 # Copyright (c) 1997-9 bioperl, Ewan Birney. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
@@ -130,4 +130,33 @@ sub write_seq {
    return 1;
 }
 
+=head2 write_qual
+
+ Title   : write_qual
+ Usage   : $stream->write_qual($seq)
+ Function: writes the $seq object into the stream
+ Returns : 1 for success and 0 for error
+ Args    : Bio::Seq object
+
+
+=cut
+
+sub write_qual {
+   my ($self,@seq) = @_;
+   my @qual = ();
+   foreach (@seq) {
+     unless ($_->isa("Bio::Seq::SeqWithQuality")){
+        warn("You cannot write raw qualities without supplying a Bio::Seq::SeqWithQuality object! You passed a ", ref($_), "\n");
+        next;
+     } 
+     @qual = @{$_->qual};
+     if(scalar(@qual) == 0) {
+	    $qual[0] = "\n";
+     }
+     
+     $self->_print (join " ", @qual,"\n") or return;
+
+   }
+   return 1;
+}
 1;

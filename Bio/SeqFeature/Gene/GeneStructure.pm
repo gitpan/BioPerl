@@ -1,4 +1,4 @@
-# $Id: GeneStructure.pm,v 1.4.2.1 2001/05/21 05:32:52 lapp Exp $
+# $Id: GeneStructure.pm,v 1.13 2001/10/23 21:05:48 dblock Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::GeneStructure
 #
@@ -69,8 +69,9 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::SeqFeature::Generic;
+use Bio::SeqFeature::Gene::GeneStructureI;
 
-@ISA = qw(Bio::SeqFeature::Generic);
+@ISA = qw(Bio::SeqFeature::Generic Bio::SeqFeature::Gene::GeneStructureI);
 
 
 sub new {
@@ -120,13 +121,14 @@ sub transcripts {
 sub add_transcript {
     my ($self, $fea) = @_;
 
-    if(! $fea->isa('Bio::SeqFeature::Gene::TranscriptI') ) {
+    if(!$fea || ! $fea->isa('Bio::SeqFeature::Gene::TranscriptI') ) {
 	$self->throw("$fea does not implement Bio::SeqFeature::Gene::TranscriptI");
     }
     if(! exists($self->{'_transcripts'})) {
 	$self->{'_transcripts'} = [];
     }
     $self->_expand_region($fea);
+    $fea->parent($self);
     push(@{$self->{'_transcripts'}}, $fea);
 }
 
@@ -148,6 +150,38 @@ sub flush_transcripts {
 	delete($self->{'_transcripts'});
     }
 }
+
+=head2 add_transcript_as_features
+
+ Title   : add_transcript_as_features
+ Usage   : $gene->add_transcript_as_features(@featurelist);
+ Function: take a list of Bio::SeqFeatureI objects and turn them into a
+           Bio::SeqFeature::Gene::Transcript object.  Add that transcript to the gene.
+ Returns : nothing
+ Args    : a list of Bio::SeqFeatureI compliant objects
+
+
+=cut
+
+sub add_transcript_as_features{
+   my ($self,@features) = @_;
+   my $transcript=Bio::SeqFeature::Gene::Transcript->new;
+   foreach my $fea (@features) {
+       
+       if ($fea->primary_tag =~ /utr/i) {           #UTR / utr/ 3' utr / utr5 etc.
+	   $transcript->add_utr($fea);
+       } elsif ($fea->primary_tag =~ /promot/i) {   #allow for spelling differences
+	   $transcript->add_promoter($fea);
+       } elsif ($fea->primary_tag =~ /poly.*A/i) {  #polyA, POLY_A, etc.
+	   $transcript->poly_A_site($fea);
+       } else {                                     #assume the rest are exons
+	   $transcript->add_exon($fea);
+       }
+   }
+   $self->add_transcript($transcript);
+
+}
+
 
 =head2 promoters
 
@@ -357,3 +391,11 @@ sub flush_sub_SeqFeature {
 }
 
 1;
+
+
+
+
+
+
+
+

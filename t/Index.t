@@ -5,7 +5,7 @@ BEGIN {
 	use lib 't';
     }
     use Test;
-    plan tests => 10;
+    plan tests => 12;
 }
 
 use Bio::Root::IO;
@@ -14,38 +14,28 @@ use Bio::Index::SwissPfam;
 use Bio::Index::EMBL;
 use Bio::Index::GenBank;
 use Bio::Index::Swissprot;
+use Bio::DB::InMemoryCache;
+eval {foobar();
+  require Bio::DB::FileCache;	
+};
 use vars qw ($dir);
-use SDBM_File;
 
 ($Bio::Root::IO::FILESPECLOADED && File::Spec->can('cwd') && ($dir = File::Spec->cwd) ) ||
     ($dir = `pwd`) || ($dir = '.');
  
-END { foreach my $f ( qw( Wibbl Wibbl2 Wibbl3 Wibbl4 Wibbl5) ) {
-	if( -e "$f.dir" ) {
-	    unlink("$f.dir");
-	} 
-	if( -e "$f.pag" ) {
-	    unlink("$f.pag");
-	} 
-	if( -e "$f" ) {
-	    unlink("$f");
-	} 
-    }
-}
+END {  unlink qw( Wibbl Wibbl2 Wibbl3 Wibbl4 Wibbl5); }
 
 chomp( $dir );
 {
     my $ind = Bio::Index::Fasta->new(-filename => 'Wibbl', 
 				     -write_flag => 1,
-				     -verbose => 0,
-				     -dbm_package => 'SDBM_File'
-				     );
-    $ind->make_index(Bio::Root::IO->catfile($dir,"t","multifa.seq"));
-    $ind->make_index(Bio::Root::IO->catfile($dir,"t","seqs.fas"));
-    $ind->make_index(Bio::Root::IO->catfile($dir,"t","multi_1.fa"));
+				     -verbose => 0);
+    $ind->make_index(Bio::Root::IO->catfile($dir,"t","data","multifa.seq"));
+    $ind->make_index(Bio::Root::IO->catfile($dir,"t","data","seqs.fas"));
+    $ind->make_index(Bio::Root::IO->catfile($dir,"t","data","multi_1.fa"));
 }
 
-ok ( -e "Wibbl" || -e "Wibbl.dir" );
+ok ( -e "Wibbl" );
 
 {
     my %t_seq = (
@@ -55,9 +45,7 @@ ok ( -e "Wibbl" || -e "Wibbl.dir" );
         'gi|238775|bbs|65126'   => 70,
     );
 
-    my $ind = Bio::Index::Abstract->new(-FILENAME => 'Wibbl', 				     
-	                                -dbm_package => 'SDBM_File'
-					);
+    my $ind = Bio::Index::Abstract->new(-FILENAME => 'Wibbl');
 
     my $ok_3 = 1;
     while (my($name, $length) = each %t_seq) {
@@ -87,40 +75,45 @@ ok ( -e "Wibbl" || -e "Wibbl.dir" );
 }
 
 {
-    my $ind = Bio::Index::SwissPfam->new(-filename=> 'Wibbl2', 
-	                                 -dbm_package => 'SDBM_File',
+    my $ind = Bio::Index::SwissPfam->new(-filename=>'Wibbl2', 
 					 -write_flag=>1);
-    $ind->make_index(Bio::Root::IO->catfile($dir,"t","swisspfam.data"));
-    ok ( -e "Wibbl2" || -e "Wibbl2.dir");
+    $ind->make_index(Bio::Root::IO->catfile($dir,"t","data","swisspfam.data"));
+    ok ( -e "Wibbl2" );
 }
 
 {
     my $ind = Bio::Index::EMBL->new(-filename=>'Wibbl3', 
-    	                            -dbm_package => 'SDBM_File',
 				    -write_flag=>1);
-    $ind->make_index(Bio::Root::IO->catfile($dir,"t","test.embl"));
-    ok ( -e "Wibbl3" || -e "Wibbl3.dir" );
+    $ind->make_index(Bio::Root::IO->catfile($dir,"t","data","test.embl"));
+    ok ( -e "Wibbl3" );
     ok $ind->fetch('AL031232')->length, 4870;
 }
 
 {
     my $ind = Bio::Index::Swissprot->new(-filename=>'Wibbl4', 
 				    -write_flag=>1);
-    $ind->make_index(Bio::Root::IO->catfile($dir,"t","roa1.swiss"));
-    ok ( -e "Wibbl4" || -e "Wibbl4.dir" );
+    $ind->make_index(Bio::Root::IO->catfile($dir,"t","data","roa1.swiss"));
+    ok ( -e "Wibbl4" );
     ok ($ind->fetch('P09651')->display_id(), 'ROA1_HUMAN');
 }
 
+my $gb_ind;
 {
-    my $ind = Bio::Index::GenBank->new(-filename=>'Wibbl5', 
-	                               -dbm_package => 'SDBM_File',
+    $gb_ind = Bio::Index::GenBank->new(-filename=>'Wibbl5', 
 				       -write_flag=>1, 
 				       -verbose => 0);
-    $ind->make_index(Bio::Root::IO->catfile($dir,"t","roa1.genbank"));
-    ok ( -e "Wibbl5" || "Wibbl5.dir" );
-    ok ($ind->fetch('AI129902')->length, 37);
+    $gb_ind->make_index(Bio::Root::IO->catfile($dir,"t","data","roa1.genbank"));
+    ok ( -e "Wibbl5" );
+    ok ($gb_ind->fetch('AI129902')->length, 37);
 }
 
+my $cache = Bio::DB::InMemoryCache->new( -seqdb => $gb_ind );
 
+ok ( $cache->get_Seq_by_id('AI129902') );
 
-
+if (Bio::DB::FileCache->can('new')) {
+  $cache = Bio::DB::FileCache->new($gb_ind);
+  ok ($cache->get_Seq_by_id('AI129902') );
+} else {
+  skip('Bio::DB::FileCache not loaded because one or more of Storable, DB_File or File::Temp not installed',1);
+}

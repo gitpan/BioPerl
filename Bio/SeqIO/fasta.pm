@@ -1,4 +1,4 @@
-# $Id: fasta.pm,v 1.22.2.2 2001/06/16 13:41:41 birney Exp $
+# $Id: fasta.pm,v 1.27 2001/10/22 08:22:53 heikki Exp $
 # BioPerl module for Bio::SeqIO::fasta
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
@@ -87,8 +87,8 @@ sub next_seq {
 
 =head2 next_primary_seq
 
- Title   : next_seq
- Usage   : $seq = $stream->next_seq()
+ Title   : next_primary_seq
+ Usage   : $seq = $stream->next_primary_seq()
  Function: returns the next sequence in the stream
  Returns : Bio::PrimarySeq object
  Args    : NONE
@@ -98,7 +98,7 @@ sub next_seq {
 sub next_primary_seq {
   my( $self, $as_next_seq ) = @_;
   my $seq;
-  my $moltype;
+  my $alphabet;
   local $/ = "\n>";
 
   return unless my $entry = $self->_readline;
@@ -107,23 +107,23 @@ sub next_primary_seq {
     return unless $entry = $self->_readline;
   }
 
-  my ($top,$sequence) = $entry =~ /^(.+?)\n([^>]*)/s
-    or $self->throw("Can't parse entry [$entry]");
+  my ($top,$sequence) = $entry =~ /^>?(.+?)\n([^>]*)/s
+    or $self->throw("Can't parse fasta entry");
   my ($id,$fulldesc) = $top =~ /^\s*(\S+)\s*(.*)/
     or $self->throw("Can't parse fasta header");
-  $id =~ s/^>//;
+  if ($id eq '') {$id=$fulldesc;} # FIX incase no space between > and name \AE
   $sequence =~ s/\s//g; # Remove whitespace
 
   # for empty sequences we need to know the mol.type
-  $moltype = $self->moltype();
+  $alphabet = $self->alphabet();
   if(length($sequence) == 0) {
-      if(! defined($moltype)) {
+      if(! defined($alphabet)) {
 	  # let's default to dna
-	  $moltype = "dna";
+	  $alphabet = "dna";
       }
   } else {
       # we don't need it really, so disable
-      $moltype = undef;
+      $alphabet = undef;
   }
 
   # create the seq object
@@ -133,18 +133,18 @@ sub next_primary_seq {
 		         -id         => $id,
 		         -primary_id => $id,
 		         -desc       => $fulldesc,
-			 -moltype    => $moltype
+			 -alphabet    => $alphabet
 		         );
   } else {
     $seq = Bio::PrimarySeq->new(-seq        => $sequence,
 		                -id         => $id,
 		                -primary_id => $id,
 		                -desc       => $fulldesc,
-				-moltype    => $moltype
+				-alphabet    => $alphabet
 		                );
   }
   # if there wasn't one before, set the guessed type
-  $self->moltype($seq->moltype());
+  $self->alphabet($seq->alphabet());
   
   return $seq;
 }

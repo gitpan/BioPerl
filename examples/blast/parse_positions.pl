@@ -3,9 +3,9 @@
 #---------------------------------------------------------------------------
 # PROGRAM : parse_positions.pl
 # PURPOSE : To extract identical + conserved positions for a hit.
-# AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
+# AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 12 Jun 1998
-# REVISION: $Id: parse_positions.pl,v 1.2 1999/02/27 12:28:06 sac Exp $
+# REVISION: $Id: parse_positions.pl,v 1.3 2002/01/11 08:05:38 sac Exp $
 # WEBSITE : http://bio.perl.org/Projects/Blast/
 # USAGE   : parse.pl -h
 # EXAMPLES: parse.pl -eg

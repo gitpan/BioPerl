@@ -74,7 +74,8 @@ Email birney@sanger.ac.uk
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -83,22 +84,15 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::SeqI;
+use strict;
+
 use vars qw(@ISA);
 use Bio::PrimarySeqI;
-use strict;
 use Carp;
 
-# Object preamble - inheriets from Bio::Root::Object
+# Object preamble - inheriets from Bio::PrimarySeqI
 
 @ISA = qw(Bio::PrimarySeqI);
-
-sub _abstractDeath {
-  my $self = shift;
-  my $package = ref $self;
-  my $caller = (caller)[1];
-  
-  confess "Abstract method '$caller' defined in interface Bio::SeqI not implemented by pacakge $package. Not your fault - author of $package should be blamed!";
-}
 
 =head2 top_SeqFeatures
 
@@ -114,9 +108,7 @@ sub _abstractDeath {
 
 sub top_SeqFeatures{
    my ($self) = @_;
-
-   $self->_abstractDeath();
-
+   $self->throw_not_implemented;
 }
 
 
@@ -133,9 +125,7 @@ sub top_SeqFeatures{
 
 sub all_SeqFeatures{
    my ($self) = @_;
-   
-   $self->_abstractDeath();
-
+   $self->throw_not_implemented();
 }
 
 =head2 seq
@@ -152,9 +142,7 @@ sub all_SeqFeatures{
 
 sub seq{
    my ($self) = @_;
-
-   $self->_abstractDeath();
-
+   $self->throw_not_implemented();
 }
 
 =head2 write_GFF
@@ -194,24 +182,7 @@ sub write_GFF{
 
 sub annotation {
    my ($obj) = @_;
-   $obj->_abstractDeath();
-}
-
-=head2 primary_seq
-
- Title   : primary_seq
- Usage   : $obj->primary_seq($newval)
- Function: 
- Example : 
- Returns : value of primary_seq
- Args    : newvalue (optional)
-
-
-=cut
-
-sub primary_seq {
-    my ($obj) = @_;
-    $obj->_abstractDeath();
+   $obj->throw_not_implemented();
 }
 
 =head2 feature_count
@@ -228,7 +199,7 @@ sub primary_seq {
 
 sub feature_count {
     my ($obj) = @_;
-    $obj->_abstractDeath();
+    $obj->throw_not_implemented();
 }
 
 =head2 species
@@ -245,7 +216,24 @@ sub feature_count {
 
 sub species {
     my ($self) = @_;
-    $self->_abstractDeath();
+    $self->throw_not_implemented();
+}
+
+=head2 primary_seq
+
+ Title   : primary_seq
+ Usage   : $obj->primary_seq($newval)
+ Function: 
+ Example : 
+ Returns : value of primary_seq
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub primary_seq {
+    my ($self) = @_;
+    $self->throw_not_implemented;
 }
 
 1;

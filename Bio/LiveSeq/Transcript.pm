@@ -1,4 +1,4 @@
-# $Id: Transcript.pm,v 1.9.2.6 2001/06/22 10:40:02 heikki Exp $
+# $Id: Transcript.pm,v 1.16 2001/12/10 16:10:20 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::Transcript
 #
@@ -44,7 +44,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::Transcript;
-$version=5.2;
+$VERSION=5.2;
 
 # Version history:
 # Tue Mar 21 14:38:02 GMT 2000 v 1.0 begun
@@ -81,9 +81,9 @@ $version=5.2;
 
 use strict;
 # use Carp qw(carp cluck);
-use vars qw($version @ISA);
-use Bio::LiveSeq::SeqI; # uses SeqI, inherits from it
-use Bio::LiveSeq::Exon; # uses Exon to create new exon in case of deletion
+use vars qw($VERSION @ISA);
+use Bio::LiveSeq::SeqI 3.2; # uses SeqI, inherits from it
+use Bio::LiveSeq::Exon 1.0; # uses Exon to create new exon in case of deletion
 @ISA=qw(Bio::LiveSeq::SeqI);
 
 =head2 new
@@ -120,6 +120,7 @@ sub new {
   #my $end = $lastexon->end;
   my $strand = $firstexon->strand;
   my $seq = $firstexon->{'seq'};
+  $obj->alphabet('rna');
 
   unless (_checkexons(\@exons)) {
     $obj->warn("$class not initialised because of problems in the exon structure");
@@ -195,7 +196,7 @@ sub downstream_seq {
       $self->throw("No sense in asking less than 1 downstream nucleotides!");
     }
   } else {
-    unless ($self->{'seq'}->moltype eq 'rna') { # if rna retrieve until the end
+    unless ($self->{'seq'}->alphabet eq 'rna') { # if rna retrieve until the end
       #$str=$DNAobj->labelsubseq($self->end,undef,undef,"unsecuremoderequested");
       #return(substr($str,1)); # delete first nucleotide that is the last of Transcript
       if ($self->gene) { # if there is Gene object attached fetch relevant info
@@ -249,7 +250,7 @@ sub upstream_seq {
       $self->throw("No sense in asking less than 1 upstream nucleotides!");
     }
   } else {
-    unless ($self->{'seq'}->moltype eq 'rna') { # if rna retrieve from the start
+    unless ($self->{'seq'}->alphabet eq 'rna') { # if rna retrieve from the start
       if ($self->gene) { # if there is Gene object attached fetch relevant info
 	my $str=$self->{'seq'}->labelsubseq($self->gene->maxtranscript->start,undef,$self->start); # retrieve from start of maxtranscript to start of this Transcript
 	chop $str; # delete last nucleotide that is the A of starting ATG

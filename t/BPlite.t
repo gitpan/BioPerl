@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: BPlite.t,v 1.10 2001/02/26 20:45:37 lapp Exp $
+## $Id: BPlite.t,v 1.20 2002/01/08 09:45:25 birney Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -15,7 +15,7 @@ BEGIN {
 	use lib 't';
     }
     use Test;
-    plan tests => 45;
+    plan tests => 97;
 }
 
 use Bio::Tools::BPlite;
@@ -33,7 +33,7 @@ my $seq =
     "DEATPTLTNQSPTLTLQSTNTHTQSSSSSSDGGLFRSRPAHSLPPGEDGRVEPYVDFAEFY".
     "RLWSVDHGEQSVVTAP";
 
-open FH, Bio::Root::IO->catfile("t","blast.report");
+open FH, Bio::Root::IO->catfile("t","data","blast.report");
 my $report = Bio::Tools::BPlite->new(-fh=>\*FH);
 ok $report->isa('Bio::Tools::BPlite');
 my $sbjct = $report->nextSbjct;
@@ -59,13 +59,35 @@ ok $hsp->query->end, 504;
 ok $hsp->query->seqname, $report->query;
 ok $hsp->query->primary_tag, "similarity";
 ok $hsp->query->source_tag, "BLAST";
-ok $hsp->subject->length, 1512;
+ok $hsp->hit->length, 1512;
+ok $hsp->gaps, 0;
+
+$sbjct = $report->nextSbjct;
+ok defined $sbjct;
+$hsp = $sbjct->nextHSP;
+ok defined $hsp;
+
+ok $hsp->bits, 57.8;
+ok $hsp->score, 137;
+ok int($hsp->percent), 24;
+ok ( $hsp->P < 0.00000041 && $hsp->P > 0.00000039);
+ok $hsp->match, 64;
+ok $hsp->positive, 112;
+ok $hsp->hsplength, 261;
+ok $hsp->query->start, 64;
+ok $hsp->query->end, 324;
+ok $hsp->query->length, 261;
+ok $hsp->query->seqname, $report->query;
+ok $hsp->hit->start, 182;
+ok $hsp->hit->end, 844;
+ok $hsp->hit->length, 663;
+ok $hsp->gaps, 2;
 
 close FH;
 
 # Verify that BPlite is properly parsing PHIBLAST reports as well
 
-my $report2 = Bio::Tools::BPlite->new(-file=>Bio::Root::IO->catfile("t","phi.out"));
+my $report2 = Bio::Tools::BPlite->new(-file=>Bio::Root::IO->catfile("t","data","phi.out"));
 
 ok $report2->pattern, "P-E-E-Q";
 ok $report2->query_pattern_location->[0], 23;
@@ -73,7 +95,7 @@ ok $report2->query_pattern_location->[1], 120;
 my $sbjct2 = $report2->nextSbjct;
 ok $sbjct2->name =~ /4988/;
 my $hsp2 = $sbjct2->nextHSP;
-ok $hsp2->subject->end, 343;
+ok $hsp2->hit->end, 343;
 
 close FH;
 
@@ -82,13 +104,41 @@ close FH;
 
 # tests 29-38 are just counting to see that we get the expected number 
 # of features
-my $parser = new Bio::Tools::BPlite(-file => Bio::Root::IO->catfile("t","blast.report"));
+my $parser = new Bio::Tools::BPlite(-file => Bio::Root::IO->catfile("t","data","blast.report"));
 while( $parser->next_feature ) {
     ok(1);
 }
 
-$parser = new Bio::Tools::BPlite(-file => Bio::Root::IO->catfile("t","cysprot.tblastn"));
+$parser = new Bio::Tools::BPlite(-file => Bio::Root::IO->catfile("t","data","cysprot.tblastn"));
 while( $parser->next_feature ) {
     ok(1);
 }
 
+$parser = new Bio::Tools::BPlite(-file => Bio::Root::IO->catfile("t",
+								 "data",
+								 "short.blx"));
+ok($parser);
+my $count = 0;
+while( $parser->next_feature ) {
+    ok(1);    
+}
+
+
+$parser = new Bio::Tools::BPlite(-verbose => 1,
+				 -file => Bio::Root::IO->catfile("t",
+								 "data",
+								 "multiseq.bls"));
+ok($parser);
+
+while( my $sbjct = $parser->nextSbjct ) {
+    while( my $hsp = $sbjct->nextHsp ) {
+	# some oks would be here, except that this currently does not
+	# run because multi seq reports are not parsed properly.
+    }
+}
+
+$parser = new Bio::Tools::BPlite(-file => Bio::Root::IO->catfile("t",
+								 "data",
+								 "AE003528_ecoli.bls"));
+ok $parser;
+ok $parser->qlength, 283821;

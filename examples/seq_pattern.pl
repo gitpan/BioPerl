@@ -5,9 +5,9 @@
 # PURPOSE : This is a simple driver used to test the Bio::Tools::SeqPattern.pm
 #           module for working with sequence patterns (regexps that recognize
 #           nucleotide or peptide sequences).
-# AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
+# AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 28 Aug 1997
-# REVISION: $Id: seq_pattern.pl,v 1.3 1999/10/06 18:56:49 birney Exp $
+# REVISION: $Id: seq_pattern.pl,v 1.4 2002/01/11 08:05:38 sac Exp $
 # USAGE   : seq_pattern.pl -h
 # COMMENTS: 
 #    This is a driver script for the Bio::Tools::SeqPattern.pm Bioperl module

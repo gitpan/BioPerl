@@ -1,4 +1,4 @@
-# $Id: DBLinkContainerI.pm,v 1.5.2.1 2001/03/02 17:32:14 heikki Exp $
+# $Id: DBLinkContainerI.pm,v 1.7 2001/11/24 21:49:23 jason Exp $
 #
 # BioPerl module for Bio::DBLinkContainerI
 #
@@ -80,7 +80,9 @@ use vars qw(@ISA);
 use strict;
 
 use Carp;
+use Bio::Root::RootI;
 
+@ISA = qw(Bio::Root::RootI);
 
 =head2 each_DBLink
 
@@ -96,21 +98,9 @@ use Carp;
 
 sub each_DBLink{
    my ($self) = @_;
-
-   $self->_abstractDeath();
-
+   my $class = ref($self) || $self;
+   $self->throw("Class $class did not define method 'each_DBLink' for interface DBLinkContainerI");
 }
-
-
-sub _abstractDeath {
-  my $self = shift;
-  my $package = ref $self;
-  my $caller = (caller)[1];
-  
-  confess "Abstract method '$caller' defined in interface 
-          Bio::DBLinkContainerI not implemented by package $package";
-}
-
 
 1;
 

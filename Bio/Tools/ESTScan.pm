@@ -1,4 +1,4 @@
-# $Id: ESTScan.pm,v 1.6 2001/02/26 11:28:47 lapp Exp $
+# $Id: ESTScan.pm,v 1.8 2001/11/20 02:09:40 lstein Exp $
 #
 # BioPerl module for Bio::Tools::ESTScan
 #
@@ -83,7 +83,7 @@ use vars qw(@ISA);
 use strict;
 use Symbol;
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
 use Bio::Tools::AnalysisResult;
 use Bio::Tools::Prediction::Exon;
 
@@ -211,7 +211,7 @@ sub next_prediction {
 	$cds = Bio::PrimarySeq->new('-seq' => $cds,
 				    '-display_id' => $seq->display_id(),
 				    '-desc' => $seq->desc(),
-				    '-moltype' => "dna");
+				    '-alphabet' => "dna");
 	$gene->predicted_cds($cds);
 	$predobj->predicted_cds($cds);
 	if($gene->strand() == -1) {
@@ -267,7 +267,7 @@ sub next_prediction {
 	    $cds = Bio::PrimarySeq->new('-seq' => $cds,
 					'-display_id' => $seq->display_id(),
 					'-desc' => $seq->desc(),
-					'-moltype' => "dna");
+					'-alphabet' => "dna");
 	    # only store the first one in the overall prediction
 	    $gene->predicted_cds($cds) unless $gene->predicted_cds();
 	    $predobj->predicted_cds($cds);

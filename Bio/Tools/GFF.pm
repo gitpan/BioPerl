@@ -1,4 +1,4 @@
-# $Id: GFF.pm,v 1.8.2.1 2001/03/30 05:21:18 lapp Exp $
+# $Id: GFF.pm,v 1.15 2002/03/05 17:47:30 mwilkinson Exp $
 #
 # BioPerl module for Bio::Tools::GFF
 #
@@ -19,7 +19,7 @@ Bio::Tools::GFF - A Bio::SeqAnalysisParserI compliant GFF format parser
     use Bio::Tool::GFF;
 
     # specify input via -fh or -file
-    my $gffio = Bio::Tools::GFF(-fh => \*STDIN, -gff_version => 2);
+    my $gffio = Bio::Tools::GFF->new(-fh => \*STDIN, -gff_version => 2);
     my $feature;
     # loop over the input stream
     while($feature = $gffio->next_feature()) {
@@ -87,7 +87,7 @@ use Bio::Root::IO;
 use Bio::SeqAnalysisParserI;
 use Bio::SeqFeature::Generic;
 
-@ISA = qw(Bio::Root::RootI Bio::SeqAnalysisParserI Bio::Root::IO);
+@ISA = qw(Bio::Root::Root Bio::SeqAnalysisParserI Bio::Root::IO);
 
 =head2 new
 
@@ -194,8 +194,8 @@ sub from_gff_string {
 
 sub _from_gff1_string {
    my ($gff, $feat, $string) = @_;
-
-   my ($seqname, $source, $primary, $start, $end, $score, $strand, $frame, @group) = split(/\s+/, $string);
+   chomp $string;
+   my ($seqname, $source, $primary, $start, $end, $score, $strand, $frame, @group) = split(/\t/, $string);
 
    if ( !defined $frame ) {
        $feat->throw("[$string] does not look like GFF to me");
@@ -295,8 +295,8 @@ sub _from_gff2_string {
 
        my @values;								
 
-       while ($values =~ s/"(.*?)"//){          # free text is quoted, so match each free-text block
-       		if ($1){push @values, $1};          # and push it on to the list of values (tags may have more than one value...)
+       while ($values =~ s/"(.*?)"//){          # free text is quoted, so match each free-text block and remove it from the $values string
+       		push @values, $1;          # and push it on to the list of values (tags may have more than one value... and the value may be undef)
        }
 
        my @othervals = split /\s+/, $values;  # and what is left over should be space-separated non-free-text values
@@ -488,6 +488,7 @@ sub _gff2_string{
          			$value =~ s/\t/\\t/g;          # substitute tab and newline characters
          			$value =~ s/\n/\\n/g;          # to their UNIX equivalents
          			$value = '"' . $value . '" '}  # if the value contains anything other than valid tag/value characters, then quote it
+				$value = "\"\"" unless $value;  # if it is completely empty, then just make empty double quotes
          		$valuestr .=  $value . " ";								# with a trailing space in case there are multiple values
          															# for this tag (allowed in GFF2 and .ace format)		
             }

@@ -1,56 +1,72 @@
-
+# -*-Perl-*-
+## Bioperl Test Harness Script for Modules
+## $Id: StandAloneBlast.t,v 1.16.2.5 2002/03/15 18:41:25 jason Exp $
+#
 
 use strict;
-use vars qw($NUMTESTS);
+use constant NUMTESTS => 10;
 BEGIN { 
     eval { require Test; };
     if( $@ ) {
 	use lib 't';
     }
     use Test;
-
-    $NUMTESTS = 8; 
-    plan tests => 8; 
+    plan tests => NUMTESTS; 
 }
 
-END { unlink('blastreport.out') }
+END { 
+    foreach( $Test::ntest..NUMTESTS) {
+	skip('Blast or env variables not installed correctly',1);
+    }
+    unlink('blastreport.out');
+}
 
-use Bio::Tools::Blast;
 use Bio::Tools::BPlite;
 use Bio::Tools::Run::StandAloneBlast;
 use Bio::SeqIO;
 use Bio::AlignIO;
 use Bio::Seq;
 use Bio::Root::IO;
+use Bio::SearchIO;
 
 ok(1);
-
+my $verbose = -1;
 my ($blast_report, $hsp, @testresults);
-
 
 my $nt_database = 'ecoli.nt';
 my $amino_database = 'swissprot';
 
 my @params = ('program' => 'blastn', 'database' => $nt_database , 
-	      '_READMETHOD' => 'Blast', 'output' => 'blastreport.out');
-my  $factory = Bio::Tools::Run::StandAloneBlast->new(@params);
+	      '_READMETHOD' => 'SearchIO', 
+	      'output' => 'blastreport.out');
+my  $factory = Bio::Tools::Run::StandAloneBlast->new('-verbose' => $verbose,
+						     @params);
 
 ok $factory;
 
-my $inputfilename = Bio::Root::IO->catfile("t","test.txt");
+my $inputfilename = Bio::Root::IO->catfile("t","data","test.txt");
 my $program = 'blastn';
 
-
 my $blast_present = Bio::Tools::Run::StandAloneBlast->exists_blast();
-unless ($blast_present) {
-    warn "blast program not found. Skipping tests $Test::ntest to $NUMTESTS\n";
-    foreach ($Test::ntest..$NUMTESTS) {
-	skip(1,1);
-    }
+if( ! $blast_present ) {
+    skip('Blast not installed',1);
+    exit;
+} else { 
+    ok($blast_present);
+}
+if( ! defined $Bio::Tools::Run::StandAloneBlast::DATADIR ) {
+    print STDERR "must have BLASTDIR and BLASTDB or BLASTDATADIR env variable set\n";
+    exit();
+}
+my $nt_database_file = Bio::Root::IO->catfile($Bio::Tools::Run::StandAloneBlast::DATADIR, $nt_database);
+ok($nt_database_file, qr/$nt_database/);
+my $amino_database_file = Bio::Root::IO->catfile($Bio::Tools::Run::StandAloneBlast::DATADIR, $amino_database);
+my $file_present = -e $nt_database_file;
+my $file_present2 = -e $amino_database_file;
+unless ($blast_present && $file_present && $file_present2) {
+    warn "blast program or databases [$nt_database,$amino_database] not found. Skipping rest of tests\n";
     exit 0;
 }
-
-
 
 if ($nt_database eq 'ecoli.nt') {	
 	$testresults[3] = '$blast_report->num_hits == 1' ;
@@ -61,7 +77,7 @@ if ($nt_database eq 'ecoli.nt') {
 	$testresults[4]  =  '$hsp->score';
 	$testresults[5]  =  '$hsp->score';
 }
-if ($nt_database eq 'swissprot') {	
+if ($amino_database eq 'swissprot') {	
 	$testresults[8]  =  '$blast_report->number_of_iterations == 2';
 } else {
 	$testresults[8] =  '$blast_report->number_of_iterations';
@@ -72,7 +88,7 @@ ok $testresults[3];
 
 $factory->_READMETHOD('BPlite');    # Note required leading underscore in _READMETHOD
 
-my $str = Bio::SeqIO->new(-file=>Bio::Root::IO->catfile("t","dna2.fa") , '-format' => 'Fasta', );
+my $str = Bio::SeqIO->new(-file=>Bio::Root::IO->catfile("t","data","dna2.fa") , '-format' => 'Fasta', );
 my $seq1 = $str->next_seq();
 my $seq2 = $str->next_seq();
 
@@ -90,15 +106,17 @@ my $BPlite_report2 = $factory->blastall(\@seq_array);
  $hsp = $sbjct->nextHSP;
 ok $testresults[5];
 
-@params = ('program' => 'blastp');
+@params = ('-verbose' => $verbose,
+	   'program' => 'blastp'); # This used to be blastp but atleast on my implementation it should be T
 $factory = Bio::Tools::Run::StandAloneBlast->new(@params);
 
-$str = Bio::SeqIO->new(-file=>Bio::Root::IO->catfile("t","amino.fa") , '-format' => 'Fasta', );
+$str = Bio::SeqIO->new(-file=>Bio::Root::IO->catfile("t","data","amino.fa") , '-format' => 'Fasta', );
 my $seq3 = $str->next_seq();
 my $seq4 = $str->next_seq();
 
 my $bl2seq_report = $factory->bl2seq($seq3, $seq4);
-ok $bl2seq_report->subject->start, 167, " failed creating or parsing bl2seq report object";
+$hsp = $bl2seq_report->next_feature;
+ok $hsp->hit()->start, 167, " failed creating or parsing bl2seq report object";
 
 
 @params = ('database' => $amino_database);

@@ -1,9 +1,9 @@
 #--------------------------------------------------------
 # PACKAGE : Person.pm
 # PURPOSE : Dummy object for testing Bio::Root::Vector.pm.
-# AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
-# CREATED : 4 May 1997 (sac@genome.stanford.edu)
-# REVISION: $Id: Person.pm,v 1.1.1.1 1998/12/11 15:24:35 birney Exp $
+# AUTHOR  : Steve Chervitz (sac@bioperl.org)
+# CREATED : 4 May 1997 (sac@bioperl.org)
+# REVISION: $Id: Person.pm,v 1.2 2002/01/11 08:05:40 sac Exp $
 #--------------------------------------------------------
 
 package Person;

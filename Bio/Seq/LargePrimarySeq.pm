@@ -1,4 +1,4 @@
-# $Id: LargePrimarySeq.pm,v 1.13.2.1 2001/03/02 22:48:00 heikki Exp $
+# $Id: LargePrimarySeq.pm,v 1.23 2001/11/20 02:09:36 lstein Exp $
 #
 # BioPerl module for Bio::Seq::LargePrimarySeq
 #
@@ -15,7 +15,7 @@
 
 Bio::Seq::LargePrimarySeq - PrimarySeq object that stores sequence as
 files in the tempdir (as found by File::Temp) or the default method in
-Bio::Root::RootI
+Bio::Root::Root
 
 =head1 SYNOPSIS
 
@@ -92,7 +92,7 @@ sub new {
 	delete $params{'-SEQ'};
     }
     my $self = $class->SUPER::new(%params);
-
+    $self->_initialize_io(%params);
     my $tempdir = $self->tempdir( CLEANUP => 1);
     my ($tfh,$file) = $self->tempfile( DIR => $tempdir );
 
@@ -152,16 +152,58 @@ sub seq {
 
 sub subseq{
    my ($self,$start,$end) = @_;
-
-   if( $start < 1 || $end > $self->length ) {
-       $self->throw("Attempting to get a subseq out of range $start:$end vs ",$self->length);
+   my $string;
+   my $fh = $self->_fh();
+   
+   if( ref($start) && $start->isa('Bio::LocationI') ) {
+       my $loc = $start;
+       if( $loc->length == 0 ) { 
+	   $self->warn("Expect location lengths to be > 0");
+	   return '';
+       } elsif( $loc->end < $loc->start ) { 
+	   # what about circular seqs
+	   $self->warn("Expect location start to come before location end");
+       }
+       my $seq = '';
+       if( $loc->isa('Bio::Location::SplitLocationI') ) {
+	   foreach my $subloc ( $loc->sub_Location ) {
+	       if(! seek($fh,$subloc->start() - 1,0)) {
+		   $self->throw("Unable to seek on file $start:$end $!");
+	       }
+	       my $ret = read($fh, $string, $subloc->length());
+	       if( !defined $ret ) {
+		   $self->throw("Unable to read $start:$end $!");
+	       }
+	       if( $subloc->strand < 0 ) { 
+		   $string = Bio::PrimarySeq->new(-seq => $string)->revcom()->seq();
+	       }
+	       $seq .= $string;		   
+	   }
+       } else { 
+	   if(! seek($fh,$loc->start()-1,0)) {
+	       $self->throw("Unable to seek on file ".$loc->start.":".
+			    $loc->end ." $!");
+	   }
+	   my $ret = read($fh, $string, $loc->length());
+	   if( !defined $ret ) {
+	       $self->throw("Unable to read ".$loc->start.":".
+			    $loc->end ." $!");
+	   }
+	   $seq = $string;
+       }
+       if( $loc->strand < 0 ) { 
+	   $seq = Bio::PrimarySeq->new(-seq => $seq)->revcom()->seq();
+       }
+       return $seq;
+   }
+   if( $start <= 0 || $end > $self->length ) {
+       $self->throw("Attempting to get a subseq out of range $start:$end vs ".
+		    $self->length);
    }
    if( $end < $start ) {
        $self->throw("Attempting to subseq with end ($end) less than start ($start). To revcom use the revcom function with trunc");
    }
    
-   my $string;
-   my $fh = $self->_fh();
    if(! seek($fh,$start-1,0)) {
        $self->throw("Unable to seek on file $start:$end $!");
    }
@@ -169,20 +211,18 @@ sub subseq{
    if( !defined $ret ) {
        $self->throw("Unable to read $start:$end $!");
    }
-
-
    return $string;
 }
 
 =head2 add_sequence_as_string
 
  Title   : add_sequence_as_string
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+ Usage   : $seq->add_sequence_as_string("CATGAT");
+ Function: Appends additional residues to an existing LargePrimarySeq object.  
+           This allows one to build up a large sequence without storing
+           entire object in memory.
+ Returns : Current length of sequence
+ Args    : string to append
 
 =cut
 
@@ -218,12 +258,33 @@ sub _filename{
     return $obj->{'_filename'};
 
 }
+=head2 alphabet
+
+ Title   : alphabet
+ Usage   : $obj->alphabet($newval)
+ Function: 
+ Example : 
+ Returns : value of alphabet
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub alphabet{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->SUPER::alphabet($value);
+    }
+    return $self->SUPER::alphabet() || 'dna';
+
+}
 
 sub DESTROY {
     my $self = shift;
     my $fh = $self->_fh();
     close($fh) if( defined $fh );
-    unlink $self->_filename;
+    # this should be handled by Tempfile removal, but we'll unlink anyways.
+    unlink $self->_filename();
     $self->SUPER::DESTROY();
 }
 

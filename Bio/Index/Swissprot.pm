@@ -1,6 +1,6 @@
 
 #
-# $Id: Swissprot.pm,v 1.5.2.2 2001/06/21 15:36:01 heikki Exp $
+# $Id: Swissprot.pm,v 1.9 2001/12/14 16:40:14 heikki Exp $
 #
 # BioPerl module for Bio::Index::Abstract
 #
@@ -79,7 +79,8 @@ Email - birney@sanger.ac.uk
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. 
+Internal methods are usually preceded with a _
 
 =cut
 
@@ -89,7 +90,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::Index::Swissprot;
 
-use vars qw($version @ISA);
+use vars qw($VERSION @ISA);
 use strict;
 
 use Bio::Index::AbstractSeq;
@@ -107,11 +108,11 @@ sub _type_stamp {
 #
 
 BEGIN {
-    $version = 0.1;
+    $VERSION = 0.1;
 }
 
 sub _version {
-    return $version;
+    return $VERSION;
 }
 
 =head2 _index_file

@@ -1,8 +1,8 @@
 #-----------------------------------------------------------------------------
 # PACKAGE : Bio::Root::Object.pm
-# AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
+# AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 23 July 1996
-# REVISION: $Id: Object.pm,v 1.13.2.4 2001/11/09 13:43:41 avc Exp $
+# REVISION: $Id: Object.pm,v 1.22 2002/02/20 21:31:46 bosborne Exp $
 # STATUS  : Alpha
 #            
 # For documentation, run this module through pod2html 
@@ -10,7 +10,7 @@
 #
 # MODIFICATION NOTES: See bottom of file.
 #
-# Copyright (c) 1996-2000 Steve A. Chervitz. All Rights Reserved.
+# Copyright (c) 1996-2000 Steve Chervitz. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
 #           modify it under the same terms as Perl itself.
 #           Retain this notice and note any modifications made.
@@ -21,7 +21,7 @@ use strict;
 
 require 5.002;
 use Bio::Root::Global qw(:devel $AUTHORITY $CGI);
-use Bio::Root::RootI;
+use Bio::Root::Root;
 
 use Exporter ();
 
@@ -29,20 +29,20 @@ use Exporter ();
 #*AUTOLOAD = \&AutoLoader::AUTOLOAD;
 
 use vars qw(@EXPORT_OK %EXPORT_TAGS);
-@EXPORT_OK = qw($version &find_object &stack_trace &containment &_rearrange);  
+@EXPORT_OK = qw($VERSION &find_object &stack_trace &containment &_rearrange);  
 %EXPORT_TAGS = ( std => [qw(&stack_trace &containment)] );
 
-use vars qw($ID $version %Objects_created $Revision @ISA);
+use vars qw($ID $VERSION %Objects_created $Revision @ISA);
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::Root::Root);
 
 
 # %Objects_created can be used for tracking all objects created.
 # See _initialize() for details.
 
 $ID       = 'Bio::Root::Object';
-$version  = 0.041;
-$Revision = '$Id: Object.pm,v 1.13.2.4 2001/11/09 13:43:41 avc Exp $';  #'
+$VERSION  = 0.041;
+$Revision = '$Id: Object.pm,v 1.22 2002/02/20 21:31:46 bosborne Exp $';  #'
 
 ### POD Documentation:
 
@@ -52,10 +52,7 @@ Bio::Root::Object - A core Perl 5 object.
 
 =head1 SYNOPSIS
 
-B<Use of this module is deprecated. Wherever possible try to switch to
-Bio::Root::RootI as the root of your inheritance tree. Using this module as
-your root of inheritance will trigger a warning at object instantiation.
-This module is no longer being maintained and will eventually disappear.>
+Use this module as the root of your inheritance tree.
 
 =head2 Object Creation
 
@@ -67,22 +64,12 @@ This module is no longer being maintained and will eventually disappear.>
 			         -make    => 'full');
 
 
-See the L<new>() method for a complete description of parameters.
-See also L<USAGE>.
-
-
-=head1 INSTALLATION
-
-This module is included with the central Bioperl distribution:
-
-   http://bio.perl.org/Core/Latest
-   ftp://bio.perl.org/pub/DIST
-
-Follow the installation instructions included in the README file.
+See the L<new()|new> method for a complete description of parameters.
+See also L<the USAGE section | USAGE>.
 
 =head1 DESCRIPTION
 
-B<Bio::Root::Object.pm> attempts to encapsulate the "core" Perl5
+B<Bio::Root::Object> attempts to encapsulate the "core" Perl5
 object: What are the key data and behaviors ALL (or at least most) Perl5
 objects should have?
 
@@ -95,17 +82,18 @@ B<Bio::Root::Object.pm>. However, when generating lots of different types
 of potentially complex objects which should all conform to a set of
 basic expectations, this module may be handy.
 
-At the very least, this module saves you from re-writing the L<new>()
+At the very least, this module saves you from re-writing the L<new()|new>
 method for each module you develop. It also permits consistent and
 robust handling of C<-tag =E<gt> value> method arguments via the
-L<_rearrange>() method and provides a object-oriented way handle
-exceptions and warnings via the L<throw>() and L<warn>() methods. 
-See the L<APPENDIX> for some other handy methods.
+L<Bio::Root::RootI::_rearrange()|Bio::Root::RootI> method and provides a
+object-oriented way handle exceptions and warnings via the L<Bio::Root::Root::throw()|Bio::Root::Root> and L<Bio::Root::Root::warn()|Bio::Root::Root> methods.
+
+See L<the APPENDIX section | APPENDIX> for some other handy methods.
 
 =head2 Fault-Tolerant Objects
 
 A major motivation for this module was to promote the creation of robust,
-fault-tolerant Perl5 objects. The L<throw>() method relies on Perl's built-in 
+fault-tolerant Perl5 objects. The L<Bio::Root::Root::throw()|Bio::Root::Root> method relies on Perl's built-in 
 C<eval{}/die> exception mechanism to generate fatal exceptions.
 The data comprising an exception is managed by the B<Bio::Root::Err.pm> 
 module, which essentially allows the data thrown by a C<die()> event to be
@@ -136,7 +124,7 @@ arises.
 
 =back
 
-These goals may at times be at odds and I am not claiming 
+These goals may at times be at odds and we are not claiming 
 to have achieved the perfect balance. Ultimately, we want self-
 sufficient object-oriented systems able to deal with their own errors. 
 This area should improve as the module, and Perl, evolve. 
@@ -166,8 +154,8 @@ crashing the script and attempt to recover gracefully:
     $obj = eval { new Foo(@data) };  # ending semicolon required.
     if($@) { 
         print STDERR "\nTrouble creating Foo object: $@\n";
-        recover_gracefully($@); 
-    }    
+        recover_gracefully($@);
+    }
 
 A common strategy when generating lots of objects is to collect
 data about which objects failed to build but still permit
@@ -209,24 +197,23 @@ Bio::Root::Err.pm objects can be reconstructed from the contents of C<$@>:
 
 =head2 Demo Scripts
 
-Some demo script that illustrate working with Bio::Root::Objects are included with the distribution (see L<INSTALLATION>). These are also available at:
-
-    http://bio.perl.org/Core/Examples/Root_object
+Some demo script that illustrate working with Bio::Root::Objects
+are included with the distribution in the examples/root_object directory.
 
 
 =head1 STRICTNESS & VERBOSITY
 
 There are two global variables that can be used to control sensitivity to
 exceptions/warnings and the amount of reporting for all objects within a process.
-These are accessed via functions C<strictness()> and C<verbosity()> exported by
-B<Bio::Root::Global.pm>.
+These are accessed via functions B<strictness()> and B<verbosity()> exported by
+Bio::Root::Global (see L<Bio::Root::Global>).
 
   $STRICTNESS  - Regulates the sensitivity of the object to exceptions and warnings.
 
   $VERBOSITY   - Regulates the amount of reporting by an object.
 
 
-The L<strict>() and L<verbose>() methods of B<Bio::Root::Object.pm>
+The L<strict()|strict> and L<verbose()|verbose> methods of B<Bio::Root::Object>
 originally operated at the the object level, to permit individual
 strictness and verbosity levels for different objects. This level of
 control is not usually required and can often be inconvenient; one
@@ -240,8 +227,9 @@ differentially sensitive to these values depending on design criteria.
 
 Strictness and verbosity can be positive or negative. Negative 
 verbosity equals terseness; negative strictness equals permissiveness.
-In B<Bio::Root::Object.pm> only the L<throw>() and L<warn>() methods
-are sensitive to these values as indicated in the tables below:
+In B<Bio::Root::Object> only the Bio::Root::Root::throw() and
+Bio::Root::Root::warn() methods (see L<Bio::Root::Root>) are sensitive to
+these values as indicated in the tables below:
 
     +---------+
     | throw() |         v e r b o s i t y
@@ -278,13 +266,14 @@ are sensitive to these values as indicated in the tables below:
      -record_err =>1 flag is set when constructing the object
      or if $object->record_err(1) is called subsequent to creation.
 
-See the methods L<verbose>(), L<strict>(), L<throw>(), L<warn>(), and
-L<record_err>() for more details.
+See the methods L<verbose()|verbose>, L<strict()|strict>, L<record_err()|record_err>,
+Bio::Root::Root::throw(), and Bio::Root::Root::warn() in
+L<Bio::Root::Root> for more details.
 
 
 =head1 DEPENDENCIES
 
-As the B<Bio::Root::Object.pm> does not inherit from any modules 
+As the B<Bio::Root::Object> does not inherit from any modules 
 but wraps (i.e., provides an interface and delegates 
 functionality to) other modules in the Bio::Root:: hierarchy:
 
@@ -295,14 +284,14 @@ functionality to) other modules in the Bio::Root:: hierarchy:
    Bio::Root::Xref.pm        Arbitrary links between objects
 
 All of these modules are loaded only when necessary.
-B<Bio::Root::Err.pm> is an object representing an exception.
-B<Bio::Root::IOManager.pm> and B<Bio::Root::Xref.pm> are more experimental. They are
+B<Bio::Root::Err> is an object representing an exception.
+B<Bio::Root::IOManager> and B<Bio::Root::Xref> are more experimental. They are
 utilized via delegation, which permits them to be developed and utilized
-independently of B<Bio::Root::Object.pm>.
+independently of B<Bio::Root::Object>.
 
 Since this module is at the root of potentially many different objects
 in a particular application, efficiency is important. Bio::Root::Object.pm is 
-intended to be a lightweight, lean and mean module. 
+intended to be a lightweight, lean and mean module.
 
 
 =head1 FEEDBACK
@@ -324,11 +313,11 @@ their resolution. Bug reports can be submitted via email or the web:
     bioperl-bugs@bio.perl.org                   
     http://bio.perl.org/bioperl-bugs/           
 
-=head1 AUTHOR
+=head1 AUTHOR 
 
-Steve A. Chervitz, sac@genome.stanford.edu
+Steve Chervitz E<lt>sac@bioperl.orgE<gt>
 
-See the L<FEEDBACK> section for where to send bug reports and comments.
+See L<the FEEDBACK section | FEEDBACK> for where to send bug reports and comments.
 
 =head1 VERSION
 
@@ -350,36 +339,36 @@ Consider incorporating a more widely-used Error/Exception module
 
 =head1 SEE ALSO
 
-  Bio::Root::Err.pm       - Error/Exception object
-  Bio::Root::IOManager.pm - Input/Output manager object
-  Bio::Root::Vector.pm    - Manages dynamic lists of objects
-  Bio::Root::Xref.pm      - Cross-reference object
-  Bio::Root::Global.pm    - Manages global variables/constants
+L<Bio::Root::Err>       - Error/Exception object
+L<Bio::Root::IOManager> - Input/Output manager object
+L<Bio::Root::Vector>    - Manages dynamic lists of objects
+L<Bio::Root::Xref>      - Cross-reference object
+L<Bio::Root::Global>    - Manages global variables/constants
 
-  http://bio.perl.org/Projects/modules.html  - Online module documentation
-  http://bio.perl.org/                       - Bioperl Project Homepage 
-
+http://bio.perl.org/Projects/modules.html  - Online module documentation
+http://bio.perl.org/                       - Bioperl Project Homepage 
 
 =head2 Other Exception Modules
 
-  Experimental::Exception.pm   - ftp://ftp.matematik.su.se/pub/teke/
-  Error.pm                     - http://www.cpan.org/authors/id/GBARR/
-  Throwable.pm                 - mailto:kstevens@globeandmail.ca
+Experimental::Exception.pm   - ftp://ftp.matematik.su.se/pub/teke/
+Error.pm                     - http://www.cpan.org/authors/id/GBARR/
+Throwable.pm                 - mailto:kstevens@globeandmail.ca
 
-  http://genome-www.stanford.edu/perlOOP/exceptions.html 
+http://genome-www.stanford.edu/perlOOP/exceptions.html 
 
 =head1 ACKNOWLEDGEMENTS
 
 This module was developed under the auspices of the Saccharomyces Genome
 Database:
-    http://genome-www.stanford.edu/Saccharomyces
+
+http://genome-www.stanford.edu/Saccharomyces
 
 Other Bioperl developers contributed ideas including Ewan Birney, Ian Korf,
 Chris Dagdigian, Georg Fuellen, and Steven Brenner.
 
 =head1 COPYRIGHT
 
-Copyright (c) 1996-98 Steve A. Chervitz. All Rights Reserved.
+Copyright (c) 1996-98 Steve Chervitz. All Rights Reserved.
 This module is free software; you can redistribute it and/or 
 modify it under the same terms as Perl itself.
 
@@ -460,7 +449,7 @@ my @inheriting_modules = ('Bio::Tools::Blast', 'Bio::Root::Object',
            : An object is free to define its own strict, and verbose
            : behavior as well as its own make (constructor) options.
 
-See Also   : L<_initialize>(), L<name>(), L<parent>(), L<make>(), L<strict>(), L<verbose>(), L<throw>(), L<warn>(), L<record_err>()
+See Also   : L<_initialize()|_initialize>, L<name()|name>, L<parent()|parent>, L<make()|make>, L<strict()|strict>, L<verbose()|verbose>, L<record_err()|record_err>, and Bio::Root::Root::throw() and Bio::Root::Root::warn() in L<Bio::Root::Root>
 
 =cut
 
@@ -523,7 +512,7 @@ sub new {
            : It also would cause problems if the same parameters are used by
            : different methods or objects.
 
-See Also   : L<new>(), L<make>(), L<name>(), L<parent>(), L<strict>(), L<index>(), L<_rearrange>(), L<_set_clone>(), L<verbose>()
+See Also   : L<new()|new>, L<make()|make>, L<name()|name>, L<parent()|parent>, L<strict()|strict>, L<index()|index>, L<verbose()|verbose>
 
 =cut
 
@@ -532,12 +521,12 @@ sub _initialize {
 #----------------
     local($^W) = 0;
     my($self, %param) = @_;
-    
-#   if(! grep { ref($self) =~ /$_/; } @inheriting_modules) {
-#	$self->warn("Class " . ref($self) .
-#		    " inherits from Bio::Root::Object, which is deprecated. ".
-#		    "Try changing your inheritance to Bio::Root::RootI.");
-#    }
+
+    if(! grep { ref($self) =~ /$_/; } @inheriting_modules) {
+	$self->warn("Class " . ref($self) .
+		    " inherits from Bio::Root::Object, which is deprecated. ".
+		    "Try changing your inheritance to Bio::Root::Root.");
+    }
     my($name, $parent, $make, $strict, $verbose, $obj, $record_err) = (
 	($param{-NAME}||$param{'-name'}), ($param{-PARENT}||$param{'-parent'}), 
 	($param{-MAKE}||$param{'-make'}), ($param{-STRICT}||$param{'-strict'}),
@@ -598,7 +587,7 @@ sub _initialize {
            : The overridden method should end with a call to 
            : SUPER::DESTROY;
 
-See Also   : L<destroy>() 
+See Also   : L<destroy()|destroy> 
 
 =cut
 
@@ -626,7 +615,7 @@ sub DESTROY {
  Argument  : n/a
  Comments  : Circular reference structures are problematic for garbage
            : collection schemes such as Perl's which are based on reference
-           : counting. If you create such such structures outside of
+           : counting. If you create such structures outside of
            : the parent-child relationship, be sure to properly break
            : the circularity when destroying the object.
            : Subclasses should override this method to call destroy()
@@ -685,17 +674,18 @@ sub destroy {
  Argument  : Object reference for the child object to be dropped
  Throws    : Exception if an object ref is not provided as an argument.
  Comments  : This is a simplistic version that systematically checks every
-           : data member, searching all top-level array, hash, and scalar data members. 
+           : data member, searching all top-level array, hash, and scalar
+           : data members. 
            : It does not recurse through all levels of complex data members.
-           : Subclasses could override this method to handle complex child data members 
-           : for more optimal child searching. However, the version here is
-           : probably sufficient for most situations.
+           : Subclasses could override this method to handle complex child
+           : data members for more optimal child searching. However, the
+           : version here is probably sufficient for most situations.
            :
-           : _drop_child() is called by Bio::Root::Object::destroy() for all objects
-           : with parents.
+           : _drop_child() is called by Bio::Root::Object::destroy() for
+           : all objects with parents.
  Status    : Experimental
 
-See Also   : L<destroy>()
+See Also   : L<destroy()|destroy>
 
 =cut
 
@@ -763,7 +753,7 @@ sub _drop_child {
  Argument  : String to be used as the common name of the object. 
            : Should be unique within its class.
 
-See also   : L<has_name>()
+See also   : L<has_name()|has_name>
 
 =cut
 
@@ -789,7 +779,7 @@ sub name {
  Argument  : n/a
  Throws    : n/a
 
-See also   : L<name>()
+See also   : L<name()|name>
 
 =cut
 
@@ -821,7 +811,7 @@ sub to_string {
            : When and if this happens, parent() will still be supported but
            : will be deprecated.
 
-See also   : L<destroy>()
+See also   : L<destroy()|destroy>
 
 =cut
 
@@ -849,6 +839,8 @@ sub parent {
            : THIS METHOD IS NOW DEPRECATED. USE parent() INSTEAD.
  Purpose   : Set/Get the current object's source object (parent).
 
+See also   : L<parent()|parent>
+
 =cut
 
 #------------'
@@ -872,9 +864,9 @@ sub src_obj {
            :   (1) If an object's name is not defined, name() returns 
            :        "anonymous <CLASSNAME>".
            :   (2) If an object's name is 0 (zero) or '' (empty string), 
-           :       conditionals that simply check name() would fail incorrectly.
+           : conditionals that simply check name() would fail incorrectly.
 
-See also   : L<name>()
+See also   : L<name()|name>
 
 =cut
 
@@ -901,7 +893,7 @@ sub has_name { my $self = shift; return defined $self->{'_name'}; }
            : from an existing object. In this case, the new() method
            : is called with -MAKE => 'clone'.
 
-See also   : L<_initialize>(), L<clone>()
+See also   : L<_initialize()|_initialize>, L<clone()|clone>
 
 =cut
 
@@ -962,7 +954,7 @@ sub make {
            : For more detailed manipulations with the Err data, retrieve the
            : Err object and process its data as necessary.
 
-See also   : L<err_string>(), L<print_err>(), B<Bio::Root::Err.pm>::get_all
+See also   : L<err_string()|err_string>, L<print_err()|print_err>, L<Bio::Root::Err::get_all|Bio::Root::Err>
 
 =cut
 
@@ -1000,7 +992,7 @@ sub err {
            : use Bio::Root::Global::record_err().
  Status    : Experimental
 
-See also   : L<_set_err>(), B<Bio::Root::Global::record_err()>
+See also   : L<err()|err>, and record_err() in L<Bio::Root::Err>
 
 =cut
 
@@ -1022,8 +1014,6 @@ sub record_err {
            : (OKAY is returned if there are no Errors)
  Status    : Experimental
 
-See also   : L<_set_err_state>()
-
 =cut
 
 #-------------'
@@ -1040,7 +1030,7 @@ sub err_state {
  Purpose   : To remove any error associated with the given object.
  Usage     : $myObj->clear_err;
 
-See  also  : L<_set_err>()
+See  also  : L<err()|err>
 
 =cut
 
@@ -1048,7 +1038,7 @@ See  also  : L<_set_err>()
 sub clear_err {
 #-------------
     my $self = shift;
-    $self->_set_err();
+    undef $self->{'_err'};
 }
 
 
@@ -1073,7 +1063,7 @@ sub clear_err {
            : since an object can currently have only one source object.
  Status    : Exported
 
-See also   : L<_set_err>()
+See also   : L<err()|err>
 
 =cut
 
@@ -1166,7 +1156,7 @@ sub set_stats {
            : is generally more convenient.
  Status    : Experimental
 
-See also   : L<warn>(), L<throw>(), L<STRICTNESS & VERBOSITY>, B<Bio::Root::Global::strictness()>
+See also   : warn() and throw() in L<Bio::Root::Root>, L<STRICTNESS & VERBOSITY>, strictness() in L<Bio::Root::Global>
 
 =cut
 
@@ -1175,17 +1165,42 @@ sub strict {
 #------------
     my $self = shift;
 
-    # Using global strictness
-    return &strictness(@_);
-
-    # Object-specific strictness (not used unless above code is commented out)
-    if (@_) { $self->{'_strict'} = shift; }
-    defined($self->{'_strict'}) 
-	? return $self->{'_strict'}
-	: (ref $self->{'_parent'} ? $self->{'_parent'}->strict : 0);
+    # Use global strictness?
+    if( $self->{'_use_global_strictness'}) {
+	return &strictness(@_);
+    }
+    else {
+        # Object-specific strictness 
+        if (@_) { $self->{'_strict'} = shift; }
+        defined($self->{'_strict'}) 
+            ? return $self->{'_strict'}
+            : (ref $self->{'_parent'} ? $self->{'_parent'}->strict : 0);
+    }
 }
 
+=head2 use_global_strictness 
 
+ Usage     : $object->use_global_strictnness( [1|0] );
+ Purpose   : Set/Get accessor for a flag indicating whether or not
+           : to use the global strictness setting or to instead use
+           : object-specific strictness.
+ Returns   : Boolean
+ Comments  : 
+ Status    : Experimental
+
+See also   : L<strict()|strict>, L<STRICTNESS & VERBOSITY>, strictness() in L<Bio::Root::Global>
+
+=cut
+
+sub use_global_strictness {
+    my ($self, $value) = @_;
+
+    if( defined $value ) {
+	$self->{'_use_global_strictness'} = $value;
+    }
+
+    return $self->{'_use_global_strictness'};
+}
 
 
 =head2 clone
@@ -1212,7 +1227,7 @@ sub strict {
            : USE WITH CAUTION.
  Status    : Experimental
 
-See Also   : L<_set_clone>(), L<_initialize>()
+See Also   : L<_set_clone()|_set_clone>, L<_initialize()|_initialize>
 
 =cut
 
@@ -1225,7 +1240,7 @@ sub clone {
 
     my $clone = $self->new(-MAKE    =>'clone', 
 			   -OBJ     =>$self);  
-    if($self->err()) { $clone->_set_err($self->err); } 
+    if($self->err()) { $clone->err($self->err); } 
     $clone; 
 } 
 
@@ -1244,7 +1259,7 @@ sub clone {
            : Cloning of objects has not been extensively tested.
            : USE WITH CAUTION.
 
-See Also   : L<_initialize>()
+See Also   : L<_initialize()|_initialize>
 
 =cut
 
@@ -1288,7 +1303,7 @@ sub _set_clone {
            : is generally more convenient.
  Status    : Experimental
 
-See Also   : L<strict>(), L<STRICTNESS & VERBOSITY>, B<Bio::Root::Global::verbosity()>
+See Also   : L<strict()|strict>, L<STRICTNESS & VERBOSITY>, verbosity() in L<Bio::Root::Global>
 
 =cut
 
@@ -1309,14 +1324,14 @@ sub verbose {
 
 
 
-=head1 I/O-RELATED METHODS (Delegated to B<Bio::Root::IOManager.pm>)
+=head1 I/O-RELATED METHODS (Delegated to B<Bio::Root::IOManager>)
 
 =head2 _io
 
  Usage     : $object->_io()
  Purpose   : Get the Bio::Root::IOManager.pm object for the current object.
 
-See also   : L<display>(), L<read>(), L<file>()
+See also   : L<display()|display>, L<read()|read>, L<file()|file>
 
 =cut
 
@@ -1331,7 +1346,7 @@ sub _io  {  my $self = shift;   return $self->{'_io'}; }
  Usage     : n/a; internal use only.
  Purpose   : Sets a new Bio::Root::IOManager.pm object for the current object.
 
-See also   : L<display>(), L<read>(), L<file>()
+See also   : L<display()|display>, L<read()|read>, L<file()|file>
 
 =cut
 
@@ -1362,7 +1377,7 @@ sub _set_io {
  Comments  : Sets the IOManager.pm object if it is not set.
            : I'm not satisfied with the current display()/set_display() strategy.
 
-See also   : B<Bio::Root::IOManager.pm>::set_display
+See also   : set_display() in L<Bio::Root::IOManager>
 
 =cut
 
@@ -1435,7 +1450,7 @@ sub set_display {
            :
            : I'm not satisfied with the current display()/set_display() strategy.
 
-See also   : B<Bio::Root::IOManager::display()>
+See also   : display() in L<Bio::Root::IOManager>
 
 =cut
 
@@ -1458,7 +1473,7 @@ sub display {
  Argument  : Filehandle reference or string 'STDOUT' 'STDIN' 'STDERR'
  Status    : Experimental
 
-See also   : L<display>()
+See also   : L<display()|display>
 
 =cut
 
@@ -1497,7 +1512,7 @@ sub _display_stats {
            : the display() method. 
            : IO issues are considered experimental.
 
-See also   : L<display>(), B<Bio::Root::IOManager::read()>
+See also   : L<display()|display>, read() in L<Bio::Root::IOManager>
 
 =cut
 
@@ -1522,7 +1537,7 @@ sub read {
  Status    : Experimental
  Comments  : Sets the IOManager.pm object if it is not set.
 
-See also   : B<Bio::Root::IOManager::fh()>
+See also   : fh() in L<Bio::Root::IOManager>
 
 =cut
 
@@ -1545,7 +1560,7 @@ sub fh      {
  Status    : Experimental
  Comments  : Sets the IOManager.pm object if it is not set.
 
-See also   : B<Bio::Root::IOManager::show()>, B<Bio::Root::IOManager::set_display()>
+See also   : show() in L<Bio::Root::IOManager>, set_display() in L<Bio::Root::IOManager>
 
 =cut
 
@@ -1568,7 +1583,7 @@ sub show    {
  Status    : Experimental
  Comments  : Sets the IOManager.pm object if it is not set.
 
-See also   : B<Bio::Root::IOManager::file()>
+See also   : file() in L<Bio::Root::IOManager>
 
 =cut
 
@@ -1591,7 +1606,7 @@ sub file    {
  Status    : Experimental
  Comments  : Sets the IOManager.pm object if it is not set.
 
-See also   : L<file>(), B<Bio::Root::IOManager::compress_file()>
+See also   : L<file()|file>, compress_file() in L<Bio::Root::IOManager>
 
 =cut
 
@@ -1614,7 +1629,7 @@ sub compress_file {
  Status    : Experimental
  Comments  : Sets the IOManager.pm object if it is not set.
 
-See also   : L<file>(), B<Bio::Root::IOManager::uncompress_file()>
+See also   : L<file()|file>, uncompress_file() in L<Bio::Root::IOManager>
 
 =cut
 
@@ -1637,7 +1652,7 @@ sub uncompress_file {
  Status    : Experimental
  Comments  : Sets the IOManager.pm object if it is not set.
 
-See also   : L<file>(), B<Bio::Root::IOManager.pm>::delete_file
+See also   : L<file()|file>, delete_file() in L<Bio::Root::IOManager>
 
 =cut
 
@@ -1661,7 +1676,7 @@ sub delete_file {
  Status    : Experimental
  Comments  : Sets the IOManager.pm object if it is not set.
 
-See also   : L<file>(), B<Bio::Root::IOManager::file_date()>
+See also   : L<file()|file>, file_date() in L<Bio::Root::IOManager>
 
 =cut
 
@@ -1694,7 +1709,7 @@ sub file_date {
  Status    : Experimental
  WARNING   : NOT FULLY TESTED.
 
-See Also   : B<Bio::Root::Xref.pm>
+See Also   : L<Bio::Root::Xref>
 
 =cut
 
@@ -1737,7 +1752,7 @@ sub xref  {
            : To find an object, use find_object().
            : Uses the package global %Objects_created.
 
-See also   : L<find_object>()
+See also   : L<find_object()|find_object>
 
 =cut
 
@@ -1783,7 +1798,7 @@ sub _remove_from_index {
            : This is not an instance method.
  Status    : Experimental
 
-See  also  : L<index>()
+See  also  : L<index()|index>
 
 =cut
 
@@ -1814,7 +1829,7 @@ sub find_object {
            : and must be handled when it occurs.
  Status    : Experimental
 
-See also   : L<err>(), L<warn>(), L<throw>()
+See also   : L<err()|err>, warn() in L<Bio::Root::Root>, throw() in L<Bio::Root::Root>
 
 =cut
 
@@ -1842,7 +1857,7 @@ sub has_warning {
  Returns   : n/a
  Status    : Experimental
 
-See also   : L<err_string>(), L<strict>()
+See also   : L<err_string()|err_string>, L<strict()|strict>
 
 =cut
 
@@ -1877,7 +1892,7 @@ sub print_err {
            : alternative to $self->err->string.
  Status    : Experimental
 
-See also   : L<print_err>(), B<Bio::Root::Err.pm>::string
+See also   : L<print_err()|print_err>, string() in L<Bio::Root::Err>
 
 =cut
 
@@ -1924,7 +1939,7 @@ sub err_string {
  Status    : Deprecated  
            : Use verbose() with a negative value instead.
 
-See also   : L<verbose>()
+See also   : L<verbose()|verbose>
 
 =cut
 
@@ -1956,7 +1971,7 @@ sub terse {
  Throws    : Exception if object has no errors.
  Status    : Deprecated
 
-See Also   : B<Bio::Root::Err.pm>set
+See Also   : set() in L<Bio::Root::Err>
 
 =cut
 
@@ -1980,7 +1995,7 @@ sub set_err_data {
  Status    : Experimental
  WARNING!  : This method has not been tested.
 
-See also   : B<Bio::Root::IOManager.pm>::set_read
+See also   : set_read() in L<Bio::Root::IOManager>
 
 =cut
 
@@ -2005,7 +2020,7 @@ sub set_read {
  Status    : Experimental
  WARNING!  : This method has not been tested.
 
-See also   : B<Bio::Root::IOManager.pm>::set_log_err
+See also   : set_log_err() in L<Bio::Root::IOManager>
 
 =cut
 
@@ -2123,7 +2138,7 @@ MODIFICATION NOTES:
 0.03, 16 Aug 1998, sac:
   * Calls to warn() or throw() now no longer result in Err.pm objects
     being attached to the current object. For discussion about this 
-    descision, see comments under _set_err().
+    descision, see comments under err().
   * Added the -RECORD_ERR constructor option and Global::record_err() 
     method to enable the attachment of Err.pm object to the current 
     object.

@@ -1,4 +1,4 @@
-# $Id: RichSeqI.pm,v 1.5 2001/02/26 11:35:01 lapp Exp $
+# $Id: RichSeqI.pm,v 1.7 2001/10/22 08:22:52 heikki Exp $
 #
 # BioPerl module for Bio::Seq::RichSeqI
 #
@@ -22,6 +22,7 @@ Bio::Seq::RichSeqI - RichSeq interface, mainly for database orientated sequences
     @dates       = $richseq->get_dates; 
     $seq_version = $richseq->seq_version;  
     $pid         = $richseq->pid;
+    $keywords    = $richseq->keywords;
 
 =head1 DESCRIPTION
 
@@ -124,7 +125,7 @@ sub division{
  Function: Get (and set, depending on the implementation) the molecule
            type for the sequence.
 
-           This is not necessarily the same as Bio::PrimarySeqI::moltype(),
+           This is not necessarily the same as Bio::PrimarySeqI::alphabet(),
            because it is databank-specific.
  Example :
  Returns : a string
@@ -197,6 +198,22 @@ sub seq_version{
 
    $self->throw("hit seq_version in interface definition - error");
 
+}
+
+=head2 keywords
+
+ Title   : keywords
+ Usage   : $obj->keywords($newval)
+ Function: 
+ Returns : value of keywords (a string)
+ Args    : newvalue (optional) (a string)
+
+
+=cut
+
+sub keywords {
+   my ($self) = @_;
+   $self->throw("hit keywords in interface definition - error");
 }
 
 1;

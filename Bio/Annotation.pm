@@ -1,5 +1,5 @@
 #
-# $Id: Annotation.pm,v 1.14.2.2 2001/04/16 19:41:04 krbou Exp $
+# $Id: Annotation.pm,v 1.20 2001/11/20 02:09:28 lstein Exp $
 #
 # BioPerl module for Bio::Annotation
 #
@@ -13,7 +13,7 @@
 
 =head1 NAME
 
-Bio::Annotation - A generic object for annotations
+Bio::Annotation - A generic object for annotations.
 
 =head1 SYNOPSIS
 
@@ -116,7 +116,7 @@ package Bio::Annotation;
 use vars qw(@ISA);
 use strict;
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
 
 # we don't really need these object but we should 
 # declare them here to prevent tears later.
@@ -125,7 +125,7 @@ use Bio::Annotation::Reference;
 use Bio::Annotation::DBLink;
 use Bio::Annotation::Comment;
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::Root::Root);
 
 =head2 new
 
@@ -397,11 +397,14 @@ sub each_Comment{
 =cut
 
 sub add_DBLink{
-   my ($self,$com) = @_;
-   if( ! $com->isa('Bio::Annotation::DBLink') ) {
-       $self->throw("Is not a link object but a  [$com]");
-   }
+   my ($self,@list) = @_;
+
+   foreach my $com ( @list ) {
+       if( ! $com->isa('Bio::Annotation::DBLink') ) {
+	   $self->throw("Is not a link object but a  [$com]");
+       }
    push(@{$self->{'link'}},$com);
+   }
 }
 
 =head2 remove_DBLink

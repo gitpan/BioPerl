@@ -1,6 +1,6 @@
 ## --Makefile.PL for Bioperl core module distribution--##
 ## ----------------------------------------------------##
-## $Id: Makefile.PL,v 1.19.2.4 2001/08/06 09:01:06 birney Exp $
+## $Id: Makefile.PL,v 1.30.2.5 2002/03/17 00:00:47 jason Exp $
 ##----------------------------------------------------
 
 #
@@ -11,26 +11,32 @@
 # the developers by sending a message to bioperl-l@bioperl.org.
 
 
+
+# All Bioperl dependencies on external modules are defined here
 %packages = (
-	     'HTTP::Request::Common'    => '0.0/Part of the LWP package/GenBank+GenPept sequence retrieval, remote http Blast jobs/Bio::DB::*,Bio::Tools::Blast',
-	     'LWP::UserAgent'           => '0.0/Part of the LWP package/GenBank+GenPept sequence retrieval, remote http Blast jobs/Bio::DB::*,Bio::Tools::Blast',
+	     'HTTP::Request::Common'    => '0.0/Part of the LWP package/GenBank+GenPept sequence retrieval, remote http Blast jobs/Bio::DB::*,Bio::Tools::Run::RemoteBlast',
+	     'LWP::UserAgent'           => '0.0/Part of the LWP package/GenBank+GenPept sequence retrieval, remote http Blast jobs/Bio::DB::*,Bio::Tools::Run::RemoteBlast',
 	     'Ace'                      => '0.0/Aceperl/access of ACeDB database/Bio::DB::Ace',
 	     'IO::Scalar'               => '0.0/IO handle to read or write to a scalar/remote http Blast jobs/Bio::Tools::Blast::Run::Webblast',
-	     'IO::String'               => '0.0/IO handle to read or write to a string/GenBank+GenPept sequence retrieval, Variation code/Bio::DB::*,Bio::Variation::*,Bio::Tools::Blast::Run::Webblast',
+	     'IO::String'               => '0.0/IO handle to read or write to a string/GenBank+GenPept sequence retrieval, Variation code/Bio::DB::*,Bio::Variation::*,Bio::Tools::Blast::Run::Webblast, Bio::Index::Blast',
 	     'XML::Parser'              => '0.0/Parsing of XML documents/Bio::Variation code, GAME parser/Bio::SeqIO::game,Bio::Variation::*',
 	     'XML::Writer'              => '0.0/Parsing + writing of XML documents/Bio::Variation code, GAME parser/Bio::SeqIO::game,Bio::Variation::*',
 	     'XML::Parser::PerlSAX'              => '0.0/Parsing of XML documents/Bio::Variation code, GAME parser/Bio::SeqIO::game,Bio::Variation::*',
-	     'XML::Node'         	=> '0.0/Available on CPAN/parsing of XML documents/Module Bio::Variation::IO::xml.pm',
+	     'XML::Twig'         	=> '0.0/Available on CPAN/parsing of XML documents/Module Bio::Variation::IO::xml.pm',
 	     'File::Temp'               => '0.0/Temporary File creation/Bio::DB::WebDBSeqI, Bio::Seq::LargePrimarySeq',
+	     'SOAP::Lite'               => '0.0/SOAP protocol/XEMBL Services (also Bibliographic queries in Biblio::) /Bio::DB::XEMBLService',
 	     'HTML::Parser'             => '0.0/HTML parsing of GDB page/Bio::DB::GDB',
+	     'DBD::mysql'               => '0.0/Mysql driver/loading and querying of Mysql-based GFF feature databases/Bio::DB::GFF',
+	     'GD'                       => '1.3/Graphical Drawing Toolkit/Rendering Sequences and Features/Bio::Graphics',
+	     'Storable'                 => '0.0/Persistent object storage and retrieval/Storing sequence objects in local file cache/Bio::DB::FileCache',
+# rare function let's not scare people
+# 	     'srsperl.pm'               => '0.0/Sequence Retrieval System (SRS) perl API/alternative way of retrieving sequences/Bio::LiveSeq::IO::SRS.pm'
 	     );
 
 sub check_package {
     my ($name,$str) = @_;
-    my($ver,$desc,$expl,@modules);
-
-    ($ver,$desc,$expl,$module) = split( /\// , $str);
-    if( !eval "require $name") {
+    my ($ver,$desc,$expl,$module) = split( /\// , $str);
+    if( !eval "require($name)") {
 	print "External Module $name, $desc,\n is not installed on this computer.\n  The $module in Bioperl needs it for $expl\n\n";
 	return 1;
     }
@@ -68,21 +74,48 @@ sub MY::postamble {
              $tline;
            }
 
+#
+# Prompt user for BioGFFDB stuff
+#
+
+if(  eval { require DBI } ) {
+    my $proceed = user_prompt("Do you want to run the BioGFFDB tests (requires mysql) y/n",'n');
+    if( $proceed eq 'y' ) {
+	system("touch t/do_biodbgff.tests");
+    } else { 
+	if( -e "t/do_biodbgff.tests" ) {
+	    unlink "t/do_biodbgff.tests";
+	}
+    }
+}
+
+sub user_prompt ($;$) {
+    my($mess,$def)=@_;
+    Carp::confess("prompt function called without an argument") unless defined $mess;
+    my $dispdef = defined $def ? "[$def] " : " ";
+    $def = defined $def ? $def : "";
+    my $ans;
+    local $|=1;
+    print STDERR "$mess $dispdef";
+    chomp($ans = <STDIN>);
+    return ($ans ne '') ? $ans : $def;
+}
+
 
 				           
 #
-# Talk to Ewan (<birney@sanger.ac.uk>) for more info.
+# Talk to Ewan (<birney@ebi.ac.uk>) or bioperl-l@bioperl.org for more info.
 #
 
 # Let the code begin...
 
-require 5.004;
+require 5.005;
 use ExtUtils::MakeMaker;
 
 $do_autoload_finesse = 0;
 $NAME     = 'Bio';
 $DISTNAME = "bioperl";
-$VERSION  = "0.72";
+$VERSION  = "1.00";
 
 if( $do_autoload_finesse == 1 ) {
     fatal("Autoload finessing does not work at the moment!");
@@ -104,6 +137,7 @@ if( $do_autoload_finesse ) {
 }
 
 $error = 0;
+print "\n";
 foreach $name ( keys %packages ) {
     if( &check_package($name,$packages{$name}) == 1 ) {
 	$error = 1;
@@ -137,8 +171,11 @@ WriteMakefile(
                       SUFFIX       => '.gz', 
                       DIST_DEFAULT => 'all tardist',
                    },
-
-   'realclean'  => {  FILES        => join(' ',@BACKUP_FILES) }
+    ($] ge '5.005')  ? (
+	'AUTHOR' => 'Bioperl Team (bioperl-l@bioperl.org)',
+	'ABSTRACT' => 'Bioinformatics Toolkit',
+	) : (),
+     'realclean'  => {  FILES        => join(' ',@BACKUP_FILES) }
 );
 
 

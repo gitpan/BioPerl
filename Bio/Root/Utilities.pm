@@ -1,9 +1,9 @@
 #-----------------------------------------------------------------------------
 # PACKAGE : Bio::Root::Utilities.pm
 # PURPOSE : Provides general-purpose utilities of potential interest to any Perl script.
-# AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
+# AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : Feb 1996
-# REVISION: $Id: Utilities.pm,v 1.13.2.3 2001/11/02 18:58:18 jason Exp $
+# REVISION: $Id: Utilities.pm,v 1.20 2002/01/26 20:28:13 heikki Exp $
 # STATUS  : Alpha
 #
 # This module manages file compression and uncompression using gzip or
@@ -22,7 +22,7 @@
 #
 # MODIFICATIONS: See bottom of file.
 #
-# Copyright (c) 1996-2000 Steve A. Chervitz. All Rights Reserved.
+# Copyright (c) 1996-2000 Steve Chervitz. All Rights Reserved.
 #          This module is free software; you can redistribute it and/or 
 #          modify it under the same terms as Perl itself.
 #
@@ -31,23 +31,30 @@
 package	Bio::Root::Utilities;
 use strict;
 
+BEGIN {
+    use vars qw($Loaded_POSIX $Loaded_IOScalar);
+    $Loaded_POSIX = 1;
+    unless( eval "require POSIX" ) {
+	$Loaded_POSIX = 0;
+    }
+}
+
 use Bio::Root::Global  qw(:data :std $TIMEOUT_SECS);
 use Bio::Root::Object  ();
 use Exporter           ();
-use POSIX;
 #use AutoLoader;
 #*AUTOLOAD = \&AutoLoader::AUTOLOAD;
 
 use vars qw( @ISA @EXPORT_OK %EXPORT_TAGS );
-@ISA         = qw( Bio::Root::RootI Exporter);
+@ISA         = qw( Bio::Root::Root Exporter);
 @EXPORT_OK   = qw($Util);
 %EXPORT_TAGS = ( obj => [qw($Util)],
 		 std => [qw($Util)],);
 
-use vars qw($ID $version $Util $GNU_PATH $DEFAULT_NEWLINE);
+use vars qw($ID $VERSION $Util $GNU_PATH $DEFAULT_NEWLINE);
 
 $ID        = 'Bio::Root::Utilities';
-$version   = 0.05;
+$VERSION   = 0.05;
 
 # $GNU_PATH points to the directory containing the gzip and gunzip 
 # executables. It may be required for executing gzip/gunzip 
@@ -142,11 +149,11 @@ their resolution. Bug reports can be submitted via email or the web:
     bioperl-bugs@bio.perl.org                   
     http://bio.perl.org/bioperl-bugs/           
 
-=head1 AUTHOR
+=head1 AUTHOR 
 
-Steve A. Chervitz, sac@genome.stanford.edu
+Steve Chervitz E<lt>sac@bioperl.orgE<gt>
 
-See the L<FEEDBACK> section for where to send bug reports and comments.
+See L<the FEEDBACK section | FEEDBACK> for where to send bug reports and comments.
 
 =head1 VERSION
 
@@ -160,7 +167,7 @@ Database:
 
 =head1 COPYRIGHT
 
-Copyright (c) 1997-98 Steve A. Chervitz. All Rights Reserved.
+Copyright (c) 1997-98 Steve Chervitz. All Rights Reserved.
 This module is free software; you can redistribute it and/or 
 modify it under the same terms as Perl itself.
 
@@ -408,7 +415,11 @@ sub compress {
     my ($compressed, @args);
 
     if($tmp or not -o $fileName) {
-	$compressed = POSIX::tmpnam;
+	if($Loaded_POSIX) {
+	    $compressed = POSIX::tmpnam;
+	} else {
+	    $compressed = _get_pseudo_tmpnam();
+	}
 	$compressed .= ".tmp.bioperl";
 	$compressed .= '.gz';
 	@args = ($GNU_PATH."gzip -f < $fileName > $compressed");
@@ -481,7 +492,11 @@ sub uncompress {
     my($uncompressed, @args);
 
     if($tmp or not -o $fileName) {
-	$uncompressed = POSIX::tmpnam;
+	if($Loaded_POSIX) {
+	    $uncompressed = POSIX::tmpnam;
+	} else {
+	    $uncompressed = _get_pseudo_tmpnam();
+	}
 	$uncompressed .= ".tmp.bioperl";
 	@args = ($GNU_PATH."gunzip -f < $fileName > $uncompressed");
 	not $tmp and $self->verbose > 0 and
@@ -769,7 +784,9 @@ sub create_filehandle {
 
     if(not ref $client) {  $client = $self; }
     $file ||= $handle;
-    $file = $client->file($file);
+    if( $client->can('file')) {
+	$file = $client->file($file);
+    }
 
     my $FH; # = new FileHandle;
 
@@ -1129,6 +1146,23 @@ sub verify_version {
 	printf STDERR ( "%s %0.3f %s\n\n", "You are running Perl version", $], "Please update your Perl!\n\n" );
 	exit(1);
     }
+}
+
+# Purpose : Returns a string that can be used as a temporary file name.
+#           Based on localtime.
+#           This is used if POSIX is not available.
+
+sub _get_pseudo_tmpnam {
+
+    my $date = localtime(time());
+    
+    my $tmpnam = 'tmpnam'; 
+
+    if( $date =~ /([\d:]+)\s+(\d+)\s*$/ ) {
+    	$tmpnam = $2. '_' . $1;
+    	$tmpnam =~ s/:/_/g;
+    }
+    return $tmpnam;
 }
 
 

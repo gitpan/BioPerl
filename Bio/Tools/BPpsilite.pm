@@ -1,4 +1,4 @@
-# $Id: BPpsilite.pm,v 1.13.2.1 2001/03/02 22:48:02 heikki Exp $
+# $Id: BPpsilite.pm,v 1.20 2001/12/14 16:40:19 heikki Exp $
 # Bioperl module Bio::Tools::BPpsilite
 ############################################################
 #	based closely on the Bio::Tools::BPlite modules
@@ -117,6 +117,10 @@ or the web:
 
 Email: schattner@alum.mit.edu
 
+=head1 CONTRIBUTORS
+
+Jason Stajich, jason@cgt.mc.duke.edu
+
 =head1 ACKNOWLEDGEMENTS
 
 Based on work of:
@@ -139,26 +143,19 @@ use strict;
 use vars qw(@ISA);
 use Bio::Tools::BPlite::Iteration; #
 use Bio::Tools::BPlite::Sbjct; #   Debug code
-use Bio::Root::RootI; # root interface to inherit from
+use Bio::Root::Root; # root interface to inherit from
 use Bio::Root::IO;
 use Bio::Tools::BPlite; 
 
-@ISA = qw(Bio::Root::RootI Bio::Root::IO);
-
-#  clean up temporary files when exiting
-END {
-    #system('rm -f iteration?.tmp '); # this is not cross-platform compatible
-    # temp files created via tempfile() will be removed automatically
-}
+@ISA = qw(Bio::Root::Root Bio::Root::IO);
 
 sub new {
   my ($class, @args) = @_; 
   my $self = $class->SUPER::new(@args);
-
+  
   # initialize IO
   $self->_initialize_io(@args);
-  $self->{'_tempdir'} = $self->tempdir(CLEANUP=>1);
-  $self->{'LASTLINE'} = "";
+  $self->{'_tempdir'} = $self->tempdir('CLEANUP' => 1);
   $self->{'QPATLOCATION'} = [];  # Anonymous array of query pattern locations for PHIBLAST
   $self->{'NEXT_ITERATION_NUMBER'} = 1;
   $self->{'TOTAL_ITERATION_NUMBER'} = -1;  # -1 indicates preprocessing not yet done
@@ -261,12 +258,12 @@ sub number_of_iterations {
 sub round {
   my $self = shift;
   my $iter_num = shift;
-  open( FH, Bio::Root::IO->catfile($self->{'_tempdir'}, 
-				  "iteration".$iter_num.".tmp")) ||
+  $self->_initialize_io(-file => Bio::Root::IO->catfile
+			($self->{'_tempdir'},"iteration".$iter_num.".tmp"));
+  if( ! $self->_fh ) {
       $self->throw("unable to re-open iteration file for round ".$iter_num);
-  return Bio::Tools::BPlite::Iteration->new(-fh => \*FH,
-					    -lastline=>$self->{'LASTLINE'},
-					    -round=>$iter_num,
+  }
+  return Bio::Tools::BPlite::Iteration->new(-round=>$iter_num,
 					    -parent=>$self);
 }
 
@@ -274,12 +271,12 @@ sub round {
 
 sub _parseHeader {
   my ($self) = @_;
-  my $FH = $self->_fh();
+
   
-  while(<$FH>) {
+  while(defined ($_ = $self->_readline) ) {
     if ($_ =~ /^Query=\s+([^\(]+)/)    {
       my $query = $1;
-      while(<$FH>) {
+      while(defined ($_ = $self->_readline)) {
         last if $_ !~ /\S/;
 	$query .= $_;
       }
@@ -291,14 +288,16 @@ sub _parseHeader {
       $self->{'LENGTH'} = $length;
     }
     elsif ($_ =~ /^Database:\s+(.+)/) {$self->{'DATABASE'} = $1}
-    elsif ($_ =~ /^\s*pattern\s+(\S+).*position\s+(\d+)\D/) {   # For PHIBLAST reports
-			$self->{'PATTERN'} = $1;
-			push (@{$self->{'QPATLOCATION'}}, $2);
-			}
-    elsif ($_ =~ /^>|^Results from round 1/)    {$self->{'LASTLINE'} = $_; return 1;}
-    elsif ($_ =~ /^Parameters|^\s+Database:/) {
-      $self->{'LASTLINE'} = $_;
-      return 0; # there's nothing in the report
+    elsif ($_ =~ /^\s*pattern\s+(\S+).*position\s+(\d+)\D/) 
+    {   # For PHIBLAST reports
+	$self->{'PATTERN'} = $1;
+	push (@{$self->{'QPATLOCATION'}}, $2);
+    } elsif ($_ =~ /^>|^Results from round 1/)    {
+	$self->_pushback($_); 
+	return 1;
+    } elsif ($_ =~ /^Parameters|^\s+Database:/) {
+	$self->_pushback($_); 
+	return 0; # there's nothing in the report
     }
   }
 }
@@ -307,11 +306,12 @@ sub _parseHeader {
 
  Title    : _preprocess
  Usage    : internal routine, not called directly
- Function :  determines number of iterations in report and prepares
-	data so individual iterations canbe parsed in non-sequential order 
+ Function : determines number of iterations in report and prepares
+	    data so individual iterations canbe parsed in non-sequential 
+            order 
  Example  :  
- Returns  :  nothing. Sets TOTAL_ITERATION_NUMBER in object's hash
- Args     :  reference to calling object
+ Returns  : nothing. Sets TOTAL_ITERATION_NUMBER in object's hash
+ Args     : reference to calling object
 
 =cut
 
@@ -319,7 +319,7 @@ sub _parseHeader {
 sub _preprocess {
     my $self = shift;
 #	$self->throw(" PSIBLAST report preprocessing not implemented yet!");
-    my $FH = $self->_fh();
+
     my  $oldround = 0;
     my ($currentline, $currentfile, $round);
 
@@ -330,24 +330,29 @@ sub _preprocess {
     open (FILEHANDLE, ">$currentfile") || 
 	$self->throw("cannot open filehandle to write to file $currentfile");
 
-    while($currentline = <$FH>) {
+    while(defined ($currentline = $self->_readline()) ) {
 	if ($currentline =~ /^Results from round\s+(\d+)/) {
 	    if ($oldround) { close (FILEHANDLE) ;}
 	    $round = $1;
 	    $currentfile = Bio::Root::IO->catfile($self->{'_tempdir'}, 
 						  "iteration$round.tmp");
 
+	    close FILEHANDLE;
 	    open (FILEHANDLE, ">$currentfile") || 
 		$self->throw("cannot open filehandle to write to file $currentfile");
 	    $oldround = $round;
+	}elsif ($currentline =~ /CONVERGED/){ # This is a fix for psiblast parsing with -m 6 /AE
+	    $round--;
 	}
 	print FILEHANDLE $currentline ;
-
+	
     }
     $self->{'TOTAL_ITERATION_NUMBER'}= $round;
+# It is necessary to close filehandle otherwise the whole
+# file will not be read later !!
+    close FILEHANDLE;
 }
 
 1;
 
 __END__
-

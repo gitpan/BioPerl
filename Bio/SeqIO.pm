@@ -1,4 +1,5 @@
-# $Id: SeqIO.pm,v 1.26.2.3 2001/09/26 14:36:15 jason Exp $
+
+# $Id: SeqIO.pm,v 1.42 2002/02/24 16:51:15 bosborne Exp $
 #
 # BioPerl module for Bio::SeqIO
 #
@@ -30,7 +31,21 @@ Bio::SeqIO - Handler for SeqIO Formats
 	$out->write_seq($seq);
     }
 
-or
+now, to actually get at the sequence object, use the standard Bio::Seq
+methods (look at L<Bio::Seq> if you don't know what they are)
+
+    use Bio::SeqIO;
+
+    $in  = Bio::SeqIO->new(-file => "inputfilename" , '-format' => 'genbank');
+
+    while ( my $seq = $in->next_seq() ) {
+       print "Sequence ",$seq->id," first 10 bases ",$seq->subseq(1,10),"\n";
+    }
+
+
+the SeqIO system does have a filehandle binding. Most people find this
+a little confusing, but it does mean you write the worlds smallest
+reformatter
 
     use Bio::SeqIO;
 
@@ -46,8 +61,13 @@ Bio::SeqIO is a handler module for the formats in the SeqIO set (eg,
 Bio::SeqIO::fasta). It is the officially sanctioned way of getting at
 the format objects, which most people should use.
 
-The SeqIO system replaces the old parse_XXX functions in the Seq
-object.
+The Bio::SeqIO system can be thought of like biological file handles.
+They are attached to filehandles with smart formatting rules (eg,
+genbank format, or EMBL format, or binary trace file format) and 
+can either read or write sequence objects (Bio::Seq objects, or
+more correctly, Bio::SeqI implementing objects, of which Bio::Seq is
+one such object). If you want to know what to do with a Bio::Seq
+object, read L<Bio::Seq>
 
 The idea is that you request a stream object for a particular format.
 All the stream objects have a notion of an internal file that is read
@@ -108,7 +128,7 @@ This makes the simplest ever reformatter
    $seqIO = Bio::SeqIO->new(-format => $format);
 
 The new() class method constructs a new Bio::SeqIO object.  The
-returned object can be used to retrieve or print BioSeq objects. new()
+returned object can be used to retrieve or print Seq objects. new()
 accepts the following parameters:
 
 =over 4
@@ -173,6 +193,9 @@ Specify the format of the file.  Supported formats include:
    GCG         GCG format
    raw         Raw format (one sequence per line, no ID)
    ace         ACeDB sequence format
+   game        GAME XML format
+   phd         phred output
+   qual        Quality values (get a sequence of quality scores)
 
 If no format is specified and a filename is given, then the module
 will attempt to deduce it from the filename.  If this is unsuccessful,
@@ -255,14 +278,14 @@ methods. Internal methods are usually preceded with a _
 package Bio::SeqIO;
 
 use strict;
-use vars '@ISA';
+use vars qw(@ISA);
 
-use Bio::Root::RootI;
+use Bio::Root::Root;
 use Bio::Root::IO;
 use Bio::PrimarySeq;
 use Symbol();
 
-@ISA = qw(Bio::Root::RootI Bio::Root::IO);
+@ISA = qw(Bio::Root::Root Bio::Root::IO);
 
 =head2 new
 
@@ -273,6 +296,8 @@ use Symbol();
  Args    : -file => $filename
            -format => format
            -fh => filehandle to attach to
+
+See L<Bio::SeqIO::Handler>
 
 =cut
 
@@ -297,16 +322,11 @@ sub new {
 		'fasta';
 	$format = "\L$format";	# normalize capitalization to lower case
 
-	if ( $class eq 'Bio::SeqIO::MultiFile' ) {
-	    return $class->new(%param);
-	}	
-
 	# normalize capitalization
 	return undef unless( &_load_format_module($format) );
 	return "Bio::SeqIO::$format"->new(@args);
     }
 }
-
 
 =head2 newFh
 
@@ -318,6 +338,8 @@ sub new {
            print $fh $sequence; # write a sequence object
  Returns : filehandle tied to the Bio::SeqIO::Fh class
  Args    :
+
+See L<Bio::SeqIO::Fh>
 
 =cut
 
@@ -338,6 +360,8 @@ sub newFh {
  Returns : filehandle tied to the Bio::SeqIO::Fh class
  Args    :
 
+See L<Bio::SeqIO::Fh>
+
 =cut
 
 
@@ -349,15 +373,10 @@ sub fh {
   return $s;
 }
 
-
 # _initialize is chained for all SeqIO classes
 
 sub _initialize {
     my($self, @args) = @_;
-    
-    # not really necessary unless we put more in RootI
-    $self->SUPER::_initialize(@args);
-    
     # initialize the IO part
     $self->_initialize_io(@args);
 }
@@ -376,10 +395,11 @@ sub _initialize {
            of a non-recoverable situation an exception will be thrown.
            Do not assume that you can resume parsing the same stream after
            catching the exception. Note that you can always turn recoverable
-           errors into exceptions by calling $stream->verbose(2) (see
-           Bio::RootI POD page).
+           errors into exceptions by calling $stream->verbose(2).
  Returns : a Bio::Seq sequence object
- Args    :
+ Args    : none
+
+See L<Bio::Root::RootI>
 
 =cut
 
@@ -396,6 +416,7 @@ sub next_seq {
  Returns : A Bio::PrimarySeqI object
  Args    : none
 
+See L<Bio::PrimarySeqI>
 
 =cut
 
@@ -426,33 +447,33 @@ sub write_seq {
 }
 
 
-=head2 moltype
+=head2 alphabet
 
- Title   : moltype
- Usage   : $self->moltype($newval)
+ Title   : alphabet
+ Usage   : $self->alphabet($newval)
  Function: Set/get the molecule type for the Seq objects to be created.
- Example : $seqio->moltype('protein')
- Returns : value of moltype: 'dna', 'rna', or 'protein'
+ Example : $seqio->alphabet('protein')
+ Returns : value of alphabet: 'dna', 'rna', or 'protein'
  Args    : newvalue (optional)
  Throws  : Exception if the argument is not one of 'dna', 'rna', or 'protein'
 
 =cut
 
-sub moltype {
+sub alphabet {
    my ($self, $value) = @_;
 
    if ( defined $value) {
        # instead of hard-coding the allowed values once more, we check by
        # creating a dummy sequence object
        eval {
-	   my $seq = Bio::PrimarySeq->new('-moltype' => $value);
+	   my $seq = Bio::PrimarySeq->new('-alphabet' => $value);
        };
        if($@) {
-	   $self->throw("Invalid moltype: $value\n. See Bio::PrimarySeq for allowed values.");
+	   $self->throw("Invalid alphabet: $value\n. See Bio::PrimarySeq for allowed values.");
        }
-       $self->{'moltype'} = "\L$value";
+       $self->{'alphabet'} = "\L$value";
    }
-   return $self->{'moltype'};
+   return $self->{'alphabet'};
 }
 
 =head2 _load_format_module
@@ -533,10 +554,13 @@ sub _filehandle {
 
  Title   : _guess_format
  Usage   : $obj->_guess_format($filename)
- Function:
+ Function: guess format based on file suffix
  Example :
  Returns : guessed format of filename (lower case)
  Args    :
+ Notes   : formats that _filehandle() will guess include fasta,
+           genbank, scf, pir, embl, raw, gcg, ace, bsml, swissprot,
+           and phd/phred
 
 =cut
 
@@ -547,11 +571,13 @@ sub _guess_format {
    return 'genbank' if /\.(gb|gbank|genbank)$/i;
    return 'scf'     if /\.scf$/i;
    return 'pir'     if /\.pir$/i;
-   return 'embl'    if /\.(embl|ebl|emb)$/i;
-   return 'embl'    if /\.dat$/i;
+   return 'embl'    if /\.(embl|ebl|emb|dat)$/i;
    return 'raw'     if /\.(txt)$/i;
    return 'gcg'     if /\.gcg$/i;
    return 'ace'     if /\.ace$/i;
+   return 'bsml'    if /\.(bsm|bsml)$/i;
+   return 'swiss'   if /\.(swiss|sp)$/i;
+   return 'phd'     if /\.(phd|phred)$/i;
 }
 
 sub DESTROY {
@@ -561,8 +587,8 @@ sub DESTROY {
 }
 
 sub TIEHANDLE {
-  my $class = shift;
-  return bless {seqio => shift}, $class;
+    my ($class,$val) = @_;
+    return bless {'seqio' => $val}, $class;
 }
 
 sub READLINE {
