@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Object.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 23 July 1996
-# REVISION: $Id: Object.pm,v 1.13 2001/01/30 19:22:06 lapp Exp $
+# REVISION: $Id: Object.pm,v 1.13.2.3 2001/06/21 15:36:03 heikki Exp $
 # STATUS  : Alpha
 #            
 # For documentation, run this module through pod2html 
@@ -29,10 +29,10 @@ use Exporter ();
 #*AUTOLOAD = \&AutoLoader::AUTOLOAD;
 
 use vars qw(@EXPORT_OK %EXPORT_TAGS);
-@EXPORT_OK = qw($VERSION &find_object &stack_trace &containment &_rearrange);  
+@EXPORT_OK = qw($version &find_object &stack_trace &containment &_rearrange);  
 %EXPORT_TAGS = ( std => [qw(&stack_trace &containment)] );
 
-use vars qw($ID $VERSION %Objects_created $Revision @ISA);
+use vars qw($ID $version %Objects_created $Revision @ISA);
 
 @ISA = qw(Bio::Root::RootI);
 
@@ -41,8 +41,8 @@ use vars qw($ID $VERSION %Objects_created $Revision @ISA);
 # See _initialize() for details.
 
 $ID       = 'Bio::Root::Object';
-$VERSION  = 0.041;
-$Revision = '$Id: Object.pm,v 1.13 2001/01/30 19:22:06 lapp Exp $';  #'
+$version  = 0.041;
+$Revision = '$Id: Object.pm,v 1.13.2.3 2001/06/21 15:36:03 heikki Exp $';  #'
 
 ### POD Documentation:
 
@@ -60,7 +60,7 @@ This module is no longer being maintained and will eventually disappear.>
 =head2 Object Creation
 
     require Bio::Root::Object;
- 
+
     $dad = new Bio::Root::Object();
     $son = new Bio::Root::Object(-name    => 'Junior', 
 			         -parent  => $dad,
@@ -257,7 +257,7 @@ are sensitive to these values as indicated in the tables below:
     e    2   |   stack trace  stack trace    trace and 
     s        |                               sysbeep
     s
- 
+
 
     +---------+
     | warn()  |         v e r b o s i t y
@@ -848,7 +848,7 @@ sub parent {
  Usage     : $object->src_obj([object | 'null']);
            : THIS METHOD IS NOW DEPRECATED. USE parent() INSTEAD.
  Purpose   : Set/Get the current object's source object (parent).
- 
+
 =cut
 
 #------------'
@@ -1496,7 +1496,7 @@ sub _display_stats {
            : Note that the read() method uses a different strategy than
            : the display() method. 
            : IO issues are considered experimental.
- 
+
 See also   : L<display>(), B<Bio::Root::IOManager::read()>
 
 =cut

@@ -3,7 +3,7 @@
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu) 
 # CREATED : 7 October 1996
 # STATUS  : Alpha
-# REVISION: $Id: Sbjct.pm,v 1.12 2001/01/28 06:45:12 lapp Exp $
+# REVISION: $Id: Sbjct.pm,v 1.12.2.1 2001/06/18 12:41:54 heikki Exp $
 #
 # For the latest version and documentation, visit the distribution site:
 #    http://genome-www.stanford.edu/perlOOP/bioperl/blast/
@@ -26,7 +26,7 @@ use Bio::Root::Object  ();
 use strict;
 use vars qw($ID %SUMMARY_OFFSET $Revision);
 $ID = 'Bio::Tools::Blast::Sbjct';
-$Revision = '$Id: Sbjct.pm,v 1.12 2001/01/28 06:45:12 lapp Exp $';  #'
+$Revision = '$Id: Sbjct.pm,v 1.12.2.1 2001/06/18 12:41:54 heikki Exp $';  #'
 
 my $_prog       = '';
 my $_signif_fmt = '';
@@ -46,7 +46,7 @@ You should not need to use this package directly. See L<_initialize>()
 for a description of constructor parameters.
 
     require Bio::Tools::Blast::Sbjct;
- 
+
     $hit = new Bio::Tools::Blast::Sbjct (-DATA    =>\@hitData, 
 					 -PARENT  =>$self, 
 					 -NAME    =>5,
@@ -112,10 +112,10 @@ The results of the HSP tiling is reported with the following ambiguity codes:
 
    'q' = Query sequence contains multiple sub-sequences matching
          a single region in the sbjct sequence. 
- 
+
    's' = Sbjct sequence contains multiple sub-sequences matching
          a single region in the query sequence. 
- 
+
    'qs' = Both query and sbjct sequences contain more than one
           sub-sequence with similarity to the other sequence.
 
@@ -994,7 +994,7 @@ sub overlap {
  Returns   : Integer
  Argument  : n/a
  Throws    : n/a
- 
+
 See Also   : L<bits>()
 
 =cut

@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Err.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 22 July 1996
-# REVISION: $Id: Err.pm,v 1.9.2.1 2001/03/02 22:47:59 heikki Exp $
+# REVISION: $Id: Err.pm,v 1.9.2.2 2001/06/21 15:36:03 heikki Exp $
 # STATUS  : Alpha
 #
 # For documentation, run this module through pod2html
@@ -31,9 +31,9 @@ use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 		 std  => [qw(&throw &warning)]
 		);
 
-use vars qw($ID $VERSION);
+use vars qw($ID $version);
 $ID = 'Bio::Root::Err';
-$VERSION = 0.041;
+$version = 0.041;
 
 %Bio::Root::Err::ERR_FIELDS = (TYPE=>1, MSG=>1, NOTE=>1, CONTEXT=>1,
 			       TECH=>1, STACK=>1 );

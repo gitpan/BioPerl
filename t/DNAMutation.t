@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: DNAMutation.t,v 1.5 2001/01/25 22:13:40 jason Exp $
+## $Id: DNAMutation.t,v 1.5.2.1 2001/04/01 17:56:28 heikki Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -16,7 +16,7 @@ BEGIN {
     }
     use Test;
 
-    plan tests => 27 }
+    plan tests => 28 }
 
 use Bio::Variation::DNAMutation;
 use Bio::Variation::Allele;
@@ -97,6 +97,9 @@ ok $obj->region, 'region';
 
 $obj->region_value('region_value'); 
 ok $obj->region_value, 'region_value';
+
+$obj->region_dist(-5); 
+ok $obj->region_dist, -5;
 
 $obj->numbering('coding'); 
 ok $obj->numbering, 'coding';

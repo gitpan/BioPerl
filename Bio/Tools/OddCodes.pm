@@ -1,4 +1,4 @@
-#$Id: OddCodes.pm,v 1.5.2.1 2001/03/03 08:28:58 heikki Exp $
+#$Id: OddCodes.pm,v 1.5.2.2 2001/06/18 12:41:53 heikki Exp $
 #-----------------------------------------------------------------------------
 # PACKAGE    : OddCodes.pm
 # PURPOSE    : To write amino acid sequences in alternative alphabets
@@ -55,7 +55,7 @@ do the alternative coding, returning the answer as a reference to a string
 	my $output = $oddcode_obj->Dayhoff();
 	my $output = $oddcode_obj->Sneath();
 	my $output = $oddcode_obj->Stanfel();
-	
+
 
 display sequence in new form, eg:
 

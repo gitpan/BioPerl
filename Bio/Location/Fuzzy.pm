@@ -1,4 +1,4 @@
-# $Id: Fuzzy.pm,v 1.14.2.1 2001/03/02 22:47:58 heikki Exp $
+# $Id: Fuzzy.pm,v 1.14.2.3 2001/04/16 19:42:44 krbou Exp $
 #
 # BioPerl module for Bio::Location::Fuzzy
 # Cared for by Jason Stajich <jason@chg.mc.duke.edu>
@@ -15,11 +15,13 @@ which has unclear start and/or end locations
 
 =head1 SYNOPSIS
 
+    use Bio::Location::Fuzzy;
     my $fuzzylocation = new Bio::Location::Fuzzy(-start => '<30',
 						 -end   => 90,
 						 -loc_type => '.');
 
-    print "location string is ", $fuzzylocation->to_FTstring();
+    print "location string is ", $fuzzylocation->to_FTstring(), "\n";
+    print "location is of the type ", $fuzzylocation->loc_type, "\n";
 
 =head1 DESCRIPTION
 
@@ -390,12 +392,12 @@ sub to_FTstring {
     # I'm lazy, lets do this in a loop since behaviour will be the same for 
     # start and end
     foreach my $point ( qw(start end) ) {
-	if( $vals{"$point\_code"} ne 'EXACT' ) {
+	if( $vals{$point."_code"} ne 'EXACT' ) {
 	    
 	    if( (!defined $vals{"min_$point"} ||
 		 !defined $vals{"max_$point"})
-		&& ( $vals{"$point\_code"} eq 'WITHIN' || 
-		     $vals{"$point\_code"} eq 'BETWEEN')
+		&& ( $vals{$point."_code"} eq 'WITHIN' || 
+		     $vals{$point."_code"} eq 'BETWEEN')
 		     ) {
 		$vals{"min_$point"} = '' unless defined $vals{"min_$point"};
 		$vals{"max_$point"} = '' unless defined $vals{"max_$point"};
@@ -403,23 +405,23 @@ sub to_FTstring {
 		$self->warn("Fuzzy codes for start are in a strange state, (".
 			    join(",", ($vals{"min_$point"}, 
 				       $vals{"max_$point"},
-				       $vals{"$point\_code"})). ")");
+				       $vals{$point."_code"})). ")");
 		return '';
 	    }
-	    if( defined $vals{"$point\_code"} && 
-		($vals{"$point\_code"} eq 'BEFORE' ||
-		 $vals{"$point\_code"} eq 'AFTER')
+	    if( defined $vals{$point."_code"} && 
+		($vals{$point."_code"} eq 'BEFORE' ||
+		 $vals{$point."_code"} eq 'AFTER')
 		) {
-		$strs{$point} .= $FUZZYCODES{$vals{"$point\_code"}};
+		$strs{$point} .= $FUZZYCODES{$vals{$point."_code"}};
 	    } 
 	    if( defined $vals{"min_$point"} ) {
 		$strs{$point} .= $vals{"min_$point"};
 	    }
-	    if( defined $vals{"$point\_code"} && 
-		($vals{"$point\_code"} eq 'WITHIN' ||
-		 $vals{"$point\_code"} eq 'BETWEEN')
+	    if( defined $vals{$point."_code"} && 
+		($vals{$point."_code"} eq 'WITHIN' ||
+		 $vals{$point."_code"} eq 'BETWEEN')
 		) {
-		$strs{$point} .= $FUZZYCODES{$vals{"$point\_code"}};
+		$strs{$point} .= $FUZZYCODES{$vals{$point."_code"}};
 	    }
 	    if( defined $vals{"max_$point"} ) {
 		$strs{$point} .= $vals{"max_$point"};

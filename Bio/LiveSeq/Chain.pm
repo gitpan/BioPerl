@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: Chain.pm,v 1.9.2.1 2001/03/02 22:47:56 heikki Exp $
+# $Id: Chain.pm,v 1.9.2.3 2001/06/21 15:36:02 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::Chain
 #
@@ -101,7 +101,7 @@ package Bio::LiveSeq::Chain;
 # Tue Dec 12 16:28:45 GMT 2000 v 2.7 rewritten comments to methods in pod style
 
 #
-$VERSION=2.7;
+$version=2.7;
 #
 # TODO_list:
 # **** cleanup code
@@ -827,7 +827,7 @@ sub _is_updownstream {
   return $found;
 }
 
-=head1 is_downstream
+=head2 is_downstream
 
   Title   : is_downstream
   Usage   : Bio::LiveSeq::Chain::is_downstream($chainref,$firstlabel,$secondlabel)
@@ -845,7 +845,7 @@ sub is_downstream {
   _is_updownstream("down",@_);
 }
 
-=head1 is_upstream
+=head2 is_upstream
 
   Title   : is_upstream
   Usage   : Bio::LiveSeq::Chain::is_upstream($chainref,$firstlabel,$secondlabel)

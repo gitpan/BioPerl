@@ -1,6 +1,6 @@
 ## --Makefile.PL for Bioperl core module distribution--##
 ## ----------------------------------------------------##
-## $Id: Makefile.PL,v 1.19.2.1 2001/03/04 22:24:58 dag Exp $
+## $Id: Makefile.PL,v 1.19.2.2 2001/06/25 19:48:54 jason Exp $
 ##----------------------------------------------------
 
 #
@@ -82,7 +82,7 @@ use ExtUtils::MakeMaker;
 $do_autoload_finesse = 0;
 $NAME     = 'Bio';
 $DISTNAME = "bioperl";
-$VERSION  = "0.7";
+$VERSION  = "0.7.1";
 
 if( $do_autoload_finesse == 1 ) {
     fatal("Autoload finessing does not work at the moment!");

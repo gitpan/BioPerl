@@ -1,4 +1,4 @@
-# $Id: AAChange.pm,v 1.3.2.2 2001/03/02 22:48:04 heikki Exp $
+# $Id: AAChange.pm,v 1.3.2.5 2001/06/21 15:36:05 heikki Exp $
 #
 # BioPerl module for Bio::Variation::AAChange
 #
@@ -32,7 +32,7 @@ Bio::Variation::AAChange - Sequence change class for polypeptides
    $a2->seq($mut) if $mut;
    $aachange->add_Allele($a2);
    $aachange->allele_mut($a2);
- 
+
    print  "\n"; 
 
    # add it to a SeqDiff container object
@@ -94,7 +94,7 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Variation::AAChange;
-my $VERSION=1.0;
+my $version=1.0;
 use vars qw(@ISA);
 use strict;
 
@@ -113,6 +113,7 @@ sub new {
 	$frame, $score, $gff_string,
 	$allele_ori,  $allele_mut,  $upstreamseq,  $dnstreamseq,  
 	$label,  $status,  $proof,  $re_changes,  $region, $region_value, 
+        $region_dist, 
 	$numbering,  $mut_number,  $ismutation) =
 	    $self->_rearrange([qw(START
 				  END
@@ -133,6 +134,7 @@ sub new {
 				  RE_CHANGES
 				  REGION
 				  REGION_VALUE
+				  REGION_DIST
 				  NUMBERING
 				  MUT_NUMBER
 				  ISMUTATION
@@ -162,6 +164,7 @@ sub new {
     $proof && $self->SUPER::proof($proof);
     $region  && $self->SUPER::region($region);
     $region_value  && $self->SUPER::region_value($region_value);
+    $region_dist  && $self->SUPER::region_dist($region_dist);
     $numbering && $self->SUPER::numbering($numbering);
     $mut_number && $self->SUPER::mut_number($mut_number);
     $ismutation && $self->SUPER::isMutation($ismutation);

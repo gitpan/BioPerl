@@ -1,4 +1,4 @@
-# $Id: SeqDiff.pm,v 1.7.2.2 2001/03/02 22:48:05 heikki Exp $
+# $Id: SeqDiff.pm,v 1.7.2.5 2001/06/21 15:36:05 heikki Exp $
 # bioperl module for Bio::Variation::SeqDiff
 #
 # Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
@@ -91,10 +91,10 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Variation::SeqDiff;
-my $VERSION=1.0;
+my $version=1.0;
 
 use strict;
-use vars qw($VERSION @ISA);
+use vars qw($version @ISA);
 use Bio::Root::RootI;
 use Bio::Tools::CodonTable;
 use Bio::PrimarySeq;
@@ -1009,10 +1009,11 @@ sub alignment {
 	    push (@rseqmut, $rseqmutd);
 	    unshift (@rseqmut, $rseqmutu);
 	    
-	
+	    return unless $mut->AAChange;
 	    #translate
 	    my $tr = new Bio::Tools::CodonTable ('-id' => $mut->codon_table);
 	    my $apos =  $mut->AAChange->start;
+	    my $aposmax = CORE::length($self->aa_ori); #terminator codon no 
 	    my $rseqori;
 	    my $rseqmut;
 	    my $aaseqori;
@@ -1022,7 +1023,9 @@ sub alignment {
 
 		 $a =  $tr->translate($rseqori[$i]) if length($rseqori[$i]) == 3;
 		 
-		 if (length($a) != 1 or $apos - ( $maxflanklen/2 -1) + $i < 1) {
+		 if (length($a) != 1 or 
+		     $apos - ( $maxflanklen/2 -1) + $i < 1 or 
+		     $apos - ( $maxflanklen/2 -1) + $i > $aposmax ) {
 		     $aaseqori .= "    ";
 		 } else {
 		     $aaseqori .= " ". $a. "  ";
@@ -1035,10 +1038,15 @@ sub alignment {
 			 $b = $tr->translate($rseqmut[$i]);
 		     }
 		 }
-		 if ($b eq $a or length($b) != 1 or $apos - ( $maxflanklen/2 -1) + $i < 1) {
-		     $aaseqmut .= "    ";
-		 } else {
+		 if (( $b ne $a and
+		       length($b) == 1 and 
+		       $apos - ( $maxflanklen/2 -1) + $i >= 1 ) or
+		     ( $apos - ( $maxflanklen/2 -1) + $i >= $aposmax and 
+		       $mut->label =~ 'termination')
+		     ) {
 		     $aaseqmut .= " ". $b. "  ";
+		 } else {
+		     $aaseqmut .= "    ";
 		 }
 		 
 		 if ($i == 0 and length($rseqori[$i]) != 3) {

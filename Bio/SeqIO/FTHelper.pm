@@ -1,4 +1,4 @@
-# $Id: FTHelper.pm,v 1.25 2001/02/27 23:18:11 jason Exp $
+# $Id: FTHelper.pm,v 1.25.2.4 2001/06/15 17:10:37 jason Exp $
 #
 # BioPerl module for Bio::SeqIO::FTHelper
 #
@@ -113,27 +113,40 @@ sub _generic_seqfeature {
 	my $combotype=$1; 	
 	$sf->primary_tag($fth->key);
 	$sf->source_tag($source);
-
 	my $splitlocation = new Bio::Location::Split(-strand=>$strand, 
+						     -seqid => $annseq->id,
 						     -splittype => $combotype);
 	# we need to make sub features
 	my $loc = $fth->loc;
-	$loc =~ s/^$combotype\((\S+)\)/$1/;	
+	$loc =~ s/^.*$combotype\((\S+)\)/$1/;
 	foreach my $next_loc ( split(/\s*,\s*/, $loc) ) {
+	    my $remote=0;
+	    my $seqid = $annseq->id;
+	    if ( $next_loc =~ s/\(?\s*([A-Za-z\d]+(\.\d+)?):// ) {
+		$seqid = $1;
+		$remote=1;
+	    }
 	    if( my $location = $fth->_parse_loc($sf,$next_loc)) {
 		print STDERR "I got ", join(",", ($location->start(), 
 					 $location->end(), 
 					 $location->strand())), 
 		" for $next_loc\n" if( $fth->verbose > 0 );
+		$location->seq_id($seqid);
+		if ($remote) {
+		    $location->is_remote(1);
+		}
 		$splitlocation->add_sub_Location($location);
 	    } else {
 		$fth->warn("unable to parse location successfully out of " .
 			   $next_loc . ", ignoring feature (seqid=" .
 			   $annseq->id() . ")");		
                 $sf = undef;
+		last;
 	    }
 	}
-	$sf->location($splitlocation);
+	# see bug #930
+	# we'll skip this SeqFeature if we can't parse the location 
+	$sf->location($splitlocation) if( defined $sf);
     }     
     # Parse simple locations and fuzzy locations
     else {
@@ -308,8 +321,8 @@ sub from_SeqFeature {
     $fth->key($key);
     $fth->field->{'note'} = [];
     #$sf->source_tag && do { push(@{$fth->field->{'note'}},"source=" . $sf->source_tag ); };
-    $sf->score && do { push(@{$fth->field->{'note'}},"score=" . $sf->score ); };
-    $sf->frame && do { push(@{$fth->field->{'note'}},"frame=" . $sf->frame ); };
+    ($sf->can('score') && $sf->score) && do { push(@{$fth->field->{'note'}},"score=" . $sf->score ); };
+    ($sf->can('frame') && $sf->frame) && do { push(@{$fth->field->{'note'}},"frame=" . $sf->frame ); };
     #$sf->strand && do { push(@{$fth->field->{'note'}},"strand=" . $sf->strand ); };
 
     foreach my $tag ( $sf->all_tags ) {

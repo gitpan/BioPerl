@@ -1,4 +1,4 @@
-# $Id: Clustalw.pm,v 1.8.2.1 2001/03/03 08:29:01 heikki Exp $
+# $Id: Clustalw.pm,v 1.8.2.4 2001/06/20 14:07:27 heikki Exp $
 #
 # BioPerl module for Bio::Tools::Run::Alignment::Clustalw
 #
@@ -323,7 +323,6 @@ use Bio::Root::IO;
 
 @ISA = qw(Bio::Root::RootI Bio::Root::IO);
 
-BEGIN {
 
 # You will need to enable Clustalw to find the clustalw program. This
 # can be done in (at least) three ways:
@@ -339,8 +338,7 @@ BEGIN {
 # every script that will use Clustal.pm.
 # $ENV{CLUSTALDIR} = '/home/peter/clustalw1.8/';
 
-    $PROGRAMDIR = $ENV{CLUSTALDIR} || '';
-    $PROGRAM = Bio::Root::IO->catfile($PROGRAMDIR,'clustalw');
+BEGIN {
 
     @CLUSTALW_PARAMS = qw(KTUPLE TOPDIAGS WINDOW PAIRGAP FIXEDGAP
                    FLOATGAP MATRIX TYPE	TRANSIT DNAMATRIX OUTFILE
@@ -356,13 +354,16 @@ BEGIN {
     # Authorize attribute fields
     foreach my $attr ( @CLUSTALW_PARAMS, @CLUSTALW_SWITCHES,
 		       @OTHER_SWITCHES ) { $OK_FIELD{$attr}++; }
-
-
 }
 
 sub new {
     my ($class,@args) = @_;
     my $self = $class->SUPER::new(@args);
+    # to facilitiate tempfile cleanup
+    $self->_initialize_io();
+
+    $PROGRAMDIR = $ENV{CLUSTALDIR} || '';
+    $PROGRAM = Bio::Root::IO->catfile($PROGRAMDIR,'clustalw');
 
     unless (&exists_clustal()) {
 	warn "Clustalw program not found as $PROGRAM or not executable. \n  Clustalw can be obtained from eg- http://corba.ebi.ac.uk/Biocatalog/Alignment_Search_software.html/ \n";
@@ -440,7 +441,7 @@ sub align {
 
 # Create input file pointer
     $infilename = $self->_setinput($input);
-    if (!$infilename) {$self->throw("Bad input data or less than 2 sequences in $input !");}
+    if (!$infilename) {$self->throw("Bad input data (sequences need an id ) or less than 2 sequences in $input !");}
 
 # Create parameter string to pass to clustalw program
     my $param_string = $self->_setparams();
@@ -577,7 +578,7 @@ sub _setinput {
 	unless (scalar(@$input) > 1) {return 0;}
 
 	foreach $seq (@$input) {
-	    unless (ref($seq) eq "Bio::Seq")
+	    unless ( $seq->isa("Bio::PrimarySeqI") and $seq->id() )
 	    {return 0;}
 	    $temp->write_seq($seq);
 	}

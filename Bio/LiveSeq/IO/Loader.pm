@@ -1,4 +1,4 @@
-# $Id: Loader.pm,v 1.9.2.1 2001/03/02 22:47:58 heikki Exp $
+# $Id: Loader.pm,v 1.9.2.4 2001/06/22 10:40:03 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::IO::Loader
 #
@@ -44,7 +44,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::IO::Loader;
-$VERSION=4.44;
+$version=4.44;
 
 # Version history:
 # Wed Feb 16 17:55:01 GMT 2000 0.1a was a general EMBL entry printer with SRS
@@ -94,22 +94,22 @@ $VERSION=4.44;
 
 use strict;
 use Carp qw(cluck croak carp);
-use vars qw($VERSION @ISA);
-use Bio::LiveSeq::DNA 1.2;
-use Bio::LiveSeq::Exon 1.0;
-use Bio::LiveSeq::Transcript 2.4;
-use Bio::LiveSeq::Translation 1.4;
-use Bio::LiveSeq::Gene 1.1;
-use Bio::LiveSeq::Intron 1.0;
-use Bio::LiveSeq::Prim_Transcript 1.0;
-use Bio::LiveSeq::Repeat_Region 1.0;
-use Bio::LiveSeq::Repeat_Unit 1.0;
-use Bio::LiveSeq::AARange 1.4;
+use vars qw($version @ISA);
+use Bio::LiveSeq::DNA;
+use Bio::LiveSeq::Exon;
+use Bio::LiveSeq::Transcript;
+use Bio::LiveSeq::Translation;
+use Bio::LiveSeq::Gene;
+use Bio::LiveSeq::Intron;
+use Bio::LiveSeq::Prim_Transcript;
+use Bio::LiveSeq::Repeat_Region;
+use Bio::LiveSeq::Repeat_Unit;
+use Bio::LiveSeq::AARange;
 use Bio::Tools::CodonTable;
 
 #@ISA=qw(Bio::LiveSeq::); # not useful now
 
-=head1 entry2liveseq
+=head2 entry2liveseq
 
   Title   : entry2liveseq
   Usage   : @translationobjects=$loader->entry2liveseq();
@@ -145,7 +145,7 @@ sub entry2liveseq {
   return @translationobjects;
 }
 
-=head1 novelaasequence2gene
+=head2 novelaasequence2gene
 
   Title   : novelaasequence2gene
   Usage   : $gene=$loader->novelaasequence2gene(-aasequence => "MGLAAPTRS*");
@@ -165,8 +165,8 @@ sub entry2liveseq {
             string specifying a gene name
 
 =cut
- 
-=head1 gene2liveseq
+
+=head2 gene2liveseq
 
   Title   : gene2liveseq
   Usage   : $gene=$loader->gene2liveseq(-gene_name => "gene name");
@@ -544,7 +544,7 @@ sub transexonscreation {
 #sub printgene {
 # deleted. Some functionality placed in Gene->printfeaturesnum
 
-=head1 printswissprot
+=head2 printswissprot
 
   Title   : printswissprot
   Usage   : $loader->printswissprot($hashref);
@@ -591,7 +591,7 @@ sub printswissprot {
   }
 }
 
-=head1 printembl
+=head2 printembl
 
   Title   : printembl
   Usage   : $loader->printembl();
@@ -658,7 +658,7 @@ sub printembl {
   }
 }
 
-=head1 genes
+=head2 genes
 
   Title   : genes
   Usage   : $loader->genes();

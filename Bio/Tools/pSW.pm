@@ -1,4 +1,4 @@
-## $Id: pSW.pm,v 1.9.2.2 2001/03/05 17:44:43 dag Exp $
+## $Id: pSW.pm,v 1.9.2.3 2001/03/30 07:23:16 lapp Exp $
 
 #
 # BioPerl module for Bio::Tools::pSW
@@ -88,7 +88,7 @@ Send your comments and suggestions preferably to one of the Bioperl mailing list
 Your participation is much appreciated.
 
     bioperl-l@bioperl.org              - General discussion
-    http://bioperl.org/MailList.html  - About the mailing lists
+    http://bioperl.org/MailList.shtml  - About the mailing lists
 
 =head2 Reporting Bugs
 

@@ -2,7 +2,7 @@
 # PACKAGE : Bio::SeqIO::scf
 # AUTHOR  : Aaron Mackey <amackey@virginia.edu>
 # CREATED : Feb 16 1999
-# REVISION: $Id: scf.pm,v 1.7 2001/01/30 06:48:11 lapp Exp $
+# REVISION: $Id: scf.pm,v 1.7.2.1 2001/04/01 06:20:23 lapp Exp $
 #            
 # Copyright (c) 1997-9 bioperl, Aaron Mackeyy. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
@@ -133,7 +133,7 @@ sub next_seq{
    $seqc = '';
    for (0 .. ($bases - 1) ) {
      $self->throw('Unexpected end of file while reading from SCF file')
-       unless 12 == read(STDIN, $buffer, 12);
+       unless 12 == read($fh, $buffer, 12);
      my ($index,
 	 $prob_A,
 	 $prob_C,

@@ -1,4 +1,4 @@
-# $Id: SeqIO.pm,v 1.26.2.1 2001/03/02 22:47:54 heikki Exp $
+# $Id: SeqIO.pm,v 1.26.2.2 2001/03/09 17:37:32 heikki Exp $
 #
 # BioPerl module for Bio::SeqIO
 #
@@ -137,6 +137,28 @@ Note that you must pass filehandles as references to globs.
 If neither a filehandle nor a filename is specified, then the module
 will read from the @ARGV array or STDIN, using the familiar E<lt>E<gt>
 semantics.
+
+A string filehandle is handy if you want to modify the output in the
+memory, before printing it out. The following program reads in EMBL
+formatted entries from a file and prints them out in fasta format with
+some HTML tags:
+
+  use Bio::SeqIO;
+  use IO::String;
+  my $in  = Bio::SeqIO->new('-file' => "emblfile" , 
+  			    '-format' => 'EMBL');
+  while ( my $seq = $in->next_seq() ) {
+      # the output handle is reset for every file
+      my $stringio = IO::String->new($string);
+      my $out = Bio::SeqIO->new('-fh' => $stringio,
+  			        '-format' => 'fasta');
+      # output goes into $string
+      $out->write_seq($seq);
+      # modify $string
+      $string =~ s|(>)(\w+)|$1<font color="Red">$2</font>|g;
+      # print into STDOUT
+      print $string;
+  }
 
 =item -format
 

@@ -1,4 +1,4 @@
-# $Id: AlignIO.pm,v 1.7.2.1 2001/03/02 17:32:14 heikki Exp $
+# $Id: AlignIO.pm,v 1.7.2.3 2001/05/16 11:05:43 heikki Exp $
 #
 # BioPerl module for Bio::AlignIO
 #
@@ -24,19 +24,21 @@ Bio::AlignIO - Handler for AlignIO Formats
 
     use Bio::AlignIO;
 
-    $in  = Bio::AlignIO->new(-file => "inputfilename" , '-format' => 'fasta');
-    $out = Bio::AlignIO->new(-file => ">outputfilename" , '-format' => 'pfam');
+    $inputfilename = "testaln.fasta";
+    $in  = Bio::AlignIO->new(-file => $inputfilename , '-format' => 'fasta');
+    $out = Bio::AlignIO->new(-file => ">out.aln.pfam" , '-format' => 'pfam');
     # note: we quote -format to keep older perl's from complaining.
 
     while ( my $aln = $in->next_aln() ) {
-	$out->write_aln($aln);
+        $out->write_aln($aln);
     }
 
 or
 
     use Bio::AlignIO;
 
-    $in  = Bio::AlignIO->newFh(-file => "inputfilename" , '-format' => 'fasta');
+    $inputfilename = "testaln.fasta";
+    $in  = Bio::AlignIO->newFh(-file => $inputfilename , '-format' => 'fasta');
     $out = Bio::AlignIO->newFh('-format' => 'pfam');
 
     # World's shortest Fasta<->pfam format converter:

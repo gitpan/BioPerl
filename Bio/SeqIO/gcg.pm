@@ -1,4 +1,4 @@
-# $Id: gcg.pm,v 1.10 2001/02/26 02:00:34 lapp Exp $
+# $Id: gcg.pm,v 1.10.2.1 2001/06/18 12:41:53 heikki Exp $
 #
 # BioPerl module for Bio::SeqIO::gcg
 #
@@ -213,7 +213,7 @@ sub write_seq {
  Argument  : a Bio::PrimarySeqI implementing object
 
 =cut
- 
+
 sub GCG_checksum {
     my ($self,$seqobj) = @_;
     my $index = 0;

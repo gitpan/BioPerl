@@ -11,7 +11,7 @@
 #                 support.
 # CREATED : 4 May 1998
 # STATUS  : Alpha
-# REVISION: $Id: Webblast.pm,v 1.8.2.1 2001/03/03 08:29:00 heikki Exp $
+# REVISION: $Id: Webblast.pm,v 1.8.2.4 2001/06/21 15:36:05 heikki Exp $
 #
 # For documentation, run this module through pod2html
 # (preferably from Perl v5.004 or better).
@@ -77,10 +77,10 @@ use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 			    @Blast_matrix_remote)] );
 
 use strict;
-use vars qw( $ID $VERSION $revision);
+use vars qw( $ID $version $revision);
 
 $ID       = 'Bio::Tools::Blast::Run::Webblast';
-$VERSION  = 1.24; 
+$version  = 1.24; 
 
 # SAC: grouped database names.
 # May want to put these sorts of things in a
@@ -323,21 +323,21 @@ The development of this is thus linked with the Blast.pm module.
 
 =head2 Mailing Lists 
 
-User feedback is an integral part of the evolution of this and other Bioperl modules.
-Send your comments and suggestions preferably to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-    vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
-    vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
-    http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                 - General discussion
+  http://bio.perl.org/MailList.html  - About the mailing lists
 
 =head2 Reporting Bugs
 
-Report bugs to the Bioperl bug tracking system to help us keep track the bugs and 
-their resolution. Bug reports can be submitted via email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via email
+or the web:
 
-    bioperl-bugs@bio.perl.org                   
-    http://bio.perl.org/bioperl-bugs/           
+  bioperl-bugs@bioperl.org
+  http://bio.perl.org/bioperl-bugs/
 
 =head1 AUTHOR
 
@@ -452,7 +452,7 @@ for documentation purposes only.
         nr, month, swissprot, dbest, dbsts, 
         est_mouse, est_human, est_others, pdb, vector, kabat,
         mito, alu, epd, yeast, ecoli, gss, htgs.
- 
+
     These are exported by this module in the @Blast_dbp_remote
     and @Blast_dbn_remote arrays.
   -------------------------------------------------------------
@@ -465,7 +465,7 @@ for documentation purposes only.
         (11) Bacterial                  (12) Alternative Yeast Nuclear
         (13) Ascidian Mitochondrial     (14) Flatworm Mitochondrial
         (15) Blepharisma Macronuclear
- 
+
   -------------------------------------------------------------
   Available values for organism (Blast2):
 
@@ -1733,17 +1733,17 @@ BLOSUM45	 19	 1
 BLOSUM45	 18	 1  
 BLOSUM45	 17	 1  
 BLOSUM45	 16	 1  
- 
+
 OTHER_ADVANCED
 [default value]:""
- 
+
 EMAIL
 [default value]:''
 IS_SET
 
 PATH
 [default value]:""
- 
+
 HTML
 [default value]:''
 IS_SET
@@ -1841,7 +1841,7 @@ BLOSUM45	 19	 1
 BLOSUM45	 18	 1
 BLOSUM45	 17	 1
 BLOSUM45	 16	 1
- 
+
 OTHER_ADVANCED
 [default value]:""
 

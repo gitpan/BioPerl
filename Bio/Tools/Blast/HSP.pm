@@ -3,7 +3,7 @@
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : March 1996
 # STATUS  : Alpha
-# REVISION: $Id: HSP.pm,v 1.11.2.1 2001/03/03 08:28:58 heikki Exp $
+# REVISION: $Id: HSP.pm,v 1.11.2.2 2001/06/18 12:41:54 heikki Exp $
 #
 # For the latest version and documentation, visit the distribution site:
 #    http://genome-www.stanford.edu/perlOOP/bioperl/blast/
@@ -27,7 +27,7 @@ use Bio::Root::Object ();
 use strict;
 use vars qw($ID $GAP_SYMBOL @SCORE_CUTOFFS $Revision %STRAND_SYMBOL);
 $ID       = 'Bio::Tools::Blast::HSP';
-$Revision = '$Id: HSP.pm,v 1.11.2.1 2001/03/03 08:28:58 heikki Exp $';  #'
+$Revision = '$Id: HSP.pm,v 1.11.2.2 2001/06/18 12:41:54 heikki Exp $';  #'
 
 $GAP_SYMBOL    = '-';          # Need a more general way to handle gap symbols.
 @SCORE_CUTOFFS = ( 100, 30 );  # Bit score cutoffs (see homol_score()).
@@ -48,7 +48,7 @@ You should not need to use this package directly. See L<_initialize>()
 for a description of constructor parameters.
 
     require Bio::Tools::Blast::HSP;
- 
+
     $hspObj = eval{ new Bio::Tools::Blast::HSP(-DATA    =>\@hspData, 
 					       -PARENT  =>$sbjct_object, 
 					       -NAME    =>$hspCount,

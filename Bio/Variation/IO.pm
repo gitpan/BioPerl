@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.6 2001/02/27 19:37:41 lapp Exp $
+# $Id: IO.pm,v 1.6.2.2 2001/06/21 15:36:05 heikki Exp $
 #
 # BioPerl module for Bio::Variation::IO
 #
@@ -229,13 +229,12 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Variation::IO;
-my $VERSION=1.0;
+my $version=1.0;
 
 use strict;
 use vars '@ISA';
 
 use Bio::SeqIO;
-use Symbol();
 
 @ISA = 'Bio::SeqIO';
 

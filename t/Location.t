@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Location.t,v 1.14 2001/02/20 17:51:45 jason Exp $
+## $Id: Location.t,v 1.14.2.1 2001/05/21 19:06:37 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -126,7 +126,7 @@ ok($fuzzy->to_FTstring(), 'complement(<10..20)');
 ok($simple->to_FTstring(), '10..20');
 $simple->strand(-1);
 ok($simple->to_FTstring(), 'complement(10..20)');
-ok( $splitlocation->to_FTstring(), 'join(13..30,18..22,19..20,30..90,<50..61)');
+ok( $splitlocation->to_FTstring(), 'join(13..30,30..90,18..22,19..20,<50..61)');
 $f = new Bio::Location::Fuzzy(-start => '45.60',
 			      -end   => '75^80');
 

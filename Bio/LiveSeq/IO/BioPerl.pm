@@ -1,4 +1,4 @@
-# $Id: BioPerl.pm,v 1.9.2.1 2001/03/02 22:47:58 heikki Exp $
+# $Id: BioPerl.pm,v 1.9.2.4 2001/06/22 10:40:03 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::IO::BioPerl
 #
@@ -62,7 +62,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::IO::BioPerl;
-$VERSION=2.3;
+$version=2.3;
 
 # Version history:
 # Thu Apr  6 00:25:46 BST 2000 v 1.0 begun
@@ -82,17 +82,17 @@ $VERSION=2.3;
 
 use strict;
 use Carp qw(cluck croak carp);
-use vars qw($VERSION @ISA);
+use vars qw($version @ISA);
 use Bio::SeqIO;
 
-use Bio::LiveSeq::IO::Loader 2.0;
+use Bio::LiveSeq::IO::Loader;
 
 @ISA=qw(Bio::LiveSeq::IO::Loader);
 
 # This package can in the future host other databases loading subroutines.
 # e.g. ensembl2hash
 
-=head1 load
+=head2 load
 
   Title   : load
   Usage   : my $filename="../data/M20132";
@@ -144,7 +144,7 @@ sub load {
   return $obj;
 }
 
-=head1 embl2hash
+=head2 embl2hash
 
   Title   : embl2hash
   Function: retrieves with BioPerl an EMBL entry, parses it and creates
@@ -299,7 +299,7 @@ sub embl2hash {
   return (\%entryhash);
 }
 
-=head1 novelaasequence2gene
+=head2 novelaasequence2gene
 
   Title   : novelaasequence2gene
   Usage   : $gene=Bio::LiveSeq::IO::BioPerl->novelaasequence2gene(-aasequence => "MGLAAPTRS*");

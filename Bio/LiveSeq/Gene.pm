@@ -1,4 +1,4 @@
-# $Id: Gene.pm,v 1.8.2.1 2001/03/02 22:47:56 heikki Exp $
+# $Id: Gene.pm,v 1.8.2.6 2001/06/22 10:40:02 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::Gene
 #
@@ -42,7 +42,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::Gene;
-$VERSION=2.2;
+$version=2.3;
 
 # Version history:
 # Tue Apr  4 15:22:41 BST 2000 v 1.0 begun
@@ -55,16 +55,17 @@ $VERSION=2.2;
 # Wed Jun 28 18:38:45 BST 2000 v 2.1 chaged croak to carp + return(-1)
 # Wed Jul 12 15:19:26 BST 2000 v 2.11 ->strand call protected by if(ref(transcript))
 # Tue Jan 30 14:15:42 EST 2001 v 2.2 delete_Obj added, to flush circular references
+# Wed Apr  4 13:29:59 BST 2001 v 2.3 LiveSeq-wide warn and verbose added
 
 use strict;
 use Carp;
-use vars qw($VERSION @ISA);
-use Bio::LiveSeq::Prim_Transcript 1.0; # needed to create maxtranscript obj
+use vars qw($version @ISA);
+use Bio::LiveSeq::Prim_Transcript; # needed to create maxtranscript obj
 
 #use Bio::LiveSeq::SeqI 2.11; # uses SeqI, inherits from it
 #@ISA=qw(Bio::LiveSeq::SeqI);
 
-=head1 new
+=head2 new
 
   Title   : new
   Usage   : $gene = Bio::LiveSeq::Gene->new(-name => "name",
@@ -100,7 +101,7 @@ use Bio::LiveSeq::Prim_Transcript 1.0; # needed to create maxtranscript obj
 sub new {
   my ($thing, %args) = @_;
   my $class = ref($thing) || $thing;
-  my ($i,$obj,%gene);
+  my ($i,$self,%gene);
 
   my ($name,$inputfeatures,$upbound,$downbound)=($args{-name},$args{-features},$args{-upbound},$args{-downbound});
 
@@ -126,7 +127,7 @@ sub new {
 
   my $strand;
   unless (ref($Transcripts[0]) eq "Bio::LiveSeq::Transcript") {
-    carp "$class not initialised: first Transcript not a LiveSeq object";
+    $self->warn("$class not initialised: first Transcript not a LiveSeq object");
     return (-1);
   } else {
     $strand=$Transcripts[0]->strand; # for maxtranscript consistency check
@@ -135,14 +136,14 @@ sub new {
   for $i (@Transcripts) {
     ($start,$end)=($i->start,$i->end);
     unless ((ref($i) eq "Bio::LiveSeq::Transcript")&&($DNA->valid($start))&&($DNA->valid($end))) {
-      carp "$class not initialised because of problems in Transcripts feature";
+      $self->warn("$class not initialised because of problems in Transcripts feature");
       return (-1);
     } else {
     }
     unless($minstart) { $minstart=$start; } # initialize
     unless($maxend) { $maxend=$end; } # initialize
     if ($i->strand != $strand) {
-      carp "$class not initialised because exon-CDS-prim_transcript features do not share the same strand!";
+      $self->warn("$class not initialised because exon-CDS-prim_transcript features do not share the same strand!");
       return (-1);
     }
     if (($strand == 1)&&($start < $minstart)||($strand == -1)&&($start > $minstart)) { $minstart=$start; }
@@ -168,7 +169,7 @@ sub new {
     for $i (@Translations) {
       ($start,$end)=($i->start,$i->end);
       unless ((ref($i) eq "Bio::LiveSeq::Translation")&&($DNA->valid($start))&&($DNA->valid($end))) {
-	carp "$class not initialised because of problems in Translations feature";
+	$self->warn("$class not initialised because of problems in Translations feature");
 	return (-1);
       }
     }
@@ -177,11 +178,11 @@ sub new {
     for $i (@Exons) {
       ($start,$end)=($i->start,$i->end);
       unless ((ref($i) eq "Bio::LiveSeq::Exon")&&($DNA->valid($start))&&($DNA->valid($end))) {
-	carp "$class not initialised because of problems in Exons feature";
+	$self->warn("$class not initialised because of problems in Exons feature");
 	return (-1);
       }
       if ($i->strand != $strand) {
-	carp "$class not initialised because exon-CDS-prim_transcript features do not share the same strand!";
+	$self->warn("$class not initialised because exon-CDS-prim_transcript features do not share the same strand!");
 	return (-1);
       }
       if (($strand == 1)&&($start < $minstart)||($strand == -1)&&($start > $minstart)) { $minstart=$start; }
@@ -192,7 +193,7 @@ sub new {
     for $i (@Introns) {
       ($start,$end)=($i->start,$i->end);
       unless ((ref($i) eq "Bio::LiveSeq::Intron")&&($DNA->valid($start))&&($DNA->valid($end))) {
-	carp "$class not initialised because of problems in Introns feature";
+	$self->warn("$class not initialised because of problems in Introns feature");
 	return (-1);
       }
     }
@@ -201,7 +202,7 @@ sub new {
     for $i (@Repeat_Units) {
       ($start,$end)=($i->start,$i->end);
       unless ((ref($i) eq "Bio::LiveSeq::Repeat_Unit")&&($DNA->valid($start))&&($DNA->valid($end))) {
-	carp "$class not initialised because of problems in Repeat_Units feature";
+	$self->warn("$class not initialised because of problems in Repeat_Units feature");
 	return (-1);
       }
     }
@@ -210,7 +211,7 @@ sub new {
     for $i (@Repeat_Regions) {
       ($start,$end)=($i->start,$i->end);
       unless ((ref($i) eq "Bio::LiveSeq::Repeat_Region")&&($DNA->valid($start))&&($DNA->valid($end))) {
-	carp "$class not initialised because of problems in Repeat_Regions feature";
+	$self->warn("$class not initialised because of problems in Repeat_Regions feature");
 	return (-1);
       }
     }
@@ -219,11 +220,11 @@ sub new {
     for $i (@Prim_Transcripts) {
       ($start,$end)=($i->start,$i->end);
       unless ((ref($i) eq "Bio::LiveSeq::Prim_Transcript")&&($DNA->valid($start))&&($DNA->valid($end))) {
-	carp "$class not initialised because of problems in Prim_Transcripts feature";
+	$self->warn("$class not initialised because of problems in Prim_Transcripts feature");
 	return (-1);
       }
       if ($i->strand != $strand) {
-	carp "$class not initialised because exon-CDS-prim_transcript features do not share the same strand!";
+	$self->warn("$class not initialised because exon-CDS-prim_transcript features do not share the same strand!");
 	return (-1);
       }
       if (($strand == 1)&&($start < $minstart)||($strand == -1)&&($start > $minstart)) { $minstart=$start; }
@@ -260,7 +261,7 @@ sub new {
   # check the upbound downbound parameters
   if (defined($upbound)) {
     unless ($DNA->valid($upbound)) {
-      carp "$class not initialised because upbound label not valid";
+      $self->warn("$class not initialised because upbound label not valid");
       return (-1);
     }
   } else {
@@ -268,7 +269,7 @@ sub new {
   }
   if (defined($downbound)) {
     unless ($DNA->valid($downbound)) {
-      carp "$class not initialised because downbound label not valid";
+      $self->warn("$class not initialised because downbound label not valid");
       return (-1);
     }
   } else {
@@ -277,19 +278,19 @@ sub new {
 
   %gene = (name => $name, features => $features,multiplicity => \%multiplicity,
           upbound => $upbound, downbound => $downbound, allfeatures => \@allfeatures, maxtranscript => $maxtranscript);
-  $obj = \%gene;
-  $obj = bless $obj, $class;
-  _set_Gene_in_all($obj,@allfeatures);
-  return $obj;
+  $self = \%gene;
+  $self = bless $self, $class;
+  _set_Gene_in_all($self,@allfeatures);
+  return $self;
 }
 
 # this sets the "gene" objref in all the objects "belonging" to the Gene,
 # i.e. in all its Features.
 sub _set_Gene_in_all {
   my $Gene=shift;
-  my $obj;
-  foreach $obj (@_) {
-    $obj->gene($Gene);
+  my $self;
+  foreach $self (@_) {
+    $self->gene($Gene);
   }
 }
 
@@ -403,5 +404,47 @@ sub delete_Obj {
   }
   return(1);
 }
+
+
+=head2 verbose
+
+ Title   : verbose
+ Usage   : $self->verbose(0)
+ Function: Sets verbose level for how ->warn behaves
+           -1 = silent: no warning
+            0 = reduced: minimal warnings
+            1 = default: all warnings
+            2 = extended: all warnings + stack trace dump
+            3 = paranoid: a warning becomes a throw and the program dies
+
+           Note: a quick way to set all LiveSeq objects at the same verbosity
+           level is to change the DNA level object, since they all look to
+           that one if their verbosity_level attribute is not set.
+           But the method offers fine tuning possibility by changing the
+           verbose level of each object in a different way.
+
+           So for example, after $loader= and $gene= have been retrieved
+           by a program, the command $gene->verbose(0); would
+           set the default verbosity level to 0 for all objects.
+
+ Returns : the current verbosity level
+ Args    : -1,0,1,2 or 3
+
+=cut
+
+
+sub verbose {
+  my $self=shift;
+  my $value = shift;
+  return $self->{'features'}->{'DNA'}->verbose($value);
+}
+
+sub warn {
+  my $self=shift;
+  my $value = shift;
+  return $self->{'features'}->{'DNA'}->warn($value);
+}
+
+
 
 1;

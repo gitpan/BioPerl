@@ -5,10 +5,10 @@
 package Bio::UnivAln;
 use strict;
 
-use vars qw ($VERSION $Revision);
+use vars qw ($version $Revision);
 
-$VERSION    = 1.010; # bio.perl.org Version;
-$Revision   = '$Id: UnivAln.pm,v 1.9.2.1 2001/03/02 22:47:54 heikki Exp $';
+$version    = 1.010; # bio.perl.org Version;
+$Revision   = '$Id: UnivAln.pm,v 1.9.2.2 2001/06/21 15:36:01 heikki Exp $';
 
 # Disclaimer from Georg Fuellen:
 # UnivAln is now under the CVS system. Georg Fuellen is currently
@@ -932,7 +932,7 @@ use Exporter;
 use vars qw( @ISA  @EXPORT @EXPORT_OK );
 @ISA         = qw(Exporter);
 @EXPORT      = qw();
-@EXPORT_OK   = qw($VERSION %UnivAlnType @UnivAlnType
+@EXPORT_OK   = qw($version %UnivAlnType @UnivAlnType
                   %UnivAlnForm @UnivAlnForm %UnivAlnAlphs @UnivAlnAlphs);
 require 5.002;
 use Carp;

@@ -3,7 +3,7 @@
 # PURPOSE : To encapsulate commonly used URLs for web key websites in bioinformatics.
 # AUTHOR  : Steve A. Chervitz
 # CREATED : 27 Aug 1996 
-# REVISION: $Id: WWW.pm,v 1.4 2001/01/30 20:40:46 jason Exp $
+# REVISION: $Id: WWW.pm,v 1.4.2.2 2001/06/21 15:36:05 heikki Exp $
 #
 # For documentation, run this module through pod2html 
 # (preferably from Perl v5.004 or better).
@@ -20,7 +20,7 @@ package	 Bio::Tools::WWW;
 use strict;  
 use Bio::Root::RootI;
 use Exporter      ();
-use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS $ID $VERSION $BioWWW $Revision 
+use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS $ID $version $BioWWW $Revision 
 	    $AUTHORITY);
 $AUTHORITY = 'nobody@localhost';
 @ISA         = qw( Bio::Root::RootI Exporter);
@@ -29,8 +29,8 @@ $AUTHORITY = 'nobody@localhost';
 		 std => [qw($BioWWW)]);
 
 $ID = 'Bio::Tools::WWW';
-$VERSION = 0.014;
-$Revision = '$Id: WWW.pm,v 1.4 2001/01/30 20:40:46 jason Exp $'; #'
+$version = 0.014;
+$Revision = '$Id: WWW.pm,v 1.4.2.2 2001/06/21 15:36:05 heikki Exp $'; #'
 
 ## Static object.
 $BioWWW = {};
@@ -135,9 +135,8 @@ User feedback is an integral part of the evolution of this and other Bioperl mod
 Send your comments and suggestions preferably to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-    vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
-    vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
-    http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://www.bioperl.org/MailList.shtml  - About the mailing lists
 
 =head2 Reporting Bugs
 

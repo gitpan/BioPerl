@@ -1,4 +1,4 @@
-# $Id: RootI.pm,v 1.28 2001/03/01 10:19:55 lapp Exp $
+# $Id: RootI.pm,v 1.28.2.2 2001/06/21 15:36:04 heikki Exp $
 #
 # BioPerl module for Bio::Root::RootI
 #
@@ -59,14 +59,14 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Root::RootI;
 
-use vars qw(@ISA $DEBUG $ID $Revision $VERSION $VERBOSITY);
+use vars qw(@ISA $DEBUG $ID $Revision $version $VERBOSITY);
 use strict;
 #use Bio::Root::Err; # we don't use that any longer, right?
 
 BEGIN { 
     $ID        = 'Bio::Root::RootI';
-    $VERSION   = 0.7;
-    $Revision  = '$Id: RootI.pm,v 1.28 2001/03/01 10:19:55 lapp Exp $ ';
+    $version   = 0.7;
+    $Revision  = '$Id: RootI.pm,v 1.28.2.2 2001/06/21 15:36:04 heikki Exp $ ';
     $DEBUG     = 0;
     $VERBOSITY = 0;
 }
@@ -76,7 +76,7 @@ BEGIN {
 
  Purpose   : generic intantiation function can be overridden if 
              special needs of a module cannot be done in _initialize
- 
+
 =cut
 
 sub new {
@@ -139,7 +139,6 @@ sub throw{
  Returns : 
  Args    :
 
- 
 =cut
 
 sub warn{

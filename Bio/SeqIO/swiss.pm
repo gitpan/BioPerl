@@ -1,4 +1,4 @@
-# $Id: swiss.pm,v 1.34.2.1 2001/03/02 22:48:02 heikki Exp $
+# $Id: swiss.pm,v 1.34.2.7 2001/06/09 22:50:18 roger Exp $
 #
 # BioPerl module for Bio::SeqIO::swiss
 #
@@ -56,7 +56,7 @@ This is function which is called as
 To generate the ID line. If it is not there, it generates a sensible ID
 line using a number of tools.
 
- 
+
 =back
 
 =head1 FEEDBACK
@@ -114,7 +114,7 @@ sub _initialize {
   $self->SUPER::_initialize(@args);
    
   # hash for functions for decoding keys.
-  $self->{'_func_ftunit_hash'} = {}; 
+  $self->{'_func_ftunit_hash'} = {};
   $self->_show_dna(1); # sets this to one by default. People can change it
 }
 
@@ -145,17 +145,24 @@ sub next_seq {
        while( defined ($line = $self->_readline) ) {
    	   $line =~ /\S/ && last;
        }
-   }   
+   }
    if( !defined $line ) {
        return undef; # end of file
    }
 
-   $line =~ /^ID\s+([^\s_]+)_([^\s_]+)\s+([^\s;]+);\s+([^\s;]+);/ 
+   # fixed to allow _DIVISION to be optional for bug #946
+   # see bug report for more information
+   $line =~ /^ID\s+([^\s_]+)(_([^\s_]+))?\s+([^\s;]+);\s+([^\s;]+);/ 
      || $self->throw("swissprot stream with no ID. Not swissprot in my book");
-   $name = $1."_".$2;
+   if( $3 ) {
+       $name = "$1$2";
+       $seq->division($3);
+   } else {
+       $name = $1;
+       $seq->division('UNK');       
+   }
    $seq->primary_id($1);
-   $seq->division($2);
-   $seq->molecule($4);
+   $seq->molecule($5);
     # this is important to have the id for display in e.g. FTHelper, otherwise
     # you won't know which entry caused an error
    $seq->display_id($name);
@@ -227,7 +234,7 @@ sub next_seq {
 		   $comment .= $1;
 		   $comment .= "\n";
 	       }
-	       else { 
+	       else {
 		   last;
 	       }
 	   }
@@ -287,7 +294,7 @@ sub next_seq {
 	   /^SQ/ && last;
        }
    }
-   $seqc = "";	       
+   $seqc = "";	
    while( defined ($_ = $self->_readline) ) {
        /^\/\// && last;
        $_ = uc($_);
@@ -338,17 +345,10 @@ sub write_seq {
 
    if ( !$seq->can('division') || ! defined ($div = $seq->division()) ) {
        $div = 'UNK';
-   }
-   else {
-       $div=$seq->division;
-   }
-   $mol = $seq->molecule;
-  
-   if(!$seq->can('molecule') || (!defined($mol))) {
+   } 
+      
+   if(! $seq->can('molecule') || ! defined ($mol = $seq->molecule) ) {
        $mol = 'XXX';
-   }
-   else {
-       $mol = $seq->molecule;
    }
    
    my $temp_line;
@@ -365,16 +365,16 @@ sub write_seq {
        # this. HL 2000/09/03
        $temp_line = sprintf ("%10s     STANDARD;      %3s;   %d AA.",
 			     $seq->display_id(), $mol, $len);
-   } 
+   }
 
-   $self->_print( "ID   $temp_line\n");   
+   $self->_print( "ID   $temp_line\n");
 
    # if there, write the accession line
    local($^W) = 0;   # supressing warnings about uninitialized fields
 
    if( $self->_ac_generation_func ) {
        $temp_line = &{$self->_ac_generation_func}($seq);
-       $self->_print( "AC   $temp_line\n");   
+       $self->_print( "AC   $temp_line\n");
    } else {
        if ($seq->can('accession_number') ) {
 	   $self->_print("AC   ",$seq->accession_number,";");
@@ -389,19 +389,23 @@ sub write_seq {
 	   }
        }
        # otherwise - cannot print <sigh>
-   } 
+   }
 
    #Date lines
-   foreach my $dt ( $seq->get_dates() ) {
-       $self->_write_line_swissprot_regex("DT   ","DT   ",$dt,"\\s\+\|\$",80);
+   if( $seq->can('get_dates') ) {
+       foreach my $dt ( $seq->get_dates() ) {
+	   $self->_write_line_swissprot_regex("DT   ","DT   ",
+					      $dt,"\\s\+\|\$",80);
+       }
    }
-   
+
    #Definition lines
    $self->_write_line_swissprot_regex("DE   ","DE   ",$seq->desc(),"\\s\+\|\$",80);
 
    #Gene name
-   if ($seq->annotation->can('gene_name') && $seq->annotation->gene_name) {
-       $self->_print("GN   ",$seq->annotation->gene_name,"\n");
+   if ($seq->annotation->can('each_gene_name') && 
+       (my @genes = $seq->annotation->each_gene_name) ) {
+       $self->_print("GN   ",join(' OR ', @genes),"\n");
    }
    
    # Organism lines
@@ -447,11 +451,11 @@ sub write_seq {
        # more like a comment than a parseable value, so print it as is
        if ($ref->rp) {
 	 $self->_write_line_swissprot_regex("RP   ","RP   ",$ref->rp,
-					    "\\s\+\|\$",80); 
-       } 
+					    "\\s\+\|\$",80);
+       }
        if ($ref->comment) {
 	 $self->_write_line_swissprot_regex("RC   ","RC   ",$ref->comment,
-					    "\\s\+\|\$",80); 
+					    "\\s\+\|\$",80);
        }
        if ($ref->medline) {
 	 # new RX format in swissprot LP 09/17/00
@@ -465,8 +469,8 @@ sub write_seq {
 					    $ref->medline.".","\\s\+\|\$",80);
 	 }
        }
-       $self->_write_line_swissprot_regex("RA   ","RA   ",$ref->authors,"\\s\+\|\$",80);       
-       $self->_write_line_swissprot_regex("RT   ","RT   ",$ref->title,"\\s\+\|\$",80);       
+       $self->_write_line_swissprot_regex("RA   ","RA   ",$ref->authors,"\\s\+\|\$",80);
+       $self->_write_line_swissprot_regex("RT   ","RT   ",$ref->title,"\\s\+\|\$",80);
        $self->_write_line_swissprot_regex("RL   ","RL   ",$ref->location,"\\s\+\|\$",80);
        $t++;
    }
@@ -487,67 +491,78 @@ sub write_seq {
      if (defined($dblink->comment)&&($dblink->comment)) {
        $self->_print("DR   ",$dblink->database,"; ",$dblink->primary_id,"; ",
 		     $dblink->optional_id,"; ",$dblink->comment,".\n");
-     } else {
+     } elsif($dblink->optional_id) {
        $self->_print("DR   ",$dblink->database,"; ",$dblink->primary_id,"; ",
 		     $dblink->optional_id,".\n");
      }
-   }
+     else {
+	$self->_print("DR   ",$dblink->database,"; ",$dblink->primary_id,"; ",
+		     "-.\n");
+    }
+ }
    
 
    # if there, write the kw line
    
    if( $self->_kw_generation_func ) {
        $temp_line = &{$self->_kw_generation_func}($seq);
-       $self->_print( "KW   $temp_line\n");   
+       $self->_print( "KW   $temp_line\n");
    } else {
        if( $seq->can('keywords') ) {
 	 $self->_write_line_swissprot_regex("KW   ","KW   ",
-					    $seq->keywords,"\\s\+\|\$",80);       
+					    $seq->keywords,"\\s\+\|\$",80);
        }
-   } 
-   if( defined $self->_post_sort ) {
-       # we need to read things into an array. Process. Sort them. Print 'em
+   }
 
-       my $post_sort_func = $self->_post_sort();
-       my @fth;
-
-       foreach my $sf ( $seq->top_SeqFeatures ) {
-	   push(@fth,Bio::SeqIO::FTHelper::from_SeqFeature($sf,$seq));
-       }
-
-       @fth = sort { &$post_sort_func($a,$b) } @fth;
-       
-       foreach my $fth ( @fth ) {
-	   $self->_print_swissprot_FTHelper($fth);
-       }
-   } else {
-       # not post sorted. And so we can print as we get them.
-       # lower memory load...
-       
-       foreach my $sf ( $seq->top_SeqFeatures ) {
-	   my @fth = Bio::SeqIO::FTHelper::from_SeqFeature($sf,$seq);
+#Check if there is seqfeatures before printing the FT line
+   my @feats = $seq->top_SeqFeatures;
+       if ($feats[0]) {
+         if( defined $self->_post_sort ) {
+	     
+	     # we need to read things into an array. Process. Sort them. Print 'em
+	     
+	     my $post_sort_func = $self->_post_sort();
+	     my @fth;
+	     
+	   my @feats = $seq->top_SeqFeatures;
+	   
+	   foreach my $sf ( $seq->top_SeqFeatures ) {
+	       push(@fth,Bio::SeqIO::FTHelper::from_SeqFeature($sf,$seq));
+	   }
+	   @fth = sort { &$post_sort_func($a,$b) } @fth;
+	   
 	   foreach my $fth ( @fth ) {
-	       if( ! $fth->isa('Bio::SeqIO::FTHelper') ) {
-		   $sf->throw("Cannot process FTHelper... $fth");
-	       }
-
 	       $self->_print_swissprot_FTHelper($fth);
 	   }
+       } else {
+	   # not post sorted. And so we can print as we get them.
+	   # lower memory load...
+	   
+	   foreach my $sf ( $seq->top_SeqFeatures ) {
+	       my @fth = Bio::SeqIO::FTHelper::from_SeqFeature($sf,$seq);
+	       foreach my $fth ( @fth ) {
+		   if( ! $fth->isa('Bio::SeqIO::FTHelper') ) {
+		       $sf->throw("Cannot process FTHelper... $fth");
+		   }
+		   
+		   $self->_print_swissprot_FTHelper($fth);
+	       }
+	   }
+       }
+       
+       if( $self->_show_dna() == 0 ) {
+	   return;
        }
    }
-
-   if( $self->_show_dna() == 0 ) {
-       return;
-   }
-
    # finished printing features.
 
    # molecular weight
    my $mw = ${Bio::Tools::SeqStats->get_mol_wt($seq->primary_seq)}[0];
    # checksum
-   my $crc32 = $self->_crc32(\$str); 
-   $self->_print( sprintf("SQ   SEQUENCE  %4d AA;  %d MW;  %X CRC32;\n",
-			  $len,$mw,$crc32));
+   # was crc32 checksum, changed it to crc64
+   my $crc64 = $self->_crc64(\$str);
+   $self->_print( sprintf("SQ   SEQUENCE  %4d AA;  %d MW;  %16s CRC64;\n",
+			  $len,$mw,$crc64));
    $self->_print( "     ");
    my $linepos;
    for ($i = 0; $i < length($str); $i += 10) {
@@ -572,11 +587,12 @@ sub write_seq {
  Returns : 
  Args    :
 
+
 =cut
 
 sub _generateCRCTable {
   # 10001000001010010010001110000100
-  # 32 
+  # 32
   my $poly = 0xEDB88320;
   my ($self) = shift;
         
@@ -628,6 +644,62 @@ sub _crc32 {
   return $crc;
 }
 
+=head2 _crc64
+
+ Title   : _crc64
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _crc64{
+    my ($self, $sequence) = @_;
+    my $POLY64REVh = 0xd8000000;
+    my @CRCTableh = 256;
+    my @CRCTablel = 256;
+    my $initialized;
+    
+
+    my $seq = $$sequence;
+      
+    my $crcl = 0;
+    my $crch = 0;
+    if (!$initialized) {
+	$initialized = 1;
+	for (my $i=0; $i<256; $i++) {
+	    my $partl = $i;
+	    my $parth = 0;
+	    for (my $j=0; $j<8; $j++) {
+		my $rflag = $partl & 1;
+		$partl >>= 1;
+		$partl |= (1 << 31) if $parth & 1;
+		$parth >>= 1;
+		$parth ^= $POLY64REVh if $rflag;
+	    }
+	    $CRCTableh[$i] = $parth;
+	    $CRCTablel[$i] = $partl;
+	}
+    }
+    
+    foreach (split '', $seq) {
+	my $shr = ($crch & 0xFF) << 24;
+	my $temp1h = $crch >> 8;
+	my $temp1l = ($crcl >> 8) | $shr;
+	my $tableindex = ($crcl ^ (unpack "C", $_)) & 0xFF;
+	$crch = $temp1h ^ $CRCTableh[$tableindex];
+	$crcl = $temp1l ^ $CRCTablel[$tableindex];
+    }
+    my $crc64 = sprintf("%08X%08X", $crch, $crcl);
+        
+    return $crc64;
+      
+}
+
+
 =head2 _print_swissprot_FTHelper
 
  Title   : _print_swissprot_FTHelper
@@ -653,6 +725,9 @@ sub _print_swissprot_FTHelper {
    $fth->loc =~ /(\d+)\.\.(\d+)/;
    $start = $1;
    $end = $2;
+   # to_FTString only returns one value when start == end,		#JB955
+   # so if no match is found, assume it is both start and end	#JB955
+   if (!$start) { $start = $end = $fth->loc; }					#JB955
    my $desc = "";
    $desc = @{$fth->field->{"description"}}[0]."." 
      if exists $fth->field->{"description"};

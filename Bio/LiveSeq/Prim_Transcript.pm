@@ -1,4 +1,4 @@
-# $Id: Prim_Transcript.pm,v 1.3.2.1 2001/03/02 22:47:57 heikki Exp $
+# $Id: Prim_Transcript.pm,v 1.3.2.5 2001/06/22 10:40:02 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::Prim_Transcript
 #
@@ -44,18 +44,17 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::Prim_Transcript;
-$VERSION=1.0;
+$version=1.0;
 
 # Version history:
 # Tue Apr  4 18:11:31 BST 2000 v 1.0 created
 
 use strict;
-use Carp;
-use vars qw($VERSION @ISA);
-use Bio::LiveSeq::Range 1.2; # uses Range, inherits from it
+use vars qw($version @ISA);
+use Bio::LiveSeq::Range; # uses Range, inherits from it
 @ISA=qw(Bio::LiveSeq::Range);
 
-=head1 new
+=head2 new
 
   Title   : new
   Usage   : $intron1=Bio::LiveSeq::Prim_Transcript->new(-seq => $objref,

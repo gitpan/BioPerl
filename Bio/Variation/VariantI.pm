@@ -1,4 +1,4 @@
-# $Id: VariantI.pm,v 1.5.2.1 2001/03/02 17:32:14 heikki Exp $
+# $Id: VariantI.pm,v 1.5.2.4 2001/06/21 15:36:05 heikki Exp $
 #
 # BioPerl module for Bio::Variation::VariantI
 #
@@ -94,7 +94,7 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Variation::VariantI;
-$VERSION=1.0;
+$version=1.0;
 use vars qw(@ISA);
 use strict;
 use  Bio::Root::RootI;
@@ -109,17 +109,16 @@ use Bio::SeqFeature::Generic;
  Title   : id
  Usage   : $obj->id
  Function:
- 
+
            Read only method. Returns the id of the variation object.
            The id is the id of the first DBLink object attached to this object.
- 
+
  Example :
  Returns : scalar
  Args    : none
 
 =cut
- 
- 
+
 sub id {
    my ($self) = @_;
    my @ids = $self->each_DBLink;
@@ -203,10 +202,9 @@ sub each_Allele{
            assumed that the Variant descibes polymorphisms.
 
  Returns : a boolean
- 
+
 =cut
- 
- 
+
 sub isMutation {
     my ($self,$value) = @_;
     if (defined $value) {
@@ -530,6 +528,35 @@ sub region_value {
 	$self->{'region_value'} = $value;
     }
     return $self->{'region_value'};
+}
+
+=head2 region_dist
+
+ Title   : region_dist
+ Usage   : $obj->region_dist();
+ Function: 
+
+            Sets and returns the distance tot the closest region
+            (i.e. intro/exon or domain) boundary. If distance is not
+            set, returns false.
+
+ Example : 
+ Returns : integer
+ Args    : integer
+
+=cut
+
+
+sub region_dist {
+    my ($self,$value) = @_;
+    if( defined $value) {
+       if (  not $value =~ /^[+-]?\d+$/ ) {
+	   $self->throw("[$value] for region_dist has to be an integer\n");
+        } else {
+	    $self->{'region_dist'} = $value;
+        }
+    }
+    return $self->{'region_dist'};
 }
 
 

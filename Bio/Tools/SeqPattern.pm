@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Tools::SeqPattern.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 28 Aug 1997
-# REVISION: $Id: SeqPattern.pm,v 1.5 2001/01/30 20:40:46 jason Exp $
+# REVISION: $Id: SeqPattern.pm,v 1.5.2.2 2001/06/21 15:36:05 heikki Exp $
 #            
 # Copyright (c) 1997-8 Steve A. Chervitz. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
@@ -14,9 +14,9 @@ package Bio::Tools::SeqPattern;
 use Bio::Root::RootI;
 @ISA = qw(Bio::Root::RootI);
 use strict;
-use vars qw ($ID $VERSION);
+use vars qw ($ID $version);
 $ID  = 'Bio::Tools::SeqPattern';
-$VERSION = 0.011;
+$version = 0.011;
 
 ## These constants may be more appropriate in a Bio::Dictionary.pm 
 ## type of class.
@@ -74,7 +74,7 @@ tasks with sequence patterns such as:
   -- Untainting yet preserving special characters in the pattern
 
 Other features to look for in the future:
- 
+
   -- Full pattern syntax checking
   -- Conversion between expanded and ondensed forms of the pattern
 
@@ -84,13 +84,13 @@ A key motivation for Bio::Tools::SeqPattern.pm is to have a way to
 generate a reverse complement of a nucleotide sequence pattern.
 This makes possible simultaneous pattern matching on both sense and 
 anti-sense strands of a query sequence. 
- 
+
 In principle, one could do such a search more inefficiently by testing 
 ainst both sense and anti-sense versions of a sequence. 
 It is entirely equivalent to test a regexp containing both sense and 
 anti-sense versions of the *pattern* against one copy of the sequence.
 The latter approach is much more efficient since:
- 
+
    1) You need only one copy of the sequence.
    2) Only one regexp is executed.
    3) Regexp patterns are typically much smaller than sequences.

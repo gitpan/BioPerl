@@ -1,4 +1,4 @@
-# $Id: DNAMutation.pm,v 1.4.2.1 2001/03/02 17:32:14 heikki Exp $
+# $Id: DNAMutation.pm,v 1.4.2.4 2001/06/21 15:36:05 heikki Exp $
 #
 # BioPerl module for Bio::Variation::DNAMutation
 #
@@ -90,7 +90,7 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Variation::DNAMutation;
-my $VERSION=1.0;
+my $version=1.0;
 use vars qw(@ISA);
 use strict;
 
@@ -108,7 +108,7 @@ sub new {
     my ($start, $end, $length, $strand, $primary, $source, 
 	$frame, $score, $gff_string,
 	$allele_ori,  $allele_mut,  $upstreamseq,  $dnstreamseq,  
-	$label,  $status,  $proof,  $region, $region_value, $numbering, 
+	$label,  $status,  $proof,  $region, $region_value, $region_dist, $numbering, 
 	$cpg, $mut_number, $ismutation) =
 	    $self->_rearrange([qw(START
 				  END
@@ -128,6 +128,7 @@ sub new {
 				  PROOF
 				  REGION
 				  REGION_VALUE
+				  REGION_DIST
 				  NUMBERING
 				  CPG
 				  MUT_NUMBER
@@ -159,6 +160,7 @@ sub new {
     $proof && $self->SUPER::proof($proof);
     $region  && $self->SUPER::region($region);
     $region_value  && $self->SUPER::region_value($region_value);
+    $region_dist  && $self->SUPER::region_dist($region_dist);
     $numbering && $self->SUPER::numbering($numbering);
     $mut_number && $self->SUPER::mut_number($mut_number);
     $ismutation && $self->SUPER::isMutation($ismutation);
@@ -377,7 +379,7 @@ sub sysname {
 	#push @alleles, $self->allele_mut if $self->allele_mut;
 	foreach my $allele (@alleles) {
 	    $self->allele_mut($allele);
-	    $sysname .= $sep if $self->label =~ /point/;
+	    $sysname .= $sep if $self->label =~ /point/ or $self->label =~ /complex/;
 	    $sysname .=  uc $self->allele_mut->seq if $self->allele_mut->seq;
 	}
 	$self->{'sysname'} = $sysname;

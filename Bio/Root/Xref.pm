@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Xref.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 8 May 1997
-# REVISION: $Id: Xref.pm,v 1.3.2.1 2001/03/02 22:47:59 heikki Exp $
+# REVISION: $Id: Xref.pm,v 1.3.2.3 2001/06/21 15:36:04 heikki Exp $
 # STATUS  : Pre-Alpha 
 #
 # WARNING: This is considered an experimental module.
@@ -20,9 +20,9 @@ use Bio::Root::Vector ();
 
 @Bio::Root::Xref::ISA = qw( Bio::Root::Vector Bio::Root::Object );
 
-use vars qw($ID $VERSION);
+use vars qw($ID $version);
 $ID = 'Bio::Root::Xref';
-$VERSION = 0.01;
+$version = 0.01;
 
 ## POD Documentation:
 
@@ -39,16 +39,16 @@ B<WARNING: This module is still in the experimental phase and has not been teste
  use Bio::Root::Object;
 
  $myObj->xref($object_ref);
- 
+
 =head2 Object Manipulation
- 
+
  Accessors
  ---------------------------------------------------------------------
  obj()         - Get the cross-referenced object.
  desc()        - Description of the nature of the cross-reference.
  set_desc()    - Set description.
  type()        - Symmetric or assymetric.
- 
+
  Methods
  ---------------------------------------------------------------------
  clear()       - remove all cross-references within the Xref object (not implemented).
@@ -81,7 +81,7 @@ B<The API for this module is not complete since the module is under development.
 
   http://bio.perl.org/Projects/modules.html  - Online module documentation
   http://bio.perl.org/                       - Bioperl Project Homepage 
- 
+
 =head1 FEEDBACK
 
 =head2 Mailing Lists 
@@ -186,7 +186,7 @@ __END__
  _obj   : The object being cross-referenced to the parent.
  _type  : Symmetric or asymmetric
  _desc  : Description associated with the cross-reference
- 
+
  INHERITED DATA MEMBERS (from Bio::Root::Object)
 
  _parent : The object receiving the cross-reference.

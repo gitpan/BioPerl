@@ -1,6 +1,6 @@
 
 #
-# $Id: Fasta.pm,v 1.14 2001/01/28 06:45:08 lapp Exp $
+# $Id: Fasta.pm,v 1.14.2.2 2001/06/21 15:36:01 heikki Exp $
 #
 # BioPerl module for Bio::Index::Abstract
 #
@@ -22,8 +22,8 @@ Bio::Index::Fasta - Interface for indexing (multiple) fasta files
 
     my $Index_File_Name = shift;
     my $inx = Bio::Index::Fasta->new(
-        -filename => $Index_File_Name,
-        -write_flag => 1);
+        '-filename' => $Index_File_Name,
+        '-write_flag' => 1);
     $inx->make_index(@ARGV);
 
     # Print out several sequences present in the index
@@ -31,7 +31,7 @@ Bio::Index::Fasta - Interface for indexing (multiple) fasta files
     use Bio::Index::Fasta;
 
     my $Index_File_Name = shift;
-    my $inx = Bio::Index::Fasta->new($Index_File_Name);
+    my $inx = Bio::Index::Fasta->new('-filename' => $Index_File_Name);
     my $out = Bio::SeqIO->new('-format' => 'Fasta','-fh' => \*STDOUT);
 
     foreach my $id (@ARGV) {
@@ -88,7 +88,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::Index::Fasta;
 
-use vars qw($VERSION @ISA);
+use vars qw($version @ISA);
 use strict;
 
 use Bio::Index::AbstractSeq;
@@ -102,11 +102,11 @@ use Bio::Seq;
 #
 
 BEGIN { 
-    $VERSION = 0.2;
+    $version = 0.2;
 }
 
 sub _version {
-    return $VERSION;
+    return $version;
 }
 
 =head2 _file_format

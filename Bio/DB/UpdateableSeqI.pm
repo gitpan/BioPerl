@@ -1,5 +1,5 @@
 #
-# $Id: UpdateableSeqI.pm,v 1.2.2.1 2001/03/02 22:47:55 heikki Exp $
+# $Id: UpdateableSeqI.pm,v 1.2.2.2 2001/06/18 08:26:52 heikki Exp $
 #
 # BioPerl module for Bio::DB::UpdateableSeqI
 #
@@ -25,7 +25,7 @@ Bio::DB::UpdateableSeqI - An interface for writing to a database of sequences.
 	my ( @updatedseqs, @newseqs, @deadseqs);
 	my $seq = $db->get_Seq_by_id('ROA1_HUMAN');
 	$seq->desc('a new description');
-	
+
 	push @updatedseqs, $seq;
 
 	$db->write_seq(\@updatedseqs, \@newseqs, \@deadseqs);

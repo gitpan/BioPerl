@@ -1,4 +1,4 @@
-# $Id: Split.pm,v 1.10.2.1 2001/03/02 22:47:59 heikki Exp $
+# $Id: Split.pm,v 1.10.2.3 2001/05/21 19:05:27 jason Exp $
 #
 # BioPerl module for Bio::Location::SplitLocation
 # Cared for by Jason Stajich <jason@chg.mc.duke.edu>
@@ -14,6 +14,8 @@ Bio::Location::Split - Implementation of a Location on a Sequence
 which has multiple locations (start/end points)
 
 =head1 SYNOPSIS
+
+    use Bio::Location::Split;
 
     my $splitlocation = new Bio::Location::Split();
     $splitlocation->add_sub_Location(new Bio::Location::Simple(-start=>1,
@@ -117,10 +119,11 @@ sub new {
 sub sub_Location {
     my ($self, $order) = @_;
 
+    $order = 0 unless defined $order;
     if( defined($order) && ($order !~ /^-?\d+$/) ) {
 	$self->throw("value $order passed in to sub_Location is $order, an invalid value");
     } 
-    $order = 1 if((!defined($order)) || ($order > 1));
+    $order = 1 if($order > 1);
     $order = -1 if($order < -1);
 
     my @sublocs = @{$self->{'_sublocations'}};
@@ -446,9 +449,16 @@ sub end_pos_type {
 sub to_FTstring {
     my ($self) = @_;
     my @strs;
-    foreach my $loc ( $self->sub_Location() ) {
-	push @strs, $loc->to_FTstring();
+    foreach my $loc ( $self->sub_Location() ) {	
+	my $str = $loc->to_FTstring();
+	if( defined $self->seq_id && 
+	    defined $loc->seq_id && 
+	    $loc->seq_id ne $self->seq_id ) {
+	    $str = sprintf("%s:%s", $loc->seq_id, $str);
+	} 
+	push @strs, $str;
     }    
+
     my $str = sprintf("%s(%s)",$self->splittype, join(",", @strs));
     if( $self->strand == -1 ) {
 	$str = sprintf("complement(%s)",$str);

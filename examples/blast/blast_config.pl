@@ -18,7 +18,7 @@ BEGIN {
 #                processing for working with Bio::Tools::Blast.pm objects.
 # AUTHOR       : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED      : 15 May 1998
-# REVISION     : $Id: blast_config.pl,v 1.7 2000/05/15 08:24:06 sac Exp $
+# REVISION     : $Id: blast_config.pl,v 1.7.2.1 2001/05/30 21:31:26 sac Exp $
 # WEBSITE      : http://bio.perl.org/Projects/Blast/
 # INSTALLATION : Edit $INSTALL_PATH to point to the directory containing
 #                your Bioperl modules (the Bio/ directory).
@@ -603,7 +603,7 @@ sub print_table {
 		       print $bo->table($opt_desc); last SWITCH;};
 	    /2/ && do{ print $bo->table_labels_tiled($opt_desc) if not $_printed_labels; 
 		       print $bo->table_tiled($opt_desc); last SWITCH;};
-	    /3/ && do{ print $_table_custom($bo); last SWITCH;};
+	    /3/ && do{ print _table_custom($bo); last SWITCH;};
 	}
     } else {
 	push @nohits, $bo->name.", File: ".($bo->file || '<STDIN>');
@@ -630,7 +630,7 @@ sub _table_custom {
     $str = &_table_custom_labels unless $_custom_labels;
 
     foreach $hit($bo->hits) {
-	$str .= printf "%s\t%s\t%.1e\t%.2f\t%s\n", 
+	$str .= sprintf "%s\t%s\t%.1e\t%.2f\t%s\n", 
 	               $bo->name, $hit->name, $hit->expect, 
 	               $hit->frac_identical, $hit->desc;
     }

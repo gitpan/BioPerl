@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.10 2001/03/01 10:31:49 lapp Exp $
+# $Id: IO.pm,v 1.10.2.1 2001/06/15 16:59:02 jason Exp $
 #
 # BioPerl module for Bio::Root::IO
 #
@@ -298,6 +298,7 @@ sub _readline {
     } else {
 	$line = <$fh>;
     }
+    $line =~ s/\r\n/\n/g if (defined $line);
     return $line;
 }
 

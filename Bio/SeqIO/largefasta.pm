@@ -1,4 +1,4 @@
-# $Id: largefasta.pm,v 1.5.2.1 2001/03/02 22:48:02 heikki Exp $
+# $Id: largefasta.pm,v 1.5.2.2 2001/06/18 12:41:53 heikki Exp $
 # BioPerl module for Bio::SeqIO::largefasta
 #
 # Cared for by Jason Stajich
@@ -34,7 +34,7 @@ on UNIX.  If a sequence file is larger than the swap space (capacity
 of the /tmp dir) this could cause problems for the machine.  It is
 possible to set the directory where the temporary file is located by
 adding the following line to your code BEFORE calling next_seq.
- 
+
     $Bio::Seq::LargePrimarySeq::DEFAULT_TEMP_DIR = 'newdir';
 
 =head1 FEEDBACK

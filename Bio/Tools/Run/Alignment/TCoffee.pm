@@ -1,4 +1,4 @@
-# $Id: TCoffee.pm,v 1.11.2.1 2001/03/03 08:29:02 heikki Exp $
+# $Id: TCoffee.pm,v 1.11.2.5 2001/06/20 14:08:26 heikki Exp $
 #
 # BioPerl module for Bio::Tools::Run::Alignment::TCoffee
 #
@@ -56,7 +56,7 @@ One should really read the online manual for the best explaination of
 all the features.  See
 http://igs-server.cnrs-mrs.fr/~cnotred/Documentation/t_coffee/t_coffee_doc.html
 
-These can be specified as paramters when instantiating a new TCoffee
+These can be specified as parameters when instantiating a new TCoffee
 object, or through get/set methods of the same name (lowercase).
 
 =head1 PARAMETERS FOR ALIGNMENT COMPUTATION
@@ -506,20 +506,17 @@ use Bio::Root::IO;
 
 @ISA = qw(Bio::Root::RootI Bio::Root::IO);
 
-
-BEGIN {
 # You will need to enable TCoffee to find the tcoffee program. This can be done
 # in (at least) three ways:
 #  1. Modify your $PATH variable to include your tcoffee directory as in (for Linux):
 #	export PATH=$PATH:/home/progs/tcoffee  or
 #  2. define an environmental variable TCOFFEE:
-#	export TCOFEEDIR=/home/progs/tcoffee   or
+#	export TCOFFEEDIR=/home/progs/tcoffee   or
 #  3. include a definition of an environmental variable TCOFFEEDIR in every script that will
 #     use Bio::Tools::Run::Alignment::TCoffee.pm.
 #	BEGIN {$ENV{TCOFFEEDIR} = '/home/progs/tcoffee'; }
 
-    $PROGRAMDIR = $ENV{TCOFFEEDIR} || '';
-    $PROGRAM = Bio::Root::IO->catfile($PROGRAMDIR,'t_coffee');
+BEGIN {
 
     @TCOFFEE_PARAMS = qw(IN TYPE PARAMETERS DO_NORMALISE EXTEND
 			 DP_MODE KTUPLE NDIAGS DIAG_MODE SIM_MATRIX
@@ -540,6 +537,12 @@ BEGIN {
 sub new {
     my ($class,@args) = @_;
     my $self = $class->SUPER::new(@args);
+    # to facilitiate tempfile cleanup
+    $self->_initialize_io();
+
+    $PROGRAMDIR = $ENV{TCOFFEEDIR} || '';
+    $PROGRAM = Bio::Root::IO->catfile($PROGRAMDIR,'t_coffee');
+
     my ($attr, $value);
     (undef,$TMPOUTFILE) = $self->tempfile();
     while (@args)  {
@@ -756,7 +759,7 @@ sub _setinput {
 				'-format' => 'Fasta');
 	unless (scalar(@$input) > 1) {return 0;} # Need at least 2 seqs for alignment
 	foreach $seq (@$input) {
-	    return 0 if( !ref($seq) || ! $seq->isa("Bio::PrimarySeqI"));
+	    return 0 unless ( ref($seq) and $seq->isa("Bio::PrimarySeqI") and $seq->id );
 	    $temp->write_seq($seq);
 	}
 	return $infilename;

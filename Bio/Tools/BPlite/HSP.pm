@@ -124,7 +124,21 @@ sub _overload {
 
 =cut
 
-sub P               {shift->significance(@_)}
+sub P {
+	my ($self, @args) = @_;
+	my $float = $self->significance(@args);
+	my $match = '([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?'; # Perl Cookbook 2.1
+	if ($float =~ /^$match$/) {
+	    # Is a C float
+	    return $float;
+	} elsif ("1$float" =~ /^$match$/) {
+	    # Almost C float, Jitterbug 974
+	    return "1$float";
+	} else {
+		$self->warn("[HSP::P()] '$float' is not a known number format. Returning zero (0) instead.");
+		return 0;
+	}
+}
 
 =head2 percent
 
@@ -245,11 +259,16 @@ sub frame {
 	    $self->warn("Specifying an invalid frame ($frame)");
 	    $frame = undef;
 	} else { 
-	    if( ($1 eq '-' && $self->subject->strand >= 0) ||
-		($1 eq '+' && $self->subject->strand <= 0) ) {
-		$self->warn("Frame ($frame) did not match strand of query match (".
-			    $self->subject->strand().")");
-	    }
+	    # JB 949 - Creates too many warnings for blastx report.
+	    #          Future enhancement to BPLite::_parseHeader needed to set report type
+	    #          so that subject strand is used with tblastn and query strand with blastx
+	    # if( ($1 eq '-' && $self->subject->strand >= 0) ||
+		# ($1 eq '+' && $self->subject->strand <= 0) ) {
+		# $self->warn("Frame ($frame) did not match strand of query match (".
+		# 	    $self->subject->strand().")");
+	    # }
+	    
+	    # Set frame to GFF [0-2]
 	    $frame = $2 - 1;
 	}
     }

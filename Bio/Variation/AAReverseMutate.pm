@@ -1,4 +1,4 @@
-# $Id: AAReverseMutate.pm,v 1.2.2.1 2001/03/02 17:32:14 heikki Exp $
+# $Id: AAReverseMutate.pm,v 1.2.2.2 2001/06/21 15:36:05 heikki Exp $
 #
 # BioPerl module for Bio::Variation::AAReverseMutate
 #
@@ -88,7 +88,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Variation::AAReverseMutate;
-my $VERSION=1.0;
+my $version=1.0;
 use vars qw(@ISA);
 use strict;
 

@@ -1,4 +1,4 @@
-# $Id: Simple.pm,v 1.6.2.1 2001/03/02 22:47:59 heikki Exp $
+# $Id: Simple.pm,v 1.6.2.5 2001/05/29 22:17:04 jason Exp $
 #
 # BioPerl module for Bio::Location::Simple
 # Cared for by Jason Stajich <jason@chg.mc.duke.edu>
@@ -13,6 +13,8 @@
 Bio::Location::Simple - Implementation of a Simple Location on a Sequence
 
 =head1 SYNOPSIS
+
+    use Bio::Location::Simple;
 
     my $location = new Bio::Location::Simple(-start => 1, -end => 100,
 					     -strand => 1 );
@@ -74,13 +76,14 @@ sub new {
     my ($class, @args) = @_;
     my $self = $class->SUPER::new(@args);
 
-    my ($start,$end,$strand) = $self->_rearrange([qw(START 
-						     END 
-						     STRAND)],@args);
-    $start && $self->start($start);
-    $end && $self->end($end);
-    $strand && $self->strand($strand);
-
+    my ($start,$end,$strand,$seqid) = $self->_rearrange([qw(START 
+							    END 
+							    STRAND
+							    SEQID)],@args);
+    defined $start  && $self->start($start);
+    defined $end    && $self->end($end);
+    defined $strand && $self->strand($strand);
+    $seqid && $self->seq_id($seqid);
     return $self;
 }
 
@@ -297,6 +300,28 @@ sub location_type {
     my ($self) = @_;
     return 'EXACT';
 }
+
+=head2 is_remote
+
+ Title   : is_remote
+ Usage   : $self->is_remote($newval)
+ Function: Getset for is_remote value
+ Returns : value of is_remote
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub is_remote{
+   my $self = shift;
+   if( @_ ) {
+       my $value = shift;
+       $self->{'is_remote'} = $value;
+   }
+   return $self->{'is_remote'};
+
+}
+
 
 =head2 to_FTstring
 

@@ -1,6 +1,6 @@
 
 #
-# $Id: SeqI.pm,v 1.3 2000/07/12 16:58:38 dag Exp $
+# $Id: SeqI.pm,v 1.3.2.2 2001/06/22 14:56:21 jason Exp $
 #
 # BioPerl module for Bio::DB::SeqI.pm
 #
@@ -38,28 +38,25 @@ Abstract interface for a sequence database
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-
-  vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
-  vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org              - General discussion
+  http://bio.perl.org/MailList.html  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via email
+or the web:
 
-  bioperl-bugs@bio.perl.org
+  bioperl-bugs@bioperl.org
   http://bio.perl.org/bioperl-bugs/
 
 =head1 AUTHOR - Ewan Birney
 
-Email birney@ebi.ac.uk
+Email E<lt>birney@ebi.ac.ukE<gt>
 
 Describe contact details here
 

@@ -1,4 +1,4 @@
-# $Id: fasta.pm,v 1.22 2001/01/30 06:55:29 lapp Exp $
+# $Id: fasta.pm,v 1.22.2.2 2001/06/16 13:41:41 birney Exp $
 # BioPerl module for Bio::SeqIO::fasta
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
@@ -108,7 +108,7 @@ sub next_primary_seq {
   }
 
   my ($top,$sequence) = $entry =~ /^(.+?)\n([^>]*)/s
-    or $self->throw("Can't parse entry");
+    or $self->throw("Can't parse entry [$entry]");
   my ($id,$fulldesc) = $top =~ /^\s*(\S+)\s*(.*)/
     or $self->throw("Can't parse fasta header");
   $id =~ s/^>//;
@@ -164,7 +164,7 @@ sub write_seq {
    my ($self,@seq) = @_;
    foreach my $seq (@seq) {
      my $str = $seq->seq;
-     my $top = $seq->id();
+     my $top = $seq->display_id();
      if ($seq->can('desc') and my $desc = $seq->desc()) {
 	 $desc =~ s/\n//g;
         $top .= " $desc";

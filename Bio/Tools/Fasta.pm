@@ -4,7 +4,7 @@
 #           and eventually for parsing, analyzing, running Fasta analyses.
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 27 Mar 1998
-# REVISION: $Id: Fasta.pm,v 1.5.4.1 2001/03/02 22:48:03 heikki Exp $
+# REVISION: $Id: Fasta.pm,v 1.5.4.4 2001/06/21 15:36:04 heikki Exp $
 # STATUS  : Alpha
 #
 # For documentation, run this module through pod2html 
@@ -27,16 +27,16 @@ use Bio::Root::Global     qw(:std);
 use Bio::Root::Utilities  qw(:obj); 
 
 use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS
-            $ID $VERSION $Fasta $RawData $Newline);
+            $ID $version $Fasta $RawData $Newline);
 
 @ISA        = qw( Bio::Tools::SeqAnal Exporter);
 @EXPORT     = qw();
-@EXPORT_OK  = qw($VERSION $Fasta);
+@EXPORT_OK  = qw($version $Fasta);
 %EXPORT_TAGS = ( obj => [qw($Fasta)],
 		 std => [qw($Fasta)]);
 
 $ID = 'Bio::Tools::Fasta';
-$VERSION  = 0.014; 
+$version  = 0.014; 
 
 
 ## Static FASTA object. 
@@ -147,9 +147,8 @@ User feedback is an integral part of the evolution of this and other Bioperl mod
 Send your comments and suggestions preferably to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-    vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
-    vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
-    http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://www.bioperl.org/MailList.shtml  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -363,11 +362,11 @@ sub parse {
   The motivation here is that when working with a potentially huge set of
   sequences, there is no need to read them all into memory before you start
   processing them. In fact, you may only be interested in a few of them.
- 
+
   This method constructs and returns a closure for parsing a single Fasta sequence.
   It is called automatically by the read() method inherited from 
   Bio::Root::Object.pm. 
- 
+
   Another issue concerns what to do with the parsed data: save it or
   use it? Sometimes you need to process all sequence data as a group
   (eg., sorting). Other times, you can safely process each sequence

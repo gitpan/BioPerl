@@ -1,4 +1,4 @@
-# $Id: Range.pm,v 1.3.2.1 2001/03/02 22:47:57 heikki Exp $
+# $Id: Range.pm,v 1.3.2.5 2001/06/22 10:40:02 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::Range
 #
@@ -42,7 +42,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::Range;
-$VERSION=1.5;
+$version=1.6;
 
 # Version history:
 # Mon Mar 20 22:21:44 GMT 2000 v 1.0 begun
@@ -52,14 +52,14 @@ $VERSION=1.5;
 # Wed Apr 12 16:35:12 BST 2000 v 1.4 added valid()
 # Mon Jun 26 15:25:14 BST 2000 v 1.44 ranges with start=end are now accepted / valid() removed because inherited now from SeqI
 # Tue Jun 27 14:06:06 BST 2000 v 1.5 croak changed to carp and return(-1) in new() function
+# Wed Mar 28 16:47:36 BST 2001 v 1.6 carp -> warn,throw (coded methods in SeqI)
 
 use strict;
-use Carp;
-use vars qw($VERSION @ISA);
-use Bio::LiveSeq::SeqI 2.11; # uses SeqI, inherits from it
+use vars qw($version @ISA);
+use Bio::LiveSeq::SeqI; # uses SeqI, inherits from it
 @ISA=qw(Bio::LiveSeq::SeqI);
 
-=head1 new
+=head2 new
 
   Title   : new
   Usage   : $range1 = Bio::LiveSeq::Range->new(-seq => $obj_ref,
@@ -83,26 +83,29 @@ sub new {
 
   my ($seq,$start,$end,$strand)=($args{-seq},$args{-start},$args{-end},$args{-strand});
 
+  $obj = \%range;
+  $obj = bless $obj, $class;
+
   unless ($seq->valid($start)) {
-    carp "$class not initialised because start label not valid";
+    $obj->warn("$class not initialised because start label not valid");
     return (-1);
   }
   unless ($seq->valid($end)) {
-    carp "$class not initialised because end label not valid";
+    $obj->warn("$class not initialised because end label not valid");
     return (-1);
   }
   unless (defined $strand) {
     $strand = 1;
   }
   if (($strand != 1)&&($strand != -1)) {
-    carp "$class not initialised because strand identifier not valid. Use 1 (forward strand) or -1 (reverse strand).";
+    $obj->warn("$class not initialised because strand identifier not valid. Use 1 (forward strand) or -1 (reverse strand).");
     return (-1);
   }
   if ($start eq $end) {
-    carp "$class reports: start and end label are the same....";
+    $obj->warn("$class reports: start and end label are the same....");
   } else {
     unless ($seq->follows($start,$end,$strand)==1) {
-      carp "Fatal: end label $end doesn't follow start label $start for strand $strand!";
+      $obj->warn("Fatal: end label $end doesn't follow start label $start for strand $strand!");
       return (-1);
     }
   }
@@ -115,14 +118,14 @@ sub new {
   #    croak "Fatal: end label not upstream of start label for reverse strand!";
   #  }
   #}
-
-  %range = (seq => $seq, start => $start, end => $end, strand => $strand);
-  $obj = \%range;
-  $obj = bless $obj, $class;
+  $obj->{'seq'}=$seq;
+  $obj->{'start'}=$start;
+  $obj->{'end'}=$end;
+  $obj->{'strand'}=$strand;
   return $obj;
 }
 
-=head1 valid
+=head2 valid
 
   Title   : valid
   Usage   : $boolean = $obj->valid($label)

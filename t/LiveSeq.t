@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: LiveSeq.t,v 1.8 2001/02/26 20:45:37 lapp Exp $
+## $Id: LiveSeq.t,v 1.8.2.1 2001/04/03 15:22:38 heikki Exp $
 # Created: Thu Dec 14 13:57:04 GMT 2000
 # By Joseph A.L. Insana, <insana@ebi.ac.uk>
 #
@@ -17,7 +17,7 @@ BEGIN {
 	use lib 't';
     }
     use Test;
-    plan tests => 47; 
+    plan tests => 48; 
 }
 
 use Bio::LiveSeq::IO::BioPerl;
@@ -82,4 +82,6 @@ ok substr($transcript->seq,0,32), "atggtctcccaggccctcaggctcctctgcct";
 ok $transcript->translation_table(2);
 ok $transcript->translation_table , 2;
 ok substr($translation->seq,0,16), "MVSQAL*"; # mitochondrial table creates stop codon
+ok $gene->verbose(2), 2;
 ok $gene->delete_Obj(); # to free all memory, deleting circular references
+

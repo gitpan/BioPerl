@@ -1,4 +1,4 @@
-# $Id: Transcript.pm,v 1.4 2001/03/02 09:26:35 lapp Exp $
+# $Id: Transcript.pm,v 1.4.2.2 2001/06/18 12:41:53 heikki Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::Transcript
 #
@@ -210,7 +210,7 @@ sub exons {
     return () unless(@keys);
     # bring keys into the right order, depending on the strand, provided we've
     # got an unambiguous strand
-    foreach my $exon (map { @{$_}; } @{%$self}{@keys}) {
+    foreach my $exon (map { @{$_}; } @{$self}{@keys}) {
 	if($exon->strand()) {
 	    # defined and != 0
 	    $strand = $exon->strand() if(! $strand);
@@ -298,7 +298,7 @@ sub add_exon {
  Function: Remove all or a certain type of exon features from this transcript.
 
            See add_exon() for documentation about types.
- 
+
            Calling without a type will not flush UTRs. Call flush_utrs() for
            this purpose.
  Returns : 
@@ -325,7 +325,7 @@ sub flush_exons {
            $tableref = $transcript->exon_type_sortorder();
            Bio::SeqFeature::Gene::Transcript->exon_type_sortorder('type1','type2','type3');
  Function: Install or retrieve the sort-order of exon types.
- 
+
            Ordering exons by type is only of relevance for methods
            constructing a sequence corresponding to the transcript object
            (e.g., mrna(), cds(), etc). For instance, an initial exon would

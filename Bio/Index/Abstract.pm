@@ -1,6 +1,6 @@
 
 #
-# $Id: Abstract.pm,v 1.31.2.1 2001/03/02 22:47:56 heikki Exp $
+# $Id: Abstract.pm,v 1.31.2.2 2001/06/18 08:26:53 heikki Exp $
 #
 # BioPerl module for Bio::Index::Abstract
 #
@@ -248,7 +248,7 @@ sub db {
            WARNING: you must parse the record deliminter
            *yourself*. Abstract wont do this for you 
            So this code
- 
+
            $fh = $index->get_stream($myid);
            while( <$fh> ) {
               # do something

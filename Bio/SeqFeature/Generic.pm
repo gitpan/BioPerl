@@ -1,4 +1,4 @@
-# $Id: Generic.pm,v 1.46.2.1 2001/03/02 22:48:00 heikki Exp $
+# $Id: Generic.pm,v 1.46.2.3 2001/05/29 22:28:07 jason Exp $
 #
 # BioPerl module for Bio::SeqFeature::Generic
 #
@@ -153,16 +153,16 @@ sub new {
 	$self->gff_format(Bio::Tools::GFF->new('-gff_version' => 1));
 	$self->_from_gff_stream($gff1_string);
     };
-    $primary     && $self->primary_tag($primary);
-    $source      && $self->source_tag($source);
-    $start       && $self->start($start);
-    $end         && $self->end($end);
-    $strand      && $self->strand($strand);
-    $frame       && $self->frame($frame);
-    $score       && $self->score($score);
-    $seqname     && $self->seqname($seqname);
-    $annot       && $self->annotation($annot);
-    $tag         && do {
+    $primary         && $self->primary_tag($primary);
+    $source          && $self->source_tag($source);
+    defined $start   && $self->start($start);
+    defined $end     && $self->end($end);
+    defined $strand  && $self->strand($strand);
+    defined $frame   && $self->frame($frame);
+    $score           && $self->score($score);
+    $seqname         && $self->seqname($seqname);
+    $annot           && $self->annotation($annot);
+    $tag             && do {
 	foreach my $t ( keys %$tag ) {
 	    $self->add_tag_value($t,$tag->{$t});
 	}
@@ -825,10 +825,10 @@ sub _expand_region {
 	$self->end($feat->end());
 	$self->strand($feat->strand) unless defined($self->strand());
     } else {
-	my ($start, $end, $strand) = $self->union($feat);
-	$self->start($start);
-	$self->end($end);
-	$self->strand($strand);
+	my $range = $self->union($feat);
+	$self->start($range->start);
+	$self->end($range->end);
+	$self->strand($range->strand);
     }
 }
 

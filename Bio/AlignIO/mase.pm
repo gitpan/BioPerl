@@ -1,4 +1,4 @@
-# $Id: mase.pm,v 1.4 2001/01/03 17:56:43 jason Exp $
+# $Id: mase.pm,v 1.4.2.1 2001/05/25 10:07:13 heikki Exp $
 #
 # BioPerl module for Bio::AlignIO::mase
 
@@ -81,6 +81,7 @@ sub next_aln {
     my $seq;
     my $add;
     my $count = 0;
+    my $seq_residues;
 
     my $aln =  Bio::SimpleAlign->new();
 
@@ -106,7 +107,10 @@ sub next_aln {
 	}
 	if( $end == -1) {
 	    $start = 1;
-	    $end = length($seq);
+
+	    $seq_residues = $seq;
+	    $seq_residues =~ s/\W//g;
+	    $end = length($seq_residues);
 	}
 
 	$add = new Bio::LocatableSeq('-seq'=>$seq,

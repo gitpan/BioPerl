@@ -1,4 +1,4 @@
-# $Id: stockholm.pm,v 1.5 2001/01/25 23:03:50 jason Exp $
+# $Id: stockholm.pm,v 1.5.2.1 2001/05/25 12:32:25 heikki Exp $
 #
 # BioPerl module for Bio::AlignIO::stockholm
 
@@ -103,6 +103,7 @@ sub next_aln {
 	    $accession{ $1 } = $2;
 	    next;
 	};
+	$entry =~ /^([A-Za-z\.\-]+)$/ && ( $align{$name} .= $1 ) && next; 
 	$entry !~ /^([^\#]\S+)\s+([A-Za-z\.\-]+)\s*/ && next;
 	
 	$name = $1;

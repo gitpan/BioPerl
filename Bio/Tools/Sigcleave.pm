@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Tools::Sigcleave.pm
 # AUTHOR  : Chris Dagdigian, dag@sonsorol.org
 # CREATED : Jan 28 1999
-# REVISION: $Id: Sigcleave.pm,v 1.12 2000/12/29 07:43:27 lapp Exp $
+# REVISION: $Id: Sigcleave.pm,v 1.12.2.1 2001/06/21 15:36:05 heikki Exp $
 #            
 # Copyright (c) 1997-9 bioperl, Chris Dagdigian and others. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
@@ -30,9 +30,9 @@ use Bio::Seq ();
 
 @ISA = qw(Bio::Seq);
 use strict;
-use vars qw ($ID $VERSION %WeightTable);
+use vars qw ($ID $version %WeightTable);
 $ID  = 'Bio::Tools::Sigcleave';
-$VERSION = 0.01;
+$version = 0.01;
 
 =head1 NAME
 
@@ -162,7 +162,7 @@ Chris Dagdigian, dag@sonsorol.org  & others
 
 =head1 VERSION
 
-Bio::Tools::Sigcleave.pm, $Id: Sigcleave.pm,v 1.12 2000/12/29 07:43:27 lapp Exp $
+Bio::Tools::Sigcleave.pm, $Id: Sigcleave.pm,v 1.12.2.1 2001/06/21 15:36:05 heikki Exp $
 
 =head1 COPYRIGHT
 

@@ -1,4 +1,4 @@
-# $Id: GenBank.pm,v 1.35.2.1 2001/03/02 22:47:55 heikki Exp $
+# $Id: GenBank.pm,v 1.35.2.3 2001/04/03 15:22:36 heikki Exp $
 #
 # BioPerl module for Bio::DB::GenBank
 #
@@ -48,6 +48,12 @@ database at NCBI, via an Entrez query.
 WARNING: Please do NOT spam the Entrez web server with multiple requests.
 NCBI offers Batch Entrez for this purpose.  Batch Entrez support will likely
 be supported in a future version of DB::GenBank.
+
+Note that when querying for GenBank accessions starting with 'NT_' you
+will need to call $gb-E<gt>request_format('fasta') beforehand, because in
+GenBank format (the default) the sequence part will be left out (the
+reason is that NT contigs are rather annotation with references to
+clones).
 
 =head1 FEEDBACK
 

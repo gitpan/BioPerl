@@ -1,4 +1,4 @@
-# $Id: BPlite.pm,v 1.14.2.1 2001/03/03 08:28:57 heikki Exp $
+# $Id: BPlite.pm,v 1.14.2.5 2001/04/08 21:28:44 lapp Exp $
 ##############################################################################
 # Bioperl module Bio::Tools::BPlite
 ##############################################################################
@@ -15,7 +15,9 @@ Bio::Tools::BPlite - Lightweight BLAST parser
 =head1 SYNOPSIS
 
  use Bio::Tools::BPlite;
- my $report = new BPlite(-fh=>\*STDIN);
+ my $report = new Bio::Tools::BPlite(-fh=>\*STDIN);
+
+ {
  $report->query;
  $report->database;
  while(my $sbjct = $report->nextSbjct) {
@@ -33,12 +35,24 @@ Bio::Tools::BPlite - Lightweight BLAST parser
 	 $hsp->homologySeq;
 	 $hsp->query->start;
 	 $hsp->query->end;
-	 $hsp->sbjct->start;
-	 $hsp->sbjct->end;
-	 $hsp->sbjct->seqname;
-	 $hsp->sbjct->overlaps($exon);
+	 $hsp->subject->start;
+	 $hsp->subject->end;
+	 $hsp->subject->seqname;
+	 $hsp->subject->overlaps($exon);
      }
  }
+
+ # the following line takes you to the next report in the stream/file
+ # it will return 0 if that report is empty,
+ # but that is valid for an empty blast report.
+ # Returns -1 for EOF.
+
+ last if ($report->_parseHeader == -1));
+
+ redo
+
+ }
+
 
 =head1 DESCRIPTION
 
@@ -59,7 +73,7 @@ in pipes.
 BPlite has three kinds of objects, the report, the subject, and the HSP. To
 create a new report, you pass a filehandle reference to the BPlite constructor.
 
- my $report = new BPlite(-fh=>\*STDIN); # or any other filehandle
+ my $report = new Bio::Tools::BPlite(-fh=>\*STDIN); # or any other filehandle
 
 The report has two attributes (query and database), and one method (nextSbjct).
 
@@ -91,7 +105,7 @@ anyone who has seen a blast report.
 For lazy/efficient coders, two-letter abbreviations are available for the 
 attributes with long names (qs, ss, hs). Ranges of the aligned sequences in
 query/subject and other information (like seqname) are stored
-in SeqFeature objects (i.e.: $hsp-E<gt>query, $hsp-E<gt>sbjct which is equal to
+in SeqFeature objects (i.e.: $hsp-E<gt>query, $hsp-E<gt>subject which is equal to
 $hsp-E<gt>feature1, $hsp-E<gt>feature2). querySeq, sbjctSeq and homologySeq do only
 contain the alignment sequences from the blast report.
 
@@ -108,10 +122,10 @@ contain the alignment sequences from the blast report.
  $hsp->query->start;
  $hsp->query->end;
  $hsp->query->seqname;
- $hsp->sbjct->primary_tag; # "similarity"
- $hsp->sbjct->source_tag;  # "BLAST"
- $hsp->sbjct->start;
- $hsp->sbjct->end;
+ $hsp->subject->primary_tag; # "similarity"
+ $hsp->subject->source_tag;  # "BLAST"
+ $hsp->subject->start;
+ $hsp->subject->end;
  ...
  "$hsp"; # overloaded for query->start..query->end bits
 
@@ -122,7 +136,7 @@ to modify this to whatever is most frequently used by you.
 
 So a very simple look into a BLAST report might look like this.
 
- my $report = new BPlite(-fh=>\*STDIN);
+ my $report = new Bio::Tools::BPlite(-fh=>\*STDIN);
  while(my $sbjct = $report->nextSbjct) {
      print "$sbjct\n";
      while(my $hsp = $sbjct->nextHSP) {
@@ -208,11 +222,13 @@ sub new {
 
  Title   : next_feature
  Usage   : while( my $feat = $res->next_feature ) { # do something }
- Function: SeqAnalysisParserI implementing function
+ Function: SeqAnalysisParserI implementing function. This implementation
+           iterates over all HSPs. If the HSPs of the current subject match
+           are exhausted, it will automatically call nextSbjct().
  Example :
- Returns : A Bio::SeqFeatureI compliant object, in this case, 
-           each DomainUnit object, ie, flattening the Sequence
-           aspect of this.
+ Returns : A Bio::SeqFeatureI compliant object, in this case a
+           Bio::Tools::BPlite::HSP object, and FALSE if there are no more
+           HSPs.
  Args    : None
 
 =cut
@@ -261,7 +277,7 @@ sub qlength  {shift->{'LENGTH'}}
 
 =head2 pattern
 
- Title    : database
+ Title    : pattern
  Usage    : $pattern = $obj->pattern();
  Function : returns the pattern used in a PHIBLAST search
 
@@ -318,6 +334,7 @@ sub nextSbjct {
     if    ($_ !~ /\w/)            {next}
     elsif ($_ =~ /Strand HSP/)    {next} # WU-BLAST non-data
     elsif ($_ =~ /^\s{0,2}Score/) {$self->{'LASTLINE'} = $_; last}
+    elsif ($_ =~ /^Parameters|^\s+Database:|^\s+Posted date:/) {$self->{'LASTLINE'} = $_; last}
     else                          {$def .= $_}
   }
   $def =~ s/\s+/ /g;
@@ -343,13 +360,18 @@ sub nextSbjct {
 sub _parseHeader {
   my ($self) = @_;
   my $FH = $self->_fh();
-  
+  # normally, _parseHeader will break out of the parse as soon as it reaches a new Subject (i.e. the first one after the header)
+  # if you call _parseHeader twice in a row, with nothing in between, all you accomplish is a ->nextSubject call..
+  # so we need a flag to indicate that we have *entered* a header, before we are allowed to leave it!
+  my $header_flag = 0;	# here is the flag/  It is "false" at first, and is set to "true" when any valid header element is encountered
+  $self->{'REPORT_DONE'} = 0;  # reset this bit for a new report
   while(<$FH>) {
-    if ($_ =~ /^Query=\s+([^\(]+)/)    {
+    if ($_ =~ /^Query=(?:\s+([^\(]+))?/) {
+      $header_flag = 1;   # valid header element found
       my $query = $1;
       while(<$FH>) {
         last if $_ !~ /\S/;
-	$query .= $_;
+		$query .= $_;
       }
       $query =~ s/\s+/ /g;
       $query =~ s/^>//;
@@ -358,24 +380,27 @@ sub _parseHeader {
       $self->{'QUERY'} = $query;
       $self->{'LENGTH'} = $length;
     }
-    elsif ($_ =~ /^Database:\s+(.+)/) {$self->{'DATABASE'} = $1}
+    elsif ($_ =~ /^Database:\s+(.+)/) {$header_flag = 1;$self->{'DATABASE'} = $1}   # valid header element found
     elsif ($_ =~ /^\s*pattern\s+(\S+).*position\s+(\d+)\D/) {   
 # For PHIBLAST reports
-	$self->{'PATTERN'} = $1;
-	push (@{$self->{'QPATLOCATION'}}, $2);
+		$header_flag = 1;    # valid header element found
+		$self->{'PATTERN'} = $1;
+		push (@{$self->{'QPATLOCATION'}}, $2);
 #			$self->{'QPATLOCATION'} = $2;
     } 
-    elsif ($_ =~ /^>/) {$self->{'LASTLINE'} = $_; return 1}
-    elsif ($_ =~ /^Parameters|^\s+Database:/) {
+    elsif (($_ =~ /^>/) && ($header_flag==1)) {$self->{'LASTLINE'} = $_; return 1} # only leave if we have actually parsed a valid header!
+    elsif (($_ =~ /^Parameters|^\s+Database:/) && ($header_flag==1)) {  # if we entered a header, and saw nothing before the stats at the end, then it was empty
       $self->{'LASTLINE'} = $_;
       return 0; # there's nothing in the report
     }
   }
+  return -1; # EOF
 }
 sub _fastForward {
     my ($self) = @_;
     return 0 if $self->{'REPORT_DONE'}; # empty report
-    return 1 if $self->{'LASTLINE'} =~ /^>/;
+    return 0 if $self->{'LASTLINE'} =~ /^Parameters|^\s+Database:|^\s+Posted date:/;
+	return 1 if $self->{'LASTLINE'} =~ /^>/;
 
     my $FH = $self->_fh();
     my $capture;

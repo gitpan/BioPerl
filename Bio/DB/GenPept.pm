@@ -1,4 +1,4 @@
-# $Id: GenPept.pm,v 1.19.2.1 2001/03/02 22:47:55 heikki Exp $
+# $Id: GenPept.pm,v 1.19.2.3 2001/04/03 15:22:36 heikki Exp $
 #
 # BioPerl module for Bio::DB::GenPept
 #
@@ -152,15 +152,13 @@ sub default_format {
  Args    : the id (as a string) of a sequence
  Throws  : "id does not exist" exception
 
-=head2 get_Stream_by_acc
+=head2 get_Seq_by_acc
 
-  Title   : get_Stream_by_acc
-  Usage   : $seq = $db->get_Seq_by_acc($acc);
-  Function: Gets a series of Seq objects by accession numbers
-  Returns : a Bio::SeqIO stream object
-  Args    : $ref : a reference to an array of accession numbers for
-                   the desired sequence entries
-  Note    : For GenBank, this just calls the same code for get_Stream_by_id()
+  Title   : get_Seq_by_acc
+  Usage   : $seq = $db->get_Seq_by_acc('AAC73346');
+  Function: Gets a Seq objects by accession number
+  Returns : Bio::Seq object
+  Args    : accession number to retrive by
 
 =head1 Routines implemented by Bio::DB::NCBIHelper
 
@@ -196,7 +194,7 @@ sub default_format {
 =head2 get_Stream_by_acc (2)
 
   Title   : get_Stream_by_acc
-  Usage   : $seq = $db->get_Seq_by_acc($acc);
+  Usage   : $seq = $db->get_Stream_by_acc($acc);
   Function: Gets a series of Seq objects by accession numbers
   Returns : a Bio::SeqIO stream object
   Args    : $ref : a reference to an array of accession numbers for

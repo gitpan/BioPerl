@@ -1,4 +1,4 @@
-# $Id: Seq.pm,v 1.35.2.1 2001/03/02 22:47:54 heikki Exp $
+# $Id: Seq.pm,v 1.35.2.4 2001/06/22 10:40:01 heikki Exp $
 #
 # BioPerl module for Bio::Seq
 #
@@ -60,19 +60,18 @@ Ian Korf really helped in the design of the Seq and SeqFeature system.
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
+  bioperl-l@bioperl.org              - General discussion
   http://bio.perl.org/MailList.html  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via email
+or the web:
 
   bioperl-bugs@bioperl.org
   http://bio.perl.org/bioperl-bugs/
@@ -94,7 +93,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::Seq;
-use vars qw(@ISA);
+use vars qw(@ISA $VERSION);
 use strict;
 use Bio::SeqI;
 
@@ -104,8 +103,8 @@ use Bio::Root::RootI;
 use Bio::Annotation;
 use Bio::PrimarySeq;
 
+$VERSION = '0.7.1';
 @ISA = qw(Bio::Root::RootI Bio::SeqI);
-
 
 =head2 new
 

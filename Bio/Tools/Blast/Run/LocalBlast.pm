@@ -4,7 +4,7 @@
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu).
 # CREATED : 22 May 1998
 # STATUS  : STUB MODULE, MUST BE CUSTOMIZED FOR A LOCAL SITE.
-# REVISION: $Id: LocalBlast.pm,v 1.5.2.1 2001/03/03 08:28:59 heikki Exp $
+# REVISION: $Id: LocalBlast.pm,v 1.5.2.2 2001/06/21 15:36:05 heikki Exp $
 #
 # For the latest version and documentation, visit the distribution site:
 #    http://genome-www.stanford.edu/perlOOP/bioperl/blast/
@@ -35,10 +35,10 @@ use vars qw( @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS );
 		 @Blast_matrix_local)] );
 
 use strict;
-use vars qw( $ID $VERSION);
+use vars qw( $ID $version);
 
 $ID      = 'Bio::Tools::Blast::Run::LocalBlast';
-$VERSION = '0.01';
+$version = '0.01';
 
 
 ## POD Documentation

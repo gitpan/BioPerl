@@ -4,7 +4,7 @@
 # PURPOSE  : Simple driver for Bio::Tools::pSW
 # AUTHOR   : Ewan Birney birney@sanger.ac.uk 
 # CREATED  : Tue Oct 27 1998
-# REVISION : $Id: psw.pl,v 1.2 1999/02/27 12:28:01 sac Exp $
+# REVISION : $Id: psw.pl,v 1.2.14.1 2001/03/30 07:45:06 lapp Exp $
 #
 # INSTALLATION
 #  
@@ -34,6 +34,7 @@ use Bio::Tools::pSW;
 
 use Bio::Seq; 
 use Bio::SimpleAlign;
+use Bio::AlignIO;
 
 # for legibility - write with newlines and then strip them!
 
@@ -108,7 +109,11 @@ $fac->kbyte(100);
 
 $al = $fac->pairwise_alignment($seq1,$seq2);
 
-$al->write_MSF(\*STDOUT);
+
+# write out a MSF file
+my $out = Bio::AlignIO->newFh('-fh'=> \*STDOUT,  '-format' => 'msf');
+my $status = print $out $al;
+#$al->write_MSF(\*STDOUT);
 
 
 

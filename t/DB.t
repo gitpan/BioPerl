@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: DB.t,v 1.22 2001/02/28 19:32:24 jason Exp $
+# $Id: DB.t,v 1.22.2.3 2001/05/31 17:26:48 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -22,7 +22,7 @@ BEGIN {
     }
     use Test;
 
-    $NUMTESTS = 33;
+    $NUMTESTS = 47;
     plan tests => $NUMTESTS;
     eval { require 'IO/String.pm' };
     if( $@ ) {
@@ -80,6 +80,7 @@ eval {
 if ($@) {
     warn "Batch access test failed.\nError: $@\n";
     foreach ( $Test::ntest..$NUMTESTS ) { skip(1,1,'no network access'); }
+    exit(0);
 }
 $seq = $seqio = undef;
 
@@ -106,21 +107,41 @@ $seq  = $seqio = undef;
 
 eval { 
     ok defined($gb = new Bio::DB::SwissProt('-verbose'=>$verbose)); 
+    ok(defined($seq = $gb->get_Seq_by_id('YNB3_YEAST')));
+    ok( $seq->length, 125);
+    ok($seq->division, 'YEAST');
     ok(defined($seq = $gb->get_Seq_by_acc('P43780')));
     ok( $seq->length, 103); 
+    ok( defined( $seq = $gb->get_Seq_by_acc('O39869')));
+    ok( $seq->length, 56);
+    ok($seq->primary_id, 'O39869');
+    ok($seq->division, 'UNK');
+
+    # test for bug #958
+    $seq = $gb->get_Seq_by_id('P18584');
+    ok( defined $seq );
+    ok( $seq->length, 497);
+    ok( $seq->primary_id, 'DEGP');
+    ok( $seq->display_id, 'DEGP_CHLTR');
+    ok( $seq->division, 'CHLTR');    
+
     ok( defined($gb = new Bio::DB::SwissProt('-verbose'=>$verbose, 
 					     '-retrievaltype' => 'tempfile')));
-    ok(defined($seqio = $gb->get_Stream_by_id(['KPY1_ECOLI'])));
+    ok(defined($seqio = $gb->get_Stream_by_id(['KPY1_ECOLI', 'KPY1_HUMAN'])));
     undef $gb; # testing to see if we can remove gb
     ok( defined($seq = $seqio->next_seq()));
     ok( $seq->length, 470);
+    ok( defined($seq = $seqio->next_seq()));
+    ok( $seq->length, 530);
+
 };
 
 if ($@) {
     print STDERR "Warning: Couldn't connect to SwissProt with Bio::DB::Swiss.pm!\n";
     foreach ( $Test::ntest..$NUMTESTS) { 
-	skip(1,1,'could not connect to swissprot');}
-
+	skip(1,1,'could not connect to swissprot');
+    }
+    exit(0);
 }
 $seq = undef;
 
@@ -152,5 +173,6 @@ if ($@) {
     foreach ( $Test::ntest..$NUMTESTS ) { 
 	skip(1,1,'could not connect to Genbank'); 
     }
+    exit(0);
 }
 $seq = $seqio = undef;

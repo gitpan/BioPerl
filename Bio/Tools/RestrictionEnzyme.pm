@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Tools::RestrictionEnzyme.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 3 June 1997
-# REVISION: $Id: RestrictionEnzyme.pm,v 1.9.2.1 2001/03/03 08:28:58 heikki Exp $
+# REVISION: $Id: RestrictionEnzyme.pm,v 1.9.2.3 2001/06/21 15:36:04 heikki Exp $
 # STATUS  : Alpha
 #            
 # MODIFIED: 
@@ -25,15 +25,15 @@ use strict;
 use Bio::Root::RootI;
 use Exporter;
 
-use vars qw (@ISA @EXPORT_OK %EXPORT_TAGS $ID $VERSION @RE_available $Revision);
+use vars qw (@ISA @EXPORT_OK %EXPORT_TAGS $ID $version @RE_available $Revision);
 
 @ISA         = qw(Bio::Root::RootI Exporter);
 @EXPORT_OK   = qw(@RE_available);
 %EXPORT_TAGS = ( std => [qw(@RE_available)] );
 
 $ID = 'Bio::Tools::RestrictionEnzyme';
-$VERSION = 0.04;
-$Revision = '$Id: RestrictionEnzyme.pm,v 1.9.2.1 2001/03/03 08:28:58 heikki Exp $';  #'
+$version = 0.04;
+$Revision = '$Id: RestrictionEnzyme.pm,v 1.9.2.3 2001/06/21 15:36:04 heikki Exp $';  #'
 
 # Generated from REBASE version 802 (strider format), dated Jan 29 98
 # by rebase2perl.pl (JA Feb 98). Merged with previous list by Ewan, Nov 1998
@@ -869,7 +869,7 @@ containing all or some of the following fields:
               :
  _cuts_after  : Integer indicating the cleavage position relative to the 
               : 5' end of the recognition sequence.
- 
+
  INHERITED DATA MEMBERS:
 
  _name      : (From Bio::Bio::Root::Object.pm) String containing name of the enzyme.

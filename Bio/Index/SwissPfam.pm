@@ -1,6 +1,6 @@
 
 #
-# $Id: SwissPfam.pm,v 1.11 2001/02/13 19:56:18 krbou Exp $
+# $Id: SwissPfam.pm,v 1.11.2.2 2001/06/21 15:36:01 heikki Exp $
 #
 # BioPerl module for Bio::Index::SwissPfam
 #
@@ -19,13 +19,14 @@ Bio::Index::SwissPfam - Interface for indexing swisspfam files
     use Bio::Index::SwissPfam;
 
     my $Index_File_Name = shift;
-    my $inx = Bio::Index::SwissPfam->new($Index_File_Name, 'WRITE');
+    my $inx = Bio::Index::SwissPfam->new('-filename' => $Index_File_Name, 
+					 '-write_flag' => 'WRITE');
     $inx->make_index(@ARGV);
 
     use Bio::Index::SwissPfam;
 
     my $Index_File_Name = shift;
-    my $inx = Bio::Index::SwissPfam->new($Index_File_Name);
+    my $inx = Bio::Index::SwissPfam->new('-filename' => $Index_File_Name);
 
     foreach my $id (@ARGV) {
         my $seq = $inx->fetch($id); # Returns stream
@@ -85,7 +86,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::Index::SwissPfam;
 
-use vars qw($VERSION @ISA);
+use vars qw($version @ISA);
 use strict;
 
 use Bio::Index::Abstract;
@@ -99,11 +100,11 @@ use Bio::Seq;
 #
 
 BEGIN {
-    $VERSION = 0.1;
+    $version = 0.1;
 }
 
 sub _version {
-    return $VERSION;
+    return $version;
 }
 
 =head2 _index_file

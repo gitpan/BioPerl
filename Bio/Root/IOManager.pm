@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::IOManager.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 26 Mar 1997
-# REVISION: $Id: IOManager.pm,v 1.8.2.1 2001/03/02 22:47:59 heikki Exp $
+# REVISION: $Id: IOManager.pm,v 1.8.2.2 2001/06/21 15:36:03 heikki Exp $
 # STATUS  : Alpha
 #
 # For documentation, run this module through pod2html
@@ -25,9 +25,9 @@ use FileHandle            ();
 @ISA   = qw(Bio::Root::Object);
 
 use strict;
-use vars qw($ID $VERSION $revision);
+use vars qw($ID $version $revision);
 $ID = 'Bio::Root::IOManager';
-$VERSION = 0.043;
+$version = 0.043;
 
 ## POD Documentation:
 

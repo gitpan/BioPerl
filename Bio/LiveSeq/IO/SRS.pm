@@ -1,4 +1,4 @@
-# $Id: SRS.pm,v 1.4.2.1 2001/03/02 22:47:58 heikki Exp $
+# $Id: SRS.pm,v 1.4.2.3 2001/06/21 15:36:03 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::IO::SRS
 #
@@ -63,7 +63,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::IO::SRS;
-$VERSION=2.4;
+$version=2.4;
 
 # Version history:
 # Wed Apr  5 13:06:43 BST 2000 v 1.0 restarted as a child of Loader.pm
@@ -81,7 +81,7 @@ $VERSION=2.4;
 
 use strict;
 use Carp qw(cluck croak carp);
-use vars qw($VERSION @ISA);
+use vars qw($version @ISA);
 use lib $ENV{SRSEXE};
 use srsperl;
 use Bio::Tools::CodonTable; # for novelaasequence2gene
@@ -93,7 +93,7 @@ use Bio::LiveSeq::IO::Loader 2.2;
 # This package can in the future host other databases loading subroutines.
 # e.g. ensembl2hash
 
-=head1 load
+=head2 load
 
   Title   : load
   Usage   : my $acc_id="M20132";
@@ -158,7 +158,7 @@ sub load {
   return $obj;
 }
 
-=head1 embl2hash
+=head2 embl2hash
 
   Title   : embl2hash
   Function: retrieves with SRS an EMBL entry, parses it and creates
@@ -371,7 +371,7 @@ sub joinedlocation2range {
 }
 
 
-=head1 get_swisshash
+=head2 get_swisshash
 
   Title   : get_swisshash
   Usage   : $loader->get_swisshash();
@@ -415,7 +415,7 @@ sub get_swisshash {
   }
 }
 
-=head1 swissprot2hash
+=head2 swissprot2hash
 
   Title   : swissprot2hash
   Usage   : $loader->swissprot2hash();
@@ -505,7 +505,7 @@ sub swissprot2hash {
   }
 }
 
-=head1 novelaasequence2gene
+=head2 novelaasequence2gene
 
   Title   : novelaasequence2gene
   Usage   : $gene=Bio::LiveSeq::IO::SRS->novelaasequence2gene(-aasequence => "MGLAAPTRS*");

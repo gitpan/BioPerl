@@ -1,4 +1,4 @@
-# $Id: GeneStructure.pm,v 1.4 2001/03/02 09:26:34 lapp Exp $
+# $Id: GeneStructure.pm,v 1.4.2.1 2001/05/21 05:32:52 lapp Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::GeneStructure
 #
@@ -64,7 +64,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::SeqFeature::GeneStructure;
+package Bio::SeqFeature::Gene::GeneStructure;
 use vars qw(@ISA);
 use strict;
 

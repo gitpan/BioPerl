@@ -1,4 +1,4 @@
-# $Id: RNAChange.pm,v 1.4.2.1 2001/03/02 17:32:14 heikki Exp $
+# $Id: RNAChange.pm,v 1.4.2.3 2001/06/21 15:36:05 heikki Exp $
 #
 # BioPerl module for Bio::Variation::RNAChange
 #
@@ -105,7 +105,7 @@ use vars qw(@ISA);
 use strict;
 
 # Object preamble - inheritance
-my $VERSION=1.0;
+my $version=1.0;
 use Bio::Variation::VariantI;
 use Bio::Tools::CodonTable;
 
@@ -120,7 +120,7 @@ sub new {
     my ($start, $end, $length, $strand, $primary, $source, 
 	$frame, $score, $gff_string,
 	$allele_ori,  $allele_mut,  $upstreamseq,  $dnstreamseq,  
-	$label,  $status,  $proof,  $region,  $numbering,
+	$label,  $status,  $proof,  $region,  $region_value, $region_dist, $numbering,
 	$mut_number,  $isMutation,
 	$codon_ori, $codon_mut, $codon_pos, $codon_table, $cds_end) =
 	    $self->_rearrange([qw(START
@@ -140,6 +140,8 @@ sub new {
 				  STATUS
 				  PROOF
 				  REGION
+				  REGION_VALUE
+				  REGION_DIST
 				  NUMBERING
 				  MUT_NUMBER
 				  ISMUTATION
@@ -173,6 +175,8 @@ sub new {
     $status  && $self->SUPER::status($status);
     $proof && $self->SUPER::proof($proof);
     $region  && $self->region($region);
+    $region_value  && $self->SUPER::region_value($region_value);
+    $region_dist  && $self->SUPER::region_dist($region_dist);
     $numbering && $self->SUPER::numbering($numbering);
     $mut_number && $self->SUPER::mut_number($mut_number);
     $isMutation && $self->SUPER::isMutation($isMutation);
@@ -471,28 +475,6 @@ sub region {
 	}
     }
     return $self->{'region'};
-}
-
-
-=head2 region_value
-
- Title   : region_value
- Usage   : $obj->region_value();
- Function: 
-
-            Sets and returns the name of the sequence region_value type or
-            protein domain at this location. Not a valid method for RNAChange.
- Example : 
- Returns : string
- Args    : string
-
-=cut
-
-
-
-sub region_value {
-    my ($self,$value) = @_;
-    $self->throw("'region_value' is not a method for RNAChange!\n");
 }
 
 =head2 cds_end

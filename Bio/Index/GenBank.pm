@@ -1,6 +1,6 @@
 
 #
-# $Id: GenBank.pm,v 1.4 2001/01/28 06:45:08 lapp Exp $
+# $Id: GenBank.pm,v 1.4.2.2 2001/06/21 15:36:01 heikki Exp $
 #
 # BioPerl module for Bio::Index::Abstract
 #
@@ -22,7 +22,8 @@ Bio::Index::GenBank - Interface for indexing (multiple) GenBank
     use Bio::Index::GenBank;
 
     my $Index_File_Name = shift;
-    my $inx = Bio::Index::GenBank->new($Index_File_Name, 'WRITE');
+    my $inx = Bio::Index::GenBank->new('-filename' => $Index_File_Name,
+				       '-write_flag' => 'WRITE');
     $inx->make_index(@ARGV);
 
     # Print out several sequences present in the index
@@ -30,7 +31,7 @@ Bio::Index::GenBank - Interface for indexing (multiple) GenBank
     use Bio::Index::GenBank;
 
     my $Index_File_Name = shift;
-    my $inx = Bio::Index::GenBank->new($Index_File_Name);
+    my $inx = Bio::Index::GenBank->new('-filename' => $Index_File_Name);
 
     foreach my $id (@ARGV) {
         my $seq = $inx->fetch($id); # Returns Bio::Seq object
@@ -85,7 +86,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::Index::GenBank;
 
-use vars qw($VERSION @ISA);
+use vars qw($version @ISA);
 use strict;
 
 use Bio::Index::AbstractSeq;
@@ -103,11 +104,11 @@ sub _type_stamp {
 #
 
 BEGIN {
-    $VERSION = 0.1;
+    $version = 0.1;
 }
 
 sub _version {
-    return $VERSION;
+    return $version;
 }
 
 =head2 _index_file

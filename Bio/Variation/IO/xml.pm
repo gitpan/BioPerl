@@ -1,4 +1,4 @@
-# $Id: xml.pm,v 1.4.2.1 2001/03/02 17:32:15 heikki Exp $
+# $Id: xml.pm,v 1.4.2.6 2001/06/21 15:36:06 heikki Exp $
 # BioPerl module for Bio::Variation::IO::xml
 #
 # Cared for by Heikki Lehvaslaiho <Heikki@ebi.ac.uk>
@@ -72,9 +72,9 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Variation::IO::xml;
-my $VERSION=1.0;
+my $version=1.0;
 use vars qw(@ISA  $h $id $moltype $offset $dna $start $end $len $ismut $number
-	    $allele_ori $allele_mut $upFlank $dnFlank $proof $region $region_value 
+	    $allele_ori $allele_mut $upFlank $dnFlank $proof $region $region_value $region_dist
 	    $rna $codon_ori $codon_mut $codon_pos $codon_table $aa $upflank $dnflank
 	    $prevdnaobj $prevrnaobj $prevaaobj);
 use strict;
@@ -140,21 +140,21 @@ sub _DNA {
 						 '-end'           => $end,        
 						 '-lenght'        => $len,        
 						 '-mut_number'    => $number,
-						 '-upStreamSeq'   => $upFlank,    
-						 '-dnStreamSeq'   => $dnFlank,    
-						 '-proof'         => $proof,      
-						 '-region'        => $region,     
-						 '-region_value'  => $region_value
+						 '-upStreamSeq'   => $upFlank,
+						 '-dnStreamSeq'   => $dnFlank,
+						 '-proof'         => $proof
 						 );
 	
+	$dna->region($region) if $region;
+	$dna->region_value($region_value) if $region_value;
+	$dna->region_dist($region_dist) if $region_dist;
+
 	my $a1 = Bio::Variation::Allele->new;
 	$a1->seq($allele_ori) if $allele_ori;
 	$dna->allele_ori($a1);
 	my $a2 = Bio::Variation::Allele->new;
 	$a2->seq($allele_mut) if $allele_mut;
-	if ($ismut) {
-	    $dna->isMutation(1);
-	}
+	$dna->isMutation(1) if $ismut;
 	$dna->allele_mut($a2);	
 	$dna->add_Allele($a2);
 	$dna->length($len);
@@ -162,8 +162,8 @@ sub _DNA {
 	$prevdnaobj = $dna;
     }
     $upFlank = $dnFlank = '';
-    $start = $end = $len = $ismut = $number = $allele_ori = $allele_mut = 
-        $proof = $region = $region_value = '';
+    $start = $end = $len = $ismut = $number = $allele_ori = $allele_mut =
+        $proof = $region = $region_value = $region_dist = '';
 }
 
 sub _RNA {
@@ -174,15 +174,18 @@ sub _RNA {
 	$a3->seq($allele_mut) if $allele_mut;
 	$prevrnaobj->add_Allele($a3);
     } else {
-	$rna = Bio::Variation::RNAChange->new ('-start'         => $start,      
-					       '-end'           => $end,        
-					       '-lenght'        => $len,     
-					       '-mut_number'    => $number,   
-					       '-upStreamSeq'   => $upFlank,    
-					       '-dnStreamSeq'   => $dnFlank,    
-					       '-proof'         => $proof,      
-					       '-region'        => $region
+	$rna = Bio::Variation::RNAChange->new ('-start'         => $start,
+					       '-end'           => $end,
+					       '-lenght'        => $len,
+					       '-mut_number'    => $number,
+					       '-upStreamSeq'   => $upFlank,
+					       '-dnStreamSeq'   => $dnFlank,
+					       '-proof'         => $proof
 					       );
+
+	$rna->region($region) if $region;
+	$rna->region_value($region_value) if $region_value;
+	$rna->region_dist($region_dist) if $region_dist;
 
 	my $a1 = Bio::Variation::Allele->new;
 	$a1->seq($allele_ori) if $allele_ori;
@@ -204,8 +207,8 @@ sub _RNA {
     }	
     $codon_table = $codon_ori = $codon_mut = $codon_pos ='';
     $upFlank = $dnFlank = '';
-    $start = $end = $len = $ismut = $number = $allele_ori = $allele_mut = 
-	$proof = $region  = '';
+    $start = $end = $len = $ismut = $number = $allele_ori = $allele_mut =
+	$proof = $region = $region_value = $region_dist = '';
 }
 
 
@@ -216,34 +219,35 @@ sub _AA {
 	my $a3 = Bio::Variation::Allele->new;
 	$a3->seq($allele_mut) if $allele_mut;
 	$prevaaobj->add_Allele($a3);
-    } else {    
-	$aa = Bio::Variation::AAChange->new ('-start'         => $start,      
-					     '-end'           => $end,        
-					     '-lenght'        => $len,    
-					     '-mut_number'    => $number,    
-					     '-proof'         => $proof,      
-					     '-region'        => $region
+    } else {
+	$aa = Bio::Variation::AAChange->new ('-start'         => $start,
+					     '-end'           => $end,
+					     '-lenght'        => $len,
+					     '-mut_number'    => $number,
+					     '-proof'         => $proof
 					     );
+
+	$aa->region($region) if $region;
+	$aa->region_value($region_value) if $region_value;
+	$aa->region_dist($region_dist) if $region_dist;
+
 	my $a1 = Bio::Variation::Allele->new;
 	$a1->seq($allele_ori) if $allele_ori;
 	$aa->allele_ori($a1);
 	my $a2 = Bio::Variation::Allele->new;
 	$a2->seq($allele_mut) if $allele_mut;
-	if ($ismut) {
-	    $aa->isMutation(1);
-	}
+	$aa->isMutation(1) if $ismut;
 	$aa->allele_mut($a2);
 	$aa->add_Allele($a2);
 	$aa->length($len);
-	$aa->region($region) if $region;
 
 	$rna->AAChange($aa);
 	$aa->RNAChange($rna);
 	$h->add_Variant($aa);
 	$prevaaobj = $aa;
     }
-    $start = $end = $len = $ismut = $number = $allele_ori = $allele_mut = $upflank = 
-	$dnflank = $proof = $region  = '';
+    $start = $end = $len = $ismut = $number = $allele_ori = $allele_mut = $upflank =
+	$dnflank = $proof = $region  = $region_value = $region_dist = '';
 }
 
 sub next {
@@ -257,9 +261,9 @@ sub next {
     return unless $entry =~ /^\W*<seqDiff/;
 
     $id = $offset = '';
-    $start = $end = $len = $number = $allele_ori = $allele_mut = $upflank = 
-	$dnflank = $proof = $region  = '';
-    
+    $start = $end = $len = $number = $allele_ori = $allele_mut = $upflank =
+	$dnflank = $proof = $region  = $region_value = $region_dist = '';
+
     $h = Bio::Variation::SeqDiff->new;
 
     # create new parser object
@@ -296,6 +300,11 @@ sub next {
     $p->register("allele_mut","char" => \$allele_mut);
     $p->register("region","char" => \$region);
     $p->register(">seqDiff>DNA>region:value","attr" => \$region_value);
+    $p->register(">seqDiff>DNA>region:dist","attr" => \$region_dist);
+    $p->register(">seqDiff>RNA>region:value","attr" => \$region_value);
+    $p->register(">seqDiff>RNA>region:dist","attr" => \$region_dist);
+    $p->register(">seqDiff>AA>region:value","attr" => \$region_value);
+    $p->register(">seqDiff>AA>region:dist","attr" => \$region_dist);
 
     $p->register("codon_table","char" => \$codon_table);
     $p->register(">seqDiff>RNA>codon:codon_ori","attr" => \$codon_ori);
@@ -387,12 +396,13 @@ sub write {
 				     "end"    => $mut->end,
 				     "length" => $mut->length,
 				     "isMutation" => $mut->isMutation
-				     #param('splicedist') < 10 $mut->param('splicedist')
 				     );
 			if ($mut->label) {
-			    $w->startTag("label");
-			    $w->characters($mut->label );
-			    $w->endTag;
+			    foreach my $label (split ', ', $mut->label) {
+				$w->startTag("label");
+				$w->characters($label);
+				$w->endTag;
+			    }
 			}	
 			if ($mut->proof) {
 			    $w->startTag("proof");
@@ -421,10 +431,26 @@ sub write {
 			    $w->characters($mut->dnStreamSeq );
 			    $w->endTag;
 			}
+			if ($mut->restriction_changes) {
+			    $w->startTag("restriction_changes");
+			    $w->characters($mut->restriction_changes);
+			    $w->endTag;
+			}	
 			if ($mut->region) {
-			    if($mut->region_value) {
+			    if($mut->region_value and $mut->region_dist) {
+				$w->startTag("region",
+					     "value" => $mut->region_value,
+					     "dist" => $mut->region_dist
+					     );
+			    }
+			    elsif($mut->region_value) {
 				$w->startTag("region",
 					     "value" => $mut->region_value
+					     );
+			    }
+			    elsif($mut->region_dist) {
+				$w->startTag("region",
+					     "dist" => $mut->region_dist
 					     );
 			    } else {
 				$w->startTag("region");
@@ -432,11 +458,6 @@ sub write {
 			    $w->characters($mut->region );
 			    $w->endTag;
 			}
-			if ($mut->restriction_changes) {
-			    $w->startTag("restriction_changes");
-			    $w->characters($mut->restriction_changes);
-			    $w->endTag;
-			}	    
 			$w->endTag; #DNA
 		    }
 		}
@@ -463,9 +484,11 @@ sub write {
 				     );
 
 			if ($mut->label) {
-			    $w->startTag("label");
-			    $w->characters($mut->label );
-			    $w->endTag;
+			    foreach my $label (split ', ', $mut->label) {
+				$w->startTag("label");
+				$w->characters($label );
+				$w->endTag;
+			    }
 			}	
 			if ($mut->proof) {
 			    $w->startTag("proof");
@@ -519,9 +542,26 @@ sub write {
 			    $w->startTag("restriction_changes");
 			    $w->characters($mut->restriction_changes);
 			    $w->endTag;
-			}	    
+			}	
 			if ($mut->region) {
-			    $w->startTag("region");
+			    if($mut->region_value and $mut->region_dist) {
+				$w->startTag("region",
+					     "value" => $mut->region_value,
+					     "dist" => $mut->region_dist
+					     );
+			    }
+			    elsif($mut->region_value) {
+				$w->startTag("region",
+					     "value" => $mut->region_value
+					     );
+			    }
+			    elsif($mut->region_dist) {
+				$w->startTag("region",
+					     "dist" => $mut->region_dist
+					     );
+			    } else {
+				$w->startTag("region");
+			    }
 			    $w->characters($mut->region );
 			    $w->endTag;
 			}
@@ -551,9 +591,11 @@ sub write {
 				     );
 
 			if ($mut->label) {
-			    $w->startTag("label");
-			    $w->characters($mut->label );
-			    $w->endTag;
+			    foreach my $label (split ', ', $mut->label) {
+				$w->startTag("label");
+				$w->characters($label );
+				$w->endTag;
+			    }
 			}	
 			if ($mut->proof) {
 			    $w->startTag("proof");
@@ -573,8 +615,25 @@ sub write {
 			}	
 			#}
 			if ($mut->region) {
-			    $w->startTag("region");
-			    $w->characters( $mut->region );
+			    if($mut->region_value and $mut->region_dist) {
+				$w->startTag("region",
+					     "value" => $mut->region_value,
+					     "dist" => $mut->region_dist
+					     );
+			    }
+			    elsif($mut->region_value) {
+				$w->startTag("region",
+					     "value" => $mut->region_value
+					     );
+			    }
+			    elsif($mut->region_dist) {
+				$w->startTag("region",
+					     "dist" => $mut->region_dist
+					     );
+			    } else {
+				$w->startTag("region");
+			    }
+			    $w->characters($mut->region );
 			    $w->endTag;
 			}
 			$w->endTag; #AA

@@ -1,5 +1,5 @@
 
-# $Id: Ace.pm,v 1.7.2.1 2001/03/02 22:47:55 heikki Exp $
+# $Id: Ace.pm,v 1.7.2.2 2001/06/18 16:00:26 dag Exp $
 #
 # BioPerl module for Bio::DB::Ace
 #
@@ -109,7 +109,7 @@ BEGIN {
 
 sub new {
   my($class,@args) = @_;
-  my $sekf = $class->SUPER::new(@args);
+  my $self = $class->SUPER::new(@args);
   my ($host,$port) = $self->_rearrange([qw(
 					 HOST
 					 PORT
