@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-# $Id: BPbl2seq.t,v 1.10.2.2 2001/06/21 17:01:37 jason Exp $
+# $Id: BPbl2seq.t,v 1.10.2.3 2001/11/15 15:28:27 jason Exp $
 
 use strict;
 BEGIN {     
@@ -12,7 +12,7 @@ BEGIN {
 	use lib 't';
     }
     use Test;
-    plan tests => 20; 
+    plan tests => 23; 
 }
 
 use Bio::Tools::BPbl2seq;
@@ -40,3 +40,9 @@ ok $report->query->end, 343, "wrong query end";
 ok $report->subject->start, 60, "wrong hit start ";
 ok $report->subject->end, 360, "wrong hit end";
 ok $report->subject->seqname =~ /ALEU_HORVU/;# "wrong hit name";
+
+ $report = new Bio::Tools::BPbl2seq(-file => Bio::Root::IO->catfile("t","empty.bl2seq"));
+$report->verbose(2);
+ok $report->isa('Bio::Tools::BPbl2seq');# " no report";
+ok $report->query->seqname,undef, "query found where none expected";
+ok $report->subject->seqname, undef, "subject found where none expected";

@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.6.2.2 2001/06/21 15:36:05 heikki Exp $
+# $Id: IO.pm,v 1.6.2.4 2001/09/14 08:01:40 heikki Exp $
 #
 # BioPerl module for Bio::Variation::IO
 #
@@ -35,7 +35,7 @@ or
     $out = Bio::Variation::IO->newFh('-format' => 'xml');
 
     # World's shortest flat<->xml format converter:
-    print $output $_ while <$in>;
+    print $out $_ while <$in>;
 
 =head1 DESCRIPTION
 
@@ -299,7 +299,7 @@ END
 =head2 next
 
  Title   : next
- Usage   : $seqDiff = stream->next
+ Usage   : $seqDiff = $stream->next
  Function: reads the next $seqDiff object from the stream
  Returns : a Bio::Variation::SeqDiff object
  Args    :
@@ -329,7 +329,7 @@ sub next_seq {
 
 sub write {
     my ($self, $seq) = @_;
-    $self->throw("Sorry, you cannot write to a generic Bio::Variation::IO object.");
+    $self->throw("Sorry, you cannot write from generic Bio::Variation::IO object.");
 }
 
 sub write_seq {

@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Tools::RestrictionEnzyme.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 3 June 1997
-# REVISION: $Id: RestrictionEnzyme.pm,v 1.9.2.3 2001/06/21 15:36:04 heikki Exp $
+# REVISION: $Id: RestrictionEnzyme.pm,v 1.9.2.4 2001/08/19 12:00:14 roger Exp $
 # STATUS  : Alpha
 #            
 # MODIFIED: 
@@ -33,7 +33,7 @@ use vars qw (@ISA @EXPORT_OK %EXPORT_TAGS $ID $version @RE_available $Revision);
 
 $ID = 'Bio::Tools::RestrictionEnzyme';
 $version = 0.04;
-$Revision = '$Id: RestrictionEnzyme.pm,v 1.9.2.3 2001/06/21 15:36:04 heikki Exp $';  #'
+$Revision = '$Id: RestrictionEnzyme.pm,v 1.9.2.4 2001/08/19 12:00:14 roger Exp $';  #'
 
 # Generated from REBASE version 802 (strider format), dated Jan 29 98
 # by rebase2perl.pl (JA Feb 98). Merged with previous list by Ewan, Nov 1998
@@ -496,7 +496,10 @@ sub site {
 #---------
     my $self = shift;
     my $seq = $self->seq;
-    return $seq->subseq(1, $self->cuts_after).'^'.$seq->subseq($self->cuts_after+1, $seq->length); 
+    my $cuts_after = $self->cuts_after;
+    if    (!$cuts_after)                { return '^' . $seq->subseq(1, $seq->length); }
+    elsif ($cuts_after == $seq->length) { return $seq->subseq(1, $seq->length) . '^'; }
+    else                                { return $seq->subseq(1, $cuts_after) . '^' . $seq->subseq($cuts_after + 1, $seq->length); }
 }
     
 

@@ -1,6 +1,19 @@
-# $Id: BUGS,v 1.1.2.3 2001/06/25 18:36:18 jason Exp $
+# $Id: BUGS,v 1.1.2.7 2001/11/16 17:10:53 heikki Exp $
 Known Bugs 
 
+
+Bioperl 0.7.2
+=============
+
+ * NCBI has changed some of the cgi scripts for retrieving sequences
+   online which as resulted in some of the DB methods from not working
+   consistently.  We are addressing these in the 0.9.x and 1.0 series
+   of releases.  We recommend using the Bio::DB::EMBL object that is
+   part of the later releases. 
+ 
+   Additionally RefSeq Contigs are not properly downloaded, please see
+   the bioperl list archives for information about potential
+   workarounds and ongoing development effort to address these.
 
 Bioperl 0.7.1
 =============
@@ -8,7 +21,7 @@ Bioperl 0.7.1
    tblastx reports (Jitterbug bug # 978).
 
  * Bio::Tools::BPlite interface needs to be updated to fix parsing
-   more than bl2seq report report (Jitterbug bug #940), this has been
+   more than bl2seq report (Jitterbug bug #940), this has been
    fixed on the main code trunk and will be part of the next major
    bioperl release.
 

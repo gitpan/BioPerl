@@ -1,4 +1,4 @@
-# $Id: RootI.pm,v 1.28.2.2 2001/06/21 15:36:04 heikki Exp $
+# $Id: RootI.pm,v 1.28.2.3 2001/11/04 17:15:42 jason Exp $
 #
 # BioPerl module for Bio::Root::RootI
 #
@@ -66,7 +66,7 @@ use strict;
 BEGIN { 
     $ID        = 'Bio::Root::RootI';
     $version   = 0.7;
-    $Revision  = '$Id: RootI.pm,v 1.28.2.2 2001/06/21 15:36:04 heikki Exp $ ';
+    $Revision  = '$Id: RootI.pm,v 1.28.2.3 2001/11/04 17:15:42 jason Exp $ ';
     $DEBUG     = 0;
     $VERBOSITY = 0;
 }
@@ -398,7 +398,9 @@ sub _register_for_cleanup {
 
 sub DESTROY {
     my ($self) = shift;
-    if(exists($self->{'_cleanup_methods'})) {
+    if(ref($self) && $self->isa('HASH') && 
+       exists($self->{'_cleanup_methods'}) 
+       &&  ref($self->{'_cleanup_methods'}) =~ /array/i) {
 	foreach my $method (@{$self->{'_cleanup_methods'}}) {
 	    &$method($self);
 	}

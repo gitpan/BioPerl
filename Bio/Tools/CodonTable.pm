@@ -1,4 +1,4 @@
-# $Id: CodonTable.pm,v 1.12.2.1 2001/03/02 22:48:03 heikki Exp $
+# $Id: CodonTable.pm,v 1.12.2.3 2001/11/14 11:26:55 birney Exp $
 #
 # bioperl module for Bio::Tools::CodonTable
 #

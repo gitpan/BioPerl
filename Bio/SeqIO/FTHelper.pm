@@ -1,4 +1,4 @@
-# $Id: FTHelper.pm,v 1.25.2.4 2001/06/15 17:10:37 jason Exp $
+# $Id: FTHelper.pm,v 1.25.2.5 2001/06/27 12:53:44 jason Exp $
 #
 # BioPerl module for Bio::SeqIO::FTHelper
 #
@@ -312,10 +312,10 @@ sub from_SeqFeature {
     my $locstr = $sf->location->to_FTstring;
 
     # going into sub features
-    foreach my $sub ( $sf->sub_SeqFeature() ) {
-	my @subfth = &Bio::SeqIO::FTHelper::from_SeqFeature($sub);
-	push(@ret, @subfth);    
-    }
+#    foreach my $sub ( $sf->sub_SeqFeature() ) {
+#	my @subfth = &Bio::SeqIO::FTHelper::from_SeqFeature($sub);
+#	push(@ret, @subfth);    
+#    }
 
     $fth->loc($locstr);
     $fth->key($key);

@@ -1,4 +1,4 @@
-# $Id: genbank.pm,v 1.33.2.4 2001/06/01 20:30:21 jason Exp $
+# $Id: genbank.pm,v 1.33.2.7 2001/11/09 10:21:57 birney Exp $
 # BioPerl module for Bio::SeqIO::GenBank
 #
 # Cared for by Elia Stupka <elia@ebi.ac.uk>
@@ -326,24 +326,24 @@ sub write_seq {
     if( !defined $div || ! $div ) { $div = 'UNK'; }
 
     if( !$seq->can('molecule') || ! defined ($mol = $seq->molecule()) ) {
-	$mol = 'DNA';
-    }
-    else {
-	$mol = $seq->molecule;
+	$mol = $seq->moltype;
     }
     
     local($^W) = 0;   # supressing warnings about uninitialized fields.
     
     my $temp_line;
     if( $self->_id_generation_func ) {
-	$temp_line = &{$self->_id_generation_func}($seq);
+	my $t2 = &{$self->_id_generation_func}($seq,'genbank');
+	$temp_line = sprintf ("%-12s%s",'LOCUS',$t2);
     } else {
 	my $date = '';
 	if( $seq->can('get_dates') ) { 
 	    ($date) = $seq->get_dates(); # get first one from the list
 	}
-	$temp_line = sprintf ("%-12s%-10s%7s bp%4s%-5s%-11s%-3s%7s%-s", 
-			      'LOCUS', $seq->id(),$len,'',$mol,'',
+	$temp_line = sprintf ("%-12s%-10s%7s %s%4s%-5s%-11s%-3s%7s%-s", 
+			      'LOCUS', $seq->id(),$len,
+			      ($mol eq 'protein' || uc($mol) eq  'PRT') ? ('aa','', '') : 
+			      ('bp', '',$mol),'',
 			      $div,'',$date);
     }
     
@@ -498,21 +498,22 @@ sub write_seq {
 # finished printing features.
     
     $str =~ tr/A-Z/a-z/;
-
+    unless ( $mol eq 'protein' ) {
 # Count each nucleotide
-    my $alen = $str =~ tr/a/a/;
-    my $clen = $str =~ tr/c/c/;
-    my $glen = $str =~ tr/g/g/;
-    my $tlen = $str =~ tr/t/t/;
-    
-    my $olen = $len - ($alen + $tlen + $clen + $glen);
-    if( $olen < 0 ) {
-	$self->warn("Weird. More atgc than bases. Problem!");
+	my $alen = $str =~ tr/a/a/;
+	my $clen = $str =~ tr/c/c/;
+	my $glen = $str =~ tr/g/g/;
+	my $tlen = $str =~ tr/t/t/;
+
+	my $olen = $len - ($alen + $tlen + $clen + $glen);
+	if( $olen < 0 ) {
+	    $self->warn("Weird. More atgc than bases. Problem!");
+	}
+	my $base_count = sprintf("BASE COUNT %8s a %6s c %6s g %6s t%s\n",
+				 $alen,$clen,$glen,$tlen,
+				 ( $olen > 0 ) ? sprintf("%6s others",$olen) : '');
+	$self->_print($base_count); 
     }
-    my $base_count = sprintf("BASE COUNT %8s a %6s c %6s g %6s t%s\n",
-			     $alen,$clen,$glen,$tlen,
-			     ( $olen > 0 ) ? sprintf("%6s others",$olen) : '');
-    $self->_print($base_count); 
     $self->_print(sprintf("ORIGIN%6s\n",''));
 
     my $di;

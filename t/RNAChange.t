@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: RNAChange.t,v 1.4 2001/01/25 22:13:40 jason Exp $
+## $Id: RNAChange.t,v 1.4.2.1 2001/10/09 15:11:44 heikki Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -86,6 +86,8 @@ ok ($obj->codon_pos, 1 );
 my $obj3 = Bio::Variation::AAChange -> new;
 $obj3->start(2);
 $obj->AAChange($obj3);
+$obj3->allele_ori($a1);
+$obj3->allele_mut($a2);
 
 ok ($obj->label, 'missense' , "label is". $obj->label);
 

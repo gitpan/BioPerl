@@ -1,4 +1,4 @@
-# $Id: embl.pm,v 1.24.2.3 2001/06/18 12:41:53 heikki Exp $
+# $Id: embl.pm,v 1.24.2.4 2001/10/19 10:31:59 heikki Exp $
 #
 # BioPerl module for Bio::SeqIO::EMBL
 #
@@ -169,7 +169,7 @@ sub next_seq {
 	       $moltype='dna';
 	   }
 	   elsif ($mol =~ /RNA/) {
-	       $moltype='rna';
+	       $moltype='dna';
 	   }
 	   elsif ($mol =~ /AA/) {
 	       $moltype='protein';

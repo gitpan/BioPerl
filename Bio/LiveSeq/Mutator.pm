@@ -1,4 +1,4 @@
-# $Id: Mutator.pm,v 1.8.2.9 2001/06/21 15:36:02 heikki Exp $
+# $Id: Mutator.pm,v 1.8.2.10 2001/08/07 14:24:16 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::Mutator
 #
@@ -925,12 +925,12 @@ sub _rnaAffected {
 			 $self->dnamut->region('exon');
 			 if ($afterdist < $beforedist) {
 			     $afterdist++;
-			     $self->dnamut->region_value($exonvalue);
+			     $self->dnamut->region_value($exonvalue+1);
 			     $self->dnamut->region_dist($afterdist);
 			     #print "splice site $afterdist nt upstream!<br>";
 			 } else {
 			     #$beforedist;
-			     $self->dnamut->region_value($exonvalue);
+			     $self->dnamut->region_value($exonvalue+1);
 			     $self->dnamut->region_dist($beforedist * -1);
 			     #print "splice site $beforedist nt downstream!<br>";
 			 }

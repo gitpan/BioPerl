@@ -3,7 +3,7 @@
 # PURPOSE : Provides general-purpose utilities of potential interest to any Perl script.
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : Feb 1996
-# REVISION: $Id: Utilities.pm,v 1.13.2.2 2001/06/21 15:36:04 heikki Exp $
+# REVISION: $Id: Utilities.pm,v 1.13.2.3 2001/11/02 18:58:18 jason Exp $
 # STATUS  : Alpha
 #
 # This module manages file compression and uncompression using gzip or
@@ -442,7 +442,7 @@ sub compress {
 
  Title     : uncompress
  Usage     : $Util->uncompress(filename, [tmp]);
- Purpose   : Uncompress a file to conserve disk space.
+ Purpose   : Uncompress a file.
  Example   : $Util->uncompress("/usr/people/me/data.txt.gz");
  Returns   : String (name of uncompressed file, full path).
  Argument  : filename = String (name of file to be uncompressed, full path).

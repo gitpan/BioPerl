@@ -1,4 +1,4 @@
-# $Id: GDB.pm,v 1.6.2.1 2001/03/02 22:47:55 heikki Exp $
+# $Id: GDB.pm,v 1.6.2.2 2001/11/01 00:57:15 jason Exp $
 #
 # BioPerl module for Bio::DB::GenBank
 #
@@ -300,8 +300,8 @@ sub _request {
     } else { $resp =  $self->ua->request($url); } 
 
     if( $resp->is_error  ) {
-	$self->warn($resp->as_string());
-	$self->warn("Error getting for url " . $url->uri . "!\n");
+	$self->warn($resp->as_string() . "\nError getting for url " .
+		     $url->uri . "!\n");
 	return undef;
     }
     return $resp;

@@ -1,4 +1,4 @@
-# $Id: SeqIO.pm,v 1.26.2.2 2001/03/09 17:37:32 heikki Exp $
+# $Id: SeqIO.pm,v 1.26.2.3 2001/09/26 14:36:15 jason Exp $
 #
 # BioPerl module for Bio::SeqIO
 #
@@ -38,7 +38,7 @@ or
     $out = Bio::SeqIO->newFh('-format' => 'EMBL');
 
     # World's shortest Fasta<->EMBL format converter:
-    print $output $_ while <$in>;
+    print $out $_ while <$in>;
 
 =head1 DESCRIPTION
 

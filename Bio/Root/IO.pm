@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.10.2.1 2001/06/15 16:59:02 jason Exp $
+# $Id: IO.pm,v 1.10.2.2 2001/11/09 13:43:41 avc Exp $
 #
 # BioPerl module for Bio::Root::IO
 #
@@ -155,7 +155,7 @@ BEGIN {
 	    $OPENFLAGS |= $bit if eval { $bit = &$func(); 1 };
 	}
     }
-}
+};
 
 =head2 new
 

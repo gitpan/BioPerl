@@ -1,4 +1,4 @@
-# $Id: AAChange.pm,v 1.3.2.5 2001/06/21 15:36:05 heikki Exp $
+# $Id: AAChange.pm,v 1.3.2.6 2001/10/09 15:11:44 heikki Exp $
 #
 # BioPerl module for Bio::Variation::AAChange
 #
@@ -256,11 +256,17 @@ sub label {
 	   ($o and $m and  length($o) > length($m) and 
 	    substr($m, -1, 1) ne '*')) {
 	$type = 'deletion';
+	if ($o and $m and $o !~ $m and $o !~ $m) {
+	    $type .= ', complex'; 
+	}
     }
     elsif (not $o or 
 	   ($o and $m and length($o) < length($m) and 
 	    substr($m, -1, 1) ne '*' ) ) {
 	$type = 'insertion';	
+	if ($o and $m and $o !~ $m and $o !~ $m) {
+	    $type .= ', complex'; 
+	}
     }
     elsif  ($o and $m and $o ne $m and 
 	    length $o == 1 and  length $m  == 1 ) {

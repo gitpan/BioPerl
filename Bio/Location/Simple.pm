@@ -1,4 +1,4 @@
-# $Id: Simple.pm,v 1.6.2.5 2001/05/29 22:17:04 jason Exp $
+# $Id: Simple.pm,v 1.6.2.7 2001/11/01 00:59:08 jason Exp $
 #
 # BioPerl module for Bio::Location::Simple
 # Cared for by Jason Stajich <jason@chg.mc.duke.edu>
@@ -80,9 +80,19 @@ sub new {
 							    END 
 							    STRAND
 							    SEQID)],@args);
+    defined $strand && $self->strand($strand);
     defined $start  && $self->start($start);
     defined $end    && $self->end($end);
-    defined $strand && $self->strand($strand);
+    if( defined $self->start && defined $self->end &&
+	$self->start > $self->end ) {
+	$self->warn("When building a location start ($start) is expected to be less than end ($end), however it was not was not. Switching start and end and setting strand to -1");
+	$self->strand(-1);
+	my $e = $self->end;
+	my $s = $self->start;
+	$self->start($e);
+	$self->end($s);
+    }
+
     $seqid && $self->seq_id($seqid);
     return $self;
 }
@@ -170,7 +180,7 @@ sub strand {
 
 sub length {
    my ($self) = @_;
-   return $self->end() - $self->start() + 1;
+   return abs($self->end() - $self->start() ) + 1;
 }
 
 =head2 min_start

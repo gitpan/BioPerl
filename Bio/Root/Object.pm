@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Object.pm
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 23 July 1996
-# REVISION: $Id: Object.pm,v 1.13.2.3 2001/06/21 15:36:03 heikki Exp $
+# REVISION: $Id: Object.pm,v 1.13.2.4 2001/11/09 13:43:41 avc Exp $
 # STATUS  : Alpha
 #            
 # For documentation, run this module through pod2html 
@@ -42,7 +42,7 @@ use vars qw($ID $version %Objects_created $Revision @ISA);
 
 $ID       = 'Bio::Root::Object';
 $version  = 0.041;
-$Revision = '$Id: Object.pm,v 1.13.2.3 2001/06/21 15:36:03 heikki Exp $';  #'
+$Revision = '$Id: Object.pm,v 1.13.2.4 2001/11/09 13:43:41 avc Exp $';  #'
 
 ### POD Documentation:
 
@@ -533,11 +533,11 @@ sub _initialize {
     local($^W) = 0;
     my($self, %param) = @_;
     
-    if(! grep { ref($self) =~ /$_/; } @inheriting_modules) {
-	$self->warn("Class " . ref($self) .
-		    " inherits from Bio::Root::Object, which is deprecated. ".
-		    "Try changing your inheritance to Bio::Root::RootI.");
-    }
+#   if(! grep { ref($self) =~ /$_/; } @inheriting_modules) {
+#	$self->warn("Class " . ref($self) .
+#		    " inherits from Bio::Root::Object, which is deprecated. ".
+#		    "Try changing your inheritance to Bio::Root::RootI.");
+#    }
     my($name, $parent, $make, $strict, $verbose, $obj, $record_err) = (
 	($param{-NAME}||$param{'-name'}), ($param{-PARENT}||$param{'-parent'}), 
 	($param{-MAKE}||$param{'-make'}), ($param{-STRICT}||$param{'-strict'}),

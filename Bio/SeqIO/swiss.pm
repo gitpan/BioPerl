@@ -1,4 +1,4 @@
-# $Id: swiss.pm,v 1.34.2.7 2001/06/09 22:50:18 roger Exp $
+# $Id: swiss.pm,v 1.34.2.9 2001/09/26 14:47:56 jason Exp $
 #
 # BioPerl module for Bio::SeqIO::swiss
 #
@@ -162,7 +162,7 @@ sub next_seq {
        $seq->division('UNK');       
    }
    $seq->primary_id($1);
-   $seq->molecule($5);
+   $seq->moltype('protein');
     # this is important to have the id for display in e.g. FTHelper, otherwise
     # you won't know which entry caused an error
    $seq->display_id($name);
@@ -347,7 +347,7 @@ sub write_seq {
        $div = 'UNK';
    } 
       
-   if(! $seq->can('molecule') || ! defined ($mol = $seq->molecule) ) {
+   if(! $seq->can('moltype') || ! defined ($mol = $seq->moltype) ) {
        $mol = 'XXX';
    }
    
@@ -733,7 +733,7 @@ sub _print_swissprot_FTHelper {
      if exists $fth->field->{"description"};
    
    $self->_write_line_swissprot_regex(sprintf("FT   %-8s %6s %6s       ",
-					      $fth->key,$start,$end),
+					      substr($fth->key,0,8),$start,$end),
 				      "FT                                ",
 				      $desc,'\s+|$',80);
 }

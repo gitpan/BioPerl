@@ -1,4 +1,4 @@
-# $Id: Seq.pm,v 1.35.2.4 2001/06/22 10:40:01 heikki Exp $
+# $Id: Seq.pm,v 1.35.2.5 2001/07/02 17:21:57 jason Exp $
 #
 # BioPerl module for Bio::Seq
 #
@@ -103,7 +103,7 @@ use Bio::Root::RootI;
 use Bio::Annotation;
 use Bio::PrimarySeq;
 
-$VERSION = '0.7.1';
+$VERSION = '0.7.2';
 @ISA = qw(Bio::Root::RootI Bio::SeqI);
 
 =head2 new
