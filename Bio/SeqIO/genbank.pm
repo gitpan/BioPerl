@@ -1,4 +1,4 @@
-# $Id: genbank.pm,v 1.76 2002/12/29 00:51:43 lapp Exp $
+# $Id: genbank.pm,v 1.76.2.5 2003/03/25 12:32:16 heikki Exp $
 #
 # BioPerl module for Bio::SeqIO::GenBank
 #
@@ -47,7 +47,7 @@ record.
 
 =item GI number
 
-$seq->primary_id
+$seq-E<gt>primary_id
 
 =back
 
@@ -222,7 +222,7 @@ sub next_seq {
       }
       my $date = join(' ', @tokens); # we lump together the rest
       if($date =~ s/.*(\d\d-\w\w\w-\d\d\d\d).*/$1/) {
-	  $params{'-date'} = [$date];
+	  $params{'-dates'} = [$date];
       }
       # set them all at once
       $builder->add_slot_value(%params);
@@ -256,7 +256,13 @@ sub next_seq {
 	  }
 	  # accession number (there can be multiple accessions)
 	  if( /^ACCESSION\s+(\S.*\S)/ ) {
-	      push(@acc, split(' ',$1));
+	      push(@acc, split(/\s+/,$1));
+	      while( defined($_ = $self->_readline) ) { 
+		  /^\s+(.*)/ && do { push (@acc, split(/\s+/,$1)); next };
+		  last;
+	      }
+	      $buffer = $_;
+	      next;
 	  }
 	  # PID
 	  elsif( /^PID\s+(\S+)/ ) {
@@ -275,10 +281,18 @@ sub next_seq {
 	  }
 	  #Keywords
 	  elsif( /^KEYWORDS\s+(.*)/ ) {
-	      my $keywords = $1;
-	      $keywords =~ s/\;//g;
+	      my @kw = ($1);
+	      while( defined($_ = $self->_readline) ) { 
+		  chomp;
+		  /^\s+(.*)/ && do { push (@kw,$1); next };
+		  last;
+	      }
+	      
+	      my $keywords = join(" ", @kw);
 	      $keywords =~ s/\.$//; # remove possibly trailing dot
 	      $params{'-keywords'} = $keywords;
+	      $buffer = $_;
+	      next;
 	  }
 	  # Organism name and phylogenetic information
 	  elsif (/^SOURCE/) {
@@ -328,7 +342,7 @@ sub next_seq {
 	      next;
 	  }
 	  # Exit at start of Feature table, or start of sequence
-	  last if( /^(FEATURES)|(ORIGIN)/ );
+	  last if( /^(FEATURES|ORIGIN)/ );
 	  # Get next line and loop again
 	  $buffer = $self->_readline;
       }
@@ -408,9 +422,9 @@ sub next_seq {
 		       $ftunit->_generic_seqfeature($self->location_factory(),
 						    $display_id));
 	      }	
-	  } elsif(! /^ORIGIN/) {     # advance to the section with the sequence
+	  } elsif(! /^(ORIGIN|\/\/)/ ) {    # advance to the sequence, if any
 	      while (defined( $_ = $self->_readline) ) {
-		  last if /^ORIGIN/;
+		  last if /^(ORIGIN|\/\/)/;
 	      }
 	  }
       }
@@ -419,16 +433,21 @@ sub next_seq {
 	  next RECORDSTART;
       }
       if($builder->want_slot('seq')) {
-	  my $seqc = '';
-	  while( defined($_ = $self->_readline) ) {
-	      /^\/\// && last;
-	      $_ = uc($_);
-	      s/[^A-Za-z]//g;
-	      $seqc .= $_;
+	  # the fact that we want a sequence does not necessarily mean that
+	  # there also is a sequence ...
+	  if(defined($_) && /^ORIGIN/) {
+	      my $seqc = '';
+	      while( defined($_ = $self->_readline) ) {
+		  /^\/\// && last;
+		  $_ = uc($_);
+		  s/[^A-Za-z]//g;
+		  $seqc .= $_;
+	      }
+	      $self->debug("sequence length is ". length($seqc) ."\n");
+	      $builder->add_slot_value(-seq => $seqc);
 	  }
-	  $self->debug("sequence length is ". length($seqc) ."\n");
-	  $builder->add_slot_value(-seq => $seqc);
-      } else {
+      } elsif ( defined($_) && (substr($_,0,2) ne '//')) {
+	  # advance to the end of the record
 	  while( defined($_ = $self->_readline) ) {
 	      last if substr($_,0,2) eq '//';
 	  }
@@ -548,7 +567,9 @@ sub write_seq {
 	    $self->_print("KEYWORDS    $temp_line\n");   
 	} else {
 	    if( $seq->can('keywords') ) {
-		$self->_print("KEYWORDS    ",$seq->keywords,"\n");
+		my $kw = $seq->keywords;
+		$kw .= '.' if( $kw !~ /\.$/ );
+		$self->_print("KEYWORDS    $kw\n");
 	    }
 	} 
 
@@ -565,7 +586,7 @@ sub write_seq {
 	    if (my $ssp = $spec->sub_species) {
 		$OS .= " $ssp";
 	    }
-	    $self->_print("SOURCE      $OS.\n");
+	    $self->_print("SOURCE      $OS\n");
 	    $self->_print("  ORGANISM  ",
 			  ($spec->organelle() ? $spec->organelle()." " : ""),
 			  "$genus $species", "\n");

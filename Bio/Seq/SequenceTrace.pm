@@ -1,4 +1,4 @@
-# $Id: SequenceTrace.pm,v 1.1 2002/12/19 22:02:38 matsallac Exp $
+# $Id: SequenceTrace.pm,v 1.1.2.1 2003/03/25 12:32:16 heikki Exp $
 #
 # BioPerl module for Bio::Seq::SeqWithQuality
 #
@@ -15,6 +15,8 @@
 Bio::Seq::SequenceTrace - Bioperl object packaging a sequence with its trace
 
 =head1 SYNOPSIS
+
+  # example code here
 
 =head1 DESCRIPTION
 

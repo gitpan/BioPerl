@@ -1,15 +1,21 @@
 # -*-Perl-*-
-# $Id: Index.t,v 1.23 2002/12/03 22:51:28 jason Exp $
+# $Id: Index.t,v 1.23.2.2 2003/03/24 20:52:45 jason Exp $
 
 use strict;
+my $error;
 BEGIN {     
     eval { require Test; };
+    use vars qw($NUMTESTS);
+    $NUMTESTS = 32;
     if( $@ ) {
 	use lib 't';
     }
     use Test;
-    plan tests => 12;
+    plan tests => $NUMTESTS;
+    $error = 0;    
 }
+
+eval { require Bio::DB::FileCache };
 
 use Bio::Root::IO;
 use Bio::Index::Fasta;
@@ -18,14 +24,20 @@ use Bio::Index::EMBL;
 use Bio::Index::GenBank;
 use Bio::Index::Swissprot;
 use Bio::DB::InMemoryCache;
-eval { require Bio::DB::FileCache };
+
 
 use vars qw ($dir);
 
 ($Bio::Root::IO::FILESPECLOADED && File::Spec->can('cwd') && ($dir = File::Spec->cwd) ) ||
     ($dir = `pwd`) || ($dir = '.');
  
-END { foreach my $root ( qw( Wibbl Wibbl2 Wibbl3 Wibbl4 Wibbl5 ) ) {
+END { 
+    foreach ( $Test::ntest..$NUMTESTS) {
+	skip('Bio::DB::FileCache not loaded because one or more of Storable, DB_File or File::Temp not installed',1);
+    }
+
+    foreach my $root ( qw( Wibbl Wibbl2 Wibbl3 Wibbl4 Wibbl5 
+			   ) ) {
 	if( -e "$root" ) { unlink $root;}
 	if( -e "$root.pag") { unlink "$root.pag";}
 	if( -e "$root.dir") { unlink "$root.dir";}
@@ -111,7 +123,9 @@ my $gb_ind;
 				       -verbose => 0);
     $gb_ind->make_index(Bio::Root::IO->catfile($dir,"t","data","roa1.genbank"));
     ok ( -e "Wibbl5" || -e "Wibbl5.pag" );
-    ok ($gb_ind->fetch('AI129902')->length, 37);
+    my $seq =$gb_ind->fetch('AI129902'); 
+    ok ($seq->length, 37);
+    ok ($seq->species->binomial, 'Homo sapiens');
 }
 
 my $cache = Bio::DB::InMemoryCache->new( -seqdb => $gb_ind );
@@ -119,8 +133,43 @@ my $cache = Bio::DB::InMemoryCache->new( -seqdb => $gb_ind );
 ok ( $cache->get_Seq_by_id('AI129902') );
 
 if (Bio::DB::FileCache->can('new')) {
-  $cache = Bio::DB::FileCache->new($gb_ind);
-  ok ($cache->get_Seq_by_id('AI129902') );
+  
+    $cache = Bio::DB::FileCache->new(-seqdb => $gb_ind,
+				     -keep  => 1,
+				     -file  => 'filecache.idx');
+    my $seq = $cache->get_Seq_by_id('AI129902');
+    ok ( $seq);
+    ok ( $seq->length, 37);
+    ok ( lc($seq->seq()), 'ctccgcgccaactccccccaccccccccccacacccc');
+    
+    my ( $f1 ) = $seq->get_SeqFeatures();
+    ok ( ($f1->each_tag_value('sex'))[0], 'female');
+    ok ( ($f1->each_tag_value('lab_host'))[0], 'DH10B');
+    my $species = $seq->species;
+    ok( $species );
+    ok( $species->binomial, 'Homo sapiens');
+    ok( $species->species(), 'sapiens');
+    ok( $species->genus(), 'Homo');
+    ok ($species->common_name(), 'human');
+
+    $cache = undef;
+    $cache = Bio::DB::FileCache->new(-seqdb => $gb_ind,
+				     -keep  => 0,
+				     -file  => 'filecache.idx');
+    $seq = $cache->get_Seq_by_id('AI129902');
+    ok ( $seq);
+    ok ( $seq->length, 37);
+    ok ( lc($seq->seq()), 'ctccgcgccaactccccccaccccccccccacacccc');
+    
+    ( $f1 ) = $seq->get_SeqFeatures();
+    ok ( ($f1->each_tag_value('sex'))[0], 'female');
+    ok ( ($f1->each_tag_value('lab_host'))[0], 'DH10B');
+    $species = $seq->species;
+    ok( $species );
+    ok( $species->binomial, 'Homo sapiens');
+    ok( $species->species(), 'sapiens');
+    ok( $species->genus(), 'Homo');
+    ok ($species->common_name(), 'human');    
 } else {
   skip('Bio::DB::FileCache not loaded because one or more of Storable, DB_File or File::Temp not installed',1);
 }

@@ -1,4 +1,4 @@
-# $Id: unigene.pm,v 1.16 2002/10/31 09:45:39 lapp Exp $
+# $Id: unigene.pm,v 1.16.2.1 2003/01/21 01:17:02 jason Exp $
 # BioPerl module for Bio::ClusterIO::unigene
 #
 # Cared for by Andrew Macgregor <andrew@anatomy.otago.ac.nz>
@@ -74,7 +74,7 @@ use Bio::Cluster::ClusterFactory;
 @ISA = qw(Bio::ClusterIO);
 
 my %line_is = (
-		ID			=> 	q/ID\s+(\w\w\.\d+)/,
+		ID			=> 	q/ID\s+(\w{2,3}\.\d+)/,
 		TITLE			=>	q/TITLE\s+(\S.*)/,
 		GENE			=>	q/GENE\s+(\S.*)/,
 		CYTOBAND		=>	q/CYTOBAND\s+(\S.*)/,

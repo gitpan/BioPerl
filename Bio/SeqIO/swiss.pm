@@ -1,4 +1,4 @@
-# $Id: swiss.pm,v 1.66 2002/12/24 12:14:14 birney Exp $
+# $Id: swiss.pm,v 1.66.2.1 2003/02/20 08:10:58 jason Exp $
 #
 # BioPerl module for Bio::SeqIO::swiss
 #
@@ -350,7 +350,7 @@ sub next_seq {
 	-desc     => $desc,
 	-keywords => $keywords,
 	-accession_number => $acc,
-	-secondardy_accessions => \@sec,
+	-secondary_accessions => \@sec,
 	-features => \@features,
 	-annotation => $annotation,
 	);

@@ -1,4 +1,4 @@
-# $Id: RelationshipI.pm,v 1.2 2002/11/15 16:11:39 mwilkinson Exp $
+# $Id: RelationshipI.pm,v 1.2.2.2 2003/03/27 10:07:56 lapp Exp $
 #
 # BioPerl module for RelationshipI
 #
@@ -22,15 +22,33 @@
 
 =head1 NAME
 
-RelationshipI - DESCRIPTION of Interface
+RelationshipI - Interface for a relationship between ontology terms
 
 =head1 SYNOPSIS
 
-Give standard usage here
+    # see documentation of methods and an implementation, e.g.,
+    # Bio::Ontology::Relationship
 
 =head1 DESCRIPTION
 
-Describe the interface here
+This is the minimal interface for a relationship between two terms in
+an ontology. Ontology engines will use this.
+
+The terminology we use here is the one commonly used for ontologies,
+namely the triple of (subject, predicate, object), which in addition
+is scoped in a namespace (ontology). It is called triple because it is
+a tuple of three ontology terms.
+
+There are other terminologies in use for expressing relationships. For
+those who it helps to better understand the concept, the triple of
+(child, relationship type, parent) would be equivalent to the
+terminology chosen here, disregarding the question whether the notion
+of parent and child is sensible in the context of the relationship
+type or not. Especially in the case of ontologies with a wide variety
+of predicates the parent/child terminology and similar ones can
+quickly become ambiguous (e.g., A synthesises B), meaningless (e.g., A
+binds B), or even conflicting (e.g., A is-parent-of B), and are
+therefore strongly discouraged.
 
 =head1 FEEDBACK
 
@@ -50,17 +68,15 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Peter Dimitrov
 
 Email dimitrov@gnf.org
 
-Describe contact details here
-
 =head1 CONTRIBUTORS
 
-Additional contributors names and emails here
+ Hilmar Lapp, email: hlapp at gmx.net
 
 =head1 APPENDIX
 
@@ -76,84 +92,100 @@ Internal methods are usually preceded with a _
 package Bio::Ontology::RelationshipI;
 use vars qw(@ISA);
 use strict;
-use Carp;
-use Bio::Root::Root;
+use Bio::Root::RootI;
 
-@ISA = qw( Bio::Root::Root );
+@ISA = qw( Bio::Root::RootI );
 
 =head2 identifier
 
  Title   : identifier
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+ Usage   : print $rel->identifier();
+ Function: Set/get for the identifier of this Relationship.
 
+           Note that this may not necessarily be used by a particular
+           ontology.
+
+ Returns : The identifier [scalar].
+ Args    : 
 
 =cut
 
 sub identifier{
-  my ($self) = @_;
-
-  $self->throw("Abstract method identifier implementing class did not provide method");
+    shift->throw_not_implemented();
 }
 
-=head2 parent_term
+=head2 subject_term
 
- Title   : parent_term
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+ Title   : subject_term
+ Usage   : $subj = $rel->subject_term();
+ Function: Set/get for the subject term of this Relationship.
+
+           The common convention for ontologies is to express
+           relationships between terms as triples (subject, predicate,
+           object).
+
+ Returns : The subject term [Bio::Ontology::TermI].
+ Args    : 
+
+=cut
+
+sub subject_term{
+    shift->throw_not_implemented();
+}
+
+=head2 object_term
+
+ Title   : object_term
+ Usage   : $object = $rel->object_term();
+ Function: Set/get for the object term of this Relationship.
+
+           The common convention for ontologies is to express
+           relationships between terms as triples (subject, predicate,
+           object).
+
+ Returns : The object term [Bio::Ontology::TermI].
+ Args    : 
+
+=cut
+
+sub object_term{
+    shift->throw_not_implemented();
+}
+
+=head2 predicate_term
+
+ Title   : predicate_term
+ Usage   : $type = $rel->predicate_term();
+ Function: Set/get for the relationship type of this relationship.
+
+           The common convention for ontologies is to express
+           relationships between terms as triples (subject, predicate,
+           object).
+
+ Returns : The relationship type [Bio::Ontology::TermI].
+ Args    : 
+
+=cut
+
+sub predicate_term{
+    shift->throw_not_implemented();
+}
+
+=head2 ontology
+
+ Title   : ontology
+ Usage   : $ont = $obj->ontology()
+ Function: Get the ontology that defined (is the scope for) this
+           relationship.
+ Example : 
+ Returns : an object implementing L<Bio::Ontology::OntologyI>
+ Args    : 
 
 
 =cut
 
-sub parent_term{
-  my ($self) = @_;
-
-  $self->throw("Abstract method parent_term implementing class did not provide method");
-
-
+sub ontology{
+    shift->throw_not_implemented();
 }
-
-=head2 child_term
-
- Title   : child_term
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub child_term{
-  my ($self) = @_;
-
-  $self->throw("Abstract method child_term implementing class did not provide method");
-}
-
-=head2 relationship_type
-
- Title   : relationship_type
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub relationship_type{
-  my ($self) = @_;
-
-  $self->throw("Abstract method relationship_type implementing class did not provide method");
-}
-
 
 1;

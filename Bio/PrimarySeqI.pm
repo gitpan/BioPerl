@@ -1,4 +1,4 @@
-# $Id: PrimarySeqI.pm,v 1.50 2002/12/24 12:14:13 birney Exp $
+# $Id: PrimarySeqI.pm,v 1.50.2.1 2003/03/31 11:49:51 heikki Exp $
 #
 # BioPerl module for Bio::PrimarySeqI
 #
@@ -419,7 +419,8 @@ sub revcom{
 			     '-display_id'  => $self->display_id,
 			     '-accession_number' => $self->accession_number,
 			     '-alphabet' => $self->alphabet,
-			     '-desc' => $self->desc()
+			     '-desc' => $self->desc(),
+                             '-verbose' => $self->verbose
 			     );
    return $out;
 
@@ -468,7 +469,8 @@ sub trunc{
 			     '-display_id'  => $self->display_id,
 			     '-accession_number' => $self->accession_number,
 			     '-alphabet' => $self->alphabet,
-			     '-desc' => $self->desc()
+			     '-desc' => $self->desc(),
+                             '-verbose' => $self->verbose
 			     );
    return $out;
 }
@@ -584,7 +586,8 @@ sub translate {
 			      # is there anything wrong with retaining the
 			      # description?
 			      '-desc' => $self->desc(),
-			      '-alphabet' => 'protein'
+			      '-alphabet' => 'protein',
+                              '-verbose' => $self->verbose
 			      );
     return $out;
 

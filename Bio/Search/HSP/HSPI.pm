@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: HSPI.pm,v 1.21 2002/11/13 11:27:18 sac Exp $
+# $Id: HSPI.pm,v 1.21.2.1 2003/01/22 22:51:00 jason Exp $
 #
 # BioPerl module for Bio::Search::HSP::HSPI
 #
@@ -515,11 +515,30 @@ sub end {
     return 0;
 }
 
+=head2 seq_str
+
+ Usage     : $hsp->seq_str( seq_type );
+ Purpose   : Get the full query, sbjct, or 'match' sequence as a string.
+           : The 'match' sequence is the string of symbols in between the 
+           : query and sbjct sequences.
+ Example   : $str = $hsp->seq_str('query');
+ Returns   : String
+ Argument  : seq_Type = 'query' or 'hit' or 'sbjct' or 'match'
+           :  ('sbjct' is synonymous with 'hit')
+           : default is 'query'
+ Throws    : Exception if the argument does not match an accepted seq_type.
+ Comments  : 
+
+See Also   : L<seq()|seq>, L<seq_inds()|seq_inds>, B<_set_match_seq()>
+
+=cut
+
 sub seq_str {  
-    my ($self,$type) = @_;
+    my $self = shift;
+    my $type = shift;
     if( $type =~ /^q/i ) { return $self->query_string(shift) }
-    elsif( $type =~ /^s/i || $type =~ /^hi/i ) { return $self->hit_string(shift)}
-    elsif ( $type =~ /^ho/i ) { return $self->hit_string(shift) }
+    elsif( $type =~ /^(s|hi)/i ) { return $self->hit_string(shift)}
+    elsif ( $type =~ /^(ho|ma)/i ) { return $self->hit_string(shift) }
     else { 
 	$self->warn("unknown sequence type $type");
     }

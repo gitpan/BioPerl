@@ -1,6 +1,4 @@
-# $Id: locuslink.pm,v 1.2 2002/12/28 03:26:33 lapp Exp $
-#
-# $GNF: projects/gi/symgene/src/perl/seqproc/Bio/SeqIO/locuslink.pm,v 1.6 2002/11/07 11:14:34 hlapp Exp $
+# $Id: locuslink.pm,v 1.2.2.2 2003/03/13 02:09:20 lapp Exp $
 #
 # BioPerl module for Bio::SeqIO::locuslink
 #
@@ -70,7 +68,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
   bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org/
 
 =head1 AUTHOR - Keith Ching
 
@@ -482,7 +480,7 @@ sub next_seq{
 	# modify CDD references	@=();
 	if($record{CDD}) {
 	    @keep=();
-	    foreach my $cdd ($record{CDD}) {
+	    foreach my $cdd (@{$record{CDD}}) {
 		$PRESENT = undef;
 		foreach my $key (keys %cddprefix) {
 		    if ($cdd=~/$key/){
@@ -508,7 +506,7 @@ sub next_seq{
 		my $goann = Bio::Annotation::OntologyTerm->new(
 					   -identifier => $record{GO}->[$j],
 					   -name => $record{GO_DESC}->[$j],
-					   -category => $record{GO_CAT}->[$j]);
+					   -ontology => $record{GO_CAT}->[$j]);
 		$ann->add_Annotation($goann);
 	    }
 	}

@@ -1,4 +1,4 @@
-# $Id: ClusterIO.pm,v 1.11 2002/11/02 21:04:18 lapp Exp $
+# $Id: ClusterIO.pm,v 1.11.2.1 2003/01/21 01:11:17 jason Exp $
 #
 # BioPerl module for Bio::ClusterIO.pm
 #
@@ -37,6 +37,7 @@ Bio::ClusterIO - Handler for Cluster Formats
       while ( my $sequence = $in->next_seq() ) {
           print $sequence->accession_number() . "\n";
       }
+  }
   # Parsing errors are printed to STDERR.
 
 =head1 DESCRIPTION

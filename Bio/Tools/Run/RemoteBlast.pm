@@ -1,4 +1,4 @@
-# $Id: RemoteBlast.pm,v 1.14 2002/12/23 13:01:50 birney Exp $
+# $Id: RemoteBlast.pm,v 1.14.2.1 2003/03/25 12:32:17 heikki Exp $
 #
 # BioPerl module for Bio::Tools::Run::RemoteBlast
 #
@@ -40,7 +40,7 @@ via HTTP
 
   my $v = 1;
   #$v is just to turn on and off the messages
-  
+
   my $str = Bio::SeqIO->new(-file=>'amino.fa' , '-format' => 'fasta' );
 
   while (my $input = $str->next_seq()){

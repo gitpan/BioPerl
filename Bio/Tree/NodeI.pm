@@ -1,4 +1,4 @@
-# $Id: NodeI.pm,v 1.19 2002/12/24 17:52:03 jason Exp $
+# $Id: NodeI.pm,v 1.19.2.1 2003/02/04 18:21:26 jason Exp $
 #
 # BioPerl module for Bio::Tree::NodeI
 #
@@ -246,7 +246,7 @@ sub height{
    
    if( $self->is_Leaf ) { 
        if( !defined $self->branch_length ) { 
-	   $self->debug(sprintf("Trying to calculate height of a node when a Node (%s) has an undefined branch_length",$self->id || '?' ));
+	   $self->debug(sprintf("Trying to calculate height of a node when a Node (%s) has an undefined branch_length\n",$self->id || '?' ));
 	   return 0;
        }
        return $self->branch_length;

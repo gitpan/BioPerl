@@ -1,4 +1,4 @@
-# $Id: newick.pm,v 1.13 2002/10/22 07:45:25 lapp Exp $
+# $Id: newick.pm,v 1.13.2.1 2003/02/04 18:16:18 jason Exp $
 #
 # BioPerl module for Bio::TreeIO::newick
 #
@@ -117,7 +117,7 @@ sub next_tree{
 	   $self->_eventHandler->start_element( {'Name' => 'tree'} );
 	   $lastevent = $ch;
        } elsif($ch eq ')' ) {
-	   if( $chars ) {
+	   if( length $chars ) {
 	       if( $lastevent eq ':' ) {
 		   $self->_eventHandler->start_element( { 'Name' => 'branch_length'});
 		   $self->_eventHandler->characters($chars);
@@ -138,7 +138,7 @@ sub next_tree{
 	   $chars = '';
 	   $lastevent = $ch;
        } elsif ( $ch eq ',' ) {
-	   if( $chars ) {
+	   if( length $chars ) {
 	       if( $lastevent eq ':' ) {
 		   $self->_eventHandler->start_element( { 'Name' => 'branch_length'});
 		   $self->_eventHandler->characters($chars);

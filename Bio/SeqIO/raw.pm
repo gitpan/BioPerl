@@ -2,7 +2,7 @@
 # PACKAGE : Bio::SeqIO::raw
 # AUTHOR  : Ewan Birney <birney@ebi.ac.uk>
 # CREATED : Feb 16 1999
-# REVISION: $Id: raw.pm,v 1.15 2002/10/25 16:22:01 jason Exp $
+# REVISION: $Id: raw.pm,v 1.15.2.1 2003/02/05 21:55:21 jason Exp $
 #            
 # Copyright (c) 1997-9 bioperl, Ewan Birney. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
@@ -140,7 +140,7 @@ sub write_seq {
    foreach my $seq (@seq) {
        $self->throw("Must provide a valid Bio::PrimarySeqI object") 
 	   unless defined $seq && ref($seq) && $seq->isa('Bio::PrimarySeqI');
-     $self->_print($_->seq, "\n") or return;
+     $self->_print($seq->seq, "\n") or return;
    }
    $self->flush if $self->_flush_on_write && defined $self->_fh;
    return 1;

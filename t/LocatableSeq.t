@@ -1,16 +1,16 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: LocatableSeq.t,v 1.7 2002/07/01 15:57:27 heikki Exp $
+## $Id: LocatableSeq.t,v 1.7.2.1 2003/03/31 11:49:51 heikki Exp $
 use strict;
-use constant NUMTESTS => 22;
+use constant NUMTESTS => 33;
 
-BEGIN {     
+BEGIN {
     eval { require Test; };
     if( $@ ) {
 	use lib 't';
     }
     use Test;
-    
+
     plan tests => NUMTESTS;
 }
 use Bio::LocatableSeq;
@@ -58,3 +58,30 @@ ok ref($seq), 'Bio::LocatableSeq';
 ok $seq->get_nse, '1433_LYCES/9-246';
 ok $seq->id, '1433_LYCES';
 
+# test revcom and trunc
+
+$seq = new Bio::LocatableSeq(
+			     -seq => '--atg---gta--',
+			     -start => 1,
+			     -end => 6,
+			     -strand => 1,
+			     -alphabet => 'dna'
+			     );
+
+my $seq2 = $seq->trunc(1,9);
+ok $seq2->seq, '--atg---g';
+ok $seq2->start, 1;
+ok $seq2->end, 4;
+ok $seq2->strand, $seq->strand;
+
+$seq2 = $seq->trunc(3,8);
+ok $seq2->seq, 'atg---';
+ok $seq2->start, 1;
+ok $seq2->end, 3;
+
+
+$seq2 = $seq->revcom();
+ok $seq2->seq, '--tac---cat--';
+ok $seq2->start, $seq->start;
+ok $seq2->end, $seq->end;
+ok $seq2->strand, $seq->strand * -1;

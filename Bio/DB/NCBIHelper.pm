@@ -1,4 +1,4 @@
-# $Id: NCBIHelper.pm,v 1.24 2002/12/09 15:39:44 jason Exp $
+# $Id: NCBIHelper.pm,v 1.24.2.1 2003/01/20 14:02:12 jason Exp $
 #
 # BioPerl module for Bio::DB::NCBIHelper
 #
@@ -92,7 +92,7 @@ $VERSION = '0.8';
 
 BEGIN {
     $MAX_ENTRIES = 19000;
-    $HOSTBASE = 'http://www.ncbi.nih.gov';
+    $HOSTBASE = 'http://www.ncbi.nlm.nih.gov';
     %CGILOCATION = (
 		    'batch'  => ['post' => '/entrez/eutils/efetch.fcgi'],
 		    'query'  => ['get'  => '/entrez/eutils/efetch.fcgi'],

@@ -1,4 +1,4 @@
-# $Id: blast.pm,v 1.42 2002/11/23 15:32:23 jason Exp $
+# $Id: blast.pm,v 1.42.2.4 2003/03/25 18:16:28 jason Exp $
 #
 # BioPerl module for Bio::SearchIO::blast
 #
@@ -220,7 +220,10 @@ sub next_result{
        next if( /^>\s*$/);
 
        if( /^([T]?BLAST[NPX])\s*(.+)$/i ||
-	   /^(RPS-BLAST)\s*(.+)$/i ) {
+	   /^(PSITBLASTN)\s+(.+)$/i ||
+	   /^(RPS-BLAST)\s*(.+)$/i ||
+	   /^(MEGABLAST)\s*(.+)$/i 
+	   ) {
 	   if( $seentop ) {	    
 	       $self->_pushback($_);
 	       $self->in_element('hsp') && 
@@ -287,13 +290,15 @@ sub next_result{
 	       $self->element({ 'Name' =>  'BlastOutput_query-acc',
 				'Data'  => $acc});
 	   }
+	   
        } elsif( /Sequences producing significant alignments:/ ) {
 	   # skip the next whitespace line
 	   $_ = $self->_readline();
 	   while( defined ($_ = $self->_readline() ) && 
-		  ! /^\s+$/ ) {	       
-	       my @line = split;
-	       push @hit_signifs, [ pop @line, pop @line];
+		  ! /^\s+$/ ) {
+	       if( /(\d+)\s+([\d\.\-eE]+)\s*$/) {
+		   push @hit_signifs, [ $2,$1 ];
+	       }
 	   }
        } elsif( /Sequences producing High-scoring Segment Pairs:/ ) {
 	   # skip the next line
@@ -335,8 +340,7 @@ sub next_result{
 	   my $id = $1;	  
 	   my $restofline = $2;
 	   $self->element({ 'Name' => 'Hit_id',
-			    'Data' => $id});
-
+			    'Data' => $id});	   
 	   my ($acc, $version);
 	   if ($id =~ /(gb|emb|dbj|sp|pdb|bbs|ref|lcl)\|(.*)\|(.*)/) {
 	   ($acc, $version) = split /\./, $2; 
@@ -435,11 +439,15 @@ sub next_result{
 	   if( defined $3 ) {
 	       $self->element( { 'Name' => 'Hsp_positive',
 				 'Data' => $4});
+	   } else { 
+	       $self->element( { 'Name' => 'Hsp_positive',
+				 'Data' => $1});
 	   }
-	   if( defined $6 ) { 
+	   if( defined $6 ) { 	       
 	       $self->element( { 'Name' => 'Hsp_gaps',
-				 'Data' => $7});	   
-	   } 
+				 'Data' => $7});
+	   }
+	   
 	   $self->{'_Query'} = { 'begin' => 0, 'end' => 0};
 	   $self->{'_Sbjct'} = { 'begin' => 0, 'end' => 0};
 
@@ -453,14 +461,15 @@ sub next_result{
 	   next;
        } elsif( $self->in_element('hsp') &&
 		/Frame\s*=\s*([\+\-][1-3])\s*(\/\s*([\+\-][1-3]))?/ ){
+	   my ($one,$two)= ($1,$2);
 	   my ($queryframe,$hitframe);
 	   if( $reporttype eq 'TBLASTX' ) {
-	       ($queryframe,$hitframe) = ($1,$2);
+	       ($queryframe,$hitframe) = ($one,$two);
 	       $hitframe =~ s/\/\s*//g;
-	   } elsif( $reporttype eq 'TBLASTN' ) {
-	       ($hitframe,$queryframe) = ($1,0);	       
+	   } elsif( $reporttype =~ /^(PSI)?TBLASTN/oi ) {
+	       ($hitframe,$queryframe) = ($one,0);	       
 	   } elsif( $reporttype eq 'BLASTX' ) {	       
-	       ($queryframe,$hitframe) = ($1,0);
+	       ($queryframe,$hitframe) = ($one,0);
 	   } 
 	   $self->element({'Name' => 'Hsp_query-frame',
 			   'Data' => $queryframe});
@@ -478,7 +487,7 @@ sub next_result{
 	   $self->element({'Name' => 'Parameters_allowgaps',
 			   'Data' => 'yes'});
 	   while( defined ($_ = $self->_readline ) ) {
-	       if( /^([T]?BLAST[NPX])\s*([\d\.]+)/i ) {
+	       if( /^(PSI)?([T]?BLAST[NPX])\s*([\d\.]+)/i ) {
 		   $self->_pushback($_);
 		   # let's handle this in the loop
 		   last;
@@ -665,15 +674,21 @@ sub start_element{
        if( $self->_eventHandler->will_handle($type) ) {
 	   my $func = sprintf("start_%s",lc $type);
 	   $self->_eventHandler->$func($data->{'Attributes'});
-       }						 
+       }
        unshift @{$self->{'_elements'}}, $type;
-
-       if($type eq 'result') {
+       if( $type eq 'result') {
 	   $self->{'_values'} = {};
 	   $self->{'_result'}= undef;
+       } else { 
+	   # cleanup some things
+	   if( defined $self->{'_values'} ) {
+	       foreach my $k ( grep { /^\U$type\-/ } 
+			       keys %{$self->{'_values'}} ) { 
+		   delete $self->{'_values'}->{$k};
+	       }
+	   }
        }
    }
-
 }
 
 =head2 end_element
@@ -726,7 +741,9 @@ sub end_element {
     } elsif( $MAPPING{$nm} ) { 	
 	
 	if ( ref($MAPPING{$nm}) =~ /hash/i ) {
-	    my $key = (keys %{$MAPPING{$nm}})[0];	    
+	    # this is where we shove in the data from the 
+	    # hashref info about params or statistics
+	    my $key = (keys %{$MAPPING{$nm}})[0];	    	    
 	    $self->{'_values'}->{$key}->{$MAPPING{$nm}->{$key}} = $self->{'_last_data'};
 	} else {
 	    $self->{'_values'}->{$MAPPING{$nm}} = $self->{'_last_data'};
@@ -754,7 +771,7 @@ sub end_element {
 
 sub element{
    my ($self,$data) = @_;
-   $self->start_element($data);
+   $self->start_element($data);       
    $self->characters($data);
    $self->end_element($data);
 }
@@ -778,7 +795,6 @@ sub characters{
        $self->{'_last_hspdata'}->{$data->{'Name'}} .= $data->{'Data'};
    }  
    return unless ( defined $data->{'Data'} && $data->{'Data'} !~ /^\s+$/ );
-   
    $self->{'_last_data'} = $data->{'Data'}; 
 }
 

@@ -1,4 +1,4 @@
-# $Id: Perl.pm,v 1.16 2002/12/28 16:35:53 birney Exp $
+# $Id: Perl.pm,v 1.16.2.1 2003/03/25 12:32:15 heikki Exp $
 #
 # BioPerl module for Bio::Perl
 #
@@ -62,7 +62,7 @@ Bio::Perl - Functional access to BioPerl for people who don't know objects
   # BLAST a sequence (assummes an internet connection)
 
   $blast_report = blast_sequence($seq_object);
-  
+
   write_blast(">blast.out",$blast_report);
 
 

@@ -1,4 +1,4 @@
-# $Id: Match.pm,v 1.2 2002/10/22 07:38:28 lapp Exp $
+# $Id: Match.pm,v 1.2.2.1 2003/02/20 05:11:45 heikki Exp $
 #
 # BioPerl module for Bio::Coordinate::Result::Match
 #
@@ -23,7 +23,7 @@ Bio::Coordinate::Result::Match - An other name for Bio::Location::Simple
 
 =head1 DESCRIPTION
 
-This is a location object for coordinate transformation results.
+This is a location class for coordinate mapping results.
 
 =head1 FEEDBACK
 
@@ -64,10 +64,10 @@ package Bio::Coordinate::Result::Match;
 use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
 use Bio::Location::Simple;
+use Bio::Coordinate::ResultI;
 
-@ISA = qw(Bio::Location::Simple);
+@ISA = qw(Bio::Location::Simple Bio::Coordinate::ResultI);
 
 
 1;

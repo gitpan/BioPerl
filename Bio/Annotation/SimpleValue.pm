@@ -1,4 +1,4 @@
-# $Id: SimpleValue.pm,v 1.9 2002/10/31 09:45:39 lapp Exp $
+# $Id: SimpleValue.pm,v 1.9.2.1 2003/03/10 22:04:56 lapp Exp $
 #
 # BioPerl module for Bio::Annotation::SimpleValue
 #
@@ -221,7 +221,8 @@ sub value{
 
  Example : 
  Returns : a L<Bio::Ontology::TermI> compliant object, or undef
- Args    : on set, new value (a scalar or undef, optional)
+ Args    : on set, new value (a L<Bio::Ontology::TermI> compliant
+           object or undef, optional)
 
 
 =cut

@@ -1,4 +1,4 @@
-# $Id: OMIMparser.pm,v 1.8 2002/12/12 18:27:01 czmasek Exp $
+# $Id: OMIMparser.pm,v 1.8.2.1 2003/03/25 12:32:16 heikki Exp $
 #
 # BioPerl module for Bio::Phenotype::OMIM::OMIMparser
 #
@@ -73,7 +73,7 @@ OMIMparser - parser for the OMIM database
     print $mini_mim->created()."\n";
     print $mini_mim->contributors()."\n";
     print $mini_mim->edited()."\n";
-    
+
     my @corrs      = $omim_entry->each_Correlate();            # from genemap
       # Array of Bio::Phenotype::Correlate objects.
       # class Bio::Phenotype::Correlate

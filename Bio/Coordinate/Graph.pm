@@ -1,4 +1,4 @@
-# $Id: Graph.pm,v 1.2 2002/12/02 16:58:07 heikki Exp $
+# $Id: Graph.pm,v 1.2.2.1 2003/02/20 05:11:45 heikki Exp $
 #
 # bioperl module for Bio::Coordinate::Graph
 #
@@ -16,7 +16,7 @@ Bio::Coordinate::Graph - Finds shortest path between nodes in a graph
 
 =head1 SYNOPSIS
 
-  # get a hash of hashes representing the graph. E,g:
+  # get a hash of hashes representing the graph. E.g.:
   my $hash= {
 	     '1' => {
 		     '2' => 1

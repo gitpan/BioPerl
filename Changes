@@ -1,5 +1,20 @@
-$Id: Changes,v 1.30 2002/12/28 16:35:52 birney Exp $
+$Id: Changes,v 1.30.2.3 2003/03/19 16:58:11 heikki Exp $
 Revision history for Bioperl core modules
+
+1.2.1 Stable release update
+
+    o Inclusion of WrapperBase, a needed component for StandAloneBlast
+
+    o Addition from main trunk of Ontology objects, principly to allow
+      BioSQL releases against 1.2.1
+
+    o Fixes and cleanup of Bio::Coordinate modules
+
+    o A fix to Bio::Index::EMBL allowing  retrieval of entries using
+      the primary accession number
+ 
+    o Other bug fixes, including bpindex GenBank fix
+
 
 1.2  Stable major release
  

@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Annotation.t,v 1.9 2002/11/11 18:16:31 lapp Exp $
+## $Id: Annotation.t,v 1.9.2.1 2003/03/13 02:09:21 lapp Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -138,12 +138,12 @@ ok (scalar($nested_ac->get_all_Annotations()), 6);
 # OntologyTerm annotation
 my $termann = Bio::Annotation::OntologyTerm->new(-label => 'test case',
 						 -identifier => 'Ann:00001',
-						 -category => 'dumpster');
+						 -ontology => 'dumpster');
 ok ($termann->term);
 ok ($termann->term->name, 'test case');
 ok ($termann->term->identifier, 'Ann:00001');
 ok ($termann->tagname, 'dumpster');
-ok ($termann->category->name, 'dumpster');
+ok ($termann->ontology->name, 'dumpster');
 ok ($termann->as_text, "dumpster|test case|Ann:00001");
 
 # AnnotatableI

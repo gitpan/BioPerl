@@ -1,4 +1,4 @@
-# $Id: fasta.pm,v 1.33 2002/11/23 15:32:23 jason Exp $
+# $Id: fasta.pm,v 1.33.2.1 2003/01/17 20:32:54 jason Exp $
 #
 # BioPerl module for Bio::SearchIO::fasta
 #
@@ -332,7 +332,7 @@ sub next_result{
 	   while( defined ($_ = $self->_readline() ) && 
 		  ! /^\s+$/ ) {
 	       my @line = split;
-	       
+
 	       if ($line[-1] =~ m/\=/o && $labels[-1] eq 'fs') {
 		   # unlabelled alignment hit;
 		   push @labels, "aln_code";
@@ -416,7 +416,10 @@ sub next_result{
 			    'Data' => $desc});	   
 
 	   $_ = $self->_readline();
-	   my ($score,$bits,$e) = ( /Z-score:\s*(\S+)\s*bits:\s*(\S+)\s+E\(\):\s*(\S+)/ );
+	   my ($score,$bits,$e) = /Z-score: \s* (\S+) \s*
+                               (?: bits: \s* (\S+) \s+ )?
+                               (?: E|expect ) \s* \(\) :? \s*(\S+)/x;
+	   $bits = $score unless defined $bits;
 
 	   my $v = shift @hit_signifs;
 	   if( defined $v ) {

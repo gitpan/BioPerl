@@ -1,6 +1,6 @@
 #-*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: CoordinateMapper.t,v 1.10 2002/11/09 09:09:36 heikki Exp $
+## $Id: CoordinateMapper.t,v 1.10.2.1 2003/02/20 05:11:45 heikki Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -16,7 +16,7 @@ BEGIN {
     }
     use Test;
 
-    plan tests => 162;
+    plan tests => 170;
 }
 
 use Bio::Location::Simple;
@@ -464,6 +464,41 @@ ok $res->match->start, 2;
 ok $res->match->end, 5;
 ok $res->match->strand, -1;
 ok $res->match->seq_id, 'chr1';
+
+#
+# tests for split locations
+#
+
+# testing a  simple pair
+$match1 = Bio::Location::Simple->new 
+    (-seq_id => 'a', -start => 5, -end => 17, -strand=>1 );
+$match2 = Bio::Location::Simple->new
+    (-seq_id => 'b', -start => 1, -end => 13, -strand=>-1 );
+
+$pair = Bio::Coordinate::Pair->new(-in => $match1,
+					 -out => $match2,
+					);
+
+# split location
+
+ok my $split = new Bio::Location::Split;
+ok $split->add_sub_Location(new Bio::Location::Simple(-start=>6,
+                                                      -end=>8,
+                                                      -strand=>1));
+$split->add_sub_Location(new Bio::Location::Simple(-start=>15,
+                                                   -end=>16,
+                                                   -strand=>1));
+
+$res=$pair->map($split);
+ok my @sublocs = $res->each_Location(1);
+ok @sublocs, 2;
+
+#print Dumper \@sublocs;
+ok $sublocs[0]->start, 2;
+ok $sublocs[0]->end, 3;
+ok $sublocs[1]->start, 10;
+ok $sublocs[1]->end, 12;
+
 
 
 #

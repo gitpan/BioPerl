@@ -1,4 +1,4 @@
-# $Id: SeqFeatureI.pm,v 1.43 2002/12/02 14:00:19 jason Exp $
+# $Id: SeqFeatureI.pm,v 1.43.2.1 2003/01/10 17:13:33 birney Exp $
 #
 # BioPerl module for Bio::SeqFeatureI
 #
@@ -424,7 +424,7 @@ but can be validly overwritten by subclasses
 =cut
 
 sub spliced_seq {
-    my ($self,$db) = shift;
+    my ($self,$db) = @_;
 
     if( ! $self->location->isa("Bio::Location::SplitLocationI") ) {
 	return $self->seq(); # nice and easy!

@@ -1,5 +1,5 @@
 # -*-Perl-*- mode (to keep my emacs happy)
-# $Id: SeqIO.t,v 1.59 2002/11/09 15:09:15 jason Exp $
+# $Id: SeqIO.t,v 1.59.2.1 2003/02/20 23:10:14 jason Exp $
 
 use strict;
 use vars qw($DEBUG $TESTCOUNT);
@@ -434,3 +434,4 @@ ok($seq->seq_version, 2);
 my @accs = $seq->get_secondary_accessions();
 ok($accs[0], 'J01597');
 ok($accs[-1], 'X56742');
+

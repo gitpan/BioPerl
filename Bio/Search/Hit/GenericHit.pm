@@ -1,4 +1,4 @@
-# $Id: GenericHit.pm,v 1.20 2002/12/30 07:19:11 elia Exp $
+# $Id: GenericHit.pm,v 1.20.2.1 2003/02/28 09:27:56 jason Exp $
 #
 # BioPerl module for Bio::Search::Hit::GenericHit
 #
@@ -1319,7 +1319,7 @@ sub strand {
 #----------
     my ($self, $seqType, $strnd) = @_;
 
-    Bio::Search::BlastUtils::tile_hsps($self) if not $self->{'_tiled_hsps'};
+    Bio::Search::SearchUtils::tile_hsps($self) if not $self->{'_tiled_hsps'};
 
     $seqType ||= (wantarray ? 'list' : 'query');
     $seqType = 'sbjct' if $seqType eq 'hit';
