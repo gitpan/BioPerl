@@ -1,4 +1,4 @@
-# $Id$
+# $Id: pir.pm,v 1.18 2002/10/25 16:23:16 jason Exp $
 #
 # BioPerl module for Bio::SeqIO::PIR
 #

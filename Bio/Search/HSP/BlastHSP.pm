@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id$
+# $Id: BlastHSP.pm,v 1.20 2002/12/24 15:45:33 jason Exp $
 #
 # BioPerl module Bio::Search::HSP::BlastHSP
 #
@@ -159,7 +159,7 @@ use vars qw( @ISA $GAP_SYMBOL $Revision %STRAND_SYMBOL );
 use overload 
     '""' => \&to_string;
 
-$Revision = '$Id$';  #'
+$Revision = '$Id: BlastHSP.pm,v 1.20 2002/12/24 15:45:33 jason Exp $';  #'
 
 @ISA = qw(Bio::SeqFeature::SimilarityPair Bio::Search::HSP::HSPI);
 

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: SearchResultEventBuilder.pm,v 1.25.2.1 2003/01/17 20:32:54 jason Exp $
 #
 # BioPerl module for Bio::SearchIO::SearchResultEventBuilder
 #

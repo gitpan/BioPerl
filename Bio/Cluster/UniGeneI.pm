@@ -1,4 +1,4 @@
-# $Id$
+# $Id: UniGeneI.pm,v 1.9 2002/10/25 22:49:03 lapp Exp $
 #
 # BioPerl module for Bio::Cluster::UniGeneI.pm
 #

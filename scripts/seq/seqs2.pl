@@ -9,7 +9,7 @@
 #               -- write each sequence to a separate file.
 # AUTHOR   : Steve Chervitz <sac@bioperl.org>
 # CREATED  : 10 Apr 1998
-# REVISION : $Id$
+# REVISION : $Id: seqs2.pl,v 1.2 2002/09/07 07:13:30 sac Exp $
 # USAGE    : seqs2.pl -h
 # EXAMPLES : seqs2.pl -eg
 #

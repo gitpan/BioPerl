@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Species.pm,v 1.24 2002/12/05 13:46:30 heikki Exp $
 #
 # BioPerl module for Bio::Species
 #

@@ -1,5 +1,5 @@
 #
-# $Id$
+# $Id: embl.pm,v 1.4 2002/10/22 07:38:31 lapp Exp $
 #
 # BioPerl module for Bio::DB::Flat::BDB
 #

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: RemoteBlast.pm,v 1.14.2.2 2003/09/03 18:29:50 jason Exp $
 #
 # BioPerl module for Bio::Tools::Run::RemoteBlast
 #
@@ -165,7 +165,7 @@ BEGIN {
 			'FORMAT_TYPE'    => 'Text',
 			);
 
-    $RIDLINE = 'RID\s+=\s+(\d+-\d+-\d+)';
+    $RIDLINE = 'RID\s+=\s+(\S+)';
 
     %BLAST_PARAMS = ( 'prog' => 'blastp',
 		       'data' => 'nr',

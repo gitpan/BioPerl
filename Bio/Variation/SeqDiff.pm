@@ -1,4 +1,4 @@
-# $Id$
+# $Id: SeqDiff.pm,v 1.16 2002/10/22 07:38:49 lapp Exp $
 # bioperl module for Bio::Variation::SeqDiff
 #
 # Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>

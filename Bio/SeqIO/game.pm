@@ -1,4 +1,4 @@
-# $Id$
+# $Id: game.pm,v 1.26.2.1 2003/06/28 22:23:15 jason Exp $
 #
 # BioPerl module for Bio::SeqIO::game
 #

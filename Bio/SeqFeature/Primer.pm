@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Primer.pm,v 1.10 2002/10/30 14:21:58 heikki Exp $
 #
 # BioPerl module for Bio::SeqFeature::Primer
 #

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: chadosxpr.pm,v 1.2 2002/12/05 13:46:36 heikki Exp $
 #
 # BioPerl module for Bio::SeqIO::chadosxpr
 #

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Translation.pm,v 1.12 2002/09/25 08:57:52 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::Translation
 #

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Fuzzy.pm,v 1.24 2002/12/01 00:05:20 jason Exp $
 #
 # BioPerl module for Bio::Location::Fuzzy
 # Cared for by Jason Stajich <jason@bioperl.org>

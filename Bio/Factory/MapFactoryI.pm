@@ -1,4 +1,4 @@
-# $Id$
+# $Id: MapFactoryI.pm,v 1.5 2002/10/22 07:45:14 lapp Exp $
 #
 # BioPerl module for Bio::Factory::MapFactoryI
 #

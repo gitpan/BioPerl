@@ -1,4 +1,4 @@
-# $Id$
+# $Id: AlignFactory.pm,v 1.8 2001/11/20 02:09:40 lstein Exp $
 #
 # BioPerl module for Bio::Tools::AlignFactory
 #

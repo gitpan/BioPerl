@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Statistics.pm,v 1.6 2002/12/24 17:52:03 jason Exp $
 #
 # BioPerl module for Bio::Tree::Statistics
 #

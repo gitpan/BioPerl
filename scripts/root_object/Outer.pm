@@ -14,7 +14,7 @@ use strict;
 # PACKAGE  : Outer.pm
 # PURPOSE  : Dummy object for testing Bio::Root::Object.pm and Bio::Root::Err.pm.
 # AUTHOR   : Steve Chervitz (sac@bioperl.org)
-# REVISION : $Id$
+# REVISION : $Id: Outer.pm,v 1.1 2002/08/27 18:17:17 bosborne Exp $
 #-------------------------------------------------------------------
 
 ####################################

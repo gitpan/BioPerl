@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Blast.pm,v 1.8.2.1 2003/06/28 21:57:04 jason Exp $
 #
 # BioPerl module for Bio::Index::Blast
 #

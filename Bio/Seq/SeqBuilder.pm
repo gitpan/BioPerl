@@ -1,4 +1,4 @@
-# $Id$
+# $Id: SeqBuilder.pm,v 1.6 2002/10/22 07:45:20 lapp Exp $
 #
 # BioPerl module for Bio::Seq::SeqBuilder
 #

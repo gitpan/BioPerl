@@ -1,4 +1,4 @@
-# $Id$
+# $Id: BioPerl.pm,v 1.15 2001/12/14 16:40:15 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::IO::BioPerl
 #

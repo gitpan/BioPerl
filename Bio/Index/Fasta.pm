@@ -1,5 +1,5 @@
 #
-# $Id$
+# $Id: Fasta.pm,v 1.20 2002/10/22 07:38:33 lapp Exp $
 #
 # BioPerl module for Bio::Index::Fasta
 #

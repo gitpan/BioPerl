@@ -1,6 +1,6 @@
 # POD documentation - main docs before the code
 
-# $Id$
+# $Id: Registry.pm,v 1.12.2.2 2003/06/26 11:07:10 heikki Exp $
 
 
 =head1 NAME

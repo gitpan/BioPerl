@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id$
+## $Id: LinkageMap.t,v 1.1 2002/02/11 09:31:34 heikki Exp $
 #
 
 use strict;

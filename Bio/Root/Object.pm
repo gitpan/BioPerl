@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Object.pm
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 23 July 1996
-# REVISION: $Id$
+# REVISION: $Id: Object.pm,v 1.23 2002/10/22 07:38:37 lapp Exp $
 # STATUS  : Alpha
 #            
 # For documentation, run this module through pod2html 
@@ -42,7 +42,7 @@ use vars qw($ID $VERSION %Objects_created $Revision @ISA);
 
 $ID       = 'Bio::Root::Object';
 $VERSION  = 0.041;
-$Revision = '$Id$';  #'
+$Revision = '$Id: Object.pm,v 1.23 2002/10/22 07:38:37 lapp Exp $';  #'
 
 ### POD Documentation:
 

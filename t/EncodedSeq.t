@@ -1,7 +1,7 @@
 
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id$
+## $Id: EncodedSeq.t,v 1.3 2002/10/08 10:10:06 birney Exp $
 use strict;
 use constant NUMTESTS => 37;
 

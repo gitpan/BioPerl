@@ -1,7 +1,7 @@
 package Bio::Root::Root;
 use strict;
 
-# $Id$
+# $Id: Root.pm,v 1.30 2002/12/16 09:44:28 birney Exp $
 
 =head1 NAME
 
@@ -158,7 +158,7 @@ BEGIN {
 
     $ID        = 'Bio::Root::Root';
     $VERSION   = 1.0;
-    $Revision  = '$Id$ ';
+    $Revision  = '$Id: Root.pm,v 1.30 2002/12/16 09:44:28 birney Exp $ ';
     $DEBUG     = 0;
     $VERBOSITY = 0;
     $ERRORLOADED = 0;

@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id$
+## $Id: Allele.t,v 1.6 2001/10/22 08:22:58 heikki Exp $
 
 use strict;
 

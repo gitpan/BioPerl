@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Match.pm,v 1.2.2.1 2003/02/20 05:11:45 heikki Exp $
 #
 # BioPerl module for Bio::Coordinate::Result::Match
 #

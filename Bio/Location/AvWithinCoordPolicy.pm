@@ -1,4 +1,4 @@
-# $Id$
+# $Id: AvWithinCoordPolicy.pm,v 1.4 2002/12/01 00:05:20 jason Exp $
 #
 # BioPerl module for Bio::Location::AvWithinCoordPolicy
 #

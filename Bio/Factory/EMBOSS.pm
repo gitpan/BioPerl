@@ -1,4 +1,4 @@
-# $Id$
+# $Id: EMBOSS.pm,v 1.10 2002/10/22 07:38:32 lapp Exp $
 #
 # BioPerl module for Bio::Factory::EMBOSS
 #

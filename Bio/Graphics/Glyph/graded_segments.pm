@@ -1,5 +1,5 @@
 package Bio::Graphics::Glyph::graded_segments;
-#$Id$
+#$Id: graded_segments.pm,v 1.12.2.1 2003/07/05 00:32:04 lstein Exp $
 
 use strict;
 use Bio::Graphics::Glyph::segments;

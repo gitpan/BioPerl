@@ -1,4 +1,4 @@
-# $Id$
+# $Id: RelationshipType.pm,v 1.5.2.5 2003/09/08 12:16:19 heikki Exp $
 #
 # BioPerl module for Bio::Ontology::RelationshipType  
 #
@@ -384,9 +384,9 @@ sub comment {
     return $ret;
 } # comment
 
-=head1
+=head1 Private methods
 
-Private methods. May be overridden in a derived class, but should
+May be overridden in a derived class, but should
 never be called from outside.
 
 =cut

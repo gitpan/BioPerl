@@ -1,4 +1,4 @@
-# $Id$
+# $Id: stockholm.pm,v 1.10.2.1 2003/03/14 09:14:59 heikki Exp $
 #
 # BioPerl module for Bio::AlignIO::stockholm
 

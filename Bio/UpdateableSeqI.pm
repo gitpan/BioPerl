@@ -1,4 +1,4 @@
-# $Id$
+# $Id: UpdateableSeqI.pm,v 1.4 2002/10/22 07:45:09 lapp Exp $
 #
 # BioPerl module for Bio::UpdateableSeqI
 #

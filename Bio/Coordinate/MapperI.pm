@@ -1,4 +1,4 @@
-# $Id$
+# $Id: MapperI.pm,v 1.5 2002/11/08 09:28:24 heikki Exp $
 #
 # bioperl module for Bio::Coordinate::MapperI
 #

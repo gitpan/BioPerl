@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id$
+## $Id: LiveSeq.t,v 1.14 2002/01/08 01:20:46 jason Exp $
 # Created: Thu Dec 14 13:57:04 GMT 2000
 # By Joseph A.L. Insana, <insana@ebi.ac.uk>
 #

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use Carp;
-# $Id$
+# $Id: aacomp.pl,v 1.3 2002/08/27 18:17:19 bosborne Exp $
 
 # Author Jason Stajich <jason@bioperl.org> 
 # based on aacomp.c from EMBOSS

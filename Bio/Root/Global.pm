@@ -4,7 +4,7 @@
 #           many different modules and scripts.
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 3 Sep 1996
-# REVISION: $Id$
+# REVISION: $Id: Global.pm,v 1.8 2002/01/11 08:05:31 sac Exp $
 #
 # INSTALLATION:
 #   This module is included with the central Bioperl distribution:

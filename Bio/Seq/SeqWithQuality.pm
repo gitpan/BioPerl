@@ -1,4 +1,4 @@
-# $Id$
+# $Id: SeqWithQuality.pm,v 1.17 2002/12/19 22:02:38 matsallac Exp $
 #
 # BioPerl module for Bio::Seq::QualI
 #

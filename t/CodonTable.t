@@ -1,6 +1,6 @@
 #-*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id$
+## $Id: CodonTable.t,v 1.14 2002/01/06 18:50:51 birney Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'

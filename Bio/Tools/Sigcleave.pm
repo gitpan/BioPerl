@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Tools::Sigcleave
 # AUTHOR  : Chris Dagdigian, dag@sonsorol.org
 # CREATED : Jan 28 1999
-# REVISION: $Id$
+# REVISION: $Id: Sigcleave.pm,v 1.17 2002/10/22 07:45:22 lapp Exp $
 #
 # Copyright (c) 1997-9 bioperl, Chris Dagdigian and others. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
@@ -146,7 +146,7 @@ Heikki Lehvaslaiho, heikki@ebi.ac.uk
 
 =head1 VERSION
 
-Bio::Tools::Sigcleave.pm, $Id$
+Bio::Tools::Sigcleave.pm, $Id: Sigcleave.pm,v 1.17 2002/10/22 07:45:22 lapp Exp $
 
 =head1 COPYRIGHT
 

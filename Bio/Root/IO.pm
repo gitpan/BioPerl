@@ -1,4 +1,4 @@
-# $Id$
+# $Id: IO.pm,v 1.37.2.3 2003/06/28 21:57:04 jason Exp $
 #
 # BioPerl module for Bio::Root::IO
 #

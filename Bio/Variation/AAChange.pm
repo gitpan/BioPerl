@@ -1,4 +1,4 @@
-# $Id$
+# $Id: AAChange.pm,v 1.13 2002/10/22 07:38:49 lapp Exp $
 #
 # BioPerl module for Bio::Variation::AAChange
 #

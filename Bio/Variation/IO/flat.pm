@@ -1,4 +1,4 @@
-# $Id$
+# $Id: flat.pm,v 1.12 2002/10/22 07:38:50 lapp Exp $
 # BioPerl module for Bio::Variation::IO::flat
 #
 # Cared for by Heikki Lehvaslaiho <Heikki@ebi.ac.uk>

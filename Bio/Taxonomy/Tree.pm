@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Tree.pm,v 1.1 2002/11/18 22:08:33 kortsch Exp $
 #
 # BioPerl module for Bio::Taxonomy::Tree
 #

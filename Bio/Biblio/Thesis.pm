@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Thesis.pm,v 1.5 2002/10/22 07:45:11 lapp Exp $
 #
 # BioPerl module for Bio::Biblio::Thesis
 #

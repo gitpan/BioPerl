@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id$
+# $Id: HitFactoryI.pm,v 1.6 2002/10/22 07:38:32 lapp Exp $
 #
 # BioPerl module for Bio::Factory::HitFactoryI
 #

@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id$
+## $Id: Variation_IO.t,v 1.13 2001/12/14 17:52:44 jason Exp $
 
 use strict;
 use vars qw($NUMTESTS);

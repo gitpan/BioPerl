@@ -1,4 +1,4 @@
-# $Id$
+# $Id: dagflat.pm,v 1.2.2.6 2003/06/30 05:04:06 lapp Exp $
 #
 # BioPerl module for Bio::OntologyIO::dagflat
 #

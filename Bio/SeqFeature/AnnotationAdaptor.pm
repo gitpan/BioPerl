@@ -1,4 +1,4 @@
-# $Id$
+# $Id: AnnotationAdaptor.pm,v 1.4 2002/11/11 18:16:31 lapp Exp $
 #
 # BioPerl module for Bio::SeqFeature::AnnotationAdaptor
 #

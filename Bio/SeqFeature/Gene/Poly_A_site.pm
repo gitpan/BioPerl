@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Poly_A_site.pm,v 1.4 2002/10/22 07:45:20 lapp Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::Poly_A_site
 #

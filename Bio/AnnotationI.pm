@@ -1,4 +1,4 @@
-# $Id$
+# $Id: AnnotationI.pm,v 1.7 2002/10/22 07:38:24 lapp Exp $
 
 #
 # BioPerl module for Bio::AnnotationI

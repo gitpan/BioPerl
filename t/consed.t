@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id$
+## $Id: consed.t,v 1.5 2002/10/30 14:21:59 heikki Exp $
 #
 #####
 #

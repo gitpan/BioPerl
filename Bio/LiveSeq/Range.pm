@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Range.pm,v 1.7 2001/06/18 08:27:53 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::Range
 #

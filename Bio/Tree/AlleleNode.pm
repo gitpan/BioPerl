@@ -1,4 +1,4 @@
-# $Id$
+# $Id: AlleleNode.pm,v 1.4 2002/10/22 07:45:24 lapp Exp $
 #
 # BioPerl module for Bio::Tree::AlleleNode
 #

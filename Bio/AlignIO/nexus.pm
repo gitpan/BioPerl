@@ -1,4 +1,4 @@
-# $Id$
+# $Id: nexus.pm,v 1.12.2.1 2003/04/07 15:17:17 heikki Exp $
 #
 # BioPerl module for Bio::AlignIO::nexus
 #

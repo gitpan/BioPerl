@@ -1,4 +1,4 @@
-# $Id$
+# $Id: GenericHit.pm,v 1.20.2.1 2003/02/28 09:27:56 jason Exp $
 #
 # BioPerl module for Bio::Search::Hit::GenericHit
 #

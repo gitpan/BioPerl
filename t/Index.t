@@ -1,5 +1,5 @@
 # -*-Perl-*-
-# $Id$
+# $Id: Index.t,v 1.23.2.2 2003/03/24 20:52:45 jason Exp $
 
 use strict;
 my $error;

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Similarity.pm,v 1.10 2002/11/01 21:39:05 jason Exp $
 #
 # BioPerl module for Bio::SeqFeature::Similarity
 #

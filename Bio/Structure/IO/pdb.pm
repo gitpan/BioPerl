@@ -1,4 +1,4 @@
-# $Id$
+# $Id: pdb.pm,v 1.9.2.2 2003/08/29 16:24:14 birney Exp $
 #
 # BioPerl module for Bio::Structure::IO::pdb
 #
@@ -1199,7 +1199,19 @@ $self->debug("_read_PDB_coor: parsing model $model_num\n");
 				}
 				$chain_name = $chain->id;
 			}
-			my $res_name_num = $resname."-".$resseq;
+
+			# fix from bug 1485, by dhoworth@mrc-lmb.cam.ac.uk
+			# passes visual inspection by Ewan and tests are ok.
+			# (bug fix was to add $icode here to make unique)
+			# original looked like
+			# my $res_name_num = $resname."-".$resseq;
+			
+			# to get around warning, set icode to "" if not defined
+			if( !defined $icode ) {
+			    $icode = "";
+			}
+
+			my $res_name_num = $resname."-".$resseq.$icode;
 			if ($res_name_num ne $residue_name) { # new residue
 				$residue = Bio::Structure::Residue->new;
 				$struc->add_residue($chain,$residue);

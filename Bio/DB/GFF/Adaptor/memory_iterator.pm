@@ -35,7 +35,7 @@ it under the same terms as Perl itself.
 
 package Bio::DB::GFF::Adaptor::memory_iterator;
 use strict;
-# $Id$
+# $Id: memory_iterator.pm,v 1.4.2.1 2003/07/05 00:52:31 lstein Exp $
 # this module needs to be cleaned up and documented
 
 #use constant STH         => 0;

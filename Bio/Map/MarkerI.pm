@@ -1,4 +1,4 @@
-# $Id$
+# $Id: MarkerI.pm,v 1.9 2002/10/22 07:45:15 lapp Exp $
 #
 # BioPerl module for Bio::Map::MarkerI
 #

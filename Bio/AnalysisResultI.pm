@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id$
+# $Id: AnalysisResultI.pm,v 1.5 2002/10/22 07:38:24 lapp Exp $
 #
 # BioPerl module Bio::AnalysisResultI
 #

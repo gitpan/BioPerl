@@ -1,4 +1,4 @@
-# $Id$
+# $Id: SRS.pm,v 1.7 2001/06/18 08:27:55 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::IO::SRS
 #

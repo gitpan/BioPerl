@@ -1,4 +1,4 @@
-# $Id$
+# $Id: StructuredValue.pm,v 1.2 2002/10/22 07:38:26 lapp Exp $
 #
 # BioPerl module for Bio::Annotation::StructuredValue
 #

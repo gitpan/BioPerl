@@ -1,4 +1,4 @@
-# $Id$
+# $Id: ace.pm,v 1.15 2002/10/25 16:23:16 jason Exp $
 #
 # BioPerl module for Bio::SeqIO::ace
 #

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Comment.pm,v 1.8 2002/09/25 18:11:33 lapp Exp $
 #
 # BioPerl module for Bio::Annotation::Comment
 #

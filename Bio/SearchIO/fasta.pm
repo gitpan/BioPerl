@@ -1,4 +1,4 @@
-# $Id$
+# $Id: fasta.pm,v 1.33.2.3 2003/08/28 16:01:03 jason Exp $
 #
 # BioPerl module for Bio::SearchIO::fasta
 #
@@ -279,6 +279,7 @@ sub next_result{
 	   }
 
 	   if( $last =~ /^\s*vs\s+(\S+)/ ||	       	       
+	       ($last =~ /^searching\s+(\S+)\s+library/)  ||
 	       (defined $_ && /^\s*vs\s+(\S+)/) ||
 	       (defined ($_ = $self->_readline()) && /^\s*vs\s+(\S+)/)
 	     ) {
@@ -444,7 +445,7 @@ sub next_result{
 			       'Data' => $1});
 	   }
 	   if( / (\S+)\% \s* identity
-                 (?:\s* \( (\S+)\% \s* ungapped \) )?
+                 (?:\s* \( \s* (\S+)\% \s* ungapped \) )?
                  \s* in \s* (\d+) \s+ (?:aa|nt) \s+ overlap \s*
                  \( (\d+) \- (\d+) : (\d+) \- (\d+) \)
                /x ) {

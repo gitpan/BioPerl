@@ -1,4 +1,4 @@
-# $Id$
+# $Id: GenPept.pm,v 1.26 2002/11/21 17:45:59 lstein Exp $
 #
 # BioPerl module for Bio::DB::GenPept
 #

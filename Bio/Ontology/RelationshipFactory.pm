@@ -1,4 +1,4 @@
-# $Id$
+# $Id: RelationshipFactory.pm,v 1.1.2.1 2003/03/27 10:07:56 lapp Exp $
 #
 # BioPerl module for Bio::Ontology::RelationshipFactory
 #

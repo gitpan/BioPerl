@@ -1,4 +1,4 @@
-# $Id$
+# $Id: AnnotatableI.pm,v 1.2 2002/12/31 13:09:06 birney Exp $
 #
 # BioPerl module for Bio::AnnotatableI
 #

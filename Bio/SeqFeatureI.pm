@@ -1,4 +1,4 @@
-# $Id$
+# $Id: SeqFeatureI.pm,v 1.43.2.5 2003/08/28 19:29:34 jason Exp $
 #
 # BioPerl module for Bio::SeqFeatureI
 #
@@ -77,8 +77,14 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::SeqFeatureI;
-use vars qw(@ISA);
+use vars qw(@ISA $HasInMemory);
 use strict;
+
+BEGIN {
+    eval { require Bio::DB::InMemoryCache };
+    if( $@ ) { $HasInMemory = 0 }
+    else { $HasInMemory = 1 }
+}
 
 use Bio::RangeI;
 use Bio::Seq;
@@ -428,7 +434,8 @@ but can be validly overwritten by subclasses
 =cut
 
 sub spliced_seq {
-    my ($self,$db) = @_;
+    my $self = shift;
+    my $db = shift;
 
     if( ! $self->location->isa("Bio::Location::SplitLocationI") ) {
 	return $self->seq(); # nice and easy!
@@ -448,7 +455,17 @@ sub spliced_seq {
     # Might need to eventually allow this to be programable?
     # (can I mention how much fun this is NOT! --jason)
 
-    my ($mixed,$fstrand) = (0);
+    my ($mixed,$mixedloc,$fstrand) = (0);
+
+    if( defined $db && 
+	ref($db) &&  !$db->isa('Bio::DB::RandomAccessI') ) {
+	$self->warn("Must pass in a valid Bio::DB::RandomAccessI object for access to remote locations for spliced_seq");
+	$db = undef;
+    } elsif( defined $db && 
+	     $HasInMemory && ! $db->isa('Bio::DB::InMemoryCache') ) {
+	$db = new Bio::DB::InMemoryCache(-seqdb => $db);
+    }
+    
     if( $self->isa('Bio::Das::SegmentI') &&
 	! $self->absolute ) { 
 	$self->warn("Calling spliced_seq with a Bio::Das::SegmentI ".
@@ -465,6 +482,9 @@ sub spliced_seq {
     map { 
 	$fstrand = $_->strand unless defined $fstrand;
 	$mixed = 1 if defined $_->strand && $fstrand != $_->strand;
+	if( defined $_->seq_id ) {
+	    $mixedloc = 1 if( $_->seq_id ne $seqid );
+	}
 	[ $_, $_->start* ($_->strand || 1)];
     } $self->location->each_Location; 
 
@@ -472,7 +492,11 @@ sub spliced_seq {
 	$self->warn("Mixed strand locations, spliced seq using the input ".
                     "order rather than trying to sort");
 	@locs = $self->location->each_Location; 
+    } elsif( $mixedloc ) {
+	# we'll use the prescribed location order
+	@locs = $self->location->each_Location; 
     }
+
 
     foreach my $loc ( @locs  ) {
 	if( ! $loc->isa("Bio::Location::Atomic") ) {
@@ -483,21 +507,20 @@ sub spliced_seq {
 	    $self->warn("feature strand is different from location strand!");
 	}
 	# deal with remote sequences
-
-	if( $loc->seq_id ne $seqid ) {
+	if( defined $loc->seq_id && 
+	    $loc->seq_id ne $seqid ) {
 	    if( defined $db ) {
 		my $sid = $loc->seq_id;
-		$sid =~ s/\.\d+//g;
+		$sid =~ s/\.\d+$//g;
 		eval {
 		    $called_seq = $db->get_Seq_by_acc($sid);
 		};
 		if( $@ ) {
-		    $self->warn("In attempting to join a remote location, ".
-                                "sequence $sid was not in database. Will ".
-                                "provide padding N's. Full exception \n\n$@");
+		    $self->warn("In attempting to join a remote location, sequence $sid was not in database. Will provide padding N's. Full exception \n\n$@");
 		    $called_seq = undef;
 		}
 	    } else {
+		$self->warn( "cannot get remote location for ".$loc->seq_id ." without a valid Bio::DB::RandomAccessI database handle (like Bio::DB::GenBank)");
 		$called_seq = undef;
 	    }
 	    if( !defined $called_seq ) {

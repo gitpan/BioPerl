@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id$
+## $Id: primaryqual.t,v 1.12 2002/12/19 22:10:34 matsallac Exp $
 #
 # modeled after the t/Allele.t test script
 

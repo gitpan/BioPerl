@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id$
+## $Id: Map.t,v 1.3 2002/10/13 13:47:49 jason Exp $
 #
 
 use strict;

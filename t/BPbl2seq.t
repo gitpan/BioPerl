@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-# $Id$
+# $Id: BPbl2seq.t,v 1.20.2.1 2003/06/28 22:01:52 jason Exp $
 
 use strict;
 BEGIN {     

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: SimpleAlign.pm,v 1.65.2.1 2003/07/02 16:00:19 jason Exp $
 # BioPerl module for SimpleAlign
 #
 # Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: OBDAIndex.pm,v 1.12.2.1 2003/06/28 20:47:16 jason Exp $
 #
 # BioPerl module for Bio::DB::Flat::OBDAIndex
 #

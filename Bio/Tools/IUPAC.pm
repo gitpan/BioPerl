@@ -1,4 +1,4 @@
-# $Id$
+# $Id: IUPAC.pm,v 1.19 2002/11/30 15:39:53 jason Exp $
 #
 # BioPerl module for IUPAC
 #

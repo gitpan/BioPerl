@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Transcript.pm,v 1.25 2002/12/29 09:37:51 lapp Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::Transcript
 #

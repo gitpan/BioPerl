@@ -1,4 +1,4 @@
-# $Id$
+# $Id: mega.pm,v 1.8 2002/10/22 07:45:10 lapp Exp $
 #
 # BioPerl module for Bio::AlignIO::mega
 #

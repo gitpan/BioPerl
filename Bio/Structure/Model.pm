@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Model.pm,v 1.6 2002/10/22 07:38:44 lapp Exp $
 #
 # bioperl module for Bio::Structure::Model
 #

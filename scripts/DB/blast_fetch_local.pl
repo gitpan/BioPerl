@@ -6,7 +6,7 @@
 # This may not work if the blastdb to index is est depending on 
 # wha your machine supports
 
-# $Id$
+# $Id: blast_fetch_local.pl,v 1.3 2002/10/28 01:09:37 jason Exp $
 
 use strict;
 use Bio::Tools::BPlite;

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Atom.pm,v 1.8 2002/10/22 07:38:44 lapp Exp $
 #
 # bioperl module for Bio::Structure::Atom
 #

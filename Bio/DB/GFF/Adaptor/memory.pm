@@ -59,7 +59,7 @@ it under the same terms as Perl itself.
 =cut
 
 use strict;
-# $Id$
+# $Id: memory.pm,v 1.7.2.1 2003/07/05 00:52:31 lstein Exp $
 # AUTHOR: Shulamit Avraham
 # This module needs to be cleaned up and documented
 

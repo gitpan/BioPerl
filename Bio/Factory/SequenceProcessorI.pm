@@ -1,4 +1,4 @@
-# $Id$
+# $Id: SequenceProcessorI.pm,v 1.1 2002/10/24 18:35:46 lapp Exp $
 #
 # BioPerl module for Bio::Factory::SequenceProcessorI
 #

@@ -1,4 +1,4 @@
-# $Id$ 
+# $Id: Lucy.pm,v 1.6 2002/10/22 07:38:46 lapp Exp $ 
 #
 # BioPerl module for Bio::Tools::Lucy
 #

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: abi.pm,v 1.7 2002/10/22 07:38:42 lapp Exp $
 # BioPerl module for Bio::SeqIO::abi
 #
 # Cared for by Aaron Mackey <amackey@virginia.edu>

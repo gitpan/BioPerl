@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Exon.pm,v 1.10 2002/10/22 07:38:48 lapp Exp $
 #
 # BioPerl module for Bio::Tools::Prediction::Exon
 #

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: BaseSeqProcessor.pm,v 1.2 2002/11/02 21:04:19 lapp Exp $
 #
 # BioPerl module for Bio::Seq::BaseSeqProcessor
 #

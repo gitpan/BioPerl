@@ -3,7 +3,7 @@
 # PURPOSE : To encapsulate commonly used URLs for web key websites in bioinformatics.
 # AUTHOR  : Steve Chervitz
 # CREATED : 27 Aug 1996 
-# REVISION: $Id$
+# REVISION: $Id: WWW.pm,v 1.12 2002/10/22 07:38:46 lapp Exp $
 #
 # For documentation, run this module through pod2html 
 # (preferably from Perl v5.004 or better).
@@ -30,7 +30,7 @@ $AUTHORITY = 'nobody@localhost';
 
 $ID = 'Bio::Tools::WWW';
 $VERSION = 0.014;
-$Revision = '$Id$'; #'
+$Revision = '$Id: WWW.pm,v 1.12 2002/10/22 07:38:46 lapp Exp $'; #'
 
 ## Static object.
 $BioWWW = {};

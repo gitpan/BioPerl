@@ -1,5 +1,5 @@
 #------------------------------------------------------------------
-# $Id$
+# $Id: RestrictionEnzyme.pm,v 1.25.2.1 2003/06/29 00:53:20 jason Exp $
 #
 # BioPerl module Bio::Tools::RestrictionEnzyme
 #
@@ -178,7 +178,7 @@ use vars qw (@ISA @EXPORT_OK %EXPORT_TAGS $ID $version @RE_available $Revision);
 
 $ID = 'Bio::Tools::RestrictionEnzyme';
 $version = 0.04;
-$Revision = '$Id$';  #'
+$Revision = '$Id: RestrictionEnzyme.pm,v 1.25.2.1 2003/06/29 00:53:20 jason Exp $';  #'
 
 # Generated from REBASE version 208 (strider format), dated Aug 1 2002
 # using scripts/contributed/rebase2list.pl

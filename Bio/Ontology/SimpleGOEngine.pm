@@ -1,4 +1,4 @@
-# $Id$
+# $Id: SimpleGOEngine.pm,v 1.3.2.6 2003/06/30 05:04:06 lapp Exp $
 #
 # BioPerl module for Bio::Ontology::SimpleGOEngine
 #

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: DBLink.pm,v 1.12 2002/10/23 18:07:49 lapp Exp $
 #
 # BioPerl module for Bio::Annotation::Link
 #

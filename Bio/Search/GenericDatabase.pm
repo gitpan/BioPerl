@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id$
+# $Id: GenericDatabase.pm,v 1.5 2002/10/22 07:38:38 lapp Exp $
 #
 # BioPerl module Bio::Search::GenericDatabase
 #

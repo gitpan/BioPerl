@@ -1,4 +1,4 @@
-# $Id$
+# $Id: WebDBSeqI.pm,v 1.30.2.1 2003/06/12 09:29:38 heikki Exp $
 #
 # BioPerl module for Bio::DB::WebDBSeqI
 #

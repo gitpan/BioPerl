@@ -1,4 +1,4 @@
-# $Id$
+# $Id: LocatableSeq.pm,v 1.22.2.1 2003/03/31 11:49:51 heikki Exp $
 #
 # BioPerl module for Bio::LocatableSeq
 #

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: RootI.pm,v 1.61 2002/12/16 09:44:28 birney Exp $
 #
 # BioPerl module for Bio::Root::RootI
 #
@@ -108,7 +108,7 @@ use Carp 'confess','carp';
 BEGIN { 
     $ID        = 'Bio::Root::RootI';
     $VERSION   = 1.0;
-    $Revision  = '$Id$ ';
+    $Revision  = '$Id: RootI.pm,v 1.61 2002/12/16 09:44:28 birney Exp $ ';
     $DEBUG     = 0;
     $VERBOSITY = 0;
 }

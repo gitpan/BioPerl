@@ -1,4 +1,4 @@
-# $Id$
+# $Id: GenericResult.pm,v 1.15 2002/12/05 13:46:34 heikki Exp $
 #
 # BioPerl module for Bio::Search::Result::GenericResult
 #

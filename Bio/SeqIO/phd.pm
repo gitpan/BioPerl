@@ -1,4 +1,4 @@
-# $Id$
+# $Id: phd.pm,v 1.17 2002/12/09 23:50:23 matsallac Exp $
 #
 # Copyright (c) 1997-2001 bioperl, Chad Matsalla. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or

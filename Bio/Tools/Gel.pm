@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Gel.pm,v 1.6 2002/10/22 07:45:22 lapp Exp $
 # BioPerl module for Bio::Tools::Gel
 # Copyright Allen Day <allenday@ucla.edu>
 # You may distribute this module under the same terms as perl itself

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: HSPTableWriter.pm,v 1.12 2002/11/23 15:32:24 jason Exp $
 
 =head1 NAME
 

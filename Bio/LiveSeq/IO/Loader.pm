@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Loader.pm,v 1.15 2001/10/22 08:22:51 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::IO::Loader
 #

@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id$
+# $Id: BlastResult.pm,v 1.13 2002/12/24 15:48:41 jason Exp $
 #
 # BioPerl module Bio::Search::Result::BlastResult
 #
@@ -110,7 +110,7 @@ use overload
 
 use vars qw(@ISA $Revision );
 
-$Revision = '$Id$';  #'
+$Revision = '$Id: BlastResult.pm,v 1.13 2002/12/24 15:48:41 jason Exp $';  #'
 @ISA = qw( Bio::Root::Root Bio::Search::Result::ResultI);
 
 #----------------

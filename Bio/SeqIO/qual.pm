@@ -1,4 +1,4 @@
-# $Id$
+# $Id: qual.pm,v 1.22 2002/12/27 19:42:32 birney Exp $
 #
 # Copyright (c) 1997-9 bioperl, Chad Matsalla. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id$
+# $Id: faq.pl,v 1.6.2.1 2003/06/28 22:48:50 jason Exp $
 
 # This script generates a HTML or text FAQ from the XML version.
 #

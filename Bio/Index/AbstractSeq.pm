@@ -1,4 +1,4 @@
-# $Id$
+# $Id: AbstractSeq.pm,v 1.16 2002/10/22 07:38:33 lapp Exp $
 #
 # BioPerl module for Bio::DB::AbstractSeq
 #

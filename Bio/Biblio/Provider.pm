@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Provider.pm,v 1.4 2002/10/22 07:45:11 lapp Exp $
 #
 # BioPerl module for Bio::Biblio::Provider
 #

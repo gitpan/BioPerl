@@ -1,4 +1,4 @@
-# $Id$
+# $Id: INSTALL,v 1.16.2.1 2003/09/15 16:27:54 jason Exp $
 
 Bioperl Install Directions
 
@@ -391,3 +391,6 @@ XML::DOM		 XML parser
 DB_File                  Perl access to Berkeley DB
                          Bio::DB::Flat
                          Bio::SeqFeature::Collection
+
+Text::Wrap               (Very optional)
+                          Bio::SearchIO::Writer::TextResultWriter

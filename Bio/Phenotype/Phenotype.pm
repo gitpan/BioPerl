@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Phenotype.pm,v 1.5 2002/12/12 18:27:01 czmasek Exp $
 #
 # BioPerl module for Bio::Phenotype::Phenotype
 #

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Graph.pm,v 1.2.2.2 2003/09/08 12:16:18 heikki Exp $
 #
 # bioperl module for Bio::Coordinate::Graph
 #
@@ -65,7 +65,7 @@ would be enough. Luckily the difference for small graphs is not
 signigicant and the implementation is capable to take weights into
 account if needed at some later time.
 
-=head3 Input format
+=head2 Input format
 
 The graph needs to be primed using a hash of hashes where there is a
 key for each node. The second keys are the names of the downstream

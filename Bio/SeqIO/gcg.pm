@@ -1,4 +1,4 @@
-# $Id$
+# $Id: gcg.pm,v 1.21 2002/10/25 16:22:01 jason Exp $
 #
 # BioPerl module for Bio::SeqIO::gcg
 #

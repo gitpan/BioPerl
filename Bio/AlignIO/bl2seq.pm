@@ -1,4 +1,4 @@
-# $Id$
+# $Id: bl2seq.pm,v 1.13.2.1 2003/06/18 12:19:52 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::bl2seq
 

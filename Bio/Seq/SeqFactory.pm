@@ -1,4 +1,4 @@
-# $Id$
+# $Id: SeqFactory.pm,v 1.8 2002/10/25 22:49:04 lapp Exp $
 #
 # BioPerl module for Bio::Seq::SeqFactory
 #

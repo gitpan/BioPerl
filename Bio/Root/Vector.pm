@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Root::Vector.pm
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 15 April 1997
-# REVISION: $Id$
+# REVISION: $Id: Vector.pm,v 1.10 2002/10/22 07:38:37 lapp Exp $
 # STATUS  : Alpha
 #
 # WARNING: This is considered an experimental module.

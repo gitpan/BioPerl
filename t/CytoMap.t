@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id$
+## $Id: CytoMap.t,v 1.1 2002/02/11 09:36:23 heikki Exp $
 #
 
 use strict;

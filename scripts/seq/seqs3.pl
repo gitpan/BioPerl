@@ -10,7 +10,7 @@
 #            and Bio::SeqIO streams (via seqtools.pl).
 # AUTHOR   : Steve Chervitz <sac@bioperl.org>
 # CREATED  : 29 Apr 1998
-# REVISION : $Id$
+# REVISION : $Id: seqs3.pl,v 1.2 2002/09/07 07:13:30 sac Exp $
 # USAGE    : seqs3.pl -h
 # EXAMPLES : seqs3.pl -eg
 #

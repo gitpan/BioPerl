@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id$
+## $Id: phd.t,v 1.6 2001/10/14 21:46:23 jason Exp $
 #
 
 

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: GDB.pm,v 1.12 2002/12/01 00:05:19 jason Exp $
 #
 # BioPerl module for Bio::DB::GenBank
 #

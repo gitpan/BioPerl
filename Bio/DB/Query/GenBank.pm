@@ -1,4 +1,4 @@
-# $Id$
+# $Id: GenBank.pm,v 1.4.2.1 2003/09/09 21:28:52 lstein Exp $
 #
 # BioPerl module for Bio::DB::Query::GenBank.pm
 #
@@ -23,11 +23,11 @@ Bio::DB::Query::GenBank - Build a GenBank Entrez Query
 					    -mindate => '2001',
 					    -maxdate => '2002');
    my $count = $query->count;
-   my @ids   = $query->get_Ids;
+   my @ids   = $query->ids;
 
    # get a genbank database handle
-   $gb = new Bio::DB::GenBank;
-   my $stream = $db->get_Stream_by_query($query);
+   my $gb = new Bio::DB::GenBank;
+   my $stream = $gb->get_Stream_by_query($query);
    while (my $seq = $stream->next_seq) {
       ...
    }

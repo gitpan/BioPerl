@@ -1,4 +1,4 @@
-# $Id$
+# $Id: EncodedSeq.pm,v 1.5.2.1 2003/04/28 12:11:57 jason Exp $
 #
 # BioPerl module for Bio::Seq::EncodedSeq
 #

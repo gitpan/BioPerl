@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Collection.pm,v 1.11.2.1 2003/02/20 05:11:45 heikki Exp $
 #
 # bioperl module for Bio::Coordinate::Collection
 #

@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id$
+# $Id: BlastHitFactory.pm,v 1.7 2002/10/22 09:38:09 sac Exp $
 #
 # BioPerl module for Bio::Factory::BlastHitFactory
 #

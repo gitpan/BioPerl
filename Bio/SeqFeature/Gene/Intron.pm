@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Intron.pm,v 1.3 2002/10/22 07:45:20 lapp Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::Intron
 #

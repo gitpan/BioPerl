@@ -1,4 +1,4 @@
-# $Id$
+# $Id: PrimarySeq.pm,v 1.73.2.1 2003/06/29 00:25:27 jason Exp $
 #
 # bioperl module for Bio::PrimarySeq
 #

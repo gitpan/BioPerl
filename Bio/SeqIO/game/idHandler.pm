@@ -1,4 +1,4 @@
-# $Id$
+# $Id: idHandler.pm,v 1.8 2001/11/20 02:09:38 lstein Exp $
 #
 # BioPerl module for Bio::SeqIO::game::idHandler
 #

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: WidestCoordPolicy.pm,v 1.6 2002/12/01 00:05:20 jason Exp $
 #
 # BioPerl module for Bio::Location::WidestCoordPolicy
 #

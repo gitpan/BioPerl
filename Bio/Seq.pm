@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Seq.pm,v 1.76.2.2 2003/07/03 20:01:32 jason Exp $
 #
 # BioPerl module for Bio::Seq
 #

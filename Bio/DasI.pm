@@ -1,4 +1,4 @@
-# $Id$
+# $Id: DasI.pm,v 1.15 2002/11/11 18:16:29 lapp Exp $
 #
 # BioPerl module for Bio::DasI
 #

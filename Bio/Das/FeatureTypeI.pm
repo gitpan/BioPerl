@@ -1,4 +1,4 @@
-# $Id$
+# $Id: FeatureTypeI.pm,v 1.3 2002/11/11 18:16:30 lapp Exp $
 #
 # BioPerl module for Bio::Das::FeatureTypeI
 #

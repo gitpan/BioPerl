@@ -1,4 +1,4 @@
-# $Id$
+# $Id: msf.pm,v 1.16 2002/11/26 16:34:39 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::msf
 

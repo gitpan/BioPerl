@@ -1,4 +1,4 @@
-# $Id$
+# $Id: FastaHSP.pm,v 1.4.2.1 2003/02/28 09:47:19 jason Exp $
 #
 # BioPerl module for Bio::Search::HSP::FastaHSP
 #

@@ -1,5 +1,5 @@
 # This is -*-Perl-*- code
-# $Id$
+# $Id: AlignIO.t,v 1.28.2.2 2003/03/14 09:34:58 heikki Exp $
 use strict;
 
 BEGIN { 

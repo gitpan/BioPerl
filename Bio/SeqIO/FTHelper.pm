@@ -1,4 +1,4 @@
-# $Id$
+# $Id: FTHelper.pm,v 1.55 2002/11/05 02:55:12 lapp Exp $
 #
 # BioPerl module for Bio::SeqIO::FTHelper
 #

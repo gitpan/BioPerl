@@ -1,4 +1,4 @@
-# $Id$
+# $Id: genbank.pm,v 1.76.2.12 2003/09/13 23:33:04 jason Exp $
 #
 # BioPerl module for Bio::SeqIO::GenBank
 #
@@ -84,7 +84,49 @@ L<Bio::Annotation::Collection> object.
 reference       - Should contain Bio::Annotation::Reference objects
 comment         - Should contain Bio::Annotation::Comment objects
 
+segment         - Should contain a Bio::Annotation::SimpleValue object
+origin          - Should contain a Bio::Annotation::SimpleValue object
+
 =back
+
+=head1 Where does the data go?
+
+Data parsed in Bio::SeqIO::genbank is stored in a variety of data
+fields in the sequence object that is returned.  More information in
+the HOWTOs about exactly what each field means and where it goes.
+Here is a partial list of fields.
+
+Items listed as RichSeq or Seq or PrimarySeq and then NAME() tell you
+the top level object which defines a function called NAME() which
+stores this information.
+
+Items listed as Annotation 'NAME' tell you the data is stored the
+associated Bio::Annotation::Colection object which is associated with
+Bio::Seq objects.  If it is explictly requested that no annotations
+should be stored when parsing a record of course they won't be
+available when you try and get them.  If you are having this problem
+look at the type of SeqBuilder that is being used to contruct your
+sequence object.
+
+Comments             Annotation 'comment'
+References           Annotation 'reference'
+Segment              Annotation 'segment'
+Origin               Annotation 'origin'
+
+Accessions           PrimarySeq accession_number()
+Secondary accessions RichSeq get_secondary_accessions()
+Keywords             RichSeq keywords()
+Dates                RichSeq get_dates()
+Molecule             RichSeq molecule()
+Seq Version          RichSeq seq_version()
+PID                  RichSeq pid()
+Division             RichSeq division()
+Features             Seq get_SeqFeatures()
+Alphabet             PrimarySeq alphabet()
+Definition           PrimarySeq description() or desc()
+Version              PrimarySeq version()
+
+Sequence             PrimarySeq seq()
 
 =head1 FEEDBACK
 
@@ -223,9 +265,34 @@ sub next_seq {
 	  $params{'-division'} = shift(@tokens);
       }
       my $date = join(' ', @tokens); # we lump together the rest
-      if($date =~ s/.*(\d\d-\w\w\w-\d\d\d\d).*/$1/) {
-	  $params{'-dates'} = [$date];
+      # this is per request bug #1513
+      # we can handle
+      # 9-10-2003
+      # 9-10-03
+      #09-10-2003
+      #09-10-03
+      if($date =~ s/\s*((\d{1,2})-(\w{3})-(\d{2,4})).*/$1/) {
+	  if( length($date) < 11 ) { # improperly formatted date
+	                             # But we'll be nice and fix it for them
+	      my ($d,$m,$y) = ($2,$3,$4);
+	      if( length($d) == 1 ) {
+		  $d = "0$d";
+	      }
+	      # guess the century here
+	      if( length($y) == 2 ) {
+		  if( $y > 60 ) {  # arbitrarily guess that '60' means 1960
+		      $y = "19$y";
+		  } else { 
+		      $y = "20$y";
+		  }
+		  $self->warn("Date was malformed, guessing the century for $date to be $y\n");
+	      }
+	      $params{'-dates'} = [join('-',$d,$m,$y)];
+	  } else { 
+	      $params{'-dates'} = [$date];
+	  }
       }
+
       # set them all at once
       $builder->add_slot_value(%params);
       %params = ();
@@ -340,7 +407,27 @@ sub next_seq {
 		  }
 	      }
 	      next;
+	  } elsif( /^SEGMENT\s+(.+)/ ) {
+	      if($annotation) {
+		  my $segment = $1;
+		  while (defined($_ = $self->_readline)) {
+		      last if (/^\S/);
+		      $segment .= $_; 
+		  }
+		  $segment =~ s/\n/ /g;
+		  $segment =~ s/  +/ /g;
+		  $annotation->add_Annotation(
+					      'segment',
+					      Bio::Annotation::SimpleValue->new(-value => $segment));
+		  $buffer = $_;
+	      } else {
+		  while(defined($buffer = $self->_readline())) {
+		      last if substr($buffer,0,1) ne ' ';
+		  }
+	      }
+	      next;
 	  }
+
 	  # Exit at start of Feature table, or start of sequence
 	  last if( /^(FEATURES|ORIGIN)/ );
 	  # Get next line and loop again
@@ -435,7 +522,12 @@ sub next_seq {
       if($builder->want_slot('seq')) {
 	  # the fact that we want a sequence does not necessarily mean that
 	  # there also is a sequence ...
-	  if(defined($_) && /^ORIGIN/) {
+	  if(defined($_) && s/^ORIGIN//) {
+	      chomp;
+	      if( $annotation && length($_) > 0 ) {
+		  $annotation->add_Annotation('origin',
+					      Bio::Annotation::SimpleValue->new(-value => $_));
+	      }
 	      my $seqc = '';
 	      while( defined($_ = $self->_readline) ) {
 		  /^\/\// && last;
@@ -567,12 +659,20 @@ sub write_seq {
 	} else {
 	    if( $seq->can('keywords') ) {
 		my $kw = $seq->keywords;
+		if( ref($kw) =~ /ARRAY/i ) {
+		    $kw = join("; ", @$kw);
+		}
 		$kw .= '.' if( $kw !~ /\.$/ );
 		$self->_print("KEYWORDS    $kw\n");
 	    }
 	} 
 
-
+	# SEGMENT if it exists
+	foreach my $ref ( $seq->annotation->get_Annotations('segment') ) {
+	    $self->_print(sprintf ("%-11s %s\n",'SEGMENT',
+				  $ref->value));
+	}
+ 
 	# Organism lines
 	if (my $spec = $seq->species) {
 	    my ($species, $genus, @class) = $spec->classification();
@@ -692,7 +792,8 @@ sub write_seq {
 				     ( $olen > 0 ) ? sprintf("%6s others",$olen) : '');
 	    $self->_print($base_count); 
 	}
-	$self->_print(sprintf("ORIGIN%6s\n",''));
+	my ($o) = $seq->annotation->get_Annotations('origin');
+	$self->_print(sprintf("%-6s%s\n",'ORIGIN',$o ? $o->value : ''));
 
 # print out the sequence
 	my $nuc = 60;		# Number of nucleotides per line

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: DNAAlphabet.pm,v 1.3 2002/10/22 07:45:21 lapp Exp $
 #
 # BioPerl module for Bio::Symbol::DNAAlphabet
 #

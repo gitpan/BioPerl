@@ -2,7 +2,7 @@
 ## Bioperl Test Harness Script for Modules
 ##
 # CVS Version
-# $Id$
+# $Id: SimilarityPair.t,v 1.5 2002/03/10 17:28:10 jason Exp $
 
 
 # Before `make install' is performed this script should be runnable with

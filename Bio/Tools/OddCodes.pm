@@ -1,4 +1,4 @@
-#$Id$
+#$Id: OddCodes.pm,v 1.10.2.1 2003/04/07 04:27:42 heikki Exp $
 #-----------------------------------------------------------------------------
 # PACKAGE    : OddCodes.pm
 # PURPOSE    : To write amino acid sequences in alternative alphabets

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: InterProTerm.pm,v 1.4.2.2 2003/03/25 12:32:16 heikki Exp $
 #
 # BioPerl module for Bio::Ontology::InterProTerm
 #

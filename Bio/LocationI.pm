@@ -1,4 +1,4 @@
-# $Id$
+# $Id: LocationI.pm,v 1.18 2002/12/01 00:05:19 jason Exp $
 #
 # BioPerl module for Bio::LocationI
 # Cared for by Jason Stajich <jason@bioperl.org>

@@ -33,7 +33,7 @@
 #   Bio::SearchIO::psiblast
 #
 # Author: Steve Chervitz <sac@bioperl.org>
-# Revision: $Id$
+# Revision: $Id: resultwriter.pl,v 1.3 2002/10/26 09:35:55 sac Exp $
 
 
 use strict;

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: CodonTable.pm,v 1.23 2002/10/22 07:38:45 lapp Exp $
 #
 # bioperl module for Bio::Tools::CodonTable
 #

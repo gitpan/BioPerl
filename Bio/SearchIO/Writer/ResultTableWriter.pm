@@ -1,4 +1,4 @@
-# $Id$
+# $Id: ResultTableWriter.pm,v 1.13 2002/12/05 13:46:35 heikki Exp $
 
 =head1 NAME
 

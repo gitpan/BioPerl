@@ -1,4 +1,4 @@
-# $Id$
+# $Id: OMIMparser.pm,v 1.8.2.1 2003/03/25 12:32:16 heikki Exp $
 #
 # BioPerl module for Bio::Phenotype::OMIM::OMIMparser
 #

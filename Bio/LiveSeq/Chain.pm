@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id$
+# $Id: Chain.pm,v 1.12 2001/06/18 08:27:53 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::Chain
 #

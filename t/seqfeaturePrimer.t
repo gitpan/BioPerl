@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id$
+## $Id: seqfeaturePrimer.t,v 1.3 2002/10/30 14:21:59 heikki Exp $
 #
 # modeled after the t/Allele.t test script
 

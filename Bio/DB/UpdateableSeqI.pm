@@ -1,5 +1,5 @@
 #
-# $Id$
+# $Id: UpdateableSeqI.pm,v 1.6 2002/12/01 00:05:19 jason Exp $
 #
 # BioPerl module for Bio::DB::UpdateableSeqI
 #

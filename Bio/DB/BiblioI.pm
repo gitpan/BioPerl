@@ -1,4 +1,4 @@
-# $Id$
+# $Id: BiblioI.pm,v 1.5 2002/10/22 07:45:13 lapp Exp $
 #
 # BioPerl module for Bio::DB::BiblioI
 #
@@ -87,8 +87,8 @@ use Bio::Root::RootI;
 @ISA = qw(Bio::Root::RootI);
 
 BEGIN { 
-    $VERSION = do { my @r = (q$Revision$ =~ /\d+/g); sprintf "%d.%-02d", @r };
-    $Revision = q$Id$;
+    $VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d.%-02d", @r };
+    $Revision = q$Id: BiblioI.pm,v 1.5 2002/10/22 07:45:13 lapp Exp $;
 }
 
 # -----------------------------------------------------------------------------

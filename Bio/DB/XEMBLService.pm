@@ -1,5 +1,5 @@
 #
-# $Id$
+# $Id: XEMBLService.pm,v 1.3 2002/10/22 07:38:29 lapp Exp $
 #
 # BioPerl module for Bio::DB::XEMBLService
 #

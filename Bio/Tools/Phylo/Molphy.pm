@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Molphy.pm,v 1.3 2002/10/22 07:45:23 lapp Exp $
 #
 # BioPerl module for Bio::Tools::Phylo::Molphy
 #

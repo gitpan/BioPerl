@@ -1,4 +1,4 @@
-# $Id$
+# $Id: SearchDist.pm,v 1.16 2002/10/22 07:38:24 lapp Exp $
 
 #
 # BioPerl module for Bio::SearchDist

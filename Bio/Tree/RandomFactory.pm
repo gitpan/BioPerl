@@ -1,4 +1,4 @@
-# $Id$
+# $Id: RandomFactory.pm,v 1.8 2002/12/24 17:52:03 jason Exp $
 #
 # BioPerl module for Bio::Tree::RandomFactory
 #

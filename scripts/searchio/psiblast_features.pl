@@ -21,7 +21,7 @@
 #   Bio::SearchIO::psiblast
 #
 # Author: Steve Chervitz <sac@bioperl.org>
-# Revision: $Id$
+# Revision: $Id: psiblast_features.pl,v 1.2 2002/10/26 09:35:55 sac Exp $
 
 use strict;
 use lib '../../';

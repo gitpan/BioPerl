@@ -1,4 +1,4 @@
-# $Id$
+# $Id: fasta.pm,v 1.41.2.4 2003/09/18 02:43:16 jason Exp $
 # BioPerl module for Bio::SeqIO::fasta
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
@@ -24,6 +24,17 @@ Do not use this module directly.  Use it via the Bio::SeqIO class.
 
 This object can transform Bio::Seq objects to and from fasta flat
 file databases.
+
+A method L<preferred_id_type()> can be used to specify the type of ID
+we would like to parse from the fasta line.  By default 'display' is
+used, which means it parses everything from the '>' to the first space
+and makes that the 'display_id' for the sequence.
+
+Can be one of:
+ - accession 
+ - accession.version 
+ - display
+ - primary
 
 =head1 FEEDBACK
 
@@ -63,7 +74,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::SeqIO::fasta;
-use vars qw(@ISA $WIDTH);
+use vars qw(@ISA $WIDTH @SEQ_ID_TYPES $DEFAULT_SEQ_ID_TYPE);
 use strict;
 # Object preamble - inherits from Bio::Root::Object
 
@@ -72,6 +83,9 @@ use Bio::Seq::SeqFactory;
 use Bio::Seq::SeqFastaSpeedFactory;
 
 @ISA = qw(Bio::SeqIO);
+
+@SEQ_ID_TYPES = qw(accession accession.version display primary);
+$DEFAULT_SEQ_ID_TYPE = 'display';
 
 BEGIN { $WIDTH = 60}
 
@@ -176,7 +190,21 @@ sub write_seq {
 	   unless defined $seq && ref($seq) && $seq->isa('Bio::PrimarySeqI');
 
        my $str = $seq->seq;
-       my $top = $seq->display_id();
+       my $top;
+
+       # Allow for different ids 
+       my $id_type = $self->preferred_id_type;
+       if( $id_type =~ /^acc/i ) {
+	   $top = $seq->accession_number();
+	   if( $id_type =~ /vers/i ) {
+	       $top .= "." . $seq->version();
+	   }
+       } elsif($id_type =~ /^displ/i ) {
+	   $top = $seq->display_id();
+       } elsif($id_type =~ /^pri/i ) {
+	   $top = $seq->primary_id();
+       }
+
        if ($seq->can('desc') and my $desc = $seq->desc()) {
 	   $desc =~ s/\n//g;
 	   $top .= " $desc";
@@ -210,6 +238,34 @@ sub width{
       $self->{'width'} = $value;
     }
     return $self->{'width'} || $WIDTH;
+}
+
+=head2 preferred_id_type
+
+ Title   : preferred_id_type
+ Usage   : $obj->preferred_id_type('accession')
+ Function: Get/Set the preferred type of identifier to use in the ">ID" position
+           for FASTA output.
+ Returns : string, one of values defined in @Bio::SeqIO::fasta::SEQ_ID_TYPES.
+           Default = $Bio::SeqIO::fasta::DEFAULT_SEQ_ID_TYPE ('display').
+ Args    : string when setting. This must be one of values defined in 
+           @Bio::SeqIO::fasta::SEQ_ID_TYPES. Allowable values:
+           accession, accession.version, display, primary
+ Throws  : fatal exception if the supplied id type is not in @SEQ_ID_TYPES.
+
+=cut
+
+sub preferred_id_type {
+    my ($self,$type) = @_;
+    if( defined $type ) {
+	if( ! grep lc($type) eq $_, @SEQ_ID_TYPES) {
+	    $self->throw(-class=>'Bio::Root::BadParameter',
+			 -text=>"Invalid ID type \"$type\". Must be one of: @SEQ_ID_TYPES");
+	}
+	$self->{'_seq_id_type'} = lc($type);
+#	print STDERR "Setting preferred_id_type=$type\n";
+    }
+    $self->{'_seq_id_type'} || $DEFAULT_SEQ_ID_TYPE;
 }
 
 1;

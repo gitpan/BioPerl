@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id$
+## $Id: SearchIO.t,v 1.61.2.5 2003/09/15 16:19:00 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -20,7 +20,7 @@ BEGIN {
 	use lib 't';
     }
     use vars qw($NTESTS);
-    $NTESTS = 785;
+    $NTESTS = 792;
     $LASTXMLTEST = 54;
     $error = 0;
 
@@ -148,11 +148,14 @@ ok($result->get_statistic('lambda'), 0.267);
 ok($result->get_statistic('entropy') == 0.14);
 ok($result->get_statistic('dbletters'), 1358990);
 ok($result->get_statistic('dbentries'), 4289);
-ok($result->get_statistic('hsplength'), 47);
+ok($result->get_statistic('effective_hsplength'), 47);
 ok($result->get_statistic('effectivespace'), 894675611);
 ok($result->get_parameter('matrix'), 'BLOSUM62');
 ok($result->get_parameter('gapopen'), 11);
 ok($result->get_parameter('gapext'), 1);
+ok($result->get_statistic('S2'), '92 (40.0 bits)');
+ok($result->get_parameter('expect'), '1.0e-03');
+ok($result->get_statistic('num_extensions'), '82424');
 
 my @valid = ( [ 'gb|AAC73113.1|', 820, 'AAC73113', '0', 1567],
 	      [ 'gb|AAC76922.1|', 810, 'AAC76922', '1e-91', 332],
@@ -595,10 +598,10 @@ ok($result->get_statistic('kappa'), 0.711);
 ok($result->get_statistic('entropy'),1.31 );
 ok($result->get_statistic('T'), 0);
 ok($result->get_statistic('A'), 30);
-ok($result->get_statistic('X1'), 6);
-ok($result->get_statistic('X2'), 15);
-ok($result->get_statistic('S1'), 12);
-ok($result->get_statistic('S2'), 17);
+ok($result->get_statistic('X1'), "6 (11.9 bits)");
+ok($result->get_statistic('X2'), "15 (29.7 bits)");
+ok($result->get_statistic('S1'), "12 (24.3 bits)");
+ok($result->get_statistic('S2'), "17 (34.2 bits)");
 
 ok($result->get_statistic('dbentries'), 1083200);
 
@@ -1048,7 +1051,7 @@ my @dcompare = ( ['Contig3700', 5631, 785, '0.0', 785, '0.0', 396, 639, 12,
 		  8723,9434, 1, 4083, 4794, -1],
                  ['Contig3997', 12734, 664, '0.0', 664, '0.0', 335, 401, 0, 
 		  1282, 1704, 1, 1546, 1968,-1 ],
-                 ['Contig634', 858, 486, 'e-136', 486, 'e-136', 245, 304, 3, 
+                 ['Contig634', 858, 486, '1e-136', 486, '1e-136', 245, 304, 3, 
 		  7620, 7941, 1, 1, 321, -1],
                  ['Contig1853', 2314, 339, '1e-91',339, '1e-91', 171, 204, 0,
 		  6406, 6620, 1, 1691, 1905, 1]
@@ -1081,3 +1084,17 @@ while( my $hit = $r->next_hit ) {
     ok($hsp->hit->end, shift @$d);
     ok($hsp->hit->strand, shift @$d);       
 }
+
+# Test Wes Barris's reported bug when parsing blastcl3 output which
+# has integer overflow
+
+$searchio = new Bio::SearchIO(-file => Bio::Root::IO->catfile
+			      (qw(t data hsinsulin.blastcl3.blastn)),
+			      -format => 'blast');
+$result = $searchio->next_result;
+ok($result->query_name, 'human');
+ok($result->database_letters(), '-24016349'); 
+# this is of course not the right length, but is the what blastcl3 
+# reports, the correct value is
+ok($result->get_statistic('dbletters'),'192913178');
+ok($result->get_statistic('dbentries'),'1867771');

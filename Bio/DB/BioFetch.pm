@@ -1,4 +1,4 @@
-# $Id$
+# $Id: BioFetch.pm,v 1.13.2.1 2003/06/25 13:44:18 heikki Exp $
 #
 # BioPerl module for Bio::DB::BioFetch
 #

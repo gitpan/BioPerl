@@ -1,5 +1,5 @@
 
-# $Id$
+# $Id: SeqIO.pm,v 1.59.2.4 2003/09/14 19:16:53 jason Exp $
 #
 # BioPerl module for Bio::SeqIO
 #
@@ -425,8 +425,8 @@ sub _initialize {
 			      OBJBUILDER)
 			   ], @args);
 
-    $locfact = Bio::Factory::FTLocationFactory->new() if ! $locfact;
-    $objbuilder = Bio::Seq::SeqBuilder->new() unless $objbuilder;
+    $locfact = Bio::Factory::FTLocationFactory->new(-verbose => $self->verbose) if ! $locfact;
+    $objbuilder = Bio::Seq::SeqBuilder->new(-verbose => $self->verbose) unless $objbuilder;
     $self->sequence_builder($objbuilder);
     $self->location_factory($locfact);
     # note that this should come last because it propagates the sequence
@@ -502,7 +502,8 @@ sub alphabet {
 	   # creating a dummy sequence object
 	   eval {
 	       require Bio::PrimarySeq;
-	       my $seq = Bio::PrimarySeq->new('-alphabet' => $value);
+	       my $seq = Bio::PrimarySeq->new('-verbose' => $self->verbose,
+					      '-alphabet' => $value);
 		
 	   };
 	   if ($@) {
@@ -603,7 +604,7 @@ sub _guess_format {
    my $class = shift;
    return unless $_ = shift;
    return 'fasta'   if /\.(fasta|fast|seq|fa|fsa|nt|aa)$/i;
-   return 'genbank' if /\.(gb|gbank|genbank)$/i;
+   return 'genbank' if /\.(gb|gbank|genbank|gbk|gbs)$/i;
    return 'scf'     if /\.scf$/i;
    return 'scf'     if /\.scf$/i;
    return 'abi'     if /\.abi$/i;

@@ -1,15 +1,16 @@
 # -*-Perl-*- mode (to keep my emacs happy)
-# $Id$
+# $Id: SeqIO.t,v 1.59.2.6 2003/09/17 07:58:18 sac Exp $
 
 use strict;
 use vars qw($DEBUG $TESTCOUNT);
+$DEBUG = $ENV{BIOPERLDEBUG} || 0;
 BEGIN {     
     eval { require Test; };
     if( $@ ) {
 	use lib 't';
     }
     use Test;
-    $TESTCOUNT = 146;
+    $TESTCOUNT = 184;
     plan tests => $TESTCOUNT;
 }
 
@@ -21,9 +22,10 @@ use Bio::Annotation::Collection;
 
 ok(1);
 
-my $verbosity = -1;   # Set to -1 for release version, so warnings aren't printed
+# Set to -1 for release version, so warnings aren't printed
+my $verbosity = $DEBUG ? 0 : -1; 
 
-my ($str, $seq,$ast,$temp,$mf,$ent,$out); # predeclare variables for strict
+my ($str, $seq,$ast,$temp,$mf,$ent,$out,$id_type); # predeclare variables for strict
 $str = Bio::SeqIO->new('-file' => Bio::Root::IO->catfile("t","data","test.fasta"), 
 		       '-format' => 'Fasta');
 ok $str;
@@ -34,7 +36,7 @@ print "Sequence 1 of 2 from fasta stream:\n", $seq->seq, "\n" if ( $DEBUG);
 
 ok($seq->id, 'roa1_drome');
 ok $seq->length, 358;
-
+ok($id_type = $str->preferred_id_type('accession.version'), 'accession.version');
 
 $str = Bio::SeqIO->new(-file=> Bio::Root::IO->catfile("t","data","test.raw"), '-format' => 'Raw');
 
@@ -260,7 +262,7 @@ my $lastfeature = pop @features;
 # this is a split location; the root doesn't have strand
 ok($lastfeature->strand, undef);
 my $location = $lastfeature->location;
-$location->verbose(-1); # silence the warning of undef seq_id()
+$location->verbose($verbosity); # silence the warning of undef seq_id()
 # see above; splitlocs roots do not have a strand really
 ok($location->strand, undef);
 ok($location->start, 83202);
@@ -392,7 +394,7 @@ my $primaryseq = new Bio::PrimarySeq( -seq => 'AGAGAGAGATA',
 				      -accession_number => 'myaccession');
 
 my $embl = new Bio::SeqIO(-format => 'embl', 
-			  -verbose => $verbosity -1,
+			  -verbose => $verbosity,
 			  -file => ">primaryseq.embl");
 
 ok($embl->write_seq($primaryseq));
@@ -435,3 +437,72 @@ my @accs = $seq->get_secondary_accessions();
 ok($accs[0], 'J01597');
 ok($accs[-1], 'X56742');
 
+# validate that what is written is what is read
+my $seqin = new Bio::SeqIO(-file => Bio::Root::IO->catfile
+			 (qw(t data BK000016-tpa.gbk)),
+			 -format => 'genbank');
+$seq = $seqin->next_seq;
+ok(defined $seq);
+ok(defined $seq->seq);
+ok($seq->accession_number, 'BK000016');
+ok($seq->alphabet, 'dna');
+ok($seq->display_id, 'BK000016');
+ok($seq->length, 1162);
+ok($seq->division, 'ROD');
+ok($seq->get_dates, 1);
+ok(join("; ", @{$seq->keywords}), 'Third Party Annotation; TPA');
+ok($seq->desc, 'TPA: Mus musculus pantothenate kinase 4 mRNA, partial cds.');
+ok($seq->seq_version, 1);
+ok($seq->feature_count, 2);
+my $spec_obj = $seq->species;
+ok ($spec_obj->common_name, 'Mus musculus (house mouse)');
+ok ($spec_obj->species, 'musculus');
+ok ($spec_obj->genus, 'Mus');
+ok ($spec_obj->binomial, 'Mus musculus');
+my $ac = $seq->annotation;
+my $reference =  ($ac->get_Annotations('reference') )[0];
+ok ($reference->pubmed, '11479594');
+ok ($reference->medline, '21372465');
+
+my $testfile = "testtpa.gbk";
+$out = new Bio::SeqIO(-file => ">$testfile",
+		      -format => 'genbank');
+$out->write_seq($seq);
+$out->close();
+
+$str = new Bio::SeqIO(-format =>'genbank', 
+		      -file => $testfile);
+$seq = $str->next_seq;
+ok(defined $seq);
+ok(defined $seq->seq);
+ok($seq->accession_number, 'BK000016');
+ok($seq->alphabet, 'dna');
+ok($seq->display_id, 'BK000016');
+ok($seq->length, 1162);
+ok($seq->division, 'ROD');
+ok($seq->get_dates, 1);
+ok(join("; ", @{$seq->keywords}), 'Third Party Annotation; TPA');
+ok($seq->desc, 'TPA: Mus musculus pantothenate kinase 4 mRNA, partial cds.');
+ok($seq->seq_version, 1);
+ok($seq->feature_count, 2);
+$spec_obj = $seq->species;
+ok ($spec_obj->common_name, 'Mus musculus (house mouse)');
+ok ($spec_obj->species, 'musculus');
+ok ($spec_obj->genus, 'Mus');
+ok ($spec_obj->binomial, 'Mus musculus');
+$ac = $seq->annotation;
+$reference =  ($ac->get_Annotations('reference') )[0];
+ok ($reference->pubmed, '11479594');
+ok ($reference->medline, '21372465');
+
+unlink($testfile);
+
+# bug #1487
+$str = new Bio::SeqIO(-verbose => $verbosity,
+		      -file => Bio::Root::IO->catfile
+		      (qw(t data D12555.gbk)));
+eval { 
+    $seq = $str->next_seq;    
+};
+
+ok(! $@ );

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: blast.pm,v 1.42.2.14 2003/09/15 16:19:01 jason Exp $
 #
 # BioPerl module for Bio::SearchIO::blast
 #
@@ -147,7 +147,7 @@ BEGIN {
 
 	  'Statistics_db-len'    => {'RESULT-statistics' => 'dbentries'},
 	  'Statistics_db-let'    => { 'RESULT-statistics' => 'dbletters'},
-	  'Statistics_hsp-len'   => { 'RESULT-statistics' => 'hsplength'},
+	  'Statistics_hsp-len'   => { 'RESULT-statistics' => 'effective_hsplength'},
 	  'Statistics_query-len'   => { 'RESULT-statistics' => 'querylength'},
 	  'Statistics_eff-space' => { 'RESULT-statistics' => 'effectivespace'},
 	  'Statistics_eff-spaceused' => { 'RESULT-statistics' => 'effectivespaceused'},
@@ -157,14 +157,20 @@ BEGIN {
 	  'Statistics_entropy'   => { 'RESULT-statistics' => 'entropy'},
 	  'Statistics_framewindow'=> { 'RESULT-statistics' => 'frameshiftwindow'},
 	  'Statistics_decay'=> { 'RESULT-statistics' => 'decayconst'},
-
+	  
 	  'Statistics_T'=> { 'RESULT-statistics' => 'T'},
 	  'Statistics_A'=> { 'RESULT-statistics' => 'A'},
 	  'Statistics_X1'=> { 'RESULT-statistics' => 'X1'},
 	  'Statistics_X2'=> { 'RESULT-statistics' => 'X2'},
 	  'Statistics_S1'=> { 'RESULT-statistics' => 'S1'},
 	  'Statistics_S2'=> { 'RESULT-statistics' => 'S2'},
-
+	  'Statistics_hit_to_db' => { 'RESULT-statistics' => 'Hits_to_DB'},
+	  'Statistics_num_extensions' => { 'RESULT-statistics' => 'num_extensions'},
+	  'Statistics_num_extensions' => { 'RESULT-statistics' => 'num_extensions'},
+	  'Statistics_num_suc_extensions' => { 'RESULT-statistics' => 'num_successful_extensions'},
+	  'Statistics_seqs_better_than_cutoff' => { 'RESULT-statistics' => 'seqs_better_than_cutoff'},
+	  'Statistics_posted_date' => { 'RESULT-statistics' => 'posted_date'},
+	  
 	  # WU-BLAST stats
 	  'Statistics_DFA_states'=> { 'RESULT-statistics' => 'num_dfa_states'},
 	  'Statistics_DFA_size'=> { 'RESULT-statistics' => 'dfa_size'},
@@ -264,20 +270,24 @@ sub next_result{
 	   }
 	   $seenquery = $q;
 	   $_ = $self->_readline;
-	   while( defined ($_) && $_ !~ /^\s+$/ ) {	
-	       chomp;
-	       if( /\(([\d,]+)\s+letters.*\)/ ) {		   
-		   $size = $1;
-		   $size =~ s/,//g;
+	   while( defined ($_) ) {
+               if( /^Database:/ ) {
+		   $self->_pushback($_);
 		   last;
-	       } else { 
-		   $q .= " $_";
-		   $q =~ s/ +/ /g;
-		   $q =~ s/^ | $//g;
 	       }
+               chomp;               
+               if( /\((\-?[\d,]+)\s+letters.*\)/ ) {
+                   $size = $1;
+                   $size =~ s/,//g;
+                   last;
+               } else { 
+                   $q .= " $_";
+                   $q =~ s/ +/ /g;
+                   $q =~ s/^ | $//g;
+               }
 
-	       $_ = $self->_readline;
-	   }
+               $_ = $self->_readline;
+           }
 	   chomp($q);
 	   my ($nm,$desc) = split(/\s+/,$q,2);	   
 	   $self->element({ 'Name' => 'BlastOutput_query-def',
@@ -296,13 +306,19 @@ sub next_result{
 	   }
 	   
        } elsif( /Sequences producing significant alignments:/ ) {
-	   # skip the next whitespace line
-	   $_ = $self->_readline();
-	   while( defined ($_ = $self->_readline() ) && 
-		  ! /^\s+$/ ) {
-	       if( /(\d+)\s+([\d\.\-eE]+)\s*$/) {
-		   push @hit_signifs, [ $2,$1 ];
-	       }
+	 descline:
+           while( defined ($_ = $self->_readline() )) {
+               if( /^>/ ) {
+                   $self->_pushback($_);
+                   last descline;
+               } elsif( /(\d+)\s+([\d\.\-eE]+)(\s+\d+)?\s*$/) {
+		   # the last match is for gapped BLAST output
+		   # which will report the number of HSPs for the Hit
+                   my ($score, $evalue) = ($1, $2);
+                   # Some data clean-up so e-value will appear numeric to perl
+                   $evalue =~ s/^e/1e/i;
+		   push @hit_signifs, [ $evalue, $score ];
+               }
 	   }
        } elsif( /Sequences producing High-scoring Segment Pairs:/ ) {
 	   # skip the next line
@@ -318,7 +334,7 @@ sub next_result{
 	   my $db = $1;
 
 	   while( defined($_ = $self->_readline) ) {
-	       if( /^\s+([\d\,]+)\s+sequences\;\s+([\d,]+)\s+total\s+letters/){
+	       if( /^\s+(\-?[\d\,]+)\s+sequences\;\s+(\-?[\d,]+)\s+total\s+letters/){
 		   my ($s,$l) = ($1,$2);
 		   $s =~ s/,//g;
 		   $l =~ s/,//g;
@@ -398,42 +414,47 @@ sub next_result{
 	   next;
        } elsif( ($self->in_element('hit') || 
 		 $self->in_element('hsp')) && # wublast
-	       m/Score\s*=\s*(\S+)\s*       # Bit score
-		\(([\d\.]+)\s*bits\),       # Raw score
-		\s*Expect\s*=\s*([^,\s]+),  # E-value
-		\s*(Sum)?\s*                # SUM
-		P(\(\d+\))?\s*=\s*([^,\s]+) # P-value
+	       m/Score\s*=\s*(\S+)\s*         # Bit score
+		\(([\d\.]+)\s*bits\),         # Raw score
+		\s*Expect\s*=\s*([^,\s]+),    # E-value
+		\s*(?:Sum)?\s*                # SUM
+		P(?:\(\d+\))?\s*=\s*([^,\s]+) # P-value
 		/ox 
-		  ) {
+		  ) {	   
+	   my ($score, $bits,$evalue,$pvalue) = ($1,$2,$3,$4);
+	   $evalue =~ s/^e/1e/i;
+	   $pvalue =~ s/^e/1e/i;
 	   $self->in_element('hsp') && $self->end_element({'Name' => 'Hsp'});
 	   $self->start_element({'Name' => 'Hsp'});
        	   $self->element( { 'Name' => 'Hsp_score',
-			     'Data' => $1});
+			     'Data' => $score});
 	   $self->element( { 'Name' => 'Hsp_bit-score',
-			     'Data' => $2});
+			     'Data' => $bits});
 	   $self->element( { 'Name' => 'Hsp_evalue',			     
-			     'Data' => $3});
+			     'Data' => $evalue});
 	   $self->element( {'Name'  => 'Hsp_pvalue',
-			    'Data'  =>$6});       
+			    'Data'  => $pvalue});       
        } elsif( ($self->in_element('hit') || 
 		 $self->in_element('hsp')) && # ncbi blast
 		m/Score\s*=\s*(\S+)\s*bits\s* # Bit score
-		(\((\d+)\))?,                 # Missing for BLAT pseudo-BLAST fmt 
-		\s*Expect(\(\d+\))?\s*=\s*(\S+) # E-value
+		(?:\((\d+)\))?,             # Missing for BLAT pseudo-BLAST fmt
+		\s*Expect(?:\(\d+\))?\s*=\s*(\S+) # E-value
 		/ox) {
+	   my ($bits,$score,$evalue) = ($1,$2,$3);
+	   $evalue =~ s/^e/1e/i;
 	   $self->in_element('hsp') && $self->end_element({ 'Name' => 'Hsp'});
 	   
 	   $self->start_element({'Name' => 'Hsp'});
 	   $self->element( { 'Name' => 'Hsp_score',
-			     'Data' => $3});
+			     'Data' => $score});
 	   $self->element( { 'Name' => 'Hsp_bit-score',
-			     'Data' => $1});
+			     'Data' => $bits});
 	   $self->element( { 'Name' => 'Hsp_evalue',
-			     'Data' => $5});
+			     'Data' => $evalue});
        } elsif( $self->in_element('hsp') &&
 		m/Identities\s*=\s*(\d+)\s*\/\s*(\d+)\s*[\d\%\(\)]+\s*
-		(,\s*Positives\s*=\s*(\d+)\/(\d+)\s*[\d\%\(\)]+\s*)? # pos only valid for Protein alignments
-		(\,\s*Gaps\s*=\s*(\d+)\/(\d+))? # Gaps
+		(?:,\s*Positives\s*=\s*(\d+)\/(\d+)\s*[\d\%\(\)]+\s*)? # pos only valid for Protein alignments
+		(?:\,\s*Gaps\s*=\s*(\d+)\/(\d+))? # Gaps
 		/oxi 
 		) {
 	   $self->element( { 'Name' => 'Hsp_identity',
@@ -442,14 +463,14 @@ sub next_result{
 			    'Data' => $2});
 	   if( defined $3 ) {
 	       $self->element( { 'Name' => 'Hsp_positive',
-				 'Data' => $4});
+				 'Data' => $3});
 	   } else { 
 	       $self->element( { 'Name' => 'Hsp_positive',
 				 'Data' => $1});
 	   }
 	   if( defined $6 ) { 	       
 	       $self->element( { 'Name' => 'Hsp_gaps',
-				 'Data' => $7});
+				 'Data' => $5});
 	   }
 	   
 	   $self->{'_Query'} = { 'begin' => 0, 'end' => 0};
@@ -481,11 +502,15 @@ sub next_result{
 	   $self->element({'Name' => 'Hsp_hit-frame',
 			   'Data' => $hitframe});
        } elsif(  /^Parameters:/ || /^\s+Database:\s+?/ || /^\s+Subset/ ||
-		 ( $self->in_element('hsp') && (/WARNING/ || /NOTE/ )) ) {
+		 /^\s+Subset/ || /^\s*Lambda/ || /^\s*Histogram/ ||
+		 ( $self->in_element('hsp') &&  /WARNING|NOTE/ ) ) {
 	   $self->in_element('hsp') && $self->end_element({'Name' => 'Hsp'});
 	   $self->in_element('hit') && $self->end_element({'Name' => 'Hit'});
 	   next if /^\s+Subset/;
-	   my $blast = ( /Parameters\:/ ) ? 'wublast' : 'ncbi'; 
+	   my $blast = ( /^(\s+Database\:)|(\s*Lambda)/ ) ? 'ncbi' : 'wublast';
+	   if( /^\s*Histogram/ ) {
+	       $blast = 'btk';
+	   }
 	   my $last = '';
 	   # default is that gaps are allowed
 	   $self->element({'Name' => 'Parameters_allowgaps',
@@ -509,7 +534,7 @@ sub next_result{
 		   $self->end_element({ 'Name' => 'BlastOutput'});
 		   return $self->end_document();
 	       }
-
+	       
 	       # here is where difference between wublast and ncbiblast
 	       # is better handled by different logic
 	       if( /Number of Sequences:\s+([\d\,]+)/i ||
@@ -518,11 +543,13 @@ sub next_result{
 		   $c =~ s/\,//g;
 		   $self->element({'Name' => 'Statistics_db-len',
 				   'Data' => $c});
-	       } elsif ( /letters in database:\s+([\d,]+)/i) {	   
+	       } elsif ( /letters in database:\s+(\-?[\d,]+)/i) {	   
 		   my $s = $1;
 		   $s =~ s/,//g;
 		   $self->element({'Name' => 'Statistics_db-let',
 				   'Data' => $s});
+	       } elsif( $blast eq 'btk' ) { 
+		   next;
 	       } elsif( $blast eq 'wublast' ) {
 		   if( /E=(\S+)/ ) {
 		       $self->element({'Name' => 'Parameters_expect',
@@ -544,6 +571,11 @@ sub next_result{
 				       'Data' => $kappa});
 		       $self->element({'Name' => 'Statistics_entropy',
 				       'Data' => $entropy});
+		   } elsif( m/^\s+Q=(\d+),R=(\d+)\s+/ox ) {
+		       $self->element({'Name' => 'Parameters_gap-open',
+				       'Data' => $1});
+		       $self->element({'Name' => 'Parameters_gap-extend',
+				       'Data' => $2});
 		   } elsif( /(\S+\s+\S+)\s+DFA:\s+(\S+)\s+\((.+)\)/ ) {
 		       if( $1 eq 'states in') { 
 			   $self->element({'Name' => 'Statistics_DFA_states',
@@ -558,25 +590,28 @@ sub next_result{
 		   } elsif( /processors\s+used:\s+(\d+)/ ) {
 		          $self->element({'Name' => 'Statistics_noprocessors',
 					   'Data' => $1});
-		   } elsif( /^\s+(\S+)\s+cpu\s+time:\s+(\S+\s+\S+\s+\S+)\s+Elapsed:\s+(\S+)/ ) {
+		   } elsif( m/^\s+(\S+)\s+cpu\s+time:\s+(\S+\s+\S+\s+\S+)\s+
+			  Elapsed:\s+(\S+)/ox ) {
 		       my $cputype = lc($1);
 		       $self->element({'Name' => "Statistics_$cputype\_cputime",
 				       'Data' => $2});
 		       $self->element({'Name' => "Statistics_$cputype\_actualtime",
 				       'Data' => $3});
 		   } elsif( /^\s+Start:/ ) {
-		       my ($junk,$start,$stime,$end,$etime) = split(/\s+(Start|End)\:\s+/,$_);
+		       my ($junk,$start,$stime,$end,$etime) = 
+			   split(/\s+(Start|End)\:\s+/,$_);
 		       chomp($stime);
 		       $self->element({'Name' => 'Statistics_starttime',
 				       'Data' => $stime});
 		       chomp($etime);
 		       $self->element({'Name' => 'Statistics_endtime',
 				       'Data' => $etime});
+		   } elsif( !/^\s+$/ ) {
+		       $self->debug( "unmatched stat $_");
 		   }
 		   
 	       } elsif ( $blast eq 'ncbi' ) {
-
-		   if( /^Matrix:\s+(\S+)/i ) {
+		   if( m/^Matrix:\s+(\S+)/oxi ) {
 		       $self->element({'Name' => 'Parameters_matrix',
 				       'Data' => $1});		       
 		   } elsif( /Lambda/ ) {
@@ -589,13 +624,14 @@ sub next_result{
 				       'Data' => $kappa});
 		       $self->element({'Name' => 'Statistics_entropy',
 				       'Data' => $entropy});
-		   } elsif( /effective\s+search\s+space\s+used:\s+(\d+)/ ) {
+		   } elsif( m/effective\s+search\s+space\s+used:\s+(\d+)/ox ) {
 		       $self->element({'Name' => 'Statistics_eff-spaceused',
 				       'Data' => $1});		       
-		   } elsif( /effective\s+search\s+space:\s+(\d+)/ ) {
+		   } elsif( m/effective\s+search\s+space:\s+(\d+)/ox ) {
 		       $self->element({'Name' => 'Statistics_eff-space',
 				       'Data' => $1});
-		   } elsif( /Gap\s+Penalties:\s+Existence:\s+(\d+)\,\s+Extension:\s+(\d+)/) {
+		   } elsif( m/Gap\s+Penalties:\s+Existence:\s+(\d+)\,
+			    \s+Extension:\s+(\d+)/ox) {		       
 		       $self->element({'Name' => 'Parameters_gap-open',
 				       'Data' => $1});
 		       $self->element({'Name' => 'Parameters_gap-extend',
@@ -606,22 +642,49 @@ sub next_result{
 		   } elsif( /effective\s+length\s+of\s+query:\s+([\d\,]+)/ ) {
 		       my $c = $1;
 		       $c =~ s/\,//g;
-		        $self->element({'Name' => 'Statistics_query-len',
-					'Data' => $c});
-		   } elsif( /effective\s+length\s+of\s+database:\s+([\d\,]+)/){
+		       $self->element({'Name' => 'Statistics_query-len',
+				       'Data' => $c});
+		   } elsif( m/effective\s+length\s+of\s+database:\s+
+			    ([\d\,]+)/ox){
 		       my $c = $1;
 		       $c =~ s/\,//g;
 		       $self->element({'Name' => 'Statistics_eff-dblen',
 				       'Data' => $c});
-		   } elsif( /^(T|A|X1|X2|S1|S2):\s+(\d+)/ ) {
+		   } elsif( m/^(T|A|X1|X2|S1|S2):\s+(.+)/ox ) {
+		       my $v = $2;
+		       chomp($v);
 		       $self->element({'Name' => "Statistics_$1",
-				       'Data' => $2})
-		       } elsif( /frameshift\s+window\,\s+decay\s+const:\s+(\d+)\,\s+([\.\d]+)/ ) {
-			   $self->element({'Name'=> 'Statistics_framewindow',
-					   'Data' => $1});
-			   $self->element({'Name'=> 'Statistics_decay',
-					   'Data' => $2});
-		       }
+                                       'Data' => $v});
+		   } elsif( m/frameshift\s+window\,\s+decay\s+const:\s+
+			    (\d+)\,\s+([\.\d]+)/ox ) {
+		       $self->element({'Name'=> 'Statistics_framewindow',
+				       'Data' => $1});
+		       $self->element({'Name'=> 'Statistics_decay',
+				       'Data' => $2});
+		   } elsif( m/^Number\s+of\s+Hits\s+to\s+DB:\s+(\S+)/ox ) {
+		       $self->element({'Name' => 'Statistics_hit_to_db',
+				       'Data' => $1});
+		   } elsif( m/^Number\s+of\s+extensions:\s+(\S+)/ox ) {
+		       $self->element({'Name' => 'Statistics_num_extensions',
+				       'Data' => $1});
+		   } elsif( m/^Number\s+of\s+successful\s+extensions:\s+
+			    (\S+)/ox ) {
+		       $self->element({'Name' => 'Statistics_num_suc_extensions',
+				       'Data' => $1});
+		   } elsif( m/^Number\s+of\s+sequences\s+better\s+than\s+
+			    (\S+):\s+(\d+)/ox ) {
+		       $self->element({'Name' => 'Parameters_expect',
+				       'Data' => $1});
+		       $self->element({'Name' => 'Statistics_seqs_better_than_cutoff',
+				       'Data' => $2});
+		   } elsif( /^\s+Posted\s+date:\s+(.+)/ ) {
+		       my $d = $1;
+		       chomp($d);
+		       $self->element({'Name' => 'Statistics_posted_date',
+				       'Data' => $d});
+		   } elsif( ! /^\s+$/ ) { 
+		       $self->debug( "unmatched stat $_");
+		   }
 	       }
 	       $last = $_;
 	   }
@@ -814,12 +877,12 @@ sub element{
 
 sub characters{
    my ($self,$data) = @_;   
+   return unless ( defined $data->{'Data'} && $data->{'Data'} !~ /^\s+$/ );   
 
    if( $self->in_element('hsp') && 
        $data->{'Name'} =~ /Hsp\_(qseq|hseq|midline)/ ) {
        $self->{'_last_hspdata'}->{$data->{'Name'}} .= $data->{'Data'};
-   }  
-   return unless ( defined $data->{'Data'} && $data->{'Data'} !~ /^\s+$/ );
+   }   
    $self->{'_last_data'} = $data->{'Data'}; 
 }
 

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Chain.pm,v 1.1 2002/10/24 17:35:30 heikki Exp $
 #
 # bioperl module for Bio::Coordinate::Chain
 #

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: WebQuery.pm,v 1.5 2002/12/05 13:46:32 heikki Exp $
 #
 # BioPerl module for Bio::DB::WebQuery.pm
 #

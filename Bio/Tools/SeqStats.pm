@@ -1,4 +1,4 @@
-# $Id$
+# $Id: SeqStats.pm,v 1.16.2.1 2003/02/28 13:17:06 heikki Exp $
 #
 # BioPerl module for Bio::Tools::SeqStats
 #

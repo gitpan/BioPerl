@@ -1,4 +1,4 @@
-# $Id$
+# $Id: AnalysisI.pm,v 1.2.2.1 2003/07/04 02:40:29 shawnh Exp $
 #
 # BioPerl module for Bio::Factory::AnalysisI
 #
@@ -93,7 +93,7 @@ use Bio::Root::RootI;
 @ISA = qw(Bio::Root::RootI);
 
 BEGIN {
-    $Revision = q$Id$;
+    $Revision = q$Id: AnalysisI.pm,v 1.2.2.1 2003/07/04 02:40:29 shawnh Exp $;
 }
 
 

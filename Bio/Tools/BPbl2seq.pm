@@ -1,4 +1,4 @@
-# $Id$
+# $Id: BPbl2seq.pm,v 1.21.2.2 2003/06/03 14:38:18 jason Exp $
 #
 # Bioperl module Bio::Tools::BPbl2seq
 #	based closely on the Bio::Tools::BPlite modules

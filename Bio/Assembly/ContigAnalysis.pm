@@ -1,4 +1,4 @@
-# $Id$
+# $Id: ContigAnalysis.pm,v 1.2 2002/12/01 00:03:28 jason Exp $
 #
 # BioPerl module for Bio::Assembly::ContigAnalysis
 #

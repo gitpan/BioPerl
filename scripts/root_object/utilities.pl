@@ -4,7 +4,7 @@
 # PROGRAM  : utilities.pl
 # PURPOSE  : A minimal demo script for the Bio::Root::Utilities.pm module.
 # AUTHOR   : Steve Chervitz (sac@bioperl.org)
-# REVISION : $Id$
+# REVISION : $Id: utilities.pl,v 1.1 2002/08/27 18:17:17 bosborne Exp $
 #
 # Installation: 
 #   Edit the use lib line to point at your Bioperl lib

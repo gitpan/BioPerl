@@ -1,4 +1,4 @@
-# $Id$
+# $Id: CytoMarker.pm,v 1.3 2002/10/22 07:45:15 lapp Exp $
 #
 # BioPerl module for Bio::Map::CytoMarker
 #

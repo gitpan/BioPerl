@@ -1,4 +1,4 @@
-# $Id$
+# $Id: TypeManager.pm,v 1.4 2002/10/22 07:38:26 lapp Exp $
 #
 # BioPerl module for Bio::Annotation::TypeManager
 #

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: ResultFactory.pm,v 1.3 2002/10/22 07:45:18 lapp Exp $
 #
 # BioPerl module for Bio::Search::Result::ResultFactory
 #

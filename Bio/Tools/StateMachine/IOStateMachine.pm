@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id$
+# $Id: IOStateMachine.pm,v 1.6 2002/10/22 07:38:49 lapp Exp $
 #
 # BioPerl module Bio::Tools::StateMachine::IOStateMachine
 #

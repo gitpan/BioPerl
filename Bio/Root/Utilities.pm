@@ -3,7 +3,7 @@
 # PURPOSE : Provides general-purpose utilities of potential interest to any Perl script.
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : Feb 1996
-# REVISION: $Id$
+# REVISION: $Id: Utilities.pm,v 1.21 2002/10/22 07:38:37 lapp Exp $
 # STATUS  : Alpha
 #
 # This module manages file compression and uncompression using gzip or

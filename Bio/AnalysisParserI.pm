@@ -1,5 +1,5 @@
 #---------------------------------------------------------------
-# $Id$
+# $Id: AnalysisParserI.pm,v 1.7 2002/12/01 00:05:19 jason Exp $
 #
 # BioPerl module Bio::AnalysisParserI
 #

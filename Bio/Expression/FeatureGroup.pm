@@ -1,5 +1,5 @@
-# $Id$
-# BioPerl module for Bio::Expression::FeatureSet
+# $Id: FeatureGroup.pm,v 1.1.2.2 2003/09/17 09:19:21 allenday Exp $
+# BioPerl module for Bio::Expression::FeatureGroup
 #
 # Copyright Allen Day <allenday@ucla.edu>, Stanley Nelson <snelson@ucla.edu>
 # Human Genetics, UCLA Medical School, University of California, Los Angeles
@@ -8,7 +8,7 @@
 
 =head1 NAME
 
-Bio::Expression::FeatureSet - a set of DNA/RNA features.  ISA
+Bio::Expression::FeatureGroup - a set of DNA/RNA features.  ISA
 Bio::Expression::FeatureI
 
 =head1 SYNOPSIS
@@ -51,7 +51,7 @@ methods. Internal methods are usually preceded with a _
 =cut
 
 # Let the code begin...
-package Bio::Expression::FeatureSet;
+package Bio::Expression::FeatureGroup;
 
 use strict;
 
@@ -61,12 +61,12 @@ use vars qw($DEBUG);
 =head2 new
 
  Title   : new
- Usage   : $featureset = Bio::Expression::FeatureSet->new(%args);
- Function: create a new featureset object
- Returns : a Bio::Expression::FeatureSet object
+ Usage   : $featuregroup = Bio::Expression::FeatureGroup->new(%args);
+ Function: create a new featuregroup object
+ Returns : a Bio::Expression::FeatureGroup object
  Args    : an optional hash of parameters to be used in initialization:
-           -id    --  the featureset ID
-           -type  --  the featureset type
+           -id    --  the featuregroup ID
+           -type  --  the featuregroup type
 
 =cut
 
@@ -80,8 +80,8 @@ sub new {
 =head2 _initialize
 
  Title   : _initialize
- Usage   : $featureset->_initialize(@args);
- Function: initialize the featureset object
+ Usage   : $featuregroup->_initialize(@args);
+ Function: initialize the featuregroup object
  Returns : nothing
  Args    : @args
 
@@ -101,12 +101,12 @@ sub _initialize{
 =head2 type
 
  Title   : type
- Usage   : $featureset->type($optional_arg);
- Function: get/set the type of the featureset
+ Usage   : $featuregroup->type($optional_arg);
+ Function: get/set the type of the featuregroup
  Comments: this is probably going to be a string like
            "quality control", "mismatch blah blah", etc.
- Returns : the featureset type
- Args    : a new value for the featureset type
+ Returns : the featuregroup type
+ Args    : a new value for the featuregroup type
 
 =cut
 
@@ -119,10 +119,10 @@ sub type {
 =head2 id
 
  Title   : id
- Usage   : $featureset->id($optional_arg);
- Function: get/set the id of the featureset
- Returns : the featureset id
- Args    : a new value for the featureset id
+ Usage   : $featuregroup->id($optional_arg);
+ Function: get/set the id of the featuregroup
+ Returns : the featuregroup id
+ Args    : a new value for the featuregroup id
 
 =cut
 
@@ -136,10 +136,10 @@ sub id {
 =head2 standard_deviation
 
  Title   : standard_deviation
- Usage   : $featureset->standard_deviation($optional_arg);
- Function: get/set the standard deviation of the featureset value
- Returns : the featureset standard deviation
- Args    : a new value for the featureset standard deviation
+ Usage   : $featuregroup->standard_deviation($optional_arg);
+ Function: get/set the standard deviation of the featuregroup value
+ Returns : the featuregroup standard deviation
+ Args    : a new value for the featuregroup standard deviation
  Notes   : this method does no calculation, it merely holds a value
 
 =cut
@@ -153,10 +153,10 @@ sub standard_deviation {
 =head2 quantitation
 
  Title   : quantitation
- Usage   : $featureset->quantitation($optional_arg);
- Function: get/set the quantitation of the featureset
- Returns : the featureset's quantitated value
- Args    : a new value for the featureset's quantitated value
+ Usage   : $featuregroup->quantitation($optional_arg);
+ Function: get/set the quantitation of the featuregroup
+ Returns : the featuregroup's quantitated value
+ Args    : a new value for the featuregroup's quantitated value
  Notes   : this method does no calculation, it merely holds a value
 
 =cut
@@ -170,10 +170,10 @@ sub quantitation {
 =head2 quantitation_units
 
  Title   : quantitation_units
- Usage   : $featureset->quantitation_units($optional_arg);
- Function: get/set the quantitation units of the featureset
- Returns : the featureset's quantitated value units
- Args    : a new value for the featureset's quantitated value units
+ Usage   : $featuregroup->quantitation_units($optional_arg);
+ Function: get/set the quantitation units of the featuregroup
+ Returns : the featuregroup's quantitated value units
+ Args    : a new value for the featuregroup's quantitated value units
 
 =cut
 
@@ -186,10 +186,10 @@ sub quantitation_units {
 =head2 presence
 
  Title   : presence
- Usage   : $featureset->presence($optional_arg);
- Function: get/set the presence call of the featureset
- Returns : the featureset's presence call
- Args    : a new value for the featureset's presence call
+ Usage   : $featuregroup->presence($optional_arg);
+ Function: get/set the presence call of the featuregroup
+ Returns : the featuregroup's presence call
+ Args    : a new value for the featuregroup's presence call
 
 =cut
 
@@ -202,8 +202,8 @@ sub presence {
 =head2 add_feature
 
  Title   : add_feature
- Usage   : $feature_copy = $featureset->add_feature($feature);
- Function: add a feature to the featureset
+ Usage   : $feature_copy = $featuregroup->add_feature($feature);
+ Function: add a feature to the featuregroup
  Returns : see this_feature()
  Args    : a Bio::Expression::FeatureI compliant object
 
@@ -222,9 +222,9 @@ sub add_feature {
 =head2 this_feature
 
  Title   : this_feature
- Usage   : $feature = $featureset->this_feature
- Function: access the last feature added to the featureset
- Returns : the last feature added to the featureset
+ Usage   : $feature = $featuregroup->this_feature
+ Function: access the last feature added to the featuregroup
+ Returns : the last feature added to the featuregroup
  Args    : none
 
 =cut
@@ -237,7 +237,7 @@ sub this_feature {
 =head2 each_feature
 
  Title   : each_feature
- Usage   : @features = $featureset->each_feature
+ Usage   : @features = $featuregroup->each_feature
  Function: returns a list of Bio::Expression::FeatureI compliant
            objects
  Returns : a list of objects
@@ -247,14 +247,15 @@ sub this_feature {
 
 sub each_feature {
   my $self = shift;
-  return @{$self->{features}};
+  return @{$self->{features}} if defined($self->{features});
+  return ();
 }
 
 =head2 each_feature_quantitation
 
  Title   : each_feature_quantitation
- Usage   : @featurequantitions = $featureset->each_feature_quantitation;
- Function: returns an list of quantitations of the features in the featureset
+ Usage   : @featurequantitions = $featuregroup->each_feature_quantitation;
+ Function: returns an list of quantitations of the features in the featuregroup
  Returns : a list of numeric values
  Args    : none
 
@@ -270,8 +271,8 @@ sub each_feature_quantitation {
 =head2 is_qc
 
  Title   : is_qc
- Usage   : $is_quality_control = $featureset->is_qc
- Function: get/set whether or not the featureset is used for quality control purposes
+ Usage   : $is_quality_control = $featuregroup->is_qc
+ Function: get/set whether or not the featuregroup is used for quality control purposes
  Returns : a boolean (equivalent)
  Args    : a new value
 

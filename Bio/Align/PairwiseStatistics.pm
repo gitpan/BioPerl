@@ -1,4 +1,4 @@
-# $Id$
+# $Id: PairwiseStatistics.pm,v 1.2 2002/10/22 07:45:10 lapp Exp $
 #
 # BioPerl module for Bio::Align::PairwiseStatistics
 #

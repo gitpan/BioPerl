@@ -1,6 +1,6 @@
 # POD documentation - main docs before the code
 #
-# $Id$
+# $Id: RandomAccessI.pm,v 1.12 2002/10/22 07:38:29 lapp Exp $
 #
 
 =head1 NAME

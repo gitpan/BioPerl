@@ -1,4 +1,4 @@
-# $Id$
+# $Id: OntologyTerm.pm,v 1.4.2.2 2003/04/04 15:53:20 lapp Exp $
 #
 # BioPerl module for Bio::Annotation::OntologyTerm
 #

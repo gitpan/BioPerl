@@ -1,4 +1,4 @@
-# $Id$
+# $Id: NCBIHelper.pm,v 1.24.2.2 2003/06/12 09:29:38 heikki Exp $
 #
 # BioPerl module for Bio::DB::NCBIHelper
 #

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: GeneStructure.pm,v 1.14 2002/10/22 07:38:41 lapp Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::GeneStructure
 #

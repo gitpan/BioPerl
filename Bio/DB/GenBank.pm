@@ -1,4 +1,4 @@
-# $Id$
+# $Id: GenBank.pm,v 1.47.2.2 2003/07/03 12:31:31 heikki Exp $
 #
 # BioPerl module for Bio::DB::GenBank
 #

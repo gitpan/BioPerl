@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Simple.pm,v 1.31 2002/10/22 07:38:35 lapp Exp $
 #
 # BioPerl module for Bio::Location::Simple
 # Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>

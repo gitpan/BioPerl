@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Utils.pm,v 1.1.2.1 2003/02/20 05:11:45 heikki Exp $
 #
 # BioPerl module for Bio::Coordinate::Utils
 #

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: psi.pm,v 1.6 2002/12/23 19:36:39 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::psi
 #

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w 
 
-#  $Id$
+#  $Id: make_mrna_protein.pl,v 1.4 2002/12/28 16:31:04 birney Exp $
 # Jason Stajich <jason@bioperl.org>
 #
 # Convert an input mRNA/cDNA sequence into protein

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: ztr.pm,v 1.8 2002/10/22 07:38:42 lapp Exp $
 # BioPerl module for Bio::SeqIO::ztr
 #
 # Cared for by Aaron Mackey <amackey@virginia.edu>

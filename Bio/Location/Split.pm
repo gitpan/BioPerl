@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Split.pm,v 1.35 2002/12/28 03:26:32 lapp Exp $
 #
 # BioPerl module for Bio::Location::SplitLocation
 # Cared for by Jason Stajich <jason@bioperl.org>
