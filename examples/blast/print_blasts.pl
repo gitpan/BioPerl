@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl  -w
+#!/usr/bin/perl  -w
 
 #---------------------------------------------------------------------------
 # PROGRAM : print_blasts.pl
@@ -6,7 +6,7 @@
 #           to be used as input by parse_stream.pl
 # AUTHOR  : Steve A. Chervitz
 # CREATED : 20 Apr 1998
-# REVISION: $Id: print_blasts.pl,v 1.1.1.1 1998/12/11 15:24:34 birney Exp $
+# REVISION: $Id: print_blasts.pl,v 1.1.1.1.14.1 2000/05/15 09:19:18 sac Exp $
 # USAGE   : print_blasts.pl -h
 #
 #           For modest numbers of reports, use the command line instead of 

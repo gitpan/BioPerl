@@ -4,7 +4,7 @@
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED : 28 Apr 1998
 # STATUS  : Alpha
-# REVISION: $Id: HTML.pm,v 1.3 2000/03/15 11:23:21 jgrg Exp $
+# REVISION: $Id: HTML.pm,v 1.3.2.2 2000/05/18 20:55:20 sac Exp $
 # 
 # For the latest version and documentation, visit the distribution site:
 #    http://bio.perl.org/Projects/Blast/
@@ -40,8 +40,8 @@ use vars qw( @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS
 %EXPORT_TAGS = ( std => [qw(&get_html_func  &strip_html)] );
 
 $ID = 'Bio::Tools::Blast::HTML';
-$VERSION  = 0.075; 
-$Revision = '$Id: HTML.pm,v 1.3 2000/03/15 11:23:21 jgrg Exp $';  #'
+$VERSION  = 0.076; 
+$Revision = '$Id: HTML.pm,v 1.3.2.2 2000/05/18 20:55:20 sac Exp $';  #'
 
 my $_set_markup = 0;
 my $_gi_link = '';
@@ -140,7 +140,7 @@ Steve A. Chervitz, sac@genome.stanford.edu
 
 =head1 VERSION
 
-Bio::Tools::Blast::HTML.pm, 0.075
+Bio::Tools::Blast::HTML.pm, 0.076
 
 =head1 COPYRIGHT
 
@@ -334,9 +334,9 @@ sub _set_markup_data {
     $Signif  = '[\de.-]{3,}';        # Regexp for a P-value or Expect value. 
     $Int     = ' *\d\d*';            # Regexp for an integer.
     $Descrip = ' +.* {2,}?';         # Regexp for a description line.
-    $Acc     = '[A-Z]\d{5,}';        # Regexp for GB/EMBL/DDJB/SP accession number
+    $Acc     = '[A-Z][\d.]+';        # Regexp for GB/EMBL/DDJB/SP accession number
     $Pir_acc = '[A-Z][A-Z0-9]{5,}';  # Regexp for PIR accession number
-    $Word    = '\w+';                # Regexp for a word
+    $Word    = '[\w_.]+';            # Regexp for a word. Include dot for version.
     
     $_set_markup = 1;
 }
@@ -452,6 +452,8 @@ sub _markup_report {
     s/ ! / /;
 
     ### NCBI-specific markups for HSP alignment section lines:
+
+    local($^W) = 0;
 
   # GenBank/EMBL, DDBJ hits (GenBank Format):
   s@^>(gb|emb|dbj)\|($Word)(\|$Word)?(.*)$@<a name=$2_A></a><b>$1:<a href="$DbUrl{'gb_n'}$2">$2$3</a></b>$4<br>(<a href="\#$2_H">Back|<a href="\#top">Top</a>)@o;

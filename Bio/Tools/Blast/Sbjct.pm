@@ -3,7 +3,7 @@
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu) 
 # CREATED : 7 October 1996
 # STATUS  : Alpha
-# REVISION: $Id: Sbjct.pm,v 1.8 2000/03/22 09:41:11 sac Exp $
+# REVISION: $Id: Sbjct.pm,v 1.8.2.2 2000/05/15 17:50:21 sac Exp $
 #
 # For the latest version and documentation, visit the distribution site:
 #    http://genome-www.stanford.edu/perlOOP/bioperl/blast/
@@ -26,8 +26,8 @@ use Bio::Root::Object  ();
 use strict;
 use vars qw($ID $VERSION %SUMMARY_OFFSET $Revision);
 $ID = 'Bio::Tools::Blast::Sbjct';
-$VERSION = 0.09;
-$Revision = '$Id: Sbjct.pm,v 1.8 2000/03/22 09:41:11 sac Exp $';  #'
+$VERSION = 0.091;
+$Revision = '$Id: Sbjct.pm,v 1.8.2.2 2000/05/15 17:50:21 sac Exp $';  #'
 
 my $_prog       = '';
 my $_signif_fmt = '';
@@ -218,7 +218,7 @@ See the L<FEEDBACK> section for where to send bug reports and comments.
 
 =head1 VERSION
 
-Bio::Tools::Blast::Sbjct.pm, 0.09
+Bio::Tools::Blast::Sbjct.pm, 0.091
 
 =head1 COPYRIGHT
 
@@ -546,7 +546,7 @@ sub _set_hsps {
 	       } else {
 		   push @hspList, $hspObj;
                    if (!defined($self->{'_expect'}) || $hspObj->expect() < $self->{'_expect'}) {
-                       $self->{_expect} = $hspObj->expect();
+                       $self->{'_expect'} = $hspObj->expect();
                    }
                    if (!defined($self->{'_p'}) || $hspObj->p() < $self->{'_p'}) {
                        $self->{'_p'} = $hspObj->p();
@@ -1448,7 +1448,7 @@ sub num_hsps {
  Usage     : $sbjct_object->length();
  Purpose   : Get the total length of the hit sequence.
  Example   : $len    = $sbjct_object->length();
- Returns   : Integer 
+ Returns   : Integer 
  Argument  : n/a
  Throws    : n/a
  Comments  : Developer note: when using the built-in length function within

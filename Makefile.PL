@@ -1,6 +1,3 @@
-
-# $Id: Makefile.PL,v 1.9.2.3 2000/04/01 19:50:18 dag Exp $
-
 ## --Makefile.PL for Bioperl core module distribution--##
 ## ----------------------------------------------------##
 
@@ -17,10 +14,10 @@
 
 
 %packages = (
-	     'HTTP::Request::Common' => '0.0/Part of the LWP package/remote http Blast jobs/Bio::Tools::Blast',
-	     'LWP::UserAgent'        => '0.0/Part of the LWP package/remote http Blast jobs/Bio::Tools::Blast',
-	     'Ace'                   => '0.0/Aceperl/access of ACeDB database/Bio::DB::Ace',
-	     'Bio::Ext::Align'       => '0.0/Bioperl compile extensions/Bioperl alignment generation/Bio::Tools::pSW'
+	     'HTTP::Request::Common'    => '0.0/Part of the LWP package/remote http Blast jobs/Bio::Tools::Blast',
+	     'LWP::UserAgent'           => '0.0/Part of the LWP package/remote http Blast jobs/Bio::Tools::Blast',
+	     'Ace'                      => '0.0/Aceperl/access of ACeDB database/Bio::DB::Ace',
+	     'IO::Scalar'               => '0.0/IO handle to read or write to a string/remote http Blast jobs/Bio::Tools::Blast::Run::Webblast',
 	     );
 
 sub check_package {
@@ -125,11 +122,11 @@ Warning:
    The installation of these external packages is very simple. You
    can read more about the external packages at
 
-   http://bio.perl.org/Download/Core/External.html
+   http://bio.perl.org/Core/external.shtml
 
    The ftp site
 
-   ftp://bio.perl.org/pub/External/Core/
+   ftp://bio.perl.org/pub/external/
 
    has all the external packages for easy retrieval, or you can use CPAN
 

@@ -4,7 +4,7 @@
 # AUTHOR  : Steve A. Chervitz (sac@genome.stanford.edu).
 # CREATED : 22 May 1998
 # STATUS  : STUB MODULE, MUST BE CUSTOMIZED FOR A LOCAL SITE.
-# REVISION: $Id: LocalBlast.pm,v 1.2 2000/03/15 11:23:21 jgrg Exp $
+# REVISION: $Id: LocalBlast.pm,v 1.2.2.1 2000/04/12 19:52:48 jason Exp $
 #
 # For the latest version and documentation, visit the distribution site:
 #    http://genome-www.stanford.edu/perlOOP/bioperl/blast/
@@ -26,7 +26,7 @@ use Bio::Root::Utilities qw(:obj);
 use Carp;
 
 use Exporter;
-use vars qw( @ISA @EXPORT @EXPORT_OK );
+use vars qw( @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 @ISA        = qw(Exporter);
 @EXPORT     = qw();
 @EXPORT_OK  = qw(&blast_local @Blast_dbp_local @Blast_dbn_local 

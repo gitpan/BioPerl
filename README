@@ -1,7 +1,7 @@
 This is the README file for the Bioperl central distribution,
 version 0.06
 
-# $Id: README,v 1.8.2.2 2000/04/01 18:00:23 dag Exp $
+# $Id: README,v 1.8.2.4 2000/04/17 18:31:18 dag Exp $
 
 
 o About Bioperl
@@ -16,6 +16,16 @@ o About Bioperl
  resource for modules, scripts, and web links for 
  developers of Perl-based software for life 
  science research. 
+
+ This is the main distribution. The following external modules
+ are needed for some aspects of bioperl
+
+ bioperl-ext - available from ftp://bio.perl.org/pub/DIST
+ LWP::       - available from CPAN
+ AcePerl     - available from http://stein.cshl.org/AcePerl
+
+ For more information on third party extentions and
+ dependencies please see http://bio.perl.org/Core/external.shtml
 
 
 o Contact info
@@ -120,6 +130,10 @@ location. See below for details.
 INSTALLING THE COMPILED EXTENSIONS
 
 You need the bioperl-ext package for the compiled extensions.
+
+ bioperl-ext - available from ftp://bio.perl.org/pub/DIST
+
+
 
 This Installation works out-of-the box for all platforms except *BSD
 and Solaris boxes. For notes on this, read on. For other platforms,

@@ -18,7 +18,7 @@ BEGIN {
 #                processing for working with Bio::Tools::Blast.pm objects.
 # AUTHOR       : Steve A. Chervitz (sac@genome.stanford.edu)
 # CREATED      : 15 May 1998
-# REVISION     : $Id: blast_config.pl,v 1.6 2000/03/22 10:20:11 sac Exp $
+# REVISION     : $Id: blast_config.pl,v 1.6.2.1 2000/05/15 09:22:35 sac Exp $
 # WEBSITE      : http://bio.perl.org/Projects/Blast/
 # INSTALLATION : Edit $INSTALL_PATH to point to the directory containing
 #                your Bioperl modules (the Bio/ directory).
@@ -79,6 +79,9 @@ BEGIN {
 # for other ways to work with hit objects.
 #
 # MODIFICATIONS:
+#
+#   For all further modifications, refer to the cvs log.
+#
 #   25 Apr 1999, sac:
 #      * Added additional parameters for running Blasts to synch up with
 #        the new version of Webblast.pm.
@@ -555,7 +558,13 @@ sub create_blast {
 	$blast_obj = new Bio::Tools::Blast (%blastParam);
     };
     if($@) {
-	croak "\n*** Trouble creating Blast object:\n$@\n\n";
+        if($@ =~ /temp\.html is incomplete:/) {
+            print "Blast analysis submitted to queue.\n".
+                "Use retrieve_blast.pl to fetch report.\n";
+        }
+        else {
+            croak "\n*** Trouble creating Blast object:\n$@\n\n";
+        }
     }
     return $blast_obj;
 }

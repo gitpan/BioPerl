@@ -60,7 +60,7 @@ To generate the ID line. If it is not there, it generates a sensible ID
 line using a number of tools.
 
  
-=end
+=back
 
 =head1 FEEDBACK
 
@@ -131,7 +131,7 @@ sub _initialize {
 				     @args,
 				     );
   if( $file && $fh ) {
-      $self->throw("Providing both a file and a filehandle for reading from - oly one please!");
+      $self->throw("Providing both a file and a filehandle for reading from - only one please!");
   }
 
   if( !$file && !$fh ) {
@@ -187,7 +187,12 @@ sub next_seq {
    $line =~ /^ID\s+\S+/ || $self->throw("EMBL stream with no ID. Not embl in my book");
    $line =~ /^ID\s+(\S+)\s+\S+\; (.+)\; (\S+)/;
    $name = $1;
-   
+   if(! $name) {
+       $name = "unknown id";
+   }
+    # this is important to have the id for display in e.g. FTHelper, otherwise
+    # you won't know which entry caused an error
+   $seq->display_id($name);
    $mol= $2;
    $mol =~ s/\;//;
    if ($mol) {
@@ -376,7 +381,7 @@ sub write_seq {
             $acc = $seq->accession;
         }
         if (defined $acc) {
-            $self->_print("AC   $acc\n",
+            $self->_print("AC   $acc;\n",
 			  "XX\n");
         }
     }
@@ -428,23 +433,22 @@ sub write_seq {
     # Organism lines
 
     if ($seq->can('species') && (my $spec = $seq->species)) {
-        my($species, $genus, @class) = $spec->classification();
+        my($species, @class) = $spec->classification();
+        my $genus = $class[0];
         my $OS = "$genus $species";
-	if (my $sub_species = $spec->sub_species) {
-            $OS .= " $sub_species";
+	if (my $ssp = $spec->sub_species) {
+            $OS .= " $ssp";
         }
         if (my $common = $spec->common_name) {
             $OS .= " ($common)";
         }
-        $self->_print( "OS   $OS\n");
-        my $OC = join('; ', reverse(@class));
-	$OC =~ s/\;\s+$//;
-	$OC .= ".";
+        $self->_print("OS   $OS\n");
+        my $OC = join('; ', reverse(@class)) .'.';
         $self->_write_line_EMBL_regex("OC   ","OC   ",$OC,'; |$',80);
 	if ($spec->organelle) {
 	    $self->_write_line_EMBL_regex("OG   ","OG   ",$spec->organelle,'; |$',80);
 	}
-        $self->_print( "XX\n");
+        $self->_print("XX\n");
     }
    
     # Reference lines
@@ -624,7 +628,7 @@ sub _print_EMBL_FTHelper {
 	       $self->_write_line_EMBL_regex("FT                   ","FT                   ","/$tag",'.|$',80);
 	   }
            elsif( $always_quote == 1 || $value !~ /^\d+$/ ) {
-                my $pat = $value =~ /\s/ ? '\s|$' : '.|$';
+              my $pat = $value =~ /\s/ ? '\s|$' : '.|$';
 	      $self->_write_line_EMBL_regex("FT                   ","FT                   ","/$tag=\"$value\"",$pat,80);
            }
            else {
@@ -714,16 +718,11 @@ sub _read_EMBL_Species {
     my( $sub_species, $species, $genus, $common, @class );
     while (defined( $_ ||= $self->_readline )) {
         
-        if (/^OS\s+(\S+)\s+(\S+)\s+(\S+)?(?:\s+\((.*)\))?/) {
+        if (/^OS\s+(\S+)(?:\s+([^\(]\S*))?(?:\s+([^\(]\S*))?(?:\s+\((.*)\))?/) {
             $genus   = $1;
-	    if ($2) {
-		$species = $2
-		}
-	    else {
-		$species = "sp.";
-	    }
+            $species = $2 || 'sp.';
 	    $sub_species = $3 if $3;
-            $common  = $4 if $4;
+            $common      = $4 if $4;
         }
         elsif (s/^OC\s+//) {
             push(@class, split /[\;\s\.]+/);
@@ -744,18 +743,18 @@ sub _read_EMBL_Species {
     return if $genus =~ /^(Unknown|None)$/i;
 
     # Bio::Species array needs array in Species -> Kingdom direction
-    if ($sub_species) {
-	push( @class, $genus, $species, $sub_species);
-    }
-    else {
-	push( @class, $genus, $species, "");
+    if ($class[$#class] eq $genus) {
+        push( @class, $species );
+    } else {
+        push( @class, $genus, $species );
     }
     @class = reverse @class;
     
     my $make = Bio::Species->new();
     $make->classification( @class );
-    $make->common_name( $common ) if $common;
-    $make->organelle($org) if $org;
+    $make->common_name( $common      ) if $common;
+    $make->sub_species( $sub_species ) if $sub_species;
+    $make->organelle  ( $org         ) if $org;
     return $make;
 }
 
@@ -831,108 +830,96 @@ sub _filehandle{
 =cut
 
 sub _read_FTHelper_EMBL {
-   my ($self,$buffer) = @_;
-   my ($key,$loc,$out);
-
-   $out = new Bio::SeqIO::FTHelper();
-   if ( $$buffer !~ /^FT\s+(\S+)/) {
-       $out->throw("Weird location line in EMBL feature table: '$_'");
-   }
-   if( $$buffer =~ /^FT\s+(\S+)\s+(\S+)/ ) {
-       $key = $1;
-       $loc = $2;
-   }
-
-   # Read the rest of the location
-   while( defined ($_ = $self->_readline) ) {
-       # Exit loop on first qualifier - line is left in $_
-       last if /^XX/; # sometimes a trailing XX comment left in!
-       last if /^FT\s+\//;
-       last if /^FT\s+(\S+)\s+(\S+)/;
-       
-       # Get location line
-       /^FT\s+(\S+)/ or $out->throw("Weird location line in EMBL feature table: '$_'");
-       $loc .= $1;
-   }
-
-   $loc =~ s/<//;
-   $loc =~ s/>//;
-   $out->key($key);
-   $out->loc($loc);
-
-   # Now read in other fields
-   # Loop reads $_ when defined (i.e. only in first loop), then _readline, until end of file
-   while( defined($_ ||= $self->_readline) ) {
-      
-        # Exit loop on non FT lines!
-        /^FT/  || last;
-
-        # Exit loop on new primary key
-        /^FT   [\w-]/ && last;
-
-        my( $key, $value );
-        
-        # Field on one line
-        if (/^FT\s+\/(\S+)=\"(.+)\"/) {
-	    $key = $1;
-	    $value = $2;
-	    $value =~ s/\"\"/\"/g;
-        }
-        
-        # Field on on multilines:
-        elsif (/^FT\s+\/(\S+)=\"(.*)/) {
-            $key = $1;
-            my @lines = ($2);
-
-            #    /FT\s+(.*)\"/ && do { $value .= $1; last; };
-            #    /FT\s+(.*?)\s*/ && do {$value .= $1; };
-
-            while ( defined ($_ = $self->_readline) ) {
-                 s/\"\"/__DOUBLE_QUOTE_STRING__/g;
-
-                 if (/FT\s+(.*)\"/) {
-                     push(@lines, $1);
-                     last;
-                 }
-                 elsif (/FT\s+(.*?)\s*$/) {
-                     push(@lines, $1);
-                 }
-                 else {
-                     $out->throw("Couldn't match '$_'");
-                 }
-            }
-
-            # Join list with spaces any of the elements contain them
-            my( $join );
-            if (grep /\s/, @lines) {
-                $join = ' ';
+    my ($self,$buffer) = @_;
+    
+    my ($key,   # The key of the feature
+        $loc,   # The location line from the feature
+        @qual,  # An arrray of lines making up the qualifiers
+        );
+    
+    if ($$buffer =~ /^FT   (\S+)\s+(\S+)/) {
+        $key = $1;
+        $loc = $2;
+        # Read all the lines up to the next feature
+        while ( defined($_ = $self->_readline) ) {
+            if (/^FT(\s+)(.+?)\s*$/) {
+                # Lines inside features are preceeded by 19 spaces
+                # A new feature is preceeded by 3 spaces
+                if (length($1) > 4) {
+                    # Add to qualifiers if we're in the qualifiers
+                    if (@qual) {
+                        push(@qual, $2);
+                    }
+                    # Start the qualifier list if it's the first qualifier
+                    elsif (substr($2, 0, 1) eq '/') {
+                        @qual = ($2);
+                    }
+                    # We're still in the location line, so append to location
+                    else {
+                        $loc .= $2;
+                    }
+                } else {
+                    # We've reached the start of the next feature
+                    last;
+                }
             } else {
-                $join = '';
+                # We're at the end of the feature table
+                last;
             }
-            $value = join($join, @lines);
-
-            $value =~ s/__DOUBLE_QUOTE_STRING__/\"/g;
         }
-        
-        # Field with unquoted value
-        elsif (/^FT\s+\/(\S+)=?(\S+)?/) {
-	    $key = $1;
-	    $value = $2 ? $2 : "_no_value";
-        }
-
-        # Store the key and value
-        $out->field->{$key} ||= [];
-        push(@{$out->field->{$key}}, $value);
-
-        # Empty $_ to trigger read from _readline
-        undef $_;
-    }
-
+    } else {
+        # No feature key
+        return;
+    } 
+    
+    # Put the first line of the next feature into the buffer
     $$buffer = $_;
+
+    # Make the new FTHelper object
+    my $out = new Bio::SeqIO::FTHelper();
+    $out->key($key);
+    $out->loc($loc);
+
+    # Now parse and add any qualifiers.  (@qual is kept
+    # intact to provide informative error messages.)
+  QUAL: for (my $i = 0; $i < @qual; $i++) {
+        $_ = $qual[$i];
+        my( $qualifier, $value ) = m{^/([^=]+)(?:=(.+))?}
+            or $self->throw("Can't see new qualifier in: $_\nfrom:\n"
+                . join('', map "$_\n", @qual));
+        if (defined $value) {
+            # Do we have a quoted value?
+            if (substr($value, 0, 1) eq '"') {
+                # Keep adding to value until we find the trailing quote
+                # and the quotes are balanced
+                while ($value !~ /"$/ or $value =~ tr/"/"/ % 2) {
+                    $i++;
+                    my $next = $qual[$i];
+                    unless (defined($next)) {
+                        warn("Unbalanced quote in:\n", map("$_\n", @qual),
+                            "No further qualifiers will be added for this feature");
+                        last QUAL;
+                    }
+
+                    # Join to value with space if value or next line contains a space
+                    $value .= (grep /\s/, ($value, $next)) ? " $next" : $next;
+                }
+                # Trim leading and trailing quotes
+                $value =~ s/^"|"$//g;
+                # Undouble internal quotes
+                $value =~ s/""/"/g;
+            }
+        } else {
+            $value = '_no_value';
+        }
+
+        # Store the qualifier
+        $out->field->{$qualifier} ||= [];
+        push(@{$out->field->{$qualifier}},$value);
+    }   
 
     return $out;
 }
-
 
 =head2 _write_line_EMBL
 
@@ -999,7 +986,6 @@ sub _write_line_EMBL_regex {
         push(@lines, $1.$2);
     }
     foreach (@lines) { s/\s+$//; }
-    #chomp(@lines);
     
     # Print first line
     my $s = shift(@lines);
