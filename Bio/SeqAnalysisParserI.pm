@@ -1,4 +1,4 @@
-# $Id: SeqAnalysisParserI.pm,v 1.8 2001/11/24 21:44:47 jason Exp $
+# $Id: SeqAnalysisParserI.pm,v 1.8.2.1 2002/04/21 14:14:13 jason Exp $
 #
 # BioPerl module for Bio::SeqAnalysisParserI
 #
@@ -98,7 +98,7 @@ use Carp;
 
 sub next_feature {
     my ($self);
-    $self->_abstractDeath('next_feature');
+    $self->throw_not_implemented();
 }
 
 1;

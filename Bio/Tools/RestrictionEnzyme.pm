@@ -1,5 +1,5 @@
 #------------------------------------------------------------------
-# $Id: RestrictionEnzyme.pm,v 1.19 2002/02/28 07:22:51 sac Exp $
+# $Id: RestrictionEnzyme.pm,v 1.19.2.1 2002/04/21 14:30:22 jason Exp $
 #
 # BioPerl module Bio::Tools::RestrictionEnzyme
 #
@@ -169,7 +169,7 @@ use vars qw (@ISA @EXPORT_OK %EXPORT_TAGS $ID $version @RE_available $Revision);
 
 $ID = 'Bio::Tools::RestrictionEnzyme';
 $version = 0.04;
-$Revision = '$Id: RestrictionEnzyme.pm,v 1.19 2002/02/28 07:22:51 sac Exp $';  #'
+$Revision = '$Id: RestrictionEnzyme.pm,v 1.19.2.1 2002/04/21 14:30:22 jason Exp $';  #'
 
 # Generated from REBASE version 802 (strider format), dated Jan 29 98
 # by rebase2perl.pl (JA Feb 98). Merged with previous list by Ewan, Nov 1998
@@ -603,13 +603,12 @@ sub revcom {  my $self = shift; $self->{'_seq'}->revcom->seq(); }
 sub cut_seq {
 #-------------
     my( $self, $seqObj) = @_;
-
-    # Could check that $seqObj is derived from Seq (Perl 5.004).
-    ref $seqObj || $self->throw( "Can't cut sequence. Missing or invalid object",
-				 "seqObj: $seqObj");
+    if( !ref($seqObj) || 
+	! $seqObj->isa('Bio::PrimarySeqI') ) {
+	$self->throw( "Can't cut sequence. Missing or invalid object".
+		      "seqObj: $seqObj");
+    }
     
-#    print STDERR "$ID: cutting sequence.\n";
-
     my $cuts_after = $self->{'_cuts_after'};
     my ($site_3prime_seq, $site_5prime_seq);
     my $reSeq = $self->seq;
@@ -624,20 +623,20 @@ sub cut_seq {
 	$site_5prime_seq = $reSeq->subseq($self->{'_cuts_after'}+1, $reSeq->length);
     }
 
-#    print STDERR "3' site: $site_3prime_seq\n5' site: $site_5prime_seq\n";
+    $self->debug("3' site: $site_3prime_seq\n5' site: $site_5prime_seq\n");
 
     my(@re_frags);
-    my $seq = $self->_expanded_string;
+    my $seq = uc $self->_expanded_string;
 
     if(!$self->palindromic and $self->name ne 'N') {
 	my $revseq = $self->_expanded_string( $reSeq->revcom );
-	$seq .= '|'.$revseq;
+	$seq .= '|'.uc($revseq);
     }
-#    printf "$ID: site seq: %s\n\n", $seq;
-#    printf "$ID: splitting %s\n\n",$reSeq->str;
-    @re_frags = split(/$seq/, $seqObj->seq);
+    $self->debug(sprintf("$ID: site seq: %s\n\n", $seq));
+    $self->debug(sprintf("$ID: splitting %s\n\n",$reSeq->seq));
+    @re_frags = split(/$seq/, uc $seqObj->seq);
 
-#    print "$ID: cut_seq, ",scalar @re_frags, " fragments.\n";
+    $self->debug("$ID: cut_seq, ".scalar @re_frags. " fragments.\n");
 
     ## Re-attach the split recognition site back to the frags
     ## since perl zapped them in the split() call.

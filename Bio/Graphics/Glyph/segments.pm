@@ -1,18 +1,14 @@
 package Bio::Graphics::Glyph::segments;
 
 use strict;
+use Bio::Location::Simple;
 use Bio::Graphics::Glyph::generic;
 use Bio::Graphics::Glyph::segmented_keyglyph;
-use vars '@ISA';
+use vars '@ISA','$VERSION';
 @ISA = qw( Bio::Graphics::Glyph::segmented_keyglyph
 	   Bio::Graphics::Glyph::generic
 	 );
-
-#sub pad_right {
-#  my $self = shift;
-#  my @parts = $self->parts or return $self->SUPER::pad_right;
-#  $parts[-1]->pad_right;
-#}
+$VERSION = '1.00';
 
 # group sets connector to 'solid'
 sub connector {
@@ -20,7 +16,7 @@ sub connector {
   return $self->SUPER::connector(@_) if $self->all_callbacks;
   return $self->SUPER::connector(@_) || 'solid';
 }
-# group sets connector to 'solid'
+# never allow our components to bump
 sub bump {
   my $self = shift;
   return $self->SUPER::bump(@_) if $self->all_callbacks;
@@ -28,15 +24,35 @@ sub bump {
 }
 sub label {
   my $self = shift;
-  return $self->SUPER::label(@_) if $self->all_callbacks || !$self->is_recursive;
-  return unless $self->subseq($self->feature);
+  return $self->SUPER::label(@_) if $self->all_callbacks;
+  return unless $self->{level} == 0;
   return $self->SUPER::label(@_);
 }
 sub description {
   my $self = shift;
-  return $self->SUPER::description(@_) if $self->all_callbacks || !$self->is_recursive;
-  return unless $self->subseq($self->feature);
+  return $self->SUPER::description(@_) if $self->all_callbacks;
+  return unless $self->{level} == 0;
   return $self->SUPER::description(@_);
+}
+
+# Override _subseq() method to make it appear that a top-level feature that
+# has no subfeatures appears as a feature that has a single subfeature.
+# Otherwise at high mags gaps will be drawn as components rather than
+# as connectors.  Because of differing representations of split features
+# in Bio::DB::GFF::Feature and Bio::SeqFeature::Generic, there is
+# some breakage of encapsulation here.
+sub _subseq {
+  my $self    = shift;
+  my $feature = shift;
+  my @subseq  = $self->SUPER::_subseq($feature);
+  return @subseq if @subseq;
+  if ($self->level == 0 && !@subseq && !eval{$feature->compound}) {
+    my($start,$end) = ($feature->start,$feature->end);
+    ($start,$end) = ($end,$start) if $start > $end; # to keep Bio::Location::Simple from bitching
+    return Bio::Location::Simple->new(-start=>$start,-end=>$end);
+  } else {
+    return;
+  }
 }
 
 1;

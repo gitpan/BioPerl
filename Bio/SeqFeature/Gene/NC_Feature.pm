@@ -1,4 +1,4 @@
-# $Id: NC_Feature.pm,v 1.2 2001/11/20 02:09:37 lstein Exp $
+# $Id: NC_Feature.pm,v 1.2.2.1 2002/05/09 20:51:15 jason Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::NC_Feature.pm
 #
@@ -75,7 +75,6 @@ sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
-
 }
 
 

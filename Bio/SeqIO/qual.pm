@@ -1,4 +1,4 @@
-# $Id: qual.pm,v 1.10 2002/02/18 17:17:25 bosborne Exp $
+# $Id: qual.pm,v 1.10.2.2 2002/06/04 21:35:53 jason Exp $
 #
 # Copyright (c) 1997-9 bioperl, Chad Matsalla. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or
@@ -121,7 +121,6 @@ sub next_primary_qual {
 	# print("CSM next_primary_qual!\n");
   my( $self, $as_next_qual ) = @_;
   my ($qual,$seq);
-  my $alphabet;
   local $/ = "\n>";
 
   return unless my $entry = $self->_readline;
@@ -129,34 +128,15 @@ sub next_primary_qual {
   if ($entry eq '>')  {  # very first one
     return unless $entry = $self->_readline;
   }
-
-  	# original: my ($top,$sequence) = $entry =~ /^(.+?)\n([^>]*)/s
+  
   my ($top,$sequence) = $entry =~ /^(.+?)\n([^>]*)/s
-    or $self->throw("Can't parse entry [$entry]");
+      or $self->throw("Can't parse entry [$entry]");
   my ($id,$fulldesc) = $top =~ /^\s*(\S+)\s*(.*)/
-    or $self->throw("Can't parse fasta header");
+      or $self->throw("Can't parse fasta header");
   $id =~ s/^>//;
-  	# $sequence =~ s/\s//g; # Remove whitespace
-  # for empty sequences we need to know the mol.type
-	# no we don't, not for PrimaryQuals because... well just because.
-	# $alphabet = $self->alphabet();
-	# print("CSM \$alphabet is $alphabet\n");
-  if(length($sequence) == 0) {
-      if(! defined($alphabet)) {
-          # let's default to dna
-		# lets not.
-		# $alphabet = "dna";
-      }
-  } else {
-      # we don't need it really, so disable
-	# you bet we don't need it because PrimaryQual doesn't pay it any mind anyway
-	# $alphabet = undef;
-  }
-
   # create the seq object
-	$sequence =~ s/\n//g;
+  $sequence =~ s/\n+/ /g;
   if ($as_next_qual) {
-	# print("CSM qual.pm: creating a primaryqual object with $sequence\n");
       $qual = Bio::Seq::PrimaryQual->new(-qual        => $sequence,
 					 -id         => $id,
 					 -primary_id => $id,
@@ -164,17 +144,13 @@ sub next_primary_qual {
 					 -desc       => $fulldesc
 					 );
   }
-  # if there wasn't one before, set the guessed type
-	# no, don't.
-  	# $self->alphabet($qual->alphabet());
-  	# print("CSM next_primary_qual: returning $qual.\n");
   return $qual;
 }
 
-=head2 write_qual
+=head2 write_seq
 
- Title   : write_qual(-source => $source, -header => "some information")
- Usage   : $obj->write_qual(	-source => $source,
+ Title   : write_seq(-source => $source, -header => "some information")
+ Usage   : $obj->write_seq(	-source => $source,
 				-header => "some information");
  Function: Write out an list of quality values to a fasta-style file.
  Returns : Nothing.
@@ -191,31 +167,32 @@ sub next_primary_qual {
 =cut
 
 sub write_seq {
-	my ($self,%args) = @_;
-	my ($source)  = $self->_rearrange([qw(SOURCE)], %args);
-	
-	if (!$source || ( ref($source) ne "Bio::Seq::SeqWithQuality" && 
-			  ref($source) ne "Bio::Seq::PrimaryQual")) {
-	    $self->throw("You must pass a Bio::Seq::SeqWithQuality or a Bio::Seq::PrimaryQual object to write_qual as a parameter named \"source\"");
-	}
-	my $header = $source->id();
-	if (!$header) { $header = "unknown"; }
-	my @quals = $source->qual();
-	# ::dumpValue(\@quals);
-	$self->_print (">$header \n");
-	my (@slice,$max,$length);
-	$length = $source->length();
-	if ($length eq "DIFFERENT") {
-		print("You passed a SeqWithQuality object that contains a sequence and quality of differing lengths. Using the length of the PrimaryQual component of the SeqWithQuality object.");
-		$length = $source->qual_obj()->length();
-	}
-		# print("Printing $header to a file.\n");
-	for (my $count = 1; $count<$length; $count+= 50) {
-		if ($count+50 > $length) { $max = $length; }
-		else { $max = $count+49; }
-		my @slice = @{$source->subqual($count,$max)};
-		$self->_print (join(' ',@slice), " \n");
-	}
+    my ($self,%args) = @_;
+    my ($source)  = $self->_rearrange([qw(SOURCE)], %args);
+
+    if (!$source || ( ref($source) ne "Bio::Seq::SeqWithQuality" && 
+		      ref($source) ne "Bio::Seq::PrimaryQual")) {
+	$self->throw("You must pass a Bio::Seq::SeqWithQuality or a Bio::Seq::PrimaryQual object to write_seq as a parameter named \"source\"");
+    }
+    my $header = $source->id();
+    if (!$header) { $header = "unknown"; }
+    my @quals = $source->qual();
+    # ::dumpValue(\@quals);
+    $self->_print (">$header \n");
+    my (@slice,$max,$length);
+    $length = $source->length();
+    if ($length eq "DIFFERENT") {
+	$self->warn("You passed a SeqWithQuality object that contains a sequence and quality of differing lengths. Using the length of the PrimaryQual component of the SeqWithQuality object.");
+	$length = $source->qual_obj()->length();
+    }
+    # print("Printing $header to a file.\n");
+    for (my $count = 1; $count<$length; $count+= 50) {
+	if ($count+50 > $length) { $max = $length; }
+	else { $max = $count+49; }
+	my @slice = @{$source->subqual($count,$max)};
+	$self->_print (join(' ',@slice), " \n");
+    }
+    return 1;
 }
 
 

@@ -1,4 +1,4 @@
-# $Id: GFF.pm,v 1.15 2002/03/05 17:47:30 mwilkinson Exp $
+# $Id: GFF.pm,v 1.15.2.1 2002/05/21 21:06:22 jason Exp $
 #
 # BioPerl module for Bio::Tools::GFF
 #
@@ -16,7 +16,7 @@ Bio::Tools::GFF - A Bio::SeqAnalysisParserI compliant GFF format parser
 
 =head1 SYNOPSIS
 
-    use Bio::Tool::GFF;
+    use Bio::Tools::GFF;
 
     # specify input via -fh or -file
     my $gffio = Bio::Tools::GFF->new(-fh => \*STDIN, -gff_version => 2);

@@ -1,4 +1,4 @@
-# $Id: HTMLResultWriter.pm,v 1.2.2.1 2002/03/15 14:40:04 heikki Exp $
+# $Id: HTMLResultWriter.pm,v 1.2.2.2 2002/05/30 03:18:56 jason Exp $
 #
 # BioPerl module for Bio::SearchIO::Writer::HTMLResultWriter
 #
@@ -203,8 +203,15 @@ qq{<HTML>
 		    $hit->length);
 	
 	while( my $hsp = $hit->next_hsp ) {
-	    $hspstr .= sprintf(" Score = %s bits (%s), Expect = %s",
-			       $hsp->bits, $hsp->score, $hsp->evalue);
+	    if( defined $hsp->bits() ) {
+		$hspstr .= sprintf(" Score = %s", $hsp->bits());
+	    }
+	    if( defined $hsp->bits() ) {
+		$hspstr .= sprintf(" bits (%s)", $hsp->score());
+	    }
+	    if( defined $hsp->evalue ) {
+		$hspstr.= sprintf(", Expect = %s", $hsp->evalue);
+	    }
 	    if( $hsp->pvalue ) {
 		$hspstr .= ", P = ".$hsp->pvalue;
 	    }

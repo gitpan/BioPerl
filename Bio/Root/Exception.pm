@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: Exception.pm,v 1.11 2002/02/13 11:02:46 heikki Exp $
+# $Id: Exception.pm,v 1.11.2.2 2002/04/13 01:34:02 sac Exp $
 #
 # BioPerl module Bio::Root::Exception
 #
@@ -268,7 +268,7 @@ sub _reformat_stacktrace {
     my $self = shift;
     my $msg = $self->text;
     my $stack = $self->stacktrace();
-    $stack =~ s/$msg//;
+    $stack =~ s/\Q$msg//;
     my @stack = split( /\n/, $stack);
     my @new_stack = ();
     my ($method, $file, $linenum, $prev_file, $prev_linenum);
@@ -288,7 +288,7 @@ sub _reformat_stacktrace {
             ($prev_file, $prev_linenum) = ($file, $linenum);
             next;
         }
-        
+
         if( $method =~ /__ANON__/ ) {
             $method = "try{} block";
         }
@@ -299,6 +299,8 @@ sub _reformat_stacktrace {
         push @new_stack, "STACK: $method $prev_file:$prev_linenum";
         ($prev_file, $prev_linenum) = ($file, $linenum);
     }
+    push @new_stack, "STACK: $prev_file:$prev_linenum";
+
     return join "\n", @new_stack;
 }
 

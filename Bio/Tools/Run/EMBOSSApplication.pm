@@ -1,4 +1,4 @@
- # $Id: EMBOSSApplication.pm,v 1.8 2002/03/04 22:09:04 jason Exp $
+ # $Id: EMBOSSApplication.pm,v 1.8.2.1 2002/04/21 14:30:21 jason Exp $
 #
 # BioPerl module for Bio::Tools::Run::EMBOSSApplication
 #
@@ -137,7 +137,7 @@ sub new {
 
 sub run {
     my ($self, $input) = @_;
-
+    $self->{'_io'}->_io_cleanup();
     # test input
     print Dumper($input) if $self->verbose > 0;
     $self->_acd2input($input);

@@ -3,7 +3,7 @@
 # AUTHOR  : Steve Chervitz (sac@bioperl.org) 
 # CREATED : 7 October 1996
 # STATUS  : Alpha
-# REVISION: $Id: Sbjct.pm,v 1.16 2002/02/23 08:33:20 sac Exp $
+# REVISION: $Id: Sbjct.pm,v 1.16.2.1 2002/05/01 17:48:16 jason Exp $
 #
 # For the latest version and documentation, visit the distribution site:
 #    http://genome-www.stanford.edu/perlOOP/bioperl/blast/
@@ -26,7 +26,7 @@ use Bio::Root::Object  ();
 use strict;
 use vars qw($ID %SUMMARY_OFFSET $Revision);
 $ID = 'Bio::Tools::Blast::Sbjct';
-$Revision = '$Id: Sbjct.pm,v 1.16 2002/02/23 08:33:20 sac Exp $';  #'
+$Revision = '$Id: Sbjct.pm,v 1.16.2.1 2002/05/01 17:48:16 jason Exp $';  #'
 
 my $_prog       = '';
 my $_signif_fmt = '';
@@ -1342,7 +1342,7 @@ sub desc {
 #--------------
 sub database { 
     my $self = shift; 
-    self->warn("Bio::Tools::Sbjct::database() is deprecated.\nNo useful information is provided by this method.\nUse Bio::Tools::Blast::database().\n");
+    $self->warn("Bio::Tools::Sbjct::database() is deprecated.\nNo useful information is provided by this method.\nUse Bio::Tools::Blast::database().\n");
     return $self->{'_db'};
 }
 #--------------

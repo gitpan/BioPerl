@@ -1,4 +1,4 @@
-# $Id: embl.pm,v 1.42 2002/03/08 20:46:26 jason Exp $
+# $Id: embl.pm,v 1.42.2.1 2002/06/04 02:13:05 jason Exp $
 #
 # BioPerl module for Bio::SeqIO::EMBL
 #
@@ -183,7 +183,7 @@ sub next_seq {
 	   }
        }
        if ($alphabet) {
-	   $seq->primary_seq->alphabet($alphabet);
+	   $seq->alphabet($alphabet);
        }
 
    }
@@ -379,8 +379,8 @@ sub write_seq {
         $mol = $seq->molecule();
 	$mol = 'RNA' if $mol =~ /RNA/; # no 'mRNA' 
     }
-    elsif ($seq->can('primary_seq') && defined $seq->primary_seq->alphabet) {
-	my $alphabet =$seq->primary_seq->alphabet;
+    elsif ($seq->can('primary_seq') && defined $seq->alphabet) {
+	my $alphabet =$seq->alphabet;
 	if ($alphabet eq 'dna') {
 	    $mol ='DNA';
 	}

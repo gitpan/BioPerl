@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: BioFetch_DB.t,v 1.4 2002/03/01 09:52:21 heikki Exp $
+# $Id: BioFetch_DB.t,v 1.4.2.3 2002/06/05 14:13:58 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -23,14 +23,13 @@ BEGIN {
     }
     use Test;
 
-    $NUMTESTS = 26;
+    $NUMTESTS = 27;
     plan tests => $NUMTESTS;
 
-    unless( eval "use IO::String; 1;" ) {
-      warn $@;
-      print STDERR "IO::String not installed. This means that Bio::DB::BioFetch module is not usable. Skipping tests.\n";
-      for( 1..$NUMTESTS ) {
-	skip(1,"IO::String not installed. This means that Bio::DB::BioFetch module is not usable. Skipping tests.\n");
+    unless( eval "require IO::String; 1;" ) {
+#      warn $@;
+      for( $Test::ntest..$NUMTESTS ) {
+	skip("IO::String not installed. This means that Bio::DB::BioFetch module is not usable. Skipping tests.",1);
       }
       $error = 1;
     }
@@ -123,12 +122,13 @@ ok $@;
 
 eval {
     ok $seq = $db->get_Seq_by_acc('NM_006732');
-    ok($seq && $seq->length eq 3775);
+    ok($seq );
+    ok($seq->length, 3775);
 };
 
 if ($@) {
     print STDERR "Warning: Couldn't connect to BioFetch server with Bio::DB::BioFetch.pm!\n" . $@;
 
-    foreach ( 1..4) { 
+    foreach ( $Test::ntest..$NUMTESTS) { 
 	 skip('could not connect to embl',1);}
 }

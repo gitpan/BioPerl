@@ -81,12 +81,12 @@ Bio/DB/GFF/Adaptor/dbi/iterator.pm
 Bio/DB/GFF/Adaptor/dbi/mysql.pm
 Bio/DB/GFF/Adaptor/dbi/mysqlopt.pm
 Bio/DB/GFF/Adaptor/memory.pm
+Bio/DB/GFF/Adaptor/memory_iterator.pm
 Bio/DB/GFF/Aggregator.pm
 Bio/DB/GFF/Aggregator/alignment.pm
 Bio/DB/GFF/Aggregator/clone.pm
 Bio/DB/GFF/Aggregator/none.pm
 Bio/DB/GFF/Aggregator/transcript.pm
-Bio/DB/GFF/Aggregator/wormbase_gene.pm
 Bio/DB/GFF/Featname.pm
 Bio/DB/GFF/Feature.pm
 Bio/DB/GFF/Homol.pm
@@ -245,7 +245,6 @@ Bio/Search/Hit/BlastHit.pm
 Bio/Search/Hit/Fasta.pm
 Bio/Search/Hit/GenericHit.pm
 Bio/Search/Hit/HitI.pm
-Bio/Search/Processor.pm
 Bio/Search/Result/BlastResult.pm
 Bio/Search/Result/GenericResult.pm
 Bio/Search/Result/ResultI.pm
@@ -534,6 +533,7 @@ examples/state-machine.pl
 examples/structure/struct_example1.pl
 examples/structure/struct_example2.pl
 examples/test-genscan.pl
+examples/use_registry.pl
 models/README
 models/biblio.dia
 models/bio_liveseq_variation.dia
@@ -739,6 +739,11 @@ t/data/dbfa/6.fa
 t/data/dbfa/7.fa
 t/data/dna1.fa
 t/data/dna2.fa
+t/data/dnaE-bsub-prot.fa
+t/data/dnaE-bsub.fa
+t/data/dnaEbsub_ecoli.wublastx
+t/data/dnaEbsub_ecoli.wutblastn
+t/data/dnaEbsub_ecoli.wutblastx
 t/data/ecoli_domains.rps.xml
 t/data/ecolitst.bls
 t/data/ecolitst.fa
@@ -754,6 +759,7 @@ t/data/genomic-seq.mzef
 t/data/hemoglobinA.meg
 t/data/hmmpfam.out
 t/data/hmmsearch.out
+t/data/hs_fugu.newick
 t/data/lucy.info
 t/data/lucy.qual
 t/data/lucy.seq

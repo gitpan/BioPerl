@@ -1,4 +1,4 @@
-# $Id: msf.pm,v 1.11 2002/02/13 15:32:54 jason Exp $
+# $Id: msf.pm,v 1.11.2.1 2002/04/18 13:05:25 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::msf
 
@@ -21,11 +21,11 @@ Bio::AlignIO::msf - msf sequence input/output stream
 
 =head1 SYNOPSIS
 
-Do not use this module directly.  Use it via the Bio::AlignIO class.
+Do not use this module directly.  Use it via the L<Bio::AlignIO> class.
 
 =head1 DESCRIPTION
 
-This object can transform Bio::SimpleAlign objects to and from msf flat
+This object can transform L<Bio::Align::AlignI> objects to and from msf flat
 file databases.
 
 =head1 FEEDBACK
@@ -75,7 +75,7 @@ BEGIN {
           It reads all non whitespace characters in the alignment
           area. For MSFs with weird gaps (eg ~~~) map them by using
           $al->map_chars('~','-')
- Returns : Bio::Align::AlignI object
+ Returns : L<Bio::Align::AlignI> object
  Args    : NONE
 
 =cut
@@ -158,7 +158,7 @@ sub next_aln {
  Function: writes the $aln object into the stream in MSF format
            Sequence type of the alignment is determined by the first sequence.
  Returns : 1 for success and 0 for error
- Args    : Bio::Align::AlignI object
+ Args    : L<Bio::Align::AlignI> object
 
 
 =cut

@@ -1,4 +1,4 @@
-# $Id: bptutorial.pl,v 1.40.2.5 2002/03/17 20:19:22 bosborne Exp $
+# $Id: bptutorial.pl,v 1.40.2.6 2002/04/18 13:07:51 jason Exp $
 
 =head1 NAME
 
@@ -195,7 +195,7 @@ called by a given object. One way to resolve this question is by using
 the software described in Appendix V.1.
 
 For those who prefer more visual descriptions,
-http://doc.bioperl.org/bioperl-live/ also offers links to three
+http://bioperl.org/Core/Lates/modules.html also offers links to three
 PDF files which contain schematics that describe how many of the bioperl
 objects related to one another.
 
@@ -437,7 +437,7 @@ file - eg in .bashrc. (For running local blasts, it is also
 necessary that the name of local-blast database directory is known
 to bioperl.  This will typically happen automatically, but in case
 of difficulty, refer to the documentation in
-L<Bio::Tools::Run::StandAloneBlast.pm>)
+L<Bio::Tools::Run::StandAloneBlast>)
 
 =back
 
@@ -2293,8 +2293,8 @@ such framework for interlanguage support, and the biocorba project is
 currently implementing a CORBA interface for bioperl.  With biocorba,
 objects written within bioperl will be able to communicate with
 objects written in biopython and biojava (see the next subsection).
-For more information, se the biocorba project website at
-http://biocorba.org/.
+For more information, see the biocorba project website at
+http://biocorba.org/.  The Bioperl BioCORBA server and client bindings are available in the bioperl-corba-server and bioperl-corba-client bioperl CVS repositories respecitively. (see http://cvs.bioperl.org for more information). 
 
 =head2 IV.2 Biopython and biojava
 
@@ -2458,7 +2458,7 @@ and use the displayed help screen.
 # PURPOSE  : Demonstrate various uses of the bioperl package
 # AUTHOR   : Peter Schattner schattner@alum.mit.edu
 # CREATED  : Dec 15 2000
-# REVISION : $Id: bptutorial.pl,v 1.40.2.5 2002/03/17 20:19:22 bosborne Exp $
+# REVISION : $Id: bptutorial.pl,v 1.40.2.6 2002/04/18 13:07:51 jason Exp $
 
 use strict;
 use Bio::SimpleAlign;

@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: flat.t,v 1.1.2.1 2002/03/18 16:32:18 jason Exp $
+# $Id: flat.t,v 1.1.2.5 2002/06/07 21:23:06 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -24,6 +24,14 @@ BEGIN {
 
     $NUMTESTS = 7;
     plan tests => $NUMTESTS;
+    eval { require DB_File; require Bio::DB::Flat; require Bio::Root::IO;};
+    if( $@ ) {
+	print STDERR "DB_File not loaded. This means flat.t test cannot be executed. Skipping\n";
+	foreach ( $Test::ntest..$NUMTESTS ) {
+	    skip('DB_File not installed',1);
+	}
+	$error = 1;
+    }
 }
 
 if( $error ==  1 ) {
@@ -40,7 +48,6 @@ my $verbose = 0;
 
 
 #First of all we need to create an flat db
-use Bio::DB::Flat;
 use Bio::Root::IO;
 use Cwd;
 my $cd = cwd();
@@ -61,7 +68,7 @@ ok($result);
 my $seq = $db->get_Seq_by_id('AAC12660');
 ok($seq);
 ok($seq->length,504);
-
+undef $db;
 &cleanup();
 &maketmpdir();
 $db = Bio::DB::Flat->new(-directory  => $tmpdir,
@@ -69,7 +76,7 @@ $db = Bio::DB::Flat->new(-directory  => $tmpdir,
                          -format => 'embl',
                          -verbose => 1,
                          -write_flag => 1
-                            );
+			 );
 
 $dir= $cd."/t/data/factor7.embl";
 $result = $db->build_index(glob($dir));
@@ -77,7 +84,8 @@ ok($result);
 $seq = $db->get_Seq_by_id('HSCFVII');
 ok($seq);
 ok($seq->length,12850);
-&cleanup();
+undef $db;
+
 #&maketmpdir();
 #my $db = Bio::DB::Flat->new(-directory  => $tmpdir,
 #                            -index => 'flat',
@@ -88,10 +96,14 @@ ok($seq->length,12850);
 
 
 sub maketmpdir {
-    mkdir $tmpdir;
+    mkdir ($tmpdir,0777);
 }
 sub cleanup {    
     eval { 
       Bio::Root::IO->rmtree($tmpdir);
     };
 } 
+
+END {
+    &cleanup();
+}

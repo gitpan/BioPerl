@@ -1,4 +1,4 @@
-# $Id: blast.pm,v 1.21 2002/03/08 20:22:16 jason Exp $
+# $Id: blast.pm,v 1.21.2.4 2002/06/02 19:31:34 jason Exp $
 #
 # BioPerl module for Bio::SearchIO::blast
 #
@@ -128,6 +128,7 @@ BEGIN {
 		 'BlastOutput_query-def'=> 'queryname',
 		 'BlastOutput_query-len'=> 'querylen',
 		 'BlastOutput_query-acc'=> 'queryacc',
+		 'BlastOutput_querydesc'=> 'querydesc',
 		 'BlastOutput_db'       => 'dbname',
 		 'BlastOutput_db-len'   => 'dbsize',
 		 'BlastOutput_db-let'   => 'dblets',
@@ -142,6 +143,8 @@ BEGIN {
 		 'Parameters_gap-open'  =>   { 'param' => 'gapopen'},
 		 'Parameters_gap-extend'=>   { 'param' => 'gapext'},
 		 'Parameters_filter'    =>  {'param' => 'filter'},
+		 'Parameters_allowgaps' =>   { 'param' => 'allowgaps'},
+
 		 'Statistics_db-len'    => {'stat' => 'dbentries'},
 		 'Statistics_db-let'    => { 'stat' => 'dbletters'},
 		 'Statistics_hsp-len'   => { 'stat' => 'hsplength'},
@@ -161,6 +164,21 @@ BEGIN {
 		 'Statistics_X2'=> { 'stat' => 'X2'},
 		 'Statistics_S1'=> { 'stat' => 'S1'},
 		 'Statistics_S2'=> { 'stat' => 'S2'},
+		 
+		 # WU-BLAST stats
+		 'Statistics_DFA_states'=> { 'stat' => 'num_dfa_states'},
+		 'Statistics_DFA_size'=> { 'stat' => 'dfa_size'},
+		 
+		 'Statistics_search_cputime' => { 'stat' => 'search_cputime'},
+		 'Statistics_total_cputime' => { 'stat' => 'total_cputime'},
+		 'Statistics_search_actualtime' => { 'stat' => 'search_actualtime'},
+		 'Statistics_total_actualtime' => { 'stat' => 'total_actualtime'},
+		 
+		 'Statistics_noprocessors' => { 'stat' => 'no_of_processors'},
+		 'Statistics_neighbortime' => { 'stat' => 'neighborhood_generate_time'},
+		 'Statistics_starttime' => { 'stat' => 'start_time'},
+		 'Statistics_endtime' => { 'stat' => 'end_time'},
+		 
 		 
 		 );
 }
@@ -201,10 +219,10 @@ sub next_result{
    my $reporttype;
    $self->start_document();
    my @hit_signifs;
-   while( defined ($_ = $self->_readline )) {
+   while( defined ($_ = $self->_readline )) {       
        next if( /^\s+$/); # skip empty lines
-       next if( /CPU time:/);
-       if( /^([T]?BLAST[NPX])\s*(\S+)/i ) {
+       next if( /CPU time:/ || /^>\s*$/);       
+       if( /^([T]?BLAST[NPX])\s*(.+)$/i ) {
 	   if( $seentop ) {
 	       $self->_pushback($_);
 	       $self->end_element({ 'Name' => 'BlastOutput'});
@@ -236,15 +254,21 @@ sub next_result{
 	       $_ = $self->_readline;
 	   }
 	   chomp($q);
+	   my ($nm,$desc) = split(/\s+/,$q,2);
 	   $self->element({ 'Name' => 'BlastOutput_query-def',
-			    'Data' => $q});
+			    'Data' => $nm});
 	   $self->element({ 'Name' => 'BlastOutput_query-len', 
 			    'Data' => $size});
-	   my ($firstpart) = split(/\s+/,$q);
-	   my @pieces = split(/\|/,$firstpart);
-	   my $acc = pop @pieces;
-	   $self->element({ 'Name' =>  'BlastOutput_query-acc',
-			    'Data'  => $acc});	   
+	   defined $desc && $desc =~ s/\s+$//;
+	   $self->element({ 'Name' => 'BlastOutput_querydesc', 
+			    'Data' => $desc});
+	   
+	   if( my @pieces = split(/\|/,$nm) ) {
+	       my $acc = pop @pieces;
+	       $acc = pop @pieces if( ! defined $acc || $acc =~ /^\s+$/);
+	       $self->element({ 'Name' =>  'BlastOutput_query-acc',
+				'Data'  => $acc});
+	   }
        } elsif( /Sequences producing significant alignments:/ ) {
 	   # skip the next whitespace line
 	   $_ = $self->_readline();
@@ -284,19 +308,20 @@ sub next_result{
 	   $self->element({'Name' => 'BlastOutput_db',
 			   'Data' => $db});
        } elsif( /^>(\S+)\s*(.*)?/ ) {
+	   chomp;
 	   $self->in_element('hsp') && $self->end_element({ 'Name' => 'Hsp'});
 	   $self->in_element('hit') && $self->end_element({ 'Name' => 'Hit'});
 	   
 	   $self->start_element({ 'Name' => 'Hit'});
 	   my $id = $1;	  
+	   my $restofline = $2;
 	   $self->element({ 'Name' => 'Hit_id',
 			    'Data' => $id});
 	   my @pieces = split(/\|/,$id);
 	   my $acc = pop @pieces;
 	   $self->element({ 'Name' =>  'Hit_accession',
 			    'Data'  => $acc});	   
-	   $self->element({ 'Name' => 'Hit_def',
-			    'Data' => $2});
+
 	   my $v = shift @hit_signifs;
 	   if( defined $v ) {
 	       $self->element({'Name' => 'Hit_signif',
@@ -304,24 +329,41 @@ sub next_result{
 	       $self->element({'Name' => 'Hit_score',
 			       'Data' => $v->[1]});
 	   }
-
+	   while(defined($_ = $self->_readline()) ) {
+	       next if( /^\s+$/ );
+	       chomp;
+	       if(  /Length\s*=\s*([\d,]+)/ ) {
+		   my $l = $1;
+		   $l =~ s/\,//g;
+		   $self->element({ 'Name' => 'Hit_len',
+				    'Data' => $l });
+		   last;
+	       }  elsif ( /Score/ ) {
+		   $self->_pushback($_);
+		   last;
+	       } else { 
+		   $restofline .= $_;
+	       }
+	   }
+	   $restofline =~ s/\s+/ /g;
+	   $self->element({ 'Name' => 'Hit_def',
+			    'Data' => $restofline});       
       } elsif( /\s+(Plus|Minus) Strand HSPs:/i ) {
 	   next;
-       } elsif(  /Length\s*=\s*([\d,]+)/ ) {
-	   $self->element({ 'Name' => 'Hit_len',
-			    'Data' => $1 });
-       } elsif( ($self->in_element('hit') || $self->in_element('hsp')) && # wublast
-		/Score\s*=\s*(\d+)\s*\(([\d\.]+)\s*bits\),\s*Expect\s*=\s*([^,\s]+),\s*P\s*=\s*([^,\s]+)/ ) {
+       } elsif( ($self->in_element('hit') || 
+		 $self->in_element('hsp')) && # wublast
+	       /Score\s*=\s*(\S+)\s*\(([\d\.]+)\s*bits\),\s*Expect\s*=\s*([^,\s]+),\s*(Sum)?\s*P(\(\d+\))?\s*=\s*([^,\s]+)/ 
+		  ) {
 	   $self->in_element('hsp') && $self->end_element({'Name' => 'Hsp'});
 	   $self->start_element({'Name' => 'Hsp'});
        	   $self->element( { 'Name' => 'Hsp_score',
 			     'Data' => $1});
 	   $self->element( { 'Name' => 'Hsp_bit-score',
 			     'Data' => $2});
-	   $self->element( { 'Name' => 'Hsp_evalue',
+	   $self->element( { 'Name' => 'Hsp_evalue',			     
 			     'Data' => $3});
 	   $self->element( {'Name'  => 'Hsp_pvalue',
-			    'Data'  =>$4});
+			    'Data'  =>$6});       
        } elsif( ($self->in_element('hit') || $self->in_element('hsp')) && # ncbi blast
 		/Score\s*=\s*(\S+)\s*bits\s*\((\d+)\),\s*Expect(\(\d+\))?\s*=\s*(\S+)/) {
 	   $self->in_element('hsp') && $self->end_element({ 'Name' => 'Hsp'});
@@ -347,37 +389,43 @@ sub next_result{
 	   if( defined $6 ) { 
 	       $self->element( { 'Name' => 'Hsp_gaps',
 				 'Data' => $7});	   
-	   } else { 
-	       $self->element( { 'Name' => 'Hsp_gaps',
-				 'Data' => 0});
-	   }
-	   $self->{'_Query'} = {'begin' => 0, 'end' => 0};
+	   } 
+	   $self->{'_Query'} = { 'begin' => 0, 'end' => 0};
 	   $self->{'_Sbjct'} = { 'begin' => 0, 'end' => 0};
+
+	   if( /(Frame\s*=\s*.+)$/ ) {
+	       # handle wu-blast Frame listing on same line
+	       $self->_pushback($1);
+	   }	   
        } elsif( $self->in_element('hsp') &&
 		/Strand\s*=\s*(Plus|Minus)\s*\/\s*(Plus|Minus)/i ) {
+	   # consume this event
 	   next;
        } elsif( $self->in_element('hsp') &&
 		/Frame\s*=\s*([\+\-][1-3])\s*(\/\s*([\+\-][1-3]))?/ ){
-
 	   my ($queryframe,$hitframe);
 	   if( $reporttype eq 'TBLASTX' ) {
 	       ($queryframe,$hitframe) = ($1,$2);
 	       $hitframe =~ s/\/\s*//g;
 	   } elsif( $reporttype eq 'TBLASTN' ) {
-	       ($hitframe,$queryframe) = ($1,0);
-	   } else { 
+	       ($hitframe,$queryframe) = ($1,0);	       
+	   } elsif( $reporttype eq 'BLASTX' ) {	       
 	       ($queryframe,$hitframe) = ($1,0);
-	   }
+	   } 
 	   $self->element({'Name' => 'Hsp_query-frame',
 			   'Data' => $queryframe});
 	   	   
 	   $self->element({'Name' => 'Hsp_hit-frame',
 			   'Data' => $hitframe});
-       } elsif(  /^Parameters:/ || /^\s+Database:/ ) {
+       } elsif(  /^Parameters:/ || /^\s+Database:\s+?/ || 
+		 ( $self->in_element('hsp') && (/WARNING/ || /NOTE/)) ) {
 	   $self->in_element('hsp') && $self->end_element({'Name' => 'Hsp'});
 	   $self->in_element('hit') && $self->end_element({'Name' => 'Hit'});
-	   my $blast = ( /Parameters/ ) ? 'wublast' : 'ncbi'; 
+	   my $blast = ( /Parameters\:/ ) ? 'wublast' : 'ncbi'; 
 	   my $last = '';
+	   # default is that gaps are allowed
+	   $self->element({'Name' => 'Parameters_allowgaps',
+			   'Data' => 'yes'});
 	   while( defined ($_ = $self->_readline ) ) {
 	       if( /^([T]?BLAST[NPX])\s*([\d\.]+)/i ) {
 		   $self->_pushback($_);
@@ -401,7 +449,10 @@ sub next_result{
 		   if( /E=(\S+)/ ) {
 		       $self->element({'Name' => 'Parameters_expect',
 				       'Data' => $1});
-		   } elsif( $last =~ /Frame\s+MatID\s+Matrix name/i ) {
+		   } elsif( /nogaps/ ) {
+		       $self->element({'Name' => 'Parameters_allowgaps',
+				       'Data' => 'no'});
+		   } elsif( $last =~ /(Frame|Strand)\s+MatID\s+Matrix name/i ) {
 		       s/^\s+//;
                        #throw away first two slots
 		       my @vals = split;
@@ -415,7 +466,36 @@ sub next_result{
 				       'Data' => $kappa});
 		       $self->element({'Name' => 'Statistics_entropy',
 				       'Data' => $entropy});
-		   } 
+		   } elsif( /(\S+\s+\S+)\s+DFA:\s+(\S+)\s+\((.+)\)/ ) {
+		       if( $1 eq 'states in') { 
+			   $self->element({'Name' => 'Statistics_DFA_states',
+					   'Data' => "$2 $3"});
+		       } elsif( $1 eq 'size of') {
+			   $self->element({'Name' => 'Statistics_DFA_size',
+					   'Data' => "$2 $3"});
+		       }
+		   } elsif( /^\s+Time to generate neighborhood:\s+(\S+\s+\S+\s+\S+)/ ) { 
+		       $self->element({'Name' => 'Statistics_neighbortime',
+				       'Data' => $1});
+		   } elsif( /processors\s+used:\s+(\d+)/ ) {
+		          $self->element({'Name' => 'Statistics_noprocessors',
+					   'Data' => $1});
+		   } elsif( /^\s+(\S+)\s+cpu\s+time:\s+(\S+\s+\S+\s+\S+)\s+Elapsed:\s+(\S+)/ ) {
+		       my $cputype = lc($1);
+		       $self->element({'Name' => "Statistics_$cputype\_cputime",
+				       'Data' => $2});
+		       $self->element({'Name' => "Statistics_$cputype\_actualtime",
+				       'Data' => $3});
+		   } elsif( /^\s+Start:/ ) {
+		       my ($junk,$start,$stime,$end,$etime) = split(/\s+(Start|End)\:\s+/,$_);
+		       chomp($stime);
+		       $self->element({'Name' => 'Statistics_starttime',
+				       'Data' => $stime});
+		       chomp($etime);
+		       $self->element({'Name' => 'Statistics_endtime',
+				       'Data' => $etime});
+		   }
+		   
 	       } elsif ( $blast eq 'ncbi' ) {
 
 		   if( /^Matrix:\s+(\S+)/i ) {
@@ -475,7 +555,7 @@ sub next_result{
 	   my $len;
 	   for( my $i = 0; 
 		defined($_) && $i < 3; 
-		$i++ ){
+		$i++ ){	       
 	       chomp;		       
 	       if( /^((Query|Sbjct):\s+(\d+)\s*)(\S+)\s+(\d+)/ ) {
 		   $data{$2} = $4;
@@ -483,7 +563,8 @@ sub next_result{
 		   $self->{"\_$2"}->{'begin'} = $3 unless $self->{"_$2"}->{'begin'};
 		   $self->{"\_$2"}->{'end'} = $5;
 	       } else { 
-		   $self->throw("no data for midline $_") unless defined $_ && defined $len;
+		   $self->throw("no data for midline $_") 
+		       unless (defined $_ && defined $len);
 		   $data{'Mid'} = substr($_,$len);
 	       }
 	       $_ = $self->_readline();	       

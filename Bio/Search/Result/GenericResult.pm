@@ -1,4 +1,4 @@
-# $Id: GenericResult.pm,v 1.7 2002/03/08 14:55:15 birney Exp $
+# $Id: GenericResult.pm,v 1.7.2.2 2002/05/31 18:08:30 jason Exp $
 #
 # BioPerl module for Bio::Search::Result::GenericResult
 #
@@ -478,9 +478,9 @@ sub available_statistics{
    return keys %{$self->{'_statistics'}};
 }
 
-=head2 Bio::Search::Report 
+=head2 Bio::Search::Result::GenericResult specific methods
 
-Bio::Search::Result::GenericResult specific methods
+=cut
 
 =head2 add_hit
 
@@ -567,6 +567,26 @@ sub add_statistic {
    my ($self,$key,$value) = @_;
    $self->{'_statistics'}->{$key} = $value;
    return;
+}
+
+=head2 hits
+
+ Title   : hits
+ Usage   : my @hits = $result->hits
+ Function: Returns the available hits for this Result
+ Returns : Array of L<Bio::Search::Hit::HitI> objects
+ Args    : none
+
+
+=cut
+
+sub hits {
+    my $self = shift;
+    my @hits = ();
+    if( ref $self->{'_hits'}) {
+        @hits = @{$self->{'_hits'}};
+    }
+    return @hits;
 }
 
 1;

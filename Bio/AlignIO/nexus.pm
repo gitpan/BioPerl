@@ -1,4 +1,4 @@
-# $Id: nexus.pm,v 1.7 2002/02/13 15:32:54 jason Exp $
+# $Id: nexus.pm,v 1.7.2.1 2002/04/18 13:05:25 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::nexus
 #
@@ -11,11 +11,11 @@ Bio::AlignIO::nexus - NEXUS format sequence input/output stream
 
 =head1 SYNOPSIS
 
-Do not use this module directly.  Use it via the Bio::AlignIO class.
+Do not use this module directly.  Use it via the L<Bio::AlignIO> class.
 
 =head1 DESCRIPTION
 
-This object can transform Bio::SimpleAlign objects to and from NEXUS
+This object can transform L<Bio::Align::AlignI> objects to and from NEXUS
 data blocks. See method documentation for supported NEXUS features.
 
 =head1 ACKNOWLEDGEMENTS
@@ -79,7 +79,7 @@ BEGIN {
            - Sequence names of type 'Homo sapiens' and 
              Homo_sapiens are treated identically.
 
- Returns : SimpleAlign object
+ Returns : L<Bio::Align::AlignI> object
  Args    : 
 
 =cut
@@ -251,7 +251,7 @@ sub _read_taxlabels {
            SimpleAlign methods match_char, missing_char and gap_char must be set 
            if you want to see them in the output.
  Returns : 1 for success and 0 for error
- Args    : Bio::SimpleAlign object
+ Args    : L<Bio::Align::AlignI> object
 
 =cut
 

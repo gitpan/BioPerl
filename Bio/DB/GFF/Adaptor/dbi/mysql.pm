@@ -16,7 +16,7 @@ use Bio::DB::GFF::Adaptor::dbi;
 use Bio::DB::GFF::Util::Rearrange; # for rearrange()
 use vars qw($VERSION @ISA);
 @ISA = qw(Bio::DB::GFF::Adaptor::dbi);
-$VERSION = '0.30';
+$VERSION = '0.50';
 
 use constant MAX_SEGMENT => 100_000_000;  # the largest a segment can get
 use constant DEFAULT_CHUNK => 2000;
@@ -334,8 +334,13 @@ sequence.
 sub make_abscoord_query {
   my $self = shift;
   my ($name,$class,$refseq) = @_;
+  my $query = GETSEQCOORDS;
+  if ($name =~ /\*/) {
+    $name =~ tr/*/%/;
+    $query =~ s/gname=\?/gname LIKE ?/;
+  }
   defined $refseq ? $self->dbh->do_query(GETFORCEDSEQCOORDS,$name,$class,$refseq) 
-    : $self->dbh->do_query(GETSEQCOORDS,$name,$class);
+    : $self->dbh->do_query($query,$name,$class);
 }
 
 # override parent
@@ -374,7 +379,12 @@ sub get_abscoords {
 sub make_features_by_name_where_part {
   my $self = shift;
   my ($class,$name) = @_;
-  return ("fgroup.gclass=? AND fgroup.gname=?",$class,$name);
+  if ($name =~ /\*/) {
+    $name =~ s/\*/%/g;
+    return ("fgroup.gclass=? AND fgroup.gname LIKE ?",$class,$name);
+  } else {
+    return ("fgroup.gclass=? AND fgroup.gname=?",$class,$name);
+  }
 }
 
 sub make_features_by_attribute_where_part {
@@ -940,6 +950,24 @@ sub make_types_group_part {
 }
 
 
+=head2 make_classes_query
+
+ Title   : make_classes_query
+ Usage   : ($query,@args) = $db->make_classes_query
+ Function: return query fragment for generating list of reference classes
+ Returns : a query and args
+ Args    : none
+ Status  : public
+
+=cut
+
+sub make_classes_query {
+  my $self = shift;
+  return 'SELECT DISTINCT gclass FROM fgroup WHERE NOT ISNULL(gclass)';
+}
+
+
+# why is this here?
 sub get_features_iterator {
   my $self = shift;
   $self->SUPER::get_features_iterator(@_);

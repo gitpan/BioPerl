@@ -1,15 +1,18 @@
 package Bio::Graphics::Feature;
 use strict;
+use Bio::SeqFeatureI;
+use Bio::LocationI;
 
-use vars '$VERSION';
-$VERSION = 1.2;
+use vars '$VERSION','@ISA';
+$VERSION = '1.40';
+@ISA  = qw(Bio::SeqFeatureI Bio::LocationI);
 
 *stop        = \&end;
 *info        = \&name;
 *seqname     = \&name;
 *type        = \&primary_tag;
 *exons       = *sub_SeqFeature = *merged_segments = \&segments;
-*class       = *method = \&type;
+*method      = \&type;
 *source      = \&source_tag;
 
 # usage:
@@ -29,16 +32,17 @@ sub new {
   my $self = bless {},$class;
 
   $arg{-strand} ||= 0;
-  $self->{strand}  = $arg{-strand} >= 0 ? +1 : -1;
+  $self->{strand}  = $arg{-strand} ? ($arg{-strand} >= 0 ? +1 : -1) : 0;
   $self->{name}    = $arg{-name};
   $self->{type}    = $arg{-type}   || 'feature';
   $self->{subtype} = $arg{-subtype} if exists $arg{-subtype};
   $self->{source}  = $arg{-source} || $arg{-source_tag} || '';
-  $self->{score}   = $arg{-score}  || 0;
+  $self->{score}   = $arg{-score}   if exists $arg{-score};
   $self->{start}   = $arg{-start};
   $self->{stop}    = $arg{-end} || $arg{-stop};
   $self->{ref}     = $arg{-ref};
-  $self->{url}     = $arg{-url} if $arg{-url};
+  $self->{class}   = $arg{-class} if exists $arg{-class};
+  $self->{url}     = $arg{-url}   if exists $arg{-url};
 
   # fix start, stop
   if (defined $self->{stop} && defined $self->{start}
@@ -71,39 +75,20 @@ sub add_segment {
 	($start,$stop) = ($stop,$start);
 	$strand *= -1;
       }
-      push @segments,$self->new(-start=>$start,
-				-stop=>$stop,
-				-strand=>$strand,
-				-type  => $type);
+      push @segments,$self->new(-start  => $start,
+				-stop   => $stop,
+				-strand => $strand,
+				-type   => $type);
     } else {
       push @segments,$seg;
     }
   }
   if (@segments) {
+    local $^W = 0;  # some warning of an uninitialized variable...
     $self->{segments} = [ sort {$a->start <=> $b->start } @segments ];
     $self->{start}    = $self->{segments}[0]->start;
     ($self->{stop})   = sort { $b <=> $a } map { $_->end } @segments;
   }
-}
-
-sub location {
-  my $self = shift;
-
-  require Bio::Location::Split;
-  my @segments = $self->segments;
-  if (@segments) {
-    my $split = Bio::Location::Split->new;
-    foreach (@segments) {
-      $split->add_sub_Location(Bio::Location::Simple->new(-start  => $_->start,
-							  -end    => $_->end,
-							  -strand => $_->strand
-							 ));
-    }
-    return $split;
-  }
-  return Bio::Location::Simple->new(-start  => $self->start,
-				    -end    => $self->end,
-				    -strand => $self->strand);
 }
 
 sub segments {
@@ -118,7 +103,13 @@ sub score    {
   $d;
 }
 sub primary_tag     { shift->{type}        }
-sub name            { shift->{name}        }
+sub name            {
+  my $self = shift;
+  my $d    = $self->{name};
+  $self->{name} = shift if @_;
+  $d;
+}
+sub seq_id          { shift->ref()         }
 sub ref {
   my $self = shift;
   my $d = $self->{ref};
@@ -137,7 +128,7 @@ sub end    {
   $self->{stop} = shift if @_;
   $d;
 }
-sub strand { 
+sub strand {
   my $self = shift;
   my $d = $self->{strand};
   $self->{strand} = shift if @_;
@@ -154,7 +145,92 @@ sub seq {
 }
 *dna = \&seq;
 
-sub source_tag { 
+sub low {
+  my $self = shift;
+  return $self->start < $self->end ? $self->start : $self->end;
+}
+
+sub high {
+  my $self = shift;
+  return $self->start > $self->end ? $self->start : $self->end;
+}
+
+=head2 location
+
+ Title   : location
+ Usage   : my $location = $seqfeature->location()
+ Function: returns a location object suitable for identifying location
+	   of feature on sequence or parent feature
+ Returns : Bio::LocationI object
+ Args    : none
+
+=cut
+
+sub location {
+   my $self = shift;
+   require Bio::Location::Split unless Bio::Location::Split->can('new');
+   my $location;
+   if (my @segments = $self->segments) {
+       $location = Bio::Location::Split->new();
+       foreach (@segments) {
+	 $location->add_sub_Location($_);
+       }
+   } else {
+       $location = $self;
+   }
+   $location;
+}
+
+sub coordinate_policy {
+   require Bio::Location::WidestCoordPolicy unless Bio::Location::WidestCoordPolicy->can('new');
+   return Bio::Location::WidestCoordPolicy->new();
+}
+
+sub min_start { shift->low }
+sub max_start { shift->low }
+sub min_end   { shift->high }
+sub max_end   { shift->high}
+sub start_pos_type { 'EXACT' }
+sub end_pos_type   { 'EXACT' }
+sub to_FTstring {
+  my $self = shift;
+  my $low  = $self->min_start;
+  my $high = $self->max_end;
+  return "$low..$high";
+}
+sub phase { undef }
+sub class {
+  my $self = shift;
+  my $d = $self->{class};
+  $self->{class} = shift if @_;
+  return defined($d) ? $d : ucfirst $self->method;
+}
+
+sub gff_string {
+  my $self = shift;
+  my $name  = $self->name;
+  my $class = $self->class;
+  my $group = "$class $name" if $name;
+  my $string;
+  $string .= join("\t",$self->ref,$self->source||'.',$self->method||'.',
+                       $self->start,$self->stop,
+                       $self->score||'.',$self->strand||'.',$self->phase||'.',
+                       $group);
+  $string .= "\n";
+  foreach ($self->sub_SeqFeature) {
+    # add missing data if we need it
+    $_->ref($self->ref)     unless defined $_->ref;
+    $_->name($self->name);
+    $_->class($self->class);
+    $string .= $_->gff_string;
+  }
+  $string;
+}
+
+
+sub db { return }
+
+sub source_tag {
   my $self = shift;
   my $d = $self->{source};
   $self->{source} = shift if @_;
@@ -167,6 +243,8 @@ sub introns {
   my $self = shift;
   return;
 }
+
+sub has_tag { }
 
 # get/set the configurator (Bio::Graphics::FeatureFile) for this feature
 sub configurator {
@@ -200,6 +278,7 @@ sub make_link {
   }
 }
 
+sub DESTROY { }
 
 1;
 
@@ -281,11 +360,11 @@ to new().  The feature endpoints are automatically adjusted.
 
 =item segments()
 
-An alias for sub_SeqFeatures().
+An alias for sub_SeqFeature().
 
 =item merged_segments()
 
-Another alias for sub_SeqFeatures().
+Another alias for sub_SeqFeature().
 
 =item stop()
 
@@ -297,7 +376,7 @@ An alias for seqname().
 
 =item exons()
 
-An alias for sub_SeqFeatures() (you don't want to know why!)
+An alias for sub_SeqFeature() (you don't want to know why!)
 
 =back
 

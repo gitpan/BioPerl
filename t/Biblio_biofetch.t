@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: Biblio_biofetch.t,v 1.3.2.3 2002/03/17 00:48:49 jason Exp $
+# $Id: Biblio_biofetch.t,v 1.3.2.4 2002/06/04 21:46:52 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -26,9 +26,8 @@ BEGIN {
     plan tests => $NUMTESTS;
     eval { require 'IO/String.pm' };
     if( $@ ) {
-	print STDERR "IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping tests.\n";
-	for( 1..$NUMTESTS ) {
-	    skip(1,"IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping tests");
+	for( $Test::ntest..$NUMTESTS ) {
+	    skip("IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping tests",1);
 	}
        $error = 1; 
     }
@@ -71,7 +70,7 @@ if ($@) {
 	print STDERR $@ if( $DEBUG );
 
     foreach ( $Test::ntest..$NUMTESTS) { 
-	skip(1,'could not connect to Medline');}
+	skip('could not connect to Medline',1);}
 }
 
 $ref = $refio = undef;

@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: BlastHSP.pm,v 1.11.2.1 2002/03/14 22:48:51 jason Exp $
+# $Id: BlastHSP.pm,v 1.11.2.2 2002/05/30 03:18:04 jason Exp $
 #
 # BioPerl module Bio::Search::HSP::BlastHSP
 #
@@ -159,7 +159,7 @@ use vars qw( @ISA $GAP_SYMBOL $Revision %STRAND_SYMBOL );
 use overload 
     '""' => \&to_string;
 
-$Revision = '$Id: BlastHSP.pm,v 1.11.2.1 2002/03/14 22:48:51 jason Exp $';  #'
+$Revision = '$Id: BlastHSP.pm,v 1.11.2.2 2002/05/30 03:18:04 jason Exp $';  #'
 
 @ISA = qw(Bio::SeqFeature::SimilarityPair Bio::Search::HSP::HSPI);
 
@@ -430,7 +430,7 @@ sub gaps {
     }
 
     if($seqType eq 'total') {
-	return ($self->{'_queryGaps'} + $self->{'_sbjctGaps'}) || 0;
+	return (($self->{'_queryGaps'} || 0) + ($self->{'_sbjctGaps'} || 0)) || 0;
     } else {
 	## Sensitive to member name format.
 	$seqType = "_\L$seqType\E";

@@ -7,7 +7,7 @@ use Carp 'cluck';
 use GD;
 use vars '$VERSION';
 
-$VERSION = '0.99';
+$VERSION = '1.01';
 
 use constant KEYLABELFONT => gdMediumBoldFont;
 use constant KEYSPACING   => 5; # extra space between key columns
@@ -221,15 +221,15 @@ sub _do_add_track {
   my $panel_map = ref($map) eq 'CODE'
     ?  sub {
           my $feature = shift;
-	  return 'track' if eval { $feature->primary_tag } eq 'track';
-	  return 'group' if eval { $feature->primary_tag } eq 'group';
+	  return 'track' if eval { $feature->primary_tag  eq 'track' };
+	  return 'group' if eval { $feature->primary_tag  eq 'group' };
 	  return $map->($feature);
 	}
       :
 	sub {
 	  my $feature = shift;
-	  return 'track' if eval { $feature->primary_tag } eq 'track';
-	  return 'group' if eval { $feature->primary_tag } eq 'group';
+	  return 'track' if eval { $feature->primary_tag  eq 'track' };
+	  return 'group' if eval { $feature->primary_tag  eq 'group' };
 	  return $glyph_name;
 	};
 
@@ -261,7 +261,7 @@ sub _add_track {
 					   );
 
   my $factory = Bio::Graphics::Glyph::Factory->new($self,@options);
-  my $track   = $factory->make_glyph($feature);
+  my $track   = $factory->make_glyph(-1,$feature);
 
   splice(@{$self->{tracks}},$position,0,$track);
   return $track;
@@ -404,7 +404,7 @@ sub format_key {
 	my $t = Bio::Graphics::Feature->new(-segments=>
 					    [Bio::Graphics::Feature->new(-start => $self->offset,
 									 -stop  => $self->offset+$self->length)]);
-	my $g = $track->factory->make_glyph($t);
+	my $g = $track->factory->make_glyph(0,$t);
 	$glyph = $g->keyglyph;
       }
       next unless $glyph;
@@ -729,35 +729,82 @@ Bio::Graphics::Panel - Generate GD images of Bio::Seq objects
 
 =head1 SYNOPSIS
 
-  use Ace::Sequence;  # or any Bio::Seq factory
-  use Bio::Graphics::Panel;
+  use Bio::Graphics;
+  use Bio::DB::BioFetch;  # or some other Bio::SeqI generator
 
-  my $db     = Ace->connect(-host=>'brie2.cshl.org',-port=>2005) or die;
-  my $cosmid = Ace::Sequence->new(-seq=>'Y16B4A',
-				  -db=>$db,-start=>-15000,-end=>15000) or die;
+  # get a Bio::SeqI object somehow
+  my $bf     = Bio::DB::BioFetch->new;
+  my $cosmid = $bf->getSeq_by_id('CEF58D5');
 
-  my @transcripts = $cosmid->transcripts;
+  my @features = $seq->all_SeqFeatures;
+  my @CDS      = grep {$_->primary_tag eq 'CDS'}  @features;
+  my @gene     = grep {$_->primary_tag eq 'gene'} @features;
+  my @tRNAs    = grep {$_->primary_tag eq 'tRNA'} @features;
 
+  # let the drawing begin...
   my $panel = Bio::Graphics::Panel->new(
 				      -segment => $cosmid,
 				      -width  => 800
 				     );
 
-
   $panel->add_track(arrow => $cosmid,
- 		  -bump => 0,
- 		  -tick=>2);
+	  	   -bump => 0,
+		   -double=>1,
+		   -tick => 2);
 
-  $panel->add_track(transcript => \@transcripts,
- 		    -bgcolor   =>  'wheat',
- 		    -fgcolor   =>  'black',
-                    -key       => 'Curated Genes',
- 		    -bump      =>  +1,
- 		    -height    =>  10,
- 		    -label     =>  1);
+  $panel->add_track(transcript  => \@gene,
+		   -bgcolor    =>  'blue',
+		   -fgcolor    =>  'black',
+		   -key        => 'Genes',
+		   -bump       =>  +1,
+		   -height     =>  10,
+		   -label      => 1,
+		   -description=> 1
+		 ) ;
 
-  my $boxes = $panel->boxes;
-  print $panel->png;
+  $panel->add_track(transcript2  => \@CDS,
+		    -bgcolor    =>  'cyan',
+		    -fgcolor    =>  'black',
+		    -key        => 'CDS',
+		    -bump       =>  +1,
+		    -height     =>  10,
+		    -label      => \&cds_label,
+		    -description=> \&cds_description,
+		 );
+
+  $panel->add_track(generic    => \@tRNAs,
+		    -bgcolor   =>  'red',
+		    -fgcolor   =>  'black',
+		    -key       => 'tRNAs',
+		    -bump      =>  +1,
+		    -height    =>  8,
+		    -label      => 1,
+		   );
+
+  my $gd = $panel->gd;
+  print $gd->can('png') ? $gd->png : $gd->gif;
+
+  # these are callbacks used to generate nice labels and descriptions for
+  # the features...
+  sub cds_label {
+    my $feature = shift;
+    my @notes;
+    foreach (qw(product gene)) {
+      next unless $feature->has_tag($_);
+      @notes = $feature->each_tag_value($_);
+      last;
+    }
+    $notes[0];
+  }
+
+  sub cds_description {
+    my $feature = shift;
+    my @notes = $feature->each_tag_value('notes')
+                if $feature->has_tag('notes');
+    return unless @notes;
+    substr($notes[0],30) = '...' if length $notes[0] > 30;
+    $notes[0];
+  }
 
 =head1 DESCRIPTION
 
@@ -1196,19 +1243,19 @@ panel needs to configure a glyph.  The callback will be called with
 three arguments like this:
 
    sub callback {
-      my ($feature,$option_name,$part_no,$total_parts) = @_;
+      my ($feature,$option_name,$part_no,$total_parts,$glyph) = @_;
       # do something which results in $option_value being set
       return $option_value;
    }
 
-The three arguments are C<$feature>, a reference to the
-IO::SeqFeatureI object, C<$option_name>, the name of the option to
-configure, C<$part_no>, an integer index indicating which subpart of
-the feature is being drawn, and C<$total_parts>, an integer indicating
-the total number of subfeatures in the feature.  The latter fields are
-useful in the common case of treating the first or last subfeature
-differently, such as using a different color for the terminal exon of
-a gene.
+The five arguments are C<$feature>, a reference to the IO::SeqFeatureI
+object, C<$option_name>, the name of the option to configure,
+C<$part_no>, an integer index indicating which subpart of the feature
+is being drawn, C<$total_parts>, an integer indicating the total
+number of subfeatures in the feature, and finally C<$glyph>, the Glyph
+object itself.  The latter fields are useful in the common case of
+treating the first or last subfeature differently, such as using a
+different color for the terminal exon of a gene.
 
 The callback should return a string indicating the desired value of
 the option.  To tell the panel to use the default value for this

@@ -1,5 +1,4 @@
-
-
+# $Id: AnnotationCollectionI.pm,v 1.7.2.1 2002/06/10 17:18:56 jason Exp $
 #
 # BioPerl module for Bio::AnnotationCollectionI
 #

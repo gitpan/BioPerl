@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: consed.t,v 1.2 2001/12/21 19:11:32 jason Exp $
+## $Id: consed.t,v 1.2.2.1 2002/05/30 19:22:13 jason Exp $
 #
 #####
 #
@@ -23,7 +23,7 @@ BEGIN {
         use lib 't';
     }
     use Test;
-    plan tests => 12;
+    plan tests => 15;
 }
 
 use Bio::Root::IO;
@@ -83,25 +83,20 @@ ok (scalar(@multiplets), 4);
 print("Checking if the number of singletons can be retrieved and if that number is correct (3)...\n") if($DEBUG > 0);
 @singletons = $o_consed->get_singletons();
 ok (scalar(@singletons), 3);
-
-print("Finding out, via grep, how many sequences there are in the acefile _and_ in the singlets file...\n") if($DEBUG > 0);
-$invoker = $o_consed->count_sequences_with_grep();
-my $total_grep_sequences = $invoker;
-print("($total_grep_sequences)\n")if($DEBUG > 0) ;
+my($total_object_sequences, $total_grep_sequences);
+print("Finding out, via grep, how many sequences there are in the acefile _and_ in the singlets file...\n") if $DEBUG > 0; 
+ok($total_grep_sequences = $o_consed->count_sequences_with_grep(), 179);
 
 print("Getting the statistics from the Bio::Tools::Alignment::Consed object to compare the total number of sequences accounted for there to the number of sequences found via grep...\n") if($DEBUG > 0);
-$invoker = $o_consed->sum_lets("total_only");
-my $total_object_sequences = $invoker;
-$total_object_sequences =~ s/.*,//;
-print("($total_object_sequences)\n") if($DEBUG > 0) ;
+ok($total_object_sequences = $o_consed->sum_lets("total_only"),179);
 print("Match?\n") if($DEBUG > 0) ;
 ok ($total_object_sequences, $total_grep_sequences);
 
 print("These are the statistics. Look right? ".$o_consed->sum_lets()."\n") if($DEBUG > 0);
-
+ok($o_consed->sum_lets(),'Singt/singn/doub/pair/mult/total : 65,3,45(90),1(2),4(19),179');
 
 print("Dumping out the hash in a compact way...\n")if($DEBUG > 0)  ;
-$o_consed->dump_hash_compact()if($DEBUG > 0)  ;
+$o_consed->dump_hash_compact() if($DEBUG > 0)  ;
 
 # print("Dumping out the hash in an ugly way...\n");
 # $o_consed->dump_hash();

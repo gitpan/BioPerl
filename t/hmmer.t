@@ -1,7 +1,7 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: hmmer.t,v 1.12 2001/10/23 03:43:58 jason Exp $
+# $Id: hmmer.t,v 1.12.2.2 2002/06/02 19:32:52 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -16,7 +16,7 @@ BEGIN {
 	use lib 't';
     }
     use Test;
-    plan test => 24;
+    plan test => 27;
 }
 
 use Bio::Tools::HMMER::Domain;
@@ -90,6 +90,7 @@ $res = Bio::Tools::HMMER::Results->new( -file =>
 
 ok ($res->number, 2);
 
+
 # parse HMM 2.2 files
 
 $res = Bio::Tools::HMMER::Results->new( -file => 
@@ -112,6 +113,16 @@ foreach $set ( $res->each_Set) {
 	ok($domain->end, 481);
 	ok($domain->bits, -105.2);
 	ok($domain->evalue, 0.0022 );
+	ok($domain->hmmname, 'Methylase_M');
+	
     }
 }
 ok ($res->number, 1);
+
+# test for bugs #(1189,1034,1172)
+$res = Bio::Tools::HMMER::Results->new( -file => Bio::Root::IO->catfile
+					("t","data","hmmsearch.out") , 
+					-type => 'hmmsearch');
+my $res2 = $res->filter_on_cutoff(100,50);
+ok($res2);
+ok($res2->number, 604);

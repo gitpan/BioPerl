@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: HitI.pm,v 1.9 2002/02/28 12:00:51 jason Exp $
+# $Id: HitI.pm,v 1.9.2.1 2002/05/31 18:08:30 jason Exp $
 #
 # BioPerl module Bio::Search::Hit::HitI
 #
@@ -227,6 +227,23 @@ sub significance {
 sub next_hsp {
     my ($self,@args) = @_;
     $self->throw_not_implemented;
+}
+
+=head2 hits
+
+ Title   : hits
+ Usage   :
+ Function:
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub hits{
+   my ($self,@args) = @_;
+
+
 }
 
 

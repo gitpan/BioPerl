@@ -4,6 +4,8 @@ use GD;
 use strict;
 use Carp 'croak';
 use constant BUMP_SPACING => 2; # vertical distance between bumped glyphs
+use vars '$VERSION';
+$VERSION = '1.01';
 
 my %LAYOUT_COUNT;
 
@@ -19,10 +21,12 @@ sub new {
 
   my $feature = $arg{-feature} or die "No feature";
   my $factory = $arg{-factory} || $class->default_factory;
+  my $level   = $arg{-level} || 0;
 
   my $self = bless {},$class;
   $self->{feature} = $feature;
   $self->{factory} = $factory;
+  $self->{level}   = $level;
   $self->{top} = 0;
 
   my @subglyphs;
@@ -31,7 +35,7 @@ sub new {
   if (@subfeatures) {
 
     # dynamic glyph resolution
-    @subglyphs = sort { $a->left  <=> $b->left }  $factory->make_glyph(@subfeatures);
+    @subglyphs = sort { $a->left  <=> $b->left }  $factory->make_glyph($level+1,@subfeatures);
 
     $self->{parts}   = \@subglyphs;
   }
@@ -112,7 +116,7 @@ sub add_feature {
     if (ref $feature eq 'ARRAY') {
       $self->add_group(@$feature);
     } else {
-      push @{$self->{parts}},$factory->make_glyph($feature);
+      push @{$self->{parts}},$factory->make_glyph(0,$feature);
     }
   }
 }
@@ -341,7 +345,7 @@ sub fillcolor {
 # we also look for the "background-color" option for Ace::Graphics compatibility
 sub bgcolor {
   my $self = shift;
-  my $index = $self->option('fillcolor') || $self->option('bgcolor') || return 0;
+  my $index = $self->option('bgcolor') || $self->option('fillcolor') || return 0;
   $self->factory->translate_color($index);
 }
 sub font {
@@ -443,6 +447,7 @@ sub draw {
   if (my @parts = $self->parts) {
     my $x = $left;
     my $y = $top  + $self->top + $self->pad_top;
+    $self->draw_connectors($gd,$x,$y) if $connector && $connector ne 'none';
 
     my $last_x;
     for (my $i=0; $i<@parts; $i++) {
@@ -453,14 +458,19 @@ sub draw {
       $parts[$i]->draw($gd,$fake_x,$y,$i,scalar(@parts));
       $last_x = $parts[$i]->right;
     }
-    $self->draw_connectors($gd,$x,$y) if $connector && $connector ne 'none';
   }
 
   else {  # no part
-    $self->draw_component($gd,$left,$top);
     $self->draw_connectors($gd,$left,$top)
-      if $connector && $connector ne 'none' && !$self->is_recursive;
+      if $connector && $connector ne 'none' && $self->{level} == 0;
+    $self->draw_component($gd,$left,$top);
   }
+}
+
+# the "level" is the level of testing of the glyph
+# groups are level -1, top level glyphs are level 0, subcomponents are level 1 and so forth.
+sub level {
+  shift->{level};
 }
 
 sub draw_connectors {
@@ -473,7 +483,7 @@ sub draw_connectors {
   }
 
   # extra connectors going off ends
-  if (@parts>1) {
+  if (@parts) {
     my($x1,$y1,$x2,$y2) = $self->bounds(0,0);
     my($xl,$xt,$xr,$xb) = $parts[0]->bounds;
     $self->_connector($gd,$dx,$dy,$x1,$xt,$x1,$xb,$xl,$xt,$xr,$xb);
@@ -485,19 +495,24 @@ sub draw_connectors {
 
 sub _connector {
   my $self = shift;
-  my ($gd,$dx,$dy,$xl,$xt,$xr,$xb,$yl,$yt,$yr,$yb) = @_;
-    my $left   = $dx + $xr;
-    my $right  = $dx + $yl;
-    my $top1     = $dy + $xt;
-    my $bottom1  = $dy + $xb;
-    my $top2     = $dy + $yt;
-    my $bottom2  = $dy + $yb;
-    return unless $right-$left > 1;
+  my ($gd,
+      $dx,$dy,
+      $xl,$xt,$xr,$xb,
+      $yl,$yt,$yr,$yb) = @_;
+  my $left   = $dx + $xr;
+  my $right  = $dx + $yl;
+  my $top1     = $dy + $xt;
+  my $bottom1  = $dy + $xb;
+  my $top2     = $dy + $yt;
+  my $bottom2  = $dy + $yb;
+  # restore this comment if you don't like the group dash working
+  # its way backwards.
+  #    return unless $right-$left > 1;
 
-    $self->draw_connector($gd,
-			  $top1,$bottom1,$left,
-			  $top2,$bottom2,$right,
-			 );
+  $self->draw_connector($gd,
+			$top1,$bottom1,$left,
+			$top2,$bottom2,$right,
+		       );
 }
 
 sub draw_connector {
@@ -506,6 +521,7 @@ sub draw_connector {
 
   my $color          = $self->connector_color;
   my $connector_type = $self->connector or return;
+
   if ($connector_type eq 'hat') {
     $self->draw_hat_connector($gd,$color,@_);
   } elsif ($connector_type eq 'solid') {
@@ -653,16 +669,16 @@ sub filled_arrow {
     $gd->line($x2,($y2+$y1)/2,$x2-$indent,$y2,$fg);
     $gd->line($x2-$indent,$y2,$x1,$y2,$fg);
     $gd->line($x1,$y2,$x1,$y1,$fg);
-    $gd->fillToBorder($x1+1,($y1+$y2)/2,$fg,$self->bgcolor);
+    my $left = $self->panel->left > $x1 ? $self->panel->left : $x1;
+    $gd->fillToBorder($left+1,($y1+$y2)/2,$fg,$self->bgcolor);
   } else {
     $gd->line($x1,($y2+$y1)/2,$x1+$indent,$y1,$fg);
     $gd->line($x1+$indent,$y1,$x2,$y1,$fg);
     $gd->line($x2,$y2,$x1+$indent,$y2,$fg);
     $gd->line($x1+$indent,$y2,$x1,($y1+$y2)/2,$fg);
     $gd->line($x2,$y1,$x2,$y2,$fg);
-    if ($x2 > 0 && $x2<=$self->panel->right) {
-       $gd->fillToBorder($x2-1,($y1+$y2)/2,$fg,$self->bgcolor);
-    }
+    my $right = $self->panel->right < $x2 ? $self->panel->right : $x2;
+    $gd->fillToBorder($right-1,($y1+$y2)/2,$fg,$self->bgcolor);
   }
 }
 
@@ -723,9 +739,9 @@ sub _subseq {
   my $feature = shift;
   return $feature->merged_segments         if $feature->can('merged_segments');
   return $feature->segments                if $feature->can('segments');
-  my @split = eval { my $id = $feature->location->seq_id;
+  my @split = eval { my $id   = $feature->location->seq_id;
 		     my @subs = $feature->location->sub_Location;
-		     grep {$id eq $_->seq_id} $feature->location->sub_Location};
+		     grep {$id eq $_->seq_id} @subs};
   return @split if @split;
   return $feature->sub_SeqFeature          if $feature->can('sub_SeqFeature');
   return;
@@ -739,7 +755,7 @@ sub keyglyph {
   $factory->set_option(label => 1);
   $factory->set_option(bump  => 0);
   $factory->set_option(connector  => 'solid');
-  return $factory->make_glyph($feature);
+  return $factory->make_glyph(0,$feature);
 }
 
 # synthesize a key glyph
@@ -764,21 +780,11 @@ sub all_callbacks {
   my $self = shift;
   my $track_level = $self->option('all_callbacks');
   return $track_level if defined $track_level;
-  return $self->panel->all_callbacks; 
+  return $self->panel->all_callbacks;
 }
 
 sub default_factory {
   croak "no default factory implemented";
-}
-
-# This returns true if the underlying feature is fully recursive, like Bio::DB::GFF or
-# Gadfly, false if the underlying feature has split locations, like Bio::Seq::RichSeq.
-# Play with this if you start getting labels appearing on each element of a segmented
-# glyph.
-sub is_recursive {
-  my $self = shift;
-  return $self->{_recursive} if exists $self->{_recursive};
-  return $self->{_recursive} = !$self->feature->isa('Bio::SeqFeature::Generic');
 }
 
 1;
@@ -920,6 +926,12 @@ Return the value of the indicated option.
 =item $index = $glyph-E<gt>color($color)
 
 Given a symbolic or #RRGGBB-form color name, returns its GD index.
+
+=item $level = $glyph-E<gt>level
+
+The "level" is the nesting level of the glyph.
+Groups are level -1, top level glyphs are level 0,
+subparts (e.g. exons) are level 1 and so forth.
 
 =back
 

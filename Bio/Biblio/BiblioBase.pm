@@ -1,4 +1,4 @@
-# $Id: BiblioBase.pm,v 1.6.2.1 2002/03/11 16:02:34 jason Exp $
+# $Id: BiblioBase.pm,v 1.6.2.2 2002/04/18 13:05:24 jason Exp $
 #
 # BioPerl module for Bio::Biblio::BiblioBase
 #
@@ -92,21 +92,10 @@ use Bio::Root::Root;
 
 @ISA = qw(Bio::Root::Root);
 
-sub _abstractDeath {
-  my $self = shift;
-  my $package = ref $self;
-  my $caller = (caller(1))[3];
-
-  $self->throw ("Abstract method '$caller' should not been called.\n" .
-		"Not your fault - author of $package should be blamed!");
-
-}
-
 # these methods should not be called here;
 # they should be implemented by a subclass
-sub _accessible { shift->_abstractDeath; }
-sub _attr_type { shift->_abstractDeath; }
-
+sub _accessible { shift->throw_not_implemented(); }
+sub _attr_type { shift->throw_not_implemented(); }
 
 #
 # deal with 'set_' and 'get_' methods

@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: GDB.t,v 1.12 2002/03/04 01:55:17 jason Exp $
+# $Id: GDB.t,v 1.12.2.1 2002/05/31 19:06:19 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -25,7 +25,7 @@ BEGIN {
     plan tests => $NUMTESTS;
     
     unless( $SKIPTEST ) {
-	foreach ( 1..$NUMTESTS ) {
+	foreach ( $Test::ntest..$NUMTESTS ) {
 	    skip('GDB test skipped to avoid timeouts',1);
 	    $error = 1;
 	}
@@ -35,12 +35,12 @@ BEGIN {
 	 };
     if( $@ ) {
 	print STDERR "Cannot load LWP::UserAgent or HTML::Parser, skipping tests\n";
-	foreach ( 1..$NUMTESTS) { skip('LWP::UserAgent or HTML::Parser not installed',1); }
+	foreach ( $Test::ntest..$NUMTESTS) { skip('LWP::UserAgent or HTML::Parser not installed',1); }
 	$error = 1;
     } 
     if( $] < 5.005 ) {
 	print STDERR "GDB parsing does not work with 5.005 or lower Perl versions.\n";
-	foreach ( 1..$NUMTESTS) { skip('need perl > 5.005',1); }
+	foreach ( $Test::ntest..$NUMTESTS) { skip('need perl > 5.005',1); }
 	$error = 1;
     }
 }

@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: ResultI.pm,v 1.12 2002/02/07 22:12:46 jason Exp $
+# $Id: ResultI.pm,v 1.12.2.2 2002/05/31 18:08:31 jason Exp $
 #
 # BioPerl module Bio::Search::Result::ResultI
 #
@@ -28,7 +28,7 @@ Bio::Search::Result::ResultI - Abstract interface to Search Result objects
     my $io = new Bio::SearchIO(-format => 'blast',
  			       -file   => 't/data/HUMBETGLOA.tblastx');
     my $result = $io->next_result;
-    while( $hit = $result->next_hits()) { # enter code here for hit processing
+    while( $hit = $result->next_hit()) { # enter code here for hit processing
     }
 
     my $id = $result->query_name();
@@ -309,6 +309,34 @@ sub get_statistic{
 sub available_statistics{
    my ($self) = @_;
    $self->throw_not_implemented();
+}
+
+=head2 algorithm
+
+ Title   : algorithm
+ Usage   : my $r_type = $hsp->algorithm
+ Function: Obtain the name of the algorithm used to obtain the Result
+ Returns : string (e.g., BLASTP)
+ Args    : [optional] scalar string to set value
+
+=cut
+
+sub algorithm{
+    return '';
+}
+
+=head2 algorithm_version
+
+ Title   : algorithm_version
+ Usage   : my $r_version = $hsp->algorithm_version
+ Function: Obtain the version of the algorithm used to obtain the Result
+ Returns : string (e.g., 2.1.2)
+ Args    : [optional] scalar string to set algorithm version value
+
+=cut
+
+sub algorithm_version{
+    return '';
 }
 
 1;

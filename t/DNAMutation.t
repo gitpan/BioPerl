@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: DNAMutation.t,v 1.6 2001/04/01 17:54:59 heikki Exp $
+## $Id: DNAMutation.t,v 1.6.2.1 2002/03/20 13:08:24 heikki Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -16,7 +16,7 @@ BEGIN {
     }
     use Test;
 
-    plan tests => 28 }
+    plan tests => 36 }
 
 use Bio::Variation::DNAMutation;
 use Bio::Variation::Allele;
@@ -123,3 +123,24 @@ $obj->add_Allele($a1);
 $obj->add_Allele($a2);
 
 ok scalar ($obj->each_Allele), 2;
+
+
+$obj = Bio::Variation::DNAMutation->new
+    ('-start'         => 23,
+     '-end'           => 24,
+     '-length'        => 2,
+     '-upStreamSeq'   => 'gt',
+     '-dnStreamSeq'   => 'at',
+     '-proof'         => 'experimental',
+     '-isMutation'    => 1,
+     '-mut_number'    => 2
+     );
+
+ok $obj->start(), 23;
+ok $obj->end(), 24;
+ok $obj->length(), 2;
+ok $obj->upStreamSeq(), 'gt';
+ok $obj->dnStreamSeq(), 'at';
+ok $obj->proof(), 'experimental';
+ok $obj->mut_number(), 2;
+ok $obj->isMutation;

@@ -1,5 +1,5 @@
-# $Id: SimpleMap.pm,v 1.6 2002/02/11 09:24:51 heikki Exp $
-#
+# $Id: SimpleMap.pm,v 1.6.2.2 2002/04/18 13:05:24 jason Exp $
+
 # BioPerl module for Bio::Map::SimpleMap
 #
 # Cared for by Jason Stajich <jason@bioperl.org>
@@ -224,7 +224,7 @@ sub length {
    my ($len ) = 0;
 
    foreach my $marker ($self->each_element) {
-       $len = $marker->position->numeric if  $marker->postion->numeric > $len;
+       $len = $marker->position->numeric if  $marker->position->numeric > $len;
    }
    return $len;
 }

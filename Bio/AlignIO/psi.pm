@@ -1,4 +1,4 @@
-# $Id: psi.pm,v 1.1.2.1 2002/03/14 18:06:35 jason Exp $
+# $Id: psi.pm,v 1.1.2.2 2002/04/18 13:05:25 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::psi
 #
@@ -92,7 +92,7 @@ use Bio::LocatableSeq;
  Title   : next_aln
  Usage   : $aln = $stream->next_aln()
  Function: returns the next alignment in the stream
- Returns : Bio::Align::AlignI object
+ Returns : L<Bio::Align::AlignI> object
  Args    : NONE
 
 =cut
@@ -127,7 +127,7 @@ sub next_aln {
  Usage   : $stream->write_aln(@aln)
  Function: writes the NCBI psi-format object (.aln) into the stream
  Returns : 1 for success and 0 for error
- Args    : Bio::Align::AlignI object
+ Args    : L<Bio::Align::AlignI> object
 
 
 =cut

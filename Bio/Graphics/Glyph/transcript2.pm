@@ -1,9 +1,12 @@
 package Bio::Graphics::Glyph::transcript2;
 
+# $Id: transcript2.pm,v 1.3.2.9 2002/05/04 20:29:59 lstein Exp $
+
 use strict;
 use Bio::Graphics::Glyph::transcript;
-use vars '@ISA';
+use vars '@ISA','$VERSION';
 @ISA = 'Bio::Graphics::Glyph::transcript';
+$VERSION = '1.2';
 
 use constant MIN_WIDTH_FOR_ARROW => 8;
 
@@ -11,25 +14,28 @@ sub pad_left  {
   my $self = shift;
   my $pad = $self->Bio::Graphics::Glyph::generic::pad_left;
   return $pad unless $self->feature->strand < 0;
-  my $first = ($self->parts)[0] or return $pad;
+  my $first = ($self->parts)[0] || $self;
   my @rect  = $first->bounds();
   my $width = abs($rect[2] - $rect[0]);
   return $self->SUPER::pad_left if $width < MIN_WIDTH_FOR_ARROW;
-  return 0;
+  return $pad;
 }
 
 sub pad_right  {
   my $self = shift;
   my $pad = $self->Bio::Graphics::Glyph::generic::pad_right;
-  my $last = ($self->parts)[-1] or return $pad;
+  return $pad if $self->{level} > 0;
+  my $last = ($self->parts)[-1] || $self;
   my @rect  = $last->bounds();
   my $width = abs($rect[2] - $rect[0]);
   return $self->SUPER::pad_right if $width < MIN_WIDTH_FOR_ARROW;
-  return $pad;
+  return $pad
 }
 
 sub draw_component {
   my $self = shift;
+  return unless $self->level > 0;
+
   my $gd = shift;
   my ($left,$top) = @_;
   my @rect = $self->bounds(@_);
@@ -40,16 +46,14 @@ sub draw_component {
   if ($filled) {
     my $f = $self->feature;
 
-    if ($f->strand < 0 
-	&& (!$self->is_recursive
-	 || $self->{partno} == 0)) { # first exon, minus strand transcript
+    if ($f->strand < 0
+	&& 
+	$self->{partno} == 0) { # first exon, minus strand transcript
       $self->filled_arrow($gd,-1,@rect);
-      $self->{filled}++;
-    } elsif ($f->strand >= 0 
-	     && (!$self->is_recursive
-		 || $self->{partno} == $self->{total_parts}-1)) { # last exon, plus strand
+    } elsif ($f->strand >= 0
+	     &&
+	     $self->{partno} == $self->{total_parts}-1) { # last exon, plus strand
       $self->filled_arrow($gd,+1,@rect);
-      $self->{filled}++;
     } else {
       $self->SUPER::draw_component($gd,@_);
     }
@@ -68,8 +72,22 @@ sub connector {
 
 sub draw_connectors {
   my $self = shift;
-  my @parts = $self->parts;
-  if ($self->{filled} || $parts[0]->{filled} || $parts[-1]->{filled}) {
+  my ($gd,$dx,$dy) = @_;
+
+  my $part;
+  if (my @parts  = $self->parts) {
+    $part   = $self->feature->strand > 0 ? $parts[-1] : $parts[0];
+  } else {
+    # no parts -- so draw an intron spanning whole thing
+    my($x1,$y1,$x2,$y2) = $self->bounds(0,0);
+    $self->_connector($gd,$dx,$dy,$x1,$y1,$x1,$y2,$x2,$y1,$x2,$y2);
+    $part = $self;
+  }
+  my @rect   = $part->bounds();
+  my $width  = abs($rect[2] - $rect[0]);
+  my $filled = $width >= MIN_WIDTH_FOR_ARROW;
+
+  if ($filled) {
     $self->Bio::Graphics::Glyph::generic::draw_connectors(@_);
   } else {
     $self->SUPER::draw_connectors(@_);

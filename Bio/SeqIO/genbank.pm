@@ -1,4 +1,4 @@
-# $Id: genbank.pm,v 1.50.2.1 2002/03/13 16:48:28 jason Exp $
+# $Id: genbank.pm,v 1.50.2.2 2002/05/22 03:06:34 jason Exp $
 #
 # BioPerl module for Bio::SeqIO::GenBank
 #
@@ -925,6 +925,10 @@ sub _read_FTHelper_GenBank {
     } else {
         # No feature key
 	$self->debug("no feature key!\n");
+	# change suggested by JDiggans to avoid infinite loop- 
+	# see bugreport 1062.
+	# reset buffer to prevent infinite loop
+	$$buffer = $self->_readline();
         return;
     } 
     

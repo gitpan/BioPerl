@@ -1,4 +1,4 @@
-# $Id: AlignIO.pm,v 1.20 2002/02/18 17:17:23 bosborne Exp $
+# $Id: AlignIO.pm,v 1.20.2.1 2002/04/21 14:14:33 jason Exp $
 #
 # BioPerl module for Bio::AlignIO
 #
@@ -175,7 +175,7 @@ Specify the format of the file.  Supported formats include:
    pfam        Pfam sequence alignment format
    phylip      Felsenstein's PHYLIP format
 
-Currently only those formats which were implemented in SimpleAlign.pm
+Currently only those formats which were implemented in L<Bio::SimpleAlign>
 have been incorporated in AlignIO.pm.  Specifically, mase, stockholm
 and prodom have only been implemented for input.
 

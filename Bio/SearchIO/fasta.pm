@@ -1,4 +1,4 @@
-# $Id: fasta.pm,v 1.10 2002/02/06 16:09:25 jason Exp $
+# $Id: fasta.pm,v 1.10.2.2 2002/05/22 14:05:54 jason Exp $
 #
 # BioPerl module for Bio::SearchIO::fasta
 #
@@ -326,11 +326,12 @@ sub next_result{
 	       $self->element({'Name' => 'Hsp_sw-score',
 			       'Data' => $1});
 	   }
-	   if( /(\d+\.\d+)\%\s*identity\s*\((\d+\.\d+)\%\s*ungapped\)\s*in\s*(\d+)\s+(aa|nt)\s+overlap\s*\((\d+)\-(\d+):(\d+)\-(\d+)\)/ ) {
+	   if( /(\d+(\.\d+)?)\%\s*identity(\s*\((\d+(\.\d+)?)\%\s*ungapped\))?\s*in\s*(\d+)\s+(aa|nt)\s+overlap\s*\((\d+)\-(\d+):(\d+)\-(\d+)\)/ ) {
 	       my ($identper,$gapper,$len,$querystart,
-		   $queryend,$hitstart,$hitend) = ($1,$2,$3,$5,$6,$7,$8);
+		   $queryend,$hitstart,$hitend) = ($1,$4,$6,$8,$9,$10,$11);
+	       
 	       my $ident = POSIX::ceil(($identper/100) * $len);
-	       my $gaps = POSIX::ceil ( ($gapper/100) * $len);
+	       my $gaps = ( defined $gapper ) ? POSIX::ceil ( ($gapper/100) * $len) : undef;
 	       
 	       $self->element({'Name' => 'Hsp_gaps',
 			       'Data' => $gaps});
@@ -380,11 +381,15 @@ sub next_result{
 	   my $len = 0;
 	   
 	   while( defined($_ ) ) {
+	       
 	       chomp;
 	       if( /residues in \d+\s+query\s+sequences/) {
 		   $self->_pushback($_);
 		   last;
-	       }
+	       } elsif( /^>>/ ) {
+		   $self->_pushback($_);
+		   last;
+	       }	       
 	       if( $count == 0 ) {
 	       } elsif( $count == 1 || $count == 3 ) {
 		   if( /^(\S+\s+)(\S+)/ ) {

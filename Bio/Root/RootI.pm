@@ -1,4 +1,4 @@
-# $Id: RootI.pm,v 1.47.2.1 2002/03/11 01:44:47 jason Exp $
+# $Id: RootI.pm,v 1.47.2.5 2002/06/06 21:36:59 jason Exp $
 #
 # BioPerl module for Bio::Root::RootI
 #
@@ -108,7 +108,8 @@ use Carp 'confess','carp';
 BEGIN { 
     $ID        = 'Bio::Root::RootI';
     $VERSION   = 1.0;
-    $Revision  = '$Id: RootI.pm,v 1.47.2.1 2002/03/11 01:44:47 jason Exp $ ';
+    $Revision  = '$Id: RootI.pm,v 1.47.2.5 2002/06/06 21:36:59 jason Exp $ ';
+    $VERSION   = 1.0;
     $DEBUG     = 0;
     $VERBOSITY = 0;
 }
@@ -132,7 +133,6 @@ sub new {
 
     ## See "Comments" above regarding use of _rearrange().
     $self->verbose($verbose);
-
     return $self;
 }
 
@@ -155,8 +155,10 @@ sub _initialize {
 sub _create_object {
   my $class = shift;
   my @args = @_;
-  carp("Use of Bio::Root::RootI is deprecated.  Please use Bio::Root::Root instead");
-  eval "use Bio::Root::Root";
+  unless ( $ENV{'BIOPERLDEBUG'} ) {
+      carp("Use of Bio::Root::RootI is deprecated.  Please use Bio::Root::Root instead");
+  }
+  eval "require Bio::Root::Root";
   return Bio::Root::Root->new(@args);
 }
 
@@ -259,7 +261,6 @@ sub deprecated{
    }
 }
 
-		     
 =head2 verbose
 
  Title   : verbose
@@ -277,7 +278,7 @@ sub deprecated{
 
 sub verbose{
    my ($self,$value) = @_;
-   $self->_abstractDeath('verbose');
+   $self->throw_not_implemented();
 }
 
 =head2 stack_trace_dump
@@ -477,7 +478,7 @@ cleanup methods.
 
 sub _register_for_cleanup {
   my ($self,$method) = @_;
-  $self->_abstractDeath('_register_for_cleanup');
+   $self->throw_not_implemented();
 }
 
 =head2 _unregister_for_cleanup
@@ -494,7 +495,7 @@ sub _register_for_cleanup {
 
 sub _unregister_for_cleanup {
   my ($self,$method) = @_;
-  $self->_abstractDeath('_unregister_for_cleanup');
+   $self->throw_not_implemented();
 }
 
 =head2 _cleanup_methods
@@ -509,7 +510,9 @@ sub _unregister_for_cleanup {
 
 sub _cleanup_methods {
   my $self = shift;
-  carp("Use of Bio::Root::RootI is deprecated.  Please use Bio::Root::Root instead");
+  unless ( $ENV{'BIOPERLDEBUG'} || $self->verbose  > 0 ) {
+      carp("Use of Bio::Root::RootI is deprecated.  Please use Bio::Root::Root instead");
+  }
   return;
 }
 

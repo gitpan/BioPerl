@@ -1,4 +1,4 @@
-# $Id: MapIO.pm,v 1.2 2001/12/10 16:10:16 heikki Exp $
+# $Id: MapIO.pm,v 1.2.2.1 2002/04/21 14:30:22 jason Exp $
 #
 # BioPerl module for Bio::MapIO
 #
@@ -129,7 +129,7 @@ sub new {
  Title   : next_tree
  Usage   : my $map = $factory->next_map;
  Function: Get a map from the factory
- Returns : Bio::Map::MapI
+ Returns : L<Bio::Map::MapI>
  Args    : none
 
 
@@ -139,7 +139,7 @@ sub new {
  Usage   : $factory->write_map($map);
  Function: Write a map out through the factory
  Returns : none
- Args    : Bio::Map::MapI
+ Args    : L<Bio::Map::MapI>
 
 =cut
 
@@ -150,7 +150,7 @@ sub new {
  Usage   : $parser->attatch_EventHandler($handler)
  Function: Adds an event handler to listen for events
  Returns : none
- Args    : Bio::Event::EventHandlerI
+ Args    : L<Bio::Event::EventHandlerI>
 
 =cut
 
@@ -169,7 +169,7 @@ sub attach_EventHandler{
  Title   : _eventHandler
  Usage   : private
  Function: Get the EventHandler
- Returns : Bio::Event::EventHandlerI
+ Returns : L<Bio::Event::EventHandlerI>
  Args    : none
 
 

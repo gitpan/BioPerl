@@ -1,4 +1,4 @@
-# $Id: DasI.pm,v 1.3 2002/03/04 22:16:22 jason Exp $
+# $Id: DasI.pm,v 1.3.2.1 2002/04/04 08:01:42 heikki Exp $
 #
 # BioPerl module for Bio::DasI
 #
@@ -104,11 +104,10 @@ package Bio::DasI;
 use strict;
 
 use vars qw(@ISA);
-use Bio::Root;
-use Carp;
+use Bio::Root::RootI;
 
 # Object preamble - inherits from Bio::Root;
-@ISA = qw(Bio::Root);
+@ISA = qw(Bio::Root::RootI);
 
 =head2 types
 

@@ -2,7 +2,7 @@
 ## Bioperl Test Harness Script for Modules
 ##
 # CVS Version
-# $Id: SeqFeature.t,v 1.20 2001/10/22 08:22:58 heikki Exp $
+# $Id: SeqFeature.t,v 1.20.2.1 2002/04/21 01:51:46 jason Exp $
 
 
 # Before `make install' is performed this script should be runnable with
@@ -20,7 +20,7 @@ BEGIN {
     }
     use Test;
 
-    plan tests => 37;
+    plan tests => 41;
 }
 
 use Bio::Seq;
@@ -148,7 +148,7 @@ ok $pair->end, 440;
 
 ok defined ( $comp_obj1 = Bio::SeqFeature::Computation->new('-start' => 1,
 							    '-end'   => 10) );
-ok ( $comp_obj1->computation_id(332) );
+ok ( $comp_obj1->computation_id(332),332 );
 ok ( $comp_obj1->add_score_value('P', 33) );
 {
     $comp_obj2 = Bio::SeqFeature::Computation->new('-start' => 2,
@@ -157,6 +157,23 @@ ok ( $comp_obj1->add_score_value('P', 33) );
     ok (@sft = $comp_obj1->all_sub_SeqFeature_types() );
     ok ($sft[0], 'exon');
 }
+
+ok defined ( $comp_obj1 = new Bio::SeqFeature::Computation 
+	     (
+	      -start => 10, -end => 100,
+	      -strand => -1, -primary => 'repeat',
+	      -program_name => 'GeneMark',
+	      -program_date => '12-5-2000',
+	      -program_version => 'x.y',
+	      -database_name => 'Arabidopsis',
+	      -database_date => '12-dec-2000',
+	      -computation_id => 2231,
+	      -score    => { no_score => 334 } )
+	     );
+
+ok ( $comp_obj1->computation_id, 2231 );
+ok ( $comp_obj1->add_score_value('P', 33) );
+ok ( ($comp_obj1->each_score_value('no_score'))[0], '334');
 
 # some tests for bug #947
 

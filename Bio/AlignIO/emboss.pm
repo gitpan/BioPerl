@@ -1,4 +1,4 @@
-# $Id: emboss.pm,v 1.6.2.3 2002/03/17 01:27:20 jason Exp $
+# $Id: emboss.pm,v 1.6.2.4 2002/04/18 13:05:25 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::emboss
 #
@@ -96,7 +96,7 @@ sub _initialize {
  Title   : next_aln
  Usage   : $aln = $stream->next_aln()
  Function: returns the next alignment in the stream.
- Returns : Bio::SimpleAlign object - returns 0 on end of file
+ Returns : L<Bio::Align::AlignI> object - returns 0 on end of file
 	    or on error
  Args    : NONE
 
@@ -229,7 +229,7 @@ sub next_aln {
  Usage   : $stream->write_aln(@aln)
  Function: writes the $aln object into the stream in emboss format
  Returns : 1 for success and 0 for error
- Args    : Bio::Align::AlignI object
+ Args    : L<Bio::Align::AlignI> object
 
 
 =cut

@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: TCoffee.t,v 1.16.2.4 2002/03/18 14:50:34 jason Exp $
+## $Id: TCoffee.t,v 1.16.2.6 2002/03/22 20:29:36 jason Exp $
 
 use strict;
 use vars qw($NUMTESTS);
@@ -107,7 +107,7 @@ ok( int($aln1->average_percentage_identity), 39);
 $aln = $factory->profile_align($aln1,$seq);
 ok( $aln->no_sequences, 4);
 if( $version <= 1.22 ) {
-    ok( int($aln->overall_percentage_identity), 18);    
+    ok( $aln->overall_percentage_identity > 18);    
     ok( int($aln->average_percentage_identity), 44);
 } else {
     ok( int($aln->overall_percentage_identity), 21);

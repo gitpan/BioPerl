@@ -1,6 +1,6 @@
 ## --Makefile.PL for Bioperl core module distribution--##
 ## ----------------------------------------------------##
-## $Id: Makefile.PL,v 1.30.2.5 2002/03/17 00:00:47 jason Exp $
+## $Id: Makefile.PL,v 1.30.2.10 2002/06/11 13:09:53 jason Exp $
 ##----------------------------------------------------
 
 #
@@ -23,11 +23,11 @@
 	     'XML::Writer'              => '0.0/Parsing + writing of XML documents/Bio::Variation code, GAME parser/Bio::SeqIO::game,Bio::Variation::*',
 	     'XML::Parser::PerlSAX'              => '0.0/Parsing of XML documents/Bio::Variation code, GAME parser/Bio::SeqIO::game,Bio::Variation::*',
 	     'XML::Twig'         	=> '0.0/Available on CPAN/parsing of XML documents/Module Bio::Variation::IO::xml.pm',
-	     'File::Temp'               => '0.0/Temporary File creation/Bio::DB::WebDBSeqI, Bio::Seq::LargePrimarySeq',
+	     'File::Temp'               => '0.0/Temporary File creation/Bio::Root::IO uses if present/Bio::DB::WebDBSeqI, Bio::Seq::LargePrimarySeq',
 	     'SOAP::Lite'               => '0.0/SOAP protocol/XEMBL Services (also Bibliographic queries in Biblio::) /Bio::DB::XEMBLService',
-	     'HTML::Parser'             => '0.0/HTML parsing of GDB page/Bio::DB::GDB',
+	     'HTML::Parser'             => '0.0/HTML parsing/HTML parsing of GDB page/Bio::DB::GDB',
 	     'DBD::mysql'               => '0.0/Mysql driver/loading and querying of Mysql-based GFF feature databases/Bio::DB::GFF',
-	     'GD'                       => '1.3/Graphical Drawing Toolkit/Rendering Sequences and Features/Bio::Graphics',
+	     'GD'                       => '1.19/Graphical Drawing Toolkit/Rendering Sequences and Features/Bio::Graphics',
 	     'Storable'                 => '0.0/Persistent object storage and retrieval/Storing sequence objects in local file cache/Bio::DB::FileCache',
 # rare function let's not scare people
 # 	     'srsperl.pm'               => '0.0/Sequence Retrieval System (SRS) perl API/alternative way of retrieving sequences/Bio::LiveSeq::IO::SRS.pm'
@@ -78,15 +78,22 @@ sub MY::postamble {
 # Prompt user for BioGFFDB stuff
 #
 
-if(  eval { require DBI } ) {
-    my $proceed = user_prompt("Do you want to run the BioGFFDB tests (requires mysql) y/n",'n');
-    if( $proceed eq 'y' ) {
-	system("touch t/do_biodbgff.tests");
-    } else { 
-	if( -e "t/do_biodbgff.tests" ) {
-	    unlink "t/do_biodbgff.tests";
-	}
+if(  eval { require DBI } && grep {/mysql/} DBI->available_drivers) {
+  my $proceed = user_prompt("Do you want to run the BioGFFDB tests (requires a mysql database) y/n",'n');
+  if( $proceed =~ /^[yY]/) {
+    my $cfg = {dbd_driver => 'mysql'};
+    GFFQueryDb($cfg,{'prompt'=>1,'verbose'=>1});
+    if (open T,">t/do_biodbgff.tests") {
+      foreach (keys %$cfg) {
+	print T $_,"\t",$cfg->{$_},"\n";
+      }
+      close T;
     }
+  } else {
+    if( -e "t/do_biodbgff.tests" ) {
+      unlink "t/do_biodbgff.tests";
+    }
+  }
 }
 
 sub user_prompt ($;$) {
@@ -101,6 +108,79 @@ sub user_prompt ($;$) {
     return ($ans ne '') ? $ans : $def;
 }
 
+############################################################################
+#
+#   Name:    GFFQueryDb
+#
+#   Purpose: Query user for settings for running the Bio::DB::GFF test suite
+#
+#   Inputs:  $cfg - Config hash ref
+#
+#   Returns: Nothing; creates
+#            $cfg->{$driver}->{test_(db|host|dsn|user|pass)}
+#
+############################################################################
+
+sub GFFQueryDb {
+  my $cfg     = shift;
+  my $options = shift || {};
+  my $db     = $cfg->{'description'} || $cfg->{'dbd_driver'};
+  my $driver = $cfg->{'dbd_driver'};
+
+  my $d = lc $driver;
+  my $prompt = $options->{'prompt'};
+
+  my $test_db =  exists($options->{"$d-test-db"}) ?
+    $options->{"$d-test-db"} : ($cfg->{'test_db'} || 'test');
+  $test_db = user_prompt
+    ("Which database should I use for testing the $db drivers?",
+     $test_db) if $prompt;
+
+  my $test_host = exists($options->{"$d-test-host"}) ?
+    $options->{"$d-test-host"} : ($cfg->{'test_host'} || 'localhost');
+  $test_host = user_prompt
+    ("On which host is database $test_db running (hostname, ip address or host:port)", $test_host) if $prompt;
+
+  my($test_user, $test_pass);
+
+  $test_user = exists($options->{"$d-test-user"}) ?
+    $options->{"$d-test-user"} : ($cfg->{'test_user'} || "undef");
+  $test_user = user_prompt
+    ("User name for connecting to database $test_db?", $test_user)
+      if $prompt;
+  $test_user = undef if $test_user eq 'undef';
+
+  $test_pass = exists($options->{"$d-test-pass"}) ?
+    $options->{"$d-test-pass"} : ($cfg->{'test_pass'} || "undef");
+  $test_pass = user_prompt
+    ("Password for connecting to database $test_db?", $test_pass)
+      if $prompt;
+  $test_pass = undef if $test_pass eq 'undef';
+
+  $cfg->{'test_db'}   = $test_db;
+  $cfg->{'test_host'} = $test_host;
+  $cfg->{'test_user'} = $test_user;
+  $cfg->{'test_pass'} = $test_pass;
+  if ($test_host eq 'undef'  ||  $test_host eq 'localhost') {
+    $test_host = '';
+  }
+  my $test_dsn = "DBI:$driver:database=$test_db";
+  $cfg->{test_dsn} = $test_dsn;
+  if ($test_host) {
+    $cfg->{'test_dsn'} .= ";host=$test_host";
+  }
+
+
+  if ($options->{'verbose'}) {
+    local $^W=0;  # some uninitialized variable warning coming through
+    print("Driver $driver is using the following settings for tests:\n",
+	  "    Database $test_db\n",
+	  "    Host     $test_host\n",
+	  "    DSN      $test_dsn\n",
+	  "    User     $test_user\n",
+	  "    Password $test_pass\n");
+  }
+}
 
 				           
 #
@@ -115,13 +195,11 @@ use ExtUtils::MakeMaker;
 $do_autoload_finesse = 0;
 $NAME     = 'Bio';
 $DISTNAME = "bioperl";
-$VERSION  = "1.00";
+$VERSION  = "1.0.1";
 
 if( $do_autoload_finesse == 1 ) {
     fatal("Autoload finessing does not work at the moment!");
 }
-
-
 
 @BACKUP_FILES = qw(./Seq.pm.bak);
 

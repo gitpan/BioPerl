@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: EMBL_DB.t,v 1.7 2002/02/28 06:51:58 heikki Exp $
+# $Id: EMBL_DB.t,v 1.7.2.2 2002/06/11 13:07:35 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -26,9 +26,8 @@ BEGIN {
     plan tests => $NUMTESTS;
     eval { require 'IO/String.pm' };
     if( $@ ) {
-	print STDERR "IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping tests.\n";
-	for( 1..$NUMTESTS ) {
-	    skip(1,"IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping tests");
+	for( $Test::ntest..$NUMTESTS ) {
+	    skip("IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping tests",1);
 	}
        $error = 1; 
     }
@@ -60,7 +59,7 @@ eval {
     ok( $seq->length, 408); 
     ok defined ($db->request_format('fasta'));
     ok(defined($seq = $db->get_Seq_by_acc('J02231')));
-    ok $seq->id, 'embl:BUM';
+    ok $seq->id, 'embl|J02231|BUM';
     ok( $seq->length, 200); 
     ok( defined($db = new Bio::DB::EMBL(-verbose=>$verbose, 
 					-retrievaltype => 'tempfile')));
@@ -71,11 +70,10 @@ eval {
 };
 
 if ($@) {
-    print STDERR "Warning: Couldn't connect to EMBL with Bio::DB::EMBL.pm!\n" . $@;
-
+    warn "Warning: Couldn't connect to EMBL with Bio::DB::EMBL.pm!\n$@";
+    
     foreach ( $Test::ntest..$NUMTESTS) { 
 	 skip('could not connect to embl',1);}
-
 }
 
 $seq = $seqio = undef;

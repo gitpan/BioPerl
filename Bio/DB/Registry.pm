@@ -1,6 +1,6 @@
 # POD documentation - main docs before the code
 
-# $Id: Registry.pm,v 1.9.2.1 2002/03/17 23:10:29 jason Exp $
+# $Id: Registry.pm,v 1.9.2.2 2002/06/05 09:50:50 heikki Exp $
 
 
 =head1 NAME
@@ -14,11 +14,11 @@ Bio::DB::Registry - Access to the Open Bio Database Access registry scheme
     $registry = new Bio::DB::Registry();
 
     @available_services = $registry->services;
-    
+
     $db = $registry->get_database('embl'); 
     # $db is a Bio::DB::SeqI implementing class
 
-    $seq = $db->get_Seq_by_acc("J02231");    
+    $seq = $db->get_Seq_by_acc("J02231");
 
 =head1 DESCRIPTION
 
@@ -169,7 +169,7 @@ sub _load_registry {
 
 
 =cut
-	
+
 sub get_database {
     my ($self,$dbname) = @_;
 

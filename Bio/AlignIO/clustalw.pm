@@ -1,4 +1,4 @@
-# $Id: clustalw.pm,v 1.13 2002/02/13 15:32:54 jason Exp $
+# $Id: clustalw.pm,v 1.13.2.1 2002/04/18 13:05:25 jason Exp $
 #
 # BioPerl module for Bio::AlignIO::clustalw
 
@@ -107,7 +107,7 @@ sub _initialize {
  Title   : next_aln
  Usage   : $aln = $stream->next_aln()
  Function: returns the next alignment in the stream
- Returns : Bio::Align::AlignI object
+ Returns : L<Bio::Align::AlignI> object
  Args    : NONE
 
 =cut
@@ -168,7 +168,7 @@ sub next_aln {
  Usage   : $stream->write_aln(@aln)
  Function: writes the clustalw-format object (.aln) into the stream
  Returns : 1 for success and 0 for error
- Args    : Bio::Align::AlignI object
+ Args    : L<Bio::Align::AlignI> object
 
 
 =cut

@@ -1,4 +1,4 @@
-# $Id: Seq.pm,v 1.49.2.3 2002/03/15 12:39:44 heikki Exp $
+# $Id: Seq.pm,v 1.49.2.6 2002/06/11 13:09:53 jason Exp $
 #
 # BioPerl module for Bio::Seq
 #
@@ -245,8 +245,7 @@ Please see L<Bio::Species> for more information on this object.
   $seqobj->annotation();
 
 These annotations typically refer to entire sequences, unlike features.
-See L<Bio::Annotation>, L<Bio::Annotation::Reference>, and
-L<Bio::Annotation::Comment> for details.
+See L<Bio::AnnotationCollectionI>, L<Bio::Annotation::Collection>, L<Bio::Annotation::Reference>, and L<Bio::Annotation::Comment> for details.
 
 It is also important to be able to describe defined portions of a
 sequence. The combination of some description and the corresponding
@@ -360,7 +359,7 @@ use Bio::RangeI;
 use Bio::Annotation::Collection;
 use Bio::PrimarySeq;
 
-$VERSION = '1.0';
+$VERSION = '1.0.1';
 @ISA = qw(Bio::Root::Root Bio::SeqI Bio::RangeI);
 
 =head2 new
@@ -1042,10 +1041,10 @@ sub species {
  Usage   : $ann = $seq->annotation or $seq->annotation($annotation)
  Function: Gets or sets the annotation
  Example :
- Returns : Bio::Annotation object
+ Returns : Bio::AnnotationCollectionI object
  Args    : None or Bio::Annotation object
 
-See L<Bio::Annotation> for more information
+See L<Bio::AnnotationCollectionI> and L<Bio::Annotation::Collection> for more information
 
 =cut
 

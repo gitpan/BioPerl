@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: HSPI.pm,v 1.10 2002/02/26 07:28:24 jason Exp $
+# $Id: HSPI.pm,v 1.10.2.1 2002/05/09 18:14:00 jason Exp $
 #
 # BioPerl module for Bio::Search::HSP::HSPI
 #
@@ -19,7 +19,7 @@ Bio::Search::HSP::HSPI - Interface for a High Scoring Pair in a similarity searc
 
     $r_type = $hsp->algorithm
 
-    $pvalue = $hsp->p();
+    $pvalue = $hsp->pvalue();
 
     $evalue = $hsp->evalue();
 

@@ -1,4 +1,4 @@
-# $Id: SeqDiff.pm,v 1.13 2002/02/18 17:17:25 bosborne Exp $
+# $Id: SeqDiff.pm,v 1.13.2.1 2002/03/20 13:08:24 heikki Exp $
 # bioperl module for Bio::Variation::SeqDiff
 #
 # Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
@@ -116,9 +116,7 @@ use Bio::PrimarySeq;
 
 sub new {
     my($class,@args) = @_;
-    my $self;
-    $self = {};
-    bless $self, $class;
+    my $self = $class->SUPER::new(@args);
 
     my($id, $sysname, $trivname, $chr, $gene_symbol, 
        $desc, $alphabet, $numbering, $offset, $rna_offset, $rna_id, $cds_end,
