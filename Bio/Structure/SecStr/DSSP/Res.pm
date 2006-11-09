@@ -1,4 +1,4 @@
-# $id $
+# $Header: /home/repository/bioperl/bioperl-live/Bio/Structure/SecStr/DSSP/Res.pm,v 1.10.4.3 2006/10/02 23:10:31 sendu Exp $
 #
 # bioperl module for Bio::Structure::SecStr::DSSP::Res.pm
 #
@@ -113,17 +113,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ed Green
 
@@ -139,12 +138,10 @@ Internal methods are preceded with a _
 
 package Bio::Structure::SecStr::DSSP::Res;
 use strict;
-use vars qw(@ISA);
-use Bio::Root::Root;
 use Bio::Root::IO;
 use Bio::PrimarySeq;
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 # Would be a class variable if Perl had them
 
@@ -399,7 +396,7 @@ sub pdbSource {
  Title         : resAA
  Usage         : fetches the 1 char amino acid code, given an id
  Function      :
- Example       : $aa = $dssp_obj->aminoAcid( '20:A' ); # pdb id as arg
+ Example       : $aa = $dssp_obj->resAA( '20:A' ); # pdb id as arg
  Returns       : 1 character scalar string
  Args          : RESIDUE_ID
 
@@ -842,6 +839,50 @@ sub chains {
 }
 
 
+=head2 residues
+
+    Title : residues
+    Usage : returns array of residue identifiers for all residues in
+    the output file, or in a specific chain
+    Function :
+    Example : @residues_ids = $dssp_obj->residues()
+    Returns : array of residue identifiers
+    Args : if none => returns residue ids of all residues of all
+    chains (in order); if chain id is given, returns just the residue
+    ids of residues in that chain
+
+
+=cut
+
+# Can't use the standard interface for getting the amino acid,
+# pdb_resnum, etc. in this method because we don't *know* the residue
+# indentifiers - we are building a list of them.
+sub residues {
+    my $self  = shift;
+    my $chain = shift;
+    my @residues;
+    my $num_res = $self->_numResLines();
+    my $aa;
+    for ( my $i = 1; $i <= $num_res; $i++ ) {
+	# find what character was in the slot for tha amino acid code,
+	# if it's a '!' we know this is not a *real* amino acid, it's
+	# a chain discontinuity marker 
+	$aa = $self->{ 'Res' }->[ $i ]->{ 'amino_acid' };
+	if ( $aa ne '!' ) {
+	    if ( !$chain ||
+		 $chain eq $self->{ 'Res' }->[ $i ]->{ 'pdb_chain' } ) {
+		push( @residues, 
+		      $self->{ 'Res' }->[ $i ]->{ 'pdb_resnum' }.
+		      $self->{ 'Res' }->[ $i ]->{ 'insertionco' }.
+		      ":".
+		      $self->{ 'Res' }->[ $i ]->{ 'pdb_chain' } );
+	    }
+	}
+    }
+    return @residues;
+}
+
+
 =head2 getSeq
 
  Title         : getSeq
@@ -892,13 +933,13 @@ sub getSeq {
 	    push( @frags, $pot_chain );
 	}
     }
-
+    
     # if that didn't work, just get the first one
     if ( !( @frags ) ) {
 	$chain = $contSegs_pnt->[ 0 ]->[ 2 ];
 	foreach $pot_chain ( @{ $contSegs_pnt } ) {
 	    if ( $pot_chain->[ 2 ] eq $chain ) {
-		push( @frags, $chain );
+		push( @frags, $pot_chain );
 	    }
 	}
     }
@@ -1165,23 +1206,27 @@ sub _toDsspKey {
     # Now find the residue which fits this description.  Linear search is
     # probably not the best way to do this, but oh well...
     for ( my $i = 1; $i <= $self->_numResLines(); $i++ ) {
-	if ( $key_num == $self->{'Res'}->[$i]->{'pdb_resnum'} ) {
-	    if ( $chain_id ) { # if a chain was specified
-	 	if ( $chain_id eq $self->{'Res'}->[$i]->{'pdb_chain'} ) {
-		    # and it's the right one
-		    if ( $ins_code ) { # if insertion code was specified
-			if ( $ins_code eq $self->{'Res'}->[$i]->{'insertionco'} ) {
-			    # and it's the right one
+	unless ( ($self->{'Res'}->[$i]->{'term_sig'} eq '*') ||
+		 ($self->{'Res'}->[$i]->{'amino_acid'} eq '!') ) {
+	    # chain break 'residue', doesn't match anything
+	    if ( $key_num == $self->{'Res'}->[$i]->{'pdb_resnum'} ) {
+		if ( $chain_id ) { # if a chain was specified
+		    if ( $chain_id eq $self->{'Res'}->[$i]->{'pdb_chain'} ) {
+			# and it's the right one
+			if ( $ins_code ) { # if insertion code was specified
+			    if ( $ins_code eq $self->{'Res'}->[$i]->{'insertionco'} ) {
+				# and it's the right one
+				return $i;
+			    }
+			}
+			else { # no isertion code specified, this is it
 			    return $i;
 			}
 		    }
-		    else { # no isertion code specified, this is it
-			return $i;
-		    }
 		}
-	    }
-	    else { # no chain was specified
-		return $i;
+		else { # no chain was specified
+		    return $i;
+		}
 	    }
 	}
     }
@@ -1216,37 +1261,62 @@ sub _parse {
 	return;
     }
 
+    # REFERENCE line (always there)
     $cur = <$file>;
     ( $element ) = ( $cur =~ /^REFERENCE\s+(.+?)\s+\./ );
     $head{ 'REFERENCE' } = $element;
 
     $cur = <$file>;
-    @elements = split( /\s+/, $cur );
-    pop( @elements ); # take off that annoying period
-    $head{ 'PDB' } = pop( @elements );
-    $head{ 'DATE' } = pop( @elements );
-    # now, everything else is "header" except for the word
-    # HEADER
-    shift( @elements );
-    $element = shift( @elements );
-    while ( @elements ) {
-	$element = $element." ".shift( @elements );
-    }
-    $head{ 'HEADER' } = $element;
-
-    $cur = <$file>;
-    ($element) = ( $cur =~ /^COMPND\s+(.+?)\s+\./ );
-    $head{ 'COMPND' } = $element;
-
-    $cur = <$file>;
-    ($element) = ( $cur =~ /^PDBSOURCE\s+(.+?)\s+\./ );
-    $head{ 'SOURCE' } = $element;
-
-    $cur = <$file>;
-    ($element) = ( $cur =~ /^AUTHOR\s+(.+?)\s+/ );
-    $head{ 'AUTHOR' } = $element;
+    # Check for HEADER line (not always there)
+    if ( $cur =~ /^HEADER\s/ ) {
+	@elements = split( /\s+/, $cur );
+	pop( @elements ); # take off that annoying period
+	$head{ 'PDB' } = pop( @elements );
+	$head{ 'DATE' } = pop( @elements );
+	# now, everything else is "header" except for the word
+	# HEADER
+	shift( @elements );
+	$element = shift( @elements );
+	while ( @elements ) {
+	    $element = $element." ".shift( @elements );
+	}
+	$head{ 'HEADER' } = $element;
 	
-    $cur = <$file>;
+	$cur = <$file>;
+    }
+
+    # Check for COMPND line (not always there)
+    if ( $cur =~ /^COMPND\s/ ) {
+	($element) = ( $cur =~ /^COMPND\s+(.+?)\s+\./ );
+	$head{ 'COMPND' } = $element;
+	
+	$cur = <$file>;
+    }
+
+    # Check for SOURCE or PDBSOURCE line (not always there)
+    if ( $cur =~ /^PDBSOURCE\s/ ) {
+	($element) = ( $cur =~ /^PDBSOURCE\s+(.+?)\s+\./ );
+	$head{ 'SOURCE' } = $element;
+	
+	$cur = <$file>;
+    }
+
+    elsif ( $cur =~ /^SOURCE\s/ ) {
+	($element) = ( $cur =~ /^SOURCE\s+(.+?)\s+\./ );
+	$head{ 'SOURCE' } = $element;
+	
+	$cur = <$file>;
+    }
+
+    # Check for AUTHOR line (not always there)
+    if ( $cur =~ /^AUTHOR/ ) {
+	($element) = ( $cur =~ /^AUTHOR\s+(.+?)\s+/ );
+	$head{ 'AUTHOR' } = $element;
+
+	$cur = <$file>;
+    }
+
+    # A B C D E TOTAL NUMBER OF RESIDUES, NUMBER ... line
     @elements = split( /\s+/, $cur );
     shift( @elements );
     $head{ 'TotNumRes' } = shift( @elements );
@@ -1276,7 +1346,10 @@ sub _parse {
 	}
     }
 
-    while ( chomp( $cur = <$file> ) ) {
+    while ( $cur = <$file> ) {
+	if ( $cur =~ m/^\s*$/ ) {
+	    next;
+	}
 	$res_num = substr( $cur, 0, 5 );
 	$res_num =~ s/\s//g;
 	$self->{ 'Res' }->[ $res_num ] = &_parseResLine( $cur );
@@ -1315,5 +1388,5 @@ sub _parseResLine() {
     return \%elements;
 }
 
-return 1; #just because
+1;
 

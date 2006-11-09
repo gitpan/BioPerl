@@ -1,4 +1,4 @@
-# $Id: megablast.pm,v 1.2 2003/03/25 14:41:53 heikki Exp $
+# $Id: megablast.pm,v 1.7.4.1 2006/10/02 23:10:26 sendu Exp $
 #
 # BioPerl module for Bio::SearchIO::megablast
 #
@@ -64,27 +64,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
+Email jason-at-bioperl.org
 
 =head1 APPENDIX
 
@@ -99,10 +92,9 @@ Internal methods are usually preceded with a _
 
 package Bio::SearchIO::megablast;
 use strict;
-use vars qw(@ISA %MAPPING %MODEMAP $DEFAULT_BLAST_WRITER_CLASS);
-use Bio::SearchIO;
+use vars qw(%MAPPING %MODEMAP $DEFAULT_BLAST_WRITER_CLASS);
 
-@ISA = qw(Bio::SearchIO );
+use base qw(Bio::SearchIO);
 
 BEGIN {
     # mapping of MegaBlast terms to Bioperl hash keys
@@ -170,6 +162,9 @@ sub _initialize {
 
 sub next_result{
    my ($self) = @_;
+   
+   local $/ = "\n";
+   local $_;
 
    my $fmt = $self->report_format;
    my ($lastquery,$lasthit);
@@ -516,3 +511,5 @@ sub result_count {
 }
 
 sub report_count { shift->result_count }
+
+1;

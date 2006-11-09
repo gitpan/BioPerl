@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Matrix.t,v 1.4 2003/08/08 20:50:32 jason Exp $
+## $Id: Matrix.t,v 1.8 2006/02/15 21:10:09 jason Exp $
 #
 
 use strict;
@@ -16,11 +16,11 @@ BEGIN {
         use lib 't';
     }
     use Test;
-    plan tests => 64;
+    plan tests => 68;
 }
 
-END {
-}
+#END {
+#}
 
 use Bio::Matrix::Generic;
 use Bio::Matrix::IO;
@@ -30,11 +30,11 @@ my $raw = [ [ 0, 10, 20],
 	    [ 2, 17,  4],
 	    [ 3,  4,  5] ];
 
-my $matrix = new Bio::Matrix::Generic(-values     => $raw,
+my $matrix = new Bio::Matrix::Generic(-values => $raw,
 				      -matrix_id  => 'fakeid00',
 				      -matrix_name=> 'matname',
 				      -rownames   => [qw(A B C)],
-				      -colnames   => [qw(D E F)]);
+				      -colnames   => [qw(D E F)] );
 
 ok($matrix->matrix_name, 'matname');
 ok($matrix->matrix_id,   'fakeid00');
@@ -58,15 +58,22 @@ ok($matrix->column_header(0),'D');
 ok($matrix->add_row(1, 'b', [qw(21 13 14)]),4);
 ok($matrix->add_column(2, 'f', [qw(71 81 14 3)]),4);
 
+ok($matrix->add_row(4, 'c', [qw(22 11 17)]),5);
+ok($matrix->remove_row(4),4);
+
+ok($matrix->add_column(4, 'g', [qw(11 10 100 71)]),5);
+ok($matrix->remove_column(4),4);
+
 ok($matrix->row_num_for_name('B'),2);
 ok($matrix->row_num_for_name('b'),1);
+
 ok($matrix->column_num_for_name('D'),0);
 ok($matrix->column_num_for_name('F'),3);
 ok($matrix->column_num_for_name('f'),2);
 
 ok($matrix->row_header(2),'B');
-ok($matrix->column_header(3),'F');
 
+ok($matrix->column_header(3),'F');
 
 ok($matrix->get_entry('b', 'f'), 81);
 

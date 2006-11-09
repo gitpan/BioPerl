@@ -1,4 +1,4 @@
-# $Id: fasta.pm,v 1.47 2003/12/22 18:33:15 heikki Exp $
+# $Id: fasta.pm,v 1.58.4.1 2006/10/02 23:10:29 sendu Exp $
 # BioPerl module for Bio::SeqIO::fasta
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
@@ -33,8 +33,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org            - General discussion
-  http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -42,7 +42,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS - Ewan Birney & Lincoln Stein
 
@@ -63,15 +63,13 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::SeqIO::fasta;
-use vars qw(@ISA $WIDTH @SEQ_ID_TYPES $DEFAULT_SEQ_ID_TYPE);
+use vars qw($WIDTH @SEQ_ID_TYPES $DEFAULT_SEQ_ID_TYPE);
 use strict;
-# Object preamble - inherits from Bio::Root::Object
 
-use Bio::SeqIO;
 use Bio::Seq::SeqFactory;
 use Bio::Seq::SeqFastaSpeedFactory;
 
-@ISA = qw(Bio::SeqIO);
+use base qw(Bio::SeqIO);
 
 @SEQ_ID_TYPES = qw(accession accession.version display primary);
 $DEFAULT_SEQ_ID_TYPE = 'display';
@@ -124,7 +122,7 @@ sub next_seq {
     
     if (defined $id && $id eq '') {$id=$fulldesc;} # FIX incase no space 
                                                    # between > and name \AE
-    defined $sequence && $sequence =~ s/\s//g;	# Remove whitespace
+    defined $sequence && $sequence =~ tr/ \t\n\r//d;	# Remove whitespace
 
     # for empty sequences we need to know the mol.type
     $alphabet = $self->alphabet();
@@ -135,7 +133,9 @@ sub next_seq {
 	}
     } else {
 	# we don't need it really, so disable
-	$alphabet = undef;
+	# we want to keep this if SeqIO alphabet was set by user
+	# not sure if this could break something
+	#$alphabet = undef;
     }
 
     $seq = $self->sequence_factory->create(
@@ -153,9 +153,10 @@ sub next_seq {
 
 
     # if there wasn't one before, set the guessed type
-    unless ( defined $alphabet ) {
-	$self->alphabet($seq->alphabet());
-    }
+    #unless ( defined $alphabet ) {
+	# don't assume that all our seqs are the same as the first one found
+	#$self->alphabet($seq->alphabet());
+    #}
     return $seq;
 
 }
@@ -164,10 +165,9 @@ sub next_seq {
 
  Title   : write_seq
  Usage   : $stream->write_seq(@seq)
- Function: writes the $seq object into the stream
+ Function: Writes the $seq object into the stream
  Returns : 1 for success and 0 for error
- Args    : array of 1 to n Bio::PrimarySeqI objects
-
+ Args    : Array of 1 or more Bio::PrimarySeqI objects
 
 =cut
 
@@ -175,44 +175,46 @@ sub write_seq {
    my ($self,@seq) = @_;
    my $width = $self->width;
    foreach my $seq (@seq) {
-       $self->throw("Did not provide a valid Bio::PrimarySeqI object") 
-	   unless defined $seq && ref($seq) && $seq->isa('Bio::PrimarySeqI');
+		$self->throw("Did not provide a valid Bio::PrimarySeqI object") 
+		  unless defined $seq && ref($seq) && $seq->isa('Bio::PrimarySeqI');
 
-       my $str = $seq->seq;
-       my $top;
+		my $str = $seq->seq;
+		my $top;
 
-       # Allow for different ids 
-       my $id_type = $self->preferred_id_type;
-       if( $id_type =~ /^acc/i ) {
-	   $top = $seq->accession_number();
-	   if( $id_type =~ /vers/i ) {
-	       $top .= "." . $seq->version();
-	   }
-       } elsif($id_type =~ /^displ/i ) {
+		# Allow for different ids 
+		my $id_type = $self->preferred_id_type;
+		if( $id_type =~ /^acc/i ) {
+			$top = $seq->accession_number();
+			if( $id_type =~ /vers/i ) {
+				$top .= "." . $seq->version();
+			}
+		} elsif($id_type =~ /^displ/i ) { 
+			$self->warn("No whitespace allowed in FASTA ID [". $seq->display_id. "]")
+			  if defined $seq->display_id && $seq->display_id =~ /\s/;
+			$top = $seq->display_id();
+			$top = '' unless defined $top;
+			$self->warn("No whitespace allowed in FASTA ID [". $top. "]")
+			  if defined $top && $top =~ /\s/;
+		} elsif($id_type =~ /^pri/i ) {
+			$top = $seq->primary_id();
+		}
 
-           $self->warn("No whitespace allowed in FASTA ID [". $seq->display_id. "]")
-               if $seq->display_id =~ /\s/;
-
-	   $top = $seq->display_id();
-       } elsif($id_type =~ /^pri/i ) {
-	   $top = $seq->primary_id();
-       }
-
-       if ($seq->can('desc') and my $desc = $seq->desc()) {
-	   $desc =~ s/\n//g;
-	   $top .= " $desc";
-       }
-       if(length($str) > 0) {
-	   $str =~ s/(.{1,$width})/$1\n/g;
-       } else {
-	   $str = "\n";
-       }
-       $self->_print (">",$top,"\n",$str) or return;
+		if ($seq->can('desc') and my $desc = $seq->desc()) {
+			$desc =~ s/\n//g;
+			$top .= " $desc";
+		}
+		if(defined $str && length($str) > 0) {
+			$str =~ s/(.{1,$width})/$1\n/g;
+		} else {
+			$str = "\n";
+		}
+		$self->_print (">",$top,"\n",$str) or return;
    }
 
    $self->flush if $self->_flush_on_write && defined $self->_fh;
    return 1;
 }
+
 
 =head2 width
 

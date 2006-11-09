@@ -1,8 +1,8 @@
-# $Id: Gap.pm,v 1.4 2003/07/03 08:09:58 lapp Exp $
+# $Id: Gap.pm,v 1.9.4.1 2006/10/02 23:10:14 sendu Exp $
 #
 # BioPerl module for Bio::Coordinate::Result::Gap
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copywright Heikki Lehvaslaiho
 #
@@ -33,25 +33,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email heikki@ebi.ac.uk
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
+Email heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -61,13 +56,10 @@ methods. Internal methods are usually preceded with a _
 =cut
 
 package Bio::Coordinate::Result::Gap;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Location::Simple;
-use Bio::Coordinate::ResultI;
 
-@ISA = qw(Bio::Location::Simple Bio::Coordinate::ResultI);
+use base qw(Bio::Location::Simple Bio::Coordinate::ResultI);
 
 
 1;

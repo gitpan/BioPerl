@@ -1,4 +1,4 @@
-# $Id: ModelResult.pm,v 1.2 2003/09/08 12:17:15 heikki Exp $
+# $Id: ModelResult.pm,v 1.7.4.1 2006/10/02 23:10:34 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Phylo::PAML::ModelResult
 #
@@ -21,9 +21,22 @@ Bio::Tools::Phylo::PAML::ModelResult - A container for NSSite Model Result from 
   my $paml = new Bio::Tools::Phylo::PAML(-file => 'mlc');
   my $result = $paml->next_result;
   foreach my $model ( $result->get_model_results ) {
-    print $model->model_num, " ", $mode->model_description, "\n";
+    print $model->model_num, " ", $model->model_description, "\n";
     print $model->kappa, "\n";
     print $model->run_time, "\n";
+# if you are using PAML < 3.15 then only one place for POS sites
+   for my $sites ( $model->get_pos_selected_sites ) {
+    print join("\t",@$sites),"\n";
+   }
+# otherwise query NEB and BEB slots
+   for my $sites ( $model->get_NEB_pos_selected_sites ) {
+     print join("\t",@$sites),"\n";
+   }
+
+   for my $sites ( $model->get_BEB_pos_selected_sites ) {
+    print join("\t",@$sites),"\n";
+   }
+
   }
 
 =head1 DESCRIPTION
@@ -38,8 +51,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -47,17 +60,11 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
 Email jason@open-bio.org
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -71,14 +78,12 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Tools::Phylo::PAML::ModelResult;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::Root::Root;
 
-@ISA = qw(Bio::Root::Root );
+use base qw(Bio::Root::Root);
 
 =head2 new
 
@@ -91,6 +96,8 @@ use Bio::Root::Root;
            -kappa               => value of kappa
            -time_used           => amount of time
            -pos_sites           => arrayref of sites under positive selection
+           -neb_sites           => arrayref of sites under positive selection (by NEB analysis)
+           -beb_sites           => arrayref of sites under positive selection (by BEB analysis)
            -trees               => arrayref of tree(s) data for this model
            -shape_params        => hashref of parameters 
                                    ('shape' => 'alpha',
@@ -118,7 +125,7 @@ sub new {
   my $self = $class->SUPER::new(@args);
   my ($modelnum,$modeldesc,$kappa,
       $timeused,$trees,
-      $pos_sites,
+      $pos_sites,$neb_sites,$beb_sites,
       $num_site_classes, $shape_params,
       $dnds_classes,
       $likelihood) =          $self->_rearrange([qw(MODEL_NUM 
@@ -127,6 +134,7 @@ sub new {
 						      TIME_USED
 						      TREES
 						      POS_SITES
+                                                      NEB_SITES BEB_SITES
 						      NUM_SITE_CLASSES
 						      SHAPE_PARAMS
 						      DNDS_SITE_CLASSES
@@ -155,6 +163,33 @@ sub new {
 	  }
       }
   }
+  if( $beb_sites ) {
+    if(ref($beb_sites) !~ /ARRAY/i ) { 
+	  $self->warn("Must have provided a valid array reference to initialize beb_sites");
+      } else { 
+	  foreach my $s ( @$beb_sites ) {
+	      if( ref($s) !~ /ARRAY/i ) {
+		  $self->warn("need an array ref for each entry in the beb_sites object");
+		  next;
+	      }
+	      $self->add_BEB_pos_selected_site(@$s);
+	  }
+      }
+  }
+  if( $neb_sites ) {
+    if(ref($neb_sites) !~ /ARRAY/i ) { 
+	  $self->warn("Must have provided a valid array reference to initialize neb_sites");
+      } else { 
+	  foreach my $s ( @$neb_sites ) {
+	      if( ref($s) !~ /ARRAY/i ) {
+		  $self->warn("need an array ref for each entry in the neb_sites object");
+		  next;
+	      }
+	      $self->add_NEB_pos_selected_site(@$s);
+	  }
+      }
+  }
+
   defined $modelnum  && $self->model_num($modelnum);
   defined $modeldesc && $self->model_description($modeldesc);
   defined $kappa     && $self->kappa($kappa);
@@ -297,7 +332,7 @@ sub dnds_site_classes{
            site location (in the original alignment)
            Amino acid    (I *think* in the first sequence)
            P             (P value)
-           Significance  (** indicated >= 99%, * indicates >=95%)
+           Significance  (** indicated > 99%, * indicates >=95%)
  Returns : Array
  Args    : none
 
@@ -305,7 +340,7 @@ sub dnds_site_classes{
 =cut
 
 sub get_pos_selected_sites{
-   return @{$_[0]->{'_posselsites'}};
+   return @{$_[0]->{'_posselsites'} || []};
 }
 
 =head2 add_pos_selected_site
@@ -327,6 +362,92 @@ sub add_pos_selected_site{
    return scalar @{$self->{'_posselsites'}};
 }
 
+=head2 get_NEB_pos_selected_sites
+
+ Title   : get_NEB_pos_selected_sites
+ Usage   : my @sites = $modelresult->get_NEB_pos_selected_sites();
+ Function: Get the sites which PAML has identified as under positive
+           selection (w > 1) using Naive Empirical Bayes.  
+           This returns an array with each slot being a site, 4 values, 
+           site location (in the original alignment)
+           Amino acid    (I *think* in the first sequence)
+           P             (P value)
+           Significance  (** indicated > 99%, * indicates > 95%)
+           post mean for w
+ Returns : Array
+ Args    : none
+
+
+=cut
+
+sub get_NEB_pos_selected_sites{
+   return @{$_[0]->{'_NEBposselsites'} || []};
+}
+
+=head2 add_NEB_pos_selected_site
+
+ Title   : add_NEB_pos_selected_site
+ Usage   : $result->add_NEB_pos_selected_site($site,$aa,$pvalue,$signif);
+ Function: Add a site to the list of positively selected sites
+ Returns : count of the number of sites stored
+ Args    : $site   - site number (in the alignment)
+           $aa     - amino acid under selection 
+           $pvalue - float from 0->1 represent probability site is under selection according to this model
+           $signif - significance (coded as either empty, '*', or '**'
+           $postmean - post mean for w
+
+=cut
+
+sub add_NEB_pos_selected_site{
+   my ($self,@args) = @_;
+   push @{$self->{'_NEBposselsites'}}, [ @args ];
+   return scalar @{$self->{'_NEBposselsites'}};
+}
+
+
+
+=head2 get_BEB_pos_selected_sites
+
+ Title   : get_BEB_pos_selected_sites
+ Usage   : my @sites = $modelresult->get_BEB_pos_selected_sites();
+ Function: Get the sites which PAML has identified as under positive
+           selection (w > 1) using Bayes Empirical Bayes.  
+           This returns an array with each slot being a site, 6 values, 
+           site location (in the original alignment)
+           Amino acid    (I *think* in the first sequence)
+           P             (P value)
+           Significance  (** indicated > 99%, * indicates > 95%)
+           post mean for w (mean)
+           Standard Error for w (SE)
+ Returns : Array
+ Args    : none
+
+=cut
+
+sub get_BEB_pos_selected_sites{
+   return @{$_[0]->{'_BEBposselsites'} || []};
+}
+
+=head2 add_BEB_pos_selected_site
+
+ Title   : add_BEB_pos_selected_site
+ Usage   : $result->add_BEB_pos_selected_site($site,$aa,$pvalue,$signif);
+ Function: Add a site to the list of positively selected sites
+ Returns : count of the number of sites stored
+ Args    : $site   - site number (in the alignment)
+           $aa     - amino acid under selection 
+           $pvalue - float from 0->1 represent probability site is under selection according to this model
+           $signif - significance (coded as either empty, '*', or '**'
+           $postmean - post mean for w
+           $SE       - Standard Error for w
+
+=cut
+
+sub add_BEB_pos_selected_site{
+   my ($self,@args) = @_;
+   push @{$self->{'_BEBposselsites'}}, [ @args ];
+   return scalar @{$self->{'_BEBposselsites'}};
+}
 
 =head2 next_tree
 

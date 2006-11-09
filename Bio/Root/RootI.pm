@@ -1,4 +1,4 @@
-# $Id: RootI.pm,v 1.66 2003/08/10 16:27:32 jason Exp $
+# $Id: RootI.pm,v 1.69.4.4 2006/10/02 23:10:23 sendu Exp $
 #
 # BioPerl module for Bio::Root::RootI
 #
@@ -40,7 +40,7 @@ Bio::Root::RootI - Abstract interface to root object code
   # Using throw_not_implemented() within a RootI-based interface module:
 
   package Foo;
-  @ISA = qw( Bio::Root::RootI );
+  use base qw(Bio::Root::RootI);
 
   sub foo {
       my $self = shift;
@@ -54,7 +54,7 @@ This is just a set of methods which do not assume B<anything> about the object
 they are on. The methods provide the ability to throw exceptions with nice
 stack traces.
 
-This is what should be inherited by all bioperl compliant interfaces, even
+This is what should be inherited by all Bioperl compliant interfaces, even
 if they are exotic XS/CORBA/Other perl systems.
 
 =head2 Using throw_not_implemented()
@@ -77,13 +77,13 @@ following:
 
 So, if an implementer of C<FooI> forgets to implement C<foo()>
 and a user of the implementation calls C<foo()>, a
-B<Bio::Exception::NotImplemented> exception will result.
+L<Bio::Exception::NotImplemented> exception will result.
 
 Unfortunately, failure to implement a method can only be determined at
 run time (i.e., you can't verify that an implementation is complete by
 running C<perl -wc> on it). So it should be standard practice for a test
 of an implementation to check each method and verify that it doesn't
-throw a B<Bio::Exception::NotImplemented>.
+throw a L<Bio::Exception::NotImplemented>.
 
 =head1 CONTACT
 
@@ -101,7 +101,7 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Root::RootI;
 
-use vars qw($DEBUG $ID $Revision $VERBOSITY);
+use vars qw($DEBUG $ID $VERBOSITY);
 use strict;
 use Carp 'confess','carp';
 
@@ -109,7 +109,6 @@ use Bio::Root::Version;
 
 BEGIN { 
     $ID        = 'Bio::Root::RootI';
-    $Revision  = '$Id: RootI.pm,v 1.66 2003/08/10 16:27:32 jason Exp $ ';
     $DEBUG     = 0;
     $VERBOSITY = 0;
 }
@@ -173,12 +172,7 @@ sub throw{
 sub warn{
     my ($self,$string) = @_;
     
-    my $verbose;
-    if( $self->can('verbose') ) {
-	$verbose = $self->verbose;
-    } else {
-	$verbose = 0;
-    }
+    my $verbose = $self->verbose;
 
     if( $verbose >= 2 ) {
 	$self->throw($string);
@@ -288,8 +282,8 @@ sub stack_trace{
  Purpose   : Rearranges named parameters to requested order.
  Example   : $self->_rearrange([qw(SEQUENCE ID DESC)],@param);
            : Where @param = (-sequence => $s,
-	   :	                -desc     => $d,
-	   :                    -id       => $i);
+	       :                 -desc     => $d,
+	       :                 -id       => $i);
  Returns   : @params - an array of parameters in the requested order.
            : The above example would return ($s, $i, $d).
            : Unspecified parameters will return undef. For example, if
@@ -302,7 +296,7 @@ sub stack_trace{
            :          or as an associative array with hyphenated tags
            :          (in which case the function sorts the values 
            :          according to @{$order} and returns that new array.)
-	   :	      The tags can be upper, lower, or mixed case
+	       :	      The tags can be upper, lower, or mixed case
            :          but they must start with a hyphen (at least the
            :          first one should be hyphenated.)
  Source    : This function was taken from CGI.pm, written by Dr. Lincoln
@@ -324,17 +318,17 @@ sub stack_trace{
            : indicate that named parameters are being used.
            : Therefore, the ('me', 'blue') list will be returned as-is.
            :
-	   : Note that Perl will confuse unquoted, hyphenated tags as 
+	       : Note that Perl will confuse unquoted, hyphenated tags as 
            : function calls if there is a function of the same name 
            : in the current namespace:
            :    -name => 'foo' is interpreted as -&name => 'foo'
-	   :
+	       :
            : For ultimate safety, put single quotes around the tag:
-	   :    ('-name'=>'me', '-color' =>'blue');
+	       : ('-name'=>'me', '-color' =>'blue');
            : This can be a bit cumbersome and I find not as readable
            : as using all uppercase, which is also fairly safe:
-	   :    (-NAME=>'me', -COLOR =>'blue');
-	   :
+	       : (-NAME=>'me', -COLOR =>'blue');
+	       :
            : Personal note (SAC): I have found all uppercase tags to
            : be more managable: it involves less single-quoting,
            : the key names stand out better, and there are no method naming 
@@ -343,7 +337,12 @@ sub stack_trace{
            : and lots of uppercase can be hard to read.
            :
            : Regardless of the style, it greatly helps to line
-	   : the parameters up vertically for long/complex lists.
+	       : the parameters up vertically for long/complex lists.
+           :
+           : Note that if @param is a single string that happens to start with
+           : a dash, it will be treated as a hash key and probably fail to
+           : match anything in the array_ref, so not be returned as normally
+           : happens when @param is a simple list and not an associative array.
 
 =cut
 
@@ -511,28 +510,20 @@ sub _cleanup_methods {
 
 sub throw_not_implemented {
     my $self = shift;
-    my $package = ref $self;
-    my $iface = caller(0);
-    my @call = caller(1);
-    my $meth = $call[3];
 
-    my $message = "Abstract method \"$meth\" is not implemented by package $package.\n" .
-		   "This is not your fault - author of $package should be blamed!\n";
+    # Bio::Root::Root::throw() knows how to check for Error.pm and will
+    # throw an Error-derived object of the specified class (Bio::Root::NotImplemented),
+    # which is defined in Bio::Root::Exception.
+    # If Error.pm is not available, the name of the class is just included in the
+    # error message.
 
-    # Checking if Error.pm is available in case the object isn't decended from
-    # Bio::Root::Root, which knows how to check for Error.pm.
-
-    # EB - this wasn't working and I couldn't figure out!
-    # SC - OK, since most RootI objects will be Root.pm-based,
-    #      and Root.pm can deal with Error.pm. 
-    #      Still, I'd like to know why it wasn't working...
+    my $message = $self->_not_implemented_msg;
 
     if( $self->can('throw') ) {
-	 $self->throw( -text  => $message,
-                       -class => 'Bio::Root::NotImplemented');
-    }
-    else {
-	confess $message ;
+	    $self->throw(-text=>$message,
+                         -class=>'Bio::Root::NotImplemented');
+    } else {
+	    confess $message ;
     }
 }
 
@@ -561,21 +552,24 @@ sub throw_not_implemented {
 
 sub warn_not_implemented {
     my $self = shift;
-    my $package = ref $self;
-    my $iface = caller(0);
-    my @call = caller(1);
-    my $meth = $call[3];
-
-    my $message = "Abstract method \"$meth\" is not implemented by package $package.\n" .
-		   "This is not your fault - author of $package should be blamed!\n";
-
+    my $message = $self->_not_implemented_msg;
     if( $self->can('warn') ) {
         $self->warn( $message );
-    }
-    else {
-	carp $message ;
+    }else {
+	    carp $message ;
     }
 }
 
+# Unify 'not implemented' message. -Juguang
+sub _not_implemented_msg {
+    my $self = shift;
+    my $package = ref $self;
+    my $meth = (caller(2))[3];
+    my $msg =<<EOD_NOT_IMP;
+Abstract method \"$meth\" is not implemented by package $package.
+This is not your fault - author of $package should be blamed!
+EOD_NOT_IMP
+    return $msg;
+}
 
 1;

@@ -1,4 +1,4 @@
-# $Id: GenericIteration.pm,v 1.3 2003/06/04 02:16:40 sac Exp $
+# $Id: GenericIteration.pm,v 1.6.4.2 2006/10/02 23:10:24 sendu Exp $
 #
 # BioPerl module for Bio::Search::Iteration::GenericIteration
 #
@@ -63,25 +63,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Steve Chervitz
 
 Email sac@bioperl.org
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -95,13 +90,10 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Search::Iteration::GenericIteration;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
-use Bio::Search::Iteration::IterationI;
 
-@ISA = qw(Bio::Root::Root Bio::Search::Iteration::IterationI);
+use base qw(Bio::Root::Root Bio::Search::Iteration::IterationI);
 
 =head2 new
 
@@ -132,6 +124,9 @@ use Bio::Search::Iteration::IterationI;
                         previous iteration above threshold that and are still above
                         the inclusion threshold threshold.
 
+           -hit_factory => Bio::Factory::ObjectFactoryI capable of making
+                        Bio::Search::Hit::HitI objects
+
 =cut
 
 sub new {
@@ -139,7 +134,8 @@ sub new {
 
   my $self = $class->SUPER::new(@args);
   my ($number, $newhits_unclassified, $newhits_below, $newhits_not_below,
-      $oldhits_below, $oldhits_newly_below, $oldhits_not_below, $converged) =
+      $oldhits_below, $oldhits_newly_below, $oldhits_not_below, $converged,
+      $h_f) =
       $self->_rearrange([qw(NUMBER
                             NEWHITS_UNCLASSIFIED
                             NEWHITS_BELOW
@@ -148,6 +144,7 @@ sub new {
                             OLDHITS_NEWLY_BELOW
                             OLDHITS_NOT_BELOW
                             CONVERGED
+                            HIT_FACTORY
                            )], @args);
 
   if( ! defined $number ) { 
@@ -229,7 +226,9 @@ sub new {
   } else {
       $self->{'_oldhits_not_below_threshold'} = [];
   }
-
+  
+  $self->hit_factory($h_f) if $h_f;
+  
   return $self;
 }
 
@@ -266,6 +265,22 @@ sub converged {
     return $previous;
 }
 
+
+=head2 hit_factory
+
+ Title   : hit_factory
+ Usage   : $hit->hit_factory($hit_factory)
+ Function: Get/set the factory used to build HitI objects if necessary.
+ Returns : Bio::Factory::ObjectFactoryI
+ Args    : Bio::Factory::ObjectFactoryI
+
+=cut
+
+sub hit_factory {
+    my $self = shift;
+    if (@_) { $self->{_hit_factory} = shift }
+    return $self->{_hit_factory} || return;
+}
 
 =head2 next_hit
 
@@ -392,7 +407,7 @@ sub add_hit {
                              )], @args);
     my $count = 0;
 
-    unless( $hit->isa('Bio::Search::Hit::HitI') ) { 
+    unless( ref($hit) eq 'HASH' || $hit->isa('Bio::Search::Hit::HitI') ) { 
         $self->throw(-class=>'Bio::Root::BadParameter',
                      -text=>"Passed in " .ref($hit). 
                     " as a Hit which is not a Bio::Search::Hit::HitI.");
@@ -472,11 +487,15 @@ See documentation in L<Bio::Search::Iteration::IterationI::newhits_below_thresho
 
 sub newhits_below_threshold  { 
     my $self = shift;
-    my @hits = ();
     if (ref $self->{'_newhits_below_threshold'} ) {
-        @hits = @{$self->{'_newhits_below_threshold'}};
+        my $factory = $self->hit_factory || return @{$self->{'_newhits_below_threshold'}};
+        for (0..$#{$self->{'_newhits_below_threshold'}}) {
+            ref(${$self->{'_newhits_below_threshold'}}[$_]) eq 'HASH' || next;
+            ${$self->{'_newhits_below_threshold'}}[$_] = $factory->create_object(%{${$self->{'_newhits_below_threshold'}}[$_]});
+        }
+        return @{$self->{'_newhits_below_threshold'}};
     }
-    return @hits;
+    return;
 }
 
 =head2 newhits_not_below_threshold
@@ -487,11 +506,15 @@ See documentation in L<Bio::Search::Iteration::IterationI::newhits_not_below_thr
 
 sub newhits_not_below_threshold  { 
     my $self = shift;
-    my @hits = ();
     if (ref $self->{'_newhits_not_below_threshold'} ) {
-        @hits = @{$self->{'_newhits_not_below_threshold'}};
+        my $factory = $self->hit_factory || return @{$self->{'_newhits_not_below_threshold'}};
+        for (0..$#{$self->{'_newhits_not_below_threshold'}}) {
+            ref(${$self->{'_newhits_not_below_threshold'}}[$_]) eq 'HASH' || next;
+            ${$self->{'_newhits_not_below_threshold'}}[$_] = $factory->create_object(%{${$self->{'_newhits_not_below_threshold'}}[$_]});
+        }
+        return @{$self->{'_newhits_not_below_threshold'}};
     }
-    return @hits;
+    return;
 }
 
 =head2 newhits_unclassified
@@ -507,11 +530,15 @@ sub newhits_not_below_threshold  {
 
 sub newhits_unclassified  { 
     my $self = shift;
-    my @hits = ();
     if (ref $self->{'_newhits_unclassified'} ) {
-        @hits = @{$self->{'_newhits_unclassified'}};
+        my $factory = $self->hit_factory || return @{$self->{'_newhits_unclassified'}};
+        for (0..$#{$self->{'_newhits_unclassified'}}) {
+            ref(${$self->{'_newhits_unclassified'}}[$_]) eq 'HASH' || next;
+            ${$self->{'_newhits_unclassified'}}[$_] = $factory->create_object(%{${$self->{'_newhits_unclassified'}}[$_]});
+        }
+        return @{$self->{'_newhits_unclassified'}};
     }
-    return @hits;
+    return;
 }
 
 =head2 oldhits
@@ -542,11 +569,15 @@ See documentation in L<Bio::Search::Iteration::IterationI::oldhits_below_thresho
 
 sub oldhits_below_threshold  { 
     my $self = shift;
-    my @hits = ();
     if (ref $self->{'_oldhits_below_threshold'} ) {
-        @hits = @{$self->{'_oldhits_below_threshold'}};
+        my $factory = $self->hit_factory || return @{$self->{'_oldhits_below_threshold'}};
+        for (0..$#{$self->{'_oldhits_below_threshold'}}) {
+            ref(${$self->{'_oldhits_below_threshold'}}[$_]) eq 'HASH' || next;
+            ${$self->{'_oldhits_below_threshold'}}[$_] = $factory->create_object(%{${$self->{'_oldhits_below_threshold'}}[$_]});
+        }
+        return @{$self->{'_oldhits_below_threshold'}};
     }
-    return @hits;
+    return;
 }
 
 =head2 oldhits_newly_below_threshold
@@ -557,11 +588,15 @@ See documentation in L<Bio::Search::Iteration::IterationI::oldhits_newly_below_t
 
 sub oldhits_newly_below_threshold  { 
     my $self = shift;
-    my @hits = ();
     if (ref $self->{'_oldhits_newly_below_threshold'} ) {
-        @hits = @{$self->{'_oldhits_newly_below_threshold'}};
+        my $factory = $self->hit_factory || return @{$self->{'_oldhits_newly_below_threshold'}};
+        for (0..$#{$self->{'_oldhits_newly_below_threshold'}}) {
+            ref(${$self->{'_oldhits_newly_below_threshold'}}[$_]) eq 'HASH' || next;
+            ${$self->{'_oldhits_newly_below_threshold'}}[$_] = $factory->create_object(%{${$self->{'_oldhits_newly_below_threshold'}}[$_]});
+        }
+        return @{$self->{'_oldhits_newly_below_threshold'}};
     }
-    return @hits;
+    return;
 }
 
 =head2 oldhits_not_below_threshold
@@ -572,11 +607,15 @@ See documentation in L<Bio::Search::Iteration::IterationI::oldhits_not_below_thr
 
 sub oldhits_not_below_threshold  { 
     my $self = shift;
-    my @hits = ();
     if (ref $self->{'_oldhits_not_below_threshold'} ) {
-        @hits = @{$self->{'_oldhits_not_below_threshold'}};
+        my $factory = $self->hit_factory || return @{$self->{'_oldhits_not_below_threshold'}};
+        for (0..$#{$self->{'_oldhits_not_below_threshold'}}) {
+            ref(${$self->{'_oldhits_not_below_threshold'}}[$_]) eq 'HASH' || next;
+            ${$self->{'_oldhits_not_below_threshold'}}[$_] = $factory->create_object(%{${$self->{'_oldhits_not_below_threshold'}}[$_]});
+        }
+        return @{$self->{'_oldhits_not_below_threshold'}};
     }
-    return @hits;
+    return;
 }
 
 =head2 hits_below_threshold

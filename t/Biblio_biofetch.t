@@ -1,51 +1,55 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: Biblio_biofetch.t,v 1.6 2002/06/15 14:29:20 jason Exp $
+# $Id: Biblio_biofetch.t,v 1.11.6.2 2006/10/02 23:10:39 sendu Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
 use strict;
-use vars qw($NUMTESTS $DEBUG);
-use vars qw($NUMTESTS $DEBUG);
-$DEBUG = $ENV{'BIOPERLDEBUG'} || 0;
-
-my $error;
+use vars qw($NUMTESTS $DEBUG $error $msg);
 
 BEGIN { 
-    # to handle systems with no installed Test module
-    # we include the t dir (where a copy of Test.pm is located)
-    # as a fallback
-    eval { require Test; };
-    $error = 0;
-    if( $@ ) {
-	use lib 't';
-    }
-    use Test;
-
-    $NUMTESTS = 11;
-    plan tests => $NUMTESTS;
-    eval { require 'IO/String.pm' };
-    if( $@ ) {
-	if( $DEBUG ) {
-	    print STDERR "IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping tests.\n" if($DEBUG);
+	$DEBUG = $ENV{'BIOPERLDEBUG'} || 0;
+	# to handle systems with no installed Test module
+	# we include the t dir (where a copy of Test.pm is located)
+	# as a fallback
+	eval { require Test; };
+	$error = 0;
+	if( $@ ) {
+		use lib 't';
 	}
-	for( $Test::ntest..$NUMTESTS ) {
-	    skip("IO::String not installed. Skipping tests",1);
+	use Test;
+ 
+	plan tests => ($NUMTESTS = 11);
+	eval { require IO::String; };
+	if( $@ ) {
+		warn( "IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping tests.\n") if $DEBUG;
+    	$msg .= 'IO::String not installed. ';
+		$error = 1;
 	}
-       $error = 1; 
-    }
+	eval { require LWP::Simple; };
+	if( $@ ) {
+		warn( "LWP::Simple not installed. This means the Bio::DB::* modules are not usable. Skipping tests.\n") if $DEBUG;
+		$msg .= 'LWP::Simple not installed. ';
+		$error = 1; 
+	}
+	eval { require HTTP::Request::Common; };
+	if( $@ ) {
+		warn( "HTTP::Request::Common not installed. This means the Bio::DB::* modules are not usable. Skipping tests.\n") if $DEBUG;
+		$msg .= 'HTTP::Request::Common not installed. ';
+		$error = 1; 
+	}
 }
 
-if( $error ==  1 ) {
-    exit(0);
+END{
+	foreach ( $Test::ntest..$NUMTESTS) {
+		skip($msg,1);
+	}
 }
-END{ 
-    foreach ( $Test::ntest..$NUMTESTS) {
-	skip('unable to run all of the Biblio_biofetch tests',1);
-    }
-}
+
+exit if $error;
+
 use Bio::Biblio;
 use Bio::Biblio::IO;
 
@@ -64,62 +68,52 @@ $ref = $refio = undef;
 
 # check BioFetch access method
 
-
 eval { 
-    ok ($db = new Bio::Biblio (-access => 'biofetch',
-			       -verbose=>$verbose));
-    ok(defined($ref = $db->get_by_id('20063307')));
-    ok $ref->identifier, '20063307';
+	ok ($db = new Bio::Biblio (-access => 'biofetch',
+										# -verbose => $verbose,
+									  ));
+	ok(defined($ref = $db->get_by_id('10592273')));
+	ok $ref->identifier, '10592273';
 };
 
 if ($@) {
-    if( $DEBUG  ) { 
-	print STDERR "Warning: Couldn't connect to BioFetch server with Bio::DB::Medline.pm!\n" . $@;
-    }
-    foreach ( $Test::ntest..$NUMTESTS) { 
-	skip('No network access - could not connect to Medline',1);
-    }
-    exit(0);
+	warn( "Warning: Couldn't connect to BioFetch server with Bio::DB::Biblio::biofetch!\n$@\n") 
+	  if $DEBUG;
+	$msg = "Couldn't connect to BioFetch server with Bio::DB::Biblio::biofetch";
+	exit(0);
 }
 
 $ref = $refio = undef;
 
 eval {
-    ok defined($db = new Bio::Biblio(-access => 'biofetch',
-				     -verbose=>$verbose,
-				     -retrievaltype => 'tempfile'
-				     )); 
+	ok defined($db = new Bio::Biblio(-access => 'biofetch',
+												# -verbose => $verbose,
+											   )); 
 
-
-    my $ids = ['20063307', '98276153'];
-    ok(defined($refio = $db->get_all($ids)));
-    ok($refio->next_bibref->identifier, '20063307');
-    ok($refio->next_bibref->identifier, '98276153');
+	my $ids = ['10592273', '9613206'];
+	ok(defined($refio = $db->get_all($ids)));
+	ok($refio->next_bibref->identifier, '9613206');
+	ok($refio->next_bibref->identifier, '10592273');
 };
 
 if ($@) {    
-    if( $DEBUG ) { 
-	warn "Batch access test failed.Error: $@\n";
-    }
-    foreach ( $Test::ntest..$NUMTESTS ) { skip('no network access',1); }
-    exit(0);
+	warn "Batch access test failed.Error: $@\n" if $DEBUG;
+	$msg = 'No network access';
+	exit(0);
 }
 
 eval {
-    ok defined($db = new Bio::Biblio(-access => 'biofetch',
-				     -verbose=>$verbose
-				     )); 
+	ok defined($db = new Bio::Biblio(-access => 'biofetch',
+												# -verbose => $verbose,
+											  )); 
 
-    ok(defined($refio = $db->get_Stream_by_batch(['20063307', '98276153'])));
-    ok($refio->next_bibref->identifier, '20063307');
-    ok($refio->next_bibref->identifier, '98276153');
+	ok(defined($refio = $db->get_Stream_by_id(['10592273', '9613206'])));
+	ok($refio->next_bibref->identifier, '9613206');
+	ok($refio->next_bibref->identifier, '10592273');
 };
 
 if ($@) {    
-    if( $DEBUG ) { 
-	warn "Batch access test failed.Error: $@\n";
-    }
-    foreach ( $Test::ntest..$NUMTESTS ) { skip('no network access',1); }
+	warn "Batch access test failed.Error: $@\n" if $DEBUG;
+	$msg = 'No network access';
+	exit(0);
 }
-
-

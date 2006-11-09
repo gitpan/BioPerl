@@ -2,9 +2,7 @@ package Bio::Graphics::Glyph::triangle;
 # DAS-compatible package to use for drawing a triangle
 
 use strict;
-use vars '@ISA';
-@ISA = 'Bio::Graphics::Glyph::generic';
-use Bio::Graphics::Glyph::generic;
+use base qw(Bio::Graphics::Glyph::generic);
 
 sub pad_left {
   my $self = shift;
@@ -45,8 +43,8 @@ sub draw_component {
 
   if   ($orient eq 'S'){$vx1=$x1;$vy1=$y1;$vx2=$x2;$vy2=$y1;$vx3=$xmid;$vy3=$y2;}
   elsif($orient eq 'N'){$vx1=$x1;$vy1=$y2;$vx2=$x2;$vy2=$y2;$vx3=$xmid;$vy3=$y1;}
-  elsif($orient eq 'W'){$vx1=$x2;$vy1=$y1;$vx2=$x2;$vy2=$y2;$vx3=$x2-$p;$vy3=$ymid;}
-  elsif($orient eq 'E'){$vx1=$x1;$vy1=$y1;$vx2=$x1;$vy2=$y2;$vx3=$x1+$p;$vy3=$ymid;}
+  elsif($orient eq 'W'){$vx1=$x2;$vy1=$y1;$vx2=$x2;$vy2=$y2;$vx3=$x2-$q*2;$vy3=$ymid;}
+  elsif($orient eq 'E'){$vx1=$x1;$vy1=$y1;$vx2=$x1;$vy2=$y2;$vx3=$x1+$q*2;$vy3=$ymid;}
 
   # now draw the triangle
   my $poly_pkg = $self->polygon_package;

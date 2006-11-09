@@ -1,5 +1,5 @@
 # -*-Perl-*- mode (to keep my emacs happy)
-# $Id: RestrictionIO.t,v 1.6 2003/12/15 03:45:41 redwards Exp $
+# $Id: RestrictionIO.t,v 1.9.4.1 2006/10/16 17:08:15 sendu Exp $
 
 # test for Bio::Restriction::Analysis.pm
 # written by Rob Edwards
@@ -7,7 +7,6 @@
 use strict;
 
 my $NUMTESTS;
-my $error;
 
 BEGIN {
     eval { require Test; };
@@ -16,24 +15,17 @@ BEGIN {
     }
     use Test;
     $NUMTESTS = 14;
-    $error  = 0;
-
     plan tests => $NUMTESTS;
-
-}
-
-if( $error ==  1 ) {
-    exit(0);
 }
 
 require Bio::Restriction::IO;
-
 use Bio::Root::IO;
 require Bio::Restriction::EnzymeCollection;
 
-use Data::Dumper;
-ok(1);
+my $tmpdir = File::Spec->catfile(qw(t tmp));
+mkdir($tmpdir,0777);
 
+ok(1);
 
 #
 # default enz set
@@ -45,24 +37,20 @@ ok $renzs->each_enzyme, 532;
 ok my $e = $renzs->get_enzyme('AccI');
 ok $e->name, 'AccI';
 
-
-ok my $out  = Bio::Restriction::IO->new(-format=>'base',  -file=> ">/tmp/r");
+ok my $out = Bio::Restriction::IO->new(-format => 'base', -file   => ">".File::Spec->catfile($tmpdir,"r"));
 #$out->write($renzs);
 #map {print $_->name, "\t", $_->site, "\t", $_->overhang, "\n"} $renzs->each_enzyme;
-
-
 
 #
 # withrefm, 31
 #
 
 ok $in  = Bio::Restriction::IO->new
-    (-format=> 31, -verbose => 0,
-     -file => Bio::Root::IO->catfile("t","data","rebase.withrefm"));
+  (-format=> 'withrefm',
+	-verbose => 0,
+	-file => Bio::Root::IO->catfile("t","data","rebase.withrefm"));
 ok $renzs = $in->read;
 ok $renzs->each_enzyme, 11;
-
-
 
 #
 # itype2, 8
@@ -71,11 +59,18 @@ ok $renzs->each_enzyme, 11;
 #  [tab] methylation site and type [tab] commercial source [tab] references
 
 ok $in  = Bio::Restriction::IO->new
-    (-format=> 8, -verbose => 0,
+    (-format=> 'itype2', -verbose => 0,
      -file => Bio::Root::IO->catfile("t","data","rebase.itype2"));
 
 ok $renzs = $in->read;
 ok $renzs->each_enzyme, 16;
 
 ok  $out  = Bio::Restriction::IO->new(-format=>'base');
-#$out->write($renzs);
+
+END { cleanup(); }
+
+sub cleanup {
+   eval {
+      Bio::Root::IO->rmtree($tmpdir) if (-d $tmpdir);
+   };
+}

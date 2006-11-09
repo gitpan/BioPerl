@@ -1,4 +1,4 @@
-# $Id: Repeat_Region.pm,v 1.8 2003/06/04 08:36:40 heikki Exp $
+# $Id: Repeat_Region.pm,v 1.9.4.1 2006/10/02 23:10:21 sendu Exp $
 #
 # bioperl module for Bio::LiveSeq::Repeat_Region
 #
@@ -28,12 +28,6 @@ The strand could be 1 (forward strand, default), -1 (reverse strand).
 
 Email:  Insana@ebi.ac.uk, jinsana@gmx.net
 
-Address: 
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, Regioned Kingdom 
-
 =head1 APPENDIX
 
 The rest of the documentation details each of the object
@@ -47,9 +41,7 @@ package Bio::LiveSeq::Repeat_Region;
 
 
 use strict;
-use vars qw(@ISA);
-use Bio::LiveSeq::Range; # uses Range, inherits from it
-@ISA=qw(Bio::LiveSeq::Range);
+use base qw(Bio::LiveSeq::Range);
 
 =head2 new
 

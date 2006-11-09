@@ -1,4 +1,4 @@
-# $Id: GenPept.pm,v 1.26 2002/11/21 17:45:59 lstein Exp $
+# $Id: GenPept.pm,v 1.31.4.1 2006/10/02 23:10:15 sendu Exp $
 #
 # BioPerl module for Bio::DB::GenPept
 #
@@ -28,7 +28,7 @@ Bio::DB::GenPept - Database object interface to GenPept
 
     my $seqio = $gb->get_Stream_by_id(['195055', 'DEECTH']);
     while( my $seq = $seqio->next_seq ) {
-	print "seq is is ", $seq->display_id, "\n";
+	    print "seq is is ", $seq->display_id, "\n";
     }
 
 =head1 DESCRIPTION
@@ -55,17 +55,16 @@ your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation
 is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Aaron Mackey, Jason Stajich
 
@@ -83,18 +82,17 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::DB::GenPept;
 use strict;
-use vars qw(@ISA $DEFAULTFORMAT $DEFAULTMODE %PARAMSTRING );
-use Bio::DB::NCBIHelper;
+use vars qw($DEFAULTFORMAT $DEFAULTMODE %PARAMSTRING);
 
-@ISA = qw(Bio::DB::NCBIHelper);
+use base qw(Bio::DB::NCBIHelper);
 BEGIN { 
     $DEFAULTMODE   = 'single';
     $DEFAULTFORMAT = 'gp';	    
     %PARAMSTRING = ( 
 		     'batch' => { 'db'     => 'protein',
 				  'usehistory' => 'n',
-				  'tool'   => 'bioperl',
-				  'retmode' => 'text'},
+				  'tool'   => 'bioperl'},
+			 # no query?
 		     'gi' => { 'db'     => 'protein',
 			       'usehistory' => 'n',
 			       'tool'   => 'bioperl',
@@ -107,6 +105,13 @@ BEGIN {
 				   'usehistory' => 'n',
 				   'tool'   => 'bioperl',
 				   'retmode' => 'text'},
+			 'webenv' => {    
+				  'query_key'  => 'querykey',
+				  'WebEnv'  => 'cookie',
+				  'db'     => 'protein',
+				  'usehistory' => 'n',
+				  'tool'   => 'bioperl',
+				  'retmode' => 'text'},
 		     );
 }
 
@@ -209,7 +214,7 @@ sub default_format {
 
 =cut
 
-# oberride to force format to be GenPept regardless
+# override to force format to be GenPept regardless
 sub request_format {
     my ($self) = @_;
     return $self->SUPER::request_format($self->default_format());

@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Exception.t,v 1.5 2003/03/07 21:11:09 sac Exp $
+## $Id: Exception.t,v 1.8 2006/07/17 14:04:22 sendu Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -19,11 +19,18 @@ BEGIN {
     if( $@ ) {
 	use lib 't';
     }
-    use vars qw($NTESTS);
+    use vars qw($NTESTS $SKIPERROR);
     $NTESTS = 8;
     $error = 0;
 
     use Test;
+
+    eval { require Error; };
+    if( $@ ) {
+	$NTESTS = 3;
+	$SKIPERROR = 1;
+    }
+
     plan tests => $NTESTS; 
 }
 
@@ -46,16 +53,24 @@ ok($test);
 
 ok($test->data('Eeny meeny miney moe.'), 'Eeny meeny miney moe.');
 
-# This demonstrates what will happen if a method defined in an interface 
-# that is not implemented in the implementating object.
-try {
-    $test->foo();
-}
-catch Bio::Root::NotImplemented with {
-    my $err = shift;
-    ok(ref $err, 'Bio::Root::NotImplemented');
-};
+exit if $SKIPERROR; # bail if we don't have Error installed
 
+# This demonstrates what will happen if a method defined in an
+# interface that is not implemented in the implementating object.
+
+eval { 
+    try {
+	$test->foo();
+    }
+    catch Bio::Root::NotImplemented with {
+	my $err = shift;
+	ok(ref $err, 'Bio::Root::NotImplemented');
+    };
+
+};
+if( $@ ) { 
+#    warn($@);
+}
 # TestObject::bar() deliberately throws a Bio::TestException, 
 # which is defined in TestObject.pm
 try {
@@ -77,9 +92,11 @@ catch Bio::Root::Exception with {
     ok($err->value, 42);
 };
 
-# Try to call a subroutine that doesn't exist. But because it occurs within a try block,
-# the Error module will create a Error::Simple to capture it. Handy eh?
-if( defined $^V && $^V ge 5.6.1 ) {
+# Try to call a subroutine that doesn't exist. But because it occurs
+# within a try block, the Error module will create a Error::Simple to
+# capture it. Handy eh?
+
+if( $] >= 5.006001 ) {
     try {
 	$test->foobar();
     }

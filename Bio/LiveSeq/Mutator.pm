@@ -1,8 +1,8 @@
-# $Id: Mutator.pm,v 1.27 2003/06/04 08:36:40 heikki Exp $
+# $Id: Mutator.pm,v 1.33.4.3 2006/10/02 23:10:21 sendu Exp $
 #
 # bioperl module for Bio::LiveSeq::Mutator
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Joseph Insana
 #
@@ -43,28 +43,21 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho & Joseph A.L. Insana
 
-  Email:  heikki@ebi.ac.uk
+  Email:  heikki-at-bioperl-dot-org
           insana@ebi.ac.uk, jinsana@gmx.net
-
-  Address:
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom
 
 =head1 APPENDIX
 
@@ -76,10 +69,8 @@ report bugs to the Bioperl bug tracking system to help us keep track
 # Let the code begin...
 
 package Bio::LiveSeq::Mutator;
-use vars qw(@ISA);
 use strict;
 
-use vars qw(@ISA);
 use Bio::Variation::SeqDiff;
 use Bio::Variation::DNAMutation;
 use Bio::Variation::RNAChange;
@@ -90,9 +81,8 @@ use Bio::LiveSeq::Mutation;
 #use integer;
 # Object preamble - inheritance
 
-use Bio::Root::Root;
 
-@ISA = qw( Bio::Root::Root );
+use base qw(Bio::Root::Root);
 
 sub new {
     my($class,@args) = @_;
@@ -139,14 +129,14 @@ sub gene {
   if (defined $value) {
       if( ! $value->isa('Bio::LiveSeq::Gene') ) {
 	  $self->throw("Is not a Bio::LiveSeq::Gene object but a [$value]");
-	  return undef;
+	  return;
       }
       else {
 	  $self->{'gene'} = $value;
       }
   }
   unless (exists $self->{'gene'}) {
-      return (undef);
+      return;
   } else {
       return $self->{'gene'};
   }
@@ -203,15 +193,15 @@ sub add_Mutation{
     if( $value->isa('Bio::Liveseq::Mutation') ) {
 	my $com = ref $value;
 	$self->throw("Is not a Mutation object but a [$com]" );
-	return undef;
+	return;
     }
     if (! $value->pos) {
 	$self->warn("No value for mutation position in the sequence!");
-	return undef;
+	return;
     }
     if (! $value->seq && ! $value->len) {
 	$self->warn("Either mutated sequence or length of the deletion must be given!");
-	return undef;
+	return;
     }
     push(@{$self->{'mutations'}},$value);
 }
@@ -256,14 +246,14 @@ sub mutation {
   if (defined $value) {
       if( ! $value->isa('Bio::LiveSeq::Mutation') ) {
 	  $self->throw("Is not a Bio::LiveSeq::Mutation object but a [$value]");
-	  return undef;
+	  return;
       }
       else {
 	  $self->{'mutation'} = $value;
       }
   }
   unless (exists $self->{'mutation'}) {
-      return (undef);
+      return;
   } else {
       return $self->{'mutation'};
   }
@@ -290,14 +280,14 @@ sub DNA {
   if (defined $value) {
       if( ! $value->isa('Bio::LiveSeq::DNA') and ! $value->isa('Bio::LiveSeq::Transcript') ) {
 	  $self->throw("Is not a Bio::LiveSeq::DNA/Transcript object but a [$value]");
-	  return undef;
+	  return;
       }
       else {
 	  $self->{'DNA'} = $value;
       }
   }
   unless (exists $self->{'DNA'}) {
-      return (undef);
+      return;
   } else {
       return $self->{'DNA'};
   }
@@ -326,14 +316,14 @@ sub RNA {
   if (defined $value) {
       if( ! $value->isa('Bio::LiveSeq::Transcript') ) {
 	  $self->throw("Is not a Bio::LiveSeq::RNA/Transcript object but a [$value]");
-	  return undef;
+	  return;
       }
       else {
 	  $self->{'RNA'} = $value;
       }
   }
   unless (exists $self->{'RNA'}) {
-      return (undef);
+      return;
   } else {
       return $self->{'RNA'};
   }
@@ -363,14 +353,14 @@ sub dnamut {
   if (defined $value) {
       if( ! $value->isa('Bio::Variation::DNAMutation') ) {
 	  $self->throw("Is not a Bio::Variation::DNAMutation object but a [$value]");
-	  return undef;
+	  return;
       }
       else {
 	  $self->{'dnamut'} = $value;
       }
   }
   unless (exists $self->{'dnamut'}) {
-      return (undef);
+      return;
   } else {
       return $self->{'dnamut'};
   }
@@ -400,14 +390,14 @@ sub rnachange {
   if (defined $value) {
       if( ! $value->isa('Bio::Variation::RNAChange') ) {
 	  $self->throw("Is not a Bio::Variation::RNAChange object but a [$value]");
-	  return undef;
+	  return;
       }
       else {
 	  $self->{'rnachange'} = $value;
       }
   }
   unless (exists $self->{'rnachange'}) {
-      return (undef);
+      return;
   } else {
       return $self->{'rnachange'};
   }
@@ -437,14 +427,14 @@ sub aachange {
   if (defined $value) {
       if( ! $value->isa('Bio::Variation::AAChange') ) {
 	  $self->throw("Is not a Bio::Variation::AAChange object but a [$value]");
-	  return undef;
+	  return;
       }
       else {
 	  $self->{'aachange'} = $value;
       }
   }
   unless (exists $self->{'aachange'}) {
-      return (undef);
+      return;
   } else {
       return $self->{'aachange'};
   }
@@ -475,7 +465,7 @@ sub exons {
       $self->{'exons'} = $value;
   }
   unless (exists $self->{'exons'}) {
-      return (undef);
+      return;
   } else {
       return $self->{'exons'};
   }
@@ -710,7 +700,7 @@ sub change_gene {
     #
     # Recording the state: SeqDiff object creation  ?? transcript no.??
     #
-    my $seqDiff = Bio::Variation::SeqDiff->new();
+    my $seqDiff = Bio::Variation::SeqDiff->new(-verbose => $self->verbose);
     $seqDiff->alphabet($self->gene->get_DNA->alphabet);
     $seqDiff->numbering($self->numbering);
     my ($DNAobj, $RNAobj);
@@ -1074,12 +1064,19 @@ sub _rnaAffected {
 			 last;
 		     } 
 		     #proximity test for exon mutations
+		     #proximity test for exon mutations
 		     elsif ( ( $strand == 1 and 
-			       $exons[$i]->start <= $self->mutation->prelabel and 
-			       $exons[$i]->end >= $self->mutation->postlabel) or 
+			       $exons[$i]->start < $self->mutation->prelabel and 
+			       $exons[$i]->end > $self->mutation->prelabel) or 
+			     ( $strand == 1 and 
+			       $exons[$i]->start < $self->mutation->postlabel and 
+			       $exons[$i]->end > $self->mutation->postlabel) or 
 			     ( $strand == -1 and 
-			       $exons[$i]->start >= $self->mutation->prelabel and 
-			       $exons[$i]->end <= $self->mutation->postlabel) ) {
+			       $exons[$i]->start > $self->mutation->prelabel and 
+			       $exons[$i]->end < $self->mutation->prelabel) or
+			     ( $strand == -1 and 
+			       $exons[$i]->start > $self->mutation->postlabel and 
+			       $exons[$i]->end < $self->mutation->postlabel) ) {
 			 $rnaAffected = 1;
 
 			 my $afterdist = $self->mutation->prelabel - $exons[$i]->start;

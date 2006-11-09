@@ -12,11 +12,9 @@ See L<Bio::DB::GFF>
 
 # a simple mysql adaptor
 use strict;
-use Bio::DB::GFF::Adaptor::dbi;
 use Bio::DB::GFF::Util::Rearrange; # for rearrange()
 use Bio::DB::GFF::Util::Binning;
-use vars qw(@ISA);
-@ISA = qw(Bio::DB::GFF::Adaptor::dbi);
+use base qw(Bio::DB::GFF::Adaptor::dbi);
 
 use constant MAX_SEGMENT => 100_000_000;  # the largest a segment can get
 
@@ -402,6 +400,9 @@ Each row of the returned array is a arrayref containing the following fields:
 sub search_notes {
   my $self = shift;
   my ($search_string,$limit) = @_;
+
+  $search_string =~ tr/*?//d;
+
   my $query = FULLTEXTSEARCH;
   $query .= " limit $limit" if defined $limit;
   my $sth = $self->dbh->do_query($query,$search_string,$search_string);
@@ -412,7 +413,20 @@ sub search_notes {
      my $featname = Bio::DB::GFF::Featname->new($class=>$name);
      push @results,[$featname,$note,$relevance];
   }
-  @results;
+
+  #added result filtering so that this method returns the expected results
+  #this section of code used to be in GBrowse's do_keyword_search method
+
+  my $match_sub = 'sub {';
+  foreach (split /\s+/,$search_string) {
+    $match_sub .= "return unless \$_[0] =~ /\Q$_\E/i; ";
+  }
+  $match_sub .= "};";
+  my $match = eval $match_sub;
+
+  my @matches = grep { $match->($_->[1]) } @results;
+
+  return @matches;
 }
 
 
@@ -437,38 +451,19 @@ sub schema {
   my %schema = (
 		fdata =>{ 
 table=> q{
-#create table fdata (
-#    fid	         int not null  auto_increment,
-#    fref         varchar(100)    not null,
-#    fstart       int unsigned   not null,
-#    fstop        int unsigned   not null,
-#    ftypeid      int not null,
-#    fscore        float,
-#    fstrand       enum('+','-'),
-#    fphase        enum('0','1','2'),
-#    gid          int not null,
-#    ftarget_start int unsigned,
-#    ftarget_stop  int unsigned,
-#    primary key(fid),
-#    unique index(fref,fstart,fstop,ftypeid,gid),
-#    index(ftypeid),
-#    index(gid)
-#) type=MyISAM
-
-
  create table fdata (
     fid	                int not null  auto_increment,
     fref                varchar(100) not null,
-    fstart              int unsigned   not null,
-    fstop               int unsigned   not null,
-    fbin                double(20,6)  not null,
+    fstart              int not null,
+    fstop               int not null,
+    fbin                double precision,
     ftypeid             int not null,
     fscore              float,
     fstrand             enum('+','-'),
     fphase              enum('0','1','2'),
     gid                 int not null,
-    ftarget_start       int unsigned,
-    ftarget_stop        int unsigned,
+    ftarget_start       int,
+    ftarget_stop        int,
     primary key(fid),
     unique index(fref,fbin,fstart,fstop,ftypeid,gid),
     index(ftypeid),
@@ -612,6 +607,9 @@ sub setup_load {
     my $tables = join ', ',@tables;
     $dbh->do("LOCK TABLES $tables");
   }
+#  for my $table (qw(fdata)) {
+#    $dbh->do("alter table $table disable keys");
+#  }
 
   my $lookup_type = $dbh->prepare_delayed('SELECT ftypeid FROM ftype WHERE fmethod=? AND fsource=?');
   my $insert_type = $dbh->prepare_delayed('INSERT INTO ftype (fmethod,fsource) VALUES (?,?)');
@@ -683,6 +681,15 @@ sub load_gff_line {
   defined(my $typeid  = $self->get_table_id('ftype', $gff->{method} => $gff->{source})) or return;
   defined(my $groupid = $self->get_table_id('fgroup',$gff->{gname}  => $gff->{gclass})) or return;
 
+  if ($gff->{stop}-$gff->{start}+1 > $self->max_bin) {
+    warn "$gff->{gclass}:$gff->{gname} is ",$gff->{stop}-$gff->{start}+1,
+      " bp long, but the maximum indexable feature is set to ",$self->max_bin," bp.\n";
+    warn "Please set the maxbin value to a length at least as large as the largest feature you wish to store.\n";
+    warn "\n* You will need to reinitialize the database from scratch.\n";
+    warn "* With the Perl API you do this using the -max_bin argument to \$db->initialize().\n";
+    warn "* With the command-line tools you do with this with --maxfeature option.\n";
+  }
+
   my $bin =  bin($gff->{start},$gff->{stop},$self->min_bin);
   my $result = $s->{sth}{insert_fdata}->execute($gff->{ref},
 					       $gff->{start},$gff->{stop},$bin,
@@ -691,7 +698,7 @@ sub load_gff_line {
 					       $groupid,
 					       $gff->{tstart},$gff->{tstop});
 
-  warn $dbh->errstr,"\n" and return unless $result;
+  warn $dbh->errstr,"\n" && return unless $result;
 
   my $fid = $dbh->{mysql_insertid}
     || $self->get_feature_id($gff->{ref},$gff->{start},$gff->{stop},$typeid,$groupid);
@@ -711,13 +718,23 @@ sub load_gff_line {
   $fid;
 }
 
+sub finish_load {
+  my $self = shift;
+  my $dbh = $self->features_db;
+  local $dbh->{PrintError} = 0;
+#  for my $table (qw(fdata)) {
+#    $dbh->do("alter table $table enable keys");
+#  }
+  $self->SUPER::finish_load;
+}
+
 
 sub insert_sequence {
   my $self = shift;
   my($id,$offset,$seq) = @_;
   my $sth = $self->{_insert_sequence}
     ||= $self->dbh->prepare_delayed('replace into fdna values (?,?,?)');
-  $sth->execute($id,$offset,$seq) or die $sth->errstr;
+  $sth->execute($id,$offset,$seq) or $self->throw($sth->errstr);
 }
 
 

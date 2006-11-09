@@ -1,4 +1,4 @@
-# $Id: BPpsilite.pm,v 1.22 2002/10/22 07:38:45 lapp Exp $
+# $Id: BPpsilite.pm,v 1.26.4.1 2006/10/02 23:10:31 sendu Exp $
 # Bioperl module Bio::Tools::BPpsilite
 ############################################################
 #	based closely on the Bio::Tools::BPlite modules
@@ -20,8 +20,8 @@ Bio::Tools::BPpsilite - Lightweight BLAST parser for (iterated) psiblast reports
 =head1 SYNOPSIS
 
   use Bio::Tools::BPpsilite;
-  open FH, "t/psiblastreport.out";
-  $report = Bio::Tools::BPpsilite->new(-fh=>\*FH);
+  open my $FH, "t/psiblastreport.out";
+  $report = Bio::Tools::BPpsilite->new(-fh=>$FH);
 
   # determine number of iterations executed by psiblast
   $total_iterations = $report->number_of_iterations;
@@ -39,16 +39,20 @@ Bio::Tools::BPpsilite - Lightweight BLAST parser for (iterated) psiblast reports
 
 =head1 DESCRIPTION
 
-BPpsilite is a package for parsing multiple iteration PSIBLAST
-reports.  It is based closely on Ian Korf's BPlite.pm module for
-parsing single iteration BLAST reports (as modified by Lorenz Pollak).
+B<NOTE:> This module's functionality has been implemented in
+L<Bio::SearchIO::blast> and therefore is not actively maintained.
 
-Two of the four basic objects of BPpsilite.pm are identical to the
-corresponding objects in BPlite - the "HSP.pm" and "Sbjct.pm" objects.
-This DESCRIPTION documents only the one new object, the "iteration",
-as well as the additional methods that are implemented in BPpsilite
-that are not in BPlite.  See the BPlite documentation for information
-on the BPlite, SBJCT and HSP objects.
+BPpsilite is a package for parsing multiple iteration PSIBLAST
+reports.  It is based closely on Ian Korf's L<Bio::Tools::BPlite>
+module for parsing single iteration BLAST reports (as modified by
+Lorenz Pollak).
+
+Two of the four basic objects of L<Bio::Tools::BPpsilite> are
+identical to the corresponding objects in BPlite - the "HSP.pm" and
+"Sbjct.pm" objects.  This DESCRIPTION documents only the one new
+object, the "iteration", as well as the additional methods that are
+implemented in BPpsilite that are not in BPlite.  See the BPlite
+documentation for information on the BPlite, SBJCT and HSP objects.
 
 The essential difference between PSIBLAST and the other BLAST programs
 (in terms of report parsing) is that PSIBLAST performs multiple
@@ -100,17 +104,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bio.perl.org/MailList.html  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Peter Schattner
 
@@ -118,7 +121,7 @@ Email: schattner@alum.mit.edu
 
 =head1 CONTRIBUTORS
 
-Jason Stajich, jason@cgt.mc.duke.edu
+Jason Stajich, jason-at-bioperl.org
 
 =head1 ACKNOWLEDGEMENTS
 
@@ -139,19 +142,17 @@ This software is provided "as is" without warranty of any kind.
 package Bio::Tools::BPpsilite;
 
 use strict;
-use vars qw(@ISA);
 use Bio::Tools::BPlite::Iteration; #
 use Bio::Tools::BPlite::Sbjct; #   Debug code
-use Bio::Root::Root; # root interface to inherit from
-use Bio::Root::IO;
 use Bio::Tools::BPlite; 
 
-@ISA = qw(Bio::Root::Root Bio::Root::IO);
+use base qw(Bio::Root::Root Bio::Root::IO);
 
 sub new {
   my ($class, @args) = @_; 
   my $self = $class->SUPER::new(@args);
-  
+    $self->warn("Use of Bio::Tools::BPpsilite is deprecated".
+                   "Use Bio::SearchIO classes instead");
   # initialize IO
   $self->_initialize_io(@args);
   $self->{'_tempdir'} = $self->tempdir('CLEANUP' => 1);
@@ -316,40 +317,42 @@ sub _parseHeader {
 
 #'
 sub _preprocess {
-    my $self = shift;
-#	$self->throw(" PSIBLAST report preprocessing not implemented yet!");
+	my $self = shift;
+	#	$self->throw(" PSIBLAST report preprocessing not implemented yet!");
 
-    my  $oldround = 0;
-    my ($currentline, $currentfile, $round);
+	my  $oldround = 0;
+	my ($currentline, $currentfile, $round);
 
-# open output file for data from iteration round #1
-    $round = 1;
-    $currentfile = Bio::Root::IO->catfile($self->{'_tempdir'}, 
+	# open output file for data from iteration round #1
+	$round = 1;
+	$currentfile = Bio::Root::IO->catfile($self->{'_tempdir'}, 
 					  "iteration$round.tmp");
-    open (FILEHANDLE, ">$currentfile") || 
-	$self->throw("cannot open filehandle to write to file $currentfile");
+	open (my $FILEHANDLE, ">$currentfile") || 
+	  $self->throw("cannot open filehandle to write to file $currentfile");
 
-    while(defined ($currentline = $self->_readline()) ) {
-	if ($currentline =~ /^Results from round\s+(\d+)/) {
-	    if ($oldround) { close (FILEHANDLE) ;}
-	    $round = $1;
-	    $currentfile = Bio::Root::IO->catfile($self->{'_tempdir'}, 
-						  "iteration$round.tmp");
+	while(defined ($currentline = $self->_readline()) ) {
+		if ($currentline =~ /^Results from round\s+(\d+)/) {
+			if ($oldround) { 
+				close ($FILEHANDLE);
+			}
+			$round = $1;
+			$currentfile = Bio::Root::IO->catfile($self->{'_tempdir'}, 
+															  "iteration$round.tmp");
 
-	    close FILEHANDLE;
-	    open (FILEHANDLE, ">$currentfile") || 
-		$self->throw("cannot open filehandle to write to file $currentfile");
-	    $oldround = $round;
-	}elsif ($currentline =~ /CONVERGED/){ # This is a fix for psiblast parsing with -m 6 /AE
-	    $round--;
+			close $FILEHANDLE;
+			open ($FILEHANDLE, ">$currentfile") || 
+			  $self->throw("cannot open filehandle to write to file $currentfile");
+			$oldround = $round;
+		} elsif ($currentline =~ /CONVERGED/){ 
+			# This is a fix for psiblast parsing with -m 6 /AE
+			$round--;
+		}
+		print $FILEHANDLE $currentline ;
 	}
-	print FILEHANDLE $currentline ;
-	
-    }
-    $self->{'TOTAL_ITERATION_NUMBER'}= $round;
-# It is necessary to close filehandle otherwise the whole
-# file will not be read later !!
-    close FILEHANDLE;
+	$self->{'TOTAL_ITERATION_NUMBER'}= $round;
+	# It is necessary to close filehandle otherwise the whole
+	# file will not be read later !!
+	close $FILEHANDLE;
 }
 
 1;

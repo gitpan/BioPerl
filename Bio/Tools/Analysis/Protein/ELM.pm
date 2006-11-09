@@ -1,4 +1,4 @@
-# $Id: ELM.pm,v 1.5 2003/12/15 11:07:56 heikki Exp $
+# $Id: ELM.pm,v 1.12.4.1 2006/10/02 23:10:32 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Analysis::Protein::ELM
 #
@@ -11,8 +11,8 @@
 # POD documentation - main docs before the code
 
 =head1     NAME
- 
-Bio::Tools::Analysis::Protein::ELM
+
+Bio::Tools::Analysis::Protein::ELM - a wrapper around the ELM server which predicts short functional motifs on amino acid sequences
 
 =head1     SYNOPSIS
 
@@ -28,15 +28,16 @@ Bio::Tools::Analysis::Protein::ELM
 
 =head1    DESCRIPTION
 
-This module is a wrapper around the ELM server (http://elm.eu.org/)
-which predicts short functional motifs on amino acid sequences.  Two
-filters can be applied to help limit the rate of false positives:
-species and cellular compartment of the protein if known.  The modules
-supply methods for setting these attributes. To set species attribute,
-use either a Bio::Species object or an NCBI taxon ID number.  To set
+This module is a wrapper around the ELM server L<http://elm.eu.org/>
+which predicts short functional motifs on amino acid sequences. 
+
+False positives can be limited by providing values for the species
+and cellular compartment of the protein. To set the species attribute,
+use either a L<Bio::Species> object or an NCBI taxon ID number.  To set
 the cell compartment attribute (any number of compartments can be
 chosen) use an array reference to a list of compartment names.
-Results can be obtained either as raw text output, as parsed into a
+
+Results can be obtained either as raw text output, parsed into a
 data structure, or as Bio::SeqFeature::Generic objects.
 
 =head1 SEE ALSO
@@ -52,17 +53,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                       - General discussion
-  http://bio.perl.org/MailList.html           - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS
 
@@ -77,19 +77,18 @@ methods. Internal methods are usually preceded with a _
 
 use strict;
 package Bio::Tools::Analysis::Protein::ELM;
-use vars qw(@ISA %cc);
-use Bio::Tools::Analysis::SimpleAnalysisBase;
+use vars qw(%cc);
 use HTML::HeadParser;
 use Bio::SeqFeature::Generic;
 use HTTP::Request::Common qw(POST);
 use IO::String;
-@ISA = qw( Bio::Tools::Analysis::SimpleAnalysisBase  );
+use base qw(Bio::Tools::Analysis::SimpleAnalysisBase);
 
 ## valid cell compartments ##
 %cc = (
       all            => 1,
       nucleus        => 'GO:0005634',
-	  extracellular  => 'GO:0005576',
+      extracellular  => 'GO:0005576',
       cytoplasm      => 'GO:0005737',
       peroxisome     => 'GO:0005777',
       glycosome      => 'GO:0020015',
@@ -97,8 +96,8 @@ use IO::String;
       golgi          => 'GO:0005794',
       er             => 'GO:0005783',
       lysosome       => 'GO:0005764',
-	  endosome       => 'GO:0005768',
-	  plasma_membrane=> 'GO:0005886',
+      endosome       => 'GO:0005768',
+      plasma_membrane=> 'GO:0005886',
 		);
 
 my $URL           = 'http://elm.eu.org/basicELM/cgimodel.py';
@@ -159,9 +158,8 @@ sub _init {
  usage       : $elm->compartment(['golgi', 'er']);
  purpose     : get/setter for cell compartment specifications
  arguments   : None, single compartment string or ref to array of
-                    compartment names.
- returns     : Array of compartment names (default if not previously
-                    set).
+               compartment names.
+ returns     : Array of compartment names (default if not previously set).
 
 =cut
 
@@ -237,8 +235,8 @@ sub  _run {
     }
     my %h = (swissprotId      => "",
              sequence         => $self->seq->seq,
-             userSpecies      => '',
-             typedUserSpecies => $self->species(),
+             userSpecies      => $self->species,
+             typedUserSpecies => '',
              fun              => "Submit");
     splice (@cc_str, @cc_str,0, ( map{$_, $h{$_}} keys %h));
 
@@ -254,9 +252,10 @@ sub  _run {
     }
 
     my $text = $r1->content;
-    my ($url) = $text =~ /URL=(\S+)\"/s; 
-    $url =~ s/amp;//g ;
+    my ($url) = $text =~ /URL=\S+(fun=\S+r=\d)/s; 
+    #$url =~ s/amp;//g ;
     my ($resp2);
+    $url = $URL . "?" .$url;
     while (1) {
 	my $req2 = HTTP::Request->new(GET=>$url);
 	my $r2 = $self->request ($req2);
@@ -273,7 +272,7 @@ sub  _run {
 	    return;
 	} else {
 	    print "." if $self->verbose > 0;
-	    $self->sleep();
+	    $self->sleep(1);
 	}
     }
 }
@@ -283,13 +282,12 @@ sub  _run {
  name      : result
  usage     : $tool->result('Bio::SeqFeatureI');
  purpose   : parse results into sequence features or basic data format
- arguments : none    (retrieves raw text without html)
-             a value (retrieves data structure)
-             'Bio::SeqFeatureI' (returns array of sequence features)
-					tag names are : {method=>'ELM', motif=>motifname,
-                                     peptide => seqeunce of match,
-                                     concensus=> regularexpression of match.
-	.
+ arguments : 1. none    (retrieves raw text without html)
+             2. a value (retrieves data structure)
+             3. 'Bio::SeqFeatureI' (returns array of sequence features)
+                tag names are : {method => 'ELM', motif => motifname,
+                                 peptide => seqeunce of match,
+                                 concensus => regexp of match}.
  returns   : see arguments. 
 
 =cut

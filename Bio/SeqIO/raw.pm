@@ -2,15 +2,15 @@
 # PACKAGE : Bio::SeqIO::raw
 # AUTHOR  : Ewan Birney <birney@ebi.ac.uk>
 # CREATED : Feb 16 1999
-# REVISION: $Id: raw.pm,v 1.16 2003/02/05 21:53:53 jason Exp $
-#            
+# REVISION: $Id: raw.pm,v 1.21.4.1 2006/10/02 23:10:30 sendu Exp $
+#
 # Copyright (c) 1997-9 bioperl, Ewan Birney. All Rights Reserved.
-#           This module is free software; you can redistribute it and/or 
+#           This module is free software; you can redistribute it and/or
 #           modify it under the same terms as Perl itself.
 #
 # _History_
 #
-# Ewan Birney <birney@ebi.ac.uk> developed the SeqIO 
+# Ewan Birney <birney@ebi.ac.uk> developed the SeqIO
 # schema and the first prototype modules.
 #
 # This code is based on his Bio::SeqIO::Fasta module with
@@ -39,27 +39,24 @@ Do not use this module directly.  Use it via the L<Bio::SeqIO> class.
 This object can transform Bio::Seq objects to and from raw flat
 file databases.
 
-
 =head1 FEEDBACK
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
-to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://www.bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.
+Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS
 
@@ -72,7 +69,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. 
+The rest of the documentation details each of the object methods.
 Internal methods are usually preceded with a _
 
 =cut
@@ -82,20 +79,18 @@ Internal methods are usually preceded with a _
 
 package Bio::SeqIO::raw;
 use strict;
-use vars qw(@ISA);
 
-use Bio::SeqIO;
 use Bio::Seq::SeqFactory;
 
-@ISA = qw(Bio::SeqIO);
+use base qw(Bio::SeqIO);
 
 sub _initialize {
   my($self,@args) = @_;
-  $self->SUPER::_initialize(@args);    
+  $self->SUPER::_initialize(@args);
   if( ! defined $self->sequence_factory ) {
       $self->sequence_factory(new Bio::Seq::SeqFactory
-			      (-verbose => $self->verbose(), 
-			       -type => 'Bio::Seq'));      
+			      (-verbose => $self->verbose(),
+			       -type => 'Bio::Seq'));
   }
 }
 
@@ -116,7 +111,7 @@ sub next_seq{
    ## grabbing it should be easy :)
 
    my $nextline = $self->_readline();
-   if( !defined $nextline ){ return undef; }
+   return unless defined $nextline;
 
    my $sequence = uc($nextline);
    $sequence =~ s/\W//g;
@@ -138,7 +133,7 @@ sub next_seq{
 sub write_seq {
    my ($self,@seq) = @_;
    foreach my $seq (@seq) {
-       $self->throw("Must provide a valid Bio::PrimarySeqI object") 
+       $self->throw("Must provide a valid Bio::PrimarySeqI object")
 	   unless defined $seq && ref($seq) && $seq->isa('Bio::PrimarySeqI');
      $self->_print($seq->seq, "\n") or return;
    }
@@ -152,7 +147,7 @@ sub write_seq {
  Usage   : $stream->write_qual($seq)
  Function: writes the $seq object into the stream
  Returns : 1 for success and 0 for error
- Args    : Bio::Seq object
+ Args    : Bio::Seq::Quality object
 
 
 =cut
@@ -161,15 +156,15 @@ sub write_qual {
    my ($self,@seq) = @_;
    my @qual = ();
    foreach (@seq) {
-     unless ($_->isa("Bio::Seq::SeqWithQuality")){
-        warn("You cannot write raw qualities without supplying a Bio::Seq::SeqWithQuality object! You passed a ", ref($_), "\n");
+     unless ($_->isa("Bio::Seq::Quality")){
+        warn("You cannot write raw qualities without supplying a Bio::Seq::Quality object! You passed a ", ref($_), "\n");
         next;
-     } 
+     }
      @qual = @{$_->qual};
      if(scalar(@qual) == 0) {
 	    $qual[0] = "\n";
      }
-     
+
      $self->_print (join " ", @qual,"\n") or return;
 
    }

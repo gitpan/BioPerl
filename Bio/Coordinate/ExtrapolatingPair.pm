@@ -1,8 +1,8 @@
-# $Id: ExtrapolatingPair.pm,v 1.10 2003/02/11 09:05:16 heikki Exp $
+# $Id: ExtrapolatingPair.pm,v 1.16.4.1 2006/10/02 23:10:14 sendu Exp $
 #
 # bioperl module for Bio::Coordinate::ExtrapolatingPair
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Heikki Lehvaslaiho
 #
@@ -63,26 +63,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                        - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email:  heikki@ebi.ac.uk
-Address:
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom
+Email:  heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -95,15 +89,13 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Coordinate::ExtrapolatingPair;
-use vars qw(@ISA );
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 use Bio::Root::Root;
 use Bio::LocationI;
-use Bio::Coordinate::Pair;
 
-@ISA = qw(Bio::Coordinate::Pair);
+use base qw(Bio::Coordinate::Pair);
 
 
 sub new {
@@ -179,7 +171,7 @@ sub map {
            $split->add_sub_Location($match) if $match;
 
        }
-       $split->each_Location ? (return $split) : (return undef) ;
+       $split->each_Location ? (return $split) : return ;
 
    } else {
        return $self->_map($value);
@@ -218,8 +210,8 @@ sub _map {
 
    # strict prevents matches outside stated range
    if ($self->strict) {
-       return undef if $start < 0 and $end < 0;
-       return undef if $start > $self->out->end;
+       return if $start < 0 and $end < 0;
+       return if $start > $self->out->end;
        $start = 1 if $start < 0;
        $end = $self->out->end if $end > $self->out->end;
    }

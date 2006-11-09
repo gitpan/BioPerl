@@ -1,5 +1,5 @@
 #
-# $Id: swissprot.pm,v 1.1 2003/02/20 02:45:14 lstein Exp $
+# $Id: swissprot.pm,v 1.7.4.1 2006/10/02 23:10:16 sendu Exp $
 #
 # BioPerl module for Bio::DB::Flat::BDB::swissprot
 #
@@ -31,17 +31,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via
-email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 SEE ALSO
 
@@ -56,10 +55,8 @@ Email - lstein@cshl.org
 package Bio::DB::Flat::BDB::swissprot;
 
 use strict;
-use Bio::DB::Flat::BDB;
-use vars '@ISA';
 
-@ISA = qw(Bio::DB::Flat::BDB);
+use base qw(Bio::DB::Flat::BDB);
 
 sub default_file_format { "swiss" }
 
@@ -82,7 +79,7 @@ sub seq_to_ids {
   my %ids;
   $ids{ID}       = $display_id;
   $ids{ACC}      = $accession            if defined $accession;
-  $ids{VERSION}  = $accession            if defined $accession;
+  $ids{VERSION}  = "$accession.version"  if defined $accession && defined $version;
   return \%ids;
 }
 

@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: RootI.t,v 1.7 2003/12/09 20:40:00 heikki Exp $
+## $Id: RootI.t,v 1.8 2006/07/12 18:46:22 sac Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -16,8 +16,9 @@ BEGIN {
 	use lib 't';
     }
     use Test;    
-    plan tests => 10;
+    plan tests => 11;
 }
+
 
 use Bio::Root::Root;
 
@@ -82,6 +83,9 @@ ok($seq->verbose, 1);
 my @vals = Bio::Root::RootI->_rearrange([qw(apples pears)], 
 					-apples => 'up the',
 					-pears  => 'stairs');
+eval { $obj->throw_not_implemented() };
+ok $@ =~ /Bio::Root::NotImplemented/;
+
 ok(shift @vals, 'up the');
 ok(shift @vals, 'stairs');
 

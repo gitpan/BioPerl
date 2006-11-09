@@ -103,15 +103,9 @@ foreach my $filename (@ARGV){
     $filename =~ /zoom50_humMusL/          ? toGFF($line,$fho,['zoom50_humMusL',          '', 4, 1, 2, 3, 5, 6,-1]) :
     $filename =~ /humMusL/                 ? toGFF($line,$fho,['humMusL',                 '', 4, 1, 2, 3, 5, 6,-1]) :
 
-    $filename =~ /refGene/                 ? toGFF2($line,$fho,['refGene',                '', 0, 1, 2,-1,-1, 3, 4, 5, 6, 8, 9]) :
-    $filename =~ /genscan/                 ? toGFF2($line,$fho,['genscan',                '', 0, 1, 2,-1,-1, 3, 4, 5, 6, 8, 9]) :
-    $filename =~ /acembly/                 ? toGFF2($line,$fho,['acembly',                '', 0, 1, 2,-1,-1, 3, 4, 5, 6, 8, 9]) :
-    $filename =~ /ensGene/                 ? toGFF2($line,$fho,['ensGene',                '', 0, 1, 2,-1,-1, 3, 4, 5, 6, 8, 9]) :
-    $filename =~ /refFlat/                 ? toGFF2($line,$fho,['refFlat',                '', 0, 1, 2,-1,-1, 3, 4, 5, 6, 8, 9]) :
-    $filename =~ /sanger22pseudo/          ? toGFF2($line,$fho,['sanger22pseudo',         '', 0, 1, 2,-1,-1, 3, 4, 5, 6, 8, 9]) :
-    $filename =~ /sanger22/                ? toGFF2($line,$fho,['sanger22',               '', 0, 1, 2,-1,-1, 3, 4, 5, 6, 8, 9]) :
-    $filename =~ /softberryGene/           ? toGFF2($line,$fho,['softberryGene',          '', 0, 1, 2,-1,-1, 3, 4, 5, 6, 8, 9]) :
-    $filename =~ /twinscan/                ? toGFF2($line,$fho,['twinscan',               '', 0, 1, 2,-1,-1, 3, 4, 5, 6, 8, 9]) :
+     $filename =~ /(refGene|genscan|acembly|ensGene|refFlat|sanger22pseudo|sanger22|softberryGene|twinscan)/ ?
+     toGFF2($line,$fho,
+	    [$1, -1, 0, 2, 3, -1, -1, 4, 5, 6, 7, 9, 10]) :
 
     0;
   }
@@ -125,36 +119,36 @@ foreach my $filename (@ARGV){
 ###############################################
 
 sub toGFF2 {
-  my($line,$fho,$maps) = @_;
+  my($line,$fho, $maps) = @_;
 
   chomp $line; my @fields = split /\t/, $line;
 
   if(!$nolandmark{render($maps->[v_refmethod],\@fields)}){
-	print join "\t", map {render($maps->[$_],\@fields)} (v_refseq,
+	print $fho join "\t", map {render($maps->[$_],\@fields)} (v_refseq,
 														 v_refsource,
 														 v_refmethod,
 														 v_txstart,
 														 v_txstop,
-														 u_refscore,
+														 v_refscore,
 														 v_refstrand,
 														 v_refphase,);
-	print "\t";
-	print "Sequence " . render($maps->[v_refgroup],\@fields);
-	print "\n";
+	print $fho "\t";
+	print $fho "Sequence " . render($maps->[v_refgroup],\@fields);
+	print $fho "\n";
   }
 
   if(!$nolandmark{render($maps->[v_refmethod],\@fields)}){
-	print join "\t", map {render($maps->[$_],\@fields)} (v_refseq,
+	print $fho join "\t", map {render($maps->[$_],\@fields)} (v_refseq,
 														 v_refsource,
 														 v_refmethod,
 														 v_cdsstart,
 														 v_cdsstop,
-														 u_refscore,
+														 v_refscore,
 														 v_refstrand,
 														 v_refphase,);
-	print "\t";
-	print "CDS " . render($maps->[v_refgroup],\@fields);
-	print "\n";
+	print $fho "\t";
+	print $fho "CDS " . render($maps->[v_refgroup],\@fields);
+	print $fho "\n";
   }
 
   if(defined($maps->[v_exonstarts]) and defined($maps->[v_exonstops])){
@@ -163,7 +157,7 @@ sub toGFF2 {
 
 	while(my $start = shift @starts){
 	  my $stop = shift @stops;
-	  print join "\t", (render($maps->[v_refseq],\@fields),
+	  print $fho join "\t", (render($maps->[v_refseq],\@fields),
 						render($maps->[v_refsource],\@fields),
 						render($maps->[v_refmethod],\@fields),
 						$start,
@@ -179,12 +173,12 @@ sub toGFF2 {
 }
 
 sub toGFF {
-  my($line,$fho,$maps) = @_;
+  my($line,$fho, $maps) = @_;
 
   chomp $line; my @fields = split /\t/, $line;
 
   if(!$maps->[u_qrystart] and !$nolandmark{render($maps->[u_refmethod],\@fields)}){
-	print join "\t", map {render($maps->[$_],\@fields)} (u_refseq,
+	print $fho join "\t", map {render($maps->[$_],\@fields)} (u_refseq,
 														 u_refsource,
 														 u_refmethod,
 														 u_refstart,
@@ -192,11 +186,11 @@ sub toGFF {
 														 u_refscore,
 														 u_refstrand,
 														 u_refphase);
-	print "\t";
-	print "Sequence " . render($maps->[u_refgroup],\@fields);
-	print "\n";
+	print $fho "\t";
+	print $fho "Sequence " . render($maps->[u_refgroup],\@fields);
+	print $fho "\n";
   }
-  print join "\t", map {render($maps->[$_],\@fields)} (u_refseq,
+  print $fho join "\t", map {render($maps->[$_],\@fields)} (u_refseq,
 													   u_refsource,
 													   u_refmethod,
 													   u_refstart,
@@ -204,16 +198,16 @@ sub toGFF {
 													   u_refscore,
 													   u_refstrand,
 													   u_refphase);
-  print "\t";
+  print $fho "\t";
   if($maps->[u_qrystart] >= 0){
-    print "Target:" . render($maps->[u_refmethod],\@fields) . " ";
-    print render($maps->[u_refgroup],\@fields) . " " .
+    print $fho "Target:" . render($maps->[u_refmethod],\@fields) . " ";
+    print $fho render($maps->[u_refgroup],\@fields) . " " .
 	    render($maps->[u_qrystart],\@fields) . " " .
 	    render($maps->[u_qrystop], \@fields);
   } else {
-    print "Sequence " . render($maps->[u_refgroup],\@fields) . " ";
+    print $fho "Sequence " . render($maps->[u_refgroup],\@fields) . " ";
   }
-  print "\n";
+  print $fho "\n";
 
   if(defined($maps->[u_starts]) and defined($maps->[u_sizes])){
 	my @starts = split /,/, render($maps->[u_starts],\@fields);
@@ -224,7 +218,7 @@ sub toGFF {
 	  my $size = shift @sizes;
 
 	  if($maps->[u_qrystart] < 1 and $maps->[u_qrystop] < 1){
-	    print join "\t", (render($maps->[u_refseq],\@fields),
+	    print $fho join "\t", (render($maps->[u_refseq],\@fields),
 						render($maps->[u_refsource],\@fields),
 						render($maps->[u_refmethod],\@fields),
 						render($maps->[u_refstart],\@fields) + $start,
@@ -235,7 +229,7 @@ sub toGFF {
 						render($maps->[u_refmethod],\@fields) . " " . render($maps->[u_refgroup],\@fields)
 					   ), "\n";
 	  } else {
-	    print join "\t", (render($maps->[u_refseq],\@fields),
+	    print $fho join "\t", (render($maps->[u_refseq],\@fields),
 						render($maps->[u_refsource],\@fields),
 						render($maps->[u_refmethod],\@fields),
 						$start,

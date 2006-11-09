@@ -75,21 +75,19 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
 Email birney@ebi.ac.uk
 
-Describe contact details here
-
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -98,20 +96,17 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::DB::Universal;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::Root::Root;
-use Bio::DB::RandomAccessI;
 
 use Bio::DB::GenBank;
 use Bio::DB::SwissProt;
 use Bio::DB::EMBL;
 
 
-@ISA = qw(Bio::DB::RandomAccessI Bio::Root::Root);
+use base qw(Bio::DB::RandomAccessI Bio::Root::Root);
 # new() can be inherited from Bio::Root::Root
 
 sub new {
@@ -244,4 +239,4 @@ sub use_database{
    $self->{'db_hash'}->{$name} = $database;
 }
 
-
+1;

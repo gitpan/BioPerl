@@ -1,4 +1,4 @@
-# $Id: embl.pm,v 1.69 2003/12/22 18:33:15 heikki Exp $
+# $Id: embl.pm,v 1.92.4.5 2006/10/31 15:48:58 cjfields Exp $
 #
 # BioPerl module for Bio::SeqIO::EMBL
 #
@@ -17,12 +17,12 @@ Bio::SeqIO::embl - EMBL sequence input/output stream
 =head1 SYNOPSIS
 
 It is probably best not to use this object directly, but
-rather go through the AnnSeqIO handler system. Go:
+rather go through the SeqIO handler system. Go:
 
     $stream = Bio::SeqIO->new(-file => $filename, -format => 'EMBL');
 
     while ( (my $seq = $stream->next_seq()) ) {
-	# do something with $seq
+	    # do something with $seq
     }
 
 =head1 DESCRIPTION
@@ -30,11 +30,11 @@ rather go through the AnnSeqIO handler system. Go:
 This object can transform Bio::Seq objects to and from EMBL flat
 file databases.
 
-There is alot of flexibility here about how to dump things which I need
-to document fully.
+There is a lot of flexibility here about how to dump things which
+should be documented more fully.
 
-There should be a common object that this and genbank share (probably
-with swissprot). Too much of the magic is identical. 
+There should be a common object that this and Genbank share (probably
+with Swissprot). Too much of the magic is identical.
 
 =head2 Optional functions
 
@@ -51,23 +51,23 @@ before printing
 
 =item _id_generation_func()
 
-This is function which is called as 
+This is function which is called as
 
    print "ID   ", $func($annseq), "\n";
 
 To generate the ID line. If it is not there, it generates a sensible ID
 line using a number of tools.
 
-If you want to output annotations in embl format they need to be
+If you want to output annotations in EMBL format they need to be
 stored in a Bio::Annotation::Collection object which is accessible
-through the Bio::SeqI interface method L<annotation()|annotation>.  
+through the Bio::SeqI interface method L<annotation()|annotation>.
 
 The following are the names of the keys which are polled from a
 L<Bio::Annotation::Collection> object.
 
-reference       - Should contain Bio::Annotation::Reference objects
-comment         - Should contain Bio::Annotation::Comment objects
-dblink          - Should contain Bio::Annotation::DBLink objects
+ reference  - Should contain Bio::Annotation::Reference objects
+ comment    - Should contain Bio::Annotation::Comment objects
+ dblink     - Should contain Bio::Annotation::DBLink objects
 
 =back
 
@@ -75,28 +75,24 @@ dblink          - Should contain Bio::Annotation::DBLink objects
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://www.bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution. Bug reports can be submitted via
+the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
 Email birney@ebi.ac.uk
-
-Describe contact details here
 
 =head1 APPENDIX
 
@@ -110,7 +106,7 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::SeqIO::embl;
-use vars qw(@ISA %FTQUAL_NO_QUOTE);
+use vars qw(%FTQUAL_NO_QUOTE);
 use strict;
 use Bio::SeqIO::FTHelper;
 use Bio::SeqFeature::Generic;
@@ -121,7 +117,7 @@ use Bio::Annotation::Comment;
 use Bio::Annotation::Reference;
 use Bio::Annotation::DBLink;
 
-@ISA = qw(Bio::SeqIO);
+use base qw(Bio::SeqIO);
 
 %FTQUAL_NO_QUOTE=(
   'anticodon'=>1,
@@ -144,13 +140,13 @@ use Bio::Annotation::DBLink;
 sub _initialize {
   my($self,@args) = @_;
 
-  $self->SUPER::_initialize(@args);  
+  $self->SUPER::_initialize(@args);
   # hash for functions for decoding keys.
-  $self->{'_func_ftunit_hash'} = {}; 
-  $self->_show_dna(1); # sets this to one by default. People can change it 
+  $self->{'_func_ftunit_hash'} = {};
+  $self->_show_dna(1); # sets this to one by default. People can change it
   if( ! defined $self->sequence_factory ) {
       $self->sequence_factory(new Bio::Seq::SeqFactory
-			      (-verbose => $self->verbose(), 
+			      (-verbose => $self->verbose(),
 			       -type => 'Bio::Seq::RichSeq'));
   }
 }
@@ -166,214 +162,433 @@ sub _initialize {
 =cut
 
 sub next_seq {
-   my ($self,@args) = @_;
-   my ($pseq,$c,$line,$name,$desc,$acc,$seqc,$mol,$div, 
-       $date, $comment, @date_arr);
+    my ($self,@args) = @_;
+    my ($pseq,$c,$line,$name,$desc,$acc,$seqc,$mol,$div,
+        $date, $comment, @date_arr);
 
-   my ($annotation, %params, @features) = ( new Bio::Annotation::Collection);
+    my ($annotation, %params, @features) =
+       new Bio::Annotation::Collection;
 
-   $line = $self->_readline;   # This needs to be before the first eof() test
+    $line = $self->_readline;
+    # This needs to be before the first eof() test
 
-   if( !defined $line ) {
-       return undef; # no throws - end of file
-   }
+    if( !defined $line ) {
+        return; # no throws - end of file
+    }
 
-   if( $line =~ /^\s+$/ ) {
-       while( defined ($line = $self->_readline) ) {
-	   $line =~/^\S/ && last;
-       }
-   }   
-   if( !defined $line ) {
-       return undef; # end of file
-   }
-   $line =~ /^ID\s+\S+/ || $self->throw("EMBL stream with no ID. Not embl in my book");
-   $line =~ /^ID\s+(\S+)\s+\S+\;\s+([^;]+)\;\s+(\S+)\;/;
-   $name = $1;
-   $mol = $2;
-   $div = $3;
-   if(! $name) {
-       $name = "unknown id";
-   }
-   my $alphabet;
+    if( $line =~ /^\s+$/ ) {
+        while( defined ($line = $self->_readline) ) {
+            $line =~/^\S/ && last;
+        }
+        # return without error if the whole next sequence was just a single
+        # blank line and then eof
+        return unless $line;
+    }
 
-    # this is important to have the id for display in e.g. FTHelper, otherwise
-    # you won't know which entry caused an error
-   if($mol) {
-       if ( $mol =~ /circular/ ) {
-	   $params{'-is_circular'} = 1;
-	   $mol =~  s|circular ||;
-       }
-       if (defined $mol ) {	   
-	   if ($mol =~ /DNA/) {
-	       $alphabet='dna';
-	   }
-	   elsif ($mol =~ /RNA/) {
-	       $alphabet='rna';
-	   }
-	   elsif ($mol =~ /AA/) {
-	       $alphabet='protein';
-	   }
-       }
+    # no ID as 1st non-blank line, need short circuit and exit routine
+    $self->throw("EMBL stream with no ID. Not embl in my book")
+       unless $line =~ /^ID\s+\S+/;
 
-   }
-   
-#   $self->warn("not parsing upper annotation in EMBL file yet!");
+	# At this point we are sure that $line contains an ID header line
+	my $alphabet;
+    if ( $line =~ tr/;/;/ == 6) {   # New style headers contain exactly six semicolons.
+
+    	# New style header (EMBL Release >= 87, after June 2006)
+    	my $topology;
+    	my $sv;
+
+    	# ID   DQ299383; SV 1; linear; mRNA; STD; MAM; 431 BP.
+		# This regexp comes from the new2old.pl conversion script, from EBI
+    	$line =~ m/^ID   (\w+);\s+SV (\d+); (\w+); ([^;]+); (\w{3}); (\w{3}); (\d+) BP./;
+    	($name, $sv, $topology, $mol, $div) = ($1, $2, $3, $4, $6);
+
+    	if (defined($sv)) {
+	    $params{'-seq_version'} = $sv;
+	    $params{'-version'} = $sv;
+    	}
+
+    	if ($topology eq "circular") {
+	    $params{'-is_circular'} = 1;
+    	}
+	
+	if (defined $mol ) {
+	    if ($mol =~ /DNA/) {
+		$alphabet='dna';
+	    }
+	    elsif ($mol =~ /RNA/) {
+		$alphabet='rna';
+	    }
+	    elsif ($mol =~ /AA/) {
+		$alphabet='protein';
+	    }
+	}
+    }
+    else {
+	
+    	# Old style header (EMBL Release < 87, before June 2006)
+    	($name, $mol, $div) = ($line =~ /^ID\s+(\S+)[^;]*;\s+(\S+)[^;]*;\s+(\S+)[^;]*;/);
+	
+	if($mol) {
+	    if ( $mol =~ /circular/ ) {
+		$params{'-is_circular'} = 1;
+		$mol =~  s|circular ||;
+	    }
+	    if (defined $mol ) {
+		if ($mol =~ /DNA/) {
+		    $alphabet='dna';
+		}
+		elsif ($mol =~ /RNA/) {
+		    $alphabet='rna';
+		}
+		elsif ($mol =~ /AA/) {
+		    $alphabet='protein';
+		}
+	    }
+	}
+    }
+
+    unless( defined $name && length($name) ) {
+	$name = "unknown_id";
+    }
+
+	# $self->warn("not parsing upper annotation in EMBL file yet!");
    my $buffer = $line;
+    local $_;
+    BEFORE_FEATURE_TABLE :
+	until( !defined $buffer ) {
+	    $_ = $buffer;
+	    # Exit at start of Feature table
+	    if( /^(F[HT]|SQ)/ ) {
+		$self->_pushback($_) if( $1 eq 'SQ' || $1 eq 'FT');
+		last;
+	    }
+	    # Description line(s)
+	    if (/^DE\s+(\S.*\S)/) {
+		$desc .= $desc ? " $1" : $1;
+	    }
 
-   local $_;
- 
-   BEFORE_FEATURE_TABLE :
-   until( !defined $buffer ) {
-       $_ = $buffer;
+	    #accession number
+	    if( /^AC\s+(.*)?/ ) {
+		my @accs = split(/[; ]+/, $1); # allow space in addition
+		$params{'-accession_number'} = shift @accs
+		    unless defined $params{'-accession_number'};
+		push @{$params{'-secondary_accessions'}}, @accs;
+	    }
 
-       # Exit at start of Feature table
-       last if /^F[HT]/;
+	    #version number
+	    if( /^SV\s+\S+\.(\d+);?/ ) {
+		my $sv = $1;
+		#$sv =~ s/\;//;
+		$params{'-seq_version'} = $sv;
+		$params{'-version'} = $sv;
+	    }
 
-       # Description line(s)
-       if (/^DE\s+(\S.*\S)/) {
-           $desc .= $desc ? " $1" : $1;
-       }
+	    #date (NOTE: takes last date line)
+	    if( /^DT\s+(.+)$/ ) {
+		my $line = $1;
+		my ($date, $version) = split(' ', $line, 2);
+		$date =~ tr/,//d; # remove comma if new version
+		if ($version =~ /\(Rel\. (\d+), Created\)/xms ) {
+                    my $release = Bio::Annotation::SimpleValue->new(
+								    -tagname    => 'creation_release',
+								    -value      => $1
+								    );
+                    $annotation->add_Annotation($release);
+		} elsif ($version =~ /\(Rel\. (\d+), Last updated, Version (\d+)\)/xms ) {
+                    my $release = Bio::Annotation::SimpleValue->new(
+								    -tagname    => 'update_release',
+								    -value      => $1
+								    );
+                    $annotation->add_Annotation($release);
 
-       #accession number
-       if( /^AC\s+(.*)?/ ) {
-	   my @accs = split(/[; ]+/, $1); # allow space in addition
-	   $params{'-accession_number'} = shift @accs 
-	       unless defined $params{'-accession_number'};
-	   push @{$params{'-secondary_accessions'}}, @accs;
-       }
-       
-       #version number
-       if( /^SV\s+\S+\.(\d+);?/ ) {
-	   my $sv = $1;
-	   #$sv =~ s/\;//;
-	   $params{'-seq_version'} = $sv;
-	   $params{'-version'} = $sv;
-       }
+                    my $update = Bio::Annotation::SimpleValue->new(
+								   -tagname    => 'update_version',
+								   -value      => $2
+								   );
+                    $annotation->add_Annotation($update);
+		}
+		push @{$params{'-dates'}}, $date;
+	    }
 
-       #date (NOTE: takes last date line)
-       if( /^DT\s+(.+)$/ ) {
-	   my $date = $1;
-	   push @{$params{'-dates'}},$date;
-       }
-       
-       #keywords
-       if( /^KW   (.*)\S*$/ ) {
-	   my @kw = split(/\s*\;\s*/,$1);
-	   
-	   push @{$params{'-keywords'}}, @kw;
-       }
+	    #keywords
+	    if( /^KW   (.*)\S*$/ ) {
+		my @kw = split(/\s*\;\s*/,$1);
+		push @{$params{'-keywords'}}, @kw;
+	    }
 
-       # Organism name and phylogenetic information
-       elsif (/^O[SC]/) {
-           my $species = $self->_read_EMBL_Species(\$buffer);
-           $params{'-species'}= $species;
-       }
+	    # Organism name and phylogenetic information
+	    elsif (/^O[SC]/) {
+		# pass the accession number so we can give an informative throw message if necessary
+		my $species = $self->_read_EMBL_Species(\$buffer, $params{'-accession_number'});
+		$params{'-species'}= $species;
+	    }
 
-       # References
-       elsif (/^R/) {
-	   my @refs = $self->_read_EMBL_References(\$buffer);
-	   foreach my $ref ( @refs ) {
-	       $annotation->add_Annotation('reference',$ref);
-	   }
-       }
-       
-       # DB Xrefs
-       elsif (/^DR/) {
-	   my @links = $self->_read_EMBL_DBLink(\$buffer);
-	   foreach my $dblink ( @links ) {
-	       $annotation->add_Annotation('dblink',$dblink);
-	   }
-       }
-       
-       # Comments
-       elsif (/^CC\s+(.*)/) {
-	   $comment .= $1;
-	   $comment .= " ";
-	   while (defined ($_ = $self->_readline) ) {
-	       if (/^CC\s+(.*)/) {
-		   $comment .= $1;
-		   $comment .= " ";
-	       }
-	       else { 
-		   last;
-	       }
-	   }
-	   my $commobj = Bio::Annotation::Comment->new();
-	   $commobj->text($comment);
-	   $annotation->add_Annotation('comment',$commobj);
-	   $comment = "";
-       }
+	    # References
+	    elsif (/^R/) {
+		my @refs = $self->_read_EMBL_References(\$buffer);
+		foreach my $ref ( @refs ) {
+		    $annotation->add_Annotation('reference',$ref);
+		}
+	    }
 
-       # Get next line.
-       $buffer = $self->_readline;
-   }
+	    # DB Xrefs
+	    elsif (/^DR/) {
+		my @links = $self->_read_EMBL_DBLink(\$buffer);
+		foreach my $dblink ( @links ) {
+		    $annotation->add_Annotation('dblink',$dblink);
+		}
+	    }
+
+	    # Comments
+	    elsif (/^CC\s+(.*)/) {
+		$comment .= $1;
+		$comment .= " ";
+		while (defined ($_ = $self->_readline) ) {
+		    if (/^CC\s+(.*)/) {
+			$comment .= $1;
+			$comment .= " ";
+		    }
+		    else {
+			last;
+		    }
+		}
+		my $commobj = Bio::Annotation::Comment->new();
+		$commobj->text($comment);
+		$annotation->add_Annotation('comment',$commobj);
+		$comment = "";
+	    }
+
+	    # Get next line.
+	    $buffer = $self->_readline;
+	}
 
    while( defined ($_ = $self->_readline) ) {
-       /^FT   \w/ && last;
-       /^SQ / && last;
-       /^CO / && last;
+		/^FT\s{3}\w/ && last;
+		/^SQ / && last;
+		/^CO / && last;
    }
    $buffer = $_;
 
    if (defined($buffer) && $buffer =~ /^FT /) {
-     until( !defined ($buffer) ) {
-	 my $ftunit = $self->_read_FTHelper_EMBL(\$buffer);
-	 # process ftunit
+		until( !defined ($buffer) ) {
+			my $ftunit = $self->_read_FTHelper_EMBL(\$buffer);
 
-	 push(@features,
-	      $ftunit->_generic_seqfeature($self->location_factory(), $name));
+			# process ftunit
+         my $feat =
+			  $ftunit->_generic_seqfeature($self->location_factory(), $name);
 
-	 if( $buffer !~ /^FT/ ) {
-	     last;
-	 }
-     }
+         # add taxon_id from source if available
+         if($params{'-species'} && ($feat->primary_tag eq 'source')
+            && $feat->has_tag('db_xref')
+            && (! $params{'-species'}->ncbi_taxid())) {
+				foreach my $tagval ($feat->get_tag_values('db_xref')) {
+					if(index($tagval,"taxon:") == 0) {
+						$params{'-species'}->ncbi_taxid(substr($tagval,6));
+						last;
+					}
+				}
+         }
+
+         # add feature to list of features
+			push(@features, $feat);
+
+			if( $buffer !~ /^FT/ ) {
+				last;
+			}
+		}
    }
-
-
    # skip comments
-   while( defined ($buffer) && $buffer =~ /^XX/ ) { 
+   while( defined ($buffer) && $buffer =~ /^XX/ ) {
        $buffer = $self->_readline();
-   }
-   
-   if( $buffer =~ /^CO/  ) {	   
-       until( !defined ($buffer) ) {
-	   my $ftunit = $self->_read_FTHelper_EMBL(\$buffer);
-	   # process ftunit
-	   push(@features,
-		$ftunit->_generic_seqfeature($self->location_factory(),
-					     $name));
-	   
-	   if( $buffer !~ /^CO/ ) {
-	       last;
-	   }
-       }       
+	 }
+
+   if( $buffer =~ /^CO/  ) {
+		until( !defined ($buffer) ) {
+			my $ftunit = $self->_read_FTHelper_EMBL(\$buffer);
+			# process ftunit
+			push(@features,
+                             $ftunit->_generic_seqfeature($self->location_factory(),
+                                                          $name));
+
+			if( $buffer !~ /^CO/ ) {
+				last;
+			}
+		}
    }
    if( $buffer !~ /^SQ/  ) {
-       while( defined ($_ = $self->_readline) ) {
-	   /^SQ/ && last;
-       }
+		while( defined ($_ = $self->_readline) ) {
+			/^SQ/ && last;
+		}
    }
-   
-   $seqc = "";	       
+   $seqc = "";
    while( defined ($_ = $self->_readline) ) {
-       /^\/\// && last;
-       $_ = uc($_);
-       s/[^A-Za-z]//g;
-       $seqc .= $_;
+		m{^//} && last;
+		$_ = uc($_);
+		s/[^A-Za-z]//g;
+		$seqc .= $_;
    }
    my $seq = $self->sequence_factory->create
-       (-verbose => $self->verbose(),
-	-division => $div,
-	-seq => $seqc,
-	-desc => $desc,
-	-display_id => $name,
-	-annotation => $annotation,
-	-molecule => $mol,
-	-alphabet => $alphabet,
-	-features => \@features,
-	%params);
-
+	  (-verbose => $self->verbose(),
+		-division => $div,
+		-seq => $seqc,
+		-desc => $desc,
+		-display_id => $name,
+		-annotation => $annotation,
+		-molecule => $mol,
+		-alphabet => $alphabet,
+		-features => \@features,
+		%params);
    return $seq;
+}
+
+
+
+=head2 _write_ID_line
+
+ Title   : _write_ID_line
+ Usage   : $self->_write_ID_line($seq);
+ Function: Writes the EMBL Release 87 format ID line to the stream, unless
+         : there is a user-supplied ID line generation function in which
+         : case that is used instead.
+         : ( See Bio::SeqIO::embl::_id_generation_function(). )
+ Returns : nothing
+ Args    : Bio::Seq object
+
+=cut
+
+sub _write_ID_line {
+
+	my ($self, $seq) = @_;
+
+	my $id_line;
+	# If there is a user-supplied ID generation function, use it.
+	if( $self->_id_generation_func ) {
+		$id_line = "ID   " . &{$self->_id_generation_func}($seq) . "\nXX\n";
+	}
+	# Otherwise, generate a standard EMBL release 87 (June 2006) ID line.
+	else {
+
+		# The sequence name is supposed to be the primary accession number,
+		my $name = $seq->accession_number();
+		if (!$name) {
+			# but if it is not present, use the sequence ID.
+			$name = $seq->id();
+		}
+
+		$self->warn("No whitespace allowed in EMBL id [". $name. "]") if $name =~ /\s/;
+
+		# Use the sequence version, or default to 1.
+		my $version = $seq->version() || 1;
+
+		my $len = $seq->length();
+
+	 	# Taxonomic division.
+	 	my $div;
+		if ( $seq->can('division') && defined($seq->division) && $self->_is_valid_division($seq->division) ) {
+			$div = $seq->division();
+		}
+		else {
+			$div ||= 'UNC';			# 'UNC' is the EMBL division code for 'unclassified'.
+		}
+
+		my $mol;
+		# If the molecule type is a valid EMBL type, use it.
+		if (  $seq->can('molecule')
+		      && defined($seq->molecule)
+		      && $self->_is_valid_molecule_type($seq->molecule)
+		    )
+		{
+			$mol = $seq->molecule();
+		}
+		# Otherwise, choose unassigned DNA or RNA based on the alphabet.
+		elsif ($seq->can('primary_seq') && defined $seq->primary_seq->alphabet) {
+			my $alphabet =$seq->primary_seq->alphabet;
+			if ($alphabet eq 'dna') {
+				$mol ='unassigned DNA';
+			}
+			elsif ($alphabet eq 'rna') {
+				$mol='unassigned RNA';
+			}
+			elsif ($alphabet eq 'protein') {
+				$self->warn("Protein sequence found; EMBL is a nucleotide format.");
+				$mol='AA';	# AA is not a valid EMBL molecule type.
+			}
+		}
+
+		my $topology = 'linear';
+		if ($seq->is_circular) {
+			$topology = 'circular';
+		}
+
+        $mol ||= '';# 'unassigned'; ?
+		$id_line = "ID   $name; SV $version; $topology; $mol; STD; $div; $len BP.\nXX\n";
+		$self->_print($id_line);
+	}
+}
+
+=head2 _is_valid_division
+
+ Title   : _is_valid_division
+ Usage   : $self->_is_valid_division($div)
+ Function: tests division code for validity
+ Returns : true if $div is a valid EMBL release 87 taxonomic division.
+ Args    : taxonomic division code string
+
+=cut
+
+sub _is_valid_division {
+	my ($self, $division) = @_;
+
+	my %EMBL_divisions = (
+		"PHG"    => 1, 			# Bacteriophage
+		"ENV"    => 1, 			# Environmental Sample
+		"FUN"    => 1, 			# Fungal
+		"HUM"    => 1,  		# Human
+		"INV"    => 1,  		# Invertebrate
+		"MAM"    => 1,  		# Other Mammal
+		"VRT"    => 1,  		# Other Vertebrate
+		"MUS"    => 1,  		# Mus musculus
+		"PLN"    => 1,  		# Plant
+		"PRO"    => 1, 			# Prokaryote
+	    "ROD"    => 1, 			# Other Rodent
+	    "SYN"    => 1, 			# Synthetic
+	    "UNC"    => 1, 			# Unclassified
+	    "VRL"    => 1 			# Viral
+	);
+
+	return exists($EMBL_divisions{$division});
+}
+
+=head2 _is_valid_molecule_type
+
+ Title   : _is_valid_molecule_type
+ Usage   : $self->_is_valid_molecule_type($mol)
+ Function: tests molecule type for validity
+ Returns : true if $mol is a valid EMBL release 87 molecule type.
+ Args    : molecule type string
+
+=cut
+
+sub _is_valid_molecule_type {
+	my ($self, $moltype) = @_;
+
+	my %EMBL_molecule_types = (
+		"genomic DNA"    => 1,
+		"genomic RNA"    => 1,
+		"mRNA"           => 1,
+		"tRNA"           => 1,
+		"rRNA"           => 1,
+		"snoRNA"         => 1,
+		"snRNA"          => 1,
+		"scRNA"          => 1,
+		"pre-RNA"        => 1,
+		"other RNA"      => 1,
+	    "other DNA"      => 1,
+	    "unassigned DNA" => 1,
+	    "unassigned RNA" => 1
+	);
+
+	return exists($EMBL_molecule_types{$moltype});
 }
 
 =head2 write_seq
@@ -381,308 +596,278 @@ sub next_seq {
  Title   : write_seq
  Usage   : $stream->write_seq($seq)
  Function: writes the $seq object (must be seq) to the stream
- Returns : 1 for success and 0 for error
+ Returns : 1 for success and undef for error
  Args    : array of 1 to n Bio::SeqI objects
 
 
 =cut
 
 sub write_seq {
-    my ($self,@seqs) = @_;
+	my ($self,@seqs) = @_;
 
-    foreach my $seq ( @seqs ) { 
-	$self->throw("Attempting to write with no seq!") unless defined $seq;
-	unless ( ref $seq && $seq->isa('Bio::SeqI' ) ) {
-	    $self->warn("$seq is not a SeqI compliant sequence object!") 
-		if $self->verbose >= 0;
-	    unless ( ref $seq && $seq->isa('Bio::PrimarySeqI' ) ) {
-		$self->throw("$seq is not a PrimarySeqI compliant sequence object!");
-	    }
-	}
-	my $str = $seq->seq || '';
-
-	my $mol;
-	my $div;
-	my $len = $seq->length();
-
-	if ($seq->can('division') && defined $seq->division) {
-	    $div = $seq->division();
-	}
-	$div ||= 'UNK';
-
-	if ($seq->can('molecule')) {
-	    $mol = $seq->molecule();
-	    $mol = 'RNA' if defined $mol && $mol =~ /RNA/; # no 'mRNA' 
-	}
-	elsif ($seq->can('primary_seq') && defined $seq->primary_seq->alphabet) {
-	    my $alphabet =$seq->primary_seq->alphabet;
-	    if ($alphabet eq 'dna') {
-		$mol ='DNA';
-	    }
-	    elsif ($alphabet eq 'rna') {
-		$mol='RNA';
-	    }
-	    elsif ($alphabet eq 'protein') {
-		$mol='AA';
-	    }
-	}
-	$mol ||= 'XXX';
-	$mol = "circular $mol" if $seq->is_circular;
-
-	my $temp_line;
-	if( $self->_id_generation_func ) {
-	    $temp_line = &{$self->_id_generation_func}($seq);
-	} else {
-
-            $self->warn("No whitespace allowed in EMBL display id [". $seq->display_id. "]")
-                if $seq->display_id =~ /\s/;
-
-	    $temp_line = sprintf("%-11sstandard; $mol; $div; %d BP.", $seq->id(), $len);
-	} 
-
-	$self->_print( "ID   $temp_line\n","XX\n");
-
-	# Write the accession line if present
-	my( $acc );
-	{
-	    if( my $func = $self->_ac_generation_func ) {
-		$acc = &{$func}($seq);
-	    } elsif( $seq->isa('Bio::Seq::RichSeqI') && 
-		     defined($seq->accession_number) ) {
-		$acc = $seq->accession_number;
-		$acc = join("; ", $acc, $seq->get_secondary_accessions);
-	    } elsif ( $seq->can('accession_number') ) {
-		$acc = $seq->accession_number;
-	    }
-
-	    if (defined $acc) {
-		$self->_print("AC   $acc;\n",
-			      "XX\n");
-	    }
-	}
-
-	# Write the sv line if present
-	{
-	    my( $sv );
-	    if (my $func = $self->_sv_generation_func) {
-		$sv = &{$func}($seq);
-	    } elsif($seq->isa('Bio::Seq::RichSeqI') && 
-		    defined($seq->seq_version)) {
-                my ($prim_acc) = $acc =~ /([^;]+)/;
-		$sv = "$prim_acc.". $seq->seq_version();
-	    }	
-	    if (defined $sv) {
-		$self->_print( "SV   $sv\n",
-			       "XX\n");
-	    }
-	}
-
-	# Date lines
-	my $switch=0;
-	if( $seq->can('get_dates') ) {
-	    foreach my $dt ( $seq->get_dates() ) {
-		$self->_write_line_EMBL_regex("DT   ","DT   ",$dt,'\s+|$',80);#'
-		    $switch=1;
-	    }
-	    if ($switch == 1) {
-		$self->_print("XX\n");
-	    }
-	}
-
-	# Description lines
-	$self->_write_line_EMBL_regex("DE   ","DE   ",$seq->desc(),'\s+|$',80);	#'
-	$self->_print( "XX\n");
-
-	# if there, write the kw line
-	{
-	    my( $kw );
-	    if( my $func = $self->_kw_generation_func ) {
-		$kw = &{$func}($seq);
-	    } elsif( $seq->can('keywords') ) {
-		$kw = $seq->keywords;
-	    }
-	    if (defined $kw) {
-		$self->_write_line_EMBL_regex("KW   ", "KW   ", $kw, '\s+|$', 80); #'
-		$self->_print( "XX\n");
-	    }
-	}
-
-	# Organism lines
-
-	if ($seq->can('species') && (my $spec = $seq->species)) {
-	    my($species, @class) = $spec->classification();
-	    my $genus = $class[0];
-	    my $OS = "$genus $species";
-	    if (my $ssp = $spec->sub_species) {
-		$OS .= " $ssp";
-	    }
-	    if (my $common = $spec->common_name) {
-		$OS .= " ($common)";
-	    }
-	    $self->_print("OS   $OS\n");
-	    my $OC = join('; ', reverse(@class)) .'.';
-	    $self->_write_line_EMBL_regex("OC   ","OC   ",$OC,'; |$',80); #'
-	    if ($spec->organelle) {
-		$self->_write_line_EMBL_regex("OG   ","OG   ",$spec->organelle,'; |$',80); #'
-	    }
-	    $self->_print("XX\n");
-	}
-
-	# Reference lines
-	my $t = 1;
-	if ( $seq->can('annotation') && defined $seq->annotation ) {
-	    foreach my $ref ( $seq->annotation->get_Annotations('reference') ) {
-		$self->_print( "RN   [$t]\n");
-
-		# Having no RP line is legal, but we need both
-		# start and end for a valid location.
-		my $start = $ref->start;
-		my $end   = $ref->end;
-		if ($start and $end) {
-		    $self->_print( "RP   $start-$end\n");
-		} elsif ($start or $end) {
-		    $self->throw("Both start and end are needed for a valid RP line.  Got: start='$start' end='$end'");
-		}
-
-		if (my $med = $ref->medline) {
-		    $self->_print( "RX   MEDLINE; $med.\n");
-		}
-		if (my $pm = $ref->pubmed) {
-		    $self->_print( "RX   PUBMED; $pm.\n");
-		}
-		$self->_write_line_EMBL_regex("RA   ", "RA   ", 
-					      $ref->authors . ";",
-					      '\s+|$', 80); #'
-
-		# If there is no title to the reference, it appears
-		# as a single semi-colon.  All titles must end in
-		# a semi-colon.
-		my $ref_title = $ref->title || '';
-		$ref_title =~ s/[\s;]*$/;/;
-		$self->_write_line_EMBL_regex("RT   ", "RT   ", $ref_title,    '\s+|$', 80); #'
-		$self->_write_line_EMBL_regex("RL   ", "RL   ", $ref->location, '\s+|$', 80); #'
-		if ($ref->comment) {
-		    $self->_write_line_EMBL_regex("RC   ", "RC   ", $ref->comment, '\s+|$', 80); #' 
-		}
-		$self->_print("XX\n");
-		$t++;
-	    }
-
-
-	    # DB Xref lines
-	    if (my @db_xref = $seq->annotation->get_Annotations('dblink') ) {
-		foreach my $dr (@db_xref) {
-		    my $db_name = $dr->database;
-		    my $prim    = $dr->primary_id;
-		    my $opt     = $dr->optional_id || '';
-
-		    my $line = "$db_name; $prim; $opt.";
-		    $self->_write_line_EMBL_regex("DR   ", "DR   ", $line, '\s+|$', 80); #'
-		}
-		$self->_print("XX\n");
-	    }
-
-	    # Comment lines
-	    foreach my $comment ( $seq->annotation->get_Annotations('comment') ) {
-		$self->_write_line_EMBL_regex("CC   ", "CC   ", $comment->text, '\s+|$', 80); #'
-		$self->_print("XX\n");
-	    }
-	}
-	# "\\s\+\|\$"
-
-	## FEATURE TABLE
-
-	$self->_print("FH   Key             Location/Qualifiers\n");
-	$self->_print("FH\n");
-
-	my @feats = $seq->can('top_SeqFeatures') ? $seq->top_SeqFeatures : ();
-	if ($feats[0]) {
-	    if( defined $self->_post_sort ) {
-		# we need to read things into an array. 
-		# Process. Sort them. Print 'em
-
-		my $post_sort_func = $self->_post_sort();
-		my @fth;
-
-		foreach my $sf ( @feats ) {
-		    push(@fth,Bio::SeqIO::FTHelper::from_SeqFeature($sf,$seq));
-		}
-
-		@fth = sort { &$post_sort_func($a,$b) } @fth;
-
-		foreach my $fth ( @fth ) {
-		    $self->_print_EMBL_FTHelper($fth);
-		}
-	    } else {
-		# not post sorted. And so we can print as we get them.
-		# lower memory load...
-
-		foreach my $sf ( @feats ) {
-		    my @fth = Bio::SeqIO::FTHelper::from_SeqFeature($sf,$seq);
-		    foreach my $fth ( @fth ) {
-			if( $fth->key eq 'CONTIG') {
-			    $self->_show_dna(0);
+	foreach my $seq ( @seqs ) {
+		$self->throw("Attempting to write with no seq!") unless defined $seq;
+		unless ( ref $seq && $seq->isa('Bio::SeqI' ) ) {
+			$self->warn("$seq is not a SeqI compliant sequence object!")
+			  if $self->verbose >= 0;
+			unless ( ref $seq && $seq->isa('Bio::PrimarySeqI' ) ) {
+				$self->throw("$seq is not a PrimarySeqI compliant sequence object!");
 			}
-			$self->_print_EMBL_FTHelper($fth);
-		    }
 		}
-	    }
-	}
+		my $str = $seq->seq || '';
 
-	if( $self->_show_dna() == 0 ) {
-	    $self->_print( "//\n");
-	    return;
-	}
-	$self->_print( "XX\n");
+		# Write the ID line.
+		$self->_write_ID_line($seq);
 
-	# finished printing features.
-	
-	$str =~ tr/A-Z/a-z/;
 
-	# Count each nucleotide
-	my $alen = $str =~ tr/a/a/;
-	my $clen = $str =~ tr/c/c/;
-	my $glen = $str =~ tr/g/g/;
-	my $tlen = $str =~ tr/t/t/;
+		# Write the accession line if present
+		my( $acc );
+		{
+			if( my $func = $self->_ac_generation_func ) {
+				$acc = &{$func}($seq);
+			} elsif( $seq->isa('Bio::Seq::RichSeqI') &&
+						defined($seq->accession_number) ) {
+				$acc = $seq->accession_number;
+				$acc = join("; ", $acc, $seq->get_secondary_accessions);
+			} elsif ( $seq->can('accession_number') ) {
+				$acc = $seq->accession_number;
+			}
 
-	my $olen = $len - ($alen + $tlen + $clen + $glen);
-	if( $olen < 0 ) {
-	    $self->warn("Weird. More atgc than bases. Problem!");
-	}
+			if (defined $acc) {
+				$self->_print("AC   $acc;\n",
+								  "XX\n") || return;
+			}
+		}
 
-	$self->_print("SQ   Sequence $len BP; $alen A; $clen C; $glen G; $tlen T; $olen other;\n");
+		# Date lines
+		my $switch=0;
+		if( $seq->can('get_dates') ) {
+            my @dates =  $seq->get_dates();
+            my $ct = 1;
+            my $date_flag = 0;
+            my ($cr) = $seq->get_Annotations("creation_release");
+            my ($ur) = $seq->get_Annotations("update_release");
+            my ($uv) = $seq->get_Annotations("update_version");
 
-	my $nuc = 60;		# Number of nucleotides per line
-	my $whole_pat = 'a10' x 6; # Pattern for unpacking a whole line
-	my $out_pat   = 'A11' x 6; # Pattern for packing a line
-	my $length = length($str);
+            unless ($cr && $ur && $ur) {
+                $date_flag = 1;
+            }
 
-	# Calculate the number of nucleotides which fit on whole lines
-	my $whole = int($length / $nuc) * $nuc;
+            foreach my $dt (@dates){
+                if (!$date_flag) {
+                    $self->_write_line_EMBL_regex("DT   ","DT   ",
+                            $dt." (Rel. $cr, Created)",
+                            '\s+|$',80) if $ct == 1;
+                    $self->_write_line_EMBL_regex("DT   ","DT   ",
+                            $dt." (Rel. $ur, Last updated, Version $uv)",
+                            '\s+|$',80) if $ct == 2;
+                } else { # other formats?
+                    $self->_write_line_EMBL_regex("DT   ","DT   ",
+                            $dt,'\s+|$',80);
+                }
+                $switch =1;
+                $ct++;
+            }
+			if ($switch == 1) {
+				$self->_print("XX\n") || return;
+			}
+		}
 
-	# Print the whole lines
-	my( $i );
-	for ($i = 0; $i < $whole; $i += $nuc) {
-	    my $blocks = pack $out_pat,
-	    unpack $whole_pat,
-	    substr($str, $i, $nuc);
-	    $self->_print(sprintf("     $blocks%9d\n", $i + $nuc));
-	}
+		# Description lines
+		$self->_write_line_EMBL_regex("DE   ","DE   ",$seq->desc(),'\s+|$',80) || return; #'
+		$self->_print( "XX\n") || return;
 
-	# Print the last line
-	if (my $last = substr($str, $i)) {
-	    my $last_len = length($last);
-	    my $last_pat = 'a10' x int($last_len / 10) .'a'. $last_len % 10;
-	    my $blocks = pack $out_pat,
-	    unpack($last_pat, $last);
-	    $self->_print(sprintf("     $blocks%9d\n", $length)); # Add the length to the end
-	}
+		# if there, write the kw line
+		{
+			my( $kw );
+			if( my $func = $self->_kw_generation_func ) {
+				$kw = &{$func}($seq);
+			} elsif( $seq->can('keywords') ) {
+				$kw = $seq->keywords;
+			}
+			if (defined $kw) {
+				$self->_write_line_EMBL_regex("KW   ", "KW   ", $kw, '\s+|$', 80) || return; #'
+				$self->_print( "XX\n") || return;
+			}
+		}
 
-	$self->_print( "//\n");
+		# Organism lines
 
-	$self->flush if $self->_flush_on_write && defined $self->_fh;
-	return 1;
+		if ($seq->can('species') && (my $spec = $seq->species)) {
+			my @class = $spec->classification();
+            shift @class; # get rid of species name. Some embl files include
+                          # the species name in the OC lines, but this seems
+                          # more like an error than something we need to
+                          # emulate
+			my $OS = $spec->scientific_name;
+            if ($spec->common_name) {
+                $OS .= ' ('.$spec->common_name.')';
+            }
+			$self->_print("OS   $OS\n") || return;
+			my $OC = join('; ', reverse(@class)) .'.';
+			$self->_write_line_EMBL_regex("OC   ","OC   ",$OC,'; |$',80) || return;
+			if ($spec->organelle) {
+				$self->_write_line_EMBL_regex("OG   ","OG   ",$spec->organelle,'; |$',80) || return;
+			}
+			$self->_print("XX\n") || return;
+		}
+
+		# Reference lines
+		my $t = 1;
+		if ( $seq->can('annotation') && defined $seq->annotation ) {
+			foreach my $ref ( $seq->annotation->get_Annotations('reference') ) {
+				$self->_print( "RN   [$t]\n") || return;
+
+				# Having no RP line is legal, but we need both
+				# start and end for a valid location.
+				my $start = $ref->start;
+				my $end   = $ref->end;
+				if ($start and $end) {
+					$self->_print( "RP   $start-$end\n") || return;
+				} elsif ($start or $end) {
+					$self->throw("Both start and end are needed for a valid RP line.  Got: start='$start' end='$end'");
+				}
+
+				if (my $med = $ref->medline) {
+					$self->_print( "RX   MEDLINE; $med.\n") || return;
+				}
+				if (my $pm = $ref->pubmed) {
+					$self->_print( "RX   PUBMED; $pm.\n") || return;
+				}
+				$self->_write_line_EMBL_regex("RA   ", "RA   ",
+														$ref->authors . ";",
+														'\s+|$', 80) || return; #'
+
+				# If there is no title to the reference, it appears
+				# as a single semi-colon.  All titles must end in
+				# a semi-colon.
+				my $ref_title = $ref->title || '';
+				$ref_title =~ s/[\s;]*$/;/;
+				$self->_write_line_EMBL_regex("RT   ", "RT   ", $ref_title,    '\s+|$', 80) || return; #'
+				$self->_write_line_EMBL_regex("RL   ", "RL   ", $ref->location, '\s+|$', 80) || return; #'
+				if ($ref->comment) {
+					$self->_write_line_EMBL_regex("RC   ", "RC   ", $ref->comment, '\s+|$', 80) || return; #'
+				}
+				$self->_print("XX\n") || return;
+				$t++;
+			}
+
+			# DB Xref lines
+			if (my @db_xref = $seq->annotation->get_Annotations('dblink') ) {
+			    for my $dr (@db_xref) {
+				my $db_name = $dr->database;
+				my $prim    = $dr->primary_id;
+
+				my $opt     = $dr->optional_id || '';
+				my $line = $opt ? "$db_name; $prim; $opt." : "$db_name; $prim.";
+				$self->_write_line_EMBL_regex("DR   ", "DR   ", $line, '\s+|$', 80) || return; #'
+			    }
+			    $self->_print("XX\n") || return;
+			}
+			
+			# Comment lines
+			foreach my $comment ( $seq->annotation->get_Annotations('comment') ) {
+				$self->_write_line_EMBL_regex("CC   ", "CC   ", $comment->text, '\s+|$', 80) || return; #'
+				$self->_print("XX\n") || return;
+			}
+		}
+		# "\\s\+\|\$"
+
+		## FEATURE TABLE
+
+		$self->_print("FH   Key             Location/Qualifiers\n") || return;
+		$self->_print("FH\n") || return;
+
+		my @feats = $seq->can('top_SeqFeatures') ? $seq->top_SeqFeatures : ();
+		if ($feats[0]) {
+			if( defined $self->_post_sort ) {
+				# we need to read things into an array.
+				# Process. Sort them. Print 'em
+
+				my $post_sort_func = $self->_post_sort();
+				my @fth;
+
+				foreach my $sf ( @feats ) {
+					push(@fth,Bio::SeqIO::FTHelper::from_SeqFeature($sf,$seq));
+				}
+
+				@fth = sort { &$post_sort_func($a,$b) } @fth;
+
+				foreach my $fth ( @fth ) {
+					$self->_print_EMBL_FTHelper($fth) || return;
+				}
+			} else {
+				# not post sorted. And so we can print as we get them.
+				# lower memory load...
+
+				foreach my $sf ( @feats ) {
+					my @fth = Bio::SeqIO::FTHelper::from_SeqFeature($sf,$seq);
+					foreach my $fth ( @fth ) {
+						if( $fth->key eq 'CONTIG') {
+							$self->_show_dna(0);
+						}
+						$self->_print_EMBL_FTHelper($fth) || return;
+					}
+				}
+			}
+		}
+
+		if( $self->_show_dna() == 0 ) {
+			$self->_print( "//\n") || return;
+			return;
+		}
+		$self->_print( "XX\n") || return;
+
+		# finished printing features.
+
+		$str =~ tr/A-Z/a-z/;
+
+		# Count each nucleotide
+		my $alen = $str =~ tr/a/a/;
+		my $clen = $str =~ tr/c/c/;
+		my $glen = $str =~ tr/g/g/;
+		my $tlen = $str =~ tr/t/t/;
+
+		my $len = $seq->length();
+		my $olen = $seq->length() - ($alen + $tlen + $clen + $glen);
+		if( $olen < 0 ) {
+			$self->warn("Weird. More atgc than bases. Problem!");
+		}
+
+		$self->_print("SQ   Sequence $len BP; $alen A; $clen C; $glen G; $tlen T; $olen other;\n") || return;
+
+		my $nuc = 60;		# Number of nucleotides per line
+		my $whole_pat = 'a10' x 6; # Pattern for unpacking a whole line
+		my $out_pat   = 'A11' x 6; # Pattern for packing a line
+		my $length = length($str);
+
+		# Calculate the number of nucleotides which fit on whole lines
+		my $whole = int($length / $nuc) * $nuc;
+
+		# Print the whole lines
+		my( $i );
+		for ($i = 0; $i < $whole; $i += $nuc) {
+			my $blocks = pack $out_pat,
+			  unpack $whole_pat,
+				 substr($str, $i, $nuc);
+			$self->_print(sprintf("     $blocks%9d\n", $i + $nuc)) || return;
+		}
+
+		# Print the last line
+		if (my $last = substr($str, $i)) {
+			my $last_len = length($last);
+			my $last_pat = 'a10' x int($last_len / 10) .'a'. $last_len % 10;
+			my $blocks = pack $out_pat,
+			  unpack($last_pat, $last);
+			$self->_print(sprintf("     $blocks%9d\n", $length)) ||
+			  return; # Add the length to the end
+		}
+
+		$self->_print( "//\n") || return;
+
+		$self->flush if $self->_flush_on_write && defined $self->_fh;
     }
+	return 1;
 }
 
 =head2 _print_EMBL_FTHelper
@@ -690,7 +875,7 @@ sub write_seq {
  Title   : _print_EMBL_FTHelper
  Usage   :
  Function: Internal function
- Returns : 
+ Returns : 1 if writing suceeded, otherwise undef
  Args    :
 
 
@@ -698,33 +883,33 @@ sub write_seq {
 
 sub _print_EMBL_FTHelper {
    my ($self,$fth) = @_;
-   
+
    if( ! ref $fth || ! $fth->isa('Bio::SeqIO::FTHelper') ) {
        $fth->warn("$fth is not a FTHelper class. Attempting to print, but there could be tears!");
    }
-   
+
 
    #$self->_print( "FH   Key             Location/Qualifiers\n");
    #$self->_print( sprintf("FT   %-15s  %s\n",$fth->key,$fth->loc));
    # let
    if( $fth->key eq 'CONTIG' ) {
-       $self->_print("XX\n");
+       $self->_print("XX\n") || return;
        $self->_write_line_EMBL_regex("CO   ",
 				     "CO   ",$fth->loc,
-				     '\,|$',80); #'
-       return;
-   } 
+				     '\,|$',80) || return; #'
+       return 1;
+   }
    $self->_write_line_EMBL_regex(sprintf("FT   %-15s ",$fth->key),
 				 "FT                   ",$fth->loc,
-				 '\,|$',80); #'
+				 '\,|$',80) || return; #'
    foreach my $tag ( keys %{$fth->field} ) {
-       if( ! defined $fth->field->{$tag} ) { next; } 
+       if( ! defined $fth->field->{$tag} ) { next; }
        foreach my $value ( @{$fth->field->{$tag}} ) {
 	   $value =~ s/\"/\"\"/g;
 	   if ($value eq "_no_value") {
 	       $self->_write_line_EMBL_regex("FT                   ",
 					     "FT                   ",
-					     "/$tag",'.|$',80); #'
+					     "/$tag",'.|$',80) || return; #'
 	   }
            # there are almost 3x more quoted qualifier values and they
            # are more common too so we take quoted ones first
@@ -732,14 +917,16 @@ sub _print_EMBL_FTHelper {
               my $pat = $value =~ /\s/ ? '\s|\-|$' : '.|\-|$';
 	      $self->_write_line_EMBL_regex("FT                   ",
 					    "FT                   ",
-					    "/$tag=\"$value\"",$pat,80);
+					    "/$tag=\"$value\"",$pat,80) || return;
            } else {
               $self->_write_line_EMBL_regex("FT                   ",
 					    "FT                   ",
-					    "/$tag=$value",'.|$',80); #'
+					    "/$tag=$value",'.|$',80) || return; #'
            }
        }
    }
+
+   return 1;
 }
 
 #'
@@ -749,7 +936,7 @@ sub _print_EMBL_FTHelper {
  Usage   :
  Function: Reads references from EMBL format. Internal function really
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
@@ -758,7 +945,7 @@ sub _print_EMBL_FTHelper {
 sub _read_EMBL_References {
    my ($self,$buffer) = @_;
    my (@refs);
-   
+
    # assumme things are starting with RN
 
    if( $$buffer !~ /^RN/ ) {
@@ -777,7 +964,7 @@ sub _read_EMBL_References {
        /^R/ || last;
        /^RP   (\d+)-(\d+)/ && do {$b1=$1;$b2=$2;};
        /^RX   MEDLINE;\s+(\d+)/ && do {$med=$1};
-       /^RX   PUBMED;\s+(\d+)/ && do {$pm=$1};       
+       /^RX   PUBMED;\s+(\d+)/ && do {$pm=$1};
        /^RA   (.*)/ && do {
 	   $au = $self->_concatenate_lines($au,$1); next;
        };
@@ -791,7 +978,7 @@ sub _read_EMBL_References {
 	   $com = $self->_concatenate_lines($com,$1); next;
        };
    }
-   
+
    my $ref = new Bio::Annotation::Reference;
    $au =~ s/;\s*$//g;
    $title =~ s/;\s*$//g;
@@ -807,7 +994,7 @@ sub _read_EMBL_References {
 
    push(@refs,$ref);
    $$buffer = $_;
-   
+
    return @refs;
 }
 
@@ -819,36 +1006,26 @@ sub _read_EMBL_References {
            lines.
  Example :
  Returns : A Bio::Species object
- Args    : a reference to the current line buffer
+ Args    : a reference to the current line buffer, accession number
 
 =cut
 
 sub _read_EMBL_Species {
-    my( $self, $buffer ) = @_;
+    my( $self, $buffer, $acc ) = @_;
     my $org;
 
     $_ = $$buffer;
-    my( $sub_species, $species, $genus, $common, @class, $ns_name );
+    my( $sub_species, $species, $genus, $common, $sci_name, $class_lines );
     while (defined( $_ ||= $self->_readline )) {
-
-        if (/^OS\s+((\S+)(?:\s+([^\(]\S*))?(?:\s+([^\(]\S*))?(?:\s+\((.*)\))?)/) {
-            $ns_name = $1;
-            $genus   = $2;
-	    $species = $3 || 'sp.';
-	    $sub_species = $4 if $4;
-            $common      = $5 if $5;
+        if (/^OS\s+(.+)/) {
+            $sci_name .= ($sci_name) ? ' '.$1 : $1;
         }
-        elsif (s/^OC\s+//) {
-	    # only split on ';' or '.' so that 
-	    # classification that is 2 words will 
-	    # still get matched
-	    # use map to remove trailing/leading spaces
-	    chomp;
-            push(@class,  map { s/^\s+//; s/\s+$//; $_; } split /[;\.]+/);
+        elsif (s/^OC\s+(.+)$//) {
+            $class_lines .= $1;
         }
-	elsif (/^OG\s+(.*)/) {
-	    $org = $1;
-	}
+        elsif (/^OG\s+(.*)/) {
+            $org = $1;
+        }
         else {
             last;
         }
@@ -858,27 +1035,74 @@ sub _read_EMBL_Species {
 
     $$buffer = $_;
 
+    $sci_name || return;
+
+    # Convert data in classification lines into classification array.
+    # only split on ';' or '.' so that classification that is 2 or more words
+    # will still get matched, use map() to remove trailing/leading/intervening
+    # spaces
+    my @class = map { s/^\s+//; s/\s+$//; s/\s{2,}/ /g; $_; } split /[;\.]+/, $class_lines;
+
+    # do we have a genus?
+    my $possible_genus = $class[-1];
+    $possible_genus .= "|$class[-2]" if $class[-2];
+    if ($sci_name =~ /^($possible_genus)/) {
+        $genus = $1;
+        ($species) = $sci_name =~ /^$genus\s+(.+)/;
+    }
+    else {
+        $species = $sci_name;
+    }
+
     # Don't make a species object if it is "Unknown" or "None"
-    return if $genus =~ /^(Unknown|None)$/i;
+    if ($genus) {
+        return if $genus =~ /^(Unknown|None)$/i;
+    }
+
+    # is this organism of rank species or is it lower?
+    # (doesn't catch everything, but at least the guess isn't dangerous)
+    if ($species =~ /subsp\.|var\./) {
+        ($species, $sub_species) = $species =~ /(.+)\s+((?:subsp\.|var\.).+)/;
+    }
+
+    # sometimes things have common name in brackets, like
+    # Schizosaccharomyces pombe (fission yeast), so get rid of the common
+    # name bit. Probably dangerous if real scientific species name ends in
+    # bracketed bit.
+    unless ($class[-1] eq 'Viruses') {
+        ($species, $common) = $species =~ /^(.+)\s+\((.+)\)$/;
+        $sci_name =~ s/\s+\(.+\)$// if $common;
+    }
 
     # Bio::Species array needs array in Species -> Kingdom direction
-    if ($class[0] eq 'Viruses') {
-        push( @class, $ns_name );
-    }
-    elsif ($class[$#class] eq $genus) {
-        push( @class, $species );
-    } else {
-        push( @class, $genus, $species );
+    unless ($class[-1] eq $sci_name) {
+        push(@class, $sci_name);
     }
     @class = reverse @class;
 
-    my $make = Bio::Species->new();
-    $make->classification( \@class, "FORCE" );  # no name validation please
-    $make->common_name( $common      ) if $common;
-    unless ($class[-1] eq 'Viruses') {
-        $make->sub_species( $sub_species ) if $sub_species;
+    # do minimal sanity checks before we hand off to Bio::Species which won't
+    # be able to give informative throw messages if it has to throw because
+    # of problems here
+    $self->throw("$acc seems to be missing its OS line: invalid.") unless $sci_name;
+    my %names;
+    foreach my $i (0..$#class) {
+        my $name = $class[$i];
+        $names{$name}++;
+        if ($names{$name} > 1 && $name ne $class[$i - 1]) {
+            $self->throw("$acc seems to have an invalid species classification.");
+        }
     }
-    $make->organelle  ( $org         ) if $org;
+
+    my $make = Bio::Species->new();
+    $make->scientific_name($sci_name);
+    $make->classification(@class);
+    unless ($class[-1] eq 'Viruses') {
+        $make->genus($genus) if $genus;
+        $make->species($species) if $species;
+        $make->sub_species($sub_species) if $sub_species;
+        $make->common_name($common) if $common;
+    }
+    $make->organelle($org) if $org;
     return $make;
 }
 
@@ -899,24 +1123,21 @@ sub _read_EMBL_DBLink {
 
     $_ = $$buffer;
     while (defined( $_ ||= $self->_readline )) {
-        
-        if (my($databse, $prim_id, $sec_id)
-                = /^DR   ([^\s;]+);\s*([^\s;]+);\s*([^\s;]+)?\.$/) {
-            my $link = Bio::Annotation::DBLink->new();
-            $link->database   ( $databse );
-            $link->primary_id ( $prim_id );
-            $link->optional_id( $sec_id  ) if $sec_id;
+        if( /^DR   ([^\s;]+);\s*([^\s;]+);?\s*([^\s;]+)?\.$/) {
+	    my ($databse, $prim_id, $sec_id) = ($1,$2,$3);
+	    my $link = Bio::Annotation::DBLink->new(-database    => $databse,
+						    -primary_id  => $prim_id,
+						    -optional_id => $sec_id);
+
             push(@db_link, $link);
-	}
-        else {
+	} else {
             last;
         }
-        
-        $_ = undef; # Empty $_ to trigger read of next line
+        $_ = undef;	       # Empty $_ to trigger read of next line
     }
     
     $$buffer = $_;
-    
+
     return @db_link;
 }
 
@@ -924,8 +1145,8 @@ sub _read_EMBL_DBLink {
 
  Title   : _filehandle
  Usage   : $obj->_filehandle($newval)
- Function: 
- Example : 
+ Function:
+ Example :
  Returns : value of _filehandle
  Args    : newvalue (optional)
 
@@ -947,7 +1168,7 @@ sub _filehandle{
  Usage   : _read_FTHelper_EMBL($buffer)
  Function: reads the next FT key line
  Example :
- Returns : Bio::SeqIO::FTHelper object 
+ Returns : Bio::SeqIO::FTHelper object
  Args    : filehandle and reference to a scalar
 
 
@@ -955,13 +1176,13 @@ sub _filehandle{
 
 sub _read_FTHelper_EMBL {
     my ($self,$buffer) = @_;
-    
+
     my ($key,   # The key of the feature
         $loc,   # The location line from the feature
         @qual,  # An arrray of lines making up the qualifiers
 	);
-    
-    if ($$buffer =~ /^FT\s{3}(\S+)\s+(\S+)/) {
+
+    if ($$buffer =~ /^FT\s{3}(\S+)\s+(\S+)/ ) {
         $key = $1;
         $loc = $2;
         # Read all the lines up to the next feature
@@ -1007,7 +1228,7 @@ sub _read_FTHelper_EMBL {
         # No feature key
         return;
     }
-    
+
     # Put the first line of the next feature into the buffer
     $$buffer = $_;
 
@@ -1029,13 +1250,16 @@ sub _read_FTHelper_EMBL {
             if (substr($value, 0, 1) eq '"') {
                 # Keep adding to value until we find the trailing quote
                 # and the quotes are balanced
+                QUOTES:
                 while ($value !~ /"$/ or $value =~ tr/"/"/ % 2) { #"
                     $i++;
                     my $next = $qual[$i];
-                    unless (defined($next)) {
-                        warn("Unbalanced quote in:\n", map("$_\n", @qual),
-                            "No further qualifiers will be added for this feature");
-                        last QUAL;
+                    if (!defined($next)) {
+                        $self->warn("Unbalanced quote in:\n".join("\n", @qual).
+                            "\nAdding quote to close...".
+                            "Check sequence quality!");
+                        $value .= '"';
+                        last QUOTES;
                     }
 
                     # Join to value with space if value or next line contains a space
@@ -1053,7 +1277,7 @@ sub _read_FTHelper_EMBL {
         # Store the qualifier
         $out->field->{$qualifier} ||= [];
         push(@{$out->field->{$qualifier}},$value);
-    }   
+    }
 
     return $out;
 }
@@ -1064,7 +1288,7 @@ sub _read_FTHelper_EMBL {
  Usage   :
  Function: internal function
  Example :
- Returns : 
+ Returns : 1 if writing suceeded, else undef
  Args    :
 
 
@@ -1073,21 +1297,22 @@ sub _read_FTHelper_EMBL {
 sub _write_line_EMBL {
    my ($self,$pre1,$pre2,$line,$length) = @_;
 
-   $length || die "Miscalled write_line_EMBL without length. Programming error!";
+   $length || $self->throw("Miscalled write_line_EMBL without length. Programming error!");
    my $subl = $length - length $pre2;
    my $linel = length $line;
    my $i;
 
    my $sub = substr($line,0,$length - length $pre1);
 
-   $self->_print( "$pre1$sub\n");
-   
+   $self->_print( "$pre1$sub\n") || return;
+
    for($i= ($length - length $pre1);$i < $linel;) {
        $sub = substr($line,$i,($subl));
-       $self->_print( "$pre2$sub\n");
+       $self->_print( "$pre2$sub\n") || return;
        $i += $subl;
    }
 
+   return 1;
 }
 
 =head2 _write_line_EMBL_regex
@@ -1095,7 +1320,7 @@ sub _write_line_EMBL {
  Title   : _write_line_EMBL_regex
  Usage   :
  Function: internal function for writing lines of specified
-           length, with different first and the next line 
+           length, with different first and the next line
            left hand headers and split at specific points in the
            text
  Example :
@@ -1110,43 +1335,44 @@ sub _write_line_EMBL_regex {
 
     #print STDOUT "Going to print with $line!\n";
 
-    $length || die "Programming error - called write_line_EMBL_regex without length.";
-
-#    if( length $pre1 != length $pre2 ) {
-#      $self->throw(<<END);
-#Programming error - called write_line_EMBL_regex with different length pre1 and pre2 tags!
-#pre1 = $pre1
-#pre2 = $pre2
-#END
-#    }
+    $length || $self->throw("Programming error - called write_line_EMBL_regex without length.");
 
     my $subl = $length - (length $pre1) -1 ;
-
-
-
     my( @lines );
-    while(defined $line && 
-	  $line =~ m/(.{1,$subl})($regex)/g) {
-	push(@lines, $1.$2);
+
+  CHUNK: while($line) {
+        foreach my $pat ($regex, '[,;\.\/-]\s|'.$regex, '[,;\.\/-]|'.$regex) {
+            if($line =~ m/^(.{1,$subl})($pat)(.*)/ ) {
+                my $l = $1.$2;
+                my $newl = $3;
+                $line = substr($line,length($l));
+                # be strict about not padding spaces according to
+                # genbank format
+                $l =~ s/\s+$//;
+                push(@lines, $l);
+                next CHUNK;
+            }
+        }
+        # if we get here none of the patterns matched $subl or less chars
+        $self->warn("trouble dissecting \"$line\"\n     into chunks ".
+                    "of $subl chars or less - this tag won't print right");
+        # insert a space char to prevent infinite loops
+        $line = substr($line,0,$subl) . " " . substr($line,$subl);
     }
-    foreach (@lines) { s/\s+$//; }
-    
-    # Print first line
-    my $s = shift(@lines) || '';    
-    $self->_print( "$pre1$s\n");
-    
-    # Print the rest
+    my $s = shift @lines;
+    ($self->_print("$pre1$s\n") || return) if $s;
     foreach my $s ( @lines ) {
-	$s = '' if( !defined $s );
-        $self->_print( "$pre2$s\n");
+        $self->_print("$pre2$s\n") || return;
     }
+
+    return 1;
 }
 
 =head2 _post_sort
 
  Title   : _post_sort
  Usage   : $obj->_post_sort($newval)
- Function: 
+ Function:
  Returns : value of _post_sort
  Args    : newvalue (optional)
 
@@ -1167,7 +1393,7 @@ sub _post_sort{
 
  Title   : _show_dna
  Usage   : $obj->_show_dna($newval)
- Function: 
+ Function:
  Returns : value of _show_dna
  Args    : newvalue (optional)
 
@@ -1188,7 +1414,7 @@ sub _show_dna{
 
  Title   : _id_generation_func
  Usage   : $obj->_id_generation_func($newval)
- Function: 
+ Function:
  Returns : value of _id_generation_func
  Args    : newvalue (optional)
 
@@ -1209,7 +1435,7 @@ sub _id_generation_func{
 
  Title   : _ac_generation_func
  Usage   : $obj->_ac_generation_func($newval)
- Function: 
+ Function:
  Returns : value of _ac_generation_func
  Args    : newvalue (optional)
 
@@ -1230,7 +1456,7 @@ sub _ac_generation_func{
 
  Title   : _sv_generation_func
  Usage   : $obj->_sv_generation_func($newval)
- Function: 
+ Function:
  Returns : value of _sv_generation_func
  Args    : newvalue (optional)
 
@@ -1251,7 +1477,7 @@ sub _sv_generation_func{
 
  Title   : _kw_generation_func
  Usage   : $obj->_kw_generation_func($newval)
- Function: 
+ Function:
  Returns : value of _kw_generation_func
  Args    : newvalue (optional)
 

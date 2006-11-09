@@ -1,4 +1,4 @@
-# $Id: Phenotype.pm,v 1.7 2003/11/05 04:14:19 juguang Exp $
+# $Id: Phenotype.pm,v 1.12.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for Bio::Phenotype::Phenotype
 #
@@ -22,7 +22,7 @@
 
 =head1 NAME
 
-Phenotype - A class for modeling phenotypes
+Bio::Phenotype::Phenotype - A class for modeling phenotypes
 
 =head1 SYNOPSIS
 
@@ -75,17 +75,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the 
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -113,11 +112,8 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Phenotype::Phenotype;
-use vars qw( @ISA );
 use strict;
 
-use Bio::Root::Root;
-use Bio::Phenotype::PhenotypeI;
 use Bio::Species;
 use Bio::Variation::VariantI;
 use Bio::Annotation::DBLink;
@@ -128,8 +124,7 @@ use Bio::Map::CytoPosition;
 use Bio::Range;
 
 
-@ISA = qw( Bio::Root::Root
-           Bio::Phenotype::PhenotypeI );
+use base qw(Bio::Root::Root Bio::Phenotype::PhenotypeI);
 
 
 
@@ -308,13 +303,8 @@ sub comment {
 sub each_gene_symbol {
     my ( $self ) = @_;
 
-    if ( $self->{ "_gene_symbols" } ) {
-        return @{ $self->{ "_gene_symbols" } };
-    }
-    else {
-        return my @a = (); 
-    }
-
+    return @{$self->{"_gene_symbols"}} if exists($self->{"_gene_symbols"});
+    return ();
 } # each_gene_symbol
 
 
@@ -381,13 +371,8 @@ sub remove_gene_symbols {
 sub each_Variant {
      my ( $self ) = @_;
 
-    if ( $self->{ "_variants" } ) {
-        return @{ $self->{ "_variants" } };
-    }
-    else {
-        return my @a = (); 
-    }
-
+     return @{ $self->{ "_variants" } } if exists($self->{ "_variants" });
+     return ();
 } # each_Variant
 
 
@@ -454,13 +439,8 @@ sub remove_Variants {
 sub each_Reference {
     my ( $self ) = @_;
     
-    if ( $self->{ "_references" } ) {
-        return @{ $self->{ "_references" } };
-    }
-    else {
-        return my @a = (); 
-    }
-
+    return @{ $self->{ "_references" } } if exists($self->{ "_references" });
+    return ();
 } # each_Reference
 
 
@@ -528,13 +508,8 @@ sub remove_References {
 sub each_CytoPosition {
     my ( $self ) = @_;
     
-    if ( $self->{ "_cyto_positions" } ) {
-        return @{ $self->{ "_cyto_positions" } };
-    }
-    else {
-        return my @a = (); 
-    }
-
+    return @{$self->{"_cyto_positions"}} if exists($self->{"_cyto_positions"});
+    return ();
 } # each_CytoPosition
 
 
@@ -605,13 +580,8 @@ sub remove_CytoPositions {
 sub each_Correlate {
     my ( $self ) = @_;
 
-    if ( $self->{ "_correlates" } ) {
-        return @{ $self->{ "_correlates" } };
-    }
-    else {
-        return my @a = (); 
-    }
-
+    return @{ $self->{ "_correlates" } } if exists($self->{ "_correlates" });
+    return (); 
 } # each_Correlate
 
 
@@ -683,13 +653,8 @@ sub remove_Correlates {
 sub each_Measure {
     my ( $self ) = @_;
     
-    if ( $self->{ "_measures" } ) {
-        return @{ $self->{ "_measures" } };
-    }
-    else {
-        return my @a = (); 
-    }
-
+    return @{ $self->{ "_measures" } } if exists($self->{ "_measures" });
+    return ();
 } # each_Measure
 
 
@@ -757,13 +722,8 @@ sub remove_Measures {
 sub each_keyword {
     my ( $self ) = @_;
     
-    if ( $self->{ "_keywords" } ) {
-        return @{ $self->{ "_keywords" } };
-    }
-    else {
-        return my @a = (); 
-    }
-
+    return @{ $self->{ "_keywords" } } if exists($self->{ "_keywords" });
+    return ();
 } # each_keyword
 
 
@@ -827,13 +787,8 @@ sub remove_keywords {
 sub each_DBLink {
     my ( $self ) = @_;
    
-    if ( $self->{ "_db_links" } ) {
-        return @{ $self->{ "_db_links" } };
-    }
-    else {
-        return my @a = (); 
-    }
-   
+    return @{ $self->{ "_db_links" } } if exists($self->{ "_db_links" });
+    return ();   
 }
 
 
@@ -904,13 +859,8 @@ sub remove_DBLinks {
 sub each_Genotype {
     my ( $self ) = @_;
    
-    if ( $self->{ "_genotypes" } ) {
-        return @{ $self->{ "_genotypes" } };
-    }
-    else {
-        return my @a = (); 
-    }
-
+    return @{ $self->{ "_genotypes" } } if exists($self->{ "_genotypes" });
+    return ();
 } # each_Genotype
 
 

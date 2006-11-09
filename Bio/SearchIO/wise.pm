@@ -1,4 +1,4 @@
-# $Id: wise.pm,v 1.2 2003/10/01 18:37:33 jason Exp $
+# $Id: wise.pm,v 1.6.4.1 2006/10/02 23:10:26 sendu Exp $
 #
 # BioPerl module for Bio::SearchIO::wise
 #
@@ -36,8 +36,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -45,7 +45,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -63,13 +63,12 @@ Internal methods are usually preceded with a _
 
 
 package Bio::SearchIO::wise;
-use vars qw(@ISA %MAPPING %MODEMAP $DEFAULT_WRITER_CLASS);
+use vars qw(%MAPPING %MODEMAP $DEFAULT_WRITER_CLASS);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::SearchIO;
-@ISA = qw(Bio::SearchIO);
+use base qw(Bio::SearchIO);
 
 %MODEMAP = ('WiseOutput' => 'result',
 	    'Hit'             => 'hit',
@@ -172,10 +171,12 @@ sub _initialize {
 
 sub next_result{
    my ($self) = @_;
+   local $/ = "\n";
+   local $_;
 
-   return undef unless $self->wise;
+   return unless $self->wise;
    my $prediction = $self->wise->next_prediction;
-   return undef unless $prediction;
+   return unless $prediction;
    $self->{'_reporttype'} = uc $self->wisetype;
    $self->start_element({'Name' => 'WiseOutput'});
    $self->element({'Name' => 'WiseOutput_program',

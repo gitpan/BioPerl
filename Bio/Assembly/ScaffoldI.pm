@@ -1,4 +1,4 @@
-# $Id: ScaffoldI.pm,v 1.2 2002/11/11 18:16:30 lapp Exp $
+# $Id: ScaffoldI.pm,v 1.6.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 #  BioPerl module for Bio::Assembly::ScaffoldI
 #
@@ -12,7 +12,7 @@
 
 Bio::Assembly::ScaffoldI - Abstract Inteface of Sequence Assemblies
 
-=head1 SYNOPSYS
+=head1 SYNOPSIS
 
     # get a Bio::Assembly::ScaffoldI object somehow
 
@@ -33,17 +33,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html     - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Robson Francisco de Souza
 
@@ -63,13 +62,11 @@ methods. Internal methods are usually preceded with a _
 package Bio::Assembly::ScaffoldI;
 
 use strict;
-use vars qw(@ISA);
 use Carp;
-use Bio::Root::RootI;
 
 # Inheritance
 
-@ISA = qw(Bio::Root::RootI);
+use base qw(Bio::Root::RootI);
 
 #
 # Methods

@@ -1,4 +1,4 @@
-# $Id: soap.pm,v 1.6 2003/06/04 08:36:37 heikki Exp $
+# $Id: soap.pm,v 1.10.4.1 2006/10/02 23:10:15 sendu Exp $
 #
 # BioPerl module Bio::DB::Biblio::soap.pm
 #
@@ -17,7 +17,7 @@ Do not use this object directly, it is recommended to access it and use
 it through the I<Bio::Biblio> module:
 
   use Bio::Biblio;
-  my $biblio = new Bio::Biblio (-access => 'soap');
+  my $biblio = Bio::Biblio->new (-access => 'soap');
 
 =head1 DESCRIPTION
 
@@ -34,21 +34,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
-Martin Senger (senger@ebi.ac.uk)
+Martin Senger (martin.senger@gmail.com)
 
 =head1 COPYRIGHT
 
@@ -73,15 +72,7 @@ I<contains>) can be used only with SOAP::Lite version 0.52 and newer
 
 =item *
 
-It does not use WSDL. Coming soon...
-
-=item *
-
-There is an open question to discuss: should the service return
-citations as type I<string> or rather as type I<base64>? What is
-faster? What is better for keeping non-ASCII characters untouched? How
-the decision would be influenced if the transparent compression
-support is introduced?
+It does not use WSDL.
 
 =item *
 
@@ -105,28 +96,25 @@ with an underscore _.
 
 
 package Bio::DB::Biblio::soap;
-use vars qw(@ISA $Revision $DEFAULT_SERVICE $DEFAULT_NAMESPACE);
+use vars qw($DEFAULT_SERVICE $DEFAULT_NAMESPACE);
 use strict;
 
-use Bio::Biblio;  # TBD: ?? WHY SHOULD I DO THIS ??
 use SOAP::Lite
     on_fault => sub {
 	my $soap = shift;
 	my $res = shift;
 	my $msg =
 	    ref $res ? "--- SOAP FAULT ---\n" . $res->faultcode . " " . $res->faultstring
-		     : "--- TRANSPORT ERROR ---\n" . $soap->transport->status;
+		     : "--- TRANSPORT ERROR ---\n" . $soap->transport->status . "\n$res\n";
         Bio::DB::Biblio::soap->throw ( -text => $msg );
     }
 ;
 
-@ISA = qw(Bio::Biblio);
+use base qw(Bio::Biblio);
 
 BEGIN {
-    $Revision = q$Id: soap.pm,v 1.6 2003/06/04 08:36:37 heikki Exp $;
-
     # where to go...
-    $DEFAULT_SERVICE = 'http://industry.ebi.ac.uk/soap/openBQS';
+    $DEFAULT_SERVICE = 'http://www.ebi.ac.uk/openbqs/services/MedlineSRS';
 
     # ...and what to find there
     $DEFAULT_NAMESPACE = 'http://industry.ebi.ac.uk/openBQS';
@@ -147,9 +135,7 @@ BEGIN {
                uniqueness - therefore it often has a style of a URL -
                but it does not mean that such pseudo-URL really exists.
 
-               Default is 'http://industry.ebi.ac.uk/openBQS'
-               (which well corresponds with the default '-location' -
-               see module Bio::Biblio).
+               Default is 'http://industry.ebi.ac.uk/openBQS'.
 
              -destroy_on_exit => '0'
                 Default value is '1' which means that all Bio::Biblio
@@ -242,6 +228,7 @@ sub _initialize {
 	                          -> uri ($self->{'_namespace'})
 				  -> proxy ($self->{'_location'});
 	}
+#	$self->{'_soap'}->soapversion (1.2);
     }
 }
 
@@ -353,13 +340,13 @@ sub get_count {
    my $soap = $self->{'_soap'};
    my ($collection_id) = $self->{'_collection_id'};
    if ($collection_id) {
-       $soap->getBibRefCount (SOAP::Data->type (string => $collection_id))->result;
+       $soap->getBibRefCountOfCollection (SOAP::Data->type (string => $collection_id))->result;
    } else {
        $soap->getBibRefCount->result;
    }
 }
 
-# try: 94033980
+# try: 12368254 (it's a Bioperl article)
 sub get_by_id {
    my ($self, $citation_id) = @_;
    $self->throw ("Citation ID is expected as a parameter of method 'get_by_id'.")
@@ -393,27 +380,29 @@ sub find {
    my $new_id;
    if ($collection_id) {
        if (@attrs) {
-	   $new_id = $soap->find (SOAP::Data->type (string => $collection_id),
-				  &_as_strings (\@keywords),
-				  &_as_strings (\@attrs))->result;
+	   $new_id = $soap->reFindInAttrs (SOAP::Data->name ('arg0')->type (string => $collection_id),
+				           SOAP::Data->name ('arg1')->value (&_as_strings (\@keywords)),
+				           SOAP::Data->name ('arg2')->value (&_as_strings (\@attrs)))
+	       ->result;
        } else {
-	   $new_id = $soap->find (SOAP::Data->type (string => $collection_id),
-				  &_as_strings (\@keywords))->result;
+	   $new_id = $soap->reFind (SOAP::Data->name ('arg0')->type (string => $collection_id),
+				    SOAP::Data->name ('arg1')->value (&_as_strings (\@keywords)))
+	       ->result;
        }
    } else {
        if (@attrs) {
-	   $new_id = $soap->find (&_as_strings (\@keywords),
-				  &_as_strings (\@attrs))->result;
-
-
+	   $new_id = $soap->findInAttrs (SOAP::Data->name ('arg0')->value (&_as_strings (\@keywords)),
+				         SOAP::Data->name ('arg1')->value (&_as_strings (\@attrs)))
+	       ->result;
        } else {
-	   $new_id = $soap->find (&_as_strings (\@keywords))->result;
+	   $new_id = $soap->find (SOAP::Data->name ('arg0')->value (&_as_strings (\@keywords)))
+	       ->result;
        }
    }
 
    # clone itself but change the collection ID to a new one
-   return $self->new (-collection_id       => $new_id,
-		      -parent_collection_d => $collection_id);
+   return $self->new (-collection_id        => $new_id,
+		      -parent_collection_id => $collection_id);
 }
 
 sub get_all_ids {
@@ -437,7 +426,7 @@ sub has_next {
    my $soap = $self->{'_soap'};
    my ($collection_id) = $self->{'_collection_id'};
    $self->throw ($self->_no_id_msg) unless $collection_id;
-   $self->throw ($self->_old_version_msg) if $SOAP::Lite::VERSION < 0.52;
+   $self->throw ($self->_old_version_msg) if $SOAP::Lite::VERSION lt '0.52';
    $soap->hasNext (SOAP::Data->type (string => $collection_id))->result;
 }
 
@@ -446,9 +435,7 @@ sub get_next {
    my $soap = $self->{'_soap'};
    my ($collection_id) = $self->{'_collection_id'};
    $self->throw ($self->_no_id_msg) unless $collection_id;
-   my $ra = $soap->getNext (SOAP::Data->type (string => $collection_id))->result;
-   $self->{'_collection_id'} = shift @{ $ra };
-   shift @{ $ra };
+   $soap->getNext (SOAP::Data->type (string => $collection_id))->result;
 }
 
 sub get_more {
@@ -458,11 +445,11 @@ sub get_more {
    $self->throw ($self->_no_id_msg) unless $collection_id;
 
    unless (defined ($how_many) and $how_many =~ /^\d+$/) {
-       warn ("Method 'get_more' expects a numeric argument. Changing to 1.\n");
+       $self->warn ("Method 'get_more' expects a numeric argument. Changing to 1.\n");
        $how_many = 1;
    }
    unless ($how_many > 0) {
-       warn ("Method 'get_more' expects a positive argument. Changing to 1.\n");
+       $self->warn ("Method 'get_more' expects a positive argument. Changing to 1.\n");
        $how_many = 1;
    }
 
@@ -485,7 +472,7 @@ sub exists {
    my $soap = $self->{'_soap'};
    my ($collection_id) = $self->{'_collection_id'};
    $self->throw ($self->_no_id_msg) unless $collection_id;
-   $self->throw ($self->_old_version_msg) if $SOAP::Lite::VERSION < 0.52;
+   $self->throw ($self->_old_version_msg) if $SOAP::Lite::VERSION lt '0.52';
    $soap->exists (SOAP::Data->type (string => $collection_id))->result;
 }
 
@@ -506,7 +493,7 @@ sub get_vocabulary_names {
 sub contains {
    my ($self, $vocabulary_name, $value) = @_;
    my $soap = $self->{'_soap'};
-   $self->throw ($self->_old_version_msg) if $SOAP::Lite::VERSION < 0.52;
+   $self->throw ($self->_old_version_msg) if $SOAP::Lite::VERSION lt '0.52';
    $self->throw ($self->_two_params_msg)
        unless defined $vocabulary_name and defined $value;
    $soap->contains (SOAP::Data->type (string => $vocabulary_name),

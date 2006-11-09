@@ -1,6 +1,6 @@
 package Bio::Graphics::FeatureFile;
 
-# $Id: FeatureFile.pm,v 1.41 2003/12/13 17:17:50 lstein Exp $
+# $Id: FeatureFile.pm,v 1.78.4.5 2006/11/08 17:25:54 sendu Exp $
 # This package parses and renders a simple tab-delimited format for features.
 # It is simpler than GFF, but still has a lot of expressive power.
 # See __END__ for the file format
@@ -53,7 +53,7 @@ FeatureFile object has been initialized, you can interrogate it for
 its consistuent features and their settings, or render the entire file
 onto a Bio::Graphics::Panel.
 
-This moduel is a precursor of Jason Stajich's
+This module is a precursor of Jason Stajich's
 Bio::Annotation::Collection class, and fulfills a similar function of
 storing a collection of sequence features.  However, it also stores
 rendering information about the features, and does not currently
@@ -117,14 +117,16 @@ belong to the same group named yk53c10.
 use strict;
 use Bio::Graphics::Feature;
 use Bio::DB::GFF::Util::Rearrange;
-use Carp;
+use Carp 'cluck','carp','croak';
 use Bio::DB::GFF;
 use IO::File;
-use Text::Shellwords;
+use Text::ParseWords 'shellwords';
 
 # default colors for unconfigured features
 my @COLORS = qw(cyan blue red yellow green wheat turquoise orange);
+
 use constant WIDTH => 600;
+use constant MAX_REMAP => 100;
 
 =head2 METHODS
 
@@ -201,7 +203,8 @@ sub new {
 		   },$class;
   $self->{coordinate_mapper} = $args{-map_coords} 
     if exists $args{-map_coords} && ref($args{-map_coords}) eq 'CODE';
-  $self->{smart_features}    = $args{-smart_features} if exists $args{-smart_features};
+
+  $self->smart_features($args{-smart_features})       if exists $args{-smart_features};
   $self->{safe}              = $args{-safe}           if exists $args{-safe};
 
   # call with
@@ -230,15 +233,34 @@ sub new {
 
 =over 4
 
-=item ($rendered,$panel) = $features-E<gt>render([$panel])
+=item ($rendered,$panel) = $features-E<gt>render([$panel, $position_to_insert, $options, $max_bump, $max_label, $selector])
 
 Render features in the data set onto the indicated
 Bio::Graphics::Panel.  If no panel is specified, creates one.
 
+All arguments are optional.
+
+$panel is a Bio::Graphics::Panel that has previously been created and
+configured.
+
+$position_to_insert indicates the position at which to start inserting
+new tracks. The last current track on the panel is assumed.
+
+$options is a scalar used to control automatic expansion of the
+tracks. 0=auto, 1=compact, 2=expanded, 3=expand and label,
+4=hyperexpand, 5=hyperexpand and label.
+
+$max_bump and $max_label indicate the maximum number of features
+before bumping and labeling are turned off.
+
+$selector is a code ref that can be used to filter which features to
+render. It receives a feature and should return true to include the
+feature and false to exclude it.
+
 In a scalar context returns the number of tracks rendered.  In a list
-context, returns a two-element list containing the number of features
-rendered and the panel.  Use this form if you want the panel created
-for you.
+context, returns a three-element list containing the number of
+features rendered, the created panel, and a list of all the track
+objects created.
 
 =back
 
@@ -249,12 +271,12 @@ for you.
 sub render {
   my $self = shift;
   my $panel = shift;
-  my ($position_to_insert,$options,$max_bump,$max_label) = @_;
+  my ($position_to_insert,$options,$max_bump,$max_label,$selector) = @_;
 
   $panel ||= $self->new_panel;
 
   # count up number of tracks inserted
-  my $tracks = 0;
+  my @tracks;
   my $color;
   my %types = map {$_=>1} $self->configured_types;
 
@@ -282,7 +304,13 @@ sub render {
   }
 
   for my $type (@configured_types,@unconfigured_types) {
-    my $features = $self->features($type);
+    next if defined $selector && !$selector->($self,$type);
+    next unless length $type > 0; # avoid empty ''
+    my $f = $self->features($type);
+    my @features = grep {$self->{visible}{$_} || $_->type eq 'group'} @$f;
+    next unless @features;  # suppress tracks for features that don't appear
+    my $features = \@features;
+
     my @auto_bump;
     push @auto_bump,(-bump  => @$features < $max_bump)  if defined $max_bump;
     push @auto_bump,(-label => @$features < $max_label) if defined $max_label;
@@ -290,6 +318,7 @@ sub render {
     my @config = ( -glyph   => 'segments',         # really generic
 		   -bgcolor => $COLORS[$color++ % @COLORS],
 		   -label   => 1,
+		   -description => 1,
 		   -key     => $type,
 		   @auto_bump,
 		   @base_config,         # global
@@ -297,13 +326,12 @@ sub render {
 		   @override,
 		 );
     if (defined($position_to_insert)) {
-      $panel->insert_track($position_to_insert++,$features,@config);
+      push @tracks,$panel->insert_track($position_to_insert++,$features,@config);
     } else {
-      $panel->add_track($features,@config);
+      push @tracks,$panel->add_track($features,@config);
     }
-    $tracks++;
   }
-  return wantarray ? ($tracks,$panel) : $tracks;
+  return wantarray ? (scalar(@tracks),$panel,\@tracks) : scalar @tracks;
 }
 
 sub _stat {
@@ -350,8 +378,9 @@ sub smart_features {
 
 sub parse_argv {
   my $self = shift;
-
   $self->init_parse;
+
+  local $/ = "\n";
   while (<>) {
     chomp;
     $self->parse_line($_);
@@ -362,9 +391,11 @@ sub parse_argv {
 sub parse_file {
   my $self = shift;
   my $fh   = shift or return;
-  $self->_stat($fh);
 
+  $self->_stat($fh);
   $self->init_parse;
+
+  local $/ = "\n";
   while (<$fh>) {
     chomp;
     $self->parse_line($_) || last;
@@ -388,6 +419,7 @@ sub parse_line {
   local $_ = shift;
 
   s/\015//g;  # get rid of carriage returns left over by MS-DOS/Windows systems
+  s/\s+$//;   # get rid of trailing whitespace
 
   # capture GFF header
   if (/^\#\#gff-version\s+(\d+)/) {
@@ -396,13 +428,16 @@ sub parse_line {
     return 1;
   }
 
-  # skip on blank lines and comments
-  return 1 if /^\s*[\#]/;
+  # remove comments (but rescue hex-code colors)
+  s/\s*\#.+$// unless /\s*\#[0-9A-Fa-f]{6}\b/;
+
+  # skip on blank lines
+  return 1 if /^\s*$/;
 
   # abort if we see a >FASTA line
   return 0 if /^>/;
 
-  if (/^\s+(.+)/ && $self->{current_tag}) { # continuation line
+  if (/^\s+(.+)/ && $self->{current_tag}) { # configuration continuation line
     my $value = $1;
     my $cc = $self->{current_config} ||= 'general';       # in case no configuration named
     $self->{config}{$cc}{$self->{current_tag}} .= ' ' . $value;
@@ -435,12 +470,14 @@ sub parse_line {
     return 1;
   }
 
+  undef $self->{current_tag};
+
   # parse data lines
-  my @tokens = eval { shellwords($_||'') };
+  my @tokens = shellwords($_);
   unshift @tokens,'' if /^\s+/;
 
   # close any open group
-  if (length $tokens[0] > 0 && $self->{group}) {
+  if ($self->{group} && $self->{grouptype} && $tokens[0] && length $tokens[0] > 0) {
     push @{$self->{features}{$self->{grouptype}}},$self->{group};
     undef $self->{group};
     undef $self->{grouptype};
@@ -457,11 +494,16 @@ sub parse_line {
 
   my($ref,$type,$name,$strand,$bounds,$description,$url,$score,%attributes);
 
-  if (@tokens >= 8) { # conventional GFF file
+  my @parts;
+
+  # conventional GFF file, with check for numeric start/end
+  if (@tokens >= 8 && $tokens[3]=~ /^-?\d+$/ && $tokens[4]=~ /^-?\d+$/) {
     my ($r,$source,$method,$start,$stop,$scor,$s,$phase,@rest) = @tokens;
+    # sanity checks
     my $group = join ' ',@rest;
     $type   = defined $source && $source ne '.' ? join(':',$method,$source) : $method;
-    $bounds = join '..',$start,$stop;
+    #$bounds = join '..',$start,$stop;
+    @parts   = ([$start,$stop]);
     $strand = $s;
     if ($group) {
       my ($notes,@notes);
@@ -470,11 +512,11 @@ sub parse_line {
 	my ($key,$value) = @$_;
 	if ($value =~ m!^(http|ftp)://!) { 
 	  $url = $_ 
-	} elsif ($key=~/note/i) { 
-	  push @notes,$value;
+	} else {
+	  push @notes,"$key=$value";
 	}
       }
-      $description = join '; ',@notes if @notes;
+      $description = join '; ',map {_escape($_)} @notes if @notes;
       $score       = $scor if defined $scor && $scor ne '.';
     }
     $name ||= $self->{group}->display_id if $self->{group};
@@ -500,23 +542,40 @@ sub parse_line {
   }
   $self->{refs}{$ref}++ if defined $ref;
 
-  my @parts = map { [/(-?\d+)(?:-|\.\.)(-?\d+)/]} split /(?:,| )\s*/,$bounds;
+  @parts = map { [/(-?\d+)(?:-|\.\.)(-?\d+)/]} split /(?:,| )\s*/,$bounds
+    if $bounds && !@parts;
 
   foreach (@parts) { # max and min calculation, sigh...
-    $self->{min} = $_->[0] if !defined $self->{min} || $_->[0] < $self->{min};
-    $self->{max} = $_->[1] if !defined $self->{max} || $_->[1] > $self->{max};
+    $self->{min} = $_->[0] if defined $_->[0] && defined $self->{min} ? ($_->[0] < $self->{min}) : 1;
+    $self->{max} = $_->[1] if defined $_->[1] && defined $self->{max} ? ($_->[1] > $self->{max}) : 1;
   }
 
+  my $visible = 1;
+
   if ($self->{coordinate_mapper} && $ref) {
-    ($ref,@parts) = $self->{coordinate_mapper}->($ref,@parts);
-    return 1 unless $ref;
+    my @remapped = $self->{coordinate_mapper}->($ref,@parts);
+    ($ref,@parts) = @remapped if @remapped;
+    $visible   = @remapped;
+    return 1 if !$visible && $self->{feature_count} > MAX_REMAP;
   }
 
   $type = '' unless defined $type;
   $name = '' unless defined $name;
 
+  # if strand is not explicitly given in file, we infer it
+  # from the order of start and end coordinates
+  # (this is to deal with confusing documentation, actually)
+  unless (defined $strand) {
+    foreach (@parts) {
+      if (defined $_ && ref($_) eq 'ARRAY' && defined $_->[0] && defined $_->[1]) {
+        $strand           ||= $_->[0] <= $_->[1] ? '+' : '-';
+        ($_->[0],$_->[1])   = ($_->[1],$_->[0]) if $_->[0] > $_->[1];
+      }
+    }
+  }
+
   # attribute handling
-  if (defined $description && $description =~ /\w+=\w+/) { # attribute line
+  if (defined $description && $description =~ /\w+=\S+/) { # attribute line
     my @attributes = split /;\s*/,$description;
     foreach (@attributes) {
       my ($name,$value) = split /=/,$_,2;
@@ -548,6 +607,7 @@ sub parse_line {
     $feature->add_segment(map {
       _make_feature($name,$type,$strand,$description,$ref,\%attributes,$url,$score,[$_])
     }  @parts);
+    $self->{visible}{$feature}++  if $visible;
   }
 
   else {
@@ -559,6 +619,8 @@ sub parse_line {
       $self->{group}->add_segment($feature);
     } else {
       push @{$self->{features}{$type}},$feature;  # for speed; should use add_feature() instead
+      $self->{visible}{$feature}++  if $visible;
+      $self->{feature_count}++;
     }
   }
 
@@ -571,6 +633,12 @@ sub _unescape {
     s/%([0-9a-fA-F]{2})/chr hex($1)/g;
   }
   @_;
+}
+
+sub _escape {
+  my $toencode = shift;
+  $toencode =~ s/([^a-zA-Z0-9_.=-])/uc sprintf("%%%02x",ord($1))/eg;
+  $toencode;
 }
 
 sub _make_feature {
@@ -606,7 +674,10 @@ feature's primary_tag() method will be invoked to get the type.
 sub add_feature {
   my $self = shift;
   my ($feature,$type) = @_;
+  $feature->configurator($self) if $self->smart_features;
   $type = $feature->primary_tag unless defined $type;
+  $self->{visible}{$feature}++;
+  $self->{feature_count}++;
   push @{$self->{features}{$type}},$feature;
 }
 
@@ -705,6 +776,9 @@ Call with no elements to retrieve all stanza names:
 
 sub setting {
   my $self = shift;
+  if (@_ > 2) {
+    $self->{config}->{$_[0]}{$_[1]} = $_[2];
+  }
   if ($self->safe) {
      $self->code_setting(@_);
   } else {
@@ -715,12 +789,15 @@ sub setting {
 # return configuration information
 # arguments are ($type) => returns tags for type
 #               ($type=>$tag) => returns values of tag on type
+#               ($type=>$tag,$value) => sets value of tag
 sub _setting {
   my $self = shift;
   my $config = $self->{config} or return;
   return keys %{$config} unless @_;
-  return keys %{$config->{$_[0]}} if @_ == 1;
-  return $config->{$_[0]}{$_[1]}  if @_ > 1;
+  return keys %{$config->{$_[0]}}        if @_ == 1;
+  return $config->{$_[0]}{$_[1]}         if @_ == 2 && exists $config->{$_[0]};
+  return $config->{$_[0]}{$_[1]} = $_[2] if @_ > 2;
+  return;
 }
 
 
@@ -750,18 +827,25 @@ sub code_setting {
     my $package         = $self->base2package;
     my $codestring      = "\\&${package}\:\:${subroutine_name}";
     my $coderef         = eval $codestring;
-    warn $@ if $@;
+    $self->_callback_complain($section,$option) if $@;
     $self->set($section,$option,$coderef);
     return $coderef;
   }
-  elsif ($setting =~ /^sub\s*\{/) {
-    my $coderef   = eval $setting;
-    warn $@ if $@;
+  elsif ($setting =~ /^sub\s*(\(\$\$\))*\s*\{/) {
+    my $package         = $self->base2package;
+    my $coderef         = eval "package $package; $setting";
+    $self->_callback_complain($section,$option) if $@;
     $self->set($section,$option,$coderef);
     return $coderef;
   } else {
     return $setting;
   }
+}
+
+sub _callback_complain {
+  my $self    = shift;
+  my ($section,$option) = @_;
+  carp "An error occurred while evaluating the callback at section='$section', option='$option':\n   => $@";
 }
 
 =over 4
@@ -912,7 +996,8 @@ Two APIs:
 # return features
 sub features {
   my $self = shift;
-  my ($types,$iterator,@rest) = defined($_[0] && $_[0]=~/^-/) ? rearrange([['TYPE','TYPES']],@_) : (\@_);
+  my ($types,$iterator,@rest) = defined($_[0] && $_[0]=~/^-/)
+    ? rearrange([['TYPE','TYPES']],@_) : (\@_);
   $types = [$types] if $types && !ref($types);
   my @types = ($types && @$types) ? @$types : $self->types;
   my @features = map {@{$self->{features}{$_}}} @types;
@@ -969,6 +1054,117 @@ sub get_seq_stream {
   my @args = $_[0] =~ /^-/ ? (@_,-iterator=>1) : (-types=>\@_,-iterator=>1);
   $self->features(@args);
 }
+
+=head2 get_feature_by_name
+
+ Usage   : $db->get_feature_by_name(-name => $name)
+ Function: fetch features by their name
+ Returns : a list of Bio::DB::GFF::Feature objects
+ Args    : the name of the desired feature
+ Status  : public
+
+This method can be used to fetch a named feature from the file.
+
+The full syntax is as follows.  Features can be filtered by
+their reference, start and end positions
+
+  @f = $db->get_feature_by_name(-name  => $name,
+                                -ref   => $sequence_name,
+                                -start => $start,
+                                -end   => $end);
+
+This method may return zero, one, or several Bio::Graphics::Feature
+objects.
+
+=cut
+
+sub get_feature_by_name {
+   my $self = shift;
+   my ($name,$ref,$start,$end) = rearrange(['NAME','REF','START','END'],@_);
+   my $match = <<'END';
+sub {
+        my $f = shift;
+END
+   if (defined $name) {
+      if ($name =~ /[\?\*]/) {  # regexp
+        $name =  quotemeta($name);
+        $name =~ s/\\\?/.?/g;
+        $name =~ s/\\\*/.*/g;
+        $match .= "     return unless \$f->display_name =~ /$name/i;\n";
+      } else {
+        $match .= "     return unless \$f->display_name eq '$name';\n";
+      }
+   }
+
+   if (defined $ref) {
+      $match .= "     return unless \$f->ref eq '$ref';\n";
+   }
+   if (defined $start && $start =~ /^-?\d+$/) {
+      $match .= "     return unless \$f->stop >= $start;\n";
+   }
+   if (defined $end && $end =~ /^-?\d+$/) {
+      $match .= "     return unless \$f->start <= $end;\n";
+   }
+   $match .= "     return 1;\n}";
+
+   my $match_sub = eval $match;
+   unless ($match_sub) {
+     warn $@;
+     return;
+   }
+
+   return grep {$match_sub->($_)} $self->features;
+}
+
+=head2 search_notes
+
+ Title   : search_notes
+ Usage   : @search_results = $db->search_notes("full text search string",$limit)
+ Function: Search the notes for a text string
+ Returns : array of results
+ Args    : full text search string, and an optional row limit
+ Status  : public
+
+Each row of the returned array is a arrayref containing the following fields:
+
+  column 1     Display name of the feature
+  column 2     The text of the note
+  column 3     A relevance score.
+
+=cut
+
+sub search_notes {
+  my $self = shift;
+  my ($search_string,$limit) = @_;
+
+  $search_string =~ tr/*?//d;
+
+  my @results;
+  my $search = join '|',map {quotemeta($_)} $search_string =~ /(\S+)/g;
+
+  for my $feature ($self->features) {
+    next unless $feature->{attributes};
+    my @attributes = $feature->all_tags;
+    my @values     = map {$feature->each_tag_value} @attributes;
+    push @values,$feature->notes        if $feature->notes;
+    push @values,$feature->display_name if $feature->display_name;
+    next unless @values;
+    my $value      = "@values";
+    my $matches    = 0;
+    my $note;
+    my @hits = $value =~ /($search)/ig;
+    $note ||= $value if @hits;
+    $matches += @hits;
+    next unless $matches;
+
+    my $relevance = 10 * $matches;
+    push @results,[$feature,$note,$relevance];
+    last if @results >= $limit;
+  }
+
+  @results;
+}
+
 
 =head2 get_feature_stream(), top_SeqFeatures(), all_SeqFeatures()
 
@@ -1030,6 +1226,7 @@ sub init_parse {
   $s->{features}    = {};
   $s->{config}      = {};
   $s->{gff_version} = 0;
+  $s->{feature_count}=0; 
 }
 
 sub finish_parse {
@@ -1055,7 +1252,7 @@ sub initialize_code {
   my $init_code = $self->_setting(general => 'init_code') or return;
   my $code = "package $package; $init_code; 1;";
   eval $code;
-  warn $@ if $@;
+  $self->_callback_complain(general=>'init_code') if $@;
 }
 
 sub base2package {
@@ -1067,7 +1264,8 @@ sub base2package {
 
 sub split_group {
   my $self = shift;
-  return Bio::DB::GFF->split_group(shift, $self->{gff_version} > 2);
+  my $gff = $self->{gff} ||= Bio::DB::GFF->new(-adaptor=>'memory');
+  return $gff->split_group(shift, $self->{gff_version} > 2);
 }
 
 # create a panel if needed
@@ -1096,7 +1294,8 @@ sub new_panel {
   my $new_segment = Bio::Graphics::Feature->new(-start=>$start,-stop=>$stop);
   my $panel = Bio::Graphics::Panel->new(-segment   => $new_segment,
 					-width     => $width,
-					-key_style => 'between');
+					-key_style => 'between',
+					$self->style('general'));
   $panel;
 }
 
@@ -1143,7 +1342,7 @@ interface) or its primary_tag() method otherwise.
 sub feature2label {
   my $self = shift;
   my $feature = shift;
-  my $type  = eval {$feature->type} || $feature->primary_tag or return;
+  my $type  = $feature->primary_tag or return;
   (my $basetype = $type) =~ s/:.+$//;
   my @labels = $self->type2label($type);
   @labels = $self->type2label($basetype) unless @labels;
@@ -1153,7 +1352,7 @@ sub feature2label {
 
 =over 4
 
-=item $link = $features-E<gt>make_link($feature)
+=item $link = $features-E<gt>link_pattern($linkrule,$feature,$panel)
 
 Given a feature, tries to generate a URL to link out from it.  This
 uses the 'link' option, if one is present.  This method is a
@@ -1163,42 +1362,85 @@ convenience for the generic genome browser.
 
 =cut
 
-sub make_link {
-  my $self     = shift;
-  my $feature  = shift;
-  for my $label ($self->feature2label($feature)) {
-    my $link     = $self->setting($label,'link');
-    $link        = $self->setting(general=>'link') unless defined $link;
-    next unless $link;
-    return $self->link_pattern($link,$feature);
-  }
-  return;
-}
-
 sub link_pattern {
-  my $self = shift;
-  my ($pattern,$feature,$panel) = @_;
+  my $self     = shift;
+  my ($linkrule,$feature,$panel) = @_;
+
+  $panel ||= 'Bio::Graphics::Panel';
+
+  if (ref($linkrule) && ref($linkrule) eq 'CODE') {
+    my $val = eval {$linkrule->($feature,$panel)};
+    $self->_callback_complain(none=>"linkrule for $feature") if $@;
+    return $val;
+  }
+
   require CGI unless defined &CGI::escape;
   my $n;
-  $pattern =~ s/\$(\w+)/
+  $linkrule ||= ''; # prevent uninit warning
+  $linkrule =~ s/\$(\w+)/
     CGI::escape(
-    $1 eq 'ref'              ? ($n = $feature->location->seq_id) && "$n"
-      : $1 eq 'name'         ? ($n = $feature->display_name) && "$n"  # workaround broken CGI.pm
+    $1 eq 'ref'              ? (($n = $feature->location->seq_id) && "$n") || ''
+      : $1 eq 'name'         ? (($n = $feature->display_name) && "$n")     || ''
       : $1 eq 'class'        ? eval {$feature->class}  || ''
-      : $1 eq 'type'         ? eval {$feature->method} || $feature->primary_tag
-      : $1 eq 'method'       ? eval {$feature->method} || $feature->primary_tag
-      : $1 eq 'source'       ? eval {$feature->source} || $feature->source_tag
-      : $1 eq 'start'        ? $feature->start
-      : $1 eq 'end'          ? $feature->end
-      : $1 eq 'stop'         ? $feature->end
-      : $1 eq 'segstart'     ? $panel->start
-      : $1 eq 'segend'       ? $panel->end
+      : $1 eq 'type'         ? eval {$feature->method} || $feature->primary_tag || ''
+      : $1 eq 'method'       ? eval {$feature->method} || $feature->primary_tag || ''
+      : $1 eq 'source'       ? eval {$feature->source} || $feature->source_tag  || ''
+      : $1 eq 'start'        ? $feature->start || ''
+      : $1 eq 'end'          ? $feature->end   || ''
+      : $1 eq 'stop'         ? $feature->end   || ''
+      : $1 eq 'segstart'     ? $panel->start   || ''
+      : $1 eq 'segend'       ? $panel->end     || ''
       : $1 eq 'description'  ? eval {join '',$feature->notes} || ''
-      : $1 eq 'id'           ? $feature->feature_id
+      : $1 eq 'id'           ? $feature->feature_id || ''
       : $1
-	       )
-       /exg;
-  return $pattern;
+       )
+	/exg;
+  return $linkrule;
+}
+
+sub make_link {
+  my $self             = shift;
+  my ($feature,$panel) = @_;
+
+  for my $label ($self->feature2label($feature)) {
+    my $linkrule     = $self->setting($label,'link');
+    $linkrule        = $self->setting(general=>'link') unless defined $linkrule;
+    return $self->link_pattern($linkrule,$feature,$panel);
+  }
+}
+
+sub make_title {
+  my $self = shift;
+  my $feature = shift;
+
+  for my $label ($self->feature2label($feature)) {
+    my $linkrule     = $self->setting($label,'title');
+    $linkrule        ||= $self->setting(general=>'title');
+    next unless $linkrule;
+    return $self->link_pattern($linkrule,$feature);
+  }
+
+  my $method  = eval {$feature->method} || $feature->primary_tag;
+  my $seqid   = $feature->can('seq_id')      ? $feature->seq_id : $feature->location->seq_id;
+  my $title = eval {
+    if ($feature->can('target') && (my $target = $feature->target)) {
+      join (' ',
+	    $method,
+	    (defined $seqid ? "$seqid:" : '').
+	    $feature->start."..".$feature->end,
+	    $feature->target.':'.
+	    $feature->target->start."..".$feature->target->end);
+    } else {
+      join(' ',
+	   $method,
+	   $feature->can('display_name') ? $feature->display_name : $feature->info,
+	   (defined $seqid ? "$seqid:" : '').
+	   ($feature->start||'?')."..".($feature->end||'?')
+	  );
+    }
+  };
+  warn $@ if $@;
+  $title;
 }
 
 # given a feature type, return its label(s)

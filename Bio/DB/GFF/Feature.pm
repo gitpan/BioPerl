@@ -16,7 +16,7 @@ Bio::SeqFeatureI and so has the familiar start(), stop(),
 primary_tag() and location() methods (it implements Bio::LocationI
 too, if needed).
 
-Bio::DB::GFF::Feature adds new methods to retrieve the annotation's
+Bio::DB::GFF::Feature adds new methods to retrieve the annotation
 type, group, and other GFF attributes.  Annotation types are
 represented by Bio::DB::GFF::Typename objects, a simple class that has 
 two methods called method() and source().  These correspond to the
@@ -66,23 +66,18 @@ package Bio::DB::GFF::Feature;
 use strict;
 
 use Bio::DB::GFF::Util::Rearrange;
-use Bio::DB::GFF::RelSegment;
 use Bio::DB::GFF::Featname;
 use Bio::DB::GFF::Typename;
 use Bio::DB::GFF::Homol;
-use Bio::SeqFeatureI;
-use Bio::Root::Root;
 use Bio::LocationI;
 use Data::Dumper;
 
-use vars qw(@ISA $AUTOLOAD);
-@ISA = qw(Bio::DB::GFF::RelSegment Bio::SeqFeatureI 
-	  Bio::Root::Root);
+use vars qw($AUTOLOAD);
+use base qw(Bio::DB::GFF::RelSegment Bio::SeqFeatureI Bio::Root::Root);
 
 #' 
 
-*segments = \&sub_SeqFeature;
-*get_SeqFeatures = \&sub_SeqFeature;
+*segments = *get_SeqFeatures = \&sub_SeqFeature;
 
 my %CONSTANT_TAGS = (method=>1, source=>1, score=>1, phase=>1, notes=>1, id=>1, group=>1);
 
@@ -96,10 +91,10 @@ my %CONSTANT_TAGS = (method=>1, source=>1, score=>1, phase=>1, notes=>1, id=>1, 
  Status  : Internal
 
 This method is called by Bio::DB::GFF to create a new feature using
-
 information obtained from the GFF database.  It is one of two similar
 constructors.  This one is called when the feature is generated from a
-RelSegment object, and should inherit that object's coordinate system.
+RelSegment object, and should inherit the coordinate system of that 
+object.
 
 The 13 arguments are positional (sorry):
 
@@ -108,7 +103,7 @@ The 13 arguments are positional (sorry):
   $stop         stop of this feature
   $method       this feature's GFF method
   $source       this feature's GFF source
-  $score	this feature's score
+  $score	       this feature's score
   $fstrand      this feature's strand (relative to the source
                       sequence, which has its own strandedness!)
   $phase        this feature's phase
@@ -118,7 +113,7 @@ The 13 arguments are positional (sorry):
   $tstart       this feature's target start
   $tstop        this feature's target stop
 
-tstart and tstop aren't used for anything at the moment, since the
+tstart and tstop are not used for anything at the moment, since the
 information is embedded in the group object.
 
 =cut
@@ -182,7 +177,7 @@ The 11 arguments are positional:
   $stop         stop of this feature
   $method       this feature's GFF method
   $source       this feature's GFF source
-  $score	this feature's score
+  $score	       this feature's score
   $fstrand      this feature's strand (relative to the source
                       sequence, which has its own strandedness!)
   $phase        this feature's phase
@@ -193,6 +188,7 @@ The 11 arguments are positional:
 
 # 'This is called when creating a feature from scratch.  It does not have
 # an inherited coordinate system.
+
 sub new {
   my $package = shift;
   my ($factory,
@@ -361,7 +357,7 @@ sub strand {
   if ($self->absolute) {
     return Bio::DB::GFF::RelSegment::_to_strand($self->{fstrand});
   }
-  return $self->SUPER::strand;
+  return $self->SUPER::strand || Bio::DB::GFF::RelSegment::_to_strand($self->{fstrand});
 }
 
 =head2 group
@@ -422,14 +418,17 @@ compatibility.
  Title   : target
  Usage   : $target = $f->target([$new_target])
  Function: get or set the feature target
- Returns : a Bio::DB::GFF::Featname object
+ Returns : a Bio::DB::GFF::Homol object
  Args    : a new group (optional)
  Status  : Public
 
 This method works like group(), but only returns the group if it
 implements the start() method.  This is typical for
-similarity/assembly features, where the target encodes the start and stop
-location of the alignment.
+similarity/assembly features, where the target encodes the start and
+stop location of the alignment.
+
+The returned object is of type Bio::DB::GFF::Homol, which is a
+subclass of Bio::DB::GFF::Segment.
 
 =cut
 
@@ -479,6 +478,20 @@ sub flatten_target {
     else {
 	return qq(Target "$class:$name" $start $stop);
     }
+}
+
+# override parent a smidgeon so that setting the ref for top-level feature
+# sets ref for all subfeatures
+sub refseq {
+  my $self   = shift;
+  my $result = $self->SUPER::refseq(@_);
+  if (@_) {
+    my $newref = $self->SUPER::refseq;
+    for my $sub ($self->get_SeqFeatures) {
+      $sub->refseq(@_);
+    }
+  }
+  $result;
 }
 
 
@@ -602,8 +615,6 @@ you can retrieve a subset of the subfeatures by providing a method
 name to filter on.
 
 This method may also be called as segments() or get_SeqFeatures().
-
-
 
 =cut
 
@@ -751,7 +762,7 @@ sub merged_segments {
     my ($pscore,$score) = (eval{$previous->score}||0,eval{$s->score}||0);
     if (defined($previous)
 	&& $previous->stop+1 >= $s->start
-	&& (!defined($s->score) || $previous->score  == $s->score)
+	&& $pscore == $score
 	&& $previous->method eq $s->method
        ) {
       if ($self->absolute && $self->strand < 0) {
@@ -765,11 +776,16 @@ sub merged_segments {
 	my $cg = $s->{group};
 	$g->{stop} = $cg->{stop};
       }
-    } elsif (defined($previous)
-	     && $previous->start == $s->start
-	     && $previous->stop == $s->stop) {
-      next;
-    } else {
+    }
+     elsif (defined($previous)
+	    && $previous->start == $s->start
+	    && $previous->stop  == $s->stop
+	    && $previous->method eq $s->method
+	   ) {
+       next;
+     }
+
+  else {
       my $copy = $s->clone;
       push @merged,$copy;
     }
@@ -924,7 +940,7 @@ sub has_tag {
   my $tag  = shift;
   my %att  = $self->attributes;
   my %tags = map {$_=>1} ( $self->all_tags );
-  print map { $_, '=>', $tags{$_}, "\n" } keys %tags;
+  
   return $tags{$tag};
 }
 
@@ -977,35 +993,59 @@ enclosing feature.
 # this works recursively, so subfeatures can contain other features
 sub adjust_bounds {
   my $self = shift;
+  my $shrink = shift;
   my $g = $self->{group};
 
+  my $first = 0;
+  my $tfirst = 0;
   if (my $subfeat = $self->{subfeatures}) {
     for my $list (values %$subfeat) {
       for my $feat (@$list) {
-
 	# fix up our bounds to hold largest subfeature
-	my($start,$stop,$strand) = $feat->adjust_bounds;
-	$self->{fstrand} = $strand unless defined $self->{fstrand};
-	my ($low,$high)  = $start < $stop ? ($start,$stop) : ($stop,$start);
-	if ($self->{fstrand} ne '-') {
-	  $self->{start} = $low   if !defined($self->{start}) || $low < $self->{start};
-	  $self->{stop}  = $high  if !defined($self->{stop})  || $high  > $self->{stop};
+	my($start,$stop,$strand) = $feat->adjust_bounds($shrink);
+
+	if (defined($self->{fstrand})) {
+	  $self->debug("Subfeature's strand ($strand) doesn't match parent strand ($self->{fstrand})\n") if $self->{fstrand} ne $strand;
 	} else {
-	  $self->{start} = $high  if !defined($self->{start}) || $high > $self->{start};
-	  $self->{stop}  = $low   if !defined($self->{stop})  || $low  < $self->{stop};
+	  $self->{fstrand} = $strand;
+	}
+
+	my ($low,$high)  = $start < $stop ? ($start,$stop) : ($stop,$start);
+	if ($shrink && !$first++) {
+	  # first subfeature resets start & stop:
+	  $self->{start} = $self->{fstrand} ne '-' ? $low : $high;
+	  $self->{stop}  = $self->{fstrand} ne '-' ? $high : $low;
+	} else {
+	  if ($self->{fstrand} ne '-') {
+	    $self->{start} = $low
+	      if (!defined($self->{start})) || $low < $self->{start};
+	    $self->{stop}  = $high
+	      if (!defined($self->{stop}))  || $high  > $self->{stop};
+	  } else {
+	    $self->{start} = $high
+	      if (!defined($self->{start})) || $high > $self->{start};
+	    $self->{stop}  = $low
+	      if (!defined($self->{stop}))  || $low  < $self->{stop};
+	  }
 	}
 
 	# fix up endpoints of targets too (for homologies only)
 	my $h = $feat->group;
 	next unless $h && $h->isa('Bio::DB::GFF::Homol');
 	next unless $g && $g->isa('Bio::DB::GFF::Homol');
+
 	($start,$stop) = ($h->{start},$h->{stop});
-	if ($start <= $stop) {
-	  $g->{start} = $start if !defined($g->{start}) || $start < $g->{start};
-	  $g->{stop}  = $stop  if !defined($g->{stop})  || $stop  > $g->{stop};
+	if ($shrink && !$tfirst++) {
+	    $g->{start} = $start;
+	    $g->{stop}  = $stop;
 	} else {
-	  $g->{start} = $start if !defined($g->{start}) || $start > $g->{start};
-	  $g->{stop}  = $stop  if !defined($g->{stop})  || $stop  < $g->{stop};
+	  if ($start <= $stop) {
+	    $g->{start} = $start if (!defined($g->{start})) || $start < $g->{start};
+	    $g->{stop}  = $stop  if (!defined($g->{stop}))  || $stop  > $g->{stop};
+	  } else {
+	    $g->{start} = $start if (!defined($g->{start})) || $start > $g->{start};
+	    $g->{stop}  = $stop  if (!defined($g->{stop}))  || $stop  < $g->{stop};
+	  }
 	}
       }
     }
@@ -1133,8 +1173,15 @@ sub gff_string {
   my $n   = ref($ref) ? $ref->name : $ref;
   my $phase = $self->phase;
   $phase = '.' unless defined $phase;
-  return join("\t",$n,$self->source,$self->method,$start||'.',$stop||'.',
-                   $self->score||'.',$strand||'.',$phase,$group_field);
+  return join("\t",
+	      $n,
+	      $self->source,$self->method,
+	      (defined $start ? $start : '.'),
+	      (defined $stop  ? $stop  : '.'),
+	      (defined $self->score ? $self->score : '.'),
+	      (defined $strand ? $strand : '.'),
+	      $phase,
+	      $group_field);
 }
 
 =head2 gff3_string
@@ -1166,12 +1213,7 @@ sub gff3_string {
 
   my ($class,$name) = ('','');
   my @group;
-  if (my $t = $self->target) {
-    $strand = '-' if $t->stop < $t->start;
-    push @group, $self->flatten_target($t,3);
-  }
-
-  elsif (my $g = $self->group) {
+  if (my $g = $self->group) {
     $class = $g->class || '';
     $name  = $g->name  || '';
     $name  = "$class:$name" if defined $class;
@@ -1179,6 +1221,11 @@ sub gff3_string {
   }
 
   push @group,[Parent => $parent] if defined $parent && $parent ne '';
+
+  if (my $t = $self->target) {
+    $strand = '-' if $t->stop < $t->start;
+    push @group, $self->flatten_target($t,3);
+  }
 
   my @attributes = $self->attributes;
   while (@attributes) {
@@ -1221,6 +1268,53 @@ sub _escape {
   $toencode;
 }
 
+=head2 cmap_link()
+
+ Title   : cmap_link
+ Usage   : $link = $feature->cmap_link
+ Function: returns a URL link to the corresponding feature in cmap
+ Returns : a string
+ Args    : none
+ Status  : Public
+
+If integrated cmap/gbrowse installation, it returns a link to the map otherwise
+it returns a link to a feature search on the feature name.  See the cmap
+documentation for more information.
+
+This function is intended primarily to be used in gbrowse conf files. 
+For example:
+
+  link       = sub {my $self = shift; return $self->cmap_viewer_link(data_source);}
+
+=cut
+
+
+sub cmap_viewer_link {
+  # Use ONLY if CMap is installed 
+  my $self        = shift;
+  my $data_source = shift;
+  my $group_id    = $self->group_id;
+  my $factory     = $self->factory; # aka adaptor
+
+  my $link_str; 
+
+  if ($factory->can("create_cmap_viewer_link")){
+    $link_str = $factory->create_cmap_viewer_link(
+        data_source => $data_source,
+        group_id    => $group_id,
+    );
+  }
+  my $name = $self->name();
+  $link_str = '/cgi-bin/cmap/feature_search?features='
+    . $name
+    . '&search_field=feature_name&order_by=&data_source='
+    . $data_source
+    . '&submit=Submit'
+    unless $link_str;
+
+  return $link_str; 
+
+}
 
 =head1 A Note About Similarities
 

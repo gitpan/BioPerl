@@ -1,4 +1,4 @@
-# $Id: PositionProxy.pm,v 1.4 2002/10/22 07:38:41 lapp Exp $
+# $Id: PositionProxy.pm,v 1.9.4.1 2006/10/02 23:10:28 sendu Exp $
 #
 # BioPerl module for Bio::SeqFeature::PositionProxy
 #
@@ -38,17 +38,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
@@ -77,15 +76,12 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::SeqFeature::PositionProxy;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
-use Bio::SeqFeatureI;
 use Bio::Tools::GFF;
 
 
-@ISA = qw(Bio::Root::Root Bio::SeqFeatureI);
+use base qw(Bio::Root::Root Bio::SeqFeatureI);
 
 sub new {
     my ($caller, @args) = @_;
@@ -289,7 +285,7 @@ sub seq {
    }
 
    if ( ! exists $self->{'_gsf_seq'} ) {
-       return undef;
+       return;
    }
 
    # assumming our seq object is sensible, it should not have to yank
@@ -320,7 +316,7 @@ sub seq {
 sub entire_seq {
    my ($self) = @_;
 
-   return undef unless exists($self->{'_gsf_seq'});
+   return unless exists($self->{'_gsf_seq'});
    return $self->{'_gsf_seq'};
 }
 
@@ -447,3 +443,5 @@ sub all_tags{
 
    return $self->parent->all_tags();
 }
+
+1;

@@ -1,4 +1,4 @@
-# $Id: pubmed2ref.pm,v 1.3 2003/06/04 08:36:36 heikki Exp $
+# $Id: pubmed2ref.pm,v 1.6.4.1 2006/10/02 23:10:13 sendu Exp $
 #
 # BioPerl module Bio::Biblio::IO::pubmed2ref.pm
 #
@@ -27,17 +27,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -68,14 +67,9 @@ with an underscore _.
 package Bio::Biblio::IO::pubmed2ref;
 
 use strict;
-use vars qw(@ISA $Revision);
 
-use Bio::Biblio::IO::medline2ref;
-@ISA = qw(Bio::Biblio::IO::medline2ref);
+use base qw(Bio::Biblio::IO::medline2ref);
 
-BEGIN {
-    $Revision = q$Id: pubmed2ref.pm,v 1.3 2003/06/04 08:36:36 heikki Exp $;
-}
 
 # ---------------------------------------------------------------------
 #

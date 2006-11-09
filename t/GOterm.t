@@ -1,11 +1,13 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: GOterm.t,v 1.8 2003/05/27 22:13:41 lapp Exp $
+## $Id: GOterm.t,v 1.10 2005/09/17 02:11:21 bosborne Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
 use strict;
+use vars qw($HAVEGRAPHDIRECTED $NUMTESTS $DEBUG);
+$DEBUG = $ENV{'BIOPERLDEBUG'} || 0;
 BEGIN {
     # to handle systems with no installed Test module
     # we include the t dir (where a copy of Test.pm is located)
@@ -15,11 +17,24 @@ BEGIN {
         use lib 't';
     }
     use Test;
-    plan tests => 59;
+    eval {require Graph::Directed; 
+			 $HAVEGRAPHDIRECTED=1;
+			 require Bio::Ontology::GOterm;
+			 require Bio::Ontology::Ontology;
+		 };
+    if ($@) {
+		 $HAVEGRAPHDIRECTED = 0;
+    }
+    plan tests => ($NUMTESTS = 59);
 }
 
-use Bio::Ontology::GOterm;
-use Bio::Ontology::Ontology;
+END {
+	foreach ( $Test::ntest..$NUMTESTS) {
+		skip('Unable to run all of the GOterm tests ',1);
+	}
+}
+
+exit(0) unless $HAVEGRAPHDIRECTED;
   
 my $obj = Bio::Ontology::GOterm->new();
 

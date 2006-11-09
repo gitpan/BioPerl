@@ -1,4 +1,4 @@
-# $Id: SequenceFamily.pm,v 1.5 2003/05/17 19:03:52 heikki Exp $
+# $Id: SequenceFamily.pm,v 1.10.4.1 2006/10/02 23:10:13 sendu Exp $
 #
 # BioPerl module for Bio::Cluster::SequenceFamily
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::Cluster::SequenceFamily - Sequence Family object 
+Bio::Cluster::SequenceFamily - Sequence Family object
 
 =head1 SYNOPSIS
 
@@ -22,18 +22,19 @@ Bio::Cluster::SequenceFamily - Sequence Family object
   use Bio::Cluster::SequenceFamily;
 
   my $file =  Bio::Root::IO->catfile('t','data','swiss.dat');
-  my $seqio= new Bio::SeqIO('-format' => 'swiss',
-                          '-file'   => $file);
+  my $seqio= new Bio::SeqIO(-format => 'swiss',
+                            -file => $file);
   my @mem;
   while(my $seq = $seqio->next_seq){
     push @mem, $seq;
   }
 
   #create the family
-  my $family = Bio::Cluster::SequenceFamily->new(-family_id=>"Family_1",
-                                                 -description=>"Family Description Here",
-                                                 -annotation_score=>"100",
-                                               -members=>\@mem);
+  my $family = Bio::Cluster::SequenceFamily->new(
+          -family_id=>"Family_1",
+          -description=>"Family Description Here",
+          -annotation_score=>"100",
+          -members=>\@mem);
 
   #access the family
 
@@ -49,8 +50,6 @@ Bio::Cluster::SequenceFamily - Sequence Family object
   @mem = $family->get_members(-species=>"sapiens");
   @mem = $family->get_members(-genus=>"Homo");
 
-
-
 =head1 DESCRIPTION
 
 This is a simple Family object that may hold any group of object. For more
@@ -58,6 +57,7 @@ specific families, one should derive from FamilyI.
 
 =head1 FEEDBACK
 
+Email bioperl-l@bioperl.org for support and feedback.
 
 =head2 Mailing Lists
 
@@ -65,25 +65,22 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bio.perl.org/MailList.html  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
-=head1 AUTHOR - Shawn Hoon 
+=head1 AUTHOR - Shawn Hoon
 
-Email shawnh@fugu-sg.org 
-
+Email shawnh@fugu-sg.org
 
 =head1 APPENDIX
-
 
 The rest of the documentation details each of the object
 methods. Internal methods are usually preceded with a "_".
@@ -96,24 +93,23 @@ methods. Internal methods are usually preceded with a "_".
 package Bio::Cluster::SequenceFamily;
 
 use strict;
-use vars qw(@ISA);
 
 
-use Bio::Root::Root;
-use Bio::Cluster::FamilyI;
-
-@ISA = qw(Bio::Root::Root Bio::Cluster::FamilyI);
+use base qw(Bio::Root::Root Bio::Cluster::FamilyI);
 
 
 =head2 new
 
  Title   : new
- Usage   : my $family = Bio::Cluster::SequenceFamily->new(-family_id=>"Family_1",
-                                       -description=>"Family Description Here",
-                                       -annotation_score=>"100",
-                                       -members=>\@mem);
+ Usage   : my $family = Bio::Cluster::SequenceFamily->new(
+                             -family_id=>"Family_1",
+                             -description=>"Family Description Here",
+                             -annotation_score=>"100",
+                             -members=>\@mem);
  Function: Constructor for SequenceFamily object
- Returns : L<Bio::Cluster::SequenceFamily> object
+ Returns : Bio::Cluster::SequenceFamily object
+
+See L<Bio::Cluster::SequenceFamily>.
 
 =cut
 
@@ -161,7 +157,9 @@ sub version{
            represent the confidence in which the 
            consensus description has been assigned
            to the family.
- Returns : L<Bio::SimpleAlign> 
+ Returns : Bio::SimpleAlign
+
+See L<Bio::SimpleAlign>
 
 =cut
 
@@ -179,7 +177,9 @@ sub annotation_score{
  Usage   : $family->alignment($align);
  Function: get/set for an alignment object representing
            the multiple alignment of the members of the family.
- Returns : L<Bio::SimpleAlign>
+ Returns : Bio::SimpleAlign
+
+See L<Bio::SimpleAlign>
 
 =cut
 
@@ -197,7 +197,9 @@ sub alignment {
  Usage   : $family->tree($tree);
  Function: get/set for an tree object representing
            the phylogenetic tree of the family. 
- Returns : L<Bio::Tree> 
+ Returns : Bio::Tree
+
+See L<Bio::Tree>
 
 =cut
 
@@ -245,7 +247,7 @@ sub family_score {
 =cut
 
 sub family_id{
-    return shift->display_id(@_);
+	return shift->display_id(@_);
 }
 
 =head1 L<Bio::ClusterI> methods
@@ -263,11 +265,11 @@ sub family_id{
 =cut
 
 sub display_id{
-    my ($self,$id) = @_;
-    if($id){
-	$self->{'_cluster_id'} = $id;
-    }
-    return $self->{'_cluster_id'};
+	my ($self,$id) = @_;
+	if($id){
+		$self->{'_cluster_id'} = $id;
+	}
+	return $self->{'_cluster_id'};
 }
 
 =head2 description
@@ -281,11 +283,11 @@ sub display_id{
 =cut
 
 sub description{
-  my ($self,$desc) = @_;
-  if($desc){
-    $self->{'_description'} = $desc;
-  }
-  return $self->{'_description'};
+	my ($self,$desc) = @_;
+	if($desc){
+		$self->{'_description'} = $desc;
+	}
+	return $self->{'_description'};
 }
 
 =head2 get_members
@@ -311,28 +313,28 @@ sub description{
 =cut
 
 sub get_members {
-    my $self = shift;
-    my @ret;
-    
-    if(@_) {
-	my %hash = @_;
-	foreach my $mem ( @{$self->{'_members'}} ) {
-	    foreach my $key ( keys %hash){
-		my $method = $key;
-		$method=~s/-//g;
-		if($mem->can('species')){
-		    my $species = $mem->species;
-		    $species->can($method) ||
-			$self->throw("$method is an invalid criteria");
-		    if($species->$method() eq $hash{$key} ){
-			push @ret, $mem;
-		    }
+	my $self = shift;
+	my @ret;
+
+	if(@_) {
+		my %hash = @_;
+		foreach my $mem ( @{$self->{'_members'}} ) {
+			foreach my $key ( keys %hash){
+				my $method = $key;
+				$method=~s/-//g;
+				if($mem->can('species')){
+					my $species = $mem->species;
+					$species->can($method) ||
+					  $self->throw("$method is an invalid criteria");
+					if($species->$method() eq $hash{$key} ){
+						push @ret, $mem;
+					}
+				}
+			}
 		}
-	    }
+		return @ret;
 	}
-	return @ret;
-    }
-    return @{$self->{'_members'}};    
+	return @{$self->{'_members'}};
 }
 
 =head2 size

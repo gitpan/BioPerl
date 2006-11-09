@@ -1,8 +1,12 @@
-
-
+# -*-Perl-*-
+# $Id: SiteMatrix.t,v 1.4.6.3 2006/10/02 23:10:40 sendu Exp $
 #Some simple test, nothing fancy...
 
 use strict;
+
+CHECK {
+  $ENV{PERL_HASH_SEED} = 0;
+}
 
 BEGIN {
     # to handle systems with no installed Test module
@@ -31,7 +35,7 @@ my $matrix=new Bio::Matrix::PSM::SiteMatrix(%param);
 ok $matrix;
 
 #Simple methods here
-ok $matrix->IUPAC,'ATMCK';
+ok $matrix->IUPAC,'ABVCD';
 
 ok $matrix->consensus,'ATACT';
 
@@ -41,8 +45,19 @@ ok $matrix->curpos,0;
 
 ok $matrix->get_string('A'),$A;
 
-my %x= (base=>'A',pA=>1,pC=>0,pG=>0,pT=>0,prob=>10,rel=>0);
-ok $matrix->next_pos, %x;
+my %x= (base=>'A',pA=>1,pC=>0,pG=>0,pT=>0,prob=>10,rel=>0, 
+        lA=>undef,lC=>undef,lG=>undef,lT=>undef);
+my %pos = $matrix->next_pos;
+my ($all) = 1;
+while(my ($k,$v) = each %x ) {
+    my $r =$pos{$k};
+    if( ! defined $v && ! defined $r) {
+    } elsif($pos{$k} ne $v ) { 
+	$all = 0;
+	last;
+    }
+}
+ok($all);
 
 ok $matrix->curpos,1;
 
@@ -51,7 +66,7 @@ ok $matrix->e_val(0.0001);
 ok $matrix->e_val,0.0001;
 
 #Now some PSM specific methods like regexp and matrix info
-ok $matrix->regexp,'[Aa][Tt][AaCc][Cc][GgTt]';
+ok $matrix->regexp,'[Aa][CcGgTtBb][AaCcGgVv][Cc][AaGgTtDd]';
 my $regexp=$matrix->regexp;
 ok 'ATCCT',"/$regexp/";
 

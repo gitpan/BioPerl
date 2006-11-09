@@ -1,8 +1,8 @@
-# $Id: UniGeneI.pm,v 1.10 2003/06/04 08:36:37 heikki Exp $
+# $Id: UniGeneI.pm,v 1.16.4.1 2006/10/02 23:10:13 sendu Exp $
 #
 # BioPerl module for Bio::Cluster::UniGeneI.pm
 #
-# Cared for by Andrew Macgregor <andrew@anatomy.otago.ac.nz>
+# Cared for by Andrew Macgregor <andrew at cbbc.murdoch.edu.au>
 #
 # Copyright Andrew Macgregor, Jo-Ann Stanton, David Green
 # Molecular Embryology Group, Anatomy & Structural Biology, University of Otago
@@ -24,7 +24,9 @@ Bio::Cluster::UniGeneI - abstract interface of UniGene object
 
 =head1 DESCRIPTION
 
-This is the general interface for a UniGene cluster representation in Bioperl. You cannot use this module directly, use an implementation instead.
+This is the general interface for a UniGene cluster representation in
+Bioperl. You cannot use this module directly, use an implementation
+instead.
 
 You can create UniGene cluster objects yourself by instantiating
 L<Bio::Cluster::UniGene>. If you read UniGene clusters from a
@@ -44,21 +46,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bio.perl.org/MailList.html  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Andrew Macgregor
 
-Email andrew@anatomy.otago.ac.nz
+Email andrew at cbbc.murdoch.edu.au
 
 
 =head1 APPENDIX
@@ -73,12 +74,10 @@ methods. Internal methods are usually preceded with a "_".
 
 
 package Bio::Cluster::UniGeneI;
-use vars qw(@ISA);
 use strict;
 
-use Bio::ClusterI;
 
-@ISA = qw(Bio::ClusterI);
+use base qw(Bio::ClusterI);
 
 
 =head2 unigene_id
@@ -94,8 +93,8 @@ use Bio::ClusterI;
 =cut
 
 sub unigene_id {
-	my ($self) = @_;
-	$self->throw_not_implemented;
+    my ($self) = @_;
+    $self->throw_not_implemented;
 }
 
 
@@ -113,8 +112,8 @@ sub unigene_id {
 =cut
 
 sub title {
-	my ($self) = @_;
-	$self->throw_not_implemented;
+    my ($self) = @_;
+    $self->throw_not_implemented;
 }
 
 
@@ -131,8 +130,8 @@ sub title {
 =cut
 
 sub gene {
-	my ($self) = @_;
-	$self->throw_not_implemented;
+    my ($self) = @_;
+    $self->throw_not_implemented;
 }
 
 
@@ -149,8 +148,8 @@ sub gene {
 =cut
 
 sub cytoband {
-	my ($self) = @_;
-	$self->throw_not_implemented;
+    my ($self) = @_;
+    $self->throw_not_implemented;
 }
 
 
@@ -167,8 +166,8 @@ sub cytoband {
 =cut
 
 sub mgi {
-	my ($self) = @_;
-	$self->throw_not_implemented;
+    my ($self) = @_;
+    $self->throw_not_implemented;
 }
 
 
@@ -177,15 +176,49 @@ sub mgi {
  Title   : locuslink
  Usage   : locuslink();
  Function: Returns or stores a reference to an array containing locuslink data.
- 		   This should really only be used by ClusterIO, not directly
+           This should really only be used by ClusterIO, not directly
  Returns : An array reference
  Args    : None or an array reference
 
 =cut
 
 sub locuslink {
-	my ($self) = @_;
-	$self->throw_not_implemented;
+    my ($self) = @_;
+    $self->throw_not_implemented;
+}
+
+
+=head2 homol
+
+ Title   : homol
+ Usage   : homol();
+ Function: Returns the homol entry associated with the object.
+ Example : $homol = $unigene->homol or $unigene->homol($homol)
+ Returns : A string
+ Args    : None or a homol entry
+
+=cut
+
+sub homol {
+    my ($self) = @_;
+    $self->throw_not_implemented;
+}
+
+
+=head2 restr_expr
+
+ Title   : restr_expr
+ Usage   : restr_expr();
+ Function: Returns the restr_expr entry associated with the object.
+ Example : $restr_expr = $unigene->restr_expr or $unigene->restr_expr($restr_expr)
+ Returns : A string
+ Args    : None or a restr_expr entry
+
+=cut
+
+sub restr_expr {
+    my ($self) = @_;
+    $self->throw_not_implemented;
 }
 
 
@@ -201,8 +234,8 @@ sub locuslink {
 =cut
 
 sub gnm_terminus {
-	my ($self) = @_;
-	$self->throw_not_implemented;
+    my ($self) = @_;
+    $self->throw_not_implemented;
 }
 
 
@@ -218,8 +251,8 @@ sub gnm_terminus {
 =cut
 
 sub scount {
-	my ($self) = @_;
-	$self->throw_not_implemented;
+    my ($self) = @_;
+    $self->throw_not_implemented;
 }
 
 
@@ -229,15 +262,15 @@ sub scount {
  Title   : express
  Usage   : express();
  Function: Returns or stores a reference to an array containing tissue expression data.
- 		   This should really only be used by ClusterIO, not directly
+           This should really only be used by ClusterIO, not directly
  Returns : An array reference
  Args    : None or an array reference
 
 =cut
 
 sub express {
-	my ($self) = @_;
-	$self->throw_not_implemented;
+    my ($self) = @_;
+    $self->throw_not_implemented;
 }
 
 
@@ -246,15 +279,15 @@ sub express {
  Title   : chromosome
  Usage   : chromosome();
  Function: Returns or stores a reference to an array containing chromosome lines
- 		   This should really only be used by ClusterIO, not directly
+           This should really only be used by ClusterIO, not directly
  Returns : An array reference
  Args    : None or an array reference
 
 =cut
 
 sub chromosome {
-	my ($self) = @_;
-	$self->throw_not_implemented;
+    my ($self) = @_;
+    $self->throw_not_implemented;
 }
 
 
@@ -263,15 +296,15 @@ sub chromosome {
  Title   : sts
  Usage   : sts();
  Function: Returns or stores a reference to an array containing sts lines
- 		   This should really only be used by ClusterIO, not directly
+           This should really only be used by ClusterIO, not directly
  Returns : An array reference
  Args    : None or an array reference
 
 =cut
 
 sub sts {
-	my ($self) = @_;
-	$self->throw_not_implemented;
+    my ($self) = @_;
+    $self->throw_not_implemented;
 }
 
 
@@ -286,8 +319,8 @@ sub sts {
 =cut
 
 sub txmap {
-	my ($self) = @_;
-	$self->throw_not_implemented;
+    my ($self) = @_;
+    $self->throw_not_implemented;
 }
 
 
@@ -296,15 +329,15 @@ sub txmap {
  Title   : protsim
  Usage   : protsim();
  Function: Returns or stores a reference to an array containing protsim lines
- 		   This should really only be used by ClusterIO, not directly
+           This should really only be used by ClusterIO, not directly
  Returns : An array reference
  Args    : None or an array reference
 
 =cut
 
 sub protsim {
-	my ($self) = @_;
-	$self->throw_not_implemented;
+    my ($self) = @_;
+    $self->throw_not_implemented;
 }
 
 
@@ -313,15 +346,15 @@ sub protsim {
  Title   : sequence
  Usage   : sequence();
  Function: Returns or stores a reference to an array containing sequence data
- 		   This should really only be used by ClusterIO, not directly
+           This should really only be used by ClusterIO, not directly
  Returns : An array reference
  Args    : None or an array reference
 
 =cut
 
 sub sequence {
-	my ($self) = @_;
-	$self->throw_not_implemented;
+    my ($self) = @_;
+    $self->throw_not_implemented;
 }
 
 =head2 species

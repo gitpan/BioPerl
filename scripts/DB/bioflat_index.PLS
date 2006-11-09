@@ -1,21 +1,22 @@
 #!/usr/bin/perl -w
-#$Id: bioflat_index.PLS,v 1.1 2003/11/20 12:39:02 bosborne Exp $
+#$Id: bioflat_index.PLS,v 1.5 2005/10/04 00:21:14 bosborne Exp $
 
-use strict;
-use Bio::Root::Root;
-use Bio::Root::IO;
-use Bio::DB::Flat;
-use Getopt::Long;
-use File::Path qw(mkpath rmtree);
+=head1 NAME
 
-use constant USAGE => <<END;
-Usage: $0 <options> file1 file2 file3...
+bioflat_index.PLS - index sequence files using Bio::DB::Flat
 
-Create or update a biological sequence database indexed with the
-Bio::DB::Flat indexing scheme.  The arguments are a list of flat files
-containing the sequence information to be indexed.
+=head1 DESCRIPTION
+
+ Create or update a biological sequence database indexed with the
+ Bio::DB::Flat indexing scheme.  The arguments are a list of flat files
+ containing the sequence information to be indexed.
+
+=head1 USAGE
+
+ bioflat_index.PLS <options> file1 file2 file3...
 
  Options:
+
      --create              Create or reinitialize the index.  If not specified,
                            the index must already exist.
 
@@ -40,16 +41,22 @@ corresponding options are not provided:
      OBDA_DBNAME      name of database
      OBDA_INDEX       type of index to create
 
-END
-;
+=cut
+
+use strict;
+use Bio::Root::Root;
+use Bio::Root::IO;
+use Bio::DB::Flat;
+use Getopt::Long;
+use File::Path qw(mkpath rmtree);
 
 my ($CREATE,$FORMAT,$LOCATION,$DBNAME,$INDEXTYPE);
 
 GetOptions( 'create'      => \$CREATE,
-	    'format:s'    => \$FORMAT,
-	    'location:s'  => \$LOCATION,
-	    'dbname:s'    => \$DBNAME,
-	    'indextype:s' => \$INDEXTYPE ) or die USAGE;
+				'format:s'    => \$FORMAT,
+				'location:s'  => \$LOCATION,
+				'dbname:s'    => \$DBNAME,
+				'indextype:s' => \$INDEXTYPE );
 
 $FORMAT    = $ENV{OBDA_FORMAT}    unless defined $FORMAT;
 $LOCATION  = $ENV{OBDA_LOCATION}  unless defined $LOCATION;
@@ -60,15 +67,22 @@ my $root = 'Bio::Root::Root';
 my $io   = 'Bio::Root::IO';
 
 # confirm that database directory is there
-defined $LOCATION or $root->throw("please provide a base directory with the --location option");
--d $LOCATION or $root->throw("$LOCATION is not a valid directory; use --create to create a new index");
+defined $LOCATION or 
+  $root->throw("please provide a base directory with the --location option");
 
-defined $DBNAME or $root->throw("please provide a database name with the --dbname option");
+-d $LOCATION or 
+  $root->throw("$LOCATION is not a valid directory; use --create to create a new index");
 
-defined $FORMAT or $root->throw("please specify the format for the input files with the --format option");
+defined $DBNAME or 
+  $root->throw("please provide a database name with the --dbname option");
 
-defined $INDEXTYPE or ($INDEXTYPE='flat'
-		       && $root->warn('setting index type to "flat", use the --indextype option to override'));
+defined $FORMAT or 
+  $root->throw("please specify the format for the input files with the --format option");
+
+unless (defined $INDEXTYPE) {
+	$INDEXTYPE = 'flat';
+	$root->warn('setting index type to "flat", use the --indextype option to override');
+}
 
 # Confirm that database is there and that --create flag is sensible.
 my $path = $io->catfile($LOCATION,$DBNAME,'config.dat');
@@ -87,14 +101,17 @@ elsif (!$CREATE) {
 
 # open for writing/updating
 my $db = Bio::DB::Flat->new(-directory  => $LOCATION,
-			    -dbname     => $DBNAME,
-			    $INDEXTYPE ? (
-					  -index      => $INDEXTYPE
-					  )
-			               : (),
-			    -write_flag => 1,
-			    -format     => $FORMAT) or $root->throw("can't create Bio::DB::Flat object");
+									 -dbname     => $DBNAME,
+									 $INDEXTYPE ? (
+														-index      => $INDEXTYPE
+													  )
+									 : (),
+									 -write_flag => 1,
+									 -format     => $FORMAT) or 
+  $root->throw("can't create Bio::DB::Flat object");
+
 my $entries = $db->build_index(@ARGV);
 
 print STDERR "(Re)indexed $entries entries.\n ";
-1;
+
+__END__

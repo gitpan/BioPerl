@@ -1,28 +1,43 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: OntologyEngine.t,v 1.6 2003/03/26 09:08:56 lapp Exp $
+## $Id: OntologyEngine.t,v 1.8 2005/09/17 02:11:21 bosborne Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
 use strict;
+use vars qw($HAVEGRAPHDIRECTED $DEBUG $NUMTESTS);
 BEGIN {
-    # to handle systems with no installed Test module
-    # we include the t dir (where a copy of Test.pm is located)
-    # as a fallback
-    eval { require Test; };
-    if( $@ ) {
-        use lib 't';
-    }
-    use Test;
-    plan tests => 22;
+	# to handle systems with no installed Test module
+	# we include the t dir (where a copy of Test.pm is located)
+	# as a fallback
+	eval { require Test; };
+	if( $@ ) {
+		use lib 't';
+	}
+	use Test;
+	eval {
+		require Graph::Directed;
+		$HAVEGRAPHDIRECTED=1;
+	};
+	if ($@) {
+		$HAVEGRAPHDIRECTED = 0;
+		warn "Cannot run tests, Graph::Directed not installed\n";
+	}
+	plan tests => ($NUMTESTS = 22);
 }
 
-use Bio::Ontology::Term;
-use Bio::Ontology::Relationship;
-use Bio::Ontology::RelationshipType;
-use Bio::Ontology::SimpleOntologyEngine;
-use Bio::Ontology::Ontology;
+END {
+	foreach ( $Test::ntest..$NUMTESTS) {
+		skip('Cannot run OntologyEngine tests, skipping',1);
+	}
+}
+exit(0) unless $HAVEGRAPHDIRECTED;
+require Bio::Ontology::Term;
+require Bio::Ontology::Relationship;
+require Bio::Ontology::RelationshipType;
+require Bio::Ontology::SimpleOntologyEngine;
+require Bio::Ontology::Ontology;
 
 my $ont = Bio::Ontology::Ontology->new(-name => "My Ontology");
 

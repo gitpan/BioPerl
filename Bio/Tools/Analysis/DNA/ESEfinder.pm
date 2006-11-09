@@ -1,8 +1,8 @@
-# $Id: ESEfinder.pm,v 1.4 2003/12/13 15:41:59 jason Exp $
+# $Id: ESEfinder.pm,v 1.12.4.3 2006/11/08 17:25:55 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Analysis::DNA::ESEfinder
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Richard Adams
 #
@@ -22,8 +22,8 @@ server
 
   my $seq; # a Bio::PrimarySeqI or Bio::SeqI object
 
-  $seq = Bio::Seq->new
-      (-primery_id => 'test',
+  $seq = Bio::Seq->new(
+       -primary_id => 'test',
        -seq=>'atgcatgctaggtgtgtgttttgtgggttgtactagctagtgat'.
        -alphabet=>'dna');
 
@@ -73,12 +73,12 @@ with prediction scores for all residues in the sequence
 
 C<$ese_finder-E<gt>result('Bio::SeqFeatureI')> returns an array of
 Bio::SeqFeature objects for sequences with significant scores. Feature
-tags are score, motif,SR_protein and method
+tags are score, motif, SR_protein and method
 
 =item 4.
 
 C<$ese_finder-E<gt>result('raw')> returns an array of significant matches
-with each element being a refernce to [Sprotein, position, motif,
+with each element being a reference to [SR_protein, position, motif, 
 score]
 
 =back
@@ -87,7 +87,7 @@ See L<http://exon.cshl.org/ESE/index.html>
 
 This the second implentation of Bio::SimpleAnalysisI which hopefully
 will make it easier to write wrappers on various services. This class
-uses a web resource and therefore inherits from Bio::WebAgent.
+uses a web resource and therefore inherits from L<Bio::WebAgent>.
 
 =head1 SEE ALSO
 
@@ -102,22 +102,21 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                       - General discussion
-  http://bio.perl.org/MailList.html           - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS
 
 Richard Adams, Richard.Adams@ed.ac.uk, 
-Heikki Lehvaslaiho, heikki@ebi.ac.uk
+Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -138,19 +137,17 @@ use Bio::SeqIO;
 use HTTP::Request::Common qw (POST);
 use HTML::HeadParser;
 use Bio::SeqFeature::Generic;
-use Bio::Tools::Analysis::SimpleAnalysisBase;
 use Bio::Seq::Meta::Array;
 use Bio::WebAgent;
 use strict;
 
-use vars qw(@ISA );
 #inherits directly from SimpleAnalysisBase
-@ISA = qw(Bio::Tools::Analysis::SimpleAnalysisBase);
+use base qw(Bio::Tools::Analysis::SimpleAnalysisBase);
 
 
 #global vars are now file-scoped lexicals
 
-my $URL = 'http://exon.cshl.org/cgi-bin/ESE/esefinder.cgi';
+my $URL = 'http://rulai.cshl.org/cgi-bin/tools/ESE/esefinder.cgi';
 	
 my $ANALYSIS_NAME = 'ESEfinder';
 
@@ -175,7 +172,7 @@ my $RESULT_SPEC =
     {
      '' => 'bulk',  # same as undef
      'Bio::SeqFeatureI' => 'ARRAY of Bio::SeqFeature::Generic',
-     'raw' => 'Array of [ SRprotein, position , motif,score]',
+     'raw' => 'Array of [ SR_protein, position, motif, score]',
      'all' => 'Bio::Seq::Meta::Array object'
     };
 
@@ -207,37 +204,35 @@ sub _run {
     $self->status('TERMINATED_BY_ERROR');
 
     my $request = POST $self->url,
-        Content_Type => 'x-www-form-urlencoded',
+        #Content_Type => 'x-www-form-urlencoded',
             Content  => [
                          protein1 => 1,
                          protein2 => 1,
                          protein3 => 1,
                          protein4 => 1,
-                         #radio_sf2 => 1,
-                         #radio_sc35 => 1,
-                         #radio_srp40 => 1,
-                         #radio_srp55 => 1,
+                         radio_sf2 => 0,
+                         radio_sc35 => 0,
+                         radio_srp40 => 0,
+                         radio_srp55 => 0,
                          sequence =>$seq_fasta,
                         ];
     my $content = $self->request($request);
     if( $content->is_error  ) {
-	$self->warn(ref($self)." Request Error:\n".$content->as_string);
-	return;
+	$self->throw(ref($self)." Request Error:\n".$content->as_string);
     }
 
     my $text = $content->content; #1st reponse
-    my ($tmpfile) = $text =~ /value="(tmp.+txt)"/;
+    my ($tmpfile) = $text =~ /value="(tmp\/.+txt)"/;
     # now get data for all residues #
-    my $rq2 = POST 'http://exon.cshl.org/cgi-bin/ESE/resultfile.txt',
-        Content_Type => 'x-www-form-urlencoded',
+    my $rq2 = POST 'http://rulai.cshl.org/cgi-bin/tools/ESE/resultfile.txt',
+        #Content_Type => 'x-www-form-urlencoded',
             Content => [
                         fname => $tmpfile,
                        ];
-    my $ua2 = LWP::UserAgent->new;
+    my $ua2 = Bio::WebAgent->new();
     my $content2 = $ua2->request($rq2);
     if( $content2->is_error  ) {
-	$self->warn(ref($self)." Request Error:\n".$content2->as_string);
-	return;
+	$self->throw(ref($self)." Request Error:\n".$content2->as_string);
     }
 
     my $text2 = $content2->content;
@@ -271,7 +266,7 @@ sub result {
             #parse line
             if ($line =~ /^Protein/) {
                 ($current_SR) = $line =~/:\s+(\S+)/;
-                $current_SR =~ s/\//_/; # remove unallowed charcters from hash
+                $current_SR =~ s{/}{_}; # remove unallowed charcters from hash
             }
             if ( $line =~/^\d+/ && $value ne 'all') {
                 push @sig_pdctns, [$current_SR, split /\s+/, $line] ;

@@ -12,14 +12,11 @@ See L<Bio::DB::GFF>
 
 # a simple oracle adaptor
 use strict;
-use Bio::DB::GFF::Adaptor::dbi;
 #use Bio::DB::GFF::Adaptor::dbi::mysql;
 #use Bio::DB::GFF::Adaptor::dbi::mysqlopt;
 use Bio::DB::GFF::Util::Binning;
 use Bio::DB::GFF::Util::Rearrange; # for rearrange()
-use vars qw(@ISA);
-#@ISA = qw(Bio::DB::GFF::Adaptor::dbi::mysqlopt);
-@ISA = qw(Bio::DB::GFF::Adaptor::dbi);
+use base qw(Bio::DB::GFF::Adaptor::dbi);
 
 use constant MAX_SEGMENT => 100_000_000;  # the largest a segment can get
 use constant DEFAULT_CHUNK => 2000;
@@ -842,7 +839,7 @@ sub insert_sequence {
   my($id,$offset,$seq) = @_;
   my $sth = $self->{_insert_sequence}
     ||= $self->dbh->prepare_delayed('insert into fdna values (?,?,?)');
-  $sth->execute($id,$offset,$seq) or die $sth->errstr;
+  $sth->execute($id,$offset,$seq) or $self->throw($sth->errstr);
 }
 
 =head2 search_notes
@@ -867,6 +864,8 @@ Each row of the returned array is a arrayref containing the following fields:
 sub search_notes {
   my $self = shift;
   my ($search_string,$limit) = @_;
+
+  $search_string =~ tr/*?//d;
 
   my @words  = $search_string =~ /(\w+)/g;
   my $regex  = join '|',@words;

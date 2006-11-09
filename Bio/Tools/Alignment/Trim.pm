@@ -1,3 +1,4 @@
+# $Id: Trim.pm,v 1.21.4.1 2006/10/02 23:10:32 sendu Exp $
 # Bio::Tools::Alignment::Trim.pm
 #
 # Cared for by Chad Matsalla
@@ -45,22 +46,21 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html     - About the mailing
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists     - About the mailing
 lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via
-email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Chad Matsalla
 
-Email bioinformatics@dieselwurks.com
+Email bioinformatics-at-dieselwurks.com
 
 =head1 APPENDIX
 
@@ -71,13 +71,12 @@ Internal methods are usually preceded with a _
 
 package Bio::Tools::Alignment::Trim;
 
-use Bio::Root::Root;
 use strict;
 use Dumpvalue;
 
-use vars qw(@ISA %DEFAULTS);
+use vars qw(%DEFAULTS);
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 BEGIN {
     %DEFAULTS = ( 'f_designator' => 'f',

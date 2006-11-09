@@ -1,8 +1,8 @@
-# $Id: SimpleMap.pm,v 1.9 2003/05/15 08:13:55 heikki Exp $
+# $Id: SimpleMap.pm,v 1.17.4.2 2006/10/02 23:10:21 sendu Exp $
 #
 # BioPerl module for Bio::Map::SimpleMap
 #
-# Cared for by Jason Stajich <jason@bioperl.org>
+# Cared for by Sendu Bala <bix@sendu.me.uk>
 #
 # Copyright Jason Stajich
 #
@@ -17,19 +17,27 @@ Bio::Map::SimpleMap - A MapI implementation handling the basics of a Map
 =head1 SYNOPSIS
 
     use Bio::Map::SimpleMap;
+
     my $map = new Bio::Map::SimpleMap(-name => 'genethon',
 				      -type => 'Genetic',
 				      -units=> 'cM',
 				      -species => $human);
+
     foreach my $marker ( @markers ) { # get a list of markers somewhere
-	$map->add_element($marker);
+		$map->add_element($marker);
+    }
+
+    foreach my $marker ($map->get_elements) {
+        # do something with this Bio::Map::MappableI
     }
 
 =head1 DESCRIPTION
 
-This is the basic implementation of a Bio::Map::MapI.  It handles the
-essential storage of name, species, type, and units as well as in
-memory representation of the elements of a map.
+This is the basic implementation of a Bio::Map::MapI. It handles the
+essential storage of name, species, type, and units.
+
+It knows which map elements (mappables) belong to it, and their
+position.
 
 Subclasses might need to redefine or hardcode type(), length() and
 units().
@@ -42,17 +50,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -60,8 +67,9 @@ Email jason@bioperl.org
 
 =head1 CONTRIBUTORS
 
-Heikki Lehvaslaiho heikki@ebi.ac.uk
+Heikki Lehvaslaiho heikki-at-bioperl-dot-org
 Lincoln Stein      lstein@cshl.org
+Sendu Bala         bix@sendu.me.uk
 
 =head1 APPENDIX
 
@@ -70,20 +78,14 @@ Internal methods are usually preceded with a _
 
 =cut
 
-
 # Let the code begin...
 
-
 package Bio::Map::SimpleMap;
-use vars qw(@ISA $MAPCOUNT);
+use vars qw($MAPCOUNT);
 use strict;
 
-# Object preamble - inherits from Bio::Root::Root
 
-use Bio::Root::Root;
-use Bio::Map::MapI;
-
-@ISA = qw(Bio::Root::Root Bio::Map::MapI);
+use base qw(Bio::Root::Root Bio::Map::MapI);
 BEGIN { $MAPCOUNT = 1; }
 
 =head2 new
@@ -95,10 +97,7 @@ BEGIN { $MAPCOUNT = 1; }
  Args    : -name    => name of map (string)
            -species => species for this map (Bio::Species) [optional]
            -units   => map units (string)
-           -elements=> elements to initialize with
-                       (arrayref of Bio::Map::MappableI objects) [optional]
-
-           -uid     => Unique Id
+           -uid     => Unique Id [defaults to a unique integer]
 
 =cut
 
@@ -107,27 +106,20 @@ sub new {
 
   my $self = $class->SUPER::new(@args);
 
-  $self->{'_elements'} = [];
   $self->{'_name'}     = '';
   $self->{'_species'}  = '';
   $self->{'_units'}    = '';
   $self->{'_type'}    = '';
   $self->{'_uid'} = $MAPCOUNT++;
-  my ($name, $type,$species, $units,
-      $elements,$uid) = $self->_rearrange([qw(NAME TYPE
+  my ($name, $type,$species, $units,$uid) = $self->_rearrange([qw(NAME TYPE
 					      SPECIES UNITS
-					      ELEMENTS UID)], @args);
+					      UID)], @args);
   defined $name     && $self->name($name);
   defined $species  && $self->species($species);
   defined $units    && $self->units($units);
   defined $type     && $self->type($type);
   defined $uid      && $self->unique_id($uid);
-
-  if( $elements && ref($elements) =~ /array/ ) {
-      foreach my $item ( @$elements ) {
-	  $self->add_element($item);
-      }
-  }
+    
   return $self;
 }
 
@@ -136,8 +128,8 @@ sub new {
  Title   : species
  Usage   : my $species = $map->species;
  Function: Get/Set Species for a map
- Returns : Bio::Species object or string
- Args    : (optional) Bio::Species or string
+ Returns : Bio::Taxon object or string
+ Args    : (optional) Bio::Taxon or string
 
 =cut
 
@@ -187,7 +179,6 @@ sub type {
    return $self->{'_type'};
 }
 
-
 =head2 name
 
  Title   : name
@@ -210,26 +201,29 @@ sub name {
 
  Title   : length
  Usage   : my $length = $map->length();
- Function: Retrieves the length of the map,
-           It is possible for the length to be unknown
-           for maps such as Restriction Enzyme, will return undef
-           in that case
+ Function: Retrieves the length of the map.
+           It is possible for the length to be unknown for maps such as
+           Restriction Enzyme, will return 0 in that case.
  Returns : integer representing length of map in current units
-           will return undef if length is not calculateable
+           will return 0 if length is not calculateable
  Args    : none
 
 =cut
 
 sub length {
-   my ($self) = @_;
-   my ($len ) = 0;
-
-   foreach my $marker ($self->each_element) {
-       $len = $marker->position->numeric if  $marker->position->numeric > $len;
-   }
-   return $len;
+	my $self = shift;
+    
+	my $len = 0;
+    foreach my $element ($self->get_elements) {
+        foreach my $pos ($element->get_positions($self)) {
+            if ($pos->value) {
+                $len = $pos->end if $pos->end > $len;
+            }
+        }
+	}
+    
+	return $len;
 }
-
 
 =head2 unique_id
 
@@ -249,45 +243,113 @@ sub unique_id {
    return $self->{'_uid'};
 }
 
-
 =head2 add_element
 
  Title   : add_element
- Usage   : $map->add_element($marker)
- Function: Add a Bio::Map::MappableI object to the Map
+ Usage   : $map->add_element($element)
+ Function: Tell a Bio::Map::MappableI object its default Map is this one; same
+           as calling $element->default_map($map).
+
+		   *** does not actually add the element to this map! ***
+
  Returns : none
  Args    : Bio::Map::MappableI object
+ Status  : Deprecated, will be removed in next version
 
 =cut
 
-sub add_element{
-    my ($self,$mapelement) = @_;
-    return unless ( defined $mapelement);
+sub add_element {
+    my ($self, $element) = @_;
+    return unless $element;
+	
+    $self->throw("This is not a Bio::Map::MappableI object but a [$element]")
+	unless $element->isa('Bio::Map::MappableI');
+	
+    $element->default_map($self);
+}
 
-    $self->throw("This is not a Bio::Map::MarkerI object but a [$self]")
-	unless $mapelement->isa('Bio::Map::MarkerI');
+=head2 get_elements
 
-    $mapelement->map($self);	# tell the marker its default map
+ Title   : get_elements
+ Usage   : my @elements = $map->get_elements;
+ Function: Retrieves all the elements on a map (unordered unless all elements
+           have just 1 position on the map, in which case sorted)
+ Returns : Array of Map elements (L<Bio::Map::MappableI>)
+ Args    : none
 
-    push @{$self->{'_elements'}}, $mapelement;
+=cut
 
+sub get_elements {
+	my $self = shift;
+	
+    my @elements = $self->SUPER::get_elements;
+    
+	# for backward compatability with MapIO tests, and for 'niceness', when
+	# there is only 1 position per element we will return the elements in
+	# order, as long as the positions have values set
+    my $only_1 = 1;
+    foreach my $element (@elements) {
+        my @positions = $element->get_positions($self);
+        if (@positions > 1 || (@positions == 1 && ! $positions[0]->value)) {
+            $only_1 = 0;
+        }
+    }
+	if ($only_1) {
+		@elements = map { $_->[1] }
+                    sort { $a->[0] <=> $b->[0] }
+                    map { [${[$_->get_positions($self)]}[0]->sortable, $_] }
+                    @elements;
+	}
+	
+	return @elements;
 }
 
 =head2 each_element
 
  Title   : each_element
- Usage   : my @elements = $map->each_element;
- Function: Retrieves all the elements in a map
-           unordered
- Returns : Array of Bio::Map::MappableI objects
- Args    : none
-
+ Function: Synonym of the get_elements() method.
+ Status  : deprecated, will be removed in the next version
 
 =cut
 
-sub each_element{
-   my ($self) = @_;
-   return @{$self->{'_elements'}};
+*each_element = \&get_elements;
+
+=head2 purge_element
+
+ Title   : purge_element
+ Usage   : $map->purge_element($element)
+ Function: Purge an element from the map.
+ Returns : none
+ Args    : Bio::Map::MappableI object
+
+=cut
+
+sub purge_element {
+    my ($self, $element) = @_;
+    $self->throw("Must supply an argument") unless $element;
+    $self->throw("This is [$element], not an object") unless ref($element);
+    $self->throw("This is [$element], not a Bio::Map::MappableI object") unless $element->isa('Bio::Map::MappableI');
+	
+	$self->purge_positions($element);
+}
+
+=head2 annotation
+
+ Title   : annotation
+ Usage   : $map->annotation($an_col);
+           my $an_col = $map->annotation();
+ Function: Get the annotation collection (see Bio::AnnotationCollectionI)
+           for this annotatable object.
+ Returns : a Bio::AnnotationCollectionI implementing object, or undef
+ Args    : none to get, OR
+           a Bio::AnnotationCollectionI implementing object to set
+
+=cut
+
+sub annotation {
+    my $self = shift;
+    if (@_) { $self->{_annotation} = shift }
+    return $self->{_annotation} || return;
 }
 
 1;

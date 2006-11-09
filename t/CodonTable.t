@@ -1,11 +1,12 @@
 #-*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: CodonTable.t,v 1.15 2003/10/25 14:39:35 heikki Exp $
+## $Id: CodonTable.t,v 1.20 2006/08/16 21:07:01 cjfields Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
 use strict;
+use lib './';
 BEGIN { 
     # to handle systems with no installed Test module
     # we include the t dir (where a copy of Test.pm is located)
@@ -16,7 +17,7 @@ BEGIN {
     }
     use Test;
 
-    plan tests => 38;
+    plan tests => 51;
 }
 use Bio::Tools::CodonTable;
 use vars qw($DEBUG);
@@ -32,12 +33,20 @@ ok $myCodonTable->isa('Bio::Tools::CodonTable');
 $myCodonTable = Bio::Tools::CodonTable->new();
 ok $myCodonTable->id(), 1;
 
-
 # change codon table
 $myCodonTable->id(10);
 ok $myCodonTable->id, 10;
-
 ok $myCodonTable->name(), 'Euplotid Nuclear';
+
+# enumerate tables as object method
+my $table = $myCodonTable->tables();
+ok (keys %{$table} >= 17); # currently 17 known tables
+ok $table->{11}, q{"Bacterial"};
+
+# enumerate tables as class method
+$table = Bio::Tools::CodonTable->tables;
+ok (values %{$table} >= 17); # currently 17 known tables
+ok $table->{23}, 'Thraustochytrium Mitochondrial';
 
 # translate codons
 $myCodonTable->id(1);
@@ -98,8 +107,10 @@ ok $test;
 
 # reverse translate amino acids 
 
-ok $myCodonTable->revtranslate('J'), 0;
-
+ok $myCodonTable->revtranslate('U'), 0;
+ok $myCodonTable->revtranslate('O'), 0;
+ok $myCodonTable->revtranslate('J'), 9;
+ok $myCodonTable->revtranslate('I'), 3;
 
 @ii = qw(A l ACN Thr sER ter Glx);
 @res = (
@@ -132,7 +143,7 @@ ok $test;
 $myCodonTable->id(1);
 
 ok $myCodonTable->is_start_codon('ATG');  
-ok( $myCodonTable->is_start_codon('GGH'), 0);
+ok $myCodonTable->is_start_codon('GGH'), 0;
 ok $myCodonTable->is_start_codon('HTG');
 ok $myCodonTable->is_start_codon('CCC'), 0;
 
@@ -145,7 +156,6 @@ ok $myCodonTable->is_ter_codon('ttA'), 0;
 ok $myCodonTable->is_unknown_codon('jAG');
 ok $myCodonTable->is_unknown_codon('jg');
 ok $myCodonTable->is_unknown_codon('UAG'), 0;
-
 
 ok $myCodonTable->translate_strict('ATG'), 'M';
 
@@ -174,3 +184,13 @@ ok $seq = Bio::PrimarySeq->new(-seq=>'atgaaraayacmacracwacka', -alphabet=>'dna')
 ok $seq->translate()->seq, 'MKNTTTT';
 ok $seq->translate(undef, undef, undef, undef, undef, undef, $myCodonTable)->seq, 'MKXXTTT';
 
+# test gapped translated
+
+ok $seq = Bio::PrimarySeq->new(-seq      => 'atg---aar------aay',
+			                   -alphabet => 'dna');
+ok $seq->translate->seq, 'M-K--N';
+
+ok $seq = Bio::PrimarySeq->new(-seq=>'ASDFGHKL');
+ok $myCodonTable->reverse_translate_all($seq), 'GCBWSNGAYTTYGGVCAYAARYTN';
+ok $seq = Bio::PrimarySeq->new(-seq=>'ASXFHKL');
+ok $myCodonTable->reverse_translate_all($seq), 'GCBWSNNNNTTYCAYAARYTN';

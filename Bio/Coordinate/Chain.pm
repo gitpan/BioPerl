@@ -1,8 +1,8 @@
-# $Id: Chain.pm,v 1.1 2002/10/24 17:35:30 heikki Exp $
+# $Id: Chain.pm,v 1.7.4.1 2006/10/02 23:10:13 sendu Exp $
 #
 # bioperl module for Bio::Coordinate::Chain
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Heikki Lehvaslaiho
 #
@@ -60,26 +60,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
-report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email:  heikki@ebi.ac.uk
-Address:
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom
+Email:  heikki-at-bioperl-dot-org
 
 =head1 CONTRIBUTORS
 
@@ -96,16 +90,13 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Coordinate::Chain;
-use vars qw(@ISA );
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 use Bio::Root::Root;
-use Bio::Coordinate::MapperI;
 use Bio::Coordinate::Result;
-use Bio::Coordinate::Collection;
 
-@ISA = qw(Bio::Coordinate::Collection Bio::Coordinate::MapperI);
+use base qw(Bio::Coordinate::Collection Bio::Coordinate::MapperI);
 
 
 =head2 map
@@ -134,7 +125,7 @@ sub map {
     foreach my $mapper ($self->each_mapper) {
 
 	my $res = $mapper->map($value);
-	return undef unless $res->each_match;
+	return unless $res->each_match;
 	$value = $res->match;
     }
 

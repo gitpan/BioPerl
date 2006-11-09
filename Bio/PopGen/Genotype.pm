@@ -1,4 +1,4 @@
-# $Id: Genotype.pm,v 1.6 2003/03/25 14:41:53 heikki Exp $
+# $Id: Genotype.pm,v 1.10.4.1 2006/10/02 23:10:23 sendu Exp $
 #
 # BioPerl module for Bio::PopGen::Genotype
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::PopGen::Genotype - An implementation of a genotype which is an allele container
+Bio::PopGen::Genotype - An implementation of GenotypeI which is just an allele container
 
 =head1 SYNOPSIS
 
@@ -41,8 +41,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -50,7 +50,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -72,19 +72,17 @@ Internal methods are usually preceded with a _
 
 
 package Bio::PopGen::Genotype;
-use vars qw(@ISA $BlankAlleles);
+use vars qw($BlankAlleles);
 use strict;
 
-$BlankAlleles = '\s|\-|N|\?';
+$BlankAlleles = '[\s\-N\?]';
 
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::PopGen::GenotypeI;
-use Bio::Root::Root;
 
 
-@ISA = qw(Bio::Root::Root  Bio::PopGen::GenotypeI);
+use base qw(Bio::Root::Root Bio::PopGen::GenotypeI);
 
 =head2 new
 

@@ -1,4 +1,4 @@
-# $Id: CUTG.pm,v 1.4 2003/10/25 15:00:57 heikki Exp $
+# $Id: CUTG.pm,v 1.11.4.2 2006/10/02 23:10:14 sendu Exp $
 #
 # BioPerl module for Bio::DB::CUTG
 #
@@ -26,9 +26,8 @@ at http://www.kazusa.or.jp/codon.
 
 =head1 DESCRIPTION
 
-
-This class retrieves and objectifies codon usage tables either from a
-web database . The idea is that you can initially retrieve a CUT from
+This class retrieves and objectifies codon usage tables either from the
+CUTG web database . The idea is that you can initially retrieve a CUT from
 the web database, and write it to file in a way that can be read in
 later, using the Bio::CodonUsage::IO module.
 
@@ -62,17 +61,15 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                       - General discussion
-  http://bio.perl.org/MailList.html           - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS
 
@@ -91,12 +88,11 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::DB::CUTG;
-use Bio::WebAgent;
 use Bio::CodonUsage::IO;
 use IO::String;
-use vars qw($URL @ISA $QUERY_KEYS);
+use vars qw($URL $QUERY_KEYS);
 
-@ISA = qw(Bio::WebAgent);
+use base qw(Bio::WebAgent);
 
 $QUERY_KEYS = { 
 				sp => 'full Latin species name',	
@@ -221,9 +217,12 @@ sub get_request {
 					. $nameparts . "&c=s";
 	my $rq = HTTP::Request->new(GET=>$search_url);
 	my $reply = $self->request($rq);
-
+    if ($reply->is_error) {
+        $self->throw($reply->as_string()."\nError getting for url $search_url!\n");
+    }
 	my $content = $reply->content;
         return 0 unless $content;
+    $self->debug (" reply from query is \n  $content");
 	#####  if no matches, assign defaults - or can throw here?  ######
 	if ($content =~ /not found/i) {
 		$self->warn ("organism not found -selecting human as default");
@@ -234,7 +233,7 @@ sub get_request {
 
 	
 	else {
-		 my @names = $content =~ /(species)/g;
+		my @names = $content =~ /(species)/g;
 		### get 1st species data from report ####
 		my ($sp, $db)  = $content =~ /species=(.*)\+\[(\w+)\]"/;
 		
@@ -253,21 +252,26 @@ sub get_request {
 	######## now get codon table , all defaults established now
 
 	##construct URL##
-	 $nameparts =  join "+", $self->sp =~ /(\w+)/g;
+	$nameparts =  join "+", $self->sp =~ /(\w+)/g;
 	my $CT_url = $self->url . "/codon/cgi-bin/showcodon.cgi?species="
 				. $nameparts . "+%5B" . $self->_db . "%5D&aa=" . $self->gc . "&style=GCG";
 
 	## retrieve data in html##
 	my $rq2 = HTTP::Request->new(GET=>$CT_url);
-	my $content2 = $self->request($rq2)->content;
+    $reply = $self->request($rq2);
+    if ($reply->is_error) {
+        $self->throw($reply->as_string()."\nError getting for url $CT_url!\n");
+    }
+	my $content2 = $reply->content;
 
 	## strip html tags, basic but works here
-	 $content2 =~ s/<[^>]+>//sg;
+	$content2 =~ s/<[^>]+>//sg;
 	$content2 =~ s/Format.*//sg;
+    $self->debug ("raw DDB table is :\n $content2");
 
 	### and pass to Bio::CodonUsage::IO for parsing
 	my $iostr = IO::String->new($content2);
-	 my $io = Bio::CodonUsage::IO->new (-fh=>$iostr);
+	my $io = Bio::CodonUsage::IO->new (-fh=>$iostr);
 
 	##return object ##
 	return $io->next_data;
@@ -299,7 +303,4 @@ sub _db {
 	return $self->{'_db'};
 }
 
-
-
-	return 1;
-
+1;

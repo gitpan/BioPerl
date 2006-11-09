@@ -1,6 +1,6 @@
-# $Id: SimpleOntologyEngine.pm,v 1.9 2003/07/02 22:50:58 lapp Exp $
+# $Id: SimpleOntologyEngine.pm,v 1.17.4.3 2006/10/02 23:10:22 sendu Exp $
 #
-# BioPerl module for SimpleOntologyEngine
+# BioPerl module for Bio::Ontology::SimpleOntologyEngine
 #
 # Cared for by Peter Dimitrov <dimitrov@gnf.org>
 #
@@ -21,12 +21,11 @@
 
 =head1 NAME
 
-SimpleOntologyEngine - Implementation of OntologyEngineI interface
+Bio::Ontology::SimpleOntologyEngine - Implementation of OntologyEngineI interface
 
 =head1 SYNOPSIS
 
   my $soe = Bio::Ontology::SimpleOntologyEngine->new;
-
 
 =head1 DESCRIPTION
 
@@ -40,17 +39,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+the web:
 
-  bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Peter Dimitrov
 
@@ -72,15 +70,12 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Ontology::SimpleOntologyEngine;
-use vars qw(@ISA);
 use strict;
 use Carp;
-use Bio::Root::Root;
 use Bio::Ontology::RelationshipFactory;
-use Bio::Ontology::OntologyEngineI;
 use Data::Dumper;
 
-@ISA = qw( Bio::Root::Root Bio::Ontology::OntologyEngineI );
+use base qw(Bio::Root::Root Bio::Ontology::OntologyEngineI);
 
 =head2 new
 
@@ -90,7 +85,6 @@ use Data::Dumper;
  Example : $soe = Bio::Ontology::SimpleOntologyEngine->new;
  Returns : Object of class SimpleOntologyEngine.
  Args    :
-
 
 =cut
 
@@ -120,29 +114,28 @@ sub new{
  Returns : hash
  Args    : empty hash
 
-
 =cut
 
 sub _instantiated_terms_store{
-  my ($self, $value) = @_;
+	my ($self, $value) = @_;
 
-  if( defined $value) {
-    $self->{'_instantiated_terms_store'} = $value;
-  }
-  return $self->{'_instantiated_terms_store'};
+	if( defined $value) {
+		$self->{'_instantiated_terms_store'} = $value;
+	}
+	return $self->{'_instantiated_terms_store'};
 }
 
 =head2 mark_instantiated
 
  Title   : mark_instantiated
- Usage   : $self->mark_instantiated(TermI[] terms): TermI[]
+ Usage   : $self->mark_instantiated(TermI terms): TermI
  Function: Marks TermI objects as fully instantiated,
-  allowing for proper counting of the number of terms in the term store.
-The TermI objects has to be already stored in the term store in order to
- be marked.
+           allowing for proper counting of the number of terms in the term store.
+           The TermI objects has to be already stored in the term store in order
+           to be marked.
  Example : $self->mark_instantiated($term);
  Returns : its argument or throws an exception if a term is not
-  in the term store.
+           in the term store.
  Args    : array of objects of class TermI.
 
 =cut
@@ -151,9 +144,9 @@ sub mark_instantiated{
   my ($self, @terms) = @_;
 
   foreach my $term (@terms) {
-    $self->throw( "term ".$term->identifier." not in the term store\n" )
-      if !defined $self->_term_store->{$term->identifier};
-    $self->_instantiated_terms_store->{$term->identifier} = 1;
+	  $self->throw( "term ".$term->identifier." not in the term store\n" )
+		 if !defined $self->_term_store->{$term->identifier};
+	  $self->_instantiated_terms_store->{$term->identifier} = 1;
   }
 
   return @terms;
@@ -162,13 +155,12 @@ sub mark_instantiated{
 =head2 mark_uninstantiated
 
  Title   : mark_uninstantiated
- Usage   : $self->mark_uninstantiated(TermI[] terms): TermI[]
+ Usage   : $self->mark_uninstantiated(TermI terms): TermI
  Function: Marks TermI objects as not fully instantiated,
  Example : $self->mark_uninstantiated($term);
  Returns : its argument or throws an exception if a term is not
-  in the term store(if the term is not marked it does nothing).
+           in the term store(if the term is not marked it does nothing).
  Args    : array of objects of class TermI.
-
 
 =cut
 
@@ -241,13 +233,12 @@ sub add_term{
 =head2 get_term_by_identifier
 
  Title   : get_term_by_identifier
- Usage   : get_term_by_identifier(String[] id): TermI[]
+ Usage   : get_term_by_identifier(String id): TermI
  Function: Retrieves terms from the term store by their identifier
-           field, or undef if not there.
+           field, or an empty list if not there.
  Example : $term = $soe->get_term_by_identifier("IPR000001");
  Returns : An array of zero or more Bio::Ontology::TermI objects.
  Args    : An array of identifier strings
-
 
 =cut
 
@@ -272,7 +263,6 @@ sub get_term_by_identifier{
  Returns : 
  Args    :
 
-
 =cut
 
 sub _get_number_rels{
@@ -294,7 +284,6 @@ sub _get_number_rels{
  Returns : 
  Args    :
 
-
 =cut
 
 sub _get_number_terms{
@@ -313,19 +302,18 @@ sub _get_number_terms{
  Returns : reference to an array of Bio::Ontology::TermI objects
  Args    : reference to an array of Bio::Ontology::TermI objects
 
-
 =cut
 
 sub _relationship_store{
   my ($self, $value) = @_;
 
   if( defined $value) {
-    if ( defined $self->{'_relationship_store'}) {
-      $self->throw("_relationship_store already defined\n");
-    }
-    else {
-      $self->{'_relationship_store'} = $value;
-    }
+	  if ( defined $self->{'_relationship_store'}) {
+		  $self->throw("_relationship_store already defined\n");
+	  }
+	  else {
+		  $self->{'_relationship_store'} = $value;
+	  }
   }
 
   return $self->{'_relationship_store'};
@@ -340,20 +328,19 @@ sub _relationship_store{
  Returns : reference to an array of Bio::Ontology::TermI objects
  Args    : reference to an array of Bio::Ontology::TermI objects
 
-
 =cut
 
 sub _inverted_relationship_store{
-  my ($self, $value) = @_;
+	my ($self, $value) = @_;
 
-  if( defined $value) {
-    if ( defined $self->{'_inverted_relationship_store'}) {
-      $self->throw("_inverted_relationship_store already defined\n");
-    }
-    else {
-      $self->{'_inverted_relationship_store'} = $value;
-    }
-  }
+	if( defined $value) {
+		if ( defined $self->{'_inverted_relationship_store'}) {
+			$self->throw("_inverted_relationship_store already defined\n");
+		}
+		else {
+			$self->{'_inverted_relationship_store'} = $value;
+		}
+	}
 
   return $self->{'_inverted_relationship_store'};
 }
@@ -367,19 +354,18 @@ sub _inverted_relationship_store{
  Returns : reference to an array of Bio::Ontology::RelationshipType objects
  Args    : reference to an array of Bio::Ontology::RelationshipType objects
 
-
 =cut
 
 sub _relationship_type_store{
   my ($self, $value) = @_;
 
   if( defined $value) {
-    if ( defined $self->{'_relationship_type_store'}) {
-      $self->throw("_relationship_type_store already defined\n");
-    }
-    else {
-      $self->{'_relationship_type_store'} = $value;
-    }
+	  if ( defined $self->{'_relationship_type_store'}) {
+		  $self->throw("_relationship_type_store already defined\n");
+	  }
+	  else {
+		  $self->{'_relationship_type_store'} = $value;
+	  }
   }
 
   return $self->{'_relationship_type_store'};
@@ -394,7 +380,6 @@ sub _relationship_type_store{
  Returns : 
  Args    :
 
-
 =cut
 
 sub _add_relationship_simple{
@@ -403,22 +388,22 @@ sub _add_relationship_simple{
    my $child_id;
 
    if ($inverted) {
-     $parent_id = $rel->subject_term->identifier;
-     $child_id = $rel->object_term->identifier;
+		$parent_id = $rel->subject_term->identifier;
+		$child_id = $rel->object_term->identifier;
    }
    else {
-     $parent_id = $rel->object_term->identifier;
-     $child_id = $rel->subject_term->identifier;
+		$parent_id = $rel->object_term->identifier;
+		$child_id = $rel->subject_term->identifier;
    }
-   if((defined $store->{$parent_id}->{$child_id}) &&
+   if(defined $store->{$parent_id} && (defined $store->{$parent_id}->{$child_id}) &&
       ($store->{$parent_id}->{$child_id}->name != $rel->predicate_term->name)){
-       $self->throw("relationship ".Dumper($rel->predicate_term).
-		    " between ".$parent_id." and ".$child_id.
-		    " already defined as ".
-		    Dumper($store->{$parent_id}->{$child_id})."\n");
+		$self->throw("relationship ".Dumper($rel->predicate_term).
+						 " between ".$parent_id." and ".$child_id.
+						 " already defined as ".
+						 Dumper($store->{$parent_id}->{$child_id})."\n");
    }
    else {
-     $store->{$parent_id}->{$child_id} = $rel->predicate_term;
+		$store->{$parent_id}->{$child_id} = $rel->predicate_term;
    }
 }
 
@@ -430,7 +415,6 @@ sub _add_relationship_simple{
  Example :
  Returns : Its argument.
  Args    : A RelationshipI object.
-
 
 =cut
 
@@ -450,12 +434,11 @@ sub add_relationship{
 =head2 get_relationships
 
  Title   : get_relationships
- Usage   : get_relationships(): RelationshipI[]
+ Usage   : get_relationships(): RelationshipI
  Function: Retrieves all relationship objects.
  Example :
  Returns : Array of RelationshipI objects
  Args    :
-
 
 =cut
 
@@ -467,48 +450,50 @@ sub get_relationships{
     my $relfact = $self->relationship_factory(); 
 
     my @parent_ids = $term ?
-	# if a term is supplied then only get the term's parents
-	(map { $_->identifier(); } $self->get_parent_terms($term)) :
-	# otherwise use all parent ids
-	(keys %{$store});
+		# if a term is supplied then only get the term's parents
+		(map { $_->identifier(); } $self->get_parent_terms($term)) :
+		  # otherwise use all parent ids
+		  (keys %{$store});
     # add the term as a parent too if one is supplied
     push(@parent_ids,$term->identifier) if $term;
     
     foreach my $parent_id (@parent_ids) {
-	my $parent_entry = $store->{$parent_id};
+		 my $parent_entry = $store->{$parent_id};
 
-	# if a term is supplied, add a relationship for the parent to the term
-	# except if the parent is the term itself (we added that one before)
-	if($term && ($parent_id ne $term->identifier())) {
-	    my $parent_term = $self->get_term_by_identifier($parent_id);
-	    push(@rels,
-		 $relfact->create_object(-object_term    => $parent_term,
-					 -subject_term   => $term,
-					 -predicate_term =>
-					    $parent_entry->{$term->identifier},
-					 -ontology       => $term->ontology()
-					 )
-		 );
+		 # if a term is supplied, add a relationship for the parent to the term
+		 # except if the parent is the term itself (we added that one before)
+		 if($term && ($parent_id ne $term->identifier())) {
+			 my @parent_terms = $self->get_term_by_identifier($parent_id);
+			 foreach my $parent_term (@parent_terms) {
+				 push(@rels,
+						$relfact->create_object(-object_term    => $parent_term,
+														-subject_term   => $term,
+														-predicate_term =>
+														$parent_entry->{$term->identifier},
+														-ontology => $term->ontology())
+					  );
+			 }
 		 
-	} else {
-	    # otherwise, i.e., no term supplied, or the parent equals the
-	    # supplied term
-	    my $parent_term = $term ?
-		$term : $self->get_term_by_identifier($parent_id);
-	    foreach my $child_id (keys %$parent_entry) {
-		my $rel_info = $parent_entry->{$child_id};
+		 } else {
+			 # otherwise, i.e., no term supplied, or the parent equals the
+			 # supplied term
+			 my @parent_terms = $term ?
+				($term) : $self->get_term_by_identifier($parent_id);
+			 foreach my $child_id (keys %$parent_entry) {
+				 my $rel_info = $parent_entry->{$child_id};
+				 my ($subj_term) = $self->get_term_by_identifier($child_id);
 
-		push(@rels,
-		     $relfact->create_object(-object_term    => $parent_term,
-					     -subject_term   =>
-					         $self->get_term_by_identifier(
-							            $child_id),
-					     -predicate_term => $rel_info,
-					     -ontology =>$parent_term->ontology
-					     )
-		     );
-	    }
-	}
+				 foreach my $parent_term (@parent_terms) {
+					 push(@rels,
+							$relfact->create_object(-object_term  => $parent_term,
+															-subject_term => $subj_term,
+															-predicate_term => $rel_info,
+															-ontology =>$parent_term->ontology
+														  )
+						  );
+				 }
+			 }
+		 }
     }
 
     return @rels;
@@ -517,12 +502,11 @@ sub get_relationships{
 =head2 get_all_relationships
 
  Title   : get_all_relationships
- Usage   : get_all_relationships(): RelationshipI[]
+ Usage   : get_all_relationships(): RelationshipI
  Function: Retrieves all relationship objects.
  Example :
  Returns : Array of RelationshipI objects
  Args    :
-
 
 =cut
 
@@ -533,12 +517,11 @@ sub get_all_relationships{
 =head2 get_predicate_terms
 
  Title   : get_predicate_terms
- Usage   : get_predicate_terms(): TermI[]
+ Usage   : get_predicate_terms(): TermI
  Function: Retrives all relationship types stored in the engine
  Example :
  Returns : reference to an array of Bio::Ontology::RelationshipType objects
  Args    :
-
 
 =cut
 
@@ -557,18 +540,17 @@ sub get_predicate_terms{
  Returns : 
  Args    :
 
-
 =cut
 
 sub _is_rel_type{
   my ($self, $term, @rel_types) = @_;
 
   foreach my $rel_type (@rel_types) {
-      if($rel_type->identifier || $term->identifier) {
-	  return 1 if $rel_type->identifier eq $term->identifier;
-      } else {
-	  return 1 if $rel_type->name eq $term->name;
-      }
+	  if($rel_type->identifier || $term->identifier) {
+		  return 1 if $rel_type->identifier eq $term->identifier;
+	  } else {
+		  return 1 if $rel_type->name eq $term->name;
+	  }
   }
 
   return 0;
@@ -583,39 +565,38 @@ sub _is_rel_type{
  Returns :
  Args    :
 
-
 =cut
 
 sub _typed_traversal{
-  my ($self, $rel_store, $level, $term_id, @rel_types) = @_;
-  return undef if !defined($rel_store->{$term_id});
-  my %parent_entry = %{$rel_store->{$term_id}};
-  my @children = keys %parent_entry;
+	my ($self, $rel_store, $level, $term_id, @rel_types) = @_;
+	return if !defined($rel_store->{$term_id});
+	my %parent_entry = %{$rel_store->{$term_id}};
+	my @children = keys %parent_entry;
 
-  my @ans;
+	my @ans;
 
-  if (@rel_types > 0) {
-    @ans = ();
+	if (@rel_types > 0) {
+		@ans = ();
 
-    foreach my $child_id (@children) {
-      push @ans, $child_id
-	  if $self->_is_rel_type( $rel_store->{$term_id}->{$child_id},
-				  @rel_types);
-    }
-  }
-  else {
-    @ans = @children;
-  }
-  if ($level < 1) {
-    my @ans1 = ();
+		foreach my $child_id (@children) {
+			push @ans, $child_id
+			  if $self->_is_rel_type( $rel_store->{$term_id}->{$child_id},
+											  @rel_types);
+		}
+	}
+	else {
+		@ans = @children;
+	}
+	if ($level < 1) {
+		my @ans1 = ();
 
-    foreach my $child_id (@ans) {
-      push @ans1, $self->_typed_traversal($rel_store,
-					  $level - 1, $child_id, @rel_types)
-	if defined $rel_store->{$child_id};
-    }
-    push @ans, @ans1;
-  }
+		foreach my $child_id (@ans) {
+			push @ans1, $self->_typed_traversal($rel_store,
+								$level - 1, $child_id, @rel_types)
+			  if defined $rel_store->{$child_id};
+		}
+		push @ans, @ans1;
+	}
 
   return @ans;
 }
@@ -623,30 +604,29 @@ sub _typed_traversal{
 =head2 get_child_terms
 
  Title   : get_child_terms
- Usage   : get_child_terms(TermI term, TermI[] predicate_terms): TermI[]
-  get_child_terms(TermI term, RelationshipType[] predicate_terms): TermI[]
+ Usage   : get_child_terms(TermI term, TermI predicate_terms): TermI
+           get_child_terms(TermI term, RelationshipType predicate_terms): TermI
  Function: Retrieves all child terms of a given term, that satisfy a
            relationship among those that are specified in the second
            argument or undef otherwise. get_child_terms is a special
            case of get_descendant_terms, limiting the search to the
            direct descendants.
-
  Example :
  Returns : Array of TermI objects.
- Args    : First argument is the term of interest, second is the list of relationship type terms.
-
+ Args    : First argument is the term of interest, second is the list of 
+           relationship type terms.
 
 =cut
 
 sub get_child_terms{
-    my ($self, $term, @relationship_types) = @_;
+	my ($self, $term, @relationship_types) = @_;
 
-    $self->throw("must provide TermI compliant object") 
-	unless defined($term) && $term->isa("Bio::Ontology::TermI");
+	$self->throw("must provide TermI compliant object") 
+	  unless defined($term) && $term->isa("Bio::Ontology::TermI");
 
-    return $self->_filter_unmarked(
-               $self->get_term_by_identifier(
-		   $self->_typed_traversal($self->_relationship_store,
+	return $self->_filter_unmarked(
+											 $self->get_term_by_identifier(
+						$self->_typed_traversal($self->_relationship_store,
 					   1,
 					   $term->identifier,
 					   @relationship_types) ) );
@@ -655,8 +635,8 @@ sub get_child_terms{
 =head2 get_descendant_terms
 
  Title   : get_descendant_terms
- Usage   : get_descendant_terms(TermI term, TermI[] rel_types): TermI[]
-  get_child_terms(TermI term, RelationshipType[] predicate_terms): TermI[]
+ Usage   : get_descendant_terms(TermI term, TermI rel_types): TermI
+           get_child_terms(TermI term, RelationshipType predicate_terms): TermI
  Function: Retrieves all descendant terms of a given term, that
            satisfy a relationship among those that are specified in
            the second argument or undef otherwise. Uses
@@ -664,8 +644,8 @@ sub get_child_terms{
 
  Example :
  Returns : Array of TermI objects.
- Args    : First argument is the term of interest, second is the list of relationship type terms.
-
+ Args    : First argument is the term of interest, second is the list of 
+           relationship type terms.
 
 =cut
 
@@ -687,8 +667,8 @@ sub get_descendant_terms{
 =head2 get_parent_terms
 
  Title   : get_parent_terms
- Usage   : get_parent_terms(TermI term, TermI[] predicate_terms): TermI[]
-  get_child_terms(TermI term, RelationshipType[] predicate_terms): TermI[]
+ Usage   : get_parent_terms(TermI term, TermI predicate_terms): TermI
+           get_child_terms(TermI term, RelationshipType predicate_terms): TermI
  Function: Retrieves all parent terms of a given term, that satisfy a
            relationship among those that are specified in the second
            argument or undef otherwise. get_parent_terms is a special
@@ -698,7 +678,6 @@ sub get_descendant_terms{
  Example :
  Returns : Array of TermI objects.
  Args    : First argument is the term of interest, second is the list of relationship type terms.
-
 
 =cut
 
@@ -717,8 +696,8 @@ sub get_parent_terms{
 =head2 get_ancestor_terms
 
  Title   : get_ancestor_terms
- Usage   : get_ancestor_terms(TermI term, TermI[] predicate_terms): TermI[]
-  get_child_terms(TermI term, RelationshipType[] predicate_terms): TermI[]
+ Usage   : get_ancestor_terms(TermI term, TermI predicate_terms): TermI
+           get_child_terms(TermI term, RelationshipType predicate_terms): TermI
  Function: Retrieves all ancestor terms of a given term, that satisfy
            a relationship among those that are specified in the second
            argument or undef otherwise. Uses _typed_traversal to find
@@ -728,7 +707,6 @@ sub get_parent_terms{
  Returns : Array of TermI objects.
  Args    : First argument is the term of interest, second is the list
            of relationship type terms.
-
 
 =cut
 
@@ -748,12 +726,11 @@ sub get_ancestor_terms{
 =head2 get_leaf_terms
 
  Title   : get_leaf_terms
- Usage   : get_leaf_terms(): TermI[]
+ Usage   : get_leaf_terms(): TermI
  Function: Retrieves all leaf terms from the ontology. Leaf term is a term w/o descendants.
  Example : @leaf_terms = $obj->get_leaf_terms()
  Returns : Array of TermI objects.
  Args    :
-
 
 =cut
 
@@ -762,9 +739,9 @@ sub get_leaf_terms{
   my @leaf_terms;
 
   foreach my $term (values %{$self->_term_store}) {
-    push @leaf_terms, $term
-      if !defined $self->_relationship_store->{$term->identifier} &&
-	defined $self->_instantiated_terms_store->{$term->identifier};
+	  push @leaf_terms, $term
+		 if !defined $self->_relationship_store->{$term->identifier} &&
+			defined $self->_instantiated_terms_store->{$term->identifier};
   }
 
   return @leaf_terms;
@@ -773,12 +750,11 @@ sub get_leaf_terms{
 =head2 get_root_terms
 
  Title   : get_root_terms
- Usage   : get_root_terms(): TermI[]
+ Usage   : get_root_terms(): TermI
  Function: Retrieves all root terms from the ontology. Root term is a term w/o descendants.
  Example : @root_terms = $obj->get_root_terms()
  Returns : Array of TermI objects.
  Args    :
-
 
 =cut
 
@@ -789,7 +765,7 @@ sub get_root_terms{
   foreach my $term (values %{$self->_term_store}) {
     push @root_terms, $term
       if !defined $self->_inverted_relationship_store->{$term->identifier} &&
-	defined $self->_instantiated_terms_store->{$term->identifier};
+		  defined $self->_instantiated_terms_store->{$term->identifier};
   }
 
   return @root_terms;
@@ -803,7 +779,6 @@ sub get_root_terms{
  Example :
  Returns : List of unique TermI objects
  Args    : List of TermI objects
-
 
 =cut
 
@@ -821,12 +796,11 @@ sub _filter_repeated{
 =head2 get_all_terms
 
  Title   : get_all_terms
- Usage   : get_all_terms(): TermI[]
+ Usage   : get_all_terms(): TermI
  Function: Retrieves all terms currently stored in the ontology.
  Example : @all_terms = $obj->get_all_terms()
  Returns : Array of TermI objects.
  Args    :
-
 
 =cut
 
@@ -853,7 +827,6 @@ sub get_all_terms{
               -identifier    query by the given identifier
               -name          query by the given name
 
-
 =cut
 
 sub find_terms{
@@ -863,12 +836,12 @@ sub find_terms{
     my ($id,$name) = $self->_rearrange([qw(IDENTIFIER NAME)],@args);
 
     if(defined($id)) {
-	@terms = $self->get_term_by_identifier($id);
+		 @terms = $self->get_term_by_identifier($id);
     } else {
-	@terms = $self->get_all_terms();
+		 @terms = $self->get_all_terms();
     }
     if(defined($name)) {
-	@terms = grep { $_->name() eq $name; } @terms;
+		 @terms = grep { $_->name() eq $name; } @terms;
     }
     return @terms;
 }
@@ -885,7 +858,6 @@ sub find_terms{
  Returns : value of relationship_factory (a Bio::Factory::ObjectFactoryI
            compliant object)
  Args    : on set, a Bio::Factory::ObjectFactoryI compliant object
-
 
 =cut
 
@@ -912,16 +884,15 @@ sub relationship_factory{
            compliant object)
  Args    : on set, a Bio::Factory::ObjectFactoryI compliant object
 
-
 =cut
 
 sub term_factory{
     my $self = shift;
 
     if(@_) {
-	$self->warn("setting term factory, but ".ref($self).
-		    " does not create terms on-the-fly");
-	return $self->{'term_factory'} = shift;
+		 $self->warn("setting term factory, but ".ref($self).
+						 " does not create terms on-the-fly");
+		 return $self->{'term_factory'} = shift;
     }
     return $self->{'term_factory'};
 }
@@ -929,12 +900,11 @@ sub term_factory{
 =head2 _filter_unmarked
 
  Title   : _filter_unmarked
- Usage   : _filter_unmarked(TermI[] terms): TermI[]
+ Usage   : _filter_unmarked(TermI terms): TermI
  Function: Removes the uninstantiated terms from the list of terms
  Example :
  Returns : array of fully instantiated TermI objects
  Args    : array of TermI objects
-
 
 =cut
 
@@ -963,20 +933,19 @@ sub _filter_unmarked{
  Returns : Object of class TermI or undef if not found.
  Args    : The string identifier of a term.
 
-
 =cut
 
 sub remove_term_by_id{
   my ($self, $id) = @_;
 
   if ( $self->get_term_by_identifier($id) ) {
-    my $term = $self->{_term_store}->{$id};
-    delete $self->{_term_store}->{$id};
-    return $term;
+	  my $term = $self->{_term_store}->{$id};
+	  delete $self->{_term_store}->{$id};
+	  return $term;
   }
   else {
-    $self->warn("Term with id '$id' is not in the term store");
-    return undef;
+	  $self->warn("Term with id '$id' is not in the term store");
+	  return;
   }
 }
 
@@ -989,7 +958,6 @@ sub remove_term_by_id{
  Example : print $sv->to_string();
  Returns :
  Args    :
-
 
 =cut
 
@@ -1014,7 +982,7 @@ sub to_string{
 
            If the identifier attribute is not set, it uses the
            combination of name and ontology name, provided both are
-           set. If they aren't, it returns the name alone.
+           set. If they are not, it returns the name alone.
 
            Note that this is a private method. Call from inheriting
            classes but not from outside.
@@ -1022,7 +990,6 @@ sub to_string{
  Example :
  Returns : a string
  Args    : a Bio::Ontology::TermI compliant object
-
 
 =cut
 
@@ -1033,9 +1000,9 @@ sub _unique_termid{
     return $term->identifier() if $term->identifier();
     my $id = $term->ontology->name() if $term->ontology();
     if($id) { 
-	$id .= '|'; 
+		 $id .= '|'; 
     } else { 
-	$id = ''; 
+		 $id = ''; 
     }
     $id .= $term->name();
 }

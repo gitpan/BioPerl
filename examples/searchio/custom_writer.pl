@@ -30,7 +30,7 @@
 #   STDERR: Progress info.
 #
 # Author: Steve Chervitz <sac@bioperl.org>
-# Revision: $Id: custom_writer.pl,v 1.2 2003/06/04 02:26:48 sac Exp $
+# Revision: $Id: custom_writer.pl,v 1.3 2004/02/21 10:50:34 sac Exp $
 
 package MyBlastWriter;
 
@@ -87,7 +87,9 @@ use Bio::SearchIO;
 
 select STDOUT; $|=1; 
 
-my $in     = Bio::SearchIO->new( -format => 'blast', -signif => 0.1 );
+my $in     = Bio::SearchIO->new( -format => 'blast', 
+				 -fh => \*ARGV,
+                                 -signif => 0.1 );
 my $writer = MyBlastWriter->new();
 my $out    = Bio::SearchIO->new( -format => 'blast',
 				 -writer => $writer,

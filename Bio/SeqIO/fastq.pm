@@ -20,7 +20,7 @@ Do not use this module directly.  Use it via the Bio::SeqIO class.
 
 =head1 DESCRIPTION
 
-This object can transform Bio::Seq and Bio::Seq::SeqWithQuality
+This object can transform Bio::Seq and Bio::Seq::Quality
 objects to and from fastq flat file databases.
 
 Fastq is a file format used frequently at the Sanger Centre to bundle
@@ -47,17 +47,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org            - General discussion
-  http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS - Tony Cox
 
@@ -74,20 +73,17 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::SeqIO::fastq;
-use vars qw(@ISA);
 use strict;
-# Object preamble - inherits from Bio::Root::Object
 
-use Bio::SeqIO;
 use Bio::Seq::SeqFactory;
 
-@ISA = qw(Bio::SeqIO);
+use base qw(Bio::SeqIO);
 
 sub _initialize {
   my($self,@args) = @_;
   $self->SUPER::_initialize(@args);  
   if( ! defined $self->sequence_factory ) {
-      $self->sequence_factory(new Bio::Seq::SeqFactory(-verbose => $self->verbose(), -type => 'Bio::Seq::SeqWithQuality'));      
+      $self->sequence_factory(new Bio::Seq::SeqFactory(-verbose => $self->verbose(), -type => 'Bio::Seq::Quality'));      
   }
 }
 
@@ -97,7 +93,7 @@ sub _initialize {
  Title   : next_seq
  Usage   : $seq = $stream->next_seq()
  Function: returns the next sequence in the stream
- Returns : Bio::Seq::SeqWithQuality object
+ Returns : Bio::Seq::Quality object
  Args    : NONE
 
 =cut
@@ -153,7 +149,7 @@ sub next_seq {
       $alphabet = undef;
   }
 
-  # create the SeqWithQuality object
+  # create the Quality object
   $seq = $self->sequence_factory->create(
 					 -qual         => $qual,
 					 -seq          => $sequence,
@@ -175,7 +171,7 @@ sub next_seq {
  Usage   : $stream->write_seq(@seq)
  Function: writes the $seq object into the stream
  Returns : 1 for success and 0 for error
- Args    : Bio::Seq::SeqWithQuality or Bio::seq object
+ Args    : Bio::Seq::Quality or Bio::Seq object
 
 
 =cut
@@ -208,7 +204,7 @@ sub write_seq {
  Usage   : $stream->write_qual(@seq)
  Function: writes the $seq object into the stream
  Returns : 1 for success and 0 for error
- Args    : Bio::Seq::SeqWithQuality object
+ Args    : Bio::Seq::Quality object
 
 
 =cut
@@ -216,8 +212,8 @@ sub write_seq {
 sub write_qual {
    my ($self,@seq) = @_;
    foreach my $seq (@seq) {
-     unless ($seq->isa("Bio::Seq::SeqWithQuality")){
-        warn("You can write FASTQ without supplying a Bio::Seq::SeqWithQuality object! ", ref($seq), "\n");
+     unless ($seq->isa("Bio::Seq::Quality")){
+        warn("You can write FASTQ without supplying a Bio::Seq::Quality object! ", ref($seq), "\n");
         next;
      } 
      my @qual = @{$seq->qual};
@@ -251,7 +247,7 @@ sub write_qual {
  Usage   : $stream->write_fastq(@seq)
  Function: writes the $seq object into the stream
  Returns : 1 for success and 0 for error
- Args    : Bio::Seq::SeqWithQuality object
+ Args    : Bio::Seq::Quality object
 
 
 =cut
@@ -259,8 +255,8 @@ sub write_qual {
 sub write_fastq {
    my ($self,@seq) = @_;
    foreach my $seq (@seq) {
-     unless ($seq->isa("Bio::Seq::SeqWithQuality")){
-        warn("You can write FASTQ without supplying a Bio::Seq::SeqWithQuality object! ", ref($seq), "\n");
+     unless ($seq->isa("Bio::Seq::Quality")){
+        warn("You can write FASTQ without supplying a Bio::Seq::Quality object! ", ref($seq), "\n");
         next;
      } 
      my $str = $seq->seq;

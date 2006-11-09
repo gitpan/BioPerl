@@ -14,6 +14,8 @@ Bio::Taxonomy::FactoryI - interface to define how to access NCBI Taxonoy
 
 =head1 DESCRIPTION
 
+NB: This module has been deprecated.
+
 $factory-E<gt>fetch is a general method to fetch Taxonomy by either NCBI
 taxid or any types of names.
 
@@ -40,12 +42,10 @@ Internal methods are usually preceded with a _
 =cut
 
 package Bio::Taxonomy::FactoryI;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 =head2 fetch
 

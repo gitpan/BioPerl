@@ -1,4 +1,4 @@
-# $Id: soflat.pm,v 1.2 2003/05/24 23:05:35 lapp Exp $
+# $Id: soflat.pm,v 1.7.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for Bio::OntologyIO::soflat
 #
@@ -23,7 +23,7 @@
 
 =head1 NAME
 
-soflat - a parser for the Sequence Ontology flat-file format
+Bio::OntologyIO::soflat - a parser for the Sequence Ontology flat-file format
 
 =head1 SYNOPSIS
 
@@ -32,7 +32,7 @@ soflat - a parser for the Sequence Ontology flat-file format
   # do not use directly -- use via Bio::OntologyIO
   my $parser = Bio::OntologyIO->new
 	( -format       => "so", # or soflat
-          -defs_file    => "/home/czmasek/SO/SO.defs",
+     -defs_file    => "/home/czmasek/SO/SO.defs",
 	  -file         => "/home/czmasek/SO/sofa.ontology" );
 
   my $sofa_ontology = $parser->next_ontology();
@@ -54,17 +54,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the 
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
-report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -97,17 +96,15 @@ methods. Internal methods are usually preceded with a _
 
 package  Bio::OntologyIO::soflat;
 
-use vars qw( @ISA );
 use strict;
 
 use Bio::Ontology::TermFactory;
-use Bio::OntologyIO::dagflat;
 
 use constant TRUE         => 1;
 use constant FALSE        => 0;
 
 
-@ISA = qw( Bio::OntologyIO::dagflat );
+use base qw(Bio::OntologyIO::dagflat);
 
 
 =head2 new
@@ -127,13 +124,15 @@ use constant FALSE        => 0;
                           also be specified via the -file parameter
            -ontology_name => the name of the ontology; if not specified the
                           parser will auto-discover it by using the term
-                          that starts with a '$', and converting underscores
+                          that starts with a $, and converting underscores
                           to spaces
-           -engine     => the L<Bio::Ontology::OntologyEngineI> object
+           -engine     => the Bio::Ontology::OntologyEngineI object
                           to be reused (will be created otherwise); note
-                          that every L<Bio::Ontology::OntologyI> will
+                          that every Bio::Ontology::OntologyI will
                           qualify as well since that one inherits from the
                           former.
+
+See L<Bio::Ontology::OntologyI>.
 
 =cut
 

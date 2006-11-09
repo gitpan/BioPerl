@@ -43,9 +43,10 @@ then use the -f command-line swith with an argument of '-', as in
 On the first load of a database, you will see a number of "unknown
 table" errors.  This is normal.
 
-About maxbin: the default value is 100,000,000 bases.  If you have
+About maxfeature: the default value is 100,000,000 bases.  If you have
 features that are close to or greater that 100Mb in length, then the
-value of maxbin should be increased to 1,000,000,000.
+value of maxfeature should be increased to 1,000,000,000, or another
+power of 10.
 
 =head1 COMMAND-LINE OPTIONS
 
@@ -58,8 +59,12 @@ e.g. -d instead of --database.
    --pass    <password>  Password for mysql authentication
    --fasta   <path>      Fasta file or directory containing fasta files for the DNA
    --create              Force creation and initialization of database
-   --maxbin              Set the value of the maximum bin size
+   --maxfeature          Set the value of the maximum feature size (default 100 Mb; must be a power of 10)
+   --group               A list of one or more tag names (comma or space separated)
+                          to be used for grouping in the 9th column.
    --upgrade             Upgrade existing database to current schema
+   --gff3_munge          Activate GFF3 name munging (see Bio::DB::GFF)
+   --quiet               No progress reports
 
 =head1 SEE ALSO
 
@@ -77,28 +82,35 @@ disclaimers of warranty.
 
 =cut
 
-
-my ($DSN,$ADAPTOR,$CREATE,$USER,$PASSWORD,$FASTA,$UPGRADE,$MAX_BIN);
+my ($DSN,$ADAPTOR,$CREATE,$USER,$PASSWORD,$FASTA,$UPGRADE,$MAX_BIN,$GROUP_TAG,$MUNGE,$QUIET);
 
 GetOptions ('dsn:s'       => \$DSN,
 	    'adaptor:s'   => \$ADAPTOR,
-	    'user:s'      => \$USER,
-	    'password:s'  => \$PASSWORD,
+	    'u|user:s'      => \$USER,
+	    'p|password:s'  => \$PASSWORD,
             'fasta:s'     => \$FASTA,
             'upgrade'     => \$UPGRADE,
-            'maxbin:s'    => \$MAX_BIN,
+            'maxbin|maxfeature:s'    => \$MAX_BIN,
+	    'group:s'     => \$GROUP_TAG,
+	    'gff3_munge'    => \$MUNGE,
+	    'quiet'       => \$QUIET,
 	    create        => \$CREATE) or (system('pod2text',$0), exit -1);
 
 # some local defaults
 $DSN     ||= 'dbi:mysql:test';
 $ADAPTOR ||= 'dbi::mysqlopt';
 
-my @auth;
-push @auth,(-user=>$USER)     if defined $USER;
-push @auth,(-pass=>$PASSWORD) if defined $PASSWORD;
+my @args;
+push @args,(-user=>$USER)     if defined $USER;
+push @args,(-pass=>$PASSWORD) if defined $PASSWORD;
+push @args,(-preferred_groups=>[split(/[,\s+]+/,$GROUP_TAG)]) if defined $GROUP_TAG;
+push @args,(-create=>1)       if $CREATE;
+push @args,(-write=>1);
 
-my $db = Bio::DB::GFF->new(-adaptor=>$ADAPTOR,-dsn => $DSN,@auth)
+my $db = Bio::DB::GFF->new(-adaptor=>$ADAPTOR,-dsn => $DSN,@args)
   or die "Can't open database: ",Bio::DB::GFF->error,"\n";
+
+$db->gff3_name_munging(1) if $MUNGE;
 
 if ($CREATE) {
   $MAX_BIN ? $db->initialize(-erase=>1,-MAX_BIN=>$MAX_BIN) :
@@ -127,7 +139,7 @@ foreach (@ARGV) {
 
 for my $file (@gff) {
   warn "$file: loading...\n";
-  my $loaded = $db->load_gff($file);
+  my $loaded = $db->load_gff($file,!$QUIET);
   warn "$file: $loaded records loaded\n";
 }
 
@@ -135,6 +147,6 @@ unshift @fasta,$FASTA if defined $FASTA;
 
 for my $file (@fasta) {
   warn "Loading fasta ",(-d $file?"directory":"file"), " $file\n";
-  my $loaded = $db->load_fasta($file);
+  my $loaded = $db->load_fasta($file,!$QUIET);
   warn "$file: $loaded records loaded\n";
 }

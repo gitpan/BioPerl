@@ -1,4 +1,4 @@
-# $Id: HSPTableWriter.pm,v 1.12 2002/11/23 15:32:24 jason Exp $
+# $Id: HSPTableWriter.pm,v 1.17.4.1 2006/10/02 23:10:27 sendu Exp $
 
 =head1 NAME
 
@@ -121,17 +121,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules.  Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-    bioperl-l@bioperl.org              - General discussion
-    http://bio.perl.org/MailList.html  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution. Bug reports can be submitted via email
-or the web:
+the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-    bioperl-bugs@bio.perl.org                   
-    http://bugzilla.bioperl.org/           
+  http://bugzilla.open-bio.org/           
 
 =head1 AUTHOR 
 
@@ -163,10 +162,8 @@ This software is provided "as is" without warranty of any kind.
 package Bio::SearchIO::Writer::HSPTableWriter;
 
 use strict;
-use Bio::SearchIO::Writer::ResultTableWriter;
 
-use vars qw( @ISA );
-@ISA = qw( Bio::SearchIO::Writer::ResultTableWriter );
+use base qw(Bio::SearchIO::Writer::ResultTableWriter);
 
 
 # Array fields: column, object, method[/argument], printf format, column label

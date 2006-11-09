@@ -1,4 +1,5 @@
-
+# $Id: Base.pm,v 1.4.4.1 2006/10/02 23:10:36 sendu Exp $
+#
 # BioPerl module for Bio::Tools::Primer::Assessor::Base
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
@@ -19,8 +20,6 @@ Bio::Tools::Primer::Assessor::Base - base class for common assessor things
 
     $base->weight(10);
 
-
-
 =head1 DESCRIPTION
 
 Base class for assessors, probably only defining the weight function
@@ -33,27 +32,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
-Email birney@ebi.ac.uk
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
+Email birney-at-ebi.ac.uk
 
 =head1 APPENDIX
 
@@ -66,13 +58,11 @@ Internal methods are usually preceded with a _
 # Let the code begin...
 
 
-use vars qw(@ISA);
 
-use Bio::Root::Root;
 
 package Bio::Tools::Primer::Assessor::Base;
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 sub new {
     my ( $caller, @args) = @_;   

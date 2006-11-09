@@ -1,4 +1,4 @@
-# $Id: Scoring.pm,v 1.1 2003/08/08 20:23:17 jason Exp $
+# $Id: Scoring.pm,v 1.4.4.1 2006/10/02 23:10:21 sendu Exp $
 #
 # BioPerl module for Bio::Matrix::Scoring
 #
@@ -31,8 +31,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -40,17 +40,11 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
 Email jason-at-bioperl-dot-org
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -64,12 +58,10 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Matrix::Scoring;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Matrix::Generic;
 
-@ISA = qw(Bio::Matrix::Generic);
+use base qw(Bio::Matrix::Generic);
 
 =head2 new
 
@@ -88,12 +80,10 @@ sub new {
     my $self = $class->SUPER::new(@args);
     
     my ($entropy,$expected,$scale,$scaleval,$database,
-	$lowestscore,$highestscore,$lambda,
-	$H) = $self->_rearrange([qw(ENTROPY EXPECTED SCALE
-				    SCALE_VALUE DATABASE
-				    LOWEST_SCORE
-				    HIGHEST_SCORE
-				    LAMBDA H)], @args);
+		  $lowestscore,$highestscore,$lambda,$H) = 
+			 $self->_rearrange([qw(
+        ENTROPY EXPECTED SCALE SCALE_VALUE DATABASE
+		  LOWEST_SCORE HIGHEST_SCORE LAMBDA H)], @args);
 
     $self->entropy  ($entropy);
     $self->expected_score($expected);
@@ -105,7 +95,6 @@ sub new {
     $self->lambda($lambda);
     $self->H($H);
 				    
-	
     return $self;
 }
 

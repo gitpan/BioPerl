@@ -1,4 +1,4 @@
-# $Id: Seq.pm,v 1.81 2003/09/24 13:05:55 bosborne Exp $
+# $Id: Seq.pm,v 1.91.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::Seq
 #
@@ -52,7 +52,7 @@ Bio::Seq - Sequence object, with features
     # sequences may have a species
 
     if( defined $seq->species ) {
-	print "Sequence is from ",$species->binomial_name," [",$species->common_name,"]\n";
+	print "Sequence is from ",$species->binomial," [",$species->common_name,"]\n";
     }
 
     # annotation objects are Bio::AnnotationCollectionI's
@@ -91,8 +91,8 @@ also implements its interface.
 In Bioperl we have 3 main players that people are going to use frequently
 
   Bio::PrimarySeq  - just the sequence and its names, nothing else.
-  Bio::SeqFeatureI - a location on a sequence, potentially with a sequence
-                     and annotation.
+  Bio::SeqFeatureI - a feature on a sequence, potentially with a sequence
+                     and a location and annotation.
   Bio::Seq         - A sequence and a collection of sequence features
                      (an aggregate) with its own annotation.
 
@@ -412,17 +412,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bio.perl.org/MailList.html  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney, inspired by Ian Korf objects
 
@@ -445,25 +444,12 @@ methods. Internal methods are usually preceded with a "_".
 
 
 package Bio::Seq;
-use vars qw(@ISA);
 use strict;
 
-
-# Object preamble - inherits from Bio::Root::Object
-
-use Bio::Root::Root;
-use Bio::SeqI;
 use Bio::Annotation::Collection;
 use Bio::PrimarySeq;
-use Bio::IdentifiableI;
-use Bio::DescribableI;
-use Bio::AnnotatableI;
-use Bio::FeatureHolderI;
 
-
-@ISA = qw(Bio::Root::Root Bio::SeqI
-	  Bio::IdentifiableI Bio::DescribableI
-	  Bio::AnnotatableI Bio::FeatureHolderI);
+use base qw(Bio::Root::Root Bio::SeqI Bio::IdentifiableI Bio::DescribableI Bio::AnnotatableI Bio::FeatureHolderI);
 
 =head2 new
 
@@ -583,7 +569,7 @@ sub seq {
            lead to an exception if passed to seq().
 
            The implementation provided here does not take alphabet() into
-           account. Allowed are all letters (A-Z) and '-','.', and '*'.
+           account. Allowed are all letters (A-Z), '-','.','*','=', and '~'.
 
  Example :
  Returns : 1 if the supplied sequence string is valid for the object, and
@@ -722,30 +708,31 @@ sub desc {
            For sequences with no natural id, this method should return
            a stringified memory location.
 
-           Can also be used to set the primary_id.
-
-           Also notice that this method is not delegated to the
-           internal Bio::PrimarySeq object
+           Can also be used to set the primary_id (or unset to undef).
 
            [Note this method name is likely to change in 1.3]
 
  Example : $id = $seq->primary_id or $seq->primary_id($id)
  Returns : A string
- Args    : None or an id
+ Args    : None or an id, or undef to unset the primary id.
 
 
 =cut
 
 sub primary_id {
-   my ($obj,$value) = @_;
+    # Note: this used to not delegate to the primary seq. This is
+    # really bad in very subtle ways. E.g., if you created the object
+    # with a primary id given to the constructor and then later you
+    # change the primary id, if this method wouldn't delegate you'd
+    # have different values for primary id in the PrimarySeq object
+    # compared to this instance. Not good.
 
-   if( defined $value) {
-      $obj->{'primary_id'} = $value;
-    }
-   if( ! exists $obj->{'primary_id'} ) {
-       return "$obj";
-   }
-   return $obj->{'primary_id'};
+    # I can't remember why not delegating was ever deemed
+    # advantageous, but I hereby claim that its problems far outweigh
+    # its advantages, if there are any. Convince me otherwise if you
+    # disagree. HL 2004/08/05
+
+    return shift->primary_seq->primary_id(@_);
 }
 
 =head2 can_call_new
@@ -780,7 +767,7 @@ sub can_call_new {
 
  Title   : alphabet
  Usage   : if ( $obj->alphabet eq 'dna' ) { /Do Something/ }
- Function: Returns the type of sequence being one of
+ Function: Get/Set the type of sequence being one of
            'dna', 'rna' or 'protein'. This is case sensitive.
 
            This is not called <type> because this would cause
@@ -789,7 +776,7 @@ sub can_call_new {
  Returns : A string either 'dna','rna','protein'. NB - the object must
            make a call of the type - if there is no type specified it
            has to guess.
- Args    : None
+ Args    : optional string to set : 'dna' | 'rna' | 'protein'
 
 
 =cut
@@ -938,10 +925,11 @@ sub description {
 =head2 annotation
 
  Title   : annotation
- Usage   : $ann = $seq->annotation or $seq->annotation($annotation)
+ Usage   : $ann = $seq->annotation or 
+           $seq->annotation($ann)
  Function: Gets or sets the annotation
- Returns : L<Bio::AnnotationCollectionI> object
- Args    : None or L<Bio::AnnotationCollectionI> object
+ Returns : Bio::AnnotationCollectionI object
+ Args    : None or Bio::AnnotationCollectionI object
 
 See L<Bio::AnnotationCollectionI> and L<Bio::Annotation::Collection>
 for more information

@@ -1,4 +1,4 @@
-# $Id: AlignI.pm,v 1.8 2003/05/15 08:13:54 heikki Exp $
+# $Id: AlignI.pm,v 1.16.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::Align::AlignI
 #
@@ -49,17 +49,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -68,7 +67,7 @@ Email jason@bioperl.org
 =head1 CONTRIBUTORS
 
 Ewan Birney, birney@ebi.ac.uk
-Heikki Lehvaslaiho, heikki@ebi.ac.uk
+Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -82,12 +81,10 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Align::AlignI;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::RootI;
 
-@ISA = qw(Bio::Root::RootI);
+use base qw(Bio::Root::RootI);
 
 =head1 Modifier methods
 
@@ -157,7 +154,7 @@ sub purge {
  Usage     : $ali->sort_alphabetically
  Function  : 
 
-             Changes the order of the alignemnt to alphabetical on name 
+             Changes the order of the alignment to alphabetical on name 
              followed by numerical by number.
 
  Returns   : 
@@ -237,10 +234,10 @@ sub each_seq_with_id {
 
              Gets a sequence based on its position in the alignment.
              Numbering starts from 1.  Sequence positions larger than
-             no_sequences() will thow an error.
+             no_sequences() will throw an error.
 
  Returns   : a Bio::LocatableSeq object
- Argument  : positive integer for the sequence osition
+ Argument  : positive integer for the sequence position
 
 =cut
 
@@ -262,7 +259,7 @@ current MSE.
 
              Creates a new alignment from a continuous subset of
              sequences.  Numbering starts from 1.  Sequence positions
-             larger than no_sequences() will thow an error.
+             larger than no_sequences() will throw an error.
 
  Returns   : a Bio::SimpleAlign object
  Argument  : positive integer for the first sequence
@@ -284,7 +281,7 @@ sub select {
 
              Creates a new alignment from a subset of
              sequences.  Numbering starts from 1.  Sequence positions
-             larger than no_sequences() will thow an error.
+             larger than no_sequences() will throw an error.
 
  Returns   : a Bio::SimpleAlign object
  Args      : array of integers for the sequences
@@ -321,7 +318,7 @@ sub slice {
 
 =head1 Change sequences within the MSE
 
-These methods affect characters in all sequences without changeing the
+These methods affect characters in all sequences without changing the
 alignment.
 
 
@@ -334,7 +331,7 @@ alignment.
              Does a s/$arg1/$arg2/ on the sequences. Useful for gap
              characters
 
-             Notice that the from (arg1) is interpretted as a regex,
+             Notice that the from (arg1) is interpreted as a regex,
              so be careful about quoting meta characters (eg
              $ali->map_chars('.','-') wont do what you want)
 
@@ -521,7 +518,7 @@ These read only methods describe the MSE in various ways.
  Usage     : $str = $ali->consensus_string($threshold_percent)
  Function  : Makes a strict consensus 
  Returns   : 
- Argument  : Optional treshold ranging from 0 to 100.
+ Argument  : Optional threshold ranging from 0 to 100.
              The consensus residue has to appear at least threshold %
              of the sequences at a given location, otherwise a '?'
              character will be placed at that location.
@@ -659,13 +656,13 @@ sub no_sequences {
 
 sub percentage_identity{
     my ($self) = @_;
-    $self->throw_not_implemeneted();
+    $self->throw_not_implemented();
 }
 
 =head2 overall_percentage_identity
 
- Title   : percentage_identity
- Usage   : $id = $align->percentage_identity
+ Title   : overall_percentage_identity
+ Usage   : $id = $align->overall_percentage_identity
  Function: The function calculates the percentage identity of 
            the conserved columns
  Returns : The percentage identity of the conserved columns
@@ -728,11 +725,11 @@ L<Bio::LocatableSeq::location_from_column>:
            column_from_residue_number( "Seq3", 50 ) returns 9.
 
            An exception is thrown if the residue number would lie
-           outside the length of the aligment
+           outside the length of the alignment
            (e.g. column_from_residue_number( "Seq2", 22 )
 
-	  Note: If the the parent sequence is represented by more than
-	  one alignment sequence and the residue number is present in
+	  Note: If the parent sequence is represented by more than one
+	  alignment sequence and the residue number is present in
 	  them, this method finds only the first one.
 
  Returns : A column number for the position in the alignment of the

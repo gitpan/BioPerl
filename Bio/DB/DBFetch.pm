@@ -1,9 +1,8 @@
-#
-# $Id: DBFetch.pm,v 1.8 2002/12/22 22:02:13 lstein Exp $
+# $Id: DBFetch.pm,v 1.13.4.2 2006/10/02 23:10:14 sendu Exp $
 #
 # BioPerl module for Bio::DB::DBFetch
 #
-# Cared for by Heikki Lehvaslaiho <Heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Heikki Lehvaslaiho
 #
@@ -40,21 +39,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email Heikki Lehvaslaiho E<lt>Heikki@ebi.ac.ukE<gt>
+Email Heikki Lehvaslaiho E<lt>heikki-at-bioperl-dot-orgE<gt>
 
 =head1 APPENDIX
 
@@ -67,14 +65,13 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::DB::DBFetch;
 use strict;
-use vars qw(@ISA $MODVERSION $DEFAULTFORMAT $DEFAULTLOCATION
-	    $DEFAULTSERVERTYPE);
+use vars qw($MODVERSION $DEFAULTFORMAT $DEFAULTLOCATION
+	         $DEFAULTSERVERTYPE);
 
 $MODVERSION = '0.1';
 use HTTP::Request::Common;
-use Bio::DB::WebDBSeqI;
 
-@ISA = qw(Bio::DB::WebDBSeqI);
+use base qw(Bio::DB::WebDBSeqI);
 
 # the new way to make modules a little more lightweight
 
@@ -98,28 +95,28 @@ BEGIN {
 =cut
 
 sub get_request {
-    my ($self, @qualifiers) = @_;
-    my ($uids, $format) = $self->_rearrange([qw(UIDS FORMAT)],
-					    @qualifiers);
+	my ($self, @qualifiers) = @_;
+	my ($uids, $format) = $self->_rearrange([qw(UIDS FORMAT)],
+														 @qualifiers);
 
-    $self->throw("Must specify a value for UIDs to fetch")
-	unless defined $uids;
-    my $tmp;
-    my $format_string = '';
-    $format ||= $self->default_format;
-    ($format, $tmp) = $self->request_format($format);
-    $format_string = "&format=$format" if $format ne $self->default_format;
-    my $url = $self->location_url();
-    my $uid;
-    if( ref($uids) =~ /ARRAY/i ) {
-	$uid = join (',', @$uids);
-	$self->warn ('The server will accept maximum of 50 entries in a request. The rest are ignored.')
-	    if scalar @$uids >50;
-    } else {
-	$uid = $uids;
-    }
+	$self->throw("Must specify a value for UIDs to fetch")
+	  unless defined $uids;
+	my $tmp;
+	my $format_string = '';
+	$format ||= $self->default_format;
+	($format, $tmp) = $self->request_format($format);
+	$format_string = "&format=$format"; 
+	my $url = $self->location_url();
+	my $uid;
+	if( ref($uids) =~ /ARRAY/i ) {
+		$uid = join (',', @$uids);
+		$self->warn ('The server will accept maximum of 50 entries in a request. The rest are ignored.')
+		  if scalar @$uids >50;
+	} else {
+		$uid = $uids;
+	}
 
-    return GET $url. $format_string. '&id='. $uid;
+	return GET $url. $format_string. '&id='. $uid;
 }
 
 
@@ -143,15 +140,16 @@ sub postprocess_data {
     ${$args{location}} =~ s/^\s+//;  # get rid of leading whitespace
   }
   elsif ($args{type} eq 'file') {
-    open F,$args{location} or $self->throw("Cannot open $args{location}: $!");
-    my @data = <F>;
+    my $F;
+    open $F,"<", $args{location} or $self->throw("Cannot open $args{location}: $!");
+    my @data = <$F>;
     for (@data) {
       last unless /^\s+$/;
       shift @data;
     }
-    open F,">$args{location}" or $self->throw("Cannot write to $args{location}: $!");
-    print F @data;
-    close F;
+    open $F,">", $args{location} or $self->throw("Cannot write to $args{location}: $!");
+    print $F @data;
+    close $F;
   }
 }
 

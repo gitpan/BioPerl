@@ -1,4 +1,4 @@
-# $Id: Reference.pm,v 1.19 2003/12/22 08:50:00 juguang Exp $
+# $Id: Reference.pm,v 1.24.4.3 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::Annotation::Reference
 #
@@ -16,10 +16,10 @@ Bio::Annotation::Reference - Specialised DBLink object for Literature References
 
 =head1 SYNOPSIS
 
-    $reg = Bio::Annotation::Reference->new( -title => 'title line',
-					    -location => 'location line',
-					    -authors => 'author line',
-					    -medline => 998122 );
+    $reg = Bio::Annotation::Reference->new( -title    => 'title line',
+                                            -location => 'location line',
+                                            -authors  => 'author line',
+                                            -medline  => 998122 );
 
 =head1 DESCRIPTION
 
@@ -37,9 +37,9 @@ without losing data, we keep them as strings. Feel free to post the
 list for a better solution, but in general this gets very messy very
 fast...
 
-=head1 CONTACT
+=head1 AUTHOR - Ewan Birney 
 
-Describe contact details here
+Email birney@ebi.ac.uk
 
 =head1 APPENDIX
 
@@ -51,14 +51,13 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 package Bio::Annotation::Reference;
-use vars qw(@ISA);
 use strict;
-# use overload '""' => \&as_text;
+use overload '""' => sub { $_[0]->title || ''};
+use overload 'eq' => sub { "$_[0]" eq "$_[1]" };
 
-use Bio::Annotation::DBLink;
 use Bio::AnnotationI;
 
-@ISA = qw(Bio::Annotation::DBLink);
+use base qw(Bio::Annotation::DBLink);
 
 =head2 new
 
@@ -70,8 +69,8 @@ use Bio::AnnotationI;
  Function:
  Example :
  Returns : a new Bio::Annotation::Reference object
- Args    : a hash with optional title, authors, location, medline, start and end
-           attributes
+ Args    : a hash with optional title, authors, location, medline, pubmed,
+           start, end, consortium, rp and rg attributes
 
 
 =cut
@@ -81,24 +80,30 @@ sub new{
 
     my $self = $class->SUPER::new(@args);
 
-    my ($start,$end,$authors,$location,$title,$medline,$tag) =
+    my ($start,$end,$authors,$consortium,$location,$title,$medline,
+	$pubmed,$rp,$rg) =
 	$self->_rearrange([qw(START
 			      END
 			      AUTHORS
+				  CONSORTIUM
 			      LOCATION
 			      TITLE
 			      MEDLINE
-			      TAGNAME
+				  PUBMED
+				  RP
+				  RG
 			      )],@args);
 
     defined $start    && $self->start($start);
     defined $end      && $self->end($end);
     defined $authors  && $self->authors($authors);
+	defined $consortium  && $self->consortium($consortium);
     defined $location && $self->location($location);
     defined $title    && $self->title($title);
     defined $medline  && $self->medline($medline);
-    defined $tag      && $self->tagname($tag);
-
+    defined $pubmed   && $self->pubmed($pubmed);
+    defined $rp       && $self->rp($rp);
+    defined $rg       && $self->rg($rg);
     return $self;
 }
 
@@ -113,7 +118,7 @@ sub new{
  Usage   :
  Function:
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
@@ -133,28 +138,31 @@ sub as_text{
  Usage   :
  Function:
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
 =cut
 
 sub hash_tree{
-   my ($self) = @_;
-   
-   my $h = {};
-   $h->{'title'}   = $self->title;
-   $h->{'authors'} = $self->authors;
-   $h->{'location'} = $self->location;
-   if( defined $self->start ) {
-       $h->{'start'}   = $self->start;
-   }
-   if( defined $self->end ) {
-       $h->{'end'} = $self->end;
-   }
-   $h->{'medline'} = $self->medline;
+	my ($self) = @_;
 
-   return $h;
+	my $h = {};
+	$h->{'title'}   = $self->title;
+	$h->{'authors'} = $self->authors;
+	$h->{'location'} = $self->location;
+	if (defined $self->start) {
+		$h->{'start'}   = $self->start;
+	}
+	if (defined $self->end) {
+		$h->{'end'} = $self->end;
+	}
+	$h->{'medline'} = $self->medline;
+	if (defined $self->pubmed) {
+		$h->{'pubmed'} = $self->pubmed;
+	}
+
+	return $h;
 }
 
 =head2 tagname
@@ -168,20 +176,12 @@ sub hash_tree{
            obtaining an AnnotationI object from the collection, the collection
            will set the value to the tag under which it was stored unless the
            object has a tag stored already.
- Example : 
+ Example :
  Returns : value of tagname (a scalar)
  Args    : new value (a scalar, optional)
 
 
 =cut
-
-sub tagname{
-    my ($self,$value) = @_;
-    if( defined $value) {
-	$self->{'tagname'} = $value;
-    }
-    return $self->{'tagname'};
-}
 
 
 =head1 Specific accessors for References
@@ -194,7 +194,7 @@ sub tagname{
  Title   : start
  Usage   : $self->start($newval)
  Function: Gives the reference start base
- Example : 
+ Example :
  Returns : value of start
  Args    : newvalue (optional)
 
@@ -215,7 +215,7 @@ sub start {
  Title   : end
  Usage   : $self->end($newval)
  Function: Gives the reference end base
- Example : 
+ Example :
  Returns : value of end
  Args    : newvalue (optional)
 
@@ -235,7 +235,7 @@ sub end {
  Title   : rp
  Usage   : $self->rp($newval)
  Function: Gives the RP line. No attempt is made to parse this line.
- Example : 
+ Example :
  Returns : value of rp
  Args    : newvalue (optional)
 
@@ -248,7 +248,29 @@ sub rp{
       $self->{'rp'} = $value;
     }
     return $self->{'rp'};
+}
 
+=head2 rg
+
+ Title   : rg
+ Usage   : $obj->rg($newval)
+ Function: Gives the RG line. This is Swissprot/Uniprot specific, and
+           if set will usually be identical to the authors attribute,
+           but the swissprot manual does allow both RG and RA (author)
+           to be present for the same reference.
+
+ Example :
+ Returns : value of rg (a scalar)
+ Args    : on set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub rg{
+    my $self = shift;
+
+    return $self->{'rg'} = shift if @_;
+    return $self->{'rg'};
 }
 
 =head2 authors
@@ -256,7 +278,7 @@ sub rp{
  Title   : authors
  Usage   : $self->authors($newval)
  Function: Gives the author line. No attempt is made to parse the author line
- Example : 
+ Example :
  Returns : value of authors
  Args    : newvalue (optional)
 
@@ -277,7 +299,7 @@ sub authors{
  Title   : location
  Usage   : $self->location($newval)
  Function: Gives the location line. No attempt is made to parse the location line
- Example : 
+ Example :
  Returns : value of location
  Args    : newvalue (optional)
 
@@ -298,7 +320,7 @@ sub location{
  Title   : title
  Usage   : $self->title($newval)
  Function: Gives the title line (if exists)
- Example : 
+ Example :
  Returns : value of title
  Args    : newvalue (optional)
 
@@ -319,7 +341,7 @@ sub title{
  Title   : medline
  Usage   : $self->medline($newval)
  Function: Gives the medline number
- Example : 
+ Example :
  Returns : value of medline
  Args    : newvalue (optional)
 
@@ -340,7 +362,7 @@ sub medline{
  Usage   : $refobj->pubmed($newval)
  Function: Get/Set the PubMed number, if it is different from the MedLine
            number.
- Example : 
+ Example :
  Returns : value of medline
  Args    : newvalue (optional)
 
@@ -359,37 +381,47 @@ sub pubmed {
 
  Title   : database
  Usage   :
- Function: Overrides DBLink database to be hard coded to 'MEDLINE', unless
-           the database has been set explicitely before.
+ Function: Overrides DBLink database to be hard coded to 'MEDLINE' (or 'PUBMED'
+		   if only pubmed id has been supplied), unless the database has been
+		   set explicitely before.
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
 =cut
 
 sub database{
-   my ($self, @args) = @_;
-
-   return $self->SUPER::database(@args) || 'MEDLINE';
+	my ($self, @args) = @_;
+	my $default = 'MEDLINE';
+	if (! defined $self->medline && defined $self->pubmed) {
+		$default = 'PUBMED';
+	}
+	return $self->SUPER::database(@args) || $default;
 }
 
 =head2 primary_id
 
  Title   : primary_id
  Usage   :
- Function: Overrides DBLink primary_id to provide medline number
+ Function: Overrides DBLink primary_id to provide medline number, or pubmed
+           number if only that has been defined
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
 =cut
 
 sub primary_id{
-   my ($self, @args) = @_;
-
-   return $self->medline(@args);
+	my ($self, @args) = @_;
+	if (@args) {
+		$self->medline(@args);
+	}
+	if (! defined $self->medline && defined $self->pubmed) {
+		return $self->pubmed;
+	}
+	return $self->medline;
 }
 
 =head2 optional_id
@@ -398,7 +430,7 @@ sub primary_id{
  Usage   :
  Function: Overrides DBLink optional_id to provide the PubMed number.
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
@@ -415,7 +447,7 @@ sub optional_id{
  Title   : publisher
  Usage   : $self->publisher($newval)
  Function: Gives the publisher line. No attempt is made to parse the publisher line
- Example : 
+ Example :
  Returns : value of publisher
  Args    : newvalue (optional)
 
@@ -436,7 +468,7 @@ sub publisher {
  Title   : editors
  Usage   : $self->editors($newval)
  Function: Gives the editors line. No attempt is made to parse the editors line
- Example : 
+ Example :
  Returns : value of editors
  Args    : newvalue (optional)
 
@@ -459,7 +491,7 @@ sub editors {
  Function: Gives the encoded_ref line. No attempt is made to parse the encoded_ref line
  	(this is added for reading PDB records (REFN record), where this contains
 	 ISBN/ISSN/ASTM code)
- Example : 
+ Example :
  Returns : value of encoded_ref
  Args    : newvalue (optional)
 
@@ -474,5 +506,51 @@ sub encoded_ref {
    return $self->{'encoded_ref'};
 }
 
+=head2 consortium
+
+ Title   : consortium
+ Usage   : $self->consortium($newval)
+ Function: Gives the consortium line. No attempt is made to parse the consortium line
+ Example :
+ Returns : value of consortium
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub consortium{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'consortium'} = $value;
+    }
+    return $self->{'consortium'};
+
+}
+
+=head2 gb_reference
+
+ Title   : gb_reference
+ Usage   : $obj->gb_reference($newval)
+ Function: Gives the generic GenBank REFERENCE line. This is GenBank-specific.
+           If set, this includes everything on the reference line except
+	   the REFERENCE tag and the reference count.  This is mainly a
+	   fallback for the few instances when REFERENCE lines have unusual
+	   additional information such as split sequence locations, feature
+	   references, etc.  See Bug 2020 in Bugzilla for more information.
+ Example :
+ Returns : value of gb_reference (a scalar)
+ Args    : on set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub gb_reference{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'gb_reference'} = $value;
+    }
+    return $self->{'gb_reference'};
+
+}
 
 1;

@@ -1,4 +1,4 @@
-# $Id: ResultTableWriter.pm,v 1.13 2002/12/05 13:46:35 heikki Exp $
+# $Id: ResultTableWriter.pm,v 1.19.4.1 2006/10/02 23:10:27 sendu Exp $
 
 =head1 NAME
 
@@ -32,6 +32,7 @@ Bio::SearchIO::Writer::ResultTableWriter - Outputs tab-delimited data for each B
                                   -columns => [qw(
                                                   query_name
                                                   query_length
+                                                  num_hits
                                                   )]  );
 
     my $out = Bio::SearchIO->new( -writer => $writer,
@@ -52,7 +53,8 @@ you want to specify. Here's an example:
     my $writer = Bio::SearchIO::Writer::ResultTableWriter->new( 
                                -columns => [qw( query_name 
                                                 query_length
-                                                query_description )],
+                                                query_description 
+                                                num_hits)],
                                -labels  => { 1 => 'QUERY_GI',
   	                                     2 => 'QUERY_LENGTH' } );
 
@@ -90,17 +92,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules.  Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-    bioperl-l@bioperl.org              - General discussion
-    http://bio.perl.org/MailList.html  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution. Bug reports can be submitted via email
-or the web:
+the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-    bioperl-bugs@bio.perl.org                   
-    http://bugzilla.bioperl.org/           
+  http://bugzilla.open-bio.org/           
 
 =head1 AUTHOR 
 
@@ -133,11 +134,8 @@ L<Bio::SearchIO::Writer::HSPTableWriter>
 package Bio::SearchIO::Writer::ResultTableWriter;
 
 use strict;
-use Bio::Root::Root;
-use Bio::SearchIO::SearchWriterI;
 
-use vars qw( @ISA );
-@ISA = qw( Bio::Root::Root Bio::SearchIO::SearchWriterI );
+use base qw(Bio::Root::Root Bio::SearchIO::SearchWriterI);
 
 # Array fields: column, object, method[/argument], printf format, column label
 # Methods are defined in Bio::Search::Result::ResultI.
@@ -147,6 +145,7 @@ my %column_map = (
                   'query_name'        => ['1', 'result', 'query_name', 's', 'QUERY' ],
                   'query_length'      => ['2', 'result', 'query_length', 'd', 'LEN_Q'],
                   'query_description' => ['3', 'result', 'query_description', 's', 'DESC_Q'],
+                  'num_hits'          => ['4', 'result', 'num_hits', 'd', 'NUM_HITS'],
                  );
 
 sub column_map { return %column_map }

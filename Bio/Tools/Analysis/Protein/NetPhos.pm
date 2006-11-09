@@ -1,8 +1,8 @@
-# $Id: NetPhos.pm,v 1.7 2003/12/08 13:55:16 radams Exp $
+# $Id: NetPhos.pm,v 1.13.4.1 2006/10/02 23:10:32 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Analysis::Protein::NetPhos
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Richard Adams
 #
@@ -70,22 +70,21 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                       - General discussion
-  http://bio.perl.org/MailList.html           - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS
 
 Richard Adams, Richard.Adams@ed.ac.uk, 
-Heikki Lehvaslaiho, heikki@ebi.ac.uk
+Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -99,15 +98,14 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Tools::Analysis::Protein::NetPhos;
-use vars qw(@ISA  $FLOAT );
+use vars qw($FLOAT);
 use strict;
 use IO::String;
 use Bio::SeqIO;
 use HTTP::Request::Common qw (POST);
 use Bio::SeqFeature::Generic;
-use Bio::Tools::Analysis::SimpleAnalysisBase;
 
-@ISA = qw(Bio::Tools::Analysis::SimpleAnalysisBase);
+use base qw(Bio::Tools::Analysis::SimpleAnalysisBase);
 
     $FLOAT = '[+-]?\d*\.\d*';
     my $URL = 'http://www.cbs.dtu.dk/cgi-bin/nph-webface';
@@ -148,7 +146,7 @@ use Bio::Tools::Analysis::SimpleAnalysisBase;
 
 
 =head2 result
- 
+
  Name    : result
  Usage   : $job->result (...)
  Returns : a result created by running an analysis

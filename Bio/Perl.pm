@@ -1,8 +1,8 @@
-# $Id: Perl.pm,v 1.20 2003/09/15 13:38:07 bosborne Exp $
+# $Id: Perl.pm,v 1.26.4.4 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::Perl
 #
-# Cared for by Ewan Birney <bioperl-l@bio.perl.org>
+# Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
 # Copyright Ewan Birney
 #
@@ -66,7 +66,7 @@ Bio::Perl - Functional access to BioPerl for people who don't know objects
 
 =head1 DESCRIPTION
 
-Easy first time access to BioPerl via functions
+Easy first time access to BioPerl via functions.
 
 =head1 FEEDBACK
 
@@ -76,22 +76,18 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bio.perl.org
+  bioperl-l@bioperl.org
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution. Bug reports can be submitted via email
-or the web:
+the bugs and their resolution. Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
-Email bioperl-l@bio.perl.org
-
-Describe contact details here
+Email birney@ebi.ac.uk
 
 =head1 APPENDIX
 
@@ -105,13 +101,13 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Perl;
-use vars qw(@ISA @EXPORT @EXPORT_OK $DBOKAY);
+use vars qw(@EXPORT @EXPORT_OK $DBOKAY);
 use strict;
 use Carp;
-use Exporter;
 
 use Bio::SeqIO;
 use Bio::Seq;
+use Bio::Root::Version '$VERSION';
 BEGIN {
     eval {
 	require Bio::DB::EMBL;
@@ -127,11 +123,11 @@ BEGIN {
     }
 }
 
-@ISA = qw(Exporter);
+use base qw(Exporter);
 
-@EXPORT = qw(read_sequence read_all_sequences write_sequence 
-	     new_sequence get_sequence translate translate_as_string 
-	     reverse_complement revcom revcom_as_string 
+@EXPORT = qw(read_sequence read_all_sequences write_sequence
+	     new_sequence get_sequence translate translate_as_string
+	     reverse_complement revcom revcom_as_string
 	     reverse_complement_as_string blast_sequence write_blast);
 
 @EXPORT_OK = @EXPORT;
@@ -298,12 +294,14 @@ sub write_sequence{
 =head2 new_sequence
 
  Title   : new_sequence
- Usage   :
- Function:
- Example :
- Returns :
- Args    :
+ Usage   : $seq_obj = new_sequence("GATTACA", "kino-enzyme");
 
+ Function: Construct a sequency object from sequence string
+ Returns : A Bio::Seq object
+
+ Args    : sequence string
+           name string (optional, default "no-name-for-sequence")
+           accession - accession number (optional, no default)
 
 =cut
 
@@ -436,9 +434,10 @@ sub write_blast {
  Title   : get_sequence
  Usage   : $seq_object = get_sequence('swiss',"ROA1_HUMAN");
 
- Function: If the computer has Internet accessibility, gets
+ Function: If the computer has Internet access this method gets
            the sequence from Internet accessible databases. Currently
-           this supports Swissprot, EMBL, GenBank and RefSeq.
+           this supports Swissprot ('swiss'), EMBL ('embl'), GenBank
+           ('genbank'), GenPept ('genpept'), and RefSeq ('refseq').
 
            Swissprot and EMBL are more robust than GenBank fetching.
 
@@ -447,8 +446,8 @@ sub write_blast {
 
  Returns : A Bio::Seq object
 
- Args    : database type - one of swiss, embl, genbank or refseq
-           identifier or accession number
+ Args    : database type - one of swiss, embl, genbank, genpept, or
+           refseq
 
 =cut
 
@@ -477,7 +476,7 @@ sub get_sequence{
    if( $db_type =~ /genpept/ ) {
        if( !defined $genpept_db ) {
 	   $genpept_db = Bio::DB::GenPept->new();
-       } 
+       }
        $db = $genpept_db;
    }
 
@@ -495,7 +494,7 @@ sub get_sequence{
        $db = $embl_db;
    }
 
-   if( $db_type =~ /refseq/ or ($db_type !~ /swiss/ and 
+   if( $db_type =~ /refseq/ or ($db_type !~ /swiss/ and
 				$identifier =~ /^\s*N\S+_/)) {
        if( !defined $refseq_db ) {
 	   $refseq_db = Bio::DB::RefSeq->new();
@@ -565,7 +564,7 @@ sub translate {
 
  Function: translates a DNA sequence object OR just a plain
            string of DNA to amino acids
- Returns : A stirng of just amino acids
+ Returns : A string of just amino acids
 
  Args    : Either a sequence object or a string of
            just DNA sequence characters

@@ -1,4 +1,4 @@
-# $Id: TermFactory.pm,v 1.3 2003/03/27 08:54:25 lapp Exp $
+# $Id: TermFactory.pm,v 1.7.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for Bio::Ontology::TermFactory
 #
@@ -26,14 +26,16 @@
 
 =head1 NAME
 
-Bio::Ontology::TermFactory - Instantiates a new Bio::Ontology::TermI (or derived class) through a factory
+Bio::Ontology::TermFactory - Instantiates a new 
+Bio::Ontology::TermI (or derived class) through a factory
 
 =head1 SYNOPSIS
 
     use Bio::Ontology::TermFactory;
 
     # the default type is Bio::Ontology::Term
-    my $factory = new Bio::Ontology::TermFactory(-type => 'Bio::Ontology::GOterm');
+    my $factory = new Bio::Ontology::TermFactory(
+                        -type => 'Bio::Ontology::GOterm');
     my $term = $factory->create_object(-name => 'peroxisome',
                                        -ontology => 'Gene Ontology',
                                        -identifier => 'GO:0005777');
@@ -51,17 +53,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+the web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
@@ -80,13 +81,11 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Ontology::TermFactory;
-use vars qw(@ISA);
 use strict;
 
 use Bio::Root::Root;
-use Bio::Factory::ObjectFactory;
 
-@ISA = qw(Bio::Factory::ObjectFactory);
+use base qw(Bio::Factory::ObjectFactory);
 
 =head2 new
 
@@ -94,8 +93,10 @@ use Bio::Factory::ObjectFactory;
  Usage   : my $obj = new Bio::Ontology::TermFactory();
  Function: Builds a new Bio::Ontology::TermFactory object 
  Returns : Bio::Ontology::TermFactory
- Args    : -type => string, name of a L<Bio::Ontology::TermI> derived class.
-                    The default is L<Bio::Ontology::Term>.
+ Args    : -type => string, name of a Bio::Ontology::TermI derived class.
+                    The default is Bio::Ontology::Term.
+
+See L<Bio::Ontology::TermI>, L<Bio::Ontology::Term>.
 
 =cut
 
@@ -121,13 +122,15 @@ sub new {
            This object allows us to genericize the instantiation of
            Term objects.
 
- Returns : L<Bio::Ontology::TermI> compliant object
+ Returns : Bio::Ontology::TermI compliant object
            The return type is configurable using new(-type =>"...").
  Args    : initialization parameters specific to the type of term
            object we want.  Typically 
            -name        => $name
            -identifier  => identifier for the term
            -ontology    => ontology for the term
+
+See L<Bio::Ontology::TermI>.
 
 =cut
 

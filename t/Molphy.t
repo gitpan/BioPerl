@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: Molphy.t,v 1.1 2002/07/25 04:34:52 jason Exp $
+# $Id: Molphy.t,v 1.2 2005/09/17 02:11:21 bosborne Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -9,31 +9,31 @@
 use strict;
 use vars qw($NUMTESTS $error);
 
-
 BEGIN { 
-    # to handle systems with no installed Test module
-    # we include the t dir (where a copy of Test.pm is located)
-    # as a fallback
-    eval { require Test; };
-    $error = 0;
-    if( $@ ) {
-	use lib 't';
-    }
-    use Test;
+	# to handle systems with no installed Test module
+	# we include the t dir (where a copy of Test.pm is located)
+	# as a fallback
+	eval { require Test; };
+	$error = 0;
+	if( $@ ) {
+		use lib 't';
+	}
+	use Test;
 
-    $NUMTESTS = 17;
-    plan tests => $NUMTESTS;
-    eval { require IO::String; 
-	   require Bio::Tools::Phylo::Molphy;}; 
-    if( $@ ) { print STDERR "no IO string installed\n"; 
-	       $error = 1;
-	   }
+	$NUMTESTS = 17;
+	plan tests => $NUMTESTS;
+	eval { require IO::String;
+			 require Bio::Tools::Phylo::Molphy;};
+	if( $@ ) {
+		warn "No IO::String installed\n";
+		$error = 1;
+	}
 }
 
 END { 
-    foreach ( $Test::ntest .. $NUMTESTS ) {
-	skip("unable to run all of the Molphy tests",1);
-    }
+	foreach ( $Test::ntest .. $NUMTESTS ) {
+		skip("Unable to run the Molphy tests",1);
+	}
 }
 
 

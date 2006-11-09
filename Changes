@@ -1,9 +1,331 @@
-$Id: Changes,v 1.39 2003/12/22 20:00:34 heikki Exp $
-
+$Id: Changes,v 1.49.4.1 2006/10/02 23:10:11 sendu Exp $
+  
 Revision history for Bioperl core modules
 
+Main trunk
 
+    n/a
+
+1.5 series - these releases represent the pre-1.6 releases, the 1.6 series
+    will be branches from the last 1.5.x release. 
+
+1.5.2 Developer release
+    Full details of changes since 1.5.1 are available online at:
+    http://www.bioperl.org/wiki/Change_log
+    The following represents a brief overview of the most important changes.
+
+    o Bio::Map
+      - Overhaul. Brand new system fully allows markers to have multiple
+        positions on multiple maps, and to have relative positions. Should be
+        backward compatible.
+    
+    o Bio::Taxonomy
+      - This module and all the modules in the Taxonomy directory now
+        deprecated in favour of Bio::Taxon and Bio::Tree::Tree
+    
+    o Bio::DB::Taxonomy
+      
+      - Taxonomy.pm
+        * get_Taxonomy_Node() eventually to be deprecated, renamed get_taxon().
+        
+        * New methods ancestor(), each_Descendent() and _handle_internal_id().
+        
+        * Allows for different database modules to create Bio::Taxon objects
+          with the same internal id when the same taxon is requested from each.
+    
+      - flatfile.pm
+        * get_Children_Taxids() is deprecated, superceded by each_Descendent().
+        
+        * No longer includes the fake root node 'root'; there are multiple roots
+          now (10239, 12884, 12908, 29384 and 131567). Consistent with entrez.pm
+    
+      - entrez.pm
+        * get_node() has new option -full
+        
+        * Caches data retrieved from website
+    
+    o Bio::Species
+      - Now a Bio::Taxon. Carries out the species name -> specific name munging
+        that Bio::DB::Taxonomy modules and SeqIO modules used to do, for
+        backward compatability in species() method.
+    
+    o Bio::Search and Bio::SearchIO
+      - Overhaul. The existing system has been sped up via some minor changes
+        (mostly gain-of-function to the API). Bio::PullParserI is introduced
+        as a potential eventual replacment for the existing system, though as
+        yet only a Hmmpfam parser exists written using it.
+
+
+1.5.1 Developer release
+
+    o Major problem with how Annotations were written out with
+      Bio::Seq is fixed by reverting to old behavior for
+      Bio::Annotation objects.
+
+    o Bio::SeqIO
+
+     - genbank.pm
+       * bug #1871; REFLOOP' parsing loop, I changed the pattern to
+         expect at l east 9 spaces at the beginning of a line to
+         indicate line wrapping.
+
+       * Treat multi-line SOURCE sections correctly, this defect broke
+         both common_name() and classification()
+
+       * parse swissprot fields in genpept file 
+
+       * parse WGS genbank records
+
+     - embl.pm
+        * Changed regexp for ID line. The capturing parentheses are
+          the same, the difference is an optional repeated-not-semi-
+          colon expression following the captured \S+. This means the
+          regexp works when the division looks like /PRO;/ or when the
+          division looks like /ANG ;/ - the latter is from EMBL
+          repbase
+
+        * fix ID line parsing: the molecule string can have spaces in
+          it. Like: "genomic DNA"
+
+     - swiss.pm: bugs  #1727, #1734
+     
+     - entrezgene.pm
+        * Added parser for entrezgene ASN1 (text format) files.
+          Uses Bio::ASN1::EntrezGene as a low level parser (get it from CPAN)
+
+    o Bio::AlignIO
+
+     -  maf.pm coordinate problem fixed
+      
+    o Bio::Taxonomy and Bio::DB::Taxonomy
+
+     - Parse NCBI XML now so that nearly all the taxonomy up-and-down 
+       can be done via Web without downloading all the sequence.
+ 
+    o Bio::Tools::Run::RemoteBlast supports more options and complies
+      to changes to the NCBI interface. It is reccomended that you
+      retrieve the data in XML instead of plain-text BLAST report to
+      insure proper parsing and retrieval of all information as NCBI
+      fully expects to change things in the future.
+ 
+    o Bio::Tree and Bio::TreeIO
+
+      - Fixes so that re-rooting a tree works properly
+
+      - Writing out nhx format from a newick/nexus file will properly output
+        bootstrap information.  The use must move the internal node labels over
+        to bootstraps.
+         for my $node ( grep { ! $_->is_Leaf } $tree->get_nodes ) {
+            $node->bootstrap($node->id);
+	    $node->id('');
+	 }
+      - Nexus parsing is much more flexible now, does not care about
+        LF.
+
+      - Cladogram drawing module in Bio::Tree::Draw
+      
+      - Node height and depth now properly calculated
+
+      - fix tree pruning algorithm so that node with 1 child gets merged
+
+    o Graphics tweaks.  Glyph::xyplot improved.  Many other small-medium sized
+      bugs and improvements were added, see Gbrowse mailing list for most of 
+      these.
+
+    o Bio::DB::GFF partially supports GFF3.  See information about 
+      gff3_munge flag in scripts/Bio-DB-GFF/bulk_load_gff.pl.
+         
+    o Better location parsing in Bio::Factory::FTLocationFactory -
+      this is part of the engine for parsing EMBL/GenBank feature table
+      locations.  Nested join/order-by/complement are allowed now
+
+    o Bio::PrimarySeqI->translate now takes named parameters
+
+    o Bio::Tools::Phylo::PAML - parsing RST (ancestral sequence
+      reconstruction) is now supported.  Parsing different models and 
+      branch specific parametes are now supported.
+
+    o Bio::Factory::FTLocationFactory - parse hierarchical locations 
+      (joins of joins)
+
+    o Bio::Matrix::DistanceMatrix returns arrayrefs instead of arrays
+      for getter/setter functions
+
+    o Bio::SearchIO
+      
+      - blast bug #1739; match scientific notation in score 
+        and possible e+ values 
+
+      - blast.pm reads more WU-BLAST parameters and parameters, match
+        a full database pathname, 
+   
+      - Handle NCBI WEB and newer BLAST formats specifically
+        (Query|Sbjct:) match in alignment blocks can now be (Query|Sbjct).
+
+      - psl off-by-one error fixed
+
+      - exonerate parsing much improved, CIGAR and VULGAR can be parsed
+        and HSPs can be constructed from them.
+
+      - HSPs query/hit now have a seqdesc field filled out (this was
+        always available via $hit->description and
+        $result->query_description
+
+      - hmmer.pm can parse -A0 hmmpfam files
+
+      - Writer::GbrowseGFF more customizeable.
+
+    o Bio::Tools::Hmmpfam 
+      make e-value default score displayed in gff, rather than raw score
+      allow parse of multiple records
+
+
+1.5 Developer release
+
+    o Bio::Align::DNAStatistics and Bio::Align::ProteinStatistics
+      provide Jukes-Cantor and Kimura pairwise distance methods,
+      respectively.
+
+    o Bio::AlignIO support for "po" format of POA, and "maf";
+      Bio::AlignIO::largemultifasta is a new alternative to
+      Bio::AlignIO::fasta for temporary file-based manipulation of
+      particularly large multiple sequence alignments.
+
+    o Bio::Assembly::Singlet allows orphan, unassembled sequences to
+      be treated similarly as an assembled contig.
+
+    o Bio::CodonUsage provides new rare_codon() and probable_codons()
+      methods for identifying particular codons that encode a given
+      amino acid.
+
+    o Bio::Coordinate::Utils provides new from_align() method to build
+      a Bio::Coordinate pair directly from a
+      Bio::Align::AlignI-conforming object.
+
+    o Bio::DB::Biblio::eutils is a class for querying NCBI's Eutils.
+      Send a Pubmed, Pubmed Central, Entrez, or other query to NCBI's
+      web service using standard Pubmed query syntax, and retrieve
+      results as XML.
+
+    o Bio::DB::GFF has various sundry bug fixes.
+
+    o Bio::FeatureIO is a new SeqIO-style subsystem for
+      writing/reading genomic features to/from files.  I/O classes
+      exist for BED, GTF (aka GFF v2.5), and GFF v3.  Bio::FeatureIO
+      classes only read/write Bio::SeqFeature::Annotated objects.
+      Notably, the GFF v3 class requires features to be typed into the
+      Sequence Ontology.
+
+    o Bio::Graph namespace contains new modules for manipulation and
+      analysis of protein interaction graphs.
+
+    o Bio::Graphics has many bug fixes and shiny new glyphs.
+
+    o Bio::Index::Hmmer and Bio::Index::Qual provide multiple-file
+      indexing for HMMER reports and FASTA qual files, respectively.
+
+    o Bio::Map::Clone, Bio::Map::Contig, and Bio::Map::FPCMarker are
+      new objects that can be placed within a Bio::Map::MapI-compliant
+      genetic/physical map; Bio::Map::Physical provides a new physical
+      map type; Bio::MapIO::fpc provides finger-printed clone mapping
+      import.
+
+    o Bio::Matrix::PSM provide new support for postion-specific
+      (scoring) matrices (e.g. profiles, or "possums").
+
+    o Bio::Ontology::Ontology and Bio::Ontology::Term objects can now
+      be instantiated without explicitly using Bio::OntologyIO.  This
+      is possible through changes to Bio::Ontology::OntologyStore to
+      download ontology files from the web as necessary.  Locations of
+      ontology files are hard-coded into
+      Bio::Ontology::DocumentRegistry.
+
+    o Bio::PopGen includes many new methods and data types for
+      population genetics analyses.
+
+    o New constructor to Bio::Range, unions().  Given a list of
+      ranges, returns another list of "flattened" ranges --
+      overlapping ranges are merged into a single range with the
+      mininum and maximum coordinates of the entire overlapping group.
+
+    o Bio::Root::IO now supports -url, in addition to -file and -fh.
+      The new -url argument allows one to specify the network address
+      of a file for input.  -url currently only works for GET
+      requests, and thus is read-only.
+
+    o Bio::SearchIO::hmmer now returns individual Hit objects for each
+      domain alignment (thus containing only one HSP); previously
+      separate alignments would be merged into one hit if the domain
+      involved in the alignments was the same, but this only worked
+      when the repeated domain occured without interruption by any
+      other domain, leading to a confusing mixture of Hit and HSP
+      objects.
+
+    o Bio::Search::Result::ResultI-compliant report objects now
+      implement the "get_statistics" method to access
+      Bio::Search::StatisticsI objects that encapsulate any
+      statistical parameters associated with the search (e.g. Karlin's
+      lambda for BLAST/FASTA).
+ 
+    o Bio::Seq::LargeLocatableSeq combines the functionality already
+      found in Bio::Seq::LargeSeq and Bio::LocatableSeq.
+
+    o Bio::SeqFeature::Annotated is a replacement for
+      Bio::SeqFeature::Generic.  It breaks compliance with the
+      Bio::SeqFeatureI interface because the author was sick of
+      dealing with untyped annotation tags.  All
+      Bio::SeqFeature::Annotated annotations are Bio::AnnotationI
+      compliant, and accessible through Bio::Annotation::Collection.
+
+    o Bio::SeqFeature::Primer implements a Tm() method for primer
+      melting point predictions.
+
+    o Bio::SeqIO now supports AGAVE, BSML (via SAX), CHAOS-XML,
+      InterProScan-XML, TIGR-XML, and NCBI TinySeq formats.
+
+    o Bio::Taxonomy::Node now implements the methods necessary for
+      Bio::Species interoperability.
+
+    o Bio::Tools::CodonTable has new reverse_translate_all() and
+      make_iupac_string() methods.
+
+    o Bio::Tools::dpAlign now provides sequence profile alignments.
+
+    o Bio::Tools::GFF now parses GFF version 2.5 (a.k.a. GTF).
+
+    o Bio::Tools::Fgenesh, Bio::Tools::tRNAscanSE are new report
+      parsers.
+
+    o Bio::Tools::SiRNA includes two new rulesets (Saigo and Tuschl)
+      for designing small inhibitory RNA.
+
+    o Bio::Tree::DistanceFactory provides NJ and UPGMA tree-building
+      methods based on a distance matrix.
+
+    o Bio::Tree::Statistics provides an assess_bootstrap() method to
+      calculate bootstrap support values on a guide tree topology,
+      based on provided bootstrap tree topologies.
+  
+    o Bio::TreeIO now supports the Pagel (PAG) tree format.
+  
 1.4 branch
+
+1.4.1 
+
+  o Improvements to Bio::AlignIO::nexus for parsing TreeBase nexus files
+  
+  o Bio::Graphics will work with gd1 or gd2
+   
+  o Bio::SearchIO
+   - hmmer.pm Better hmmpfam parsing, fix bug for small number of alignment outputs
+     (RF lines alone)
+   - blast.pm Parse multi-line query fields properly
+   - small speed improvements to blasttable.pm and others
+
+  o Bio::DB::Taxonomy has better support for hierarchy traversal so that
+    Bio::Taxonomy::Node can be as simple as Bio::Species object while still
+    supporting more complex queries
+
 
 1.4. Stable major release
 
@@ -74,11 +396,11 @@ Since initial 1.2.0, 3000 separate changes have been made to make this release.
      - needs Bioperl-ext
 
    o new Bio::SearchIO formats
+     - axt and psl:  UCSC formats.
+     - blasttable: NCBI -m 8 or -m 9 format from blastall
 
    o new Bio::SeqIO formats
      - chado, tab, kegg, tigr, game
-     - axt and psl:  UCSC formats.
-     - blasttable: NCBI -m 8 or -m 9 format from blastall
      - important fixes for old modules
 
    o Bio::AlignIO: maf

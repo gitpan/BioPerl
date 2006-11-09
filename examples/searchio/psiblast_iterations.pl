@@ -13,7 +13,7 @@
 #   Bio::Search::Iteration::IterationI
 #
 # Author: Steve Chervitz <sac@bioperl.org>
-# Revision: $Id: psiblast_iterations.pl,v 1.1 2003/06/04 02:18:04 sac Exp $
+# Revision: $Id: psiblast_iterations.pl,v 1.2 2004/02/21 10:50:34 sac Exp $
 
 use strict;
 use lib '../../';
@@ -22,7 +22,8 @@ use Bio::SearchIO;
 
 my $file = shift or die "Usage: $0 <BLAST-report-file>\n";
 my $in = new Bio::SearchIO(-format => 'blast',
-                           -file => $file #comment this out to read STDIN
+                           -file => $file, #comment this out to read STDIN
+                           #-fh => \*ARGV,  #uncomment this to read STDIN
                           );
 
 # Iterate over all results in the input stream

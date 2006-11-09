@@ -1,4 +1,4 @@
-# $Id: Taxonomy.pm,v 1.5 2003/11/18 06:56:31 juguang Exp $
+# $Id: Taxonomy.pm,v 1.8.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::Taxonomy
 #
@@ -14,9 +14,12 @@ Bio::Taxonomy - representing Taxonomy.
 
 =head1 SYNOPSIS
 
+  NB: This module is deprecated. Use Bio::Taxon in combination with
+  Bio::Tree::Tree methods instead.
+
   use Bio::Taxonomy;
 
-  # CREATION: You can either create an instance by assigning it, 
+  # CREATION: You can either create an instance by assigning it,
   # or fetch it through factory.
 
   # Create the nodes first. See Bio::Taxonomy::Node for details.
@@ -111,6 +114,25 @@ argument.
 
 ##
 
+=head1 FEEDBACK
+
+=head2 Mailing Lists
+
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to
+the Bioperl mailing list.  Your participation is much appreciated.
+
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Reporting Bugs
+
+Report bugs to the Bioperl bug tracking system to help us keep track
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
+
+  http://bugzilla.open-bio.org/
+
 =head1 CONTACT
 
 Juguang Xiao, juguang@tll.org.sg
@@ -127,13 +149,10 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Taxonomy;
-use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::Root Object
-use Bio::Root::Root;
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 
 =head2 new
@@ -153,6 +172,7 @@ sub new {
    my ($class,@args) = @_;
 
    my $self = $class->SUPER::new(@args);
+   $self->warn("Bio::Taxonomy is deprecated. Use Bio::Taxon in combination with Bio::Tree::Tree instead.");
 
    $self->{'_method'}='none';
    $self->{'_ranks'}=[];
@@ -173,7 +193,7 @@ sub new {
       # some parvorder|suborder and varietas|subspecies seem
       # to be at the same level - any taxonomists?
       # I don't expect that these will actually be used except as a way
-      # to find what ranks there are in taxonomic use 
+      # to find what ranks there are in taxonomic use
       $self->ranks(('root',
         'superkingdom', 'kingdom',
         'superphylum', 'phylum', 'subphylum',
@@ -255,7 +275,7 @@ sub classify {
       # be given to the taxonomy object to act as an DB interface
       # (I'm not sure how useful this is though - if you have a DB of
       # taxonomy - why would you be doing things this way?)
-      $self->throw("Not yet implemented");
+      $self->throw_not_implemented();
    }
 
    return @ranks;
@@ -313,8 +333,8 @@ sub ranks {
    my ($self,@value) = @_;
 
    # currently this makes no uniqueness sanity check (this should be done)
-   # I am think that adding a way of converting multiple 'no rank' ranks 
-   # to unique 'no rank #' ranks so that the level of a 'no rank' is 
+   # I am think that adding a way of converting multiple 'no rank' ranks
+   # to unique 'no rank #' ranks so that the level of a 'no rank' is
    # abstracted way from the user - I'm not sure of the value of this
 
    if (@value) {
@@ -372,7 +392,7 @@ sub binomial {
     return ($species && $genus) ? "$species $genus" : undef;
 }
 
-=head2 get_node 
+=head2 get_node
 
   Title   : get_node
   Usage   : $node = $taxonomy->get_node('species');
@@ -380,7 +400,7 @@ sub binomial {
   Returns : a Bio::Taxonomy::Node object or undef if null
   Args    : a vaild rank name
 
-=cut 
+=cut
 
 sub get_node {
     my ($self, $rank) = @_;

@@ -1,22 +1,35 @@
 # -*-Perl-*- mode (to keep my emacs happy)
-# $Id: LocusLink.t,v 1.5 2003/10/25 14:52:22 heikki Exp $
+# $Id: LocusLink.t,v 1.8 2006/06/08 02:11:12 bosborne Exp $
 
 use strict;
-use vars qw($DEBUG);
+use vars qw($DEBUG $NUMTESTS $HAVEGRAPHDIRECTED);
+$DEBUG = $ENV{'BIOPERLDEBUG'} || 0;
 
 BEGIN {
-    eval { require Test; };
-    if( $@ ) {
-	use lib 't';
-    }
-    use Test;
-
-    plan tests => 23;
+	eval { require Test; };
+	if( $@ ) {
+		use lib 't';
+	}
+	use Test;
+	eval {
+		require Graph::Directed; 
+		$HAVEGRAPHDIRECTED=1;
+	};
+	if ($@) {
+		$HAVEGRAPHDIRECTED = 0;
+		warn "Graph::Directed not installed, skipping tests\n";
+	}
+	plan tests => ($NUMTESTS = 23);
 }
 
 END {
-    unlink("locuslink-test.out.embl");
+	foreach ( $Test::ntest..$NUMTESTS) {
+		skip('Cannot complete LocusLink tests, skipping',1);
+	}
+	unlink("locuslink-test.out.embl") if -e "locuslink-test.out.embl";
 }
+
+exit(0) unless $HAVEGRAPHDIRECTED;
 
 use Bio::SeqIO;
 use Bio::Root::IO;
@@ -101,6 +114,6 @@ foreach my $k (@keys) {
 }
 ok (scalar(@goann), 4);
 @goann = sort { $a->as_text() cmp $b->as_text() } @goann;
-ok ($goann[2]->as_text, "cellular component|cytoplasm|GO:0005737");
+ok ($goann[2]->as_text, "cellular component|cytoplasm|");
 
 

@@ -1,9 +1,9 @@
 #
-# $Id: EMBL.pm,v 1.15 2003/12/08 16:06:34 bosborne Exp $
+# $Id: EMBL.pm,v 1.21.4.1 2006/10/02 23:10:14 sendu Exp $
 #
 # BioPerl module for Bio::DB::EMBL
 #
-# Cared for by Heikki Lehvaslaiho <Heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Jason Stajich
 #
@@ -44,7 +44,7 @@ Bio::DB::EMBL - Database object interface for EMBL entry retrieval
   # and request Fasta sequence
   $embl = new Bio::DB::EMBL(-retrievaltype => 'tempfile' ,
  			    -format => 'fasta');
-  my $seqio = $embl->get_Stream_by_batch(['AC013798', 'AC021953'] );
+  my $seqio = $embl->get_Stream_by_id(['AC013798', 'AC021953'] );
   while( my $clone =  $seqio->next_seq ) {
  	print "cloneid is ", $clone->id, "\n";
   }
@@ -70,21 +70,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bio.perl.org/MailList.html  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email Heikki Lehvaslaiho E<lt>Heikki@ebi.ac.ukE<gt>
+Email Heikki Lehvaslaiho E<lt>heikki-at-bioperl-dot-orgE<gt>
 
 =head1 APPENDIX
 
@@ -97,13 +96,12 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::DB::EMBL;
 use strict;
-use vars qw(@ISA $MODVERSION %HOSTS  %FORMATMAP  $DEFAULTFORMAT);
+use vars qw($MODVERSION %HOSTS %FORMATMAP  $DEFAULTFORMAT);
 
 $MODVERSION = '0.2';
-use Bio::DB::DBFetch;
 use Bio::DB::RefSeq;
 
-@ISA = qw(Bio::DB::DBFetch);
+use base qw(Bio::DB::DBFetch);
 
 BEGIN {
     # you can add your own here theoretically.

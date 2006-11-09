@@ -1,6 +1,6 @@
-# $Id: DBLink.pm,v 1.14 2003/12/22 08:50:00 juguang Exp $
+# $Id: DBLink.pm,v 1.18.6.2 2006/10/19 17:52:51 jason Exp $
 #
-# BioPerl module for Bio::Annotation::Link
+# BioPerl module for Bio::Annotation::DBLink
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::Annotation::DBLink - DESCRIPTION of Object
+Bio::Annotation::DBLink - untyped links between databases
 
 =head1 SYNOPSIS
 
@@ -34,7 +34,10 @@ Bio::Annotation::DBLink - DESCRIPTION of Object
 =head1 DESCRIPTION
 
 Provides an object which represents a link from one object to something
-in another database without prescribing what is in the other database
+in another database without prescribing what is in the other database.
+
+Aside from L<Bio::AnnotationI>, this class also implements
+L<Bio::IdentifiableI>.
 
 =head1 AUTHOR - Ewan Birney
 
@@ -51,23 +54,46 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Annotation::DBLink;
-use vars qw(@ISA);
 use strict;
-# use overload '""' => \&as_text; 
+use overload '""' => sub { (($_[0]->database ? $_[0]->database . ':' : '' ) . ($_[0]->primary_id ? $_[0]->primary_id : '') . ($_[0]->version ? '.' . $_[0]->version : '')) || '' };
+use overload 'eq' => sub { "$_[0]" eq "$_[1]" };
 
-use Bio::Root::Root;
-use Bio::AnnotationI;
-use Bio::IdentifiableI;
 
-@ISA = qw(Bio::Root::Root Bio::AnnotationI Bio::IdentifiableI);
+use base qw(Bio::Root::Root Bio::AnnotationI Bio::IdentifiableI);
 
+
+=head2 new
+
+ Title   : new
+ Usage   : $dblink = Bio::Annotation::DBLink->new(-database =>"GenBank",
+                                                  -primary_id => "M123456");
+ Function: Creates a new instance of this class.
+ Example :
+ Returns : A new instance of Bio::Annotation::DBLink.
+ Args    : Named parameters. At present, the following parameters are
+           recognized.
+
+             -database    the name of the database referenced by the xref
+             -primary_id  the primary (main) id of the referenced entry
+                          (usually this will be an accession number)
+             -optional_id a secondary ID under which the referenced entry
+                          is known in the same database
+             -comment     comment text for the dbxref
+             -tagname     the name of the tag under which to add this
+                          instance to an annotation bundle (usually 'dblink')
+             -namespace   synonymous with -database (also overrides)
+             -version     version of the referenced entry
+             -authority   attribute of the Bio::IdentifiableI interface
+             -url         attribute of the Bio::IdentifiableI interface
+
+=cut
 
 sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
 
-  my ($database, $primary_id, $optional_id, $comment, $tag, $ns, $auth, $v) =
+  my ($database,$primary_id,$optional_id,$comment,$tag,$ns,$auth,$v,$url) =
       $self->_rearrange([qw(DATABASE
 			    PRIMARY_ID
 			    OPTIONAL_ID
@@ -76,6 +102,7 @@ sub new {
 			    NAMESPACE
 			    AUTHORITY
 			    VERSION
+			    URL
 			    )], @args);
   
   $database    && $self->database($database);
@@ -87,6 +114,7 @@ sub new {
   $ns          && $self->namespace($ns); # this will override $database
   $auth        && $self->authority($auth);
   defined($v)  && $self->version($v);
+  defined($url)  && $self->url($url);
 
   return $self;
 }
@@ -111,7 +139,10 @@ sub new {
 sub as_text{
    my ($self) = @_;
 
-   return "Direct database link to ".$self->primary_id." in database ".$self->database;
+   return "Direct database link to ".$self->primary_id
+       .($self->version ? ".".$self->version : "")
+       .($self->optional_id ? " (".$self->optional_id.")" : "")
+       ." in database ".$self->database;
 }
 
 =head2 hash_tree
@@ -164,10 +195,9 @@ sub hash_tree{
 =cut
 
 sub tagname{
-    my ($self,$value) = @_;
-    if( defined $value) {
-	$self->{'tagname'} = $value;
-    }
+    my $self = shift;
+
+    return $self->{'tagname'} = shift if @_;
     return $self->{'tagname'};
 }
 
@@ -301,6 +331,23 @@ sub version{
     return $self->{'version'} = shift if @_;
     return $self->{'version'};
 }
+
+
+=head2 url
+
+ Title   : url
+ Usage   : $url    = $obj->url()
+ Function: URL which is associated with this DB link
+ Returns : string, full URL descriptor
+
+=cut
+
+sub url {
+    my $self = shift;
+    return $self->{'url'} = shift if @_;
+    return $self->{'url'};
+}
+
 
 =head2 authority
 

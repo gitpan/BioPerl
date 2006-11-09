@@ -1,22 +1,33 @@
 # -*-Perl-*- mode (to keep my emacs happy)
-# $Id: GuessSeqFormat.t,v 1.3 2003/12/10 22:43:26 heikki Exp $
-
+# $Id: GuessSeqFormat.t,v 1.8 2005/01/12 17:15:21 jason Exp $
 # test for Bio::Tools::GuessSeqFormat
 # written by Heikki Lehvaslaiho
 
 use strict;
 my $NUMTESTS;
+my $error;
 
 BEGIN {
-    eval { require Test; };
-    if( $@ ) {
-        use lib 't','..';
-    }
-    use Test;
-    $NUMTESTS = 46;
-    plan tests => $NUMTESTS;
-
+   eval { require Test; };
+   if( $@ ) {
+      use lib 't','..';
+   }
+   use Test;
+   $error = 0;
+   # SeqIO::game needs XML::Writer
+   eval {require XML::Writer};
+   if ($@) {
+      print STDERR "XML::Writer not found, skipping game test\n";
+      $error = 1;
+   }
+   $NUMTESTS = ($error == 1) ? 44 : 46;
+   plan tests => $NUMTESTS;
 }
+
+my @seqformats = qw{ ace embl fasta gcg genbank mase
+                        pfam pir raw swiss tab };
+
+push @seqformats,"game" if ($error == 0);
 
 use Bio::SeqIO;
 use Bio::AlignIO;
@@ -31,9 +42,7 @@ my $verbose =1;
 # Seqio formats
 #
 
-#not tested:  waba 
-my @seqformats = qw{ ace embl fasta game gcg 
-                     genbank mase  pfam pir raw swiss tab };
+#not tested:  waba
 
 my %no_seqio_module = map {$_=>1} qw {gcgblast gcgfasta mase pfam};
 
@@ -91,31 +100,34 @@ foreach my $ext (@seqformats) {
         ok my $seq = $input->next_aln();
     };
     ok 0, 1, $@ if $@;
-
 }
 
 
 #
 # File handle tests
 #
+if( eval 'require IO::String; 1' ) {
 
-use IO::String;
-
-my $string = ">test1 no comment
+    my $string = ">test1 no comment
 agtgctagctagctagctagct
 >test2 no comment
 gtagttatgc
 ";
 
-my $stringfh = new IO::String($string);
-
-my $seqio = new Bio::SeqIO(-fh => $stringfh);
-while( my $seq = $seqio->next_seq ) {
-    ok $seq->id =~ /test/;
-}
-
+    my $stringfh = new IO::String($string);
+    
+    my $seqio = new Bio::SeqIO(-fh => $stringfh);
+    while( my $seq = $seqio->next_seq ) {
+	ok $seq->id =~ /test/;
+    }
+    
 #
 # text guessing
 #
 
-ok new Bio::Tools::GuessSeqFormat( -text => $string )->guess, 'fasta';
+    ok new Bio::Tools::GuessSeqFormat( -text => $string )->guess, 'fasta';
+} else {
+    for (1..3) {
+	skip("skipping guessing format from string, IO::String not installed",1);
+    }
+}

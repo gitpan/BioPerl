@@ -1,4 +1,4 @@
-# $Id: BioFetch.pm,v 1.22 2003/12/11 10:55:46 heikki Exp $
+# $Id: BioFetch.pm,v 1.29.4.1 2006/10/02 23:10:14 sendu Exp $
 #
 # BioPerl module for Bio::DB::BioFetch
 #
@@ -13,7 +13,6 @@
 
 package Bio::DB::BioFetch;
 use strict;
-use Bio::DB::WebDBSeqI;
 use HTTP::Request::Common 'POST';
 
 =head1 NAME
@@ -65,23 +64,22 @@ Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Lincoln Stein
 
 Email Lincoln Stein  E<lt>lstein@cshl.orgE<lt>
 
-Also thanks to Heikki Lehvaslaiho E<lt>heikki@ebi.ac.ukE<gt> for the
+Also thanks to Heikki Lehvaslaiho E<lt>heikki-at-bioperl-dot-orgE<gt> for the
 BioFetch server and interface specification.
 
 =head1 APPENDIX
@@ -92,51 +90,56 @@ methods. Internal methods are usually preceded with a _
 =cut
 
 # Let the code begin...
-use vars qw(@ISA %FORMATMAP );
-use Bio::Root::Root;
-@ISA = qw(Bio::DB::WebDBSeqI Bio::Root::Root);
+use vars qw(%FORMATMAP);
+use base qw(Bio::DB::WebDBSeqI Bio::Root::Root);
 
 # warning: names used here must map into Bio::SeqIO::* space
 use constant DEFAULT_LOCATION => 'http://www.ebi.ac.uk/cgi-bin/dbfetch';
 
 BEGIN {
-
-  %FORMATMAP = (
-		'embl' => {
-			   default => 'embl', # default BioFetch format/SeqIOmodule pair
-			   embl => 'embl',    # alternative BioFetch format/module pair 
-			   fasta => 'fasta',   # alternative BioFetch format/module pair 
-			   namespace => 'embl',
-			  },
-		'swissprot' => {
-				default => 'swiss',
-				swissprot => 'swiss',
-				fasta => 'fasta',
-				namespace => 'swall',
-			       },
-		'refseq' => {
-			     default => 'genbank',
-			     genbank => 'genbank',
-			     fasta => 'fasta',
-			     namespace => 'RefSeq',
-			    },
-		'swall' => {
-			    default => 'swiss',
-			    swissprot => 'swiss',
-			    fasta => 'fasta',
-			    namespace => 'swall',
-			   },
-		'genbank' => {
-			      default => 'genbank',
-			      genbank => 'genbank',
-			      namespace => 'genbank',
-			     },
-		'genpep' => {
-			     default => 'genbank',
-			     genbank => 'genbank',
-			     namespace => 'genpep',
-			    },
-	       );
+    
+    %FORMATMAP = (
+	'embl' => {
+	    default   => 'embl',  # default BioFetch format/SeqIOmodule pair
+	    embl      => 'embl',  # alternative BioFetch format/module pair 
+	    fasta     => 'fasta', # alternative BioFetch format/module pair 
+	    namespace => 'embl',
+	},
+	'swissprot' => {
+	    default   => 'swiss',
+	    swissprot => 'swiss',
+	    fasta     => 'fasta',
+	    namespace => 'uniprot',
+	},
+	'refseq' => {
+	    default   => 'genbank',
+	    genbank   => 'genbank',
+	    fasta     => 'fasta',
+	    namespace => 'RefSeq',
+	},
+	'swall' => {
+	    default   => 'swiss',
+	    swissprot => 'swiss',
+	    fasta     => 'fasta',
+	    namespace => 'uniprot',
+	},
+    'uniprot' => {
+	    default   => 'swiss',
+	    swissprot => 'swiss',
+	    fasta     => 'fasta',
+	    namespace => 'uniprot',
+	},
+	'genbank' => {
+	    default   => 'genbank',
+	    genbank   => 'genbank',
+	    namespace => 'genbank',
+	},
+	'genpep' => {
+	    default   => 'genbank',
+	    genbank   => 'genbank',
+	    namespace => 'genpep',
+	},
+    );
 }
 
 =head2 new

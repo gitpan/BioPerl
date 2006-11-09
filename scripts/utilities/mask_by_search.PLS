@@ -1,5 +1,7 @@
-#!/usr/bin/perl -w
-# $Id: mask_by_search.PLS,v 1.3 2003/09/08 12:17:15 heikki Exp $
+#!perl -w
+# $Id: mask_by_search.PLS,v 1.5 2005/04/26 15:03:53 jason Exp $
+# Author:  Jason Stajich <jason-at-bioperl-dot-org>
+
 
 =head1 NAME
 
@@ -29,8 +31,8 @@ Below the double dash (--) options are of the form
 or you can just say
 -f fasta
 
-By -f/--format I mean either are acceptable options.  The =s or =n or
-=c specify these arguments expect a 'string'
+By -f/--format I mean either are acceptable options.  The =s or =n
+or =c specify these arguments expect a 'string'
 
 Options:
     -f/--format=s    Search report format (fasta,blast,axt,hmmer,etc)

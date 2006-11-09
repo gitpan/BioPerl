@@ -1,4 +1,4 @@
-# $Id: NCBIHelper.pm,v 1.35 2003/12/08 16:06:34 bosborne Exp $
+# $Id: NCBIHelper.pm,v 1.54.2.1 2006/10/02 23:10:15 sendu Exp $
 #
 # BioPerl module for Bio::DB::NCBIHelper
 #
@@ -19,7 +19,7 @@ NCBI databases.
 
 =head1 SYNOPSIS
 
- #Do not use this module directly.
+ # Do not use this module directly.
 
  # get a Bio::DB::NCBIHelper object somehow
  my $seqio = $db->get_Stream_by_acc(['MUSIGHBA1']);
@@ -34,8 +34,8 @@ web databases.  This module just centralizes the methods for
 constructing a URL for querying NCBI GenBank and NCBI GenPept and the
 common HTML stripping done in L<postprocess_data>().
 
-The base NCBI query URL used is 
-http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi.
+The base NCBI query URL used is:
+http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi 
 
 =head1 FEEDBACK
 
@@ -47,18 +47,16 @@ your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation
 is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to
 help us keep track the bugs and their resolution.
-Bug reports can be submitted via email or the
-web:
+Bug reports can be submitted via the web.
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -76,36 +74,48 @@ preceded with a _
 
 package Bio::DB::NCBIHelper;
 use strict;
-use vars qw(@ISA $HOSTBASE %CGILOCATION %FORMATMAP 
-	    $DEFAULTFORMAT $MAX_ENTRIES);
+use vars qw($HOSTBASE %CGILOCATION %FORMATMAP 	    $DEFAULTFORMAT $MAX_ENTRIES $VERSION @ATTRIBUTES);
 
-use Bio::DB::WebDBSeqI;
 use Bio::DB::Query::GenBank;
 use HTTP::Request::Common;
 use URI;
 use Bio::Root::IO;
 use Bio::DB::RefSeq;
-use Bio::Root::Root;
+use URI::Escape qw(uri_unescape);
 
-@ISA = qw(Bio::DB::WebDBSeqI Bio::Root::Root);
+use base qw(Bio::DB::WebDBSeqI Bio::Root::Root);
+$VERSION = '0.8';
 
 BEGIN {
     $MAX_ENTRIES = 19000;
     $HOSTBASE = 'http://eutils.ncbi.nlm.nih.gov';
     %CGILOCATION = (
-		    'batch'  => ['post' => '/entrez/eutils/efetch.fcgi'],
+			'batch'  => ['post' => '/entrez/eutils/epost.fcgi'],
 		    'query'  => ['get'  => '/entrez/eutils/efetch.fcgi'],
 		    'single' => ['get'  => '/entrez/eutils/efetch.fcgi'],
 		    'version'=> ['get'  => '/entrez/eutils/efetch.fcgi'],
 		    'gi'   =>   ['get'  => '/entrez/eutils/efetch.fcgi'],
+			'webenv' => ['get'  => '/entrez/eutils/efetch.fcgi']
 		     );
 
     %FORMATMAP = ( 'gb' => 'genbank',
-		   'gp' => 'genbank',
-		   'fasta'   => 'fasta',
-		   );
-
+						   'gp' => 'genbank',
+						   'fasta' => 'fasta',
+						   'asn.1' => 'entrezgene',
+						   'gbwithparts' => 'genbank',
+					  );
     $DEFAULTFORMAT = 'gb';
+	@ATTRIBUTES = qw(complexity strand seq_start seq_stop no_redirect);
+	for my $method (@ATTRIBUTES) {
+		eval <<END;
+sub $method {
+	my \$self = shift;
+	my \$d    = \$self->{'_$method'};
+	\$self->{'_$method'} = shift if \@_;
+	\$d;
+}
+END
+	}
 }
 
 # the new way to make modules a little more lightweight
@@ -113,6 +123,16 @@ BEGIN {
 sub new {
     my ($class, @args ) = @_;
     my $self = $class->SUPER::new(@args);
+    my ($seq_start,$seq_stop,$no_redirect,$complexity,$strand) =
+	 $self->_rearrange([qw(SEQ_START SEQ_STOP NO_REDIRECT COMPLEXITY STRAND)],
+							 @args);
+	$seq_start     && $self->seq_start($seq_start);
+    $seq_stop      && $self->seq_stop($seq_stop);
+    $no_redirect   && $self->no_redirect($no_redirect);
+    $strand        && $self->strand($strand);
+	# adjust statement to accept zero value
+	defined $complexity && ($complexity >=0 && $complexity <=4)
+		&& $self->complexity($complexity);
     return $self;
 }
 
@@ -158,48 +178,67 @@ sub default_format {
 =cut
 
 sub get_request {
-    my ($self, @qualifiers) = @_;
-    my ($mode, $uids, $format, $query) = $self->_rearrange([qw(MODE UIDS 
-							       FORMAT QUERY)],
-							   @qualifiers);
-
-    $mode = lc $mode;
-    ($format) = $self->request_format() unless ( defined $format);
-    if( !defined $mode || $mode eq '' ) { $mode = 'single'; }
-    my %params = $self->get_params($mode);
-    if( ! %params ) {
-	$self->throw("must specify a valid retrieval mode 'single' or 'batch' not '$mode'") 
+	my ($self, @qualifiers) = @_;
+	my ($mode, $uids, $format, $query, $seq_start, $seq_stop, $strand, $complexity) = 
+	  $self->_rearrange([qw(MODE UIDS FORMAT QUERY SEQ_START SEQ_STOP STRAND COMPLEXITY)],
+							  @qualifiers);
+	$mode = lc $mode;
+	($format) = $self->request_format() unless ( defined $format);
+	if( !defined $mode || $mode eq '' ) { $mode = 'single'; }
+	my %params = $self->get_params($mode);
+	if( ! %params ) {
+		$self->throw("must specify a valid retrieval mode 'single' or 'batch' not '$mode'") 
 	}
-    my $url = URI->new($HOSTBASE . $CGILOCATION{$mode}[1]);
-
-    unless( defined $uids or defined $query) {
-	$self->throw("Must specify a query or list of uids to fetch");
-    }
-
-    if ($uids) {
-	if( ref($uids) =~ /array/i ) {
-	    $uids = join(",", @$uids);
+	my $url = URI->new($HOSTBASE . $CGILOCATION{$mode}[1]);
+	unless( $mode eq 'webenv' || defined $uids || defined $query) {
+		$self->throw("Must specify a query or list of uids to fetch");
 	}
-	$params{'id'}      = $uids;
-    }
-
-    elsif ($query && $query->can('cookie')) {
-	@params{'WebEnv','query_key'} = $query->cookie;
-	$params{'db'}                 = $query->db;
-    }
-
-    elsif ($query) {
-	$params{'id'} = join ',',$query->ids;
-    }
-
-    $params{'rettype'} = $format;
-    if ($CGILOCATION{$mode}[0] eq 'post') {
-	return POST $url,[%params];
-    } else {
-	$url->query_form(%params);
-	$self->debug("url is $url \n");
-	return GET $url;
-    }
+	if ($query && $query->can('cookie')) {
+		@params{'WebEnv','query_key'} = $query->cookie;
+		$params{'db'}                 = $query->db;
+	}
+	elsif ($query) {
+		$params{'id'} = join ',',$query->ids;
+	}
+	# for batch retrieval, non-query style
+	elsif ($mode eq 'webenv' && $self->can('cookie')) {
+		@params{'WebEnv','query_key'} = $self->cookie;
+	}
+	elsif ($uids) {
+		if( ref($uids) =~ /array/i ) {
+			$uids = join(",", @$uids);
+		}
+		$params{'id'}      = $uids;
+	}
+	$seq_start && ($params{'seq_start'} = $seq_start);
+	$seq_stop && ($params{'seq_stop'} = $seq_stop);
+	$strand && ($params{'strand'} = $strand);
+	if (defined $complexity && ($seq_start || $seq_stop || $strand)) {
+		$self->warn("Complexity set to $complexity; seq_start and seq_stop may not work!")
+			if ($complexity != 1 && ($seq_start || $seq_stop));
+		$self->warn("Complexity set to 0; expect strange results with strand set to 2")
+			if ($complexity == 0 && $strand == 2 && $format eq 'fasta');
+	}
+	defined $complexity && ($params{'complexity'} = $complexity);
+	$params{'rettype'} = $format unless $mode eq 'batch';
+	# for now, 'post' is batch retrieval
+	if ($CGILOCATION{$mode}[0] eq 'post') {
+		my $response = $self->ua->request(POST $url,[%params]);
+		$response->proxy_authorization_basic($self->authentication)
+			if ( $self->authentication);
+		$self->_parse_response($response->content);
+		my ($cookie, $querykey) = $self->cookie;
+		my %qualifiers = ('-mode' 			=> 'webenv',
+						  '-seq_start' 		=> $seq_start,
+						  '-seq_stop' 		=> $seq_stop,
+						  '-strand'			=> $strand,
+						  '-complexity'		=> $complexity,
+						  '-format'			=> $format);
+		return $self->get_request(%qualifiers);
+	} else {
+		$url->query_form(%params);
+		return GET $url;
+	}
 }
 
 =head2 get_Stream_by_batch
@@ -252,7 +291,7 @@ sub get_Stream_by_query {
 
  Title   : postprocess_data
  Usage   : $self->postprocess_data ( 'type' => 'string',
-				     'location' => \$datastr);
+				                         'location' => \$datastr);
  Function: process downloaded data before loading into a Bio::SeqIO
  Returns : void
  Args    : hash with two keys - 'type' can be 'string' or 'file'
@@ -265,99 +304,7 @@ sub get_Stream_by_query {
 # override it with their own method.
 
 sub postprocess_data {
-    my ($self, %args) = @_;
-    my $data;
-    my $type = uc $args{'type'};
-    my $location = $args{'location'};
-    if( !defined $type || $type eq '' || !defined $location) {
-	return;
-    } elsif( $type eq 'STRING' ) {
-	$data = $$location; 
-    } elsif ( $type eq 'FILE' ) {
-	open(TMP, $location) or $self->throw("could not open file $location");
-	my @in = <TMP>;
-	close TMP;
-	$data = join("", @in);
-    }
-
-    # transform links to appropriate descriptions
-    if ($data =~ /\nCONTIG\s+/) {	
-	$self->warn("CONTIG found. GenBank get_Stream_by_acc about to run."); 
-    	my(@batch,@accession,%accessions,@location,$id,
-	   $contig,$stream,$aCount,$cCount,$gCount,$tCount);
-
-    	# process GenBank CONTIG join(...) into two arrays
-    	$data =~ /(?:CONTIG\s+join\()((?:.+\n)+)(?:\/\/)/;
-	$contig = $1;
-    	$contig =~ s/\n|\)//g;
-	foreach (split /\s*,\s*/,$contig){	    
-	    if (/>(.+)<.+>:(.+)/) {
-		($id) = split /\./, $1;		
-		push @accession, $id;
-		push @location, $2;
-		$accessions{$id}->{'count'}++;
-	    } elsif( /([\w\.]+):(.+)/ ) { 
-		($id) = split /\./, $1;
-		$accessions{$id}->{'count'}++;
-		push @accession, $id;
-		push @location, $2;
-	    }
-	}
-
-	# grab multiple sequences by batch and join based location variable
-	my @unique_accessions = keys %accessions;
-	$stream = $self->get_Stream_by_acc(\@unique_accessions);
-	$contig = "";
-	my $ct = 0;
-	while( my $seq = $stream->next_seq() ) {	    
-	    if( $seq->accession_number !~ /$unique_accessions[$ct]/ ) {
-		$self->warn( sprintf("warning, %s does not match %s\n",
-		$seq->accession_number, $unique_accessions[$ct]));
-	    }
-	    $accessions{$unique_accessions[$ct]}->{'seq'} = $seq;
-	    $ct++;
-	}
-	for (my $i = 0; $i < @accession; $i++) {
-	    my $seq = $accessions{$accession[$i]}->{'seq'};
-	    unless( defined $seq ) {
-		# seq not cached, get next sequence
-		$self->warn("unable to find sequence $accession[$i]\n");
-		return undef;
-	    }
-	    my($start,$end) = split(/\.\./, $location[$i]);
-	    $contig .= $seq->subseq($start,$end-$start);
-	}
-
-	# count number of each letter in sequence
-	$aCount = () = $contig =~ /a/ig;
-	$cCount = () = $contig =~ /c/ig;
-	$gCount = () = $contig =~ /g/ig;
-	$tCount = () = $contig =~ /t/ig;
-
-	# remove everything after and including CONTIG
-	$data =~ s/(CONTIG[\s\S]+)$//i;
-
-	# build ORIGIN part of data file using sequence and counts
-	$data .= "BASE COUNT     $aCount a   $cCount c   $gCount g   $tCount t\n";
-	$data .= "ORIGIN      \n";
-	$data .= "$contig\n//";
-    }
-    else {
-	$data =~ s/<a\s+href\s*=.+>\s*(\S+)\s*<\s*\/a\s*\>/$1/ig;
-    }
-    
-    # fix gt and lt
-    $data =~ s/&gt;/>/ig;
-    $data =~ s/&lt;/</ig;
-    if( $type eq 'FILE'  ) {
-	open(TMP, ">$location") or $self->throw("couldn't overwrite file $location");
-	print TMP $data;
-	close TMP;
-    } elsif ( $type eq 'STRING' ) {
-	${$args{'location'}} = $data;
-    }
-    $self->debug("format is ". join(',',$self->request_format()). 
-		 " data is\n$data\n");
+	# retain this in case postprocessing is needed at a future date
 }
 
 
@@ -376,18 +323,18 @@ sub postprocess_data {
 =cut
 
 sub request_format {
-    my ($self, $value) = @_;    
-    if( defined $value ) {
-	$value = lc $value;	
-	if( defined $FORMATMAP{$value} ) {
-	    $self->{'_format'} = [ $value, $FORMATMAP{$value}];
-	} else {
-	    # Try to fall back to a default. Alternatively, we could throw
-	    # an exception
-	    $self->{'_format'} = [ $value, $value ];
+	my ($self, $value) = @_;    
+	if( defined $value ) {
+		$value = lc $value;	
+		if( defined $FORMATMAP{$value} ) {
+			$self->{'_format'} = [ $value, $FORMATMAP{$value}];
+		} else {
+			# Try to fall back to a default. Alternatively, we could throw
+			# an exception
+			$self->{'_format'} = [ $value, $value ];
+		}
 	}
-    }
-    return @{$self->{'_format'}};
+	return @{$self->{'_format'}};
 }
 
 =head2 Bio::DB::WebDBSeqI methods
@@ -428,33 +375,35 @@ sub get_Stream_by_acc {
 =cut
 
 sub _check_id {
-    my ($self, $ids) = @_;
+	my ($self, $ids) = @_;
 
-    # NT contigs can not be retrieved
-    $self->throw("NT_ contigs are whole chromosome files which are not part of regular".
-		 "database distributions. Go to ftp://ftp.ncbi.nih.gov/genomes/.") 
-	if $ids =~ /NT_/;
+	# NT contigs can not be retrieved
+	$self->throw("NT_ contigs are whole chromosome files which are not part of regular".
+					 "database distributions. Go to ftp://ftp.ncbi.nih.gov/genomes/.") 
+	  if $ids =~ /NT_/;
 
-    # Asking for a RefSeq from EMBL/GenBank
-
-    if ($ids =~ /N._/) {
-	$self->warn("[$ids] is not a normal sequence entry but a RefSeq entry.".
-		   " Redirecting the request.\n")
-	    if $self->verbose >= 0;
-	return $self->refseq_db;
-    }
+	# Asking for a RefSeq from EMBL/GenBank
+   
+	unless ($self->no_redirect) {
+		if ($ids =~ /N._/) {
+			$self->warn("[$ids] is not a normal sequence database but a RefSeq entry.".
+							" Redirecting the request.\n")
+			  if $self->verbose >= 0;
+			return  new Bio::DB::RefSeq;
+		}
+	}
 }
 
 =head2 delay_policy
 
- Title   : delay_policy
- Usage   : $secs = $self->delay_policy
- Function: return number of seconds to delay between calls to remote db
- Returns : number of seconds to delay
- Args    : none
+  Title   : delay_policy
+  Usage   : $secs = $self->delay_policy
+  Function: return number of seconds to delay between calls to remote db
+  Returns : number of seconds to delay
+  Args    : none
 
-NOTE: NCBI requests a delay of 3s between requests.  This method
-implements that policy.
+  NOTE: NCBI requests a delay of 3 seconds between requests.  This method
+        implements that policy.
 
 =cut
 
@@ -463,29 +412,56 @@ sub delay_policy {
   return 3;
 }
 
-=head2 refseq_db
+=head2 cookie
 
- Title   : refseq_db
- Usage   : $obj->refseq_db($newval)
- Function: 
- Example : 
- Returns : value of refseq_db (a scalar)
- Args    : on set, new value (a scalar or undef, optional)
+ Title   : cookie
+ Usage   : ($cookie,$querynum) = $db->cookie
+ Function: return the NCBI query cookie
+ Returns : list of (cookie,querynum)
+ Args    : none
 
+NOTE: this information is used by Bio::DB::GenBank in
+conjunction with efetch.
 
 =cut
 
-sub refseq_db{
-    my $self = shift;
-    if( @_ ) {
-	return $self->{'refseq_db'} = shift;
-    } elsif( ! defined $self->{'refseq_db'} ) {
-	$self->{'refseq_db'} = Bio::DB::RefSeq->new
-	    (-retrievaltype => $self->retrieval_type,
-	     -verbose        => $self->verbose);
-    }
-    return $self->{'refseq_db'};
+# ripped from Bio::DB::Query::GenBank
+sub cookie {
+  my $self = shift;
+  if (@_) {
+    $self->{'_cookie'}   = shift;
+    $self->{'_querynum'} = shift;
+  }
+  else {
+    return @{$self}{qw(_cookie _querynum)};
+  }
 }
 
+=head2 _parse_response
+
+ Title   : _parse_response
+ Usage   : $db->_parse_response($content)
+ Function: parse out response for cookie
+ Returns : empty
+ Args    : none
+ Throws  : 'unparseable output exception'
+
+=cut
+
+# trimmed-down version of _parse_response from Bio::DB::Query::GenBank
+sub _parse_response {
+  my $self    = shift;
+  my $content = shift;
+  if (my ($warning) = $content =~ m!<ErrorList>(.+)</ErrorList>!s) {
+    $self->warn("Warning(s) from GenBank: $warning\n");
+  }
+  if (my ($error) = $content =~ /<OutputMessage>([^<]+)/) {
+    $self->throw("Error from Genbank: $error");
+  }
+  my ($cookie)    = $content =~ m!<WebEnv>(\S+)</WebEnv>!;
+  my ($querykey)  = $content =~ m!<QueryKey>(\d+)!;
+  $self->cookie(uri_unescape($cookie),$querykey);
+}
 1;
+
 __END__

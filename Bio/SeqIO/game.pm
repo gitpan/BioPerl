@@ -1,10 +1,8 @@
-# $Id: game.pm,v 1.31 2003/12/16 16:58:51 smckay Exp $
+# $Id: game.pm,v 1.38.4.1 2006/10/02 23:10:29 sendu Exp $
 #
 # BioPerl module for Bio::SeqIO::game
 #
-# Cared for by Sheldon McKay <smckay@bcgsc.bc.ca>
-#
-# Copyright Sheldon McKay
+# Cared for by Sheldon McKay <mckays@cshl.edu>
 #
 # You may distribute this module under the same terms as perl itself
 #
@@ -17,6 +15,8 @@ Bio::SeqIO::game -- a class for parsing and writing game-XML
 
 =head1 SYNOPSIS
 
+This module is not used directly, use SeqIO.
+
  use Bio::SeqIO;
 
  my $in = Bio::SeqIO->new ( -file    => 'file.xml', 
@@ -28,13 +28,11 @@ Bio::SeqIO::game -- a class for parsing and writing game-XML
 =head1 DESCRIPTION
 
 Bio::SeqIO::game will parse game XML (version 1.2) or write game XML from 
-a Bio::SeqI implementing object.  The XML is readable by the genome annotation
-editor 'Apollo' (www.gmod.org).  It is not backwards compatible with the previous
-version of game XML.  The XML format currently used by Apollo 
-contains a single 'main' annotated sequence, so we will only get a single 
-annotated sequence in the stream when parsing a game-XML record.
-
-This modules is not used directly
+a Bio::SeqI implementing object.  The XML is readable by the genome 
+annotation editor 'Apollo' (www.gmod.org).  It is not backwards compatible 
+with the previous version of game XML.  The XML format currently used by 
+Apollo contains a single 'main' annotated sequence, so we will only get a 
+single annotated sequence in the stream when parsing a game-XML record.
 
 =head1 FEEDBACK
 
@@ -47,21 +45,20 @@ to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
-  http://bioperl.org/MailList.shtml      - About the mailing lists
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution.
 
-Bug reports can be submitted via email or the web:
+Bug reports can be submitted via the web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Sheldon McKay
 
-Email smckay@bcgsc.bc.ca
+Email mckays@cshl.edu
 
 =head1 APPENDIX
 
@@ -72,12 +69,10 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::SeqIO::game;
 
-use Bio::SeqIO;
 use Bio::SeqIO::game::gameHandler;
 use Bio::SeqIO::game::gameWriter;
 
-use vars qw{ @ISA };
-@ISA = qw { Bio::SeqIO };
+use base qw(Bio::SeqIO);
 
 sub _initialize {
     my ($self, @args) = @_;
@@ -91,6 +86,7 @@ sub _initialize {
  Function: get the main sequence object
  Returns : a Bio::Seq::RichSeq object
  Args    : none
+
 
 =cut
 

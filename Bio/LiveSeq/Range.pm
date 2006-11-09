@@ -1,4 +1,4 @@
-# $Id: Range.pm,v 1.8 2003/06/04 08:36:40 heikki Exp $
+# $Id: Range.pm,v 1.9.4.1 2006/10/02 23:10:21 sendu Exp $
 #
 # bioperl module for Bio::LiveSeq::Range
 #
@@ -26,12 +26,6 @@ This is used as parent for exon and intron classes.
 
 Email:  Insana@ebi.ac.uk, jinsana@gmx.net
 
-Address: 
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom 
-
 =head1 APPENDIX
 
 The rest of the documentation details each of the object
@@ -43,9 +37,7 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::LiveSeq::Range;
 use strict;
-use vars qw(@ISA);
-use Bio::LiveSeq::SeqI; # uses SeqI, inherits from it
-@ISA=qw(Bio::LiveSeq::SeqI);
+use base qw(Bio::LiveSeq::SeqI);
 
 =head2 new
 

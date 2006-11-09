@@ -1,5 +1,5 @@
-#!/usr/bin/env perl
-# $Id: seqconvert.PLS,v 1.2 2003/04/25 13:35:41 bosborne Exp $
+#!perl -w
+# $Id: seqconvert.PLS,v 1.8 2006/07/04 22:23:29 mauricio Exp $
 
 use strict;
 use Getopt::Long;
@@ -12,7 +12,9 @@ my $to=undef;
 ### please add to this list (see the modules under Bio/SeqIO):
 my @known_formats=
   qw(gcg fasta ace raw fastq phd pir scf swiss genbank locuslink
-     embl game qual bsml tab raw abi chado alf ctf exp ztr pln);
+     embl game qual bsml tab raw abi chado alf ctf exp ztr pln
+     chaosxml chadoxml yaml tigr tigrxml agave chaos kegg interpro
+     lasergene strider);
 
 my $script=substr($0, 1+rindex($0,'/'));
 my $usage="Usage:
@@ -50,11 +52,12 @@ seqconvert - generic BioPerl sequence format converter
 
 =head1 DESCRIPTION
 
-This script gives command line interface to BioPerl Bio::SeqIO.
+This script gives command line interface to BioPerl Bio::SeqIO. 
 
 =head1 SEE ALSO
 
 L<Bio::SeqIO>
+L<bp_sreformat.PLS> for similar functionality which also supports AlignIO.
 
 =head1 FEEDBACK
 
@@ -64,20 +67,21 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Philip Lijnzaad
 
-Email p.lijnzaad@med.uu.nl
+Email E<lt>p.lijnzaad-at-med.uu.nlE<gt>
 
 =cut
+
+__END__

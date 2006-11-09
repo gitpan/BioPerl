@@ -1,4 +1,4 @@
-# $Id: InstanceSite.pm,v 1.5 2003/11/14 11:24:31 heikki Exp $
+# $Id: InstanceSite.pm,v 1.14.4.2 2006/10/02 23:10:21 sendu Exp $
 
 =head1 NAME
 
@@ -17,7 +17,10 @@ Bio::Matrix::PSM::InstanceSite - A PSM site occurance
   my %params=(seq=>'TATAAT',
     id=>"TATAbox1", accession=>'ENSG00000122304', mid=>'TB1',
     desc=>'TATA box, experimentally verified in PRM1 gene',
-    relpos=>-35);
+    -relpos=>-35, -anchor=>'CHR7', -start=>35000921, -end=>35000926);
+
+  #Last 2 arguments are passed to create a Bio::LocatableSeq object
+  #Anchor shows the coordinates system for the Bio::LocatableSeq object
 
 =head1 DESCRIPTION
 
@@ -45,17 +48,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html     - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head2 Description
 
@@ -73,15 +75,10 @@ Email skirov@utk.edu
 
 # Let the code begin...
 package Bio::Matrix::PSM::InstanceSite;
-use Bio::Matrix::PSM::SiteMatrix;
-use Bio::Root::Root;
-use Bio::Matrix::PSM::InstanceSiteI;
-use Bio::LocatableSeq;
-use vars qw(@ISA);
 use strict;
 
- @ISA=qw(Bio::LocatableSeq  Bio::Matrix::PSM::InstanceSiteI Bio::Root::Root);
- 
+use base qw(Bio::LocatableSeq Bio::Matrix::PSM::InstanceSiteI);
+
 =head2 new
 
  Title   : new
@@ -89,7 +86,7 @@ use strict;
                          (-seq=>'TATAAT', -id=>"TATAbox1",
                           -accession_number='ENSG00000122304', -mid=>'TB1',
                           -desc=>'TATA box, experimentally verified in PRM1 gene',
-			  -relpos=>-35)
+                          -relpos=>-35, -anchor=>'CHR7', -start=>35000921, -end=>35000926, strand=>1)
  Function: Creates an InstanceSite object from memory.
  Throws  :
  Example :
@@ -103,7 +100,7 @@ sub new {
     my ($class, @args) = @_;
     my %args = @args; #Too many things to rearrange, and I am creating >1K such objects routinely, so this is a performance issue    
     $args{'-start'} ||= 1;
-    my $end = $args{'-start'} + length($args{-seq});
+    my $end = $args{'-start'} + length($args{-seq}) -1;
     if (!defined($args{-strand})) {
 	$args{-strand}=1;
 	@args=%args;
@@ -124,6 +121,8 @@ sub new {
     $self->desc($args{desc});
     $self->{score}=$args{score};
     $self->{relpos}=$args{relpos};
+    $self->{frame}=$args{frame};
+    $self->{anchor}=$args{anchor};
     return $self;
 }
 
@@ -165,6 +164,25 @@ sub score {
     my $self = shift;
     my $prev = $self->{score};
     if (@_) { $self->{score} = shift; }
+    return $prev;
+}
+
+=head2 anchor
+
+ Title   : anchor
+ Usage   : my $anchor=$instance->anchor;
+ Function: Get/Set the anchor which shows what coordinate system start/end use
+ Throws  :
+ Example :
+ Returns : string
+ Args    : string
+
+=cut
+
+sub anchor {
+    my $self = shift;
+    my $prev = $self->{anchor};
+    if (@_) { $self->{anchor} = shift; }
     return $prev;
 }
 
@@ -220,6 +238,74 @@ sub relpos {
     my $self = shift;
     my $prev = $self->{relpos};
     if (@_) { $self->{relpos} = shift; }
+    return $prev;
+}
+
+=head2 annotation
+
+ Title   : annotation
+ Usage   : $ann = $seq->annotation or $seq->annotation($annotation)
+ Function: Gets or sets the annotation
+ Returns : L<Bio::AnnotationCollectionI> object
+ Args    : None or L<Bio::AnnotationCollectionI> object
+
+See L<Bio::AnnotationCollectionI> and L<Bio::Annotation::Collection>
+for more information
+
+=cut
+
+sub annotation {
+    my ($obj,$value) = @_;
+    if( defined $value ) {
+	$obj->throw("object of class ".ref($value)." does not implement ".
+		    "Bio::AnnotationCollectionI. Too bad.")
+	    unless $value->isa("Bio::AnnotationCollectionI");
+	$obj->{'_annotation'} = $value;
+    } elsif( ! defined $obj->{'_annotation'}) {
+	$obj->{'_annotation'} = new Bio::Annotation::Collection();
+    }
+    return $obj->{'_annotation'};
+}
+
+=head2 species
+
+ Title   : species
+ Usage   : $species = $seq->species() or $seq->species($species)
+ Function: Gets or sets the species
+ Returns : L<Bio::Species> object
+ Args    : None or L<Bio::Species> object
+
+See L<Bio::Species> for more information
+
+=cut
+
+sub species {
+    my ($self, $species) = @_;
+    if ($species) {
+        $self->{'species'} = $species;
+    } else {
+        return $self->{'species'};
+    }
+}
+
+
+=head2 frame
+
+ Title   : frame
+ Usage   : my $frane=$instance->frame;
+ Function: Get/Set the frame of a DNA instance with respect to a protein motif used.
+            Returns undef if the motif was not protein or the DB is protein.
+ Throws  :
+ Example :
+ Returns : integer
+ Args    : integer (0, 1, 2)
+
+=cut
+
+sub frame {
+    my $self = shift;
+    my $prev = $self->{frame};
+    if (@_) { $self->{frame} = shift; $self->throw("This is not a legitimate frame") unless (grep(/$self->{frame}/,qw[0 1 2])); }
     return $prev;
 }
 

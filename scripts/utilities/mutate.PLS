@@ -1,7 +1,8 @@
-#!/usr/bin/perl 
+#!/usr/bin/perl -w
+
 =head1 NAME
 
-mutate.pl
+mutate.pl - randomly mutagenize a single protein or DNA sequence
 
 =head1 SYNOPSIS
 
@@ -30,20 +31,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl scripts. Send your comments and suggestions to the Bioperl 
 mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
-Brian Osborne, brian_osborne at cognia.com
+Brian Osborne, bosborne at alum.mit.edu
 
 =cut
 
@@ -72,10 +73,16 @@ srand(time|$$);
 my $seqio = Bio::SeqIO->new(-file => $in_file);
 my $seqobj = $seqio->next_seq;
 my $num_mut = percent_to_num($percent);
+my @seq_arr = ();
 
-foreach my $num (1..$number) {
+# don't keep a mutant that's already been made
+while ($number > $#seq_arr + 1) {
    my $mut_seq = mutate_all($seqobj,$num_mut);
-   my $name = $seqobj->display_id . "-" . "mutant" . $num;
+   push @seq_arr, $mut_seq unless (grep /$mut_seq/,@seq_arr);
+}
+
+foreach my $mut_seq (@seq_arr) {
+   my $name = $seqobj->display_id . "-" . "mutant" . $number;
    my $outseq = Bio::Seq->new(-seq        => $mut_seq,
 			      -display_id => $name,
 			      -desc       => $seqobj->desc );
@@ -83,6 +90,7 @@ foreach my $num (1..$number) {
    $args{-file} = ">>$out_file" if $out_file;
    my $seqio = Bio::SeqIO->new(%args);
    $seqio->write_seq($outseq);
+   $number--;
 }
 
 # mutagenize the sequence, one-by-one

@@ -1,4 +1,4 @@
-## $Id: primedseq.t,v 1.4 2003/07/15 01:21:16 shawnh Exp $
+## $Id: primedseq.t,v 1.4.8.1 2006/10/16 17:08:15 sendu Exp $
 
 # test for Bio::Seq::PrimedSeq
 # written by Rob Edwards
@@ -23,7 +23,7 @@ ok(1);
 my ($seqio, $seq, $left, $right, $primed_seq, $left_test, $annseq, $amplicon, $returnedseq);
 
 
-$seqio=Bio::SeqIO->new(-file=>'t/data/primedseq.fa');
+$seqio=Bio::SeqIO->new(-file=>File::Spec->catfile(qw(t data primedseq.fa)));
 $seq=$seqio->next_seq;
 $left=Bio::SeqFeature::Primer->new(-seq=>'CTTTTCATTCTGACTGCAACG');
 $right=Bio::SeqFeature::Primer->new(-seq=>'GGTGGTGCTAATGCGT');

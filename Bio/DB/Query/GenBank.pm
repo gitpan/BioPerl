@@ -1,4 +1,4 @@
-# $Id: GenBank.pm,v 1.9 2003/09/09 21:29:00 lstein Exp $
+# $Id: GenBank.pm,v 1.18.2.1 2006/10/02 23:10:17 sendu Exp $
 #
 # BioPerl module for Bio::DB::Query::GenBank.pm
 #
@@ -55,18 +55,16 @@ your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation
 is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
-Report bugs to the Bioperl bug tracking system to
-help us keep track the bugs and their resolution.
-Bug reports can be submitted via email or the
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Lincoln Stein
 
@@ -84,7 +82,6 @@ preceded with a _
 
 package Bio::DB::Query::GenBank;
 use strict;
-use Bio::DB::Query::WebQuery;
 use URI::Escape 'uri_unescape';
 
 use constant EPOST               => 'http://www.ncbi.nih.gov/entrez/eutils/epost.fcgi';
@@ -92,12 +89,12 @@ use constant ESEARCH             => 'http://www.ncbi.nih.gov/entrez/eutils/esear
 use constant DEFAULT_DB          => 'protein';
 use constant MAXENTRY            => 100;
 
-use vars qw(@ISA @ATTRIBUTES);
+use vars qw(@ATTRIBUTES);
 
-@ISA     = 'Bio::DB::Query::WebQuery';
+use base qw(Bio::DB::Query::WebQuery);
 
 BEGIN {
-  @ATTRIBUTES = qw(db reldate mindate maxdate datetype);
+  @ATTRIBUTES = qw(db reldate mindate maxdate datetype maxids);
   for my $method (@ATTRIBUTES) {
     eval <<END;
 sub $method {
@@ -123,12 +120,13 @@ END
            -reldate  relative date to retrieve from (days)
            -datetype date field to use ('edat' or 'mdat')
            -ids      array ref of gids (overrides query)
+           -maxids   the maximum number of IDs you wish to collect (defaults to 100)
 
 This method creates a new query object.  Typically you will specify a
 -db and a -query argument, possibly modified by -mindate, -maxdate, or
 -reldate.  -mindate and -maxdate specify minimum and maximum dates for
 entries you are interested in retrieving, expressed in the form
-DD/MM/YYYY.  -reldate is used to fetch entries that are more recent
+YYYY/MM/DD.  -reldate is used to fetch entries that are more recent
 than the indicated number of days.
 
 If you provide an array reference of IDs in -ids, the query will be
@@ -137,17 +135,26 @@ Bio::DB::GenBank object's get_Stream_by_query() method.  A variety of
 IDs are automatically recognized, including GI numbers, Accession
 numbers, Accession.version numbers and locus names.
 
+By default, the query will collect only the first 100 IDs and will
+generate an exception if you call the ids() method and the query
+returned more than that number.  To increase this maximum, set -maxids
+to a number larger than the number of IDs you expect to obtain.  This
+only affects the list of IDs you obtain when you call the ids()
+method, and does not affect in any way the number of entries you
+receive when you generate a SeqIO stream from the query.
+
 =cut
 
 sub new {
   my $class = shift;
   my $self  = $class->SUPER::new(@_);
-  my ($query,$db,$reldate,$mindate,$maxdate,$datetype,$ids)
-    = $self->_rearrange([qw(QUERY DB RELDATE MINDATE MAXDATE DATETYPE IDS)],@_);
+  my ($query,$db,$reldate,$mindate,$maxdate,$datetype,$ids,$maxids)
+    = $self->_rearrange([qw(QUERY DB RELDATE MINDATE MAXDATE DATETYPE IDS MAXIDS)],@_);
   $self->db($db || DEFAULT_DB);
   $reldate  && $self->reldate($reldate);
   $mindate  && $self->mindate($mindate);
   $maxdate  && $self->maxdate($maxdate);
+  $maxids   && $self->maxids($maxids);
   $datetype ||= 'mdat';
   $datetype && $self->datetype($datetype);
   $self;
@@ -197,7 +204,13 @@ sub _request_parameters {
   $method = 'get';
   $base   = ESEARCH;
   push @params,('term'   => $self->query);
-  push @params,('retmax' => $self->{'_count'} || MAXENTRY);
+
+  # Providing 'retmax' limits queries to 500 sequences  ?? I don't think so LS
+  push @params,('retmax' => $self->maxids || MAXENTRY);
+
+  # And actually, it seems that we need 'retstart' equal to 0 ?? I don't think so LS
+  # push @params, ('retstart' => 0);
+
   ($method,$base,@params);
 }
 
@@ -262,7 +275,7 @@ sub _parse_response {
   my $self    = shift;
   my $content = shift;
   if (my ($warning) = $content =~ m!<ErrorList>(.+)</ErrorList>!s) {
-    warn "Warning(s) from GenBank: $warning\n";
+    $self->warn("Warning(s) from GenBank: $warning\n");
   }
   if (my ($error) = $content =~ /<OutputMessage>([^<]+)/) {
     $self->throw("Error from Genbank: $error");
@@ -275,6 +288,8 @@ sub _parse_response {
   if (!$truncated) {
     my @ids = $content =~ /<Id>(\d+)/g;
     $self->ids(\@ids);
+  } else {
+    $self->debug("ids truncated at $max\n");
   }
   $self->_truncated($truncated);
   my ($cookie)    = $content =~ m!<WebEnv>(\S+)</WebEnv>!;

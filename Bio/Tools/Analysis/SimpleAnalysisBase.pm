@@ -1,8 +1,8 @@
-# $Id: SimpleAnalysisBase.pm,v 1.5 2003/09/23 13:50:37 radams Exp $
+# $Id: SimpleAnalysisBase.pm,v 1.12.4.1 2006/10/02 23:10:32 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Analysis::SimpleAnalysisBase
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Richard Adams
 #
@@ -12,21 +12,21 @@
 
 =head1 NAME
 
-Bio::Tools::Analysis::SimpleAnalysisBase - abstact superclass for
+Bio::Tools::Analysis::SimpleAnalysisBase - abstract superclass for
 SimpleAnalysis implementations
 
 =head1 SYNOPSIS
 
-  # no to be run directly
+# not to be run directly
 
 =head1 DESCRIPTION
 
 This class is a generic implementation of SimpleAnalysisI and should
 be used as a base class for specific implementations.
 
-SimpleAnalysis implementing modules just need to provide a specific _run()
-result() and _init() methods, plus any get/set methods for parameter
-to the analysis program.
+Modules implementing SimpleAnalysisBase only need to provide specific 
+_init(), _run() and result() methods, plus any get/set methods for 
+parameters to the analysis program.
 
 =head1 SEE ALSO
 
@@ -41,22 +41,21 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                       - General discussion
-  http://bio.perl.org/MailList.html           - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS
 
 Richard Adams, Richard.Adams@ed.ac.uk, 
-Heikki Lehvaslaiho, heikki@ebi.ac.uk
+Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -71,17 +70,14 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Tools::Analysis::SimpleAnalysisBase;
 
-use vars qw(@ISA);
 use strict;
 use Data::Dumper;
-use Bio::SimpleAnalysisI;
-use Bio::WebAgent;
 
 my $FLOAT = '[+-]?\d*\.\d*';
 
 my %STATUS =  map { $_ => 1 } qw(CREATED COMPLETED TERMINATED_BY_ERROR);
 
-@ISA = qw(Bio::WebAgent Bio::SimpleAnalysisI );
+use base qw(Bio::WebAgent Bio::SimpleAnalysisI);
 
 =head2 new
 
@@ -98,8 +94,8 @@ my %STATUS =  map { $_ => 1 } qw(CREATED COMPLETED TERMINATED_BY_ERROR);
 sub new {
     my $class = shift;
 
-    my $self = $class->SUPER::new(); #WebAGent new
-    $self->_init;      #this line has to be before the attributes are filled in
+    my $self = $class->SUPER::new(); #WebAgent new
+    $self->_init; #this line has to be before the attributes are filled in
     while ( @_ ) {
         my $key = lc shift;
         $key =~ s/^-//;
@@ -135,9 +131,9 @@ sub seq {
 
 =head2  analysis_name
 
-    Useage   :  $analysis->analysis_name();
-    Returns  :  The analysis name
-    Arguments:  none
+    Usage     : $analysis->analysis_name();
+    Returns   : The analysis name
+    Arguments : none
 
 =cut
 
@@ -148,7 +144,7 @@ sub analysis_name {
 
 =head2  analysis_spec
 
-    Useage   :  $analysis->analysis_spec();
+    Usage    :  $analysis->analysis_spec();
     Returns  :  a hash reference to  a hash of analysis parameters. See
                 Bio::SimpleAnalysisI for a list of recommended key values.
     Arguments:  none
@@ -162,11 +158,11 @@ sub analysis_spec {
 
 =head2 clear
 
-    Usage     :$analysis->clear();
-    Returns   :true value on success
-    Arguments :none
-    Purpose   :to remove raw results from a previous analysis so that
-               an analysis can be repeated with different parameters.
+    Usage     : $analysis->clear();
+    Returns   : true value on success
+    Arguments : none
+    Purpose   : to remove raw results from a previous analysis so that
+                an analysis can be repeated with different parameters.
 
 =cut
 
@@ -185,10 +181,10 @@ sub clear {
 
 =head2  input_spec
 
-    Useage   :  $analysis->input_spec();
-    Returns  :  a  reference to  an array of  hashes of analysis parameters. See
+    Usage     : $analysis->input_spec();
+    Returns   : a  reference to  an array of  hashes of analysis parameters. See
                 Bio::SimpleAnalysisI for a list of recommended key values.
-    Arguments:  none
+    Arguments : none
 
 =cut
 
@@ -199,12 +195,12 @@ sub input_spec {
 
 =head2  result_spec
 
-    Useage   :  $analysis->result_spec();
-    Returns  :  a  reference to  a   hashes of resultformats. See
-                Bio::SimpleAnalysisI for a list of recommended key values. The key
-                values can be used as parameters to the result() method, the values
-                provide descriptions.
-    Arguments:  none
+    Usage     : $analysis->result_spec();
+    Returns   : a  reference to  a   hashes of resultformats. See
+                Bio::SimpleAnalysisI for a list of recommended key values. 
+                The key values can be used as parameters to the result() 
+                method, the values provide descriptions.
+    Arguments : none
 
 =cut
 
@@ -270,5 +266,4 @@ sub _process_arguments {
 
 sub _run { shift->throw_not_implemented();}
 	
-
-
+1;

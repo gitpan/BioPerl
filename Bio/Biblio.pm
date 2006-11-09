@@ -1,4 +1,4 @@
-# $Id: Biblio.pm,v 1.9 2003/06/04 08:36:35 heikki Exp $
+# $Id: Biblio.pm,v 1.16.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module Bio::Biblio
 #
@@ -24,11 +24,11 @@ Bio::Biblio - A Bibliographic Query Service module
       print $collection->get_next;
   }
 
-  #The new() method can get parameters, for example:
+  # The new() method can accept parameters, for example:
 
   $biblio = Bio::Biblio
     (-access          => 'soap',
-     -location        => 'http://industry.ebi.ac.uk/soap/openBQS',
+     -location        => 'http://www.ebi.ac.uk/openbqs/services/MedlineSRS',
      -destroy_on_exit => '0');
 
   # See below for some one-liners
@@ -48,9 +48,7 @@ called on instances of this (Bio::Biblio) module.
 
 The module complies (with some simplifications) with the specification
 described in the B<OpenBQS> project. Its home page is at
-I<http://industry.ebi.ac.uk/openBQS>. There are also links to
-available servers providing access to the bibliographic repositories
-(namely to I<MEDLINE>).
+L<http://www.ebi.ac.uk/~senger/openbqs>.
 
 The module also gives an access to a set of controlled vocabularies
 and their values. It allows to introspect bibliographic repositories
@@ -60,7 +58,7 @@ attributes they have, eventually what attribute values are allowed.
 
 Here are some one-liners:
 
-  perl -MBio::Biblio -e 'print new Bio::Biblio->get_by_id ("94033980")'
+  perl -MBio::Biblio -e 'print new Bio::Biblio->get_by_id ("12368254")'
   perl -MBio::Biblio \
        -e 'print join ("\n", @{ new Bio::Biblio->find ("brazma")->get_all_ids })'
   perl -MBio::Biblio \
@@ -71,7 +69,7 @@ Here are some one-liners:
 
 =over
 
-=item B<Bio::Biblio>
+=item L<Bio::Biblio>
 
 This is the main class to be used by the end users. It
 loads a real implementation for a particular access protocol according
@@ -86,13 +84,15 @@ I<Bio::DB::BiblioI> (see L<Bio::DB::BiblioI>) by delegating
 calls to a loaded low-level module (e.g. see
 L<Bio::DB::Biblio::soap>).
 
-Note that there is also another module (and perhaps more) which does
-not use SOAP protocol and do not implement all query methods -
-nevertheless it has retrieval methods and it can be used in the same
-way:
+Note that there are other modules which do not use the SOAP protocol 
+and do not implement all query methods - nevertheless they have retrieval 
+methods and can be used in the same way:
 
    -access => biofetch
 
+Lacking documentation:
+
+   -access => eutils
 
 =item Bio::DB::BiblioI
 
@@ -130,21 +130,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
-Martin Senger (senger@ebi.ac.uk)
+Martin Senger (martin.senger@gmail.com)
 
 =head1 COPYRIGHT
 
@@ -163,11 +162,11 @@ This software is provided "as is" without warranty of any kind.
 
 =item *
 
-OpenBQS home page: http://industry.ebi.ac.uk/openBQS
+OpenBQS home page: http://www.ebi.ac.uk/~senger/openbqs/
 
 =item *
 
-Comments to the Perl client: http://industry.ebi.ac.uk/openBQS/Client_perl.html
+Comments to the Perl client: http://www.ebi.ac.uk/~senger/openbqs/Client_perl.html
 
 =back
 
@@ -186,18 +185,9 @@ with an underscore _.
 
 
 package Bio::Biblio;
-use vars qw(@ISA $Revision);
 use strict;
 
-use Bio::Root::Root;
-use Bio::DB::BiblioI;
-
-@ISA = qw(Bio::Root::Root Bio::DB::BiblioI);
-
-
-BEGIN {
-    $Revision = q$Id: Biblio.pm,v 1.9 2003/06/04 08:36:35 heikki Exp $;
-}
+use base qw(Bio::Root::Root Bio::DB::BiblioI);
 
 # -----------------------------------------------------------------------------
 
@@ -217,7 +207,7 @@ BEGIN {
                 on the '-access' argument.
 
                 For 'soap' access it is a URL of a WebService.
-                Default is http://industry.ebi.ac.uk/soap/openBQS
+                Default is http://www.ebi.ac.uk/openbqs/services/MedlineSRS
 
            Other arguments can be given here but they are
            recognized by the lower-level module
@@ -287,7 +277,7 @@ sub new {
 	$access = "\L$access";	# normalize capitalization to lower case
 
 	# load module with the real implementation - as defined in $access
-	return undef unless (&_load_access_module ($access));
+	return unless (&_load_access_module ($access));
 
 	# this will call this same method new() - but rather its the
 	# upper (object) branche

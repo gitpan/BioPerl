@@ -1,4 +1,4 @@
-# $Id: blasttable.pm,v 1.1 2003/08/12 18:10:15 jason Exp $
+# $Id: blasttable.pm,v 1.7.4.1 2006/10/02 23:10:26 sendu Exp $
 #
 # BioPerl module for Bio::SearchIO::blasttable
 #
@@ -36,8 +36,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -45,17 +45,11 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
 Email jason-at-bioperl-dot-org
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -68,9 +62,8 @@ Internal methods are usually preceded with a _
 
 
 package Bio::SearchIO::blasttable;
-use vars qw(@ISA %MAPPING %MODEMAP $DEFAULT_WRITER_CLASS $DefaultProgramName);
+use vars qw(%MAPPING %MODEMAP $DEFAULT_WRITER_CLASS $DefaultProgramName);
 use strict;
-use Bio::SearchIO;
 use Bio::Search::Result::ResultFactory;
 use Bio::Search::Hit::HitFactory;
 use Bio::Search::HSP::HSPFactory;
@@ -124,7 +117,7 @@ $DEFAULT_WRITER_CLASS = 'Bio::Search::Writer::HitTableWriter';
 	     'Result_db-let'   => 'RESULT-database_letters',
 	     );
 
-@ISA = qw(Bio::SearchIO );
+use base qw(Bio::SearchIO);
 
 =head2 new
 
@@ -140,6 +133,7 @@ $DEFAULT_WRITER_CLASS = 'Bio::Search::Writer::HitTableWriter';
 sub _initialize {
     my ($self,@args) = @_;
     $self->SUPER::_initialize(@args);
+
     my ($pname) = $self->_rearrange([qw(PROGRAM_NAME)],
 				    @args);
     $self->program_name($pname || $DefaultProgramName);
@@ -162,8 +156,10 @@ sub _initialize {
 
 sub next_result{
    my ($self) = @_;
-   my ($lastquery,$lasthit) = undef;
-   local ($_);
+   my ($lastquery,$lasthit);
+   local $/ = "\n";
+   local $_;
+
    while( defined ($_ = $self->_readline) ) {
        next if /^\#/ || /^\s+$/;
        my ($qname,$hname, $percent_id, $hsp_len, $mismatches,$gapsm,
@@ -261,7 +257,7 @@ sub start_element{
     my $nm = $data->{'Name'};    
    if( my $type = $MODEMAP{$nm} ) {
 	$self->_mode($type);
-	if( $self->_eventHandler->will_handle($type) ) {
+	if( $self->_will_handle($type) ) {
 	    my $func = sprintf("start_%s",lc $type);
 	    $self->_eventHandler->$func($data->{'Attributes'});
 	}						 
@@ -294,7 +290,7 @@ sub end_element {
     # object begins so have to detect this in end_element for now
         
     if( my $type = $MODEMAP{$nm} ) {
-	if( $self->_eventHandler->will_handle($type) ) {
+	if( $self->_will_handle($type) ) {
 	    my $func = sprintf("end_%s",lc $type);
 	    $rc = $self->_eventHandler->$func($self->{'_reporttype'},
 					      $self->{'_values'});	    
@@ -503,6 +499,56 @@ sub program_name{
 
     $self->{'program_name'} = shift if @_;
     return $self->{'program_name'} || $DefaultProgramName;
+}
+
+
+=head2 _will_handle
+
+ Title   : _will_handle
+ Usage   : Private method. For internal use only.
+              if( $self->_will_handle($type) ) { ... }
+ Function: Provides an optimized way to check whether or not an element of a 
+           given type is to be handled.
+ Returns : Reference to EventHandler object if the element type is to be handled.
+           undef if the element type is not to be handled.
+ Args    : string containing type of element.
+
+Optimizations:
+
+=over 2
+
+=item 1
+
+Using the cached pointer to the EventHandler to minimize repeated
+lookups.
+
+=item 2
+
+Caching the will_handle status for each type that is encountered so
+that it only need be checked by calling
+handler-E<gt>will_handle($type) once.
+
+=back
+
+This does not lead to a major savings by itself (only 5-10%).  In
+combination with other optimizations, or for large parse jobs, the
+savings good be significant.
+
+To test against the unoptimized version, remove the parentheses from
+around the third term in the ternary " ? : " operator and add two
+calls to $self-E<gt>_eventHandler().
+
+=cut
+
+sub _will_handle {
+    my ($self,$type) = @_;
+    my $handler = $self->{'_handler'};
+    my $will_handle = defined($self->{'_will_handle_cache'}->{$type})
+                             ? $self->{'_will_handle_cache'}->{$type}
+                             : ($self->{'_will_handle_cache'}->{$type} =
+                               $handler->will_handle($type));
+
+    return $will_handle ? $handler : undef;
 }
 
 1;

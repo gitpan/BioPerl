@@ -1,4 +1,4 @@
-# $Id: nexus.pm,v 1.13 2003/04/07 15:15:00 heikki Exp $
+# $Id: nexus.pm,v 1.27.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::AlignIO::nexus
 #
@@ -13,6 +13,14 @@ Bio::AlignIO::nexus - NEXUS format sequence input/output stream
 
 Do not use this module directly.  Use it via the L<Bio::AlignIO> class.
 
+    use Bio::AlignIO;
+
+    my $in = new Bio::AlignIO(-format => 'nexus',
+                              -file   => 'aln.nexus');
+    while( my $aln = $in->next_aln ) {
+        # do something with the alignment
+    }
+
 =head1 DESCRIPTION
 
 This object can transform L<Bio::Align::AlignI> objects to and from NEXUS
@@ -21,23 +29,21 @@ data blocks. See method documentation for supported NEXUS features.
 =head1 ACKNOWLEDGEMENTS
 
 Will Fisher has written an excellent standalone NEXUS format parser in
-perl, readnexus. A number of tricks were adapted from it.
+Perl, readnexus. A number of tricks were adapted from it.
 
 =head1 FEEDBACK
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS - Heikki Lehvaslaiho
 
-Email: heikki@ebi.ac.uk
-
+Email: heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -49,17 +55,55 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::AlignIO::nexus;
-use vars qw(@ISA  %valid_type);
+use vars qw(%valid_type);
 use strict;
 no strict "refs";
 
-use Bio::AlignIO;
 
-@ISA = qw(Bio::AlignIO);
+use base qw(Bio::AlignIO);
 
 BEGIN {
-    %valid_type = map {$_, 1} qw( dna rna protein standard);
+    %valid_type = map {$_, 1} qw( dna rna protein standard );
+    # standard throws error: inherited from Bio::PrimarySeq
 }
+
+=head2 new
+
+ Title   : new
+ Usage   : $alignio = new Bio::AlignIO(-format => 'nexus',
+													-file   => 'filename');
+ Function: returns a new Bio::AlignIO object to handle clustalw files
+ Returns : Bio::AlignIO::clustalw object
+ Args    : -verbose => verbosity setting (-1,0,1,2)
+           -file    => name of file to read in or with ">" - writeout
+           -fh      => alternative to -file param - provide a filehandle 
+                       to read from/write to 
+           -format  => type of Alignment Format to process or produce
+
+           Customization of nexus flavor output
+
+           -show_symbols => print the symbols="ATGC" in the data definition
+                            (MrBayes does not like this)
+                            boolean [default is 1] 
+           -show_endblock => print an 'endblock;' at the end of the data
+                            (MyBayes does not like this)
+                            boolean [default is 1] 
+
+=cut
+
+sub _initialize {
+    my ($self, @args) = @_;
+    $self->SUPER::_initialize(@args);
+    my ($show_symbols, $endblock) = 
+	$self->_rearrange([qw(SHOW_SYMBOLS SHOW_ENDBLOCK)], @args);
+    my @names = qw(symbols endblock);
+    for my $v ( $show_symbols, $endblock ) {
+	$v = 1 unless defined $v; # default value is 1
+	my $n = shift @names;
+	$self->flag($n, $v);
+    }
+}
+
 
 =head2 next_aln
 
@@ -82,7 +126,9 @@ BEGIN {
  Returns : L<Bio::Align::AlignI> object
  Args    :
 
+
 =cut
+
 
 sub next_aln {
     my $self = shift;
@@ -95,7 +141,7 @@ sub next_aln {
 
     # file starts with '#NEXUS' but we allow white space only lines before it
     $entry = $self->_readline;
-    $entry = $self->_readline while $entry =~ /^\s+$/;
+    $entry = $self->_readline while defined $entry && $entry =~ /^\s+$/;
 
     return unless $entry;
     $self->throw("Not a valid interleaved NEXUS file! [#NEXUS] not starting the file\n$entry")
@@ -111,32 +157,44 @@ sub next_aln {
     $aln_name =~ s/\s/_/g and $aln->id($aln_name) if $aln_name;
 
     # data and taxa blocks
-    my $taxlabels;
+    my $incomment;
     while ($entry = $self->_readline) {
 	local ($_) =  $entry;
+	next if s/\[[^\]]+\]//g; # remove comments
+	if( s/\[[^\]]+$// ) {
+	    $incomment = 1;
+		 # skip line if it is now empty or contains only whitespace
+	    next if /^\s*$/;
+	} elsif($incomment) {
+	    if( s/^[^\]]*\]// ) {
+			 $incomment = 0;
+	    } else {
+			 next;
+	    }
+	} elsif( /taxlabels/i ) {
+	    # doesn't deal with taxlabels adequately and can mess things up!
+	    # @names = $self->_read_taxlabels;
+	} else {
 
-	# read in seq names if in taxa block
-	$taxlabels = 1 if /taxlabels/i;
-	if ($taxlabels) {
-	    @names = $self->_read_taxlabels;
-	    $taxlabels = 0;
+	    /ntax\s*=\s*(\d+)/i        and $seqcount = $1;
+	    /nchar\s*=\s*(\d+)/i       and $residuecount = $1;
+	    /matchchar\s*=\s*(.)/i     and $match = $1;
+	    /gap\s*=\s*(.)/i           and $gap = $1;
+	    /missing\s*=\s*(.)/i       and $missing = $1;
+	    /equate\s*=\s*\"([^\"]+)/i and $equate = $1;  # "e.g. equate="T=C G=A";
+	    /datatype\s*=\s*(\w+)/i    and $alphabet = lc $1;
+	    /interleave/i              and $interleave = 1 ;
+	    last if /matrix/io;
 	}
-
-	/ntax ?= ?(\d+)/i and $seqcount = $1;
-	/nchar ?= ?(\d+)/i and $residuecount = $1;
-	/matchchar ?= ?(.)/i and $match = $1;
-	/gap ?= ?(.)/i and $gap = $1;
-	/missing ?= ?(.)/i and $missing = $1;
-	/equate ?= ?"([^\"]+)/i and $equate = $1;  # "e.g. equate="T=C G=A";
-	/datatype ?= ?(\w+)/i and $alphabet = lc $1;
-	/interleave/i and $interleave = 1 ;
-
-	last if /matrix/i;
     }
-    $self->throw("Not a valid NEXUS sequence file. Datatype not specified")
+    $self->throw("Not a valid NEXUS sequence file. Datatype not specified.")
 	unless $alphabet;
     $self->throw("Not a valid NEXUS sequence file. Datatype should not be [$alphabet]")
 	unless $valid_type{$alphabet};
+    $self->throw("\"$gap\" is not a valid gap character. For compatability, gap char can not be one of: ()[]{}/\,;:=*'`\"<>^")
+    	if $gap && $gap =~ /[\(\)\[\]\{\}\/\\\,\;\:\=\*\'\`\<\>\^]/;
+    $self->throw("\"$missing\" is not a valid missing character. For compatability, missing char can not be one of: ()[]{}/\,;:=*'`\"<>^")
+    	if $missing && $missing =~ /[\(\)\[\]\{\}\/\\\,\;\:\=\*\'\`\<\>\^]/;
 
     $aln->gap_char($gap);
     $aln->missing_char($missing);
@@ -156,49 +214,72 @@ sub next_aln {
     # matrix command
     #
     # first alignment section
-    if (@names == 0) {  # taxa block did not exist
+    if (@names == 0) {		# taxa block did not exist
 	while ($entry = $self->_readline) {
-	    local ($_) =  $entry;
+		local ($_) =  $entry;
+		if( s/\[[^\]]+\]//g ) { #]  remove comments
+			next if /^\s*$/; 
+			# skip line if it is now empty or contains only whitespace
+		}
+		if ($interleave && defined$count && ($count <= $seqcount)) {
+			/^\s+$/ and last;
+		} else {
+			/^\s+$/ and next;
+		}
+		/^\s*;/ and last;	# stop if colon at end of matrix is on it's own line
+		#/^\s*;\s*$/ and last;
+		if ( /^\s*([\"\'](.+?)[\"\']|(\S+))\s+(.*)\s*$/ ) {	
+			# get single and double quoted names, or all the first 
+         # nonwhite word as the name, and remained is seq
+			#if (/^\s*('([^']*?)'|([^']\S*))\s+(.*)$/) { #'
+			$name = ($2 || $3);
+			if  ($4) {
+				# seq is on same line as name
+				# this is the usual NEXUS format
+				$str = $4;
+			} else {
+				# otherwise get seq from following lines. No comments allowed
+				# a less common matrix format, usually used for very long seqs
+				$str='';
+				while (local ($_) = $self->_readline) {
+					my $str_tmp = $_;
+					$str_tmp =~ s/[\s;]//g;
+					$str .= $str_tmp;
+					last if length$str == $residuecount;
+				}
+			}
+			$name =~ s/ /_/g;
+			push @names, $name;
 
-	    s/\[[^[]+\]//g; #] remove comments
-	    if ($interleave) {
-		/^\s+$/ and last;
-	    } else {
-		/^\s+$/ and next;
-	    }
-	    /^\s*;\s*$/ and last;
-	    if (/^\s*('([^']*?)'|([^']\S*))\s+(.*)\s$/) { #'
-		 $name = ($2 || $3);
-		 $str = $4;
-		 $name =~ s/ /_/g;
-		 push @names, $name;
-
-		 $str =~ s/\s//g;
-		 $count =  @names;
-		 $hash{$count} = $str;
-	     };
-	    $self->throw("Not a valid interleaved NEXUS file!
-seqcount [$count] > predeclared [$seqcount] in the first section") if $count > $seqcount;
+			$str =~ s/[\s;]//g;
+			$count =  @names;
+			$hash{$count} = $str;
+		}
+		$self->throw("Not a valid interleaved NEXUS file! seqcount [$count] > predeclared [$seqcount] in the first section") if $count > $seqcount;
+		/;/ and last;	# stop if colon at end of matrix is on the same line as the last seq
 	}
-    }
+}
 
     # interleaved sections
     $count = 0;
-    while( $entry = $self->_readline) {
-	local ($_) =  $entry;
-	s/\[[^[]+\]//g; #] remove comments
-	last if /^\s*;/;
-
-	$count = 0, next if $entry =~ /^\s*$/;
-        if (/^\s*('([^']*?)'|([^']\S*))\s+(.*)\s$/) { #'
-	    $str = $4;
-	    $str =~ s/\s//g;
-	    $count++;
-	    $hash{$count} .= $str;
-	};
-	$self->throw("Not a valid interleaved NEXUS file!
-seqcount [$count] > predeclared [$seqcount] ") if $count > $seqcount;
-
+    if ( $interleave ) {	# only read next section if file is interleaved
+	while( $entry = $self->_readline) {
+	    local ($_) =  $entry;
+	    if( s/\[[^\]]+\]//g ) { #]  remove comments
+		next if /^\s*$/; # skip line if it is now empty or contains only whitespace
+	    }
+	    /^\s*;/ and last;		# stop if colon at end of matrix is on it's own line
+	    $count = 0, next if $entry =~ /^\s*$/;
+	    if (/^\s*('([^']*?)'|([^']\S*))\s+(.*)$/) { #'
+		$str = $4;
+		$str =~ s/[\s;]//g;
+		$count++;
+		$hash{$count} .= $str;
+	    };
+	    $self->throw("Not a valid interleaved NEXUS file!
+    		seqcount [$count] > predeclared [$seqcount] ") if $count > $seqcount;
+	    /;/ and last;	# stop if colon at end of matrix is on the same line as the last seq
+	}
     }
 
     return 0 if @names < 1;
@@ -240,7 +321,8 @@ seqcount [$count] > predeclared [$seqcount] ") if $count > $seqcount;
 	$aln->map_chars($1, $2) while $equate =~ /(\S)=(\S)/g;
     }
 
-    while  ($entry !~ /endblock/i) {
+    while  (defined $entry &&
+	    $entry !~ /endblock/i) {
         $entry = $self->_readline;
     }
 
@@ -251,11 +333,13 @@ sub _read_taxlabels {
     my ($self) = @_;
     my ($name, @names);
     while (my $entry = $self->_readline) {
-	($name) = $entry =~ /\s*(\S+)\s+/;
-	$name =~ s/\[[^\[]+\]//g;
-	$name =~ s/\W/_/g;
-	push @names, $name;
-	last if /^\s*;/;
+	last if $entry =~ m/^\s*(END)?;/i;
+	if( $entry =~ m/\s*(\S+)\s+/ ) {
+	    ($name) = ($1);
+	    $name =~ s/\[[^\[]+\]//g;
+	    $name =~ s/\W/_/g;
+	    push @names, $name;
+	}
     }
     return @names;
 }
@@ -296,16 +380,30 @@ sub write_aln {
 	$match = "match=". $aln->match_char if $aln->match_char;
 	$missing = "missing=". $aln->missing_char if $aln->missing_char;
 	$gap = "gap=". $aln->gap_char if $aln->gap_char;
-	$symbols = 'symbols="'.join('',$aln->symbol_chars). '"' if( $aln->symbol_chars);
-	$self->_print (sprintf("format interleave datatype=%s %s %s %s %s;\n\nmatrix\n",
-			       $aln->get_seq_by_pos(1)->alphabet, $match, $missing, $gap, $symbols));
 
-	my $indent = $aln->maxdisplayname_length;
+	$symbols = 'symbols="'.join('',$aln->symbol_chars). '"' 
+	    if( $self->flag('symbols') && $aln->symbol_chars);
+	$self->_print 
+	    (sprintf("format interleave datatype=%s %s %s %s %s;\n\nmatrix\n",
+		     $aln->get_seq_by_pos(1)->alphabet, $match, 
+		     $missing, $gap, $symbols));
+
+                     # account for single quotes round names
+	my $indent = $aln->maxdisplayname_length+2;
+
 	$aln->set_displayname_flat();
 	foreach $seq ( $aln->each_seq() ) {
-	    $name = $aln->displayname($seq->get_nse());
-	    $name = sprintf("%-${indent}s", $name);
-	    $hash{$name} = $seq->seq();
+	    my $nmid = $aln->displayname($seq->get_nse());
+	    if( $nmid =~ /[^\w\d]/ ) {
+              # put name in single quotes incase it contains any of
+              # the following chars: ()[]{}/\,;:=*'"`+-<> that are not
+              # allowed in PAUP* and possible other software
+
+		$name = sprintf("%-${indent}s", "\'" . $nmid . "\'");
+	    } else { 
+		$name = sprintf("%-${indent}s", $nmid);
+	    }
+	    $hash{$name} = $seq->seq;
 	    push(@arr,$name);
 	}
 
@@ -334,10 +432,31 @@ sub write_aln {
 	    $count = $tempcount;
 	    $wrapped = 1;
 	}
-	$self->_print (";\n\nendblock;\n");
+	if( $self->flag('endblock') ) {
+	    $self->_print (";\n\nendblock;\n");
+	} else { 
+	    $self->_print (";\n\nend;\n");
+	}
     }
     $self->flush if $self->_flush_on_write && defined $self->_fh;
     return 1;
+}
+
+=head2 flag
+
+ Title   : flag
+ Usage   : $obj->flag($name,$value)
+ Function: Get/Set a flag value
+ Returns : value of flag (a scalar)
+ Args    : on set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub flag{
+    my ($self,$name,$val) = @_;
+    return $self->{'flag'}->{$name} = $val if defined $val;
+    return $self->{'flag'}->{$name};
 }
 
 1;

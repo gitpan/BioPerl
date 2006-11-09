@@ -1,9 +1,7 @@
 package Bio::Graphics::Glyph::group;
 
 use strict;
-use vars '@ISA';
-use Bio::Graphics::Glyph::segmented_keyglyph;
-@ISA = 'Bio::Graphics::Glyph::segmented_keyglyph';
+use base qw(Bio::Graphics::Glyph::segmented_keyglyph);
 
 # group sets connector to 'dashed'
 sub connector {
@@ -17,13 +15,10 @@ sub connector {
 sub label { 0 }
 
 sub new {
-  my $self = shift->SUPER::new(@_);
-  # reset our parts to level zero
-  foreach (@{$self->{parts}}) {
-    $_->{level} = 0;
-  }
-  $self;
+  my $self = shift;
+  return $self->SUPER::new(@_,-level=>-1);
 }
+
 
 # don't allow simple bumping in groups -- it looks terrible...
 sub bump {

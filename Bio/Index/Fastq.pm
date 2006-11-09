@@ -35,7 +35,7 @@ Bio::Index::Fastq - Interface for indexing (multiple) fastq files
     my $out = Bio::SeqIO->new('-format' => 'Fastq','-fh' => \*STDOUT);
 
     foreach my $id (@ARGV) {
-        my $seq = $inx->fetch($id); # Returns Bio::Seq::SeqWithQuality object
+        my $seq = $inx->fetch($id); # Returns Bio::Seq::Quality object
 	$out->write_seq($seq);
     }
 
@@ -60,17 +60,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via
-email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Tony Cox
 
@@ -89,13 +88,11 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Index::Fastq;
 
-use vars qw(@ISA);
 use strict;
 
-use Bio::Index::AbstractSeq;
 use Bio::Seq;
 
-@ISA = qw(Bio::Index::AbstractSeq);
+use base qw(Bio::Index::AbstractSeq);
 
 #
 # Suggested fix by Michael G Schwern <schwern@pobox.com> to
@@ -147,13 +144,13 @@ sub _index_file {
     $begin = 0;
 
     my $id_parser = $self->id_parser;
-	my $c = 0;
-    open FASTQ, $file or $self->throw("Can't open file for read : $file");
+    my $c = 0;
+    open my $FASTQ, '<', $file or $self->throw("Can't open file for read : $file");
     # Main indexing loop
-    while (<FASTQ>) {
+    while (<$FASTQ>) {
         if (/^@/) {
             # $begin is the position of the first character after the '@'
-            my $begin = tell(FASTQ) - length( $_ ) + 1;
+            my $begin = tell($FASTQ) - length( $_ ) + 1;
             foreach my $id (&$id_parser($_)) {
                 $self->add_record($id, $i, $begin);
 		$c++;
@@ -161,7 +158,7 @@ sub _index_file {
         }
     }
 
-    close FASTQ;
+    close $FASTQ;
     return ($c);
 }
 

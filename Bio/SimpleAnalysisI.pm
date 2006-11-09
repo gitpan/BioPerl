@@ -1,8 +1,8 @@
-# $Id: SimpleAnalysisI.pm,v 1.4 2003/06/04 08:36:35 heikki Exp $
+# $Id: SimpleAnalysisI.pm,v 1.9.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::SimpleAnalysisI
 #
-# Cared for by Martin Senger <senger@ebi.ac.uk>
+# Cared for by Martin Senger <martin.senger@gmail.com>
 # For copyright and disclaimer see below.
 #
 
@@ -34,21 +34,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
-Martin Senger (senger@ebi.ac.uk)
+Martin Senger (martin.senger@gmail.com)
 
 =head1 COPYRIGHT
 
@@ -68,7 +67,7 @@ This software is provided "as is" without warranty of any kind.
 
 =item *
 
-http://industry.ebi.ac.uk/soaplab/Perl_Client.html
+http://www.ebi.ac.uk/soaplab/Perl_Client.html
 
 =back
 
@@ -86,15 +85,9 @@ message.
 # Let the code begin...
 
 package Bio::SimpleAnalysisI;
-use vars qw(@ISA  $Revision);
 use strict;
-use Bio::Root::RootI;
 
-@ISA = qw(Bio::Root::RootI);
-
-BEGIN {
-    $Revision = q$Id: SimpleAnalysisI.pm,v 1.4 2003/06/04 08:36:35 heikki Exp $;
-}
+use base qw(Bio::Root::RootI);
 
 # -----------------------------------------------------------------------------
 

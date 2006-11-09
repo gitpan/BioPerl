@@ -1,6 +1,6 @@
 # BioPerl module for Bio::Map::LinkageMap
 #
-# Cared for by Chad Matsalla <bioinformatics1@dieselwurks.com>
+# Cared for by Sendu Bala <bix@sendu.me.uk>
 #
 # Copyright Chad Matsalla
 #
@@ -45,17 +45,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org            - General discussion
-http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Chad Matsalla
 
@@ -64,8 +63,9 @@ Email bioinformatics1@dieselwurks.com
 =head1 CONTRIBUTORS
 
 Lincoln Stein       lstein@cshl.org
-Heikki Lehvaslaiho  heikki@ebi.ac.uk
+Heikki Lehvaslaiho  heikki-at-bioperl-dot-org
 Jason Stajich       jason@bioperl.org
+Sendu Bala          bix@sendu.me.uk
 
 =head1 APPENDIX
 
@@ -74,15 +74,12 @@ Internal methods are usually preceded with a _
 
 =cut
 
-
 # Let the code begin...
 
 package Bio::Map::LinkageMap;
-use vars qw(@ISA);
 use strict;
-use Bio::Map::SimpleMap;
 
-@ISA = qw(Bio::Map::SimpleMap);
+use base qw(Bio::Map::SimpleMap);
 
 =head2 new
 
@@ -91,28 +88,23 @@ use Bio::Map::SimpleMap;
  Function: Builds a new Bio::Map::LinkageMap object
  Returns : Bio::Map::LinkageMap
  Args    : -name    => the name of the map (string) [optional]
-	   -type    => the type of this map (string, defaults to Linkage) [optional]
+	       -type    => the type of this map (string, defaults to Linkage) [optional]
            -species => species for this map (Bio::Species) [optional]
            -units   => the map units (string, defaults to cM) [optional]
            -elements=> elements to initialize with
                        (arrayref of Bio::Map::MappableI objects) [optional]
-
-          -uid      => Unique ID of this map
+           -uid      => Unique ID of this map
 
 =cut
 
-# new provided by SimpleMap
+=head2 length
 
-
-
-=head2 length()
-
- Title   : length()
+ Title   : length
  Usage   : my $length = $map->length();
  Function: Retrieves the length of the map. In the case of a LinkageMap, the
-	   length is the sum of all marker distances.
+	       length is the sum of all marker distances.
  Returns : An integer representing the length of this LinkageMap. Will return
-	   undef if length is not calculateable
+	       0 if length is not calculateable
  Args    : None.
 
 
@@ -120,11 +112,12 @@ use Bio::Map::SimpleMap;
 
 sub length {
     my ($self) = @_;
+    $self->throw("Not yet implemented correctly");
+    
     my $total_distance;
-    foreach (@{$self->{'_elements'}}) {
-	if ($_) {
-	    $total_distance += ($_->position()->each_position_value($self))[0];
-	}
+    foreach my $element (@{$self->get_elements}) {
+        #*** there is no such method ->each_position_value!
+        $total_distance += ($element->position->each_position_value($self))[0];
     }
     return $total_distance;
 }
@@ -146,8 +139,8 @@ sub length {
                 RH markers too.
 =cut
 
-#'
-sub _add_element {
+#*** what is this? what calls it? note that it seems to be private
+sub _add_element_will_be_deleted {
     my ($self,$marker) = @_;
 
     my $o_position = $marker->position();
@@ -175,72 +168,5 @@ sub _add_element {
     }	
     $self->{'_elements'}[$position] = $marker;
 }
-
-=head2 each_element
-
- Title   : each_element
- Usage   : my @elements = $map->each_element;
- Function: Retrieves all the elements in a map
-           _ordered_.
- Returns : An array containing MappableI objects.
- Args    : None.
- Notes   : This is a useless concept in the context of a linkage map but is
-	included if you want a list of all of the marker names on the map.
-
-=cut
-
-sub each_element {
-    my ($self) = @_;
-    return @{$self->{'_elements'}};
-}
-
-=head2 implemented by Bio::Map::SimpleMap
-
-=cut
-
-=head2 name($new_name)
-
- Title   : name($new_name)
- Usage   : my $name = $map->name($new_name) _or_
-	   my $length = $map->name()
- Function: Get/set the name of the map.
- Returns : The current name of the map.
- Args    : If provided, the name of the map is set to $new_name.
-
-=head2 species
-
- Title   : species
- Usage   : my $species = $map->species;
- Function: Get/Set Species for a map
- Returns : Bio::Species object
- Args    : (optional) Bio::Species
-
-
-=head2 units
-
- Title   : units
- Usage   : $map->units('cM');
- Function: Get/Set units for a map
- Returns : units for a map
- Args    : units for a map (string)
-
-
-=head2 type
-
- Title   : type
- Usage   : my $type = $map->type
- Function: Get/Set Map type
- Returns : String coding map type
- Args    : (optional) string
-
-=head2 unique_id
-
- Title   : unique_id
- Usage   : my $id = $map->unique_id;
- Function: Get/Set the unique ID for this map
- Returns : a unique identifier
- Args    : [optional] new identifier to set
-
-=cut
 
 1;

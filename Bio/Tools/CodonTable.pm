@@ -1,8 +1,8 @@
-# $Id: CodonTable.pm,v 1.25 2003/10/25 14:34:47 heikki Exp $
+# $Id: CodonTable.pm,v 1.37.2.1 2006/10/02 23:10:31 sendu Exp $
 #
 # bioperl module for Bio::Tools::CodonTable
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Heikki Lehvaslaiho
 #
@@ -25,7 +25,7 @@ Bio::Tools::CodonTable - Bioperl codon table object
 
   # defaults to ID 1 "Standard"
   $myCodonTable   = Bio::Tools::CodonTable->new();
-  $myCodonTable2  = Bio::Tools::CodonTable -> new ( -id => 3 );
+  $myCodonTable2  = Bio::Tools::CodonTable->new( -id => 3 );
 
   # change codon table
   $myCodonTable->id(5);
@@ -33,6 +33,12 @@ Bio::Tools::CodonTable - Bioperl codon table object
   # examine codon table
   print  join (' ', "The name of the codon table no.", $myCodonTable->id(4),
 	       "is:", $myCodonTable->name(), "\n");
+
+  # print possible codon tables
+  $tables = Bio::Tools::CodonTable->tables;
+  while ( ($id,$name) = each %{$tables} ) {
+    print "$id = $name\n";
+  }
 
   # translate a codon
   $aa = $myCodonTable->translate('ACU');
@@ -45,6 +51,12 @@ Bio::Tools::CodonTable - Bioperl codon table object
   @codons = $myCodonTable->revtranslate('Glx');
   @codons = $myCodonTable->revtranslate('cYS', 'rna');
 
+  # reverse translate an entire amino acid sequence into a IUPAC
+  # nucleotide string
+
+  my $seqobj    = Bio::PrimarySeq->new(-seq => 'FHGERHEL');
+  my $iupac_str = $myCodonTable->reverse_translate_all($seqobj);
+
   #boolean tests
   print "Is a start\n"       if $myCodonTable->is_start_codon('ATG');
   print "Is a termianator\n" if $myCodonTable->is_ter_codon('tar');
@@ -52,10 +64,10 @@ Bio::Tools::CodonTable - Bioperl codon table object
 
 =head1 DESCRIPTION
 
-Codon tables are also called translation tables or genetics codes
-since that is what they try to represent. A bit more complete picture
+Codon tables are also called translation tables or genetic codes
+since that is what they represent. A bit more complete picture
 of the full complexity of codon usage in various taxonomic groups
-presented at the NCBI Genetic Codes Home page.
+is presented at the NCBI Genetic Codes Home page.
 
 CodonTable is a BioPerl class that knows all current translation
 tables that are used by primary nucleotide sequence databases
@@ -71,10 +83,12 @@ acid transcripts. The CodonTable object accepts codons of both type as
 input and allows the user to set the mode for output when reverse
 translating. Its default for output is DNA.
 
-Note: This class deals primarily with individual codons and amino
-      acids. However in the interest of speed you can L<translate>
-      longer sequence, too. The full complexity of protein translation
-      is tackled by L<Bio::PrimarySeqI::translate>.
+Note: 
+
+This class deals primarily with individual codons and amino
+acids. However in the interest of speed you can L<translate>
+longer sequence, too. The full complexity of protein translation
+is tackled by L<Bio::PrimarySeqI::translate>.
 
 
 The amino acid codes are IUPAC recommendations for common amino acids:
@@ -94,6 +108,8 @@ The amino acid codes are IUPAC recommendations for common amino acids:
           M           Met            Methionine
           F           Phe            Phenylalanine
           P           Pro            Proline
+		  O           Pyl            Pyrrolysine (22nd amino acid)
+		  U           Sec            Selenocysteine (21st amino acid)
           S           Ser            Serine
           T           Thr            Threonine
           W           Trp            Tryptophan
@@ -101,6 +117,7 @@ The amino acid codes are IUPAC recommendations for common amino acids:
           V           Val            Valine
           B           Asx            Aspartic acid or Asparagine
           Z           Glx            Glutamine or Glutamic acid
+		  J           Xle            Isoleucine or Valine (mass spec ambiguity)
           X           Xaa            Any or unknown amino acid
 
 
@@ -110,7 +127,7 @@ only differences are in available initiator codons.
 
 
 NCBI Genetic Codes home page:
-     http://www.ncbi.nlm.nih.gov/htbin-post/Taxonomy/wprintgc?mode=c
+     http://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi?mode=c
 
 EBI Translation Table Viewer:
      http://www.ebi.ac.uk/cgi-bin/mutations/trtables.cgi
@@ -118,7 +135,7 @@ EBI Translation Table Viewer:
 Amended ASN.1 version with ids 16 and 21 is at:
      ftp://ftp.ebi.ac.uk/pub/databases/geneticcode/
 
-Thank your for Matteo diTomasso for the original Perl implementation
+Thanks to Matteo diTomasso for the original Perl implementation
 of these tables.
 
 =head1 FEEDBACK
@@ -129,26 +146,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
-report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email:  heikki@ebi.ac.uk
-Address:
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom
+Email:  heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -161,20 +172,24 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Tools::CodonTable;
-use vars qw(@ISA @NAMES @TABLES @STARTS $TRCOL $CODONS %IUPAC_DNA 
+use vars qw(@NAMES @TABLES @STARTS $TRCOL $CODONS %IUPAC_DNA 	    $CODONGAP $GAP
 	    %IUPAC_AA %THREELETTERSYMBOLS $VALID_PROTEIN $TERMINATOR);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
-use Bio::Root::Root;
 use Bio::Tools::IUPAC;
 use Bio::SeqUtils;
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
+
 
 # first set internal values for all translation tables
 
 BEGIN { 
+    use constant CODONSIZE => 3;
+    $GAP = '-';
+    $CODONGAP = $GAP x CODONSIZE;
+
     @NAMES =			#id
 	(
 	 'Standard',		#1
@@ -328,6 +343,29 @@ sub name{
    return $NAMES[$id-1];
 }
 
+=head2 tables
+
+ Title   : tables
+ Usage   : $obj->tables()  or  Bio::Tools::CodonTable->tables()
+ Function: returns a hash reference where each key is a valid codon
+           table id() number, and each value is the corresponding
+           codon table name() string
+ Example :
+ Returns : A hashref
+ Args    : None
+
+
+=cut
+
+sub tables{
+  my %tables;
+  for my $id (1 .. @NAMES) {
+    my $name = $NAMES[$id-1];
+    $tables{$id} = $name if $name;
+  }
+  return \%tables;
+}
+                
 =head2 translate
 
  Title   : translate
@@ -365,15 +403,17 @@ sub translate {
 
     my $id = $self->id;
     my ($partial) = 0;
-    $partial = 2 if length($seq) % 3 == 2;
+    $partial = 2 if length($seq) % CODONSIZE == 2;
     
-    $seq = lc $seq; 
+    $seq = lc $seq;
     $seq =~ tr/u/t/;
     my $protein = "";
     if ($seq =~ /[^actg]/ ) { #ambiguous chars
-        for (my $i = 0; $i < (length($seq) - 2 ); $i+=3) {
-            my $triplet = substr($seq, $i, 3);
-	    if (exists $CODONS->{$triplet}) {
+        for (my $i = 0; $i < (length($seq) - (CODONSIZE-1)); $i+= CODONSIZE) {
+            my $triplet = substr($seq, $i, CODONSIZE);
+	    if( $triplet eq $CODONGAP ) {
+		$protein .= $GAP;
+	    } elsif (exists $CODONS->{$triplet}) {
 		$protein .= substr($TABLES[$id-1], 
 				   $CODONS->{$triplet},1);
 	    } else {
@@ -381,9 +421,11 @@ sub translate {
 	    }
 	}
     } else { # simple, strict translation
-	for (my $i = 0; $i < (length($seq) - 2 ); $i+=3) {
-            my $triplet = substr($seq, $i, 3); 
-            if (exists $CODONS->{$triplet}) {
+	for (my $i = 0; $i < (length($seq) - (CODONSIZE -1)); $i+=CODONSIZE) {
+            my $triplet = substr($seq, $i, CODONSIZE); 
+            if( $triplet eq $CODONGAP ) {
+		$protein .= $GAP;
+	    } if (exists $CODONS->{$triplet}) {
                 $protein .= substr($TABLES[$id-1], $CODONS->{$triplet}, 1);
 	    } else {
                 $protein .= 'X';
@@ -392,7 +434,9 @@ sub translate {
     }
     if ($partial == 2) { # 2 overhanging nucleotides
 	my $triplet = substr($seq, ($partial -4)). "n";
-	if (exists $CODONS->{$triplet}) {
+	if( $triplet eq $CODONGAP ) {
+	    $protein .= $GAP;
+	} elsif (exists $CODONS->{$triplet}) {
 	    my $aa = substr($TABLES[$id-1], $CODONS->{$triplet},1);       
 	    $protein .= $aa;
 	} else {
@@ -524,6 +568,73 @@ sub revtranslate {
     }
 
     return @codons;
+}
+=head2 reverse_translate_all
+
+ Title   : reverse_translate_all
+ Usage   : my $iup_str = $cttable->reverse_translate_all($seq_object)
+           my $iup_str = $cttable->reverse_translate_all($seq_object,
+                                                         $cutable,
+                                                         15);
+ Function: reverse translates a protein sequence into IUPAC nucleotide
+           sequence. An 'X' in the protein sequence is converted to 'NNN'
+           in the nucleotide sequence.
+ Returns : a string
+ Args    : a Bio::PrimarySeqI compatible object (mandatory)
+           a Bio::CodonUsage::Table object and a threshold if only
+             codons with a relative frequency above the threshold are
+             to be considered. 
+
+
+=cut
+
+sub reverse_translate_all {
+	
+	my ($self, $obj, $cut, $threshold) = @_;
+
+    ## check args are OK
+
+	if (!$obj || !$obj->isa('Bio::PrimarySeqI')){
+		$self->throw(" I need a Bio::PrimarySeqI object, not a [".
+						ref($obj) . "]");
+		}
+	if($obj->alphabet ne 'protein')	{
+		$self->throw("Cannot reverse translate, need an amino acid sequence .".
+                     "This sequence is of type [" . $obj->alphabet ."]");
+		}
+	my @data;
+	my @seq = split '', $obj->seq;
+
+	## if we're not supplying a codon usage table...
+	if( !$cut && !$threshold) {
+		## get lists of possible codons for each aa. 
+		for my $aa (@seq) {
+			if ($aa =~ /x/i) {
+				push @data, (['NNN']);
+			}else {
+				my @cods = $self->revtranslate($aa);
+				push @data, \@cods;
+			}
+		}
+	}else{
+	#else we are supplying a codon usage table, we just want common codons
+	#check args first. 
+		if(!$cut->isa('Bio::CodonUsage::Table'))	{
+			$self->throw("I need a Bio::CodonUsage::Table object, not a [".
+                     ref($cut). "].");
+			}
+		my $cod_ref = $cut->probable_codons($threshold);
+		for my $aa (@seq) {
+			if ($aa =~ /x/i) {
+				push @data, (['NNN']);
+				next;
+				}
+			push @data, $cod_ref->{$aa};
+		}
+	}
+
+	return $self->_make_iupac_string(\@data);
+
 }
 
 =head2 is_start_codon
@@ -679,6 +790,33 @@ sub add_table {
     push @STARTS, $starts;
 
     return scalar @NAMES;
+
+}
+
+sub _make_iupac_string {
+
+	my ($self, $cod_ref) = @_;
+	if(ref($cod_ref) ne 'ARRAY') {
+		$self->throw(" I need a reference to a list of references to codons, ".
+					 " not a [". ref($cod_ref) . "].");
+		}
+    my %iupac_hash   = Bio::Tools::IUPAC->iupac_rev_iub();
+	my $iupac_string = ''; ## the string to be returned
+	for my $aa (@$cod_ref) {
+
+		## scan through codon positions, record the differing values,	
+		# then look up in the iub hash
+		for my $index(0..2) {
+			my %h;
+			map { my $k = substr($_,$index,1);
+		 		$h{$k}  = undef;} @$aa;
+			my $lookup_key = join '', sort{$a cmp $b}keys %h;
+
+            ## extend string 
+			$iupac_string .= $iupac_hash{uc$lookup_key};
+		}
+	}
+    return $iupac_string;
 
 }
 

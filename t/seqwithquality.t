@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: seqwithquality.t,v 1.6 2002/12/19 22:10:34 matsallac Exp $
+## $Id: seqwithquality.t,v 1.9 2005/07/11 14:40:49 heikki Exp $
 
 use strict;
 use Dumpvalue;
@@ -14,7 +14,7 @@ BEGIN {
         use lib 't';
     }
     use Test;
-    plan tests => 18;
+    plan tests => 20;
 }
 
 
@@ -23,6 +23,8 @@ my $DEBUG = $ENV{'BIOPERLDEBUG'};
 
         # redirect STDERR to STDOUT
 open (STDERR, ">&STDOUT");
+
+my $verbosity = -1;
 
 print("Checking if the Bio::Seq::SeqWithQuality module could be used...\n") if $DEBUG;
         # test 1
@@ -40,10 +42,9 @@ my $seqobj_broken = Bio::PrimarySeq->new( -seq => "ATCGATCGA",
 my $seqobj = Bio::PrimarySeq->new( -seq => "ATCGATCGA",
                             -id  => 'QualityFragment-12',
                             -accession_number => 'X78121',
+                            -verbose => $verbosity
                             );
 ok(!$@);
-
-
 
 
 # create some random quality object with the same number of qualities and the same identifiers
@@ -54,16 +55,18 @@ eval {
 $qualobj = Bio::Seq::PrimaryQual->new( -qual => $string_quals,
                             -id  => 'QualityFragment-12',
                             -accession_number => 'X78121',
+                            -verbose => $verbosity
                             );
 };
 ok(!$@);
 
+
      # check to see what happens when you construct the SeqWithQuality object
 my $swq1 = Bio::Seq::SeqWithQuality->new( -seq	=>	$seqobj,
+                                         -verbose => $verbosity,
 					-qual		=>	$qualobj);
 ok(!$@);
-
-
+no warnings;
 
 print("Testing various weird constructors...\n") if $DEBUG;
 print("\ta) No ids, Sequence object, no quality...\n") if $DEBUG;
@@ -71,20 +74,22 @@ print("\ta) No ids, Sequence object, no quality...\n") if $DEBUG;
 my $wswq1;
 eval {
 	$wswq1 = Bio::Seq::SeqWithQuality->new( -seq  =>	$seqobj,
+                                                -verbose => $verbosity,
 						-qual	=>	"");
 };
 ok(!$@);
 
-
 print("\tb) No ids, no sequence, quality object...\n") if $DEBUG;
 	# note that you must provide a alphabet for this one.
 $wswq1 = Bio::Seq::SeqWithQuality->new( -seq => "",
+                                        -verbose => $verbosity,
 					-qual => $qualobj,
 					-alphabet => 'dna'
 );
 print("\tc) Absolutely nothing. (HAHAHAHA)...\n") if $DEBUG;
 eval {
 	$wswq1 = Bio::Seq::SeqWithQuality->new( -seq => "",
+                                                -verbose => $verbosity,
 						-qual => "",
 						-alphabet => 'dna'
 	);
@@ -93,6 +98,7 @@ ok(!$@);
 print("\td) Absolutely nothing but an ID\n") if $DEBUG;
 eval {
 	$wswq1 = Bio::Seq::SeqWithQuality->new( -seq => "",
+                                                -verbose => $verbosity,
 						-qual => "",
 						-alphabet => 'dna',
 						-id => 'an object with no sequence and no quality but with an id'
@@ -104,6 +110,7 @@ print("\td) No sequence, No quality, No ID...\n") if $DEBUG;
 
 eval {
 	$wswq1 = Bio::Seq::SeqWithQuality->new( -seq  =>	"",
+                                                -verbose => $verbosity,
 							-qual	=>	"");
 };
 	# this should fail without a alphabet
@@ -165,15 +172,34 @@ print("5. Testing the seq_obj() method...\n") if $DEBUG;
 	print("\t5b) Testing seq_obj(\$ref)...\n") if $DEBUG;
 		$swq1->seq_obj($seqobj);
 
-print("6. Testing the subqual() method...\n");
+print("6. Testing the subqual() method...\n") if $DEBUG;
      my $t_subqual = "10 20 30 40 50 60 70 80 90";
      $swq1->qual($t_subqual);
-     print("\t6d) Testing the subqual at the start (border condition)\n");
+     print("\t6d) Testing the subqual at the start (border condition)\n") if $DEBUG;
           # ok ('1 2 3' eq join(' ',@{$swq1->subqual(1,3)}));
-     print("\t6d) Testing the subqual at the end (border condition)\n");
+     print("\t6d) Testing the subqual at the end (border condition)\n") if $DEBUG;
           # ok ('7 8 9' eq join(' ',@{$swq1->subqual(7,9)}));
-     print("\t6d) Testing the subqual in the middle\n");
+     print("\t6d) Testing the subqual in the middle\n") if $DEBUG;
           # ok ('4 5 6' eq join(' ',@{$swq1->subqual(4,6)}));
 
 
+print("7. Testing cases where quality is zero...\n") if $DEBUG;
+$swq1 = Bio::Seq::SeqWithQuality->new(-seq =>  'G',
+                                      -qual => '0',
+                                      -verbose => $verbosity,
+                                     );
+my $swq2 = Bio::Seq::SeqWithQuality->new(-seq =>  'G',
+                                         -qual => '65',
+                                         -verbose => $verbosity,
+                                     );
+ok  $swq1->length, $swq2->length;
 
+$swq1 = Bio::Seq::SeqWithQuality->new(-seq =>  'GC',
+                                      -verbose => $verbosity,
+                                      -qual => '0 0',
+                                     );
+$swq2 = Bio::Seq::SeqWithQuality->new(-seq =>  'GT',
+                                      -verbose => $verbosity,
+                                      -qual => '65 0',
+                                     );
+ok  $swq1->length, $swq2->length;

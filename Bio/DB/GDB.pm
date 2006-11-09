@@ -1,6 +1,6 @@
-# $Id: GDB.pm,v 1.13 2003/05/15 08:13:54 heikki Exp $
+# $Id: GDB.pm,v 1.20.4.2 2006/10/02 23:10:14 sendu Exp $
 #
-# BioPerl module for Bio::DB::GenBank
+# BioPerl module for Bio::DB::GDB
 #
 # Cared for by Jason Stajich <jason@bioperl.org>
 #
@@ -17,10 +17,12 @@ Bio::DB::GDB - Database object interface to GDB HTTP query
 
 =head1 SYNOPSIS
 
+    use Bio::DB::GDB;
+
     $gdb = new Bio::DB::GDB;
 
-    $info = $gdb->get_info(-type=>'marker',
-			     -id=>'D1S243'); # Marker name
+    $info = $gdb->get_info(-type => 'marker',
+			                  -id => 'D1S243'); # Marker name
 
    print "genbank id is ", $info->{'gdbid'},
     "\nprimers are (fwd, rev) ", join(",", @{$info->{'primers'}}), 
@@ -42,18 +44,16 @@ your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation
 is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
-Report bugs to the Bioperl bug tracking system to
-help us keep track the bugs and their resolution.
-Bug reports can be submitted via email or the
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -71,14 +71,13 @@ preceded with a _
 
 package Bio::DB::GDB;
 use strict;
-use Bio::Root::Root;
 use LWP::UserAgent;
 use HTTP::Request::Common;
 use HTML::Parser;
 
-use vars qw(@ISA $BASEADDRESS %PARAMSTRING $MODVERSION);
+use vars qw($BASEADDRESS %PARAMSTRING $MODVERSION);
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 $MODVERSION = '0.01';
 $BASEADDRESS = 'http://www.gdb.org/gdb-bin/genera/genera/hgd/GenomicSegment';
@@ -92,7 +91,7 @@ sub new {
     my($class,@args) = @_;
     my $self = $class->SUPER::new(@args);
     
-    my $ua = new LWP::UserAgent;
+    my $ua = new LWP::UserAgent(env_proxy => 1);
     $ua->agent(ref($self) ."/$MODVERSION");
     $self->ua($ua);    
 
@@ -170,12 +169,12 @@ sub get_info {
     my ($resp) = $self->_request($url);
     if( ! defined $resp || ! ref($resp) ) {
 	$self->warn("Did not get any data for url ". $url->uri);
-	return undef;
+	return;
     }
     my $content = $resp->content;	
     if( $content =~ /ERROR/ || length($resp->content) == 0 ) {
 	$self->warn("Error getting for url " . $url->uri . "!\n");
-	return undef;
+	return;
     }
     my (@primers, $length, $markerurl, $realname);
     my $state = 0;
@@ -214,7 +213,7 @@ sub get_info {
 			       $state = 2 if( $state == 1 && $text =~ /Amplimer/);
 			   }, "text" ],
 			   marked_sections =>1);
-    $p->parse($content) or die "Can't open: $!";        
+    $p->parse($content) or $self->throw("Can't open: $!");        
     if( ! defined $markerurl ) {
 	@primers = ('notfound','notfound', '?');
     } elsif( $markerurl eq 'this' ) {
@@ -222,7 +221,7 @@ sub get_info {
     }
     else { 
 	my $resp = $self->_request(GET $markerurl);
-        return undef if ( !defined $resp );
+        return if ( !defined $resp );
 	$content = $resp->content();
     }
     $state = 0;
@@ -265,7 +264,7 @@ sub get_info {
 			   }  , "text" ],
 			   marked_sections =>1,
 			   );
-    $p->parse($content) || die "Can't open: $!";
+    $p->parse($content) || $self->throw("Can't open: $!");
 
     return { 'gdbid' => $realname, 'length' => $length, 'primers' => \@primers };
 }
@@ -300,9 +299,9 @@ sub _request {
     } else { $resp =  $self->ua->request($url); } 
 
     if( $resp->is_error  ) {
-	$self->warn($resp->as_string() . "\nError getting for url " .
+	$self->throw($resp->as_string() . "\nError getting for url " .
 		     $url->uri . "!\n");
-	return undef;
+	return;
     }
     return $resp;
 }

@@ -1,36 +1,33 @@
 #!perl
-# Author:  Jason Stajich <jason@bioperl.org>
+# Author:  Jason Stajich <jason-at-bioperl-dot-org>
 # Purpose: Bioperl implementation of Sean Eddy's sreformat
 #          We're not as clever as Sean's squid library though so
 #          you have to specify the input format rather than letting
 #          the application guess.
-
-# TODO - support STDIN/STDOUT piping?
-#      - finish POD
-#      - stress test
 
 use strict;
 use Bio::SeqIO;
 use Bio::AlignIO;
 use Getopt::Long;
 
-my $USAGE = "bpsreformat -if INFORMAT -of OUTFORMAT -i FILENAME -o output.FORMAT
+my $USAGE = "bp_sreformat -if INFORMAT -of OUTFORMAT -i FILENAME -o output.FORMAT
 
 -h/--help               Print this help
 -if/--informat          Specify the input format
 -of/--outformat         Specify the output format
 -i/--input              Specify the input file name
-                        (to pass in data on STDIN omit this flag)
+                        (to pass in data on STDIN use minus sign as filename)
 -o/--output             Specify the output file name
-                        (to pass data out on STDOUT omit this flag
+                        (to pass data out on STDOUT use minus sign as filename)
 --msa                   Specify this is multiple sequence alignment data
 --special=specialparams Specify special params supported by some formats
                         Comma or space separated please.
                         These include:
                         nointerleaved   -- for phylip,non-interleaved format
-                        idlinebreak       -- for phylip, makes it molphy format
+                        idlinebreak     -- for phylip, makes it molphy format
                         percentages     -- for clustalw, show % id per line
-
+                        flat            -- don't show start-end in seqid
+                        linelength      -- line length for clustalw
 ";
 
 
@@ -55,50 +52,74 @@ if( $special ) {
     @extra = map { my @rc;
 		   if( /nointerleaved/) {
 		       @rc = ('-interleaved' => '0');
-		   } elsif( /idlength=(\d+)/ ) { @rc = ( '-idlength' => $1) } 
+		   } elsif( /(\S+)\=(\S+)/ ) { @rc = ( "-$1" => $2) } 
 	           else{ @rc = ("-$_" => 1) }
 		   @rc;
 	       } split(/[\s,]/,$special);
 }
+# guess we're talking about MSA if any of the standard MSA names are used
+if( $informat =~ /nexus|phylip|clustal|maf|stockholm|bl2seq|msf/ ||
+    $outformat =~ /nexus|phylip|clustal|maf|stockholm|bl2seq|msf/ ) {
+    $msa = 1;
+}
+
 if( $msa ) {
     eval {
-	$in = new Bio::AlignIO(-format => $informat, -file => $input);
+	if( defined $input ) {
+	    $in = new Bio::AlignIO(-format => $informat, -file => $input);
+	} else {
+	    $in = new Bio::AlignIO(-format => $informat, -fh => \*ARGV);
+	}
     };
     if( $@ ) {
 	die("Unknown MSA format to bioperl $informat\n");
     }
     eval {
-	   if( $output ) {
-	       $out = new Bio::AlignIO(-format => $outformat,
-				       -file => ">$output", @extra);
-	   } else {
-	       # default to STDOUT for output
-	       $out = new Bio::AlignIO(-format => $outformat,@extra);
-	   }
-       };
+	if( $output ) {
+	    $out = new Bio::AlignIO(-format => $outformat,
+				    -file => ">$output", @extra);
+	} else {
+	    # default to STDOUT for output
+	    $out = new Bio::AlignIO(-format => $outformat,@extra);
+	}
+    };
     if( $@ ) {
 	die("Unknown MSA format to bioperl $outformat\n");
     }
-    while( my $aln = $in->next_aln) { $out->write_aln($aln) }
+    while( my $aln = $in->next_aln) { 
+	 if( $special =~ /flat/ ) {$aln->set_displayname_flat(1); }
+	 $out->write_aln($aln) }
 
 } else {
     eval {
-	$in = new Bio::SeqIO(-format => $informat, -file => $input);
+	if( defined $input ) {
+	    $in = new Bio::SeqIO(-format => $informat, -file => $input);
+	} else { 
+	    $in = new Bio::SeqIO(-format => $informat, -fh => \*ARGV);
+	}
     };
     if( $@ ) {
-	die("Unknown sequence format to bioperl $informat\n");
+	if( $@ =~ /Could not open/ ) {
+	    die("Could not open input file: $input\n");
+	} else { 
+	    die("Unknown sequence format to bioperl $informat\n");
+	}	
     }
     eval {
 	   if( $output ) {
 	       $out = new Bio::SeqIO(-format => $outformat,
-				       -file => ">$output");
+				     -file => ">$output");
 	   } else {
 	       # default to STDOUT for output
 	       $out = new Bio::SeqIO(-format => $outformat);
 	   }
        };
     if( $@ ) {
-	die("Unknown sequence format to bioperl $outformat\n");
+	if( $@ =~ /Could not open/ ) {
+	    die("Could not open output file: $output\n");
+	} else { 
+	    die("Unknown sequence format to bioperl $outformat: $@\n");
+	}
     }
     while( my $seq = $in->next_seq ) {
 	$out->write_seq($seq);
@@ -115,7 +136,7 @@ This script uses the SeqIO system that allows conversion of sequence
 formats either sequence data or multiple sequence alignment data.  The
 name comes from the fact that Sean Eddy's program sreformat (part of
 the HMMER pkg) already does this.  Sean's program tries to guess the
-input formats in our code we currently require your to specify what
+input formats while in our code we currently require your to specify what
 the input and output formats are and if the data is from a multiple
 sequence alignment or from straight sequence files.
 
@@ -130,10 +151,9 @@ bpsreformat -if INFORMAT -of OUTFORMAT -i FILENAME -o output.FORMAT
   -of/--outformat  Specify the output format
 
   -i/--input       Specify the input file name
-                   (to pass in data on STDIN omit this flag)
-
+                   (to pass in data on STDIN use minus sign as filename)
   -o/--output      Specify the output file name
-                   (to pass data out on STDOUT omit this flag
+                   (to pass data out on STDOUT use minus sign as filename)
 
   --msa            Specify this is multiple sequence alignment data
 

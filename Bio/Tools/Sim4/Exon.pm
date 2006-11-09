@@ -1,9 +1,9 @@
-
+# $Id: Exon.pm,v 1.16.4.1 2006/10/02 23:10:37 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Sim4::Exon
 #
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
-# and Hilmar Lapp <hlapp@gmx.net>
+# Cared for by Ewan Birney <birney-at-sanger.ac.uk>
+# and Hilmar Lapp <hlapp-at-gmx.net>
 #
 # Copyright Ewan Birney, Hilmar Lapp
 #
@@ -64,24 +64,21 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney, Hilmar Lapp
 
-Email birney@sanger.ac.uk
-Hilmar Lapp E<lt>hlapp@gmx.netE<gt> or E<lt>hilmar.lapp@pharma.novartis.comE<gt>.
-
-Describe contact details here
+Ewan Birney E<lt>birney-at-sanger.ac.ukE<gt>
+Hilmar Lapp E<lt>hlapp-at-gmx.netE<gt> or E<lt>hilmar.lapp-at-pharma.novartis.comE<gt>.
 
 =head1 APPENDIX
 
@@ -94,12 +91,10 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::Tools::Sim4::Exon;
-use vars qw(@ISA);
 use strict;
 
-use Bio::SeqFeature::SimilarityPair;
 
-@ISA = qw(Bio::SeqFeature::SimilarityPair);
+use base qw(Bio::SeqFeature::SimilarityPair);
 
 sub new {
     my ($class,@args) = @_;

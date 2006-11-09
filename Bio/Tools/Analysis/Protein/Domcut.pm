@@ -56,7 +56,7 @@ The raw text of the program output
 
 =item 2
 
-An reference to an array of hashes of scores for each state and the
+A reference to an array of hashes of scores for each state and the
 assigned state. Each element in the array is a residue (indexed from 0).
 
   my $data_ref = $analysis_object->result('parsed');
@@ -94,7 +94,7 @@ So, in order to add features to an existing Bio::Seq object;
 A Bio::Seq::Meta::Array implementing sequence.
 
 This is a Bio::Seq object that can also hold data about each residue
-in the sequence In this case, the sequence can be associated with a
+in the sequence. In this case, the sequence can be associated with a
 single array of Domcut prediction scores.  e.g.,
 
   my $meta_sequence = $analysis_object->result('meta');
@@ -121,17 +121,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                       - General discussion
-  http://bio.perl.org/MailList.html           - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS
 
@@ -148,15 +147,13 @@ methods. Internal methods are usually preceded with a _
 
 use strict;
 package Bio::Tools::Analysis::Protein::Domcut;
-use vars qw(@ISA );
 use IO::String;
 use Bio::SeqIO;
 use HTTP::Request::Common qw(GET);
 use Bio::SeqFeature::Generic;
-use Bio::Tools::Analysis::SimpleAnalysisBase;
 use Bio::Seq::Meta::Array;
 
-@ISA = qw(Bio::Tools::Analysis::SimpleAnalysisBase );
+use base qw(Bio::Tools::Analysis::SimpleAnalysisBase);
 
 my $URL = 'http://www.Bork.EMBL-Heidelberg.DE/Docu/mikita/domplot.cgi?';
 my $ANALYSIS_NAME = 'Domcut';

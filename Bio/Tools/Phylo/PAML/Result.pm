@@ -1,8 +1,8 @@
-# $Id: Result.pm,v 1.10 2003/10/02 21:10:02 jason Exp $ 
+# $Id: Result.pm,v 1.22.4.1 2006/10/02 23:10:34 sendu Exp $ 
 #
 # BioPerl module for Bio::Tools::Phylo::PAML::Result
 #
-# Cared for by Jason Stajich <jason@bioperl.org>
+# Cared for by Jason Stajich <jason-at-bioperl.org>
 #
 # Copyright Jason Stajich, Aaron Mackey
 #
@@ -25,10 +25,64 @@ Bio::Tools::Phylo::PAML::Result - A PAML result set object
   # which isa Bio::SeqAnalysisResultI object.
   my $result = $parser->next_result();
 
-  my @seqs       = $result->get_seqs;
-  my @MLmatrix   = $result->get_MLmatrix; # get MaxLikelihood Matrix
-  my @NGmatrix   = $result->get_NGmatrix; # get Nei-Gojoburi Matrix
-  my @basfreq    = $result->get_codon_pos_basefreq;
+  my @seqs         = $result->get_seqs;
+  my %input_params = $result->get_input_parameters;
+  my @basfreq      = $result->get_codon_pos_basefreq;
+  my $MLmatrix     = $result->get_MLmatrix; # get MaxLikelihood Matrix
+  my $NGmatrix     = $result->get_NGmatrix; # get Nei-Gojoburi Matrix
+
+
+  # for AAML runs
+  my $AAmatrix   = $result->get_AADistMatrix;
+  my $AAMLmatrix   = $result->get_AAMLDistMatrix;
+
+  # if -dir contains an rst file get list of
+  # Bio::PrimarySeq ancestral state reconstructions of the sequences
+  my @rsts          = $result->get_rst_seqs; 
+
+
+  # if you want to print the changes on the tree
+  # this will print out the 
+  # anc_aa       => ANCESTRAL AMINO ACID
+  # anc_prob     => ANCESTRAL AA PROBABILITY 
+  # derived_aa   => DERIVED AA
+  # derived_prob => DERIVE AA PROBABILITY (where appropriate - NA for extant/tip taxas)
+  # site         => which codon site this in the alignment
+    @trees = $result->get_rst_trees;
+    for my $t ( @trees ) {
+	for my $node ( $t->get_nodes ) {	
+	    next unless $node->ancestor; # skip root node
+	    my @changes = $node->get_tag_values('changes');
+	    my $chgstr = '';
+	    for my $c ( @changes ) { 
+		for my $k ( sort keys %$c ) {
+		    $chgstr .= "$k => $c->{$k} ";
+		}
+		$chgstr .= "\n\t";
+	    }
+
+	    printf "node:%s n=%s s=%s\n\t%s\n",
+	    $node->id, 
+	    $node->get_tag_values('n'),
+	    $node->get_tag_values('s'),
+	    $chgstr;
+	}
+    }
+
+  # Persite probabilities
+  my $persite = $result->get_rst_persite;
+  # let's score site 1
+  $site = $persite->[2]; 
+  # so site 2, node 2 (extant node, node 2)
+  print $site->[2]->{'codon'}, ' ',$site->[2]->{'aa'},"\n";
+  # site 2, node 3
+  print $site->[3]->{'codon'}, ' ',$site->[3]->{'aa'}, "\n";
+
+  # ancestral node 9, codon, aa, marginal probabilities; Yang95 is listed as 
+  #  (eqn. 4 in Yang et al. 1995 Genetics 141:1641-1650) in PAML rst file.
+  print $site->[9]->{'codon'}, ' ',$site->[9]->{'aa'}, ' ', $site->[9]->{'prob'}, ' ',
+        $site->[9]->{'Yang95_aa'},' ', $site->[9]->{'Yang95_aa_prob'},"\n";
+
 
 =head1 DESCRIPTION
 
@@ -42,8 +96,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -51,19 +105,16 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich, Aaron Mackey
 
-Email jason@bioperl.org
-Email amackey@virginia.edu
-
-Describe contact details here
+ Email jason-at-bioperl-dot-org
+ Email amackey-at-virginia-dot-edu
 
 =head1 CONTRIBUTORS
 
-Additional contributors names and emails here
+Albert Vilella avilella-AT-gmail-DOT-com
 
 =head1 APPENDIX
 
@@ -77,23 +128,20 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Tools::Phylo::PAML::Result;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
-use Bio::AnalysisResultI;
 
-@ISA = qw(Bio::Root::Root Bio::AnalysisResultI);
+use base qw(Bio::Root::Root Bio::AnalysisResultI);
 
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Tools::Phylo::PAML::Result(%data);
+ Usage   : my $obj = Bio::Tools::Phylo::PAML::Result->new(%data);
  Function: Builds a new Bio::Tools::Phylo::PAML::Result object
  Returns : Bio::Tools::Phylo::PAML::Result
- Args    : -trees     => array reference of L<Bio::Tree::TreeI> objects
+ Args    : -trees     => array reference of Bio::Tree::TreeI objects
            -MLmatrix  => ML matrix
-           -seqs      => array reference of L<Bio::PrimarySeqI> objects
+           -seqs      => array reference of Bio::PrimarySeqI objects
            -codonpos  => array reference of codon positions 
            -codonfreq => array reference of codon frequencies
            -version   => version string
@@ -103,7 +151,20 @@ use Bio::AnalysisResultI;
            -aafreq    => Hashref of AA frequencies (only for AAML)
            -aadistmat => Bio::Matrix::PhylipDist   (only for AAML)
            -aamldistmat => Bio::Matrix::PhylipDist   (only for pairwise AAML)
+           -ntfreq    => array ref of NT frequencies (only for BASEML)
+           -seqfile    => seqfile used
+           -kappa_mat => Bio::Matrix::PhylipDist of kappa values (only for BASEML)
+           -alpha_mat => Bio::Matrix::PhylipDist of alpha values (only for BASEML)
            -NSSitesresult => arrayref of PAML::ModelResult 
+           -input_params  => input params from .ctl file 
+           -rst       => array reference of Bio::PrimarySeqI objects
+                         of ancestral state reconstruction
+           -rst_persite=> arrayref of persite data, this is a complicated set of AoH
+           -rst_trees  => rst trees with changes coded on the tree
+
+See Also: L<Bio::Tree::TreeI>, L<Bio::PrimarySeqI>, L<Bio::Matrix::PhylipDist>, L<Bio::Tools::Phylo::PAML>
+
+
 =cut
 
 sub new {
@@ -115,14 +176,22 @@ sub new {
       $model,$patterns, $stats,
       $aafreq, $aadistmat, 
       $aamldistmat,
-      $NSSitesresults ) = $self->_rearrange([qw(TREES MLMATRIX 
-						SEQS NGMATRIX
-						CODONPOS CODONFREQ
-						VERSION MODEL PATTERNS
-						STATS AAFREQ AADISTMAT
-						AAMLDISTMAT 
-						NSSITESRESULTS)], 
-				       @args);
+      $ntfreqs, $seqfile, $kappa_mat, $alpha_mat,
+      $NSSitesresults,$input_params,$rst,$rst_persite,$rst_trees ) = 
+	  $self->_rearrange([qw
+			     (TREES MLMATRIX 
+			      SEQS NGMATRIX
+			      CODONPOS CODONFREQ
+			      VERSION MODEL PATTERNS
+			      STATS AAFREQ AADISTMAT
+			      AAMLDISTMAT 
+			      NTFREQ SEQFILE
+			      KAPPA_DISTMAT
+			      ALPHA_DISTMAT
+			      NSSITESRESULTS
+			      INPUT_PARAMS
+			      RST RST_PERSITE RST_TREES)], 
+			    @args);
   $self->reset_seqs;
   if( $trees ) {
       if(ref($trees) !~ /ARRAY/i ) { 
@@ -175,6 +244,7 @@ sub new {
   }
 
   $self->version($version)   if defined $version;
+  $self->seqfile($seqfile)   if defined $seqfile;
   $self->model($model)       if defined $model;
   if( defined $patterns ) {
       if( ref($patterns) =~ /HASH/i ) {
@@ -213,6 +283,57 @@ sub new {
 	  }
       }
   }
+
+  $self->{'_ntfreqs'} = {};
+  if( $ntfreqs ) {
+      if( ref($ntfreqs) =~ /HASH/i ) {
+	  $self->set_NTFreqs($ntfreqs);
+      } else { 
+	  $self->warn("Must have provided a valid hash reference to initialize ntfreq");
+      }
+  }
+
+  if( $kappa_mat ) {
+      $self->set_KappaMatrix($kappa_mat);
+  } 
+  if( $alpha_mat ) {
+      $self->set_AlphaMatrix($alpha_mat);
+  }
+
+  if( $input_params ) {
+      if(  ref($input_params) !~ /HASH/i ) {
+	  $self->warn("need a valid HASH object for input_params\n");
+      } else {
+	  while( my ($p,$v) = each %$input_params ) {
+	      $self->set_input_parameter($p,$v);
+	  }
+      }
+      
+  }
+  $self->reset_rst_seqs;
+  if( $rst ) {
+      if( ref($rst) =~ /ARRAY/i ) {	  
+	  for ( @$rst ) {
+	      $self->add_rst_seq($_);
+	  }
+      } else {
+	  $self->warn("Need a valid array ref for -rst option\n");
+      }
+  }
+  if( defined $rst_persite ) {
+      $self->set_rst_persite($rst_persite);
+  }
+  $self->reset_rst_trees;
+  if( $rst_trees ) {
+      if( ref($rst_trees) =~ /ARRAY/i ) {	  
+	  for ( @$rst_trees ) {
+	      $self->add_rst_tree($_);
+	  }
+      } else {
+	  $self->warn("Need a valid array ref for -rst_trees option\n");
+      }
+  }
+
   return $self;
 }
 
@@ -476,6 +597,23 @@ sub version{
    return $self->{'_version'};
 }
 
+=head2 seqfile
+
+ Title   : seqfile
+ Usage   : $obj->seqfile($newval)
+ Function: Get/Set seqfile
+ Returns : value of seqfile
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub seqfile{
+   my $self = shift;
+   $self->{'_seqfile'} = shift if @_;
+   return $self->{'_seqfile'};
+}
+
 =head2 model
 
  Title   : model
@@ -560,6 +698,53 @@ sub get_AAFreqs{
        return $self->{'_aafreqs'}->{$seqname} || {};
    } else { 
        return $self->{'_aafreqs'};
+   }
+}
+
+=head2 set_NTFreqs
+
+ Title   : set_NTFreqs
+ Usage   : $result->set_NTFreqs(\%aafreqs);
+ Function: Get/Set NT freqs
+ Returns : none
+ Args    : Hashref, keys are the sequence names, each points to a hashref
+           which in turn has keys which are the amino acids
+
+
+=cut
+
+sub set_NTFreqs{
+   my ($self,$freqs) = @_;
+   
+   if( $freqs && ref($freqs) =~ /HASH/i ) {
+       foreach my $seqname ( keys %{$freqs} ) {
+	   $self->{'_ntfreqs'}->{$seqname} = $freqs->{$seqname};
+       }
+   }
+}
+
+=head2 get_NTFreqs
+
+ Title   : get_NTFreqs
+ Usage   : my %all_nt_freqs = $result->get_NTFreqs() 
+            OR
+           my %seq_nt_freqs = $result->get_NTFreqs($seqname) 
+ Function: Get the NT freqs, either for every sequence or just 
+           for a specific sequence
+           The average nt freqs for the entire set are also available
+           for the sequence named 'Average'
+ Returns : Hashref
+ Args    : (optional) sequence name to retrieve nt freqs for
+
+
+=cut
+
+sub get_NTFreqs{
+   my ($self,$seqname) = @_;
+   if( $seqname ) {
+       return $self->{'_ntfreqs'}->{$seqname} || {};
+   } else { 
+       return $self->{'_ntfreqs'};
    }
 }
 
@@ -649,7 +834,7 @@ sub set_AADistMatrix{
        $self->warn("Must provide a valid Bio::Matrix::MatrixI for set_AADistMatrix");
    }
    $self->{'_AADistMatix'} = $d;
-   return undef;
+   return;
 }
 
 =head2 get_AAMLDistMatrix
@@ -687,7 +872,7 @@ sub set_AAMLDistMatrix{
        $self->warn("Must provide a valid Bio::Matrix::MatrixI for set_AAMLDistMatrix");
    }
    $self->{'_AAMLDistMatix'} = $d;
-   return undef;
+   return;
 }
 
 =head2 add_NSSite_result
@@ -722,7 +907,7 @@ sub add_NSSite_result{
 
 sub get_NSSite_results{
    my ($self) = @_;
-   return @{$self->{'_nssiteresult'}};
+   return @{$self->{'_nssiteresult'} || []};
 }
 
 =head2 set_CodonFreqs
@@ -758,6 +943,284 @@ sub get_CodonFreqs{
    my ($self) = @_;
    return @{$self->{'_codonfreqs'} || []};
 }
+
+
+=head2 BASEML Relavent values
+
+=cut
+
+=head2 get_KappaMatrix
+
+ Title   : get_KappaMatrix
+ Usage   : my $mat = $obj->get_KappaMatrix()
+ Function: Get KappaDistance Matrix
+ Returns : value of KappaMatrix (Bio::Matrix::PhylipDist)
+ Args    : none
+
+
+=cut
+
+sub get_KappaMatrix{
+    my $self = shift;
+    return $self->{'_KappaMatix'};
+}
+
+=head2 set_KappaMatrix
+
+ Title   : set_KappaMatrix
+ Usage   : $obj->set_KappaMatrix($mat);
+ Function: Set the KappaDistrance Matrix (Bio::Matrix::PhylipDist)
+ Returns : none
+ Args    : KappaDistrance Matrix (Bio::Matrix::PhylipDist)
+
+
+=cut
+
+sub set_KappaMatrix{
+   my ($self,$d) = @_;
+   if( ! $d || 
+       ! ref($d) ||
+       ! $d->isa('Bio::Matrix::PhylipDist') ) {
+       $self->warn("Must provide a valid Bio::Matrix::MatrixI for set_NTDistMatrix");
+   }
+   $self->{'_KappaMatix'} = $d;
+   return;
+}
+
+
+=head2 get_AlphaMatrix
+
+ Title   : get_AlphaMatrix
+ Usage   : my $mat = $obj->get_AlphaMatrix()
+ Function: Get AlphaDistance Matrix
+ Returns : value of AlphaMatrix (Bio::Matrix::PhylipDist)
+ Args    : none
+
+
+=cut
+
+sub get_AlphaMatrix{
+    my $self = shift;
+    return $self->{'_AlphaMatix'};
+}
+
+=head2 set_AlphaMatrix
+
+ Title   : set_AlphaMatrix
+ Usage   : $obj->set_AlphaMatrix($mat);
+ Function: Set the AlphaDistrance Matrix (Bio::Matrix::PhylipDist)
+ Returns : none
+ Args    : AlphaDistrance Matrix (Bio::Matrix::PhylipDist)
+
+
+=cut
+
+sub set_AlphaMatrix{
+   my ($self,$d) = @_;
+   if( ! $d || 
+       ! ref($d) ||
+       ! $d->isa('Bio::Matrix::PhylipDist') ) {
+       $self->warn("Must provide a valid Bio::Matrix::MatrixI for set_NTDistMatrix");
+   }
+   $self->{'_AlphaMatix'} = $d;
+   return;
+}
+
+=head2 set_input_parameter
+
+ Title   : set_input_parameter
+ Usage   : $obj->set_input_parameter($p,$vl);
+ Function: Set an Input Parameter 
+ Returns : none
+ Args    : $parameter and $value
+
+
+=cut
+
+sub set_input_parameter{
+   my ($self,$p,$v) = @_;
+   return unless defined $p;
+   $self->{'_input_parameters'}->{$p} = $v;
+}
+
+=head2 get_input_parameters
+
+ Title   : get_input_parameters
+ Usage   : $obj->get_input_parameters;
+ Function: Get Input Parameters 
+ Returns : Hash of key/value pairs
+ Args    : none
+
+
+=cut
+
+sub get_input_parameters{
+   my ($self) = @_;
+   return %{$self->{'_input_parameters'} || {}};
+}
+
+=head2 reset_input_parameters
+
+ Title   : reset_input_parameters
+ Usage   : $obj->reset_input_parameters;
+ Function: Reset the Input Parameters hash 
+ Returns : none
+ Args    : none
+
+
+=cut
+
+sub reset_input_parameters{
+   my ($self) = @_;
+   $self->{'_input_parameters'} = {};
+}
+
+=head1 Reconstructed Ancestral State relevant options 
+
+=head2 add_rst_seq
+
+ Title   : add_rst_seq
+ Usage   : $obj->add_rst_seq($seq)
+ Function: Add a Bio::PrimarySeq to the RST Result
+ Returns : none
+ Args    : Bio::PrimarySeqI
+See also : L<Bio::PrimarySeqI>
+
+=cut
+
+sub add_rst_seq{
+   my ($self,$seq) = @_;
+   if( $seq ) { 
+       unless( $seq->isa("Bio::PrimarySeqI") ) {
+	   $self->warn("Must provide a valid Bio::PrimarySeqI to add_rst_seq");
+	   return;
+       }
+       push @{$self->{'_rstseqs'}},$seq;
+   }
+
+}
+
+=head2 reset_rst_seqs
+
+ Title   : reset_rst_seqs
+ Usage   : $result->reset_rst_seqs
+ Function: Reset the RST seqs stored
+ Returns : none
+ Args    : none
+
+
+=cut
+
+sub reset_rst_seqs{
+   my ($self) = @_;
+   $self->{'_rstseqs'} = [];
+}
+
+=head2 get_rst_seqs
+
+ Title   : get_rst_seqs
+ Usage   : my @otus = $result->get_rst_seqs
+ Function: Get the seqs Bio::PrimarySeq
+ Returns : Array of Bio::PrimarySeqI objects
+ Args    : None
+See also : L<Bio::PrimarySeq>
+
+=cut
+
+sub get_rst_seqs{
+   my ($self) = @_;
+   return @{$self->{'_rstseqs'} || []};
+}
+
+
+=head2 add_rst_tree
+
+ Title   : add_rst_tree
+ Usage   : $obj->add_rst_tree($tree)
+ Function: Add a Bio::Tree::TreeI to the RST Result
+ Returns : none
+ Args    : Bio::Tree::TreeI
+See also : L<Bio::Tree::TreeI>
+
+=cut
+
+sub add_rst_tree{
+   my ($self,$tree) = @_;
+   if( $tree ) { 
+       unless( $tree->isa("Bio::Tree::TreeI") ) {
+	   $self->warn("Must provide a valid Bio::Tree::TreeI to add_rst_tree not $tree");
+	   return;
+       }
+       push @{$self->{'_rsttrees'}},$tree;
+   }
+}
+
+=head2 reset_rst_trees
+
+ Title   : reset_rst_trees
+ Usage   : $result->reset_rst_trees
+ Function: Reset the RST trees stored
+ Returns : none
+ Args    : none
+
+
+=cut
+
+sub reset_rst_trees{
+   my ($self) = @_;
+   $self->{'_rsttrees'} = [];
+}
+
+=head2 get_rst_trees
+
+ Title   : get_rst_trees
+ Usage   : my @otus = $result->get_rst_trees
+ Function: Get the trees Bio::Tree::TreeI
+ Returns : Array of Bio::Tree::TreeI objects
+ Args    : None
+See also : L<Bio::Tree::TreeI>
+
+=cut
+
+sub get_rst_trees{
+   my ($self) = @_;
+   return @{$self->{'_rsttrees'} || []};
+}
+
+=head2 set_rst_persite
+
+ Title   : set_rst_persite
+ Usage   : $obj->set_rst_persite($newval)
+ Function: Get/Set the per-site RST values
+ Returns : value of set_rst_persite (a scalar)
+ Args    : on set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub set_rst_persite{
+    my $self = shift;
+
+    return $self->{'_rstpersite'} = shift if @_;
+    return $self->{'_rstpersite'};
+}
+
+=head2 get_rst_persite
+
+ Title   : get_rst_persite
+ Usage   : my @rst_persite = @{$result->get_rst_persite()} 
+ Function: Get the per-site RST values
+ Returns : Array
+ Args    : none
+
+
+=cut
+
+sub get_rst_persite{
+   my ($self) = @_;
+   return $self->{'_rstpersite'} || [];
+}
+
 
 
 1;

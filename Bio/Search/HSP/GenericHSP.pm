@@ -1,4 +1,4 @@
-# $Id: GenericHSP.pm,v 1.60 2003/12/06 18:12:02 jason Exp $
+# $Id: GenericHSP.pm,v 1.68.4.5 2006/10/02 23:10:24 sendu Exp $
 #
 # BioPerl module for Bio::Search::HSP::GenericHSP
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::Search::HSP::GenericHSP - A "Generic" implementation of a High Scoring Pair 
+Bio::Search::HSP::GenericHSP - A "Generic" implementation of a High Scoring Pair
 
 =head1 SYNOPSIS
 
@@ -73,28 +73,25 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich and Steve Chervitz
 
-Email jason@bioperl.org
-Email sac@bioperl.org
-
-Describe contact details here
+Email jason-at-bioperl.org
+Email sac-at-bioperl.org
 
 =head1 CONTRIBUTORS
 
-Additional contributors names and emails here
+Sendu Bala, bix@sendu.me.uk
 
 =head1 APPENDIX
 
@@ -103,19 +100,16 @@ Internal methods are usually preceded with a _
 
 =cut
 
-
 # Let the code begin...
 
-
 package Bio::Search::HSP::GenericHSP;
-use vars qw(@ISA $GAP_SYMBOL);
+use vars qw($GAP_SYMBOL);
 use strict;
 
 use Bio::Root::Root;
 use Bio::SeqFeature::Similarity;
-use Bio::Search::HSP::HSPI;
 
-@ISA = qw(Bio::Search::HSP::HSPI);
+use base qw(Bio::Search::HSP::HSPI);
 
 BEGIN {
     $GAP_SYMBOL = '-';
@@ -124,7 +118,7 @@ BEGIN {
 
  Title   : new
  Usage   : my $obj = new Bio::Search::HSP::GenericHSP();
- Function: Builds a new Bio::Search::HSP::GenericHSP object 
+ Function: Builds a new Bio::Search::HSP::GenericHSP object
  Returns : Bio::Search::HSP::GenericHSP
  Args    : -algorithm => algorithm used (BLASTP, TBLASTX, FASTX, etc)
            -evalue    => evalue
@@ -135,227 +129,78 @@ BEGIN {
            -hsp_length=> Length of the HSP (including gaps)
            -identical => # of residues that that matched identically
            -percent_identity => (optional) percent identity
-           -conserved => # of residues that matched conservatively 
-                           (only protein comparisions; 
+           -conserved => # of residues that matched conservatively
+                           (only protein comparisions;
                             conserved == identical in nucleotide comparisons)
            -hsp_gaps   => # of gaps in the HSP
            -query_gaps => # of gaps in the query in the alignment
-           -hit_gaps   => # of gaps in the subject in the alignment    
+           -hit_gaps   => # of gaps in the subject in the alignment
            -query_name  => HSP Query sequence name (if available)
            -query_start => HSP Query start (in original query sequence coords)
            -query_end   => HSP Query end (in original query sequence coords)
+           -query_length=> total length of the query sequence
+           -query_seq   => query sequence portion of the HSP
+           -query_desc  => textual description of the query
            -hit_name    => HSP Hit sequence name (if available)
            -hit_start   => HSP Hit start (in original hit sequence coords)
            -hit_end     => HSP Hit end (in original hit sequence coords)
            -hit_length  => total length of the hit sequence
-           -query_length=> total length of the query sequence
-           -query_seq   => query sequence portion of the HSP
            -hit_seq     => hit sequence portion of the HSP
+           -hit_desc    => textual description of the hit
            -homology_seq=> homology sequence for the HSP
            -hit_frame   => hit frame (only if hit is translated protein)
            -query_frame => query frame (only if query is translated protein)
            -rank        => HSP rank
            -links       => HSP links information (WU-BLAST only)
-
+           -hsp_group   => HSP Group informat (WU-BLAST only)
 =cut
 
 sub new {
     my($class,@args) = @_;
 
-    my $self = $class->SUPER::new(@args);
-    my ($algo, $evalue, $pvalue, $identical, $percent_id,$conserved, 
-        $gaps, $query_gaps, $hit_gaps,
-        $hit_seq, $query_seq, $homology_seq,
-        $hsp_len, $query_len,$hit_len,
-        $hit_name,$query_name,$bits,$score,
-        $hs,$he,$qs,$qe,
-        $qframe,$hframe, $links,
-        $rank) = $self->_rearrange([qw(ALGORITHM
-                                       EVALUE
-                                       PVALUE				       
-                                       IDENTICAL
-				       PERCENT_IDENTITY
-                                       CONSERVED
-                                       HSP_GAPS
-                                       QUERY_GAPS
-                                       HIT_GAPS
-                                       HIT_SEQ
-                                       QUERY_SEQ
-                                       HOMOLOGY_SEQ
-                                       HSP_LENGTH
-                                       QUERY_LENGTH
-                                       HIT_LENGTH
-                                       HIT_NAME
-                                       QUERY_NAME
-                                       BITS
-                                       SCORE
-                                       HIT_START
-                                       HIT_END
-                                       QUERY_START
-                                       QUERY_END
-                                       QUERY_FRAME
-                                       HIT_FRAME
-				       LINKS
-                                       RANK
-                                       )], @args);
+    # don't pass anything to SUPER; complex heirarchy results in lots of work
+    # for nothing
+    my $self = $class->SUPER::new();
 
-    $algo = 'GENERIC' unless defined $algo;
-    $self->algorithm($algo);
-
-#    defined $evalue    && $self->evalue($evalue)
-#    $hsp->significance is initialized by the 
-#    the SimilarityPair object - let's only keep one
-#    value, don't need 2 slots.
-
-    defined $pvalue    && $self->pvalue($pvalue);
-    defined $bits      && $self->bits($bits);
-    defined $score     && $self->score($score);
-    my ($queryfactor, $hitfactor) = (0,0);
-    if( $algo =~ /^(PSI)?T(BLAST|FAST|SW)[NY]/oi ) {
-	$hitfactor = 1;	
-    } elsif ($algo =~ /^(FAST|BLAST)(X|Y|XY)/oi ||
-	     $algo =~ /^P?GENEWISE/oi ) {
-	$queryfactor = 1;	
-    } elsif ($algo =~ /^T(BLAST|FAST|SW)(X|Y|XY)/oi ||
-	     $algo =~ /^(BLAST|FAST|SW)N/oi ||
-	     $algo =~ /^WABA|AXT|BLAT|BLASTZ|PSL|MEGABLAST|EXONERATE|SW|SMITH\-WATERMAN|SIM4$/ 
-	     ){
-	$hitfactor = 1;
-	$queryfactor = 1;
-    } elsif( $algo eq 'RPSBLAST' ) {	
-	$queryfactor = $hitfactor = 0;
-	$qframe = $hframe = 0;
+    # for speed, don't use _rearrange and just store all input data directly
+    # with no method calls and no work done. work can be carried
+    # out just-in-time later if desired
+    my %args = @args;
+    while (my ($arg, $value) = each %args) {
+        $arg =~ tr/a-z\055/A-Z/d;
+        $self->{$arg} = $value;
     }
-    # Store the aligned query as sequence feature
-    my $strand;
-    unless( defined $qe && defined $qs ) { $self->throw("Did not specify a Query End or Query Begin @args (qs='".$qs||''."',qe='?".$qe."')"); }
-    unless( defined $he && defined $hs ) { $self->throw("Did not specify a Hit End or Hit Begin"); }
-    if ($qe > $qs) {  # normal query: start < end
-        if ($queryfactor) { $strand = 1; } else { $strand = undef; }        
-    } else { # reverse query (i dont know if this is possible, 
-             # but feel free to correct)
-        if ($queryfactor) { $strand = -1; } else { $strand = undef; }
-        ($qs,$qe) = ($qe,$qs);
+    my $bits = $self->{BITS};
+
+    defined $self->{VERBOSE} && $self->verbose($self->{VERBOSE});
+
+    $self->{ALGORITHM} ||= 'GENERIC';
+
+    if (! defined $self->{QUERY_LENGTH} || ! defined $self->{HIT_LENGTH}) {
+        $self->throw("Must define hit and query length");
+    }
+
+    $self->{'_sequenceschanged'} = 1;
     
-    }
-
-    # Note: many of these data are not query- and hit-specific.
-    # Only start, end, name, length are.
-    # We could be more efficient by only storing this info once.
-    # steve chervitz --- Sat Apr  5 00:55:07 2003
-
-    $self->query( new  Bio::SeqFeature::Similarity
-                  ('-primary'  => $self->primary_tag,
-                   '-start'    => $qs,
-                   '-expect'   => $evalue,
-                   '-bits'     => $bits,
-                   '-score'    => $score,
-                   '-end'      => $qe,
-                   '-strand'   => $strand,
-                   '-seq_id'   => $query_name,
-                   '-seqlength'=> $query_len,
-                   '-source'   => $algo,
-                   ) );
-    
-    # to determine frame from something like FASTXY which doesn't
-    # report the frame
-    if( defined $strand && ! defined $qframe && $queryfactor ) {
-        $qframe = ( $self->query->start % 3 ) * $strand;
-    } elsif( ! defined $strand ) { 
-        $qframe = 0;
-    }
-    # store the aligned subject as sequence feature
-    if ($he > $hs) {                # normal subject
-        if ($hitfactor) { $strand = 1; } else { $strand = undef; }
-    } else {
-        if ($hitfactor) { $strand = -1; } else { $strand = undef; }
-        ($hs,$he) = ( $he,$hs); # reverse subject: start bigger than end
-    }
-
-    $self->hit( Bio::SeqFeature::Similarity->new
-                ('-start'     => $hs,
-                 '-end'       => $he,
-                 '-strand'    => $strand,
-                 '-expect'    => $evalue,
-                 '-bits'     => $bits,
-                 '-score'    => $score,
-                 '-source'    => $algo,
-                 '-seq_id'    => $hit_name,
-                 '-seqlength' => $hit_len,
-                 '-primary'   => $self->primary_tag ));
-    
-    if( defined $strand && ! defined $hframe && $hitfactor ) {
-        $hframe = ( $hs % 3 ) * $strand;
-    } elsif( ! defined $strand ) { 
-        $hframe = 0;
-    }
-
-    $self->frame($qframe,$hframe);
-
-    if( ! defined $query_len || ! defined $hit_len ) { 
-        $self->throw("Must defined hit and query length");
-    }
-
-    if( ! defined $identical  ) { 
-	if( ! defined $percent_id ) {
-	    $self->warn("Did not defined the number of identical matches or overall percent identity in the HSP assuming 0");
-	    $identical = 0;
-	} else { 
-	    $identical = int($percent_id * $hsp_len);
-	}
-    } 
-    if( ! defined $conserved ) {
-	$self->warn("Did not defined the number of conserved matches in the HSP assuming conserved == identical ($identical)") 
-	    if( $algo !~ /^((FAST|BLAST)N)|EXONERATE|SIM4|AXT|PSL|BLAT|BLASTZ|WABA/oi);
-	$conserved = $identical;
-    } 
-    # protect for divide by zero if user does not specify 
-    # hsp_len, query_len, or hit_len
-    $self->num_identical($identical);
-    $self->num_conserved($conserved);
-    
-    if( $hsp_len ) {
-        $self->length('total', $hsp_len);
-        $self->frac_identical( 'total', $identical / $self->length('total'));
-        $self->frac_conserved( 'total', $conserved / $self->length('total'));
-    }
-    if( $hit_len ) {
-#        $self->length('hit', $self->hit->length);
-        $self->frac_identical( 'hit', $identical / $self->length('hit'));
-        $self->frac_conserved( 'hit', $conserved / $self->length('hit'));
-    }
-    if( $query_len ) {
-#        $self->length('query', $self->query->length);        
-        $self->frac_identical( 'query', $identical / $self->length('query')) ;
-        $self->frac_conserved( 'query', $conserved / $self->length('query'));
-    }
-    $self->query_string($query_seq);
-    $self->hit_string($hit_seq);
-    $self->homology_string($homology_seq);
-    
-    if( defined $query_gaps ) {
-        $self->gaps('query', $query_gaps);
-    } elsif( defined $query_seq ) {
-        $self->gaps('query', scalar ( $query_seq =~ tr/\-//));
-    }
-    if( defined $hit_gaps ) {
-        $self->gaps('hit', $hit_gaps);
-    } elsif( defined $hit_seq ) {
-        $self->gaps('hit', scalar ( $hit_seq =~ tr/\-//));
-    }
-    if( ! defined $gaps ) {
-        $gaps = $self->gaps("query") + $self->gaps("hit");
-    }
-    $self->gaps('total', $gaps);
-    $self->percent_identity($percent_id || 
-			    $identical / $hsp_len ) if( $hsp_len > 0 );
-
-    defined $rank && $self->rank($rank);
-    defined $links && $self->links($links);
+    $self->{_finished_new} = 1;
     return $self;
 }
 
 
+sub _logical_length {
+    my ($self, $type) = @_;
+    my $algo = $self->algorithm;
+    my $len = $self->length($type);
+    my $logical = $len;
+    if($algo =~ /^(PSI)?T(BLAST|FAST)[NY]/oi ) {
+        $logical = $len/3 if $type =~ /sbjct|hit|tot/i;
+    } elsif($algo =~ /^(BLAST|FAST)(X|Y|XY)/oi ) {
+        $logical = $len/3 if $type =~ /query|tot/i;
+    } elsif($algo =~ /^T(BLAST|FAST)(X|Y|XY)/oi ) {
+        $logical = $len/3;
+    }
+    return $logical;
+}
 
 =head2 L<Bio::Search::HSP::HSPI> methods
 
@@ -373,20 +218,20 @@ Implementation of L<Bio::Search::HSP::HSPI> methods follow
 
 sub algorithm{
     my ($self,$value) = @_;
-    my $previous = $self->{'_algorithm'};
-    if( defined $value || ! defined $previous ) { 
+    my $previous = $self->{'ALGORITHM'};
+    if( defined $value || ! defined $previous ) {
         $value = $previous = '' unless defined $value;
-        $self->{'_algorithm'} = $value;
-    } 
+        $self->{'ALGORITHM'} = $value;
+    }
 
-    return $previous;   
+    return $previous;
 }
 
 =head2 pvalue
 
  Title   : pvalue
  Usage   : my $pvalue = $hsp->pvalue();
- Function: Returns the P-value for this HSP or undef 
+ Function: Returns the P-value for this HSP or undef
  Returns : float or exponential (2e-10)
            P-value is not defined with NCBI Blast2 reports.
  Args    : [optional] numeric to set value
@@ -395,11 +240,11 @@ sub algorithm{
 
 sub pvalue {
     my ($self,$value) = @_;
-    my $previous = $self->{'_pvalue'};
-    if( defined $value  ) {         
-        $self->{'_pvalue'} = $value;
-    } 
-    return $previous;   
+    my $previous = $self->{'PVALUE'};
+    if( defined $value  ) {
+        $self->{'PVALUE'} = $value;
+    }
+    return $previous;
 }
 
 =head2 evalue
@@ -427,14 +272,14 @@ sub significance {
 
  Title   : frac_identical
  Usage   : my $frac_id = $hsp->frac_identical( ['query'|'hit'|'total'] );
- Function: Returns the fraction of identitical positions for this HSP 
+ Function: Returns the fraction of identitical positions for this HSP
  Returns : Float in range 0.0 -> 1.0
  Args    : arg 1:  'query' = num identical / length of query seq (without gaps)
                    'hit'   = num identical / length of hit seq (without gaps)
                              synonyms: 'sbjct', 'subject'
                    'total' = num conserved / length of alignment (with gaps)
                              synonyms: 'hsp'
-                   default = 'total' 
+                   default = 'total'
            arg 2: [optional] frac identical value to set for the type requested
 
 =cut
@@ -442,20 +287,24 @@ sub significance {
 sub frac_identical {
    my ($self, $type,$value) = @_;
 
+    unless ($self->{_did_prefrac}) {
+        $self->_pre_frac;
+    }
+
    $type = lc $type if defined $type;
-   $type = 'hit' if( defined $type && 
+   $type = 'hit' if( defined $type &&
 		     $type =~ /subject|sbjct/);
    $type = 'total' if( ! defined $type || $type eq 'hsp' ||
                         $type !~ /query|hit|subject|sbjct|total/);
    my $previous = $self->{'_frac_identical'}->{$type};
-   if( defined $value || ! defined $previous ) { 
+   if( defined $value || ! defined $previous ) {
        $value = $previous = '' unless defined $value;
        if( $type eq 'hit' || $type eq 'query' ) {
            $self->$type()->frac_identical( $value);
        }
        $self->{'_frac_identical'}->{$type} = $value;
-   } 
-   return $previous;   
+   }
+   return $previous;
 
 }
 
@@ -464,7 +313,7 @@ sub frac_identical {
  Title    : frac_conserved
  Usage    : my $frac_cons = $hsp->frac_conserved( ['query'|'hit'|'total'] );
  Function : Returns the fraction of conserved positions for this HSP.
-            This is the fraction of symbols in the alignment with a 
+            This is the fraction of symbols in the alignment with a
             positive score.
  Returns : Float in range 0.0 -> 1.0
  Args    : arg 1: 'query' = num conserved / length of query seq (without gaps)
@@ -472,23 +321,28 @@ sub frac_identical {
                              synonyms: 'sbjct', 'subject'
                   'total' = num conserved / length of alignment (with gaps)
                              synonyms: 'hsp'
-                  default = 'total' 
+                  default = 'total'
            arg 2: [optional] frac conserved value to set for the type requested
 
 =cut
 
 sub frac_conserved {
     my ($self, $type,$value) = @_;
+
+    unless ($self->{_did_prefrac}) {
+        $self->_pre_frac;
+    }
+
     $type = lc $type if defined $type;
     $type = 'hit' if( defined $type && $type =~ /subject|sbjct/);
     $type = 'total' if( ! defined $type || $type eq 'hsp' ||
                         $type !~ /query|hit|subject|sbjct|total/);
     my $previous = $self->{'_frac_conserved'}->{$type};
-    if( defined $value || ! defined $previous ) { 
+    if( defined $value || ! defined $previous ) {
         $value = $previous = '' unless defined $value;
         $self->{'_frac_conserved'}->{$type} = $value;
-    } 
-    return $previous;   
+    }
+    return $previous;
 }
 
 =head2 gaps
@@ -500,19 +354,24 @@ sub frac_conserved {
  Args     : arg 1: 'query' = num gaps in query seq
                    'hit'   = num gaps in hit seq; synonyms: 'sbjct', 'subject'
                    'total' = num gaps in whole alignment;  synonyms: 'hsp'
-                   default = 'total' 
+                   default = 'total'
             arg 2: [optional] integer gap value to set for the type requested
 
 =cut
 
-sub gaps        {
+sub gaps {
     my ($self, $type,$value) = @_;
+
+    unless ($self->{_did_pregaps}) {
+        $self->_pre_gaps;
+    }
+
     $type = lc $type if defined $type;
     $type = 'total' if( ! defined $type || $type eq 'hsp' ||
-                        $type !~ /query|hit|subject|sbjct|total/); 
+                        $type !~ /query|hit|subject|sbjct|total/);
     $type = 'hit' if $type =~ /sbjct|subject/;
     my $previous = $self->{'_gaps'}->{$type};
-    if( defined $value || ! defined $previous ) { 
+    if( defined $value || ! defined $previous ) {
         $value = $previous = '' unless defined $value;
         $self->{'_gaps'}->{$type} = $value;
     }
@@ -532,15 +391,15 @@ sub gaps        {
 
 sub query_string{
     my ($self,$value) = @_;
-    my $previous = $self->{'_query_string'};
-    if( defined $value || ! defined $previous ) { 
+    my $previous = $self->{QUERY_SEQ};
+    if( defined $value || ! defined $previous ) {
         $value = $previous = '' unless defined $value;
-        $self->{'_query_string'} = $value;
-        # do some housekeeping so we know when to 
+        $self->{QUERY_SEQ} = $value;
+        # do some housekeeping so we know when to
         # re-run _calculate_seq_positions
         $self->{'_sequenceschanged'} = 1;
-    } 
-    return $previous;   
+    }
+    return $previous;
 }
 
 =head2 hit_string
@@ -556,15 +415,15 @@ sub query_string{
 
 sub hit_string{
     my ($self,$value) = @_;
-    my $previous = $self->{'_hit_string'};
-    if( defined $value || ! defined $previous ) { 
+    my $previous = $self->{HIT_SEQ};
+    if( defined $value || ! defined $previous ) {
         $value = $previous = '' unless defined $value;
-        $self->{'_hit_string'} = $value;
-        # do some housekeeping so we know when to 
+        $self->{HIT_SEQ} = $value;
+        # do some housekeeping so we know when to
         # re-run _calculate_seq_positions
         $self->{'_sequenceschanged'} = 1;
-    } 
-    return $previous;   
+    }
+    return $previous;
 }
 
 =head2 homology_string
@@ -572,7 +431,7 @@ sub hit_string{
  Title   : homology_string
  Usage   : my $homo_string = $hsp->homology_string;
  Function: Retrieves the homology sequence for this HSP as a string.
-         : The homology sequence is the string of symbols in between the 
+         : The homology sequence is the string of symbols in between the
          : query and hit sequences in the alignment indicating the degree
          : of conservation (e.g., identical, similar, not similar).
  Returns : string
@@ -582,30 +441,30 @@ sub hit_string{
 
 sub homology_string{
     my ($self,$value) = @_;
-    my $previous = $self->{'_homology_string'};
-    if( defined $value || ! defined $previous ) { 
+    my $previous = $self->{HOMOLOGY_SEQ};
+    if( defined $value || ! defined $previous ) {
         $value = $previous = '' unless defined $value;
-        $self->{'_homology_string'} = $value;
-        # do some housekeeping so we know when to 
+        $self->{HOMOLOGY_SEQ} = $value;
+        # do some housekeeping so we know when to
         # re-run _calculate_seq_positions
         $self->{'_sequenceschanged'} = 1;
-    } 
-    return $previous;   
+    }
+    return $previous;
 }
 
 =head2 length
 
  Title    : length
  Usage    : my $len = $hsp->length( ['query'|'hit'|'total'] );
- Function : Returns the length of the query or hit in the alignment 
-            (without gaps) 
+ Function : Returns the length of the query or hit in the alignment
+            (without gaps)
             or the aggregate length of the HSP (including gaps;
             this may be greater than either hit or query )
  Returns  : integer
  Args     : arg 1: 'query' = length of query seq (without gaps)
                    'hit'   = length of hit seq (without gaps) (synonyms: sbjct, subject)
                    'total' = length of alignment (with gaps)
-                   default = 'total' 
+                   default = 'total'
             arg 2: [optional] integer length value to set for specific type
 
 =cut
@@ -622,12 +481,12 @@ sub length {
         return $self->query()->length(shift);
     } elsif( $type =~ /^(hit|subject|sbjct)/ ) {
         return $self->hit()->length(shift);
-    } else { 
+    } else {
         my $v = shift;
-        if( defined $v ) { 
-            $self->{'_hsplength'} = $v;
+        if( defined $v ) {
+            $self->{HSP_LENGTH} = $v;
         }
-        return $self->{'_hsplength'};
+        return $self->{HSP_LENGTH};
    }
     return 0; # should never get here
 }
@@ -637,7 +496,7 @@ sub length {
  Title   : hsp_length
  Usage   : my $len = $hsp->hsp_length()
  Function: shortcut  length('hsp')
- Returns : floating point between 0 and 100 
+ Returns : floating point between 0 and 100
  Args    : none
 
 =cut
@@ -649,12 +508,21 @@ sub hsp_length { return shift->length('hsp', shift); }
  Title   : percent_identity
  Usage   : my $percentid = $hsp->percent_identity()
  Function: Returns the calculated percent identity for an HSP
- Returns : floating point between 0 and 100 
+ Returns : floating point between 0 and 100
  Args    : none
 
 
 =cut
 
+sub percent_identity {
+    my $self = shift;
+
+    unless ($self->{_did_prepi}) {
+        $self->_pre_pi;
+    }
+
+    return $self->SUPER::percent_identity(@_);
+}
 
 =head2 frame
 
@@ -668,13 +536,20 @@ sub hsp_length { return shift->length('hsp', shift); }
            or query frame if defined or subject frame
  Args    : none
  Note    : Frames are stored in the GFF way (0-2) not 1-3
-           as they are in BLAST (negative frames are deduced by checking 
+           as they are in BLAST (negative frames are deduced by checking
                                  the strand of the query or hit)
 
 =cut
 
 sub frame {
-    my ($self, $qframe, $sframe) = @_;
+    my $self = shift;
+
+    unless (defined $self->{_did_preframe}) {
+        $self->_pre_frame;
+    }
+    my $qframe = $self->{QUERY_FRAME};
+    my $sframe = $self->{HIT_FRAME};
+
     if( defined $qframe ) {
         if( $qframe == 0 ) {
             $qframe = 0;
@@ -690,7 +565,7 @@ sub frame {
             }
             # Set frame to GFF [0-2] -
             # what if someone tries to put in a GFF frame!
-            $qframe = $2 - 1;            
+            $qframe = $2 - 1;
         }
         $self->query->frame($qframe);
     }
@@ -788,11 +663,16 @@ sub get_aln {
 =cut
 
 sub num_conserved{
-   my ($self,$value) = @_;
-   if( defined $value) {
-       $self->{'num_conserved'} = $value;
-   }
-   return $self->{'num_conserved'};
+    my ($self,$value) = @_;
+
+    unless ($self->{_did_presimilar}) {
+        $self->_pre_similar_stats;
+    }
+
+    if (defined $value) {
+        $self->{CONSERVED} = $value;
+    }
+    return $self->{CONSERVED};
 }
 
 =head2 num_identical
@@ -808,10 +688,15 @@ sub num_conserved{
 
 sub num_identical{
    my ($self,$value) = @_;
+
+   unless ($self->{_did_presimilar}) {
+        $self->_pre_similar_stats;
+    }
+
    if( defined $value) {
-       $self->{'_num_identical'} = $value;
+       $self->{IDENTICAL} = $value;
    }
-   return $self->{'_num_identical'};
+   return $self->{IDENTICAL};
 }
 
 =head2 rank
@@ -824,40 +709,40 @@ sub num_identical{
 
 =cut
 
-sub rank { 
+sub rank {
     my ($self,$value) = @_;
     if( defined $value) {
-        $self->{'_rank'} = $value;
+        $self->{RANK} = $value;
     }
-    return $self->{'_rank'};
+    return $self->{RANK};
 }
 
 
 =head2 seq_inds
 
  Title   : seq_inds
- Purpose   : Get a list of residue positions (indices) for all identical 
+ Purpose   : Get a list of residue positions (indices) for all identical
            : or conserved residues in the query or sbjct sequence.
  Example   : @s_ind = $hsp->seq_inds('query', 'identical');
            : @h_ind = $hsp->seq_inds('hit', 'conserved');
-             @h_ind = $hsp->seq_inds('hit', 'conserved-not-identical'); 
+           : @h_ind = $hsp->seq_inds('hit', 'conserved-not-identical');
            : @h_ind = $hsp->seq_inds('hit', 'conserved', 1);
- Returns   : List of integers 
+ Returns   : List of integers
            : May include ranges if collapse is true.
  Argument  : seq_type  = 'query' or 'hit' or 'sbjct'  (default = query)
-           :  ('sbjct' is synonymous with 'hit') 
+           :  ('sbjct' is synonymous with 'hit')
            : class     = 'identical' or 'conserved' or 'nomatch' or 'gap'
            :              (default = identical)
            :              (can be shortened to 'id' or 'cons')
            :             or 'conserved-not-identical'
            : collapse  = boolean, if true, consecutive positions are merged
-           :             using a range notation, e.g., "1 2 3 4 5 7 9 10 11" 
-           :             collapses to "1-5 7 9-11". This is useful for 
+           :             using a range notation, e.g., "1 2 3 4 5 7 9 10 11"
+           :             collapses to "1-5 7 9-11". This is useful for
            :             consolidating long lists. Default = no collapse.
  Throws    : n/a.
- Comments  : 
+ Comments  :
 
-See Also   : L<Bio::Search::SearchUtils::collapse_nums()|Bio::Search::SearchUtils>, 
+See Also   : L<Bio::Search::SearchUtils::collapse_nums()|Bio::Search::SearchUtils>,
              L<Bio::Search::Hit::HitI::seq_inds()|Bio::Search::Hit::HitI>
 
 =cut
@@ -878,16 +763,16 @@ sub seq_inds{
        $seqType = 'query';
    } elsif ( $t eq 's' || $t eq 'h' ) {
        $seqType = 'sbjct';
-   } else { 
+   } else {
        $self->warn("unknown seqtype $seqType using 'query'");
        $seqType = 'query';
    }
    $t = lc(substr($class,0,1));
- 
+
    if( $t eq 'c' ) {
        if( $class =~ /conserved\-not\-identical/ ) {
 	   $class = 'conserved';
-       } else { 
+       } else {
 	   $class = 'conservedall';
        }
    } elsif( $t eq 'i' ) {
@@ -896,11 +781,11 @@ sub seq_inds{
        $class = 'nomatch';
    } elsif( $t eq 'g' ) {
        $class = 'gap';
-   } else { 
+   } else {
        $self->warn("unknown sequence class $class using 'identical'");
        $class = 'identical';
    }
-   
+
    ## Sensitive to member name changes.
    $seqType  = "_\L$seqType\E";
    $class = "_\L$class\E";
@@ -908,24 +793,24 @@ sub seq_inds{
 
    if( $class eq '_gap' ) {
        # this means that we are remapping the gap length that is stored
-       # in the hash (for example $self->{'_gapRes_query'} ) 
-       # so we'll return an array which has the values of the position of the 
+       # in the hash (for example $self->{'_gapRes_query'} )
+       # so we'll return an array which has the values of the position of the
        # of the gap (the key in the hash) + the gap length (value in the
        # hash for this key - 1.
 
        @ary = map { $_ > 1 ?
-                        $_..($_ + $self->{"${class}Res$seqType"}->{$_} - 1) : 
+                        $_..($_ + $self->{"${class}Res$seqType"}->{$_} - 1) :
                         $_ }
               sort { $a <=> $b } keys %{ $self->{"${class}Res$seqType"}};
    } elsif( $class eq '_conservedall' ) {
-       @ary = sort { $a <=> $b } 
+       @ary = sort { $a <=> $b }
        keys %{ $self->{"_conservedRes$seqType"}},
        keys %{ $self->{"_identicalRes$seqType"}},
-   }  else { 
+   }  else {
        @ary = sort { $a <=> $b } keys %{ $self->{"${class}Res$seqType"}};
-   } 
+   }
    require Bio::Search::BlastUtils if $collapse;
-   
+
    return $collapse ? &Bio::Search::SearchUtils::collapse_nums(@ary) : @ary;
 }
 
@@ -942,6 +827,28 @@ These methods come from L<Bio::SeqFeature::SimilarityPair>
  Returns : L<Bio::SeqFeature::Similarity>
  Args    : [optional] new value to set
 
+=cut
+
+sub query {
+    my $self = shift;
+    unless ($self->{_created_qff}) {
+        $self->_query_seq_feature;
+    }
+    return $self->SUPER::query(@_);
+}
+
+sub feature1 {
+    my $self = shift;
+    if (! $self->{_finished_new} || $self->{_making_qff}) {
+        return $self->{_sim1} if $self->{_sim1};
+        $self->{_sim1} = Bio::SeqFeature::Similarity->new();
+        return $self->{_sim1};
+    }
+    unless ($self->{_created_qff}) {
+        $self->_query_seq_feature;
+    }
+    return $self->SUPER::feature1(@_);
+}
 
 =head2 hit
 
@@ -951,6 +858,28 @@ These methods come from L<Bio::SeqFeature::SimilarityPair>
  Returns : L<Bio::SeqFeature::Similarity>
  Args    : [optional] new value to set
 
+=cut
+
+sub hit {
+    my $self = shift;
+    unless ($self->{_created_sff}) {
+        $self->_subject_seq_feature;
+    }
+    return $self->SUPER::hit(@_);
+}
+
+sub feature2 {
+    my $self = shift;
+    if (! $self->{_finished_new} || $self->{_making_sff}) {
+        return $self->{_sim2} if $self->{_sim2};
+        $self->{_sim2} = Bio::SeqFeature::Similarity->new();
+        return $self->{_sim2};
+    }
+    unless ($self->{_created_sff}) {
+        $self->_subject_seq_feature;
+    }
+    return $self->SUPER::feature2(@_);
+}
 
 =head2 significance
 
@@ -960,6 +889,17 @@ These methods come from L<Bio::SeqFeature::SimilarityPair>
  Function: Get/Set the significance value
  Returns : numeric
  Args    : [optional] new value to set
+
+
+=head2 score
+
+ Title   : score
+ Usage   : $score = $obj->score();
+           $obj->score($value);
+ Function: Get/Set the score value
+ Returns : numeric
+ Args    : [optional] new value to set
+
 
 =head2 bits
 
@@ -991,7 +931,7 @@ These methods come from L<Bio::SeqFeature::SimilarityPair>
  Title   : _calculate_seq_positions
  Usage   : $self->_calculate_seq_positions
  Function: Internal function
- Returns : 
+ Returns :
  Args    :
 
 
@@ -1011,7 +951,7 @@ sub _calculate_seq_positions {
     my %identicalList_sbjct = ();
     my %conservedList_query = ();
     my %conservedList_sbjct = ();
-    
+
     my %gapList_query = ();
     my %gapList_sbjct = ();
     my %nomatchList_query = ();
@@ -1021,21 +961,21 @@ sub _calculate_seq_positions {
     my $sdir = $self->hit->strand || 1;
     my $resCount_query = ($qdir >=0) ? $self->query->end : $self->query->start;
     my $resCount_sbjct = ($sdir >=0) ? $self->hit->end : $self->hit->start;
-    
+
     my $prog = $self->algorithm;
-    if( $prog  =~ /FAST/i ) {
+    if( $prog  =~ /FAST|SSEARCH|SMITH-WATERMAN/i ) {
         # fasta reports some extra 'regional' sequence information
         # we need to clear out first
-        # this seemed a bit insane to me at first, but it appears to 
+        # this seemed a bit insane to me at first, but it appears to
         # work --jason
-        
+
         # we infer the end of the regional sequence where the first
         # non space is in the homology string
         # then we use the HSP->length to tell us how far to read
         # to cut off the end of the sequence
 
-        # one possible problem is the sequence which 
-        
+        # one possible problem is the sequence which
+
         my ($start) = (0);
         if( $seqString =~ /^(\s+)/ ) {
             $start = CORE::length($1);
@@ -1048,7 +988,7 @@ sub _calculate_seq_positions {
         $qseq =~ s![\\\/]!!g;
         $sseq =~ s![\\\/]!!g;
     }
-    
+
     if($prog =~ /^(PSI)?T(BLAST|FAST)N/oi ) {
 	$resCount_sbjct = int($resCount_sbjct / 3);
     } elsif($prog =~ /^(BLAST|FAST)(X|Y|XY)/oi  ) {
@@ -1056,22 +996,22 @@ sub _calculate_seq_positions {
     } elsif($prog =~ /^T(BLAST|FAST)(X|Y|XY)/oi ) {
 	$resCount_query = int($resCount_query / 3);
 	$resCount_sbjct = int($resCount_sbjct / 3);
-    }    
+    }
     while( $mchar = chop($seqString) ) {
 	($qchar, $schar) = (chop($qseq), chop($sseq));
-	if( $mchar eq '+' || $mchar eq '.' || $mchar eq ':' ) { 
-	    $conservedList_query{ $resCount_query } = 1; 
+	if( $mchar eq '+' || $mchar eq '.' || $mchar eq ':' ) {
+	    $conservedList_query{ $resCount_query } = 1;
 	    $conservedList_sbjct{ $resCount_sbjct } = 1;
-	} elsif( $mchar ne ' ' ) { 
-	    $identicalList_query{ $resCount_query } = 1; 
+	} elsif( $mchar ne ' ' ) {
+	    $identicalList_query{ $resCount_query } = 1;
 	    $identicalList_sbjct{ $resCount_sbjct } = 1;
-	} elsif( $mchar eq ' ') { 
+	} elsif( $mchar eq ' ') {
 	    $nomatchList_query{ $resCount_query } = 1;
 	    $nomatchList_sbjct{ $resCount_sbjct } = 1;
 	}
 	if( $qchar eq $GAP_SYMBOL ) {
 	    $gapList_query{ $resCount_query } ++;
-	} else { 	    
+	} else {
 	    $resCount_query -= $qdir;
 	}
 	if( $schar eq $GAP_SYMBOL ) {
@@ -1098,9 +1038,8 @@ See documentation in L<Bio::Search::HSP::HSPI::n()|Bio::Search::HSP::HSPI>
 
 =cut
 
-#-----
-sub n { 
-    my $self = shift; 
+sub n {
+    my $self = shift;
     if(@_) { $self->{'_n'} = shift; }
     defined $self->{'_n'} ? $self->{'_n'} : '';
 }
@@ -1111,9 +1050,7 @@ See documentation in L<Bio::Search::HSP::HSPI::range()|Bio::Search::HSP::HSPI>
 
 =cut
 
-#----------
 sub range {
-#----------
     my ($self, $seqType) = @_;
 
     $seqType ||= 'query';
@@ -1147,27 +1084,46 @@ sub range {
 sub links{
     my $self = shift;
 
-    return $self->{'links'} = shift if @_;
-    return $self->{'links'};
+    return $self->{LINKS} = shift if @_;
+    return $self->{LINKS};
+}
+
+=head2 hsp_group
+
+ Title   : hsp_group
+ Usage   : $obj->hsp_group($newval)
+ Function: Get/Set the Group value (from WU-BLAST)
+           Indicates a grouping of HSPs
+ Returns : Value of group
+ Args    : On set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub hsp_group {
+    my $self = shift;
+
+    return $self->{HSP_GROUP} = shift if @_;
+    return $self->{HSP_GROUP};
 }
 
 # The cigar string code is written by Juguang Xiao <juguang@fugu-sg.org>
 
 =head1 Brief introduction on cigar string
 
-NOTE: the concept is originally from EnsEMBL docs at 
-http://www.ensembl.org/Docs/wiki/html/EnsemblDocs/CigarFormat.html. 
+NOTE: the concept is originally from EnsEMBL docs at
+http://may2005.archive.ensembl.org/Docs/wiki/html/EnsemblDocs/CigarFormat.html
 Please append to these docs if you have a better definition.
 
-Sequence alignment hits can be stored in a database as ungapped alignments. 
+Sequence alignment hits can be stored in a database as ungapped alignments.
 This imposes 2 major constraints on alignments:
 
 a) alignments for a single hit record require multiple rows in the database,
 and
 b) it is not possible to accurately retrieve the exact original alignment.
 
-Alternatively, sequence alignments can be stored as gapped alignments using 
-the CIGAR line format (where CIGAR stands for Concise Idiosyncratic Gapped 
+Alternatively, sequence alignments can be stored as gapped alignments using
+the CIGAR line format (where CIGAR stands for Concise Idiosyncratic Gapped
 Alignment Report).
 
 In the cigar line format alignments are stored as follows:
@@ -1176,7 +1132,7 @@ M: Match
 D: Deletion
 I: Insertion
 
-An example of an alignment for a hypthetical protein match is shown below: 
+An example of an alignment for a hypthetical protein match is shown below:
 
 
 Query:   42 PGPAGLP----GSVGLQGPRGLRGPLP-GPLGPPL...
@@ -1186,9 +1142,9 @@ Query:   42 PGPAGLP----GSVGLQGPRGLRGPLP-GPLGPPL...
 Sbjct: 1672 PGTP*TPLVPLGPWVPLGPSSPR--LPSGPLGPTD...
 
 
-protein_align_feature table as the following cigar line: 
+protein_align_feature table as the following cigar line:
 
-7M4D12M2I2MD7M 
+7M4D12M2I2MD7M
 
 =head2 cigar_string
 
@@ -1269,6 +1225,257 @@ sub _sub_cigar_string {
         $self->{_state_for_cigar_string} = $new_state;
     }
     return $sub_cigar_string;
+}
+
+
+
+# needed before seqfeatures can be made
+sub _pre_seq_feature {
+    my $self = shift;
+    my $algo = $self->{ALGORITHM};
+
+    my ($queryfactor, $hitfactor) = (0,0);
+    if( $algo =~ /^(PSI)?T(BLAST|FAST|SW)[NY]/oi ) {
+        $hitfactor = 1;
+    }
+    elsif ($algo =~ /^(FAST|BLAST)(X|Y|XY)/oi || $algo =~ /^P?GENEWISE/oi ) {
+        $queryfactor = 1;
+    }
+    elsif ($algo =~ /^T(BLAST|FAST|SW)(X|Y|XY)/oi || $algo =~ /^(BLAST|FAST|SW)N/oi || $algo =~ /^WABA|AXT|BLAT|BLASTZ|PSL|MEGABLAST|EXONERATE|SW|SMITH\-WATERMAN|SIM4$/){
+        $hitfactor = 1;
+        $queryfactor = 1;
+    }
+    elsif ($algo =~ /^RPS-BLAST/) {
+        $queryfactor = ($algo =~ /^RPS-BLAST\(BLASTX\)/) ? 1 : 0;
+        $hitfactor = 0;
+    }
+    $self->{_query_factor} = $queryfactor;
+    $self->{_hit_factor} = $hitfactor;
+}
+
+# make query seq feature
+sub _query_seq_feature {
+    my $self = shift;
+    $self->{_making_qff} = 1;
+    my $qs = $self->{QUERY_START};
+    my $qe = $self->{QUERY_END};
+    unless (defined $self->{_query_factor}) {
+        $self->_pre_seq_feature;
+    }
+    my $queryfactor = $self->{_query_factor};
+
+    unless( defined $qe && defined $qs ) { $self->throw("Did not specify a Query End or Query Begin"); }
+
+    my $strand;
+    if ($qe > $qs) {  # normal query: start < end
+        if ($queryfactor) {
+            $strand = 1;
+        }
+        else {
+            $strand = undef;
+        }
+    }
+    else {
+        if ($queryfactor) {
+            $strand = -1;
+        }
+        else {
+            $strand = undef;
+        }
+        ($qs,$qe) = ($qe,$qs);
+    }
+
+    # Note: many of these data are not query- and hit-specific.
+    # Only start, end, name, length are.
+    # We could be more efficient by only storing this info once.
+    # steve chervitz --- Sat Apr  5 00:55:07 2003
+
+    my $sim1 = $self->{_sim1} || Bio::SeqFeature::Similarity->new();
+    $sim1->start($qs);
+    $sim1->end($qe);
+    $sim1->significance($self->{EVALUE});
+    $sim1->bits($self->{BITS});
+    $sim1->score($self->{SCORE});
+    $sim1->strand($strand);
+    $sim1->seq_id($self->{QUERY_NAME});
+    $sim1->seqlength($self->{QUERY_LENGTH});
+    $sim1->source_tag($self->{ALGORITHM});
+    $sim1->seqdesc($self->{QUERY_DESC});
+    
+    $self->SUPER::feature1($sim1);
+
+    # to determine frame from something like FASTXY which doesn't
+    # report the frame
+    my $qframe = $self->{QUERY_FRAME};
+    if (defined $strand && ! defined $qframe && $queryfactor) {
+        $qframe = ( $self->query->start % 3 ) * $strand;
+    }
+    elsif (! defined $strand) {
+        $qframe = 0;
+    }
+    $self->{QUERY_FRAME} = $qframe;
+
+    $self->{_created_qff} = 1;
+    $self->{_making_qff} = 0;
+    $self->_pre_frame;
+}
+
+# make subject seq feature
+sub _subject_seq_feature {
+    my $self = shift;
+    $self->{_making_sff} = 1;
+    my $hs = $self->{HIT_START};
+    my $he = $self->{HIT_END};
+    unless (defined $self->{_hit_factor}) {
+        $self->_pre_seq_feature;
+    }
+    my $hitfactor = $self->{_hit_factor};
+
+    unless( defined $he && defined $hs ) { $self->throw("Did not specify a Hit End or Hit Begin"); }
+
+    my $strand;
+    if ($he > $hs) { # normal subject
+        if ($hitfactor) {
+            $strand = 1;
+        }
+        else {
+            $strand = undef;
+        }
+    }
+    else {
+        if ($hitfactor) {
+            $strand = -1;
+        }
+        else {
+            $strand = undef;
+        }
+        ($hs,$he) = ( $he,$hs); # reverse subject: start bigger than end
+    }
+
+    my $sim2 = $self->{_sim2} || Bio::SeqFeature::Similarity->new();
+    $sim2->start($hs);
+    $sim2->end($he);
+    $sim2->significance($self->{EVALUE});
+    $sim2->bits($self->{BITS});
+    $sim2->score($self->{SCORE});
+    $sim2->strand($strand);
+    $sim2->seq_id($self->{HIT_NAME});
+    $sim2->seqlength($self->{HIT_LENGTH});
+    $sim2->source_tag($self->{ALGORITHM});
+    $sim2->seqdesc($self->{HIT_DESC});
+    $self->SUPER::feature2($sim2);
+
+    my $hframe = $self->{HIT_FRAME};
+    if (defined $strand && ! defined $hframe && $hitfactor) {
+        $hframe = ( $hs % 3 ) * $strand;
+    }
+    elsif (! defined $strand) {
+        $hframe = 0;
+    }
+    $self->{HIT_FRAME} = $hframe;
+
+    $self->{_created_sff} = 1;
+    $self->{_making_sff} = 0;
+    $self->_pre_frame;
+}
+
+# know the frame following seq feature creation
+sub _pre_frame {
+    my $self = shift;
+    $self->{_created_qff} || $self->_query_seq_feature;
+    $self->{_created_sff} || $self->_subject_seq_feature;
+    $self->{_did_preframe} = 1;
+    $self->frame;
+}
+
+# before calling the num_* methods
+sub _pre_similar_stats {
+    my $self = shift;
+    my $identical = $self->{IDENTICAL};
+    my $conserved = $self->{CONSERVED};
+    my $percent_id = $self->{PERCENT_IDENTITY};
+
+    if (! defined $identical) {
+        if (! defined $percent_id) {
+            $self->warn("Did not defined the number of identical matches or overall percent identity in the HSP assuming 0");
+            $identical = 0;
+        }
+        else {
+            $identical = int($percent_id * $self->{HSP_LENGTH});
+        }
+    }
+
+    if (! defined $conserved) {
+        $self->warn("Did not defined the number of conserved matches in the HSP assuming conserved == identical ($identical)")
+            if( $self->{ALGORITHM} !~ /^((FAST|BLAST)N)|EXONERATE|SIM4|AXT|PSL|BLAT|BLASTZ|WABA/oi);
+        $conserved = $identical;
+    }
+    $self->{IDENTICAL} = $identical;
+    $self->{CONSERVED} = $conserved;
+    $self->{_did_presimilar} = 1;
+}
+
+# before calling the frac_* methods
+sub _pre_frac {
+    my $self = shift;
+    my $hsp_len = $self->{HSP_LENGTH};
+    my $hit_len = $self->{HIT_LENGTH};
+    my $query_len = $self->{QUERY_LENGTH};
+
+    my $identical = $self->num_identical;
+    my $conserved = $self->num_conserved;
+
+    $self->{_did_prefrac} = 1;
+    my $logical;
+    if( $hsp_len ) {
+        $self->length('total', $hsp_len);
+        $logical = $self->_logical_length('total');
+        $self->frac_identical( 'total', $identical / $hsp_len);
+        $self->frac_conserved( 'total', $conserved / $hsp_len);
+    }
+    if( $hit_len ) {
+        $logical = $self->_logical_length('hit');
+        $self->frac_identical( 'hit', $identical / $logical);
+        $self->frac_conserved( 'hit', $conserved / $logical);
+    }
+    if( $query_len ) {
+        $logical = $self->_logical_length('query');
+        $self->frac_identical( 'query', $identical / $logical) ;
+        $self->frac_conserved( 'query', $conserved / $logical);
+    }
+}
+
+# before calling gaps()
+sub _pre_gaps {
+    my $self = shift;
+    my $query_gaps = $self->{QUERY_GAPS};
+    my $query_seq = $self->{QUERY_SEQ};
+    my $hit_gaps = $self->{HIT_GAPS};
+    my $hit_seq = $self->{HIT_SEQ};
+    my $gaps = $self->{HSP_GAPS};
+
+    $self->{_did_pregaps} = 1; # well, we're in the process; avoid recursion
+    if( defined $query_gaps ) {
+        $self->gaps('query', $query_gaps);
+    } elsif( defined $query_seq ) {
+        $self->gaps('query', scalar ( $query_seq =~ tr/\-//));
+    }
+    if( defined $hit_gaps ) {
+        $self->gaps('hit', $hit_gaps);
+    } elsif( defined $hit_seq ) {
+        $self->gaps('hit', scalar ( $hit_seq =~ tr/\-//));
+    }
+    if( ! defined $gaps ) {
+        $gaps = $self->gaps("query") + $self->gaps("hit");
+    }
+    $self->gaps('total', $gaps);
+}
+
+# before percent_identity
+sub _pre_pi {
+    my $self = shift;
+    $self->{_did_prepi} = 1;
+    $self->percent_identity($self->{PERCENT_IDENTITY} || $self->frac_identical('total')*100) if( $self->{HSP_LENGTH} > 0 );
 }
 
 1;

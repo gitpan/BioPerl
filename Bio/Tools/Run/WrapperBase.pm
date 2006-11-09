@@ -1,4 +1,4 @@
-# $Id: WrapperBase.pm,v 1.12 2003/03/28 22:42:54 jason Exp $
+# $Id: WrapperBase.pm,v 1.21.4.2 2006/10/17 09:12:57 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Run::WrapperBase
 #
@@ -42,27 +42,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
-Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track of
+the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
+Email jason-at-bioperl.org
 
 =head1 APPENDIX
 
@@ -76,15 +69,14 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Tools::Run::WrapperBase;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::Root::RootI;
-use Bio::Root::IO;
+use base qw(Bio::Root::Root);
 
-@ISA = qw(Bio::Root::RootI);
+use File::Spec;
+use File::Path qw(); # don't import anything
 
 =head2 run
 
@@ -121,6 +113,25 @@ sub error_string{
       $self->{'_error_string'} = $value;
     }
     return $self->{'_error_string'} || '';
+}
+
+=head2 arguments
+
+ Title   : arguments
+ Usage   : $obj->arguments($newval)
+ Function: Commandline parameters 
+ Returns : value of arguments
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub arguments {
+  my ($self,$value) = @_;
+  if(defined $value) {
+    $self->{'_arguments'} = $value;
+  }
+  return $self->{'_arguments'} || '';
 }
 
 
@@ -198,15 +209,16 @@ sub outfile_name{
 =cut
 
 sub tempdir{
-   my ($self) = @_;
-   
+   my ($self) = shift;
+
+   $self->{'_tmpdir'} = shift if @_;
    unless( $self->{'_tmpdir'} ) {
        $self->{'_tmpdir'} = $self->io->tempdir(CLEANUP => ! $self->save_tempfiles );
    }
-   unless( -d $self->{'_tmpdir'} ) { 
+   unless( -d $self->{'_tmpdir'} ) {
        mkdir($self->{'_tmpdir'},0777);
    }
-   $self->{'_tmpdir'};
+   return $self->{'_tmpdir'};
 }
 
 =head2 cleanup
@@ -223,9 +235,9 @@ sub tempdir{
 sub cleanup{
    my ($self) = @_;
    $self->io->_io_cleanup();
-   if( defined $self->{'_tmpdir'} &&
-       -d $self->{'_tmpdir'} ) {
-       $self->io->rmtree($self->{'_tmpdir'});
+   if( defined $self->{'_tmpdir'} && -d $self->{'_tmpdir'} ) {
+       # $self->io->rmtree($self->{'_tmpdir'});
+       File::Path->rmtree( $self->{'_tmpdir'} );
    }
 }
 
@@ -233,8 +245,8 @@ sub cleanup{
 
  Title   : io
  Usage   : $obj->io($newval)
- Function: Gets a L<Bio::Root::IO> object
- Returns : L<Bio::Root::IO> object
+ Function: Gets a Bio::Root::IO object
+ Returns : Bio::Root::IO object
  Args    : none
 
 
@@ -261,7 +273,7 @@ sub io{
 
 sub version{
    my ($self,@args) = @_;
-   return undef;
+   return;
 }
 
 =head2 executable
@@ -315,7 +327,7 @@ sub program_path {
     push @path, $self->program_dir if $self->program_dir;
     push @path, $self->program_name.($^O =~ /mswin/i ?'.exe':'');
 
-    return Bio::Root::IO->catfile(@path);
+    return File::Spec->catfile(@path);
 }
 
 =head2 program_dir

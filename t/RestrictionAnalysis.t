@@ -1,5 +1,5 @@
 # -*-Perl-*- mode (to keep my emacs happy)
-# $Id: RestrictionAnalysis.t,v 1.6 2003/12/15 02:57:23 redwards Exp $
+# $Id: RestrictionAnalysis.t,v 1.6.8.1 2006/11/08 17:25:55 sendu Exp $
 
 # test for Bio::Restriction::Analysis.pm
 # written by Rob Edwards & Heikki Lehvaslaiho
@@ -15,7 +15,7 @@ BEGIN {
         use lib 't','..';
     }
     use Test;
-    $NUMTESTS = 150;
+    $NUMTESTS = 153;
     $error  = 0;
 
     plan tests => $NUMTESTS;
@@ -40,7 +40,6 @@ ok(1);
 #
 # Bio::Restriction::Enzyme
 #
-
 
 my ($re, $seq, $iso, %meth, $microbe, $source, @vendors, @refs, $name);
 ok $re=new Bio::Restriction::Enzyme(-enzyme=>'EcoRI', -site=>'G^AATTC');
@@ -110,7 +109,11 @@ ok $re->cutter, 5;
 ok my $re2 = $re->clone;
 ok $re ne $re2;
 ok $re->name eq $re2->name;
-#print Dumper $re, $re2;exit;
+
+ok $re = new Bio::Restriction::Enzyme(-enzyme=>'AciI', 
+												  -site=>'C^CGC');
+ok $re->palindromic, 0;
+ok $re->is_palindromic, 0;
 
 #
 # Bio::Restriction::Enzyme::MultiSite

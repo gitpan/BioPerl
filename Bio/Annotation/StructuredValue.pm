@@ -1,4 +1,4 @@
-# $Id: StructuredValue.pm,v 1.2 2002/10/22 07:38:26 lapp Exp $
+# $Id: StructuredValue.pm,v 1.7.4.3 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::Annotation::StructuredValue
 #
@@ -13,7 +13,7 @@
 # Refer to the Perl Artistic License (see the license accompanying this
 # software package, or see http://www.perl.com/language/misc/Artistic.html)
 # for the terms under which you may use, modify, and redistribute this module.
-# 
+#
 # THIS PACKAGE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
 # WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 # MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
@@ -24,7 +24,7 @@
 =head1 NAME
 
 Bio::Annotation::StructuredValue - A scalar with embedded structured
-                                   information
+information
 
 =head1 SYNOPSIS
 
@@ -32,12 +32,12 @@ Bio::Annotation::StructuredValue - A scalar with embedded structured
    use Bio::Annotation::Collection;
 
    my $col = new Bio::Annotation::Collection;
-   my $sv = new Bio::Annotation::StructuredValue(-value => 'someval');   
+   my $sv = new Bio::Annotation::StructuredValue(-value => 'someval');
    $col->add_Annotation('tagname', $sv);
 
 =head1 DESCRIPTION
 
-Scalar value annotation object 
+Scalar value annotation object.
 
 =head1 FEEDBACK
 
@@ -47,23 +47,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bio.perl.org/MailList.html  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
+the bugs and their resolution.  Bug reports can be submitted via
 or the web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
-=head1 AUTHOR - bioperl
+=head1 AUTHOR - Hilmar Lapp
 
-Email bioperl-l@bio.perl.org
-
-Describe contact details here
+Email hlapp-at-gmx.net
 
 =head1 APPENDIX
 
@@ -76,15 +73,15 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::Annotation::StructuredValue;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
 use Bio::AnnotationI;
-use Bio::Annotation::SimpleValue;
+use overload '""' => sub { $_[0]->value || ''};
+use overload 'eq' => sub { "$_[0]" eq "$_[1]" };
 
-@ISA = qw(Bio::Annotation::SimpleValue);
+use base qw(Bio::Annotation::SimpleValue);
 
 =head2 new
 
@@ -120,7 +117,7 @@ sub new{
 
  Title   : as_text
  Usage   : my $text = $obj->as_text
- Function: return the string "Value: $v" where $v is the value 
+ Function: return the string "Value: $v" where $v is the value
  Returns : string
  Args    : none
 
@@ -147,7 +144,7 @@ sub as_text{
 
 sub hash_tree{
    my ($self) = @_;
-   
+
    my $h = {};
    $h->{'value'} = $self->value;
 }
@@ -160,7 +157,7 @@ sub hash_tree{
 
            Setting this is optional. If set, it obviates the need to provide
            a tag to AnnotationCollection when adding this object.
- Example : 
+ Example :
  Returns : value of tagname (a scalar)
  Args    : new value (a scalar, optional)
 
@@ -187,7 +184,7 @@ sub tagname{
  Function: Get/set the value for this annotation.
 
            Set mode is here only to retain compatibility with
-           SimpleValue. It is equivalent to calling 
+           SimpleValue. It is equivalent to calling
            add_value([0], $newval).
 
            In get mode, this implementation allows to pass additional
@@ -260,7 +257,7 @@ sub _to_text{
  Function: Get the top-level array of values. Each of the elements will
            recursively be a reference to an array or a scalar, depending
            on the depth of this structured value annotation.
- Example : 
+ Example :
  Returns : an array
  Args    : none
 
@@ -346,7 +343,7 @@ sub add_value{
     } else {
 	$tree->[$lastidx] = [@values];
     }
-    
+
 }
 
 1;

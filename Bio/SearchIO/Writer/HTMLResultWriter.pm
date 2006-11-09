@@ -1,4 +1,4 @@
-# $Id: HTMLResultWriter.pm,v 1.32 2003/11/25 17:52:36 jason Exp $
+# $Id: HTMLResultWriter.pm,v 1.38.4.1 2006/10/02 23:10:27 sendu Exp $
 #
 # BioPerl module for Bio::SearchIO::Writer::HTMLResultWriter
 #
@@ -9,13 +9,13 @@
 # You may distribute this module under the same terms as perl itself
 
 # Changes 2003-07-31 (jason)
-# Gary has cleaned up the code a lot to produce better looking
-# HTML
+# Gary has cleaned up the code a lot to produce better looking HTML
+
 # POD documentation - main docs before the code
 
 =head1 NAME
 
-Bio::SearchIO::Writer::HTMLResultWriter - Object to implement writing a Bio::Search::ResultI in HTML.
+Bio::SearchIO::Writer::HTMLResultWriter - write a Bio::Search::ResultI in HTML
 
 =head1 SYNOPSIS
 
@@ -52,7 +52,7 @@ Bio::SearchIO::Writer::HTMLResultWriter - Object to implement writing a Bio::Sea
 =head1 DESCRIPTION
 
 This object implements the SearchWriterI interface which will produce
-a set of HTML for a specific Bio::Search::Report::ReportI interface.
+a set of HTML for a specific L<Bio::Search::Report::ReportI interface>.
 
 See L<Bio::SearchIO::SearchWriterI> for more info on the filter method.
 
@@ -64,17 +64,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -92,29 +91,26 @@ Internal methods are usually preceded with a _
 =cut
 
 
-
 package Bio::SearchIO::Writer::HTMLResultWriter;
-use vars qw(@ISA %RemoteURLDefault
-            $MaxDescLen $DATE $AlignmentLineWidth $Revision);
 use strict;
-$Revision = '$Id: HTMLResultWriter.pm,v 1.32 2003/11/25 17:52:36 jason Exp $'; #'
+use vars qw(%RemoteURLDefault
+            $MaxDescLen $DATE $AlignmentLineWidth $Revision);
 
 # Object preamble - inherits from Bio::Root::RootI
 
 BEGIN {
+    $Revision = '$Id: HTMLResultWriter.pm,v 1.38.4.1 2006/10/02 23:10:27 sendu Exp $';
     $DATE = localtime(time);
-    %RemoteURLDefault = ( 'PROTEIN' => 'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=protein&cmd=search&term=%s',			  
-			  'NUCLEOTIDE' => 'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=nucleotide&cmd=search&term=%s'
-			  );
-
+    %RemoteURLDefault = ( 
+      'PROTEIN' => 'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=protein&cmd=search&term=%s',			  
+      'NUCLEOTIDE' => 'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=nucleotide&cmd=search&term=%s'
+    );
     $MaxDescLen = 60;
     $AlignmentLineWidth = 60;
 }
 
-use Bio::Root::Root;
-use Bio::SearchIO::SearchWriterI;
 
-@ISA = qw(Bio::Root::Root Bio::SearchIO::SearchWriterI);
+use base qw(Bio::Root::Root Bio::SearchIO::SearchWriterI);
 
 =head2 new
 
@@ -130,6 +126,7 @@ use Bio::SearchIO::SearchWriterI;
            -no_wublastlinks => boolean. Do not display WU-BLAST lines 
                                even if they are parsed out.
                                Links = (1) 
+
 =cut
 
 sub new {
@@ -225,7 +222,8 @@ sub to_string {
 	     $alg =~ /(WABA|EXONERATE)/i ) {
 	$qtype      = $dbtype = '';
 	$type = $dbseqtype  = 'NUCLEOTIDE';
-    } elsif( $alg =~ /(FAST|BLAST)P/  || $alg =~ /SSEARCH/i ) {
+    } elsif( $alg =~ /(FAST|BLAST)P/  || 
+	     $alg =~ /SSEARCH|HMM(PFAM|SEARCH)/i ) {
 	$qtype      = $dbtype = '';
 	$type = $dbseqtype  = 'PROTEIN';
     } elsif( $alg =~ /(FAST|BLAST)[XY]/i ) {
@@ -233,7 +231,7 @@ sub to_string {
         $dbtype     = 'PROTEIN';
 	$dbseqtype  = $type      = 'PROTEIN';
     } else { 
-	print STDERR "algorithm was ", $result->algorithm, " couldn't match\n";
+	$self->warn("algorithm was ", $result->algorithm, " couldn't match\n");
     }
     
     
@@ -309,7 +307,9 @@ sub to_string {
 	    foreach my $hsp (@hsps ) {
 		next if( $hspfilter && ! &{$hspfilter}($hsp) );
 		$hspstr .= sprintf(" Score = %s bits (%s), Expect = %s",
-				   $hsp->bits, $hsp->score, $hsp->evalue);
+				   $hsp->bits || $hsp->score, 
+				   $hsp->score || $hsp->bits, 
+				   $hsp->evalue || '');
 		if( defined $hsp->pvalue ) {
 		    $hspstr .= ", P = ".$hsp->pvalue;
 		}
@@ -463,7 +463,7 @@ sub to_string {
     }
     $str .= "</table><p><h2>Search Statistics</h2><table border=1><tr><th>Statistic</th><th>Value</th></tr>\n";
     foreach my $stat ( sort $result->available_statistics ) {
-	$str .= "<tr><td>$stat</td><td>". $result->get_statistic($stat). "</td></th>\n";
+	$str .= "<tr><td>$stat</td><td>". $result->get_statistic($stat). "</td></tr>\n";
     }
     $str .=  "</table><P>".$self->footer() . "<P>\n";
     return $str;

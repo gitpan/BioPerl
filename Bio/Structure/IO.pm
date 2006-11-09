@@ -1,10 +1,6 @@
-# $Id: IO.pm,v 1.5 2003/12/03 15:53:37 heikki Exp $
+# $Id: IO.pm,v 1.12.4.1 2006/10/02 23:10:31 sendu Exp $
 #
 # BioPerl module for Bio::Structure::IO
-#
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
-#       and Lincoln Stein  <lstein@cshl.org>
-#       and Kris Boulez	   <kris.boulez@algonomics.com>
 #
 # Copyright 2001, 2002 Kris Boulez
 #
@@ -27,49 +23,27 @@ Bio::Structure::IO - Handler for Structure Formats
     use Bio::Structure::IO;
 
     $in  = Bio::Structure::IO->new(-file => "inputfilename",
-                                   '-format' => 'pdb');
-    $out = Bio::Structure::IO->new(-file => ">outputfilename",
-                                  '-format' => 'pdb');
-    # note: we quote -format to keep older perl's from complaining.
+                                   -format => 'pdb');
 
     while ( my $struc = $in->next_structure() ) {
-	$out->write_structure($struc);
-    }
-
-  # now, to actually get at the structure object, use the standard
-  # Bio::Structure methods (look at L<Bio::Structure> if you don't
-  # know what they are)
-
-    use Bio::Structure::IO;
-
-    $in  = Bio::Structure::IO->new(-file => "inputfilename",
-                                   '-format' => 'pdb');
-
-    while ( my $struc = $in->next_structure() ) {
-       print "Structure ",$struc->id," number of models: ",
+       print "Structure ", $struc->id, " number of models: ",
              scalar $struc->model,"\n";
     }
 
-
-
 =head1 DESCRIPTION
 
-[ The following description is a copy-paste from the Bio::SeqIO
-description.  This is not surprising as the code is also mostly a
-copy. ]
-
 Bio::Structure::IO is a handler module for the formats in the
-Structure::IO set (eg, Bio::Structure::IO::pdb). It is the officially
+Structure::IO set (e.g. L<Bio::Structure::IO::pdb>). It is the officially
 sanctioned way of getting at the format objects, which most people
 should use.
 
 The Bio::Structure::IO system can be thought of like biological file
 handles.  They are attached to filehandles with smart formatting rules
-(eg, PDB format) and can either read or write structure objects
+(e.g. PDB format) and can either read or write structure objects
 (Bio::Structure objects, or more correctly, Bio::Structure::StructureI
 implementing objects, of which Bio::Structure is one such object). If
 you want to know what to do with a Bio::Structure object, read
-L<Bio::Structure>
+L<Bio::Structure>.
 
 The idea is that you request a stream object for a particular format.
 All the stream objects have a notion of an internal file that is read
@@ -98,7 +72,7 @@ and print operations to read and write structure::IOuence objects:
     $stream = Bio::Structure::IO->newFh(-format => 'pdb'); # read from standard input
 
     while ( $structure = <$stream> ) {
-	# do something with $structure
+   	# do something with $structure
     }
 
 and
@@ -145,35 +119,11 @@ If neither a filehandle nor a filename is specified, then the module
 will read from the @ARGV array or STDIN, using the familiar E<lt>E<gt>
 semantics.
 
-A string filehandle is handy if you want to modify the output in the
-memory, before printing it out. The following program reads in EMBL
-formatted entries from a file and prints them out in fasta format with
-some HTML tags:
-[ not relevant for Bio::Structure::IO as only one format is supported
-  at the moment ]
-
-  use Bio::SeqIO;
-  use IO::String;
-  my $in  = Bio::SeqIO->new('-file' => "emblfile" , 
-  			    '-format' => 'EMBL');
-  while ( my $seq = $in->next_seq() ) {
-      # the output handle is reset for every file
-      my $stringio = IO::String->new($string);
-      my $out = Bio::SeqIO->new('-fh' => $stringio,
-  			        '-format' => 'fasta');
-      # output goes into $string
-      $out->write_seq($seq);
-      # modify $string
-      $string =~ s|(>)(\w+)|$1<font color="Red">$2</font>|g;
-      # print into STDOUT
-      print $string;
-  }
-
 =item -format
 
 Specify the format of the file.  Supported formats include:
 
-   PDB         Protein Data Bank format
+   pdb         Protein Data Bank format
 
 If no format is specified and a filename is given, then the module
 will attempt to deduce it from the filename.  If this is unsuccessful,
@@ -198,7 +148,7 @@ read all structure objects into an array like this:
 
   @structures = <$fh>;
 
-Other operations, such as read(), sysread(), write(), close(), and printf() 
+Other operations, such as read(), sysread(), write(), close(), and printf()
 are not supported.
 
 =head1 OBJECT METHODS
@@ -221,28 +171,25 @@ These provide the tie interface.  See L<perltie> for more details.
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
-  http://bioperl.org/MailList.shtml      - About the mailing lists
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.
+Bug reports can be submitted via the web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
-=head1 AUTHOR - Ewan Birney, Lincoln Stein, Kris Boulez
+=head1 AUTHORS - Ewan Birney, Lincoln Stein, Kris Boulez
 
-Email birney@ebi.ac.uk, kris.boulez@algonomics.com
+Email birney@ebi.ac.uk, lstein@cshl.org, kris.boulez@algonomics.com
 
-Describe contact details here
 
 =head1 APPENDIX
 
@@ -256,14 +203,11 @@ methods. Internal methods are usually preceded with a _
 package Bio::Structure::IO;
 
 use strict;
-use vars qw(@ISA);
 
-use Bio::Root::Root;
-use Bio::Root::IO;
 use Bio::PrimarySeq;
 use Symbol();
 
-@ISA = qw(Bio::Root::Root Bio::Root::IO);
+use base qw(Bio::Root::Root Bio::Root::IO);
 
 =head2 new
 
@@ -282,24 +226,24 @@ my $entry = 0;
 sub new {
     my ($caller,@args) = @_;
     my $class = ref($caller) || $caller;
-    
+
     # or do we want to call SUPER on an object if $caller is an
     # object?
     if( $class =~ /Bio::Structure::IO::(\S+)/ ) {
-	my ($self) = $class->SUPER::new(@args);	
+	my ($self) = $class->SUPER::new(@args);
 	$self->_initialize(@args);
 	return $self;
-    } else { 
+    } else {
 
 	my %param = @args;
 	@param{ map { lc $_ } keys %param } = values %param; # lowercase keys
-	my $format = $param{'-format'} || 
+	my $format = $param{'-format'} ||
 	    $class->_guess_format( $param{-file} || $ARGV[0] ) ||
 		'pdb';
 	$format = "\L$format";	# normalize capitalization to lower case
 
 	# normalize capitalization
-	return undef unless( &_load_format_module($format) );
+	return unless( &_load_format_module($format) );
 	return "Bio::Structure::IO::$format"->new(@args);
     }
 }
@@ -350,10 +294,10 @@ sub fh {
 
 sub _initialize {
     my($self, @args) = @_;
-    
+
     # not really necessary unless we put more in RootI
     $self->SUPER::_initialize(@args);
-    
+
     # initialize the IO part
     $self->_initialize_io(@args);
 }
@@ -362,7 +306,8 @@ sub _initialize {
 
  Title   : next_structure
  Usage   : $structure = stream->next_structure
- Function: Reads the next structure object from the stream and returns it.
+ Function: Reads the next structure object from the stream and returns a
+           Bio::Structure::Entry object.
 
            Certain driver modules may encounter entries in the stream that
            are either misformatted or that use syntax not yet understood
@@ -374,7 +319,7 @@ sub _initialize {
            catching the exception. Note that you can always turn recoverable
            errors into exceptions by calling $stream->verbose(2) (see
            Bio::RootI POD page).
- Returns : a Bio::Structure structure object
+ Returns : a Bio::Structure::Entry object
  Args    : none
 
 =cut
@@ -385,7 +330,7 @@ sub next_structure {
 }
 
 # Do we want people to read out the sequence directly from a $structIO stream
-# 
+#
 ##=head2 next_primary_seq
 ##
 ## Title   : next_primary_seq
@@ -481,8 +426,8 @@ sub _load_format_module {
     print STDERR <<END;
 $load: $format cannot be found
 Exception $@
-For more information about the Structure::IO system please see the 
-Bio::Structure::IO docs.  This includes ways of checking for formats at 
+For more information about the Structure::IO system please see the
+Bio::Structure::IO docs.  This includes ways of checking for formats at
 compile time, not run time
 END
   ;

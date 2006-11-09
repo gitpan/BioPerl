@@ -1,4 +1,4 @@
-# $Id: PopulationI.pm,v 1.6 2003/07/29 02:53:06 jason Exp $
+# $Id: PopulationI.pm,v 1.9.4.1 2006/10/02 23:10:23 sendu Exp $
 #
 # BioPerl module for Bio::PopGen::PopulationI
 #
@@ -50,8 +50,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -59,7 +59,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -81,12 +81,10 @@ Internal methods are usually preceded with a _
 
 
 package Bio::PopGen::PopulationI;
-use vars qw(@ISA);
 use strict;
 use Carp;
-use Bio::Root::RootI;
 
-@ISA = qw( Bio::Root::RootI );
+use base qw(Bio::Root::RootI);
 
 =head2 name
 
@@ -222,10 +220,10 @@ sub get_Markers{
 }
 
 
-=head2 number_individuals
+=head2 get_number_individuals
 
- Title   : number_individuals
- Usage   : my $count = $pop->number_individuals;
+ Title   : get_number_individuals
+ Usage   : my $count = $pop->get_number_individuals;
  Function: Get the count of the number of individuals
  Returns : integer >= 0
  Args    : [optional] marker name, will return a count of the number

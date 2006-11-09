@@ -1,4 +1,4 @@
-# $Id: PopStats.pm,v 1.5 2003/05/15 08:13:55 heikki Exp $
+# $Id: PopStats.pm,v 1.10.4.1 2006/10/02 23:10:23 sendu Exp $
 #
 # BioPerl module for Bio::PopGen::PopStats
 #
@@ -18,8 +18,8 @@ statistics about a population or sets of populations
 =head1 SYNOPSIS
 
   use Bio::PopGen::PopStats;
-  my $stats = new Bio::PopGen::PopStats(); # add -haploid => 1 to process haploid
-                                           # data
+  my $stats = new Bio::PopGen::PopStats(); # add -haploid => 1 
+                                           # to process haploid data
 
 =head1 DESCRIPTION
 
@@ -33,8 +33,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -42,7 +42,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -64,15 +64,13 @@ Internal methods are usually preceded with a _
 
 
 package Bio::PopGen::PopStats;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::Root::Root;
 
 
-@ISA = qw(Bio::Root::Root );
+use base qw(Bio::Root::Root);
 
 =head2 new
 
@@ -125,7 +123,8 @@ sub haploid_status{
  Returns : Fst value (a value between 0 and 1)
  Args    : Arrayref of populations to process
            Arrayref of marker names to process
- Note    : Based on Weir BS, Genetics Data Analysis II, 199?
+ Note    : Based on diploid method in Weir BS, Genetics Data Analysis II, 1996
+           page 178.
 
 =cut
 
@@ -136,17 +135,17 @@ sub Fst {
    if( ! defined $populations || 
        ref($populations) !~ /ARRAY/i ) { 
        $self->warn("Must provide a valid arrayref for populations");
-       return undef;
+       return;
    } elsif( ! defined $markernames ||
 	    ref($markernames) !~ /ARRAY/i ) {
        $self->warn("Must provide a valid arrayref for marker names");
-       return undef;
+       return;
    }
    my $num_sub_pops          = scalar @$populations;
 
    if( $num_sub_pops < 2 ) {
        $self->warn("Must provide at least 2 populations for this test, you provided $num_sub_pops");
-       return undef;
+       return;
    }
 
    # This code assumes that pop 1 contains at least one of all the
@@ -187,7 +186,7 @@ sub Fst {
 	       if( ! defined $markerobj ) { 
 		   $self->warn("Could not derive Marker for $marker ".
 			       "from population ". $pop->name);
-		   return undef;
+		   return;
 	       }
 
 	       my $freq_homozygotes = 

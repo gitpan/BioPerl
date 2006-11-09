@@ -1,4 +1,4 @@
-# $Id: Ontology.pm,v 1.8 2003/06/20 18:31:44 allenday Exp $
+# $Id: Ontology.pm,v 1.18.4.3 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for Bio::Ontology::Ontology
 #
@@ -31,13 +31,14 @@ Bio::Ontology::Ontology - standard implementation of an Ontology
 =head1 SYNOPSIS
 
     use Bio::Ontology::Ontology;
+    use Bio::Ontology::Term;
 
     # create ontology object
     my $ont = Bio::Ontology::Ontology->new(-name => "OBF");
 
     # add terms, relationships ...
-    my $bp = Bio::Ontology::Term->new(-name => "Bioperl");
-    my $obf = Bio::Ontology::Term->new(-name => "OBF");
+    my $bp = Bio::Ontology::Term->new(-identifier => '02', -name => "Bioperl");
+    my $obf = Bio::Ontology::Term->new(-identifier => '01', -name => "OBF");
     my $partof = Bio::Ontology::RelationshipType->get_instance("PART_OF");
     $ont->add_term($bp);
     $ont->add_term($obf);
@@ -69,8 +70,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -78,15 +79,11 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
 Email hlapp at gmx.net
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -100,16 +97,13 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Ontology::Ontology;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::Root::Root;
-use Bio::Ontology::OntologyI;
-use Bio::Ontology::SimpleOntologyEngine;
+#use Bio::Ontology::SimpleOntologyEngine; # loaded dynamically now!
 
-@ISA = qw(Bio::Root::Root Bio::Ontology::OntologyI);
+use base qw(Bio::Root::Root Bio::Ontology::OntologyI Bio::AnnotatableI);
 
 =head2 new
 
@@ -117,31 +111,40 @@ use Bio::Ontology::SimpleOntologyEngine;
  Usage   : my $obj = new Bio::Ontology::Ontology();
  Function: Builds a new Bio::Ontology::Ontology object
  Returns : an instance of Bio::Ontology::Ontology
- Args    :
+ Args    : any number of named arguments. The following names will be
+           recognized by this module:
 
+            -name         the name of the ontology
+            -authority    the name of the authority for the ontology
+            -identifier   an identifier for the ontology, if any
+            -engine       the Bio::Ontology::OntologyEngineI
+                          implementation that this instance should use;
+                          default is Bio::Ontology::SimpleOntologyEngine
+
+            See the corresponding get/set methods for further documentation
+            on individual properties.
 
 =cut
 
 sub new {
-    my($class,@args) = @_;
+  my($class,@args) = @_;
 
-    my $self = $class->SUPER::new(@args);
-    my ($name,$auth,$def,$id,$engine) =
-	$self->_rearrange([qw(NAME
-			      AUTHORITY
-			      DEFINITION
-			      IDENTIFIER
-			      ENGINE)
-			   ],
-			  @args);
-    defined($name) && $self->name($name);
-    defined($auth) && $self->authority($auth);
-    defined($def) && $self->definition($def);
-    defined($id) && $self->identifier($id);
-    $engine = Bio::Ontology::SimpleOntologyEngine->new() unless $engine;
-    $self->engine($engine);
+  my $self = $class->SUPER::new(@args);
+  my ($name,$auth,$def,$id,$engine) =
+        $self->_rearrange([qw(NAME
+                          AUTHORITY
+                          DEFINITION
+                          IDENTIFIER
+                          ENGINE)
+                      ],
+                      @args);
+  defined($name) && $self->name($name);
+  defined($auth) && $self->authority($auth);
+  defined($def) && $self->definition($def);
+  defined($id) && $self->identifier($id);
+  defined($engine) && $self->engine($engine);
 
-    return $self;
+  return $self;
 }
 
 =head1 Methods from L<Bio::Ontology::OntologyI>
@@ -236,13 +239,13 @@ sub identifier{
     my $self = shift;
 
     if(@_) {
-	$self->throw("cannot modify identifier for ".ref($self))
-	    if exists($self->{'identifier'});
-	my $id = shift;
-	$self->{'identifier'} = $id if $id;
+        $self->throw("cannot modify identifier for ".ref($self))
+            if exists($self->{'identifier'});
+        my $id = shift;
+        $self->{'identifier'} = $id if $id;
     }
     if(! exists($self->{'identifier'})) {
-	($self->{'identifier'}) = "$self" =~ /(0x[0-9a-fA-F]+)/;
+        ($self->{'identifier'}) = "$self" =~ /(0x[0-9a-fA-F]+)/;
     }
     return $self->{'identifier'};
 }
@@ -284,25 +287,40 @@ sub close{
  Usage   : $engine = $obj->engine()
  Function: Get/set the ontology engine to which all the query methods
            delegate.
- Example : 
- Returns : an object implementing L<Bio::Ontology::OntologyEngineI>
+ Example :
+ Returns : an object implementing Bio::Ontology::OntologyEngineI
  Args    : on set, new value (an object implementing
-           L<Bio::Ontology::OntologyEngineI>, or  undef)
+           Bio::Ontology::OntologyEngineI, or  undef)
 
+See L<Bio::Ontology::OntologyEngineI>.
 
 =cut
 
 sub engine{
     my $self = shift;
 
-    if(@_) {
-	my $engine = shift;
-	if($engine && (! (ref($engine) &&
-			  $engine->isa("Bio::Ontology::OntologyEngineI")))) {
-	    $self->throw("object of class ".ref($engine)." does not implement".
-			 " Bio::Ontology::OntologyEngineI. Bummer!");
-	}
-	$self->{'engine'} = $engine;
+    if (@_) {
+        my $engine = shift;
+        if($engine &&
+           (! (ref($engine) &&
+               $engine->isa("Bio::Ontology::OntologyEngineI")))) {
+            $self->throw("object of class ".ref($engine)." does not implement".
+                         " Bio::Ontology::OntologyEngineI. Bummer!");
+        }
+        $self->{'engine'} = $engine;
+    } elsif (! exists($self->{'engine'})) {
+        # instantiate on demand
+        eval {
+            # this introduces a dependency on Graph.pm, so load dynamically
+            require Bio::Ontology::SimpleOntologyEngine;
+        };
+        if ($@) {
+            $self->throw("failed to load SimpleOntologyEngine, possibly "
+                         ."Graph.pm is not installed; either install or supply "
+                         ."another OntologyEngineI implementation:\n"
+                         .$@);
+        }
+        $self->{'engine'} = Bio::Ontology::SimpleOntologyEngine->new();
     }
     return $self->{'engine'};
 }
@@ -341,7 +359,7 @@ sub add_term{
 
  Title   : add_relationship
  Usage   : add_relationship(RelationshipI relationship): RelationshipI
-  add_relatioship(TermI subject, TermI predicate, TermI object)
+           add_relatioship(TermI subject, TermI predicate, TermI object)
  Function: Adds a relationship object to the ontology engine.
  Example :
  Returns : Its argument.
@@ -350,21 +368,40 @@ sub add_term{
 
 =cut
 
-sub add_relationship{
-    my $self = shift;
-    my $rel = shift;
+sub add_relationship {
+  my $self = shift;
+  my $rel = shift;
 
-    if($rel && $rel->isa("Bio::Ontology::TermI")) {
-	# we need to construct the relationship object on the fly
-	my ($predicate,$object) = @_;
-	$rel = Bio::Ontology::Relationship->new(-subject_term   => $rel,
-						-object_term    => $object,
-						-predicate_term => $predicate,
-						-ontology       => $self);
-    }
-    # set ontology if not set already
-    $rel->ontology($self) unless $rel->ontology();
-    return $self->engine->add_relationship($rel);
+  if($rel && $rel->isa("Bio::Ontology::TermI")) {
+    # we need to construct the relationship object on the fly
+    my ($predicate,$object) = @_;
+    $rel = Bio::Ontology::Relationship->new(
+                                            -subject_term   => $rel,
+                                            -object_term    => $object,
+                                            -predicate_term => $predicate,
+                                            -ontology       => $self,
+                                           );
+  }
+  # set ontology if not set already
+  $rel->ontology($self) unless $rel->ontology();
+  return $self->engine->add_relationship($rel);
+}
+
+=head2 get_relationship_type
+
+ Title   : get_relationship_type
+ Usage   : get_relationship_type(scalar): RelationshipTypeI
+ Function: Get a relationshiptype object from the ontology engine.
+ Example :
+ Returns : A RelationshipTypeI object.
+ Args    : The name (scalar) of the RelationshipTypeI object desired.
+
+
+=cut
+
+sub get_relationship_type{
+    my $self = shift;
+    return $self->engine->get_relationship_type(@_);
 }
 
 =head2 get_relationships
@@ -380,27 +417,27 @@ sub add_relationship{
 
 =cut
 
-sub get_relationships{
-    my $self = shift;
-    my $term = shift;
-    if($term) {
-	# we don't need to filter in this case
-	return $self->engine->get_relationships($term);
-    } 
-    # else we need to filter by ontology
-    return grep { my $ont = $_->ontology;
-		  # the first condition is a superset of the second, but
-		  # we add it here for efficiency reasons, as many times
-		  # it will short-cut to true and is supposedly faster than
-		  # string comparison
-		  ($ont == $self) || ($ont->name eq $self->name);
-	      } $self->engine->get_relationships(@_);
+sub get_relationships {
+  my $self = shift;
+  my $term = shift;
+  if($term) {
+        # we don't need to filter in this case
+        return $self->engine->get_relationships($term);
+  }
+  # else we need to filter by ontology
+  return grep { my $ont = $_->ontology;
+                # the first condition is a superset of the second, but
+                # we add it here for efficiency reasons, as many times
+                # it will short-cut to true and is supposedly faster than
+                # string comparison
+                ($ont == $self) || ($ont->name eq $self->name);
+              } $self->engine->get_relationships(@_);
 }
 
 =head2 get_predicate_terms
 
  Title   : get_predicate_terms
- Usage   : get_predicate_terms(): TermI[]
+ Usage   : get_predicate_terms(): TermI
  Function: Retrieves all relationship types.
  Example :
  Returns : Array of TermI objects
@@ -412,16 +449,14 @@ sub get_relationships{
 sub get_predicate_terms{
     my $self = shift;
 
-	my @preds = $self->engine->get_predicate_terms;
-
     return grep { $_->ontology->name eq $self->name;
-	      } $self->engine->get_predicate_terms(@_);
+              } $self->engine->get_predicate_terms(@_);
 }
 
 =head2 get_child_terms
 
  Title   : get_child_terms
- Usage   : get_child_terms(TermI term, TermI[] predicate_terms): TermI[]
+ Usage   : get_child_terms(TermI term, TermI predicate_terms): TermI
  Function: Retrieves all child terms of a given term, that satisfy a
            relationship among those that are specified in the second
            argument or undef otherwise. get_child_terms is a special
@@ -449,7 +484,7 @@ sub get_child_terms{
 =head2 get_descendant_terms
 
  Title   : get_descendant_terms
- Usage   : get_descendant_terms(TermI term, TermI[] rel_types): TermI[]
+ Usage   : get_descendant_terms(TermI term, TermI rel_types): TermI
  Function: Retrieves all descendant terms of a given term, that
            satisfy a relationship among those that are specified in
            the second argument or undef otherwise.
@@ -475,7 +510,7 @@ sub get_descendant_terms{
 =head2 get_parent_terms
 
  Title   : get_parent_terms
- Usage   : get_parent_terms(TermI term, TermI[] predicate_terms): TermI[]
+ Usage   : get_parent_terms(TermI term, TermI predicate_terms): TermI
  Function: Retrieves all parent terms of a given term, that satisfy a
            relationship among those that are specified in the second
            argument or undef otherwise. get_parent_terms is a special
@@ -503,7 +538,7 @@ sub get_parent_terms{
 =head2 get_ancestor_terms
 
  Title   : get_ancestor_terms
- Usage   : get_ancestor_terms(TermI term, TermI[] predicate_terms): TermI[]
+ Usage   : get_ancestor_terms(TermI term, TermI predicate_terms): TermI
  Function: Retrieves all ancestor terms of a given term, that satisfy
            a relationship among those that are specified in the second
            argument or undef otherwise.
@@ -529,7 +564,7 @@ sub get_ancestor_terms{
 =head2 get_leaf_terms
 
  Title   : get_leaf_terms
- Usage   : get_leaf_terms(): TermI[]
+ Usage   : get_leaf_terms(): TermI
  Function: Retrieves all leaf terms from the ontology. Leaf term is a
            term w/o descendants.
 
@@ -537,49 +572,47 @@ sub get_ancestor_terms{
  Returns : Array of TermI objects.
  Args    :
 
-
 =cut
 
 sub get_leaf_terms{
     my $self = shift;
     return grep { my $ont = $_->ontology;
-		  # the first condition is a superset of the second, but
-		  # we add it here for efficiency reasons, as many times
-		  # it will short-cut to true and is supposedly faster than
-		  # string comparison
-		  ($ont == $self) || ($ont->name eq $self->name);
-	      } $self->engine->get_leaf_terms(@_);
+                  # the first condition is a superset of the second, but
+                  # we add it here for efficiency reasons, as many times
+                  # it will short-cut to true and is supposedly faster than
+                  # string comparison
+                  ($ont == $self) || ($ont->name eq $self->name);
+              } $self->engine->get_leaf_terms(@_);
 }
 
 =head2 get_root_terms()
 
  Title   : get_root_terms
- Usage   : get_root_terms(): TermI[]
+ Usage   : get_root_terms(): TermI
  Function: Retrieves all root terms from the ontology. Root term is a
-           term w/o descendants.
+           term w/o parents.
 
  Example : @root_terms = $obj->get_root_terms()
  Returns : Array of TermI objects.
  Args    :
-
 
 =cut
 
 sub get_root_terms{
     my $self = shift;
     return grep { my $ont = $_->ontology;
-		  # the first condition is a superset of the second, but
-		  # we add it here for efficiency reasons, as many times
-		  # it will short-cut to true and is supposedly faster than
-		  # string comparison
-		  ($ont == $self) || ($ont->name eq $self->name);
-	      } $self->engine->get_root_terms(@_);
+                  # the first condition is a superset of the second, but
+                  # we add it here for efficiency reasons, as many times
+                  # it will short-cut to true and is supposedly faster than
+                  # string comparison
+                  ($ont == $self) || ($ont->name eq $self->name);
+              } $self->engine->get_root_terms(@_);
 }
 
 =head2 get_all_terms
 
  Title   : get_all_terms
- Usage   : get_all_terms: TermI[]
+ Usage   : get_all_terms: TermI
  Function: Retrieves all terms from the ontology.
 
            We do not mandate an order here in which the terms are
@@ -590,18 +623,17 @@ sub get_root_terms{
  Returns : Array of TermI objects.
  Args    :
 
-
 =cut
 
 sub get_all_terms{
     my $self = shift;
     return grep { my $ont = $_->ontology;
-		  # the first condition is a superset of the second, but
-		  # we add it here for efficiency reasons, as many times
-		  # it will short-cut to true and is supposedly faster than
-		  # string comparison
-		  ($ont == $self) || ($ont->name eq $self->name);
-	      } $self->engine->get_all_terms(@_);
+                  # the first condition is a superset of the second, but
+                  # we add it here for efficiency reasons, as many times
+                  # it will short-cut to true and is supposedly faster than
+                  # string comparison
+                  ($ont == $self) || ($ont->name eq $self->name);
+              } $self->engine->get_all_terms(@_);
 }
 
 =head2 find_terms
@@ -623,13 +655,67 @@ sub get_all_terms{
               -identifier    query by the given identifier
               -name          query by the given name
 
-
 =cut
 
 sub find_terms{
     my $self = shift;
     return grep { $_->ontology->name eq $self->name;
-	      } $self->engine->find_terms(@_);
+              } $self->engine->find_terms(@_);
+}
+
+=head2 find_identical_terms
+
+ Title   : find_identical_terms
+ Usage   : ($term) = $oe->find_identical_terms($term0);
+ Function: Find term instances where name or synonym
+           matches the query exactly
+ Example :
+ Returns : an array of zero or more Bio::Ontology::TermI objects
+ Args    : a Bio::Ontology::TermI object
+
+=cut
+
+sub find_identical_terms{
+    my $self = shift;
+    return grep { $_->ontology->name eq $self->name;
+              } $self->engine->find_identical_terms(@_);
+}
+
+
+=head2 find_similar_terms
+
+ Title   : find_similar_terms
+ Usage   : ($term) = $oe->find_similar_terms($term0);
+ Function: Find term instances where name or synonym, or part of one,
+           matches the query.
+ Example :
+ Returns : an array of zero or more Bio::Ontology::TermI objects
+ Args    : a Bio::Ontology::TermI object
+
+=cut
+
+sub find_similar_terms{
+    my $self = shift;
+    return grep { $_->ontology->name eq $self->name;
+              } $self->engine->find_similar_terms(@_);
+}
+
+=head2 find_identically_named_terms
+
+ Title   : find_identically_named_terms
+ Usage   : ($term) = $oe->find_identically_named_terms($term0);
+ Function: Find term instances where names match the query term
+           name exactly
+ Example :
+ Returns : an array of zero or more Bio::Ontology::TermI objects
+ Args    : a Bio::Ontology::TermI object
+
+=cut
+
+sub find_identically_named_terms{
+    my $self = shift;
+    return grep { $_->ontology->name eq $self->name
+              } $self->engine->find_identically_named_terms(@_);
 }
 
 =head1 Factory for relationships and terms
@@ -644,11 +730,10 @@ sub find_terms{
            factory to be used when relationship objects are created by
            the implementation on-the-fly.
 
- Example : 
+ Example :
  Returns : value of relationship_factory (a Bio::Factory::ObjectFactoryI
            compliant object)
- Args    : 
-
+ Args    :
 
 =cut
 
@@ -664,16 +749,39 @@ sub relationship_factory{
            factory to be used when term objects are created by
            the implementation on-the-fly.
 
- Example : 
+ Example :
  Returns : value of term_factory (a Bio::Factory::ObjectFactoryI
            compliant object)
- Args    : 
-
+ Args    :
 
 =cut
 
 sub term_factory{
     return shift->engine->term_factory(@_);
+}
+
+
+=head2 annotation
+
+ Title   : annotation
+ Usage   : $annos = $obj->annotation()
+ Function: Get/Set the Bio::Annotation::Collection object
+           The collection contains Bio::Annotation::SimpleValue
+           objects to store header information like the version
+           and date present in the header section of an Ontology
+           file.
+
+ Example :
+ Returns : value of annotation (a Bio::Annotation::Collection
+           compliant object)
+ Args    : A Bio::Annotation::Collection object (Optional)
+
+=cut
+
+sub annotation{
+    my $self = shift;
+    $self->{'annotation'} = shift if @_;
+    return $self->{'annotation'};
 }
 
 

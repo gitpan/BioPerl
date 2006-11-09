@@ -1,8 +1,8 @@
-# $Id: Mutation.pm,v 1.7 2003/06/01 19:52:52 heikki Exp $
+# $Id: Mutation.pm,v 1.13.4.1 2006/10/02 23:10:21 sendu Exp $
 #
 # BioPerl module for Bio::LiveSeq::Mutation
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Heikki Lehvaslaiho
 #
@@ -65,26 +65,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the 
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email:  heikki@ebi.ac.uk
-Address: 
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom 
+Email:  heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -97,14 +91,12 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LiveSeq::Mutation;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inheritance
 
-use Bio::Root::Root;
 
-@ISA = qw( Bio::Root::Root );
+use base qw(Bio::Root::Root);
 
 sub new {
     my($class,@args) = @_;
@@ -258,7 +250,7 @@ sub label {
        $self->{'label'} = $value;
    }
    if ( ! exists $self->{'label'} ) {
-       return undef;
+       return;
    } 
    return $self->{'label'};
 }
@@ -348,7 +340,7 @@ sub prelabel {
        $self->{'prelabel'} = $value;
    }
    if ( ! exists $self->{'prelabel'} ) {
-       return undef;
+       return;
    } 
    return $self->{'prelabel'};
 }
@@ -377,7 +369,7 @@ sub postlabel {
        $self->{'postlabel'} = $value;
    }
    if ( ! exists $self->{'postlabel'} ) {
-       return undef;
+       return;
    } 
    return $self->{'postlabel'};
 }
@@ -406,7 +398,7 @@ sub lastlabel {
        $self->{'lastlabel'} = $value;
    }
    if ( ! exists $self->{'lastlabel'} ) {
-       return undef;
+       return;
    } 
    return $self->{'lastlabel'};
 }

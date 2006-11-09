@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.3 2003/07/28 19:51:46 jason Exp $
+# $Id: IO.pm,v 1.6.4.1 2006/10/02 23:10:23 sendu Exp $
 #
 # BioPerl module for Bio::PopGen::IO
 #
@@ -45,8 +45,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -54,17 +54,11 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
 Email jason-at-bioperl.org
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -80,15 +74,13 @@ Internal methods are usually preceded with a _
 # hardcoded
 
 package Bio::PopGen::IO;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
 use Bio::Root::Root;
-use Bio::Root::IO;
 
-@ISA = qw(Bio::Root::IO);
+use base qw(Bio::Root::IO);
 
 =head2 new
 
@@ -117,7 +109,7 @@ sub new {
     # normalize capitalization to lower case
     $format = "\L$format";
     
-    return undef unless( $class->_load_format_module($format) );
+    return unless( $class->_load_format_module($format) );
     return "Bio::PopGen::IO::${format}"->new(@args);
   }
 }

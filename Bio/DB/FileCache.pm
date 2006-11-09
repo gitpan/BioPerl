@@ -1,4 +1,4 @@
-# $Id: FileCache.pm,v 1.8 2003/03/25 14:41:52 heikki Exp $
+# $Id: FileCache.pm,v 1.11.4.2 2006/10/02 23:10:14 sendu Exp $
 #
 # POD documentation - main docs before the code
 #
@@ -41,16 +41,15 @@ This module requires DB_File and Storable.
 
 =head1 CONTACT
 
-Lincoln Stein
+Lincoln Stein E<lt>lstein@cshl.orgE<gt>
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution. Bug reports can be submitted via email
-or the web:
+the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-    bioperl-bugs@bio.perl.org
-    http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 APPENDIX
 
@@ -68,14 +67,11 @@ use Storable qw(freeze thaw);
 use Fcntl qw(O_CREAT O_RDWR O_RDONLY);
 use File::Temp 'tmpnam';
 
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
 
-@ISA = qw(Bio::Root::Root Bio::DB::SeqI);
+use base qw(Bio::Root::Root Bio::DB::SeqI);
 
-use Bio::DB::SeqI;
 use Bio::Seq::RichSeq;
 use Bio::Location::Split;
 use Bio::Location::Fuzzy;
@@ -111,10 +107,10 @@ sub new {
     my $self = Bio::Root::Root->new();
     bless $self,$class;
 
-    my ($seqdb,$file_name,$keep) = $self->_rearrange([qw(SEQDB FILE 
+    my ($seqdb,$file_name,$keep) = $self->_rearrange([qw(SEQDB FILE
 							 KEEP)],@args);
 
-    if( !defined $seqdb || !ref $seqdb || 
+    if( !defined $seqdb || !ref $seqdb ||
 	! $seqdb->isa('Bio::DB::RandomAccessI') ) {
        $self->throw("Must be a randomaccess database not a [$seqdb]");
     }
@@ -287,6 +283,11 @@ sub _get {
 sub _store {
   my $self = shift;
   my ($type,$id,$obj) = @_;
+  if( ! defined $obj ) {
+      # bug #1628
+      $self->debug("tried to store an undefined value for $id, skipping");
+      return;
+  }
   my $serialized = freeze($obj);
   $self->db->{"${type}_${id}"} = $serialized;
 }

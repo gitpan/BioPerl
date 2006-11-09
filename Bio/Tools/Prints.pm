@@ -1,4 +1,4 @@
-# $Id: Prints.pm,v 1.8 2003/09/18 06:26:57 juguang Exp $
+# $Id: Prints.pm,v 1.13.4.1 2006/10/02 23:10:32 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Prints
 #
@@ -33,17 +33,16 @@ Bio::Tools::Prints - Parser for FingerPRINTScanII program
  Bioperl modules. Send your comments and suggestions preferably to
  the Bioperl mailing list.  Your participation is much appreciated.
 
- bioperl-l@bioperl.org              - General discussion
- http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
  Report bugs to the Bioperl bug tracking system to help us keep track
  of the bugs and their resolution. Bug reports can be submitted via
- email or the web:
+ the web:
 
- bioperl-bugs@bioperl.org
- http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Balamurugan Kumarasamy
 
@@ -59,15 +58,11 @@ Bio::Tools::Prints - Parser for FingerPRINTScanII program
 =cut
 
 package Bio::Tools::Prints;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
 use Bio::SeqFeature::FeaturePair;
-use Bio::Root::IO;
 use Bio::SeqFeature::Generic;
-@ISA = qw(Bio::Root::Root Bio::Root::IO );
-
+use base qw(Bio::Root::Root Bio::Root::IO);
 
 
 =head2 new
@@ -165,7 +160,7 @@ sub next_result {
  Title   : create_feature
  Usage   : my $feat=$prints_parser->create_feature($feature,$seqname)
  Function: creates a SeqFeature Generic object
- Returns : L<Bio::SeqFeature::Feature>
+ Returns : L<Bio::SeqFeature::FeaturePair>
  Args    :
 
 
@@ -211,7 +206,7 @@ sub create_feature {
 
 =cut
 
-sub print_sac{
+sub print_sac {
     my $self = shift;
     return $self->{'print_sac'} = shift if @_;
     return $self->{'print_sac'};
@@ -228,11 +223,10 @@ sub print_sac{
 
 =cut
 
-sub seqname{
+sub seqname {
     my($self,$seqname)=@_;
     return $self->{'seqname'}=$seqname if(defined($seqname));
     return $self->{'seqname'};
-
 }
 
 1;

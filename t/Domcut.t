@@ -23,10 +23,9 @@ BEGIN {
     plan tests => $NUMTESTS;
 
     eval {
-	require IO::String; 
-	require LWP::UserAgent;
-	
-    }; 
+		 require IO::String; 
+		 require LWP::UserAgent;
+    };
     if( $@ ) {
         warn("IO::String or LWP::UserAgent not installed. This means that the module is not usable. Skipping tests");
 	$ERROR = 1;
@@ -42,9 +41,9 @@ BEGIN {
 }
 
 END {
-    foreach ( $Test::ntest..$NUMTESTS) {
-	skip('unable to run all of the tests depending on web access',1);
-    }
+	foreach ( $Test::ntest..$NUMTESTS) {
+		skip('unable to complete all Domcut tests',1);
+	}
 }
 
 exit 0 if $ERROR ==  1;

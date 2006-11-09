@@ -20,7 +20,7 @@
 #   Bio::SearchIO::psiblast
 #
 # Author: Steve Chervitz <sac@bioperl.org>
-# Revision: $Id: rawwriter.pl,v 1.1 2003/02/25 10:02:08 bosborne Exp $
+# Revision: $Id: rawwriter.pl,v 1.2 2004/02/21 10:50:34 sac Exp $
 #
 # TODO: 
 #   * Implement a Bio::SearchIO::Writer::HSPTextWriter object
@@ -39,7 +39,9 @@ use Bio::SearchIO;
 # to do a full parse of the alignments. Thus, we're using a -shalow_parse
 # flag to indicate that we don't need to parse alignments. This should
 # result in faster processing.
+# TODO: Convert this to use -format='blast'. Shallow-parse option not supported there.
 my $in = Bio::SearchIO->new(-format => 'psiblast', 
+                            -fh => \*ARGV,
 			    -signif => 0.1,
 			    -shallow_parse => 1,
 			    -hold_raw_data => 1 );

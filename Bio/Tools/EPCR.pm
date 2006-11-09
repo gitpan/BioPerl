@@ -1,8 +1,8 @@
-# $Id: EPCR.pm,v 1.8 2002/12/01 00:05:21 jason Exp $
+# $Id: EPCR.pm,v 1.18.4.1 2006/10/02 23:10:32 sendu Exp $
 #
 # BioPerl module for Bio::Tools::EPCR
 #
-# Cared for by Jason Stajich <jason@bioperl.org>
+# Cared for by Jason Stajich <jason-at-bioperl.org>
 #
 # Copyright Jason Stajich
 #
@@ -49,23 +49,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org            - General discussion
-http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
-
-Describe contact details here
+Email jason-at-bioperl.org
 
 =head1 APPENDIX
 
@@ -79,25 +76,39 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Tools::EPCR;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
-use Bio::SeqAnalysisParserI;
 use Bio::SeqFeature::FeaturePair;
 use Bio::SeqFeature::Generic;
 
-@ISA = qw(Bio::Root::Root Bio::SeqAnalysisParserI Bio::Root::IO );
+use base qw(Bio::Root::Root Bio::SeqAnalysisParserI Bio::Root::IO);
 
 =head2 new
 
  Title   : new
- Usage   : my $epcr = new Bio::Tools::EPCR(-file => $file);
+ Usage   : my $epcr = new Bio::Tools::EPCR(-file => $file,
+					   -primary => $fprimary, 
+					   -source => $fsource, 
+					   -groupclass => $fgroupclass);
  Function: Initializes a new EPCR parser
  Returns : Bio::Tools::EPCR
  Args    : -fh   => filehandle
            OR
            -file => filename
+
+           -primary => a string to be used as the common value for
+                       each features '-primary' tag.  Defaults to
+                       'sts'.  (This in turn maps to the GFF 'type'
+                       tag (aka 'method')).
+
+            -source => a string to be used as the common value for
+                       each features '-source' tag.  Defaults to
+                       'e-PCR'. (This in turn maps to the GFF 'source'
+                       tag)
+
+             -groupclass => a string to be used as the name of the tag
+                           which will hold the sts marker namefirst
+                           attribute.  Defaults to 'name'.
 
 =cut
 
@@ -105,8 +116,15 @@ sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
+  my ($primary, $source, 
+      $groupclass) = $self->_rearrange([qw(PRIMARY
+					   SOURCE 
+					   GROUPCLASS)],@args);
+  $self->primary(defined $primary ? $primary : 'sts');
+  $self->source(defined $source ? $source : 'e-PCR');
+  $self->groupclass(defined $groupclass ? $groupclass : 'name');
+
   $self->_initialize_io(@args);
-  
   return $self;
 }
 
@@ -126,27 +144,89 @@ sub new {
 sub next_feature {
     my ($self) = @_;
     my $line = $self->_readline;
-    return undef unless defined($line);
+    return unless defined($line);
     chomp($line);
     my($seqname,$location,$mkrname, $rest) = split(/\s+/,$line,4);
     
     my ($start,$end) = ($location =~ /(\S+)\.\.(\S+)/);
 
-    # If we require that e-PCR is run with D=1 we can detect a strand
-    # for now hardcoded to 0
+    # `e-PCR -direct` results code match strand in $rest as (+) and (-).  Decode it if present.
+    my $strandsign;
+    if ($rest =~ m/^\(([+-])\)(.*)$/) {
+      ($strandsign,$rest) = ($1, $2);
+    } else {
+      $strandsign = "?";
+    }
+    my $strand = $strandsign eq "+" ? 1 :  $strandsign eq "-" ? -1 : 0;
 
-    my $strand = 0;
-    my $markerfeature = new Bio::SeqFeature::Generic ( '-start'   => $start,
-						       '-end'     => $end,
-						       '-strand'  => $strand,
-						       '-source'  => 'e-PCR',
-						       '-primary' => 'sts',
-						       '-seq_id'  => $seqname,
-						       '-tag'     => {
-							   'name'=> $mkrname,
-							   'note'=> $rest,
-						       });
+    my $markerfeature = new Bio::SeqFeature::Generic 
+	( '-start'   => $start,
+	  '-end'     => $end,
+	  '-strand'  => $strand,
+	  '-source'  => $self->source,
+	  '-primary' => $self->primary,
+	  '-seq_id'  => $seqname,
+	  '-tag'     => {
+	      $self->groupclass => $mkrname,
+	      ($rest ? ('Note'            => $rest ) : ()),
+	  });
+    #$markerfeature->add_tag_value('Note', $rest) if defined $rest;
     return $markerfeature;
+}
+
+=head2 source
+
+ Title   : source
+ Usage   : $obj->source($newval)
+ Function: 
+ Example : 
+ Returns : value of source (a scalar)
+ Args    : on set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub source{
+    my $self = shift;
+    return $self->{'_source'} = shift if @_;
+    return $self->{'_source'};
+}
+
+=head2 primary
+
+ Title   : primary
+ Usage   : $obj->primary($newval)
+ Function: 
+ Example : 
+ Returns : value of primary (a scalar)
+ Args    : on set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub primary{
+    my $self = shift;
+    return $self->{'_primary'} = shift if @_;
+    return $self->{'_primary'};
+}
+
+=head2 groupclass
+
+ Title   : groupclass
+ Usage   : $obj->groupclass($newval)
+ Function: 
+ Example : 
+ Returns : value of groupclass (a scalar)
+ Args    : on set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub groupclass{
+    my $self = shift;
+
+    return $self->{'_groupclass'} = shift if @_;
+    return $self->{'_groupclass'};
 }
 
 1;

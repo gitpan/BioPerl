@@ -5,7 +5,7 @@ use Dumpvalue;
 use Bio::SeqIO;
 use Bio::PrimarySeq;
 use Bio::Seq::PrimaryQual;
-use Bio::Seq::SeqWithQuality;
+use Bio::Seq::Quality;
 
 BEGIN {
 	# to handle systems with no installed Test module
@@ -80,7 +80,7 @@ my $subtrace_a = join(' ',@{$trace->sub_trace('a',$trace_start,$trace_end)});
 
 # whew! now given a subset of bases, get their traces....
 my $traces2 = $trace->sub_trace_object(1,5);
-
+$traces2->verbose(-1);
 
 
 # print("Attempting to synthesize traces for this object:\n");
@@ -94,7 +94,8 @@ $traces2->_synthesize_traces();
 
 
 $traces2->set_accuracies();
-# $traces2->scf_dump();
+print("This is an scf dump:\n");
+$traces2->scf_dump();
 
 sub the_old_way {
         my $start2 = 1;

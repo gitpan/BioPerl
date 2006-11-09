@@ -1,8 +1,8 @@
-# $Id: WebAgent.pm,v 1.4 2003/06/04 08:36:35 heikki Exp $
+# $Id: WebAgent.pm,v 1.12.4.3 2006/11/08 17:25:54 sendu Exp $
 #
 # BioPerl module for Bio::WebAgent
 #
-# Cared for by Heikki Lehvaslaiho, heikki@ebi.ac.uk
+# Cared for by Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 # For copyright and disclaimer see below.
 #
 
@@ -20,16 +20,16 @@ Bio::WebAgent - A base class for Web (any protocol) access
 
 =head1 DESCRIPTION
 
-This abstact superclass is a subclass of L<LWP::UserAgent> which
-allows protocol independent access of accessing remote locations over
+This abstract superclass is a subclass of L<LWP::UserAgent> which
+allows protocol independent access of remote locations over
 the Net.
 
 It takes care of error handling, proxies and various net protocols.
-BioPerl classes accessing net should inherit from it.  For details,
+BioPerl classes accessing the net should inherit from it.  For details,
 see L<LWP::UserAgent>.
 
-The interface is still eveolving. For now, I've copied over two public
-methods from Bio::DB::WebDBSeqI: delay() and delay_policy. These are
+The interface is still evolving. For now, two public methods have been
+copied from Bio::DB::WebDBSeqI: delay() and delay_policy. These are
 used to prevent overwhelming the server by rapidly repeated . Ideally
 there should be a common abstract superclass with these. See L<delay>.
 
@@ -46,21 +46,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
-Heikki Lehvaslaiho, heikki@ebi.ac.uk
+Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 
 =head1 COPYRIGHT
 
@@ -76,7 +75,8 @@ This software is provided "as is" without warranty of any kind.
 
 =head1 APPENDIX
 
-This is actually the main documentation...
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -84,29 +84,30 @@ This is actually the main documentation...
 # Let the code begin...
 
 package Bio::WebAgent;
-use vars qw(@ISA  $Revision $LAST_INVOCATION_TIME);
+use vars qw($LAST_INVOCATION_TIME);
 use strict;
-use LWP::UserAgent;
-use Bio::Root::Root;
 
-@ISA = qw(LWP::UserAgent Bio::Root::Root);
-
-BEGIN {
-    $Revision = q$Id: WebAgent.pm,v 1.4 2003/06/04 08:36:35 heikki Exp $;
-}
+use base qw(LWP::UserAgent Bio::Root::Root);
 
 
 sub new {
-    my $class = shift;
+	my $class = shift;
 
-    my $self = $class->SUPER::new();
-    while( @_ ) {
-	my $key = shift;
-        $key =~ s/^-//;
-        $self->$key(shift);
-    }
+        # We make env_proxy the default here, but it can be 
+        # over-ridden by $self->env_proxy later,
+        # or by new(env_proxy=>0) at constructor time
+        
+	my $self = $class->SUPER::new(env_proxy => 1);
 
-    return $self; # success - we hope!
+	while( @_ ) {
+		my $key = shift;
+		$key =~ s/^-//;
+		my $value = shift;
+		$self->can($key) || next;
+		$self->$key($value);
+	}
+
+	return $self; # success - we hope!
 
 }
 
@@ -124,7 +125,7 @@ sub new {
 sub url { 
    my ($self,$value) = @_;
    if( defined $value) {
-       $self->{'_url'} = $value;
+		$self->{'_url'} = $value;
    }
    return $self->{'_url'};
 }
@@ -193,7 +194,7 @@ sub sleep {
    $LAST_INVOCATION_TIME ||=  0;
    if (time - $LAST_INVOCATION_TIME < $self->delay) {
       my $delay = $self->delay - (time - $LAST_INVOCATION_TIME);
-      warn "sleeping for $delay seconds\n" if $self->verbose > 0;
+      $self->debug("sleeping for $delay seconds\n");
       sleep $delay;
    }
    $LAST_INVOCATION_TIME = time;

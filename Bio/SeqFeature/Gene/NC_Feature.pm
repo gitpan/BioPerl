@@ -1,4 +1,4 @@
-# $Id: NC_Feature.pm,v 1.8 2003/05/15 08:30:30 lapp Exp $
+# $Id: NC_Feature.pm,v 1.11.4.1 2006/10/02 23:10:28 sendu Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::NC_Feature.pm
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::SeqFeature::Gene::NC_Feature.pm - DESCRIPTION of Object
+Bio::SeqFeature::Gene::NC_Feature.pm - superclass for non-coding features
 
 =head1 SYNOPSIS
 
@@ -30,27 +30,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - David Block
 
 Email dblock@gnf.org
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -63,14 +56,12 @@ Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::SeqFeature::Gene::NC_Feature;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::SeqFeature::Generic;
 
-@ISA = qw(Bio::SeqFeature::Generic);
+use base qw(Bio::SeqFeature::Generic);
 
 sub new {
     my($class,@args) = @_;

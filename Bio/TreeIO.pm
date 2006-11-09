@@ -1,4 +1,4 @@
-# $Id: TreeIO.pm,v 1.15 2003/12/22 16:27:11 jason Exp $
+# $Id: TreeIO.pm,v 1.20.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::TreeIO
 #
@@ -39,21 +39,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
+Email jason-at-bioperl-dot-org
 
 =head1 CONTRIBUTORS
 
@@ -71,19 +70,13 @@ Internal methods are usually preceded with a _
 
 
 package Bio::TreeIO;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::Root::Root;
-use Bio::Root::IO;
-use Bio::Event::EventGeneratorI;
 use Bio::TreeIO::TreeEventBuilder;
-use Bio::Factory::TreeFactoryI;
 
-@ISA = qw(Bio::Root::Root Bio::Root::IO 
-	Bio::Event::EventGeneratorI Bio::Factory::TreeFactoryI);
+use base qw(Bio::Root::Root Bio::Root::IO Bio::Event::EventGeneratorI Bio::Factory::TreeFactoryI);
 
 =head2 new
 
@@ -110,7 +103,7 @@ sub new {
     # or do we want to call SUPER on an object if $caller is an
     # object?
     if( $class =~ /Bio::TreeIO::(\S+)/ ) {
-	my ($self) = $class->SUPER::new(@args);	
+	my ($self) = $class->SUPER::new(@args);		
 	$self->_initialize(@args);
 	return $self;
     } else { 
@@ -119,11 +112,11 @@ sub new {
 	@param{ map { lc $_ } keys %param } = values %param; # lowercase keys
 	my $format = $param{'-format'} || 
 	    $class->_guess_format( $param{'-file'} || $ARGV[0] ) ||
-		'newick';
+	    'newick';
 	$format = "\L$format";	# normalize capitalization to lower case
-
+	
 	# normalize capitalization
-	return undef unless( $class->_load_format_module($format) );
+	return unless( $class->_load_format_module($format) );
 	return "Bio::TreeIO::$format"->new(@args);
     }
 }
@@ -200,6 +193,8 @@ sub _eventHandler{
 sub _initialize {
     my($self, @args) = @_;
     $self->{'_handler'} = undef;
+    ($self->{'newline_each_node'}) = $self->_rearrange
+	([qw(NEWLINE_EACH_NODE)],@args);
     
     # initialize the IO part
     $self->_initialize_io(@args);
@@ -236,6 +231,25 @@ END
   ;
   }
   return $ok;
+}
+
+=head2 newline_each_node
+
+ Title   : newline_each_node
+ Usage   : $obj->newline_each_node($newval)
+ Function: Get/set newline each node flag which is only applicable
+           for writing tree formats for nhx and newick, will
+           print a newline after each node or paren
+ Returns : value of newline_each_node (boolean)
+ Args    : on set, new value (a boolean or undef, optional)
+
+
+=cut
+
+sub newline_each_node{
+    my $self = shift;
+    return $self->{'newline_each_node'} = shift if @_;
+    return $self->{'newline_each_node'};
 }
 
 

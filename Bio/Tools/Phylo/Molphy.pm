@@ -1,8 +1,8 @@
-# $Id: Molphy.pm,v 1.5 2003/05/17 19:03:58 heikki Exp $
+# $Id: Molphy.pm,v 1.9.4.1 2006/10/02 23:10:33 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Phylo::Molphy
 #
-# Cared for by Jason Stajich <jason@bioperl.org>
+# Cared for by Jason Stajich <jason-at-bioperl.org>
 #
 # Copyright Jason Stajich
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::Tools::Phylo::Molphy - DESCRIPTION of Object
+Bio::Tools::Phylo::Molphy - parser for Molphy output
 
 =head1 SYNOPSIS
 
@@ -71,25 +71,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
+Email jason-at-bioperl.org
 
 =head1 APPENDIX
 
@@ -103,16 +98,13 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Tools::Phylo::Molphy;
-use vars qw(@ISA);
 use strict;
 
 use Bio::Tools::Phylo::Molphy::Result;
-use Bio::Root::Root;
-use Bio::Root::IO;
 use Bio::TreeIO;
 use IO::String;
 
-@ISA = qw(Bio::Root::Root Bio::Root::IO );
+use base qw(Bio::Root::Root Bio::Root::IO);
 
 =head2 new
 
@@ -287,7 +279,7 @@ sub next_result{
 	   push @trees, $tree;
        }
    }
-   return undef unless( $parsed );
+   return unless( $parsed );
    my $result = new Bio::Tools::Phylo::Molphy::Result
        (-trees => \@trees,
 	-substitution_matrix => \%subst_matrix,

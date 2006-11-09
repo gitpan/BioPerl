@@ -1,11 +1,9 @@
 package Bio::Graphics::Glyph::xyplot;
 
 use strict;
-use Bio::Graphics::Glyph::minmax;
-use vars '@ISA';
 #use GD 'gdTinyFont';
 
-@ISA = 'Bio::Graphics::Glyph::minmax';
+use base qw(Bio::Graphics::Glyph::minmax);
 
 use constant DEFAULT_POINT_RADIUS=>1;
 
@@ -16,67 +14,156 @@ my %SYMBOLS = (
 	       point    => \&draw_point,
 	      );
 
+# Default pad_left is recursive through all parts. We certainly
+# don't want to do this for all parts in the graph.
+sub pad_left {
+  my $self = shift;
+  return 0 unless $self->level == 0;
+  return $self->SUPER::pad_left(@_);
+}
+
+# Default pad_left is recursive through all parts. We certainly
+# don't want to do this for all parts in the graph.
+sub pad_right {
+  my $self = shift;
+  return 0 unless $self->level == 0;
+  return $self->SUPER::pad_right(@_);
+}
+
 sub point_radius {
   shift->option('point_radius') || DEFAULT_POINT_RADIUS;
 }
 
-sub pad_top { 0 }
+sub pad_top {
+  shift->Bio::Graphics::Glyph::generic::pad_top(@_);
+}
+
+sub pad_bottom {
+  my $self = shift;
+  my $pad  = $self->Bio::Graphics::Glyph::generic::pad_bottom(@_);
+  if ($pad < ($self->font('gdTinyFont')->height)/4) {
+    $pad = ($self->font('gdTinyFont')->height)/4;  # extra room for the scale
+  }
+}
+
+sub default_scale
+{
+  return 'right';
+}
 
 sub draw {
   my $self = shift;
+
   my ($gd,$dx,$dy) = @_;
   my ($left,$top,$right,$bottom) = $self->calculate_boundaries($dx,$dy);
 
   my @parts = $self->parts;
+
   return $self->SUPER::draw(@_) unless @parts > 0;
 
   my ($min_score,$max_score) = $self->minmax(\@parts);
 
+  my $side = $self->_determine_side();
+
   # if a scale is called for, then we adjust the max and min to be even
   # multiples of a power of 10.
-  if ($self->option('scale')) {
+  if ($side) {
     $max_score = max10($max_score);
     $min_score = min10($min_score);
   }
 
-  my $height = $self->option('height');
+  my $height = $self->height;
   my $scale  = $max_score > $min_score ? $height/($max_score-$min_score)
                                        : 1;
+
   my $x = $dx;
-  my $y = $dy + $self->top + $self->pad_top;
+  my $y = $dy + $self->pad_top;
+  $bottom = $y+$height;
+
+  # position of "0" on the scale
+  my $y_origin = $min_score <= 0 ? $bottom - (0 - $min_score) * $scale : $bottom;
+  $y_origin    = $top if $max_score < 0;
+
+  my $clip_ok = $self->option('clip');
+  $self->{_clip_ok}   = $clip_ok;
+  $self->{_scale}     = $scale;
+  $self->{_min_score} = $min_score;
+  $self->{_max_score} = $max_score;
+  $self->{_top}       = $top;
+  $self->{_bottom}    = $bottom;
 
   # now seed all the parts with the information they need to draw their positions
   foreach (@parts) {
-    my $s = eval {$_->feature->score};
+    my $s = $_->score;
     next unless defined $s;
-    my $position      = ($s-$min_score) * $scale;
-    $_->{_y_position} = $bottom - $position;
+    $_->{_y_position}   = $self->score2position($s);
   }
 
-  my $type = $self->option('graph_type');
-  $self->_draw_histogram($gd,$x,$y)  if $type eq 'histogram';
-  $self->_draw_boxes($gd,$x,$y)      if $type eq 'boxes';
-  $self->_draw_line ($gd,$x,$y)      if $type eq 'line'
-                                       or $type eq 'linepoints';
-  $self->_draw_points($gd,$x,$y)     if $type eq 'points'
-                                       or $type eq 'linepoints';
+  my $type        = $self->option('graph_type') || $self->option('graphtype') || 'boxes';
+  my $draw_method = $self->lookup_draw_method($type);
+  $self->$draw_method($gd,$x,$y,$y_origin);
 
-  $self->_draw_scale($gd,$scale,$min_score,$max_score,$dx,$dy)      if $self->option('scale');
+  $self->_draw_scale($gd,$scale,$min_score,$max_score,$dx,$dy,$y_origin);
+  $self->draw_label(@_)       if $self->option('label');
+  $self->draw_description(@_) if $self->option('description');
+}
+
+sub lookup_draw_method {
+  my $self = shift;
+  my $type = shift;
+
+  return '_draw_histogram'            if $type eq 'histogram';
+  return '_draw_boxes'                if $type eq 'boxes';
+  return '_draw_line'                 if $type eq 'line'   or $type eq 'linepoints';
+  return '_draw_points'               if $type eq 'points' or $type eq 'linepoints';
+}
+
+sub score {
+  my $self    = shift;
+  my $s       = $self->option('score');
+  return $s   if defined $s;
+  return eval { $self->feature->score };
+}
+
+sub score2position {
+  my $self  = shift;
+  my $score = shift;
+
+  return unless defined $score;
+
+  if ($self->{_clip_ok} && $score < $self->{_min_score}) {
+    return $self->{_bottom};
+  }
+
+  elsif ($self->{_clip_ok} && $score > $self->{_max_score}) {
+    return $self->{_top};
+  }
+
+  else {
+    my $position      = ($score-$self->{_min_score}) * $self->{_scale};
+    return $self->{_bottom} - $position;
+  }
 }
 
 sub log10 { log(shift)/log(10) }
 sub max10 {
   my $a = shift;
-  $a = 1 if $a <= 0;
-  my $l=int(log10($a)); 
+  return 0 if $a==0;
+  return -min10(-$a) if $a<0;
+  return max10($a*10)/10 if $a < 1;
+  
+  my $l=int(log10($a));
   $l = 10**$l; 
-  my $r = $a/$l; 
+  my $r = $a/$l;
   return $r*$l if int($r) == $r;
   return $l*int(($a+$l)/$l);
 }
 sub min10 {
   my $a = shift;
-  $a = 1 if $a <= 0;
+  return 0 if $a==0;
+  return -max10(-$a) if $a<0;
+  return min10($a*10)/10 if $a < 1;
+  
   my $l=int(log10($a));
   $l = 10**$l; 
   my $r = $a/$l; 
@@ -115,30 +202,48 @@ sub _draw_histogram {
   my ($x3,$y3,$x4,$y4) = $parts[-1]->calculate_boundaries($left,$top);
   $gd->line($x4,$parts[-1]->{_y_position},$x4,$y4,$fgcolor);
 
-  # from left to right  -- don't like this
-  # $gd->line($x1,$y2,$x4,$y4,$fgcolor);
-
   # That's it.  Not too hard.
 }
 
 sub _draw_boxes {
   my $self = shift;
-  my ($gd,$left,$top) = @_;
+  my ($gd,$left,$top,$y_origin) = @_;
 
-  my @parts  = $self->parts;
-  my $fgcolor = $self->fgcolor;
-  my $bgcolor = $self->bgcolor;
-  my $height  = $self->height;
+  my @parts    = $self->parts;
+  my $fgcolor  = $self->fgcolor;
+  my $bgcolor  = $self->bgcolor;
+  my $lw       = $self->linewidth;
+  my $negative = $self->color('neg_color') || $bgcolor;
+  my $height   = $self->height;
+
+  my $partcolor = $self->code_option('part_color');
+  my $factory  = $self->factory;
 
   # draw each of the component lines of the histogram surface
   for (my $i = 0; $i < @parts; $i++) {
+
     my $part = $parts[$i];
     my $next = $parts[$i+1];
-    my ($x1,$y1,$x2,$y2) = $part->calculate_boundaries($left,$top);
-    $self->filled_box($gd,$x1,$part->{_y_position},$x2,$y2,$bgcolor,$fgcolor);
-    next unless $next;
-    my ($x3,$y3,$x4,$y4) = $next->calculate_boundaries($left,$top);
-    $gd->line($x2,$y2,$x3,$y4,$fgcolor) if $x2 < $x3;
+
+    my ($color,$negcolor);
+
+    # special check here for the part_color being defined so as not to introduce lots of
+    # checking overhead when it isn't
+    if ($partcolor) {
+      $color    = $factory->translate_color($factory->option($part,'part_color',0,0));
+      $negcolor = $color;
+    } else {
+      $color    = $bgcolor;
+      $negcolor = $negative;
+    }
+
+    # my ($x1,$y1,$x2,$y2) = $part->calculate_boundaries($left,$top);
+    my ($x1,$x2) = ($left+$part->{left},$left+$part->{left}+$part->{width}-1);
+    if ($part->{_y_position} < $y_origin) {
+      $self->filled_box($gd,$x1,$part->{_y_position},$x2,$y_origin,$color,$fgcolor,$lw);
+    } else {
+      $self->filled_box($gd,$x1,$y_origin,$x2,$part->{_y_position},$negcolor,$fgcolor,$lw);
+    }
   }
 
   # That's it.
@@ -159,7 +264,7 @@ sub _draw_line {
   my $current_y = $first_part->{_y_position};
 
   for my $part (@parts) {
-    my ($x1,$y1,$x2,$y2) = $part->calculate_boundaries($left,$top);
+    my ($x1,$x2) = ($left+$part->{left},$left+$part->{left}+$part->{width}-1);
     my $next_x = ($x1+$x2)/2;
     my $next_y = $part->{_y_position};
     $gd->line($current_x,$current_y,$next_x,$next_y,$fgcolor);
@@ -178,53 +283,76 @@ sub _draw_points {
   my $bgcolor = $self->bgcolor;
   my $pr      = $self->point_radius;
 
+  my $partcolor = $self->code_option('part_color');
+  my $factory  = $self->factory;
+
   for my $part (@parts) {
-    my ($x1,$y1,$x2,$y2) = $part->calculate_boundaries($left,$top);
+    my ($x1,$x2) = ($left+$part->{left},$left+$part->{left}+$part->{width}-1);
     my $x = ($x1+$x2)/2;
     my $y = $part->{_y_position};
-    $symbol_ref->($gd,$x,$y,$pr,$bgcolor);
+
+    my $color;
+    if ($partcolor) {
+      $color    = $factory->translate_color($factory->option($part,'part_color',0,0));
+    } else {
+      $color    = $bgcolor;
+    }
+
+    $symbol_ref->($gd,$x,$y,$pr,$color);
   }
+}
+
+sub _determine_side
+{
+  my $self = shift;
+  my $side = $self->option('scale');
+  return if $side eq 'none';
+  $side   ||= $self->default_scale();
+  return $side;
 }
 
 sub _draw_scale {
   my $self = shift;
-  my ($gd,$scale,$min,$max,$dx,$dy) = @_;
+  my ($gd,$scale,$min,$max,$dx,$dy,$y_origin) = @_;
   my ($x1,$y1,$x2,$y2) = $self->calculate_boundaries($dx,$dy);
 
-  my $side = $self->option('scale');
-  return if $side eq 'none';
-  $side   ||= 'both';
+  $y2 -= $self->pad_bottom - 1;
+
+  my $side = $self->_determine_side();
 
   my $fg    = $self->fgcolor;
-  my $half  = ($y1+$y2)/2;
   my $font  = $self->font('gdTinyFont');
 
   $gd->line($x1,$y1,$x1,$y2,$fg) if $side eq 'left'  || $side eq 'both';
   $gd->line($x2,$y1,$x2,$y2,$fg) if $side eq 'right' || $side eq 'both';
 
-  for ([$y1,$max],[$half,int(($max-$min)/2+0.5)]) {
+  $gd->line($x1,$y_origin,$x2,$y_origin,$fg);
+
+  my @points = ([$y1,$max],[($y1+$y2)/2,($min+$max)/2],[$y2,$min]);
+  push @points,[$y_origin,0] if ($min < 0 && $max > 0);
+
+  my $last_font_pos = -99999999999;
+
+  for (@points) {
     $gd->line($x1-3,$_->[0],$x1,$_->[0],$fg) if $side eq 'left'  || $side eq 'both';
     $gd->line($x2,$_->[0],$x2+3,$_->[0],$fg) if $side eq 'right' || $side eq 'both';
+
+    my $font_pos = $_->[0]-($font->height/2);
+
+    next unless $font_pos > $last_font_pos + $font->height; # prevent labels from clashing
     if ($side eq 'left' or $side eq 'both') {
-      #      $gd->string(gdTinyFont,
-      #		  $x1 - gdTinyFont->width * length($_->[1]) - 3,$_->[0]-(gdTinyFont->height/3),
-      #		  $_->[1],
-      #		  $fg);
-     $gd->string($font,
-		  $x1 - $font->width * length($_->[1]) - 3,$_->[0]-($font->height/3),
+      $gd->string($font,
+		  $x1 - $font->width * length($_->[1]) - 3,$font_pos,
 		  $_->[1],
 		  $fg);
     }
     if ($side eq 'right' or $side eq 'both') {
-#      $gd->string(gdTinyFont,
-#		  $x2 + 4,$_->[0]-(gdTinyFont->height/3),
-#		  $_->[1],
-#		  $fg);
       $gd->string($font,
-		  $x2 + 4,$_->[0]-($font->height/3),
+		  $x2 + 5,$font_pos,
 		  $_->[1],
 		  $fg);
     }
+    $last_font_pos = $font_pos;
   }
 }
 
@@ -267,18 +395,6 @@ sub draw_disc {
 sub draw_point {
   my ($gd,$x,$y,$pr,$color) = @_;
   $gd->setPixel($x,$y,$color);
-}
-
-sub _subseq {
-  my $class   = shift;
-  my $feature = shift;
-  return $feature->segments                if $feature->can('segments');
-  my @split = eval { my $id   = $feature->location->seq_id;
-		     my @subs = $feature->location->sub_Location;
-		     grep {$id eq $_->seq_id} @subs};
-  return @split if @split;
-  return $feature->sub_SeqFeature          if $feature->can('sub_SeqFeature');
-  return;
 }
 
 sub keyglyph {
@@ -350,15 +466,25 @@ of events would look like this:
   my $segment  = $db->segment('Chr1');
   my @features = $segment->features('repeat_density');
 
-  my $panel = Bio::Graphics::Panel->new;
+  my $panel = Bio::Graphics::Panel->new(-pad_left=>40,-pad_right=>40);
   $panel->add_track(\@features,
-                    -glyph => 'xyplot');
+                    -glyph => 'xyplot',
+  		    -graph_type=>'points',
+		    -point_symbol=>'disc',
+		    -point_radius=>4,
+		    -scale=>'both',
+		    -height=>200,
+  );
 
 If you are using Generic Genome Browser, you will add this to the
 configuration file:
 
   aggregators = repeat_density{density:repeat}
                 clone alignment etc
+
+Note that it is a good idea to add some padding to the left and right
+of the panel; otherwise the scale will be partially cut off by the
+edge of the image.
 
 =head2 OPTIONS
 
@@ -420,10 +546,95 @@ glyph-specific options:
   -graph_height Specify height of the graph   Same as the
                                               "height" option.
 
+  -neg_color   For boxes only, bgcolor for    Same as bgcolor
+               points with negative scores
+
+  -part_color  For boxes & points only,       none
+               bgcolor of each part (should
+               be a callback). Supersedes
+               -neg_color.
+
+  -clip        If min_score and/or max_score  false
+               are manually specified, then
+               setting this to true will
+               cause values outside the
+               range to be clipped.
+
 Note that when drawing scales on the left or right that the scale is
 actually drawn a few pixels B<outside> the boundaries of the glyph.
 You may wish to add some padding to the image using -pad_left and
 -pad_right when you create the panel.
+
+The B<-part_color> option can be used to color each part of the
+graph. Only the "boxes", "points" and "linepoints" styles are
+affected by this.  Here's a simple example:
+
+  $panel->add_track->(\@affymetrix_data,
+                      -glyph      => 'xyplot',
+                      -graph_type => 'boxes',
+                      -part_color => sub {
+                                   my $score = shift->score;
+	                           return 'red' if $score < 0;
+	                           return 'lightblue' if $score < 500;
+                                   return 'blue'      if $score >= 500;
+                                  }
+                      );
+
+=head2 METHODS
+
+For those developers wishing to derive new modules based on this
+glyph, the main method to override is:
+
+=over 4
+
+=item 'method_name' = $glyph-E<gt>lookup_draw_method($type)
+
+This method accepts the name of a graph type (such as 'histogram') and
+returns the name of a method that will be called to draw the contents
+of the graph, for example '_draw_histogram'. This method will be
+called with three arguments:
+
+   $self->$draw_method($gd,$left,$top,$y_origin)
+
+where $gd is the GD object, $left and $top are the left and right
+positions of the whole glyph (which includes the scale and label), and
+$y_origin is the position of the zero value on the y axis (in
+pixels). By the time this method is called, the y axis and labels will
+already have been drawn, and the scale of the drawing (in pixels per
+unit score) will have been calculated and stored in
+$self-E<gt>{_scale}. The y position (in pixels) of each point to graph
+will have been stored into the part, as $part-E<gt>{_y_position}. Hence
+you could draw a simple scatter plot with this code:
+
+ sub lookup_draw_method {
+    my $self = shift;
+    my $type = shift;
+    if ($type eq 'simple_scatterplot') {
+      return 'draw_points';
+    } else {
+      return $self->SUPER::lookup_draw_method($type);
+    }
+ }
+
+ sub draw_points {
+  my $self = shift;
+  my ($gd,$left,$top) = @_;
+  my @parts   = $self->parts;
+  my $bgcolor = $self->bgcolor;
+
+  for my $part (@parts) {
+    my ($x1,$y1,$x2,$y2) = $part->calculate_boundaries($left,$top);
+    my $x = ($x1+$x2)/2;  # take center
+    my $y = $part->{_y_position};
+    $gd->setPixel($x,$y,$bgcolor);
+ }
+
+=item $y_position = $self-E<gt>score2position($score)
+
+Translate a score into a y pixel position, obeying clipping rules and
+min and max values.
+
+=back
 
 =head1 BUGS
 

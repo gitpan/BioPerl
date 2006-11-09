@@ -2,7 +2,7 @@
 # PACKAGE : Bio::SeqIO::tab
 # AUTHOR  : Philip Lijnzaad <p.lijnzaad@med.uu.nl>
 # CREATED : Feb 6 2003
-# REVISION: $Id: tab.pm,v 1.1 2003/04/17 12:43:57 heikki Exp $
+# REVISION: $Id: tab.pm,v 1.6.4.1 2006/10/02 23:10:30 sendu Exp $
 #
 # Copyright (c) This module is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
@@ -63,22 +63,20 @@ Or chop up a huge file with sequences into smaller chunks with:
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
-to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://www.bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.
+Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
+  http://bugzilla.bioperl.org
 
 =head1 AUTHORS
 
@@ -96,12 +94,10 @@ Internal methods are usually preceded with a _
 
 package Bio::SeqIO::tab;
 use strict;
-use vars qw(@ISA);
 
-use Bio::SeqIO;
 use Bio::Seq;
 
-@ISA = qw(Bio::SeqIO);
+use base qw(Bio::SeqIO);
 
 =head2 next_seq
 
@@ -120,9 +116,9 @@ sub next_seq{
    ## grabbing it should be easy :)
 
    my $nextline = $self->_readline();
-   chomp($nextline);
-   if( !defined $nextline ){ return undef; }
-   if ($nextline =~ /^([^\t]*)\t(.*)/) { 
+   chomp($nextline) if defined $nextline;
+   return unless defined $nextline;
+   if ($nextline =~ /^([^\t]*)\t(.*)/) {
        my ($id, $seq)=($1, uc($2));
        $seq =~ s/\W//g;
        return  Bio::Seq->new(-display_id=> $id, -seq => $seq);
@@ -145,7 +141,10 @@ sub next_seq{
 sub write_seq {
    my ($self,@seq) = @_;
    foreach (@seq) {
-     $self->_print($_->display_id(), "\t",$_->seq, "\n") or return;
+       if ($_->display_id() =~ /\t/) {
+           $self->throw("display_id [".$_->display_id()."] contains TAB -- illegal in tab format");
+       }
+       $self->_print($_->display_id(), "\t",$_->seq, "\n") or return;
    }
    return 1;
 }

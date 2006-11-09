@@ -1,4 +1,4 @@
-# $Id: QualI.pm,v 1.6 2003/06/04 08:36:43 heikki Exp $
+# $Id: QualI.pm,v 1.11.4.1 2006/10/02 23:10:27 sendu Exp $
 #
 # BioPerl module for Bio::Seq::QualI
 #
@@ -67,17 +67,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                      - General discussion
-  http://bio.perl.org/MailList.html          - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Chad Matsalla
 
@@ -98,12 +97,10 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Seq::QualI;
-use vars qw(@ISA);
 use strict;
 use Carp;
-use Bio::Root::RootI;
 
-@ISA = qw(Bio::Root::RootI );
+use base qw(Bio::Root::RootI);
 
 =head1 Implementation Specific Functions
 
@@ -340,7 +337,7 @@ are encouraged to override these methods
 sub revcom{
    my ($self) = @_;
 		# this is the cleanest way
-	my @qualities = @{$self->seq()};	
+	my @qualities = @{$self->qual()};
 	my @reversed_qualities = reverse(@qualities);
    my $seqclass;
    if($self->can_call_new()) {

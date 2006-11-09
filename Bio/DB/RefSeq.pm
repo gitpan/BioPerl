@@ -1,9 +1,9 @@
 #
-# $Id: RefSeq.pm,v 1.7 2003/07/27 19:46:44 jason Exp $
+# $Id: RefSeq.pm,v 1.13.4.1 2006/10/02 23:10:15 sendu Exp $
 #
 # BioPerl module for Bio::DB::EMBL
 #
-# Cared for by Heikki Lehvaslaiho <Heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Jason Stajich
 #
@@ -44,7 +44,7 @@ Bio::DB::RefSeq - Database object interface for RefSeq retrieval
   # and request Fasta sequence
   $db = new Bio::DB::RefSeq(-retrievaltype => 'tempfile' ,
  			       -format => 'fasta');
-  my $seqio = $db->get_Stream_by_batch(['NM_006732', 'NM_005252'] );
+  my $seqio = $db->get_Stream_by_id(['NM_006732', 'NM_005252'] );
   while( my $seq  =  $seqio->next_seq ) {
  	print "seqid is ", $seq->id, "\n";
   }
@@ -75,21 +75,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email Heikki Lehvaslaiho E<lt>Heikki@ebi.ac.ukE<gt>
+Email Heikki Lehvaslaiho E<lt>heikki-at-bioperl-dot-orgE<gt>
 
 =head1 APPENDIX
 
@@ -102,12 +101,11 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::DB::RefSeq;
 use strict;
-use vars qw(@ISA $MODVERSION %HOSTS  %FORMATMAP $DEFAULTFORMAT);
+use vars qw($MODVERSION %HOSTS %FORMATMAP $DEFAULTFORMAT);
 
 $MODVERSION = '0.1';
-use Bio::DB::DBFetch;
 
-@ISA = qw(Bio::DB::DBFetch);
+use base qw(Bio::DB::DBFetch);
 
 BEGIN {
     # you can add your own here theoretically.

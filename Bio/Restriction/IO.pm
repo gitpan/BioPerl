@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.4 2003/12/15 11:50:38 heikki Exp $
+# $Id: IO.pm,v 1.12.4.1 2006/10/02 23:10:23 sendu Exp $
 #
 # BioPerl module for Bio::Restriction::IO
 #
@@ -20,45 +20,41 @@ Bio::Restriction::IO - Handler for sequence variation IO Formats
 
     $in  = Bio::Restriction::IO->new(-file => "inputfilename" ,
                                      -format => 'withrefm');
-    $out = Bio::Restriction::IO->new(-file => ">outputfilename" ,
-                                     -format => 'bairoch');
     my $res = $in->read; # a Bio::Restriction::EnzymeCollection
-    $out->write($res);
-
-  # or
-
-  #    use Bio::Restriction::IO;
-  #
-  #    #input file format can be read from the file extension (dat|xml)
-  #    $in  = Bio::Restriction::IO->newFh(-file => "inputfilename");
-  #    $out = Bio::Restriction::IO->newFh('-format' => 'xml');
-  #
-  #    # World's shortest flat<->xml format converter:
-  #    print $out $_ while <$in>;
 
 =head1 DESCRIPTION
 
-Bio::Restriction::IO is a handler module for the formats in the
-Restriction IO set (eg, Bio::Restriction::IO::XXX). It is the
+L<Bio::Restriction::IO> is a handler module for the formats in the
+Restriction IO set, e.g. C<Bio::Restriction::IO::xxx>. It is the
 officially sanctioned way of getting at the format objects, which most
 people should use.
 
 The structure, conventions and most of the code is inherited from
-L<Bio::SeqIO> module. The main difference is that instead of using
-methods next_seq and write_seq, you drop '_seq' from the method names.
+L<Bio::SeqIO>. The main difference is that instead of using methods
+C<next_seq>, you drop C<_seq> from the method name.
 
-Also, instead of dealing only with individual Bio::Restriction::Enzyme
-objects, write() will go through all enzymes from a
-Bio::Restriction::EnzymeCollection objects and read() will slurp in all
-enzymes into a Collection.
+Also, instead of dealing only with individual L<Bio::Restriction::Enzyme>
+objects, C<read()> will slurp in all enzymes into a 
+L<Bio::Restriction::EnzymeCollection> object.
 
-For more details, see documentation in Bio::SeqIO.
+For more details, see documentation in L<Bio::SeqIO>.
 
 =head1 TO DO
 
-This inherits from SeqIOfor convinience sake. Get rid of it by copying
-relevant methods in. Bio::SeqIO has too many sequence IO specific
-tweeks in it.
+At the moment, these can be use mainly to get a custom set if enzymes in
+C<withrefm> or C<itype2> formats into L<Bio::Restriction::Enzyme> or
+L<Bio::Restriction::EnzymeCollection> objects.  Using C<bairoch> format is
+highly experimental and is not recommmended at this time.
+
+This class inherits from L<Bio::SeqIO> for convenience sake, though this should
+inherit from L<Bio::Root::Root>.  Get rid of L<Bio::SeqIO> inheritance by
+copying relevant methods in.
+
+C<write()> methods are currently not implemented for any format except C<base>.
+Using C<write()> even with C<base> format is not recommended as it does not
+support multicut/multisite enzyme output.
+
+Should additional formats be supported (such as XML)?
 
 =head1 SEE ALSO
 
@@ -74,17 +70,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                     - General discussion
-  http://bio.perl.org/MailList.html         - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -92,7 +87,7 @@ Rob Edwards, redwards@utmem.edu
 
 =head1 CONTRIBUTORS
 
-Heikki Lehvaslaiho, heikki@ebi.ac.uk
+Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -106,9 +101,8 @@ methods. Internal methods are usually preceded with a _
 package Bio::Restriction::IO;
 
 use strict;
-use vars qw(@ISA %FORMAT);
-use Bio::SeqIO;
-@ISA = 'Bio::SeqIO';
+use vars qw(%FORMAT);
+use base qw(Bio::SeqIO);
 
 %FORMAT = (
             'itype2'    => 'itype2',
@@ -148,7 +142,7 @@ sub new {
              || 'base';
    $format = "\L$format"; # normalize capitalization to lower case
 
-   return undef unless $class->_load_format_module($format);
+   return unless $class->_load_format_module($format);
    return "Bio::Restriction::IO::$format"->new(%param);
 }
 
@@ -184,17 +178,17 @@ END
 
 sub read {
    my ($self, $seq) = @_;
-   $self->throw("Not implemented");
+   $self->throw_not_implemented();
 }
 
 sub next {
    my ($self, $seq) = @_;
-   $self->throw("Not implemented");
+   $self->throw_not_implemented();
 }
 
 sub next_seq {
    my ($self, $seq) = @_;
-   $self->throw("Not implemented");
+   $self->throw_not_implemented();
 }
 
 =head2 write
@@ -203,7 +197,7 @@ sub next_seq {
  Usage   : $stream->write($seq)
  Function: writes the $seq object into the stream
  Returns : 1 for success and 0 for error
- Args    : Bio::Restriction::EnzymeCOllection object
+ Args    : Bio::Restriction::EnzymeCollection object
 
 =cut
 
@@ -234,8 +228,8 @@ sub write_seq {
 sub _guess_format {
    my $class = shift;
    return  unless $_ = shift;
-   return 'flat'     if /\.dat$/i;
-   return 'xml'     if /\.xml$/i;
+   return 'flat' if /\.dat$/i;
+   return 'xml'  if /\.xml$/i;
 }
 
 

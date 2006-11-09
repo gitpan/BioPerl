@@ -1,8 +1,8 @@
-# $Id: SearchIO.pm,v 1.31 2003/11/25 17:54:00 jason Exp $
+# $Id: SearchIO.pm,v 1.39.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::SearchIO
 #
-# Cared for by Jason Stajich <jason@bioperl.org>
+# Cared for by Jason Stajich <jason-at-bioperl.org>
 #
 # Copyright Jason Stajich
 #
@@ -12,7 +12,8 @@
 
 =head1 NAME
 
-Bio::SearchIO - Driver for parsing Sequence Database Searches (Blast,FASTA,...)
+Bio::SearchIO - Driver for parsing Sequence Database Searches 
+(BLAST, FASTA, ...)
 
 =head1 SYNOPSIS
 
@@ -42,6 +43,24 @@ Once you get a SearchIO object, calling next_result() gives you back
 a L<Bio::Search::Result::ResultI> compliant object, which is an object that
 represents one Blast/Fasta/HMMER whatever report.
 
+A list of module names and formats is below:
+
+  blast      BLAST (WUBLAST, NCBIBLAST,bl2seq)   
+  fasta      FASTA -m9 and -m0
+  blasttable BLAST -m9 or -m8 output (NCBI not WUBLAST tabular)
+  megablast  MEGABLAST
+  psl        UCSC PSL format
+  waba       WABA output
+  axt        AXT format
+  sim4       Sim4
+  hmmer      HMMER hmmpfam and hmmsearch
+  exonerate  Exonerate CIGAR and VULGAR format
+  blastxml   NCBI BLAST XML
+  wise       Genewise -genesf format
+
+Also see the SearchIO HOWTO:
+http://bioperl.open-bio.org/wiki/HOWTO:SearchIO
+
 =head1 FEEDBACK
 
 =head2 Mailing Lists
@@ -50,26 +69,21 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich & Steve Chervitz
 
-Email jason@bioperl.org
-Email sac@bioperl.org
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
+Email jason-at-bioperl.org
+Email sac-at-bioperl.org
 
 =head1 APPENDIX
 
@@ -84,14 +98,10 @@ Internal methods are usually preceded with a _
 
 package Bio::SearchIO;
 use strict;
-use vars qw(@ISA);
 
 # Object preamble - inherits from Bio::Root::IO
 
-use Bio::Root::IO;
-use Bio::Event::EventGeneratorI;
 use Bio::SearchIO::SearchResultEventBuilder;
-use Bio::AnalysisParserI;
 
 # Special exception class for exceptions during parsing.
 # End users should not ever see these.
@@ -100,7 +110,7 @@ use Bio::AnalysisParserI;
 
 use Symbol();
 
-@ISA = qw( Bio::Root::IO Bio::Event::EventGeneratorI Bio::AnalysisParserI);
+use base qw(Bio::Root::IO Bio::Event::EventGeneratorI Bio::AnalysisParserI);
 
 =head2 new
 
@@ -163,7 +173,7 @@ sub new {
     # normalize capitalization to lower case
     $format = "\L$format";
     
-    return undef unless( $class->_load_format_module($format) );
+    return unless( $class->_load_format_module($format) );
     return "Bio::SearchIO::${format}"->new(@args);
   }
 }

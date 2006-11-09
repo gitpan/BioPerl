@@ -1,4 +1,4 @@
-# $Id: HitTableWriter.pm,v 1.14 2002/12/24 15:46:47 jason Exp $
+# $Id: HitTableWriter.pm,v 1.20.4.1 2006/10/02 23:10:27 sendu Exp $
 
 =head1 NAME
 
@@ -111,6 +111,8 @@ is not specified, this list, in this order, will be used as the default.
     ambiguous_aln          # Ambiguous alignment indicator ('qs', 'q', 's')
     hit_description        # Full description of the hit sequence
     query_description      # Full description of the query sequence
+    rank                   # The rank order of the hit
+    num_hits               # Number of hits for the query finding this hit
 
 Items marked with a C<*> report data summed across all HSPs
 after tiling them to avoid counting data from overlapping regions
@@ -133,17 +135,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules.  Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-    bioperl-l@bioperl.org              - General discussion
-    http://bioperl.org/MailList.html   - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution. Bug reports can be submitted via email
-or the web:
+the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-    bioperl-bugs@bio.perl.org                   
-    http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR 
 
@@ -175,10 +176,8 @@ L<Bio::SearchIO::Writer::ResultTableWriter>
 package Bio::SearchIO::Writer::HitTableWriter;
 
 use strict;
-use Bio::SearchIO::Writer::ResultTableWriter;
 
-use vars qw( @ISA );
-@ISA = qw( Bio::SearchIO::Writer::ResultTableWriter );
+use base qw(Bio::SearchIO::Writer::ResultTableWriter);
 
 
 # Array fields: column, object, method[/argument], printf format,
@@ -221,6 +220,8 @@ my %column_map = (
                   'ambiguous_aln'         => ['28', 'hit', 'ambiguous_aln', 's', 'AMBIG'],
                   'hit_description'       => ['29', 'hit', 'description', 's', 'DESC_H'],
                   'query_description'     => ['30', 'result', 'query_description', 's', 'DESC_Q'],
+                  'rank'                  => ['31', 'hit', 'rank', 's', 'RANK'],
+                  'num_hits'              => ['32', 'result', 'num_hits', 's', 'NUM_HITS'],
                  );
 
 sub column_map { return %column_map }

@@ -21,13 +21,14 @@
 #   Bio::SearchIO::psiblast
 #
 # Author: Steve Chervitz <sac@bioperl.org>
-# Revision: $Id: psiblast_features.pl,v 1.5 2003/02/25 10:02:08 bosborne Exp $
+# Revision: $Id: psiblast_features.pl,v 1.6 2004/02/21 10:50:34 sac Exp $
 
 use strict;
 use lib '../../';
 use Bio::SearchIO;
 
 my $in = Bio::SearchIO->new( -format => 'psiblast',
+                             -fh => \*ARGV,
 			     -signif => 0.1, 
 			     -verbose => 0 );
 my @hitless_reports = ();

@@ -1,4 +1,4 @@
-# $Id: QueryI.pm,v 1.2 2003/06/04 08:36:37 heikki Exp $
+# $Id: QueryI.pm,v 1.5.4.1 2006/10/02 23:10:15 sendu Exp $
 #
 # BioPerl module for Bio::DB::QueryI.pm
 #
@@ -54,18 +54,16 @@ your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation
 is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
-Report bugs to the Bioperl bug tracking system to
-help us keep track the bugs and their resolution.
-Bug reports can be submitted via email or the
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Lincoln Stein
 
@@ -83,11 +81,9 @@ preceded with a _
 
 package Bio::DB::QueryI;
 use strict;
-use Bio::Root::RootI;
 
-use vars qw(@ISA);
 
-@ISA = qw(Bio::Root::RootI);
+use base qw(Bio::Root::RootI);
 
 =head2 new
 

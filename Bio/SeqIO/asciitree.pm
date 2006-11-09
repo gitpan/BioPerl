@@ -1,4 +1,4 @@
-# $Id: asciitree.pm,v 1.2 2003/12/19 00:21:50 heikki Exp $
+# $Id: asciitree.pm,v 1.4.4.1 2006/10/02 23:10:28 sendu Exp $
 #
 # BioPerl module for Bio::SeqIO::asciitree
 #
@@ -25,7 +25,7 @@ Bio::SeqIO::asciitree - asciitree sequence input/output stream
                                  -format => 'asciitree');
 
     while ( my $seq = $instream->next_seq() ) {
-	$outstream->write_seq();
+	    $outstream->write_seq();
     }
 
 
@@ -45,16 +45,14 @@ Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
-  http://www.bioperl.org/MailList.shtml  - About the mailing lists
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Chris Mungall
 
@@ -70,17 +68,15 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::SeqIO::asciitree;
-use vars qw(@ISA);
 use strict;
 
-use Bio::SeqIO;
 
-@ISA = qw(Bio::SeqIO);
+use base qw(Bio::SeqIO);
 
 sub _initialize {
     my($self,@args) = @_;
-    
-    $self->SUPER::_initialize(@args); 
+
+    $self->SUPER::_initialize(@args);
     # hash for functions for decoding keys.
 }
 
@@ -88,8 +84,8 @@ sub _initialize {
 
  Title   : show_detail
  Usage   : $obj->show_detail($newval)
- Function: 
- Example : 
+ Function:
+ Example :
  Returns : value of show_detail (a scalar)
  Args    : on set, new value (a scalar or undef, optional)
 
@@ -167,9 +163,9 @@ sub write_indented_sf {
 		my @vals = $sf->get_tag_values($tag);
 		foreach my $val (@vals) {
 		    $val = "\"$val\"";
-		    push(@lines, 
+		    push(@lines,
 			 "$tab/$tag=");
-		    while (my $cut = 
+		    while (my $cut =
 			   substr($val, 0, $COLS - length($lines[-1]), '')) {
 			$lines[-1] .= "$cut";
 			if ($val) {
@@ -180,13 +176,13 @@ sub write_indented_sf {
 	    }
 	}
 	my $detail = join("\n", @lines);
-	
+
         my @sub_sfs = $sf->get_SeqFeatures;
 	my $locstr = '';
 	if (!@sub_sfs) {
 	    $locstr = $self->_locstr($sf);
 	}
-        my $col1 = sprintf("%s%s $label", 
+        my $col1 = sprintf("%s%s $label",
 			   '  ' x $indent, $sf->primary_tag);
 	my $line = sprintf("%-50s %s\n",
 			   substr($col1, 0, 50), $locstr);
@@ -212,12 +208,12 @@ sub _locstr {
         my @locs = ($sf->location);
         if ($sf->location->isa("Bio::Location::SplitLocationI")) {
             @locs = $sf->location->each_Location;
-            $splitlocstr = "; SPLIT: ".join(" ", 
+            $splitlocstr = "; SPLIT: ".join(" ",
                                           map {$self->_locstr($_)} @locs);
-            
+
         }
     }
-    
+
     return
       sprintf("%d..%d[%s] $splitlocstr", $sf->start, $sf->end, $ss);
 }

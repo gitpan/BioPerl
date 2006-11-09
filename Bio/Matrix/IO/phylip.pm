@@ -1,4 +1,4 @@
-# $Id: phylip.pm,v 1.1 2003/08/08 20:47:31 jason Exp $
+# $Id: phylip.pm,v 1.3.4.1 2006/10/02 23:10:21 sendu Exp $
 #
 # BioPerl module for Bio::Matrix::IO::phylip
 #
@@ -33,8 +33,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -42,17 +42,11 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
 Email jason-at-bioperl-dot.org
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -66,15 +60,14 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Matrix::IO::phylip;
-use vars qw(@ISA $DEFAULTPROGRAM);
+use vars qw($DEFAULTPROGRAM);
 use strict;
 
 $DEFAULTPROGRAM = 'phylipdist';
 
-use Bio::Matrix::IO;
 use Bio::Matrix::PhylipDist;
 
-@ISA = qw( Bio::Matrix::IO );
+use base qw(Bio::Matrix::IO);
 
 =head2 new
 

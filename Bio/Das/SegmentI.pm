@@ -1,4 +1,4 @@
-# $Id: SegmentI.pm,v 1.8 2003/06/04 08:36:39 heikki Exp $
+# $Id: SegmentI.pm,v 1.11.4.1 2006/10/02 23:10:17 sendu Exp $
 #
 # BioPerl module for Bio::Das::SegmentI
 #
@@ -77,11 +77,10 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Lincoln Stein
 
@@ -100,11 +99,9 @@ methods. Internal methods are usually preceded with a _
 package Bio::Das::SegmentI;
 use strict;
 
-use vars qw(@ISA);
-use Bio::Root::RootI;
 
 # Object preamble - inherits from Bio::Root::RootI;
-@ISA = qw(Bio::Root::RootI);
+use base qw(Bio::Root::RootI);
 
 =head2 seq_id
 
@@ -333,7 +330,7 @@ finding overlapping features.
 
 sub overlapping_features {
   my $self = shift;
-  my @args = $_[0] !~ /^-/ ? (@_,         -rangetype=>'overlaps')
+  my @args = $_[0] =~ /^-/ ? (@_,         -rangetype=>'overlaps')
                            : (-types=>\@_,-rangetype=>'overlaps');
   $self->features(@args);
 }
@@ -354,7 +351,7 @@ a range type of 'contained'.
 
 sub contained_features {
   my $self = shift;
-  my @args = $_[0] !~ /^-/ ? (@_,         -rangetype=>'contained')
+  my @args = $_[0] =~ /^-/ ? (@_,         -rangetype=>'contained')
                            : (-types=>\@_,-rangetype=>'contained');
   $self->features(@args);
 }
@@ -375,7 +372,7 @@ a range type of 'contained_in'.
 
 sub contained_in {
   my $self = shift;
-  my @args = $_[0] !~ /^-/ ? (@_,         -rangetype=>'contained_in')
+  my @args = $_[0] =~ /^-/ ? (@_,         -rangetype=>'contained_in')
                            : (-types=>\@_,-rangetype=>'contained_in');
   $self->features(@args);
 }

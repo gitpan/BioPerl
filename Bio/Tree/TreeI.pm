@@ -1,4 +1,4 @@
-# $Id: TreeI.pm,v 1.13 2003/07/27 18:52:03 jason Exp $
+# $Id: TreeI.pm,v 1.17.4.1 2006/10/02 23:10:37 sendu Exp $
 #
 # BioPerl module for Bio::Tree::TreeI
 #
@@ -38,8 +38,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -47,7 +47,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -55,8 +55,9 @@ Email jason@bioperl.org
 
 =head1 CONTRIBUTORS
 
-Aaron Mackey amackey@virginia.edu
-Elia Stupka, elia@fugu-sg.org
+Aaron Mackey, amackey@virginia.edu
+Elia Stupka,  elia@fugu-sg.org
+Sendu Bala,   bix@sendu.me.uk
 
 =head1 APPENDIX
 
@@ -70,11 +71,9 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Tree::TreeI;
-use Bio::Tree::NodeI;
-use vars qw(@ISA);
 use strict;
 
-@ISA = qw(Bio::Tree::NodeI);
+use base qw(Bio::Tree::NodeI);
 
 =head2 get_nodes
 
@@ -112,11 +111,9 @@ sub get_root_node{
 
  Title   : number_nodes
  Usage   : my $size = $tree->number_nodes
- Function: Returns the number of nodes
- Example :
- Returns : 
- Args    :
-
+ Function: Find the number of nodes in the tree.
+ Returns : int
+ Args    : none
 
 =cut
 
@@ -124,7 +121,7 @@ sub number_nodes{
    my ($self) = @_;
    my $root = $self->get_root_node;
    if( defined $root && $root->isa('Bio::Tree::NodeI'))  {
-       return $root->descendent_count;
+       return ($root->descendent_count + 1);
    }
    return 0;
 }
@@ -211,7 +208,7 @@ sub score{
 
 sub get_leaf_nodes{
    my ($self) = @_;
-   return grep { $_->is_Leaf() } $self->get_nodes(-sortby => 'creation');
+   return grep { $_->is_Leaf() } $self->get_nodes(-sortby  => 'none');
 }
 
 

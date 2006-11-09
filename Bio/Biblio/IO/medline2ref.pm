@@ -1,4 +1,4 @@
-# $Id: medline2ref.pm,v 1.11 2003/06/04 08:36:36 heikki Exp $
+# $Id: medline2ref.pm,v 1.15.4.1 2006/10/02 23:10:13 sendu Exp $
 #
 # BioPerl module Bio::Biblio::IO::medline2ref.pm
 #
@@ -27,17 +27,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -68,20 +67,14 @@ with an underscore _.
 package Bio::Biblio::IO::medline2ref;
 
 use strict;
-use vars qw(@ISA $Revision);
 
-use Bio::Root::Root;
 use Bio::Biblio::MedlineJournal;
 use Bio::Biblio::MedlineBook;
 use Bio::Biblio::Provider;
 use Bio::Biblio::Person;
 use Bio::Biblio::Organisation;
 
-@ISA = qw(Bio::Root::Root);
-
-BEGIN {
-    $Revision = q$Id: medline2ref.pm,v 1.11 2003/06/04 08:36:36 heikki Exp $;
-}
+use base qw(Bio::Root::Root);
 
 # -----------------------------------------------------------------------------
 sub new {
@@ -299,7 +292,7 @@ sub _new_instance {
 }
 
 #
-# see OpenBQS specification (http://industry.ebi.ac.uk/openBQS) how
+# see OpenBQS specification (http://www.ebi.ac.uk/~senger/openbqs/) how
 # a date should be coded;
 # TBD: this can be improved - checking is missing, timezones,
 #      converting to UTC...

@@ -1,8 +1,8 @@
-# $Id: fasta.pm,v 1.41 2003/12/13 20:57:15 jason Exp $
+# $Id: fasta.pm,v 1.50.4.1 2006/10/02 23:10:26 sendu Exp $
 #
 # BioPerl module for Bio::SearchIO::fasta
 #
-# Cared for by Jason Stajich <jason@bioperl.org>
+# Cared for by Jason Stajich <jason-at-bioperl.org>
 #
 # Copyright Jason Stajich
 #
@@ -21,12 +21,20 @@ Bio::SearchIO::fasta - A SearchIO parser for FASTA results
    my $searchio = new Bio::SearchIO(-format => 'fasta',
 				    -file   => 'report.FASTA');
    while( my $result = $searchio->next_result ) {
-	# ....
+	# ... do what you would normally doi with Bio::SearchIO.
    }
 
 =head1 DESCRIPTION
 
-This object contains the event based parsing code for FASTA format reports.
+This object contains the event based parsing code for FASTA format
+reports.  It creates L<Bio::Search::HSP::FastaHSP> objects instead of
+L<Bio::Search::HSP::GenericHSP> for the HSP objects. 
+
+This module will parse -m 9 -d 0 output as well as default m 1 output
+from FASTA as well as SSEARCH.
+
+Also see the SearchIO HOWTO:
+L<http://bioperl.open-bio.org/wiki/HOWTO:SearchIO>.
 
 =head1 FEEDBACK
 
@@ -36,27 +44,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
-=head1 AUTHOR - Jason Stajich
+=head1 AUTHOR - Jason Stajich, Aaron Mackey
 
-Email jason@bioperl.org
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
+Email jason-at-bioperl.org
 
 =head1 APPENDIX
 
@@ -70,12 +71,11 @@ Internal methods are usually preceded with a _
 
 
 package Bio::SearchIO::fasta;
-use vars qw(@ISA %MODEMAP %MAPPING $IDLENGTH);
+use vars qw(%MODEMAP %MAPPING $IDLENGTH);
 use strict;
 
 # Object preamble - inherits from Bio::Root::RootI
 
-use Bio::SearchIO;
 use Bio::Factory::ObjectFactory;
 use POSIX;
 
@@ -154,7 +154,7 @@ BEGIN {
 }
 
 
-@ISA = qw(Bio::SearchIO );
+use base qw(Bio::SearchIO);
 
 =head2 new
 
@@ -195,6 +195,8 @@ sub _initialize {
 
 sub next_result{
    my ($self) = @_;
+   local $/ = "\n";
+   local $_;
 
    my $data = '';
    my $seentop = 0;
@@ -347,14 +349,14 @@ sub next_result{
 	       my %data;
 	       @data{@labels} = splice(@line, @line - @labels);
 	       if ($line[-1] =~ m/\[([1-6rf])\]/o) {
-               my $fr = $1;
-               $data{lframe} = ($fr =~ /\d/o ?
-                                ($fr <= 3   ? "+$fr" : "-@{[$fr-3]}") :
-                                ($fr eq 'f' ? '+1'  : '-1')
-                               );
-               pop @line;
+		   my $fr = $1;
+		   $data{lframe} = ($fr =~ /\d/o ?
+				    ($fr <= 3   ? "+$fr" : "-@{[$fr-3]}") :
+				    ($fr eq 'f' ? '+1'  : '-1')
+				    );
+		   pop @line;
 	       } else {
-               $data{lframe} = '0';
+		   $data{lframe} = '0';
 	       }
 
 	       if ($line[-1] =~ m/^\(?(\d+)\)$/) {
@@ -424,14 +426,13 @@ sub next_result{
 	   $_ = $self->_readline();
 	   my ($score,$bits,$e) = /Z-score: \s* (\S+) \s*
                                (?: bits: \s* (\S+) \s+ )?
-                               (?: E|expect ) \s* \(\) :? \s*(\S+)/x;
+                               (?: E|expect ) \s* \(\) :? \s*(\S+)/ox;
 	   $bits = $score unless defined $bits;
 
 	   my $v = shift @hit_signifs;
 	   if( defined $v ) {
 	       @{$v}{qw(evalue bits z-sc)} = ($e, $bits, $score);
 	   }
-
 	   $self->element({'Name' => 'Hit_signif',
 			   'Data' => $v ? $v->{evalue} : $e });
 	   $self->element({'Name' => 'Hit_score',
@@ -445,12 +446,12 @@ sub next_result{
 	   $self->element({'Name' => 'Hsp_bit-score',
 			   'Data' => $v ? $v->{bits} : $bits });
 	   $_ = $self->_readline();
-	   if( /Smith-Waterman score:\s*(\d+)/ ) {
+	   if( s/Smith-Waterman score:\s*(\d+)\;?// ) {
 	       $self->element({'Name' => 'Hsp_sw-score',
 			       'Data' => $1});
 	   }
-	   if( / (\S+)\% \s* identity
-                 (?:\s* \(\s*(\S+)\% \s* ungapped \) )?
+	   if( / (\d*\.?\d+)\% \s* identity
+                 (?:\s* \(\s*(\S+)\% \s* (?:ungapped|similar) \) )?
                  \s* in \s* (\d+) \s+ (?:aa|nt) \s+ overlap \s*
                  \( (\d+) \- (\d+) : (\d+) \- (\d+) \)
                /x ) {
@@ -566,7 +567,12 @@ sub next_result{
 		   $self->element({'Name' => 'Hsp_gaps', 'Data' => $h->{'%_gid'} }) if exists $h->{'%_gid'};
 		   $self->element({'Name' => 'Hsp_identity', 'Data' => POSIX::ceil($h->{'%_id'} * $h->{alen}) })
 		       if (exists $h->{'%_id'} && exists $h->{alen});
-		   $self->element({'Name' => 'Hsp_positive', 'Data' => 100 * $h->{'%_id'} }) if exists $h->{'%_id'};
+		   if( exists $h->{'%_gid'} ) { 
+		       $self->element({'Name' => 'Hsp_positive', 'Data' => POSIX::ceil($h->{'%_gid'} * $h->{alen})}) if exists $h->{'%_gid'} && exists $h->{alen};
+		   } else { 
+		       $self->element({'Name' => 'Hsp_positive', 'Data' => POSIX::ceil($h->{'%_id'} * $h->{alen}) })
+			   if (exists $h->{'%_id'} && exists $h->{alen});
+		   }
 		   $self->element({'Name' => 'Hsp_align-len', 'Data' => $h->{alen} }) if exists $h->{alen};
 		   $self->element({'Name' => 'Hsp_query-from', 'Data' => $h->{an0} }) if exists $h->{an0};
 		   $self->element({'Name' => 'Hsp_query-to', 'Data' => $h->{ax0} }) if exists $h->{ax0};
@@ -644,7 +650,12 @@ sub next_result{
 		       $self->element({'Name' => 'Hsp_gaps', 'Data' => $h->{'%_gid'} }) if exists $h->{'%_gid'};
 		       $self->element({'Name' => 'Hsp_identity', 'Data' => POSIX::ceil($h->{'%_id'} * $h->{alen}) })
 			   if (exists $h->{'%_id'} && exists $h->{alen});
-		       $self->element({'Name' => 'Hsp_positive', 'Data' => $h->{'%_id'} }) if exists $h->{'%_id'};
+		       if( exists $h->{'%_gid'} ) { 
+			   $self->element({'Name' => 'Hsp_positive', 'Data' => POSIX::ceil($h->{'%_gid'} * $h->{alen})}) if exists $h->{'%_gid'} && exists $h->{alen};
+		       } else { 
+			   $self->element({'Name' => 'Hsp_positive', 'Data' => POSIX::ceil($h->{'%_id'} * $h->{alen}) })
+			   if (exists $h->{'%_id'} && exists $h->{alen});
+		       }
 		       $self->element({'Name' => 'Hsp_align-len', 'Data' => $h->{alen} }) if exists $h->{alen};
 		       $self->element({'Name' => 'Hsp_query-from', 'Data' => $h->{an0} }) if exists $h->{an0};
 		       $self->element({'Name' => 'Hsp_query-to', 'Data' => $h->{ax0} }) if exists $h->{ax0};
@@ -737,13 +748,16 @@ sub next_result{
 	       chomp;
 	       $self->debug( "$count $_\n");
 	       
-	       if( /residues in \d+\s+query\s+sequences/) {
+	       if( /residues in \d+\s+query\s+sequences/o) {
 		   $self->_pushback($_);
 		   last;
-	       } elsif( /^>>/ ) {
+	       } elsif (/^>>>\*\*\*/o) {
+		   $self->end_element({Name => "Hsp"});
+		   last;
+	       } elsif (/^>>/o) {
 		   $self->_pushback($_);
 		   last;
-	       } elsif (/^\s*\d+\s*>>>/) {
+	       } elsif (/^\s*\d+\s*>>>/o) {
 		   $self->_pushback($_);
 		   last;
 	       }
@@ -803,7 +817,7 @@ sub next_result{
 	   if( ! $seentop ) {
 	       $self->debug($_);
 	       $self->warn("unrecognized FASTA Family report file!");
-	       return undef;
+	       return;
 	   }
        }
    }

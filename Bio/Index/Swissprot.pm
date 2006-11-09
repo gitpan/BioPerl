@@ -1,10 +1,6 @@
-
+# $Id: Swissprot.pm,v 1.26.4.1 2006/10/02 23:10:20 sendu Exp $
 #
-# $Id: Swissprot.pm,v 1.14 2003/06/04 08:36:40 heikki Exp $
-#
-# BioPerl module for Bio::Index::Abstract
-#
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
+# BioPerl module for Bio::Index::Swissprot
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -12,33 +8,35 @@
 
 =head1 NAME
 
-Bio::Index::Swissprot - Interface for indexing (multiple) Swissprot
-.dat files (ie flat file swissprot format).
+Bio::Index::Swissprot - Interface for indexing one or more
+Swissprot files.
 
 =head1 SYNOPSIS
 
-    # Complete code for making an index for several
-    # Swissprot files
+Make an index for one or more Swissprot files:
+
     use Bio::Index::Swissprot;
     use strict;
 
-    my $Index_File_Name = shift;
-    my $inx = Bio::Index::Swissprot->new('-filename' => $Index_File_Name,
-					 '-write_flag' => 'WRITE');
+    my $index_file_name = shift;
+    my $inx = Bio::Index::Swissprot->new(
+                           -filename => $index_file_name,
+					            -write_flag => 1);
     $inx->make_index(@ARGV);
 
-    # Print out several sequences present in the index
-    # in gcg format
+Print out several sequences present in the index in Genbank format:
+
     use Bio::Index::Swissprot;
     use Bio::SeqIO;
     use strict;
 
-    my $out = Bio::SeqIO->new( '-format' => 'gcg', '-fh' => \*STDOUT );
-    my $Index_File_Name = shift;
-    my $inx = Bio::Index::Swissprot->new('-filename' => $Index_File_Name);
+    my $out = Bio::SeqIO->new( -format => 'genbank',
+                               -fh => \*STDOUT );
+    my $index_file_name = shift;
+    my $inx = Bio::Index::Swissprot->new(-filename => $index_file_name);
 
     foreach my $id (@ARGV) {
-        my $seq = $inx->fetch($id); # Returns Bio::Seq object
+        my $seq = $inx->fetch($id); # Returns a Bio::Seq object
         $out->write_seq($seq);
     }
 
@@ -49,14 +47,26 @@ Bio::Index::Swissprot - Interface for indexing (multiple) Swissprot
 
 =head1 DESCRIPTION
 
-Inherits functions for managing dbm files from Bio::Index::Abstract.pm,
-and provides the basic funtionallity for indexing Swissprot files, and
-retrieving the sequence from them. Heavily snaffled from James Gilbert's
-Fasta system. Note: for best results 'use strict'.
+By default the index that is created uses the AC and ID identifiers
+as keys. This module inherits functions for managing dbm files from 
+Bio::Index::Abstract.pm, and provides the basic functionality 
+for indexing Swissprot files and retrieving Sequence objects from 
+them. For best results 'use strict'.
 
-Details on configuration and additional example code are available in the
-biodatabases.pod file.
+You can also set or customize the unique key used to retrieve by 
+writing your own function and calling the id_parser() method.
+For example:
 
+   $inx->id_parser(\&get_id);
+   # make the index
+   $inx->make_index($index_file_name);
+
+   # here is where the retrieval key is specified
+   sub get_id {
+      my $line = shift;
+      $line =~ /^KW\s+([A-Z]+)/i;
+      $1;
+   }
 
 =head1 FEED_BACK
 
@@ -66,22 +76,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                - General discussion
-  http://bio.perl.org/MailList.html    - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via
-email or the web:
+the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
-Email - birney@sanger.ac.uk
-(Swissprot adaption: lorenz@ist.org)
+Also lorenz@ist.org, bosborne at alum.mit.edu
 
 =head1 APPENDIX
 
@@ -90,26 +98,22 @@ Internal methods are usually preceded with a _
 
 =cut
 
-
 # Let's begin the code...
-
 
 package Bio::Index::Swissprot;
 
-use vars qw( @ISA);
 use strict;
 
-use Bio::Index::AbstractSeq;
 use Bio::Seq;
 
-@ISA = qw(Bio::Index::AbstractSeq);
+use base qw(Bio::Index::AbstractSeq);
 
 sub _type_stamp {
-    return '__Swissprot_FLAT__'; # What kind of index are we?
+	return '__Swissprot_FLAT__'; # What kind of index are we?
 }
 
 sub _version {
-    return 0.1;
+	return 0.1;
 }
 
 =head2 _index_file
@@ -126,58 +130,78 @@ sub _version {
 =cut
 
 sub _index_file {
-    my( $self,
-        $file, # File name
-        $i     # Index-number of file being indexed
-        ) = @_;
+	# $file is file name, $i is number of file being indexed
+	my( $self, $file, $i ) = @_;
+
+	# Offset from start of file
+	my $begin = 0;
+
+	my $id_parser = $self->id_parser;
+
+	open my $SWISSPROT,'<',$file or $self->throw("Can't read file: $file");
     
-    my( $begin, # Offset from start of file of the start
-                # of the last found record.
-        $id,    # ID of last found record.
-	@accs,   # accession of last record. Also put into the index
-        );
-
-    $begin = 0;
-
-    open SWISSPROT, $file or $self->throw("Can't open file for read : $file");
-
-    # Main indexing loop
-    $id = undef;
-    @accs = ();
-    while (<SWISSPROT>) {
-	if( /^\/\// ) {
-	    if( ! defined $id ) {
-		$self->throw("Got to a end of entry line for an Swissprot flat file with no parsed ID. Considering this a problem!");
-		next;
-	    }
-	    if( ! @accs ) {
-		$self->warn("For id [$id] in Swissprot flat file, got no accession number. Storing id index anyway");
-	    }
-
-	    $self->add_record($id, $i, $begin);
-
-	    foreach my $acc (@accs) {
-		if( $acc ne $id ) {
-		    $self->add_record($acc, $i, $begin);
+        my %done_ids;
+	while (<$SWISSPROT>) {
+		if (/^ID\s+\S+/) {
+			$begin = tell($SWISSPROT) - length( $_ );
 		}
-	    }
-	    @accs = ();    # reset acc array
-	    $id = undef;   # reset id
-	} elsif (/^ID\s+(\S+)/) {
-	    $id = $1;
-	    # not sure if I like this. Assummes tell is in bytes.
-	    # we could tell before each line and save it.
-            $begin = tell(SWISSPROT) - length( $_ ); 
-	    
-	} elsif (/^AC(.*)/) { # ignore ? if there.
-	    push(@accs, ($1 =~ /\s*(\S+);/g));
-	} else {
-	    # do nothing
+		for my $id (&$id_parser($_)) {
+                        next if exists $done_ids{$id};
+  			$self->add_record($id, $i, $begin) if $id;
+                        $done_ids{$id} = 1;
+		}
+        if (m{//}) {
+            %done_ids = ();
+        }
 	}
-    }
+	close $SWISSPROT;
+	return 1;
+}
 
-    close SWISSPROT;
-    return 1;
+=head2 id_parser
+
+  Title   : id_parser
+  Usage   : $index->id_parser( CODE )
+  Function: Stores or returns the code used by record_id to
+            parse the ID for record from a string.
+            Returns \&default_id_parser (see below) if not
+            set. An entry will be added to
+            the index for each string in the list returned.
+  Example : $index->id_parser( \&my_id_parser )
+  Returns : ref to CODE if called without arguments
+  Args    : CODE
+
+=cut
+
+sub id_parser {
+	my( $self, $code ) = @_;
+
+	if ($code) {
+		$self->{'_id_parser'} = $code;
+	}
+	return $self->{'_id_parser'} || \&default_id_parser;
+}
+
+=head2 default_id_parser
+
+  Title   : default_id_parser
+  Usage   : $id = default_id_parser( $line )
+  Function: The default parser for Swissprot.pm
+            Returns $1 from applying the regexp /^ID\s*(\S+)/
+            or /^AC\s+([A-Z0-9]+)/ to the current line.
+  Returns : ID string
+  Args    : a line string
+
+=cut
+
+sub default_id_parser {
+	my $line = shift;
+	if ($line =~ /^ID\s*(\S+)/) {
+		return $1;
+	} 
+	elsif ($line =~ /^AC\s+([A-Z0-9]+)/) {
+		return $1;
+	}
 }
 
 =head2 _file_format
@@ -186,28 +210,16 @@ sub _index_file {
  Usage   : Internal function for indexing system
  Function: Provides file format for this database
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
 =cut
 
-sub _file_format{
-   my ($self,@args) = @_;
-
+sub _file_format {
    return 'swiss';
 }
 
-
-
 1;
 
-
-
-
-
-
-
-
-
-
+__END__

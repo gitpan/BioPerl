@@ -34,7 +34,7 @@
 #   Bio::SearchIO
 #
 # Author: Steve Chervitz <sac@bioperl.org>
-# Revision: $Id: resultwriter.pl,v 1.2 2003/06/04 02:26:48 sac Exp $
+# Revision: $Id: resultwriter.pl,v 1.3 2004/02/21 10:50:34 sac Exp $
 
 
 use strict;
@@ -55,6 +55,7 @@ print "\nUsing SearchIO->new()\n";
 # within 10 sec. (Note the clock is still ticking when you background the job.)
 # Setting verbose to 1 is useful for debugging.
 my $in = Bio::SearchIO->new( -format => 'blast', 
+                             -fh => \*ARGV,
                              -signif => 0.1, 
                              -verbose => 0, 
                              -timeout_sec => 10 );

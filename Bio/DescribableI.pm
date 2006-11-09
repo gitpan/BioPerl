@@ -1,4 +1,4 @@
-# $Id: DescribableI.pm,v 1.6 2002/10/25 01:29:37 lapp Exp $
+# $Id: DescribableI.pm,v 1.10.4.1 2006/10/02 23:10:12 sendu Exp $
 
 #
 # This module is licensed under the same terms as Perl itself. You use,
@@ -37,17 +37,15 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                       - General discussion
-  http://bio.perl.org/MailList.html           - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
@@ -56,12 +54,10 @@ Email birney@sanger.ac.uk
 =cut
 
 package Bio::DescribableI;
-use vars qw(@ISA );
 use strict;
-use Bio::Root::RootI;
 
 
-@ISA = qw(Bio::Root::RootI);
+use base qw(Bio::Root::RootI);
 
 =head1 Implementation Specific Functions
 

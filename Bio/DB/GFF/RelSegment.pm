@@ -110,11 +110,9 @@ use strict;
 
 use Bio::DB::GFF::Feature;
 use Bio::DB::GFF::Util::Rearrange;
-use Bio::DB::GFF::Segment;
 use Bio::RangeI;
 
-use vars qw(@ISA);
-@ISA = qw(Bio::DB::GFF::Segment);
+use base qw(Bio::DB::GFF::Segment);
 
 use overload '""' => 'asString',
              'bool' => sub { overload::StrVal(shift) },
@@ -193,7 +191,7 @@ be a sequence that has been specified as the "source" in the GFF file.
 #      -length     => length of segment
 #      -nocheck    => turn off checking, force segment to be constructed
 #      -absolute   => use absolute coordinate addressing
-#' 
+
 sub new {
   my $package = shift;
   my ($factory,$name,$start,$stop,$refseq,$class,$refclass,$offset,$length,$force_absolute,$nocheck) =
@@ -228,6 +226,7 @@ sub new {
     $class = $name->class;
     $name  = $name->name;
   }
+
   # if the class of the landmark is not specified then default to 'Sequence'
   $class ||= eval{$factory->default_class} || 'Sequence';
 
@@ -381,6 +380,8 @@ sub abs_end {
     return $self->SUPER::abs_end(@_);
   }
 }
+
+*abs_stop = \&abs_end;
 
 =head2 refseq
 
@@ -632,7 +633,6 @@ sub features {
   return $self->factory->overlapping_features(@args);
 }
 
-
 =head2 get_SeqFeatures
 
  Title   : get_SeqFeatures
@@ -641,76 +641,12 @@ sub features {
  Returns : L<Bio::SeqFeatureI> objects
  Args    : none
 
-Alias for features().  Provided for Bio::SeqI compatibility.
+Segments do not ordinarily return any subfeatures.
 
 =cut
 
-=head2 get_all_SeqFeatures
-
- Title   : get_all_SeqFeatures
- Usage   :
- Function: returns all the sequence features
- Returns : L<Bio::SeqFeatureI> objects
- Args    :
-
-Alias for features().  Provided for Bio::SeqI compatibility.
-
-=cut
-
-=head2 sub_SeqFeatures
-
- Title   : sub_SeqFeatures
- Usage   :
- Function:
- Example :
- Returns :
- Args    :
-
-Alias for features().  Provided for Bio::SeqI compatibility.
-
-=cut
-
-
-=head2 top_SeqFeatures
-
- Title   : top_SeqFeatures
- Usage   :
- Function:
- Example :
- Returns :
- Args    :
-
-Alias for features().  Provided for Bio::SeqI compatibility.
-
-=cut
-
-=head2 all_SeqFeatures
-
- Title   : all_SeqFeatures
- Usage   :
- Function:
- Example :
- Returns :
- Args    :
-
-Alias for features().  Provided for Bio::SeqI compatibility.
-
-=cut
-
-=head2 sub_SeqFeatures
-
- Title   : sub_SeqFeatures
- Usage   :
- Function:
- Example :
- Returns :
- Args    :
-
-Alias for features().  Provided for Bio::SeqI compatibility.
-
-=cut
-
-*get_all_SeqFeature = *get_SeqFeatures = *top_SeqFeatures = *all_SeqFeatures = \&features;
+# A SEGMENT DOES NOT HAVE SUBFEATURES!
+sub get_SeqFeatures { return }
 
 =head2 feature_count
 
@@ -916,7 +852,7 @@ sub _process_feature_args {
   my ($ref,$class,$start,$stop,$strand,$whole)
     = @{$self}{qw(sourceseq class start stop strand whole)};
 
-  ($start,$stop) = ($stop,$start) if $strand eq '-';
+  ($start,$stop) = ($stop,$start) if defined $strand && $strand eq '-';
 
   my @args = (-ref=>$ref,-class=>$class);
 
@@ -1073,7 +1009,7 @@ sub rel2abs {
 =head2 abs2rel
 
  Title   : abs2rel
- Usage   : @rel_coords = $s-abs2rel(@abs_coords)
+ Usage   : @rel_coords = $s->abs2rel(@abs_coords)
  Function: convert absolute coordinates into relative coordinates
  Returns : a list of relative coordinates
  Args    : a list of absolute coordinates
@@ -1112,7 +1048,10 @@ sub strand {
   if ($self->absolute) {
     return _to_strand($self->{strand});
   }
-  return $self->stop <=> $self->start;
+  my $start = $self->start;
+  my $stop  = $self->stop;
+  return 0 unless defined $start and defined $stop;
+  return $stop <=> $start;
 }
 
 sub _to_strand {
@@ -1145,11 +1084,13 @@ sub intersection {
     $low  = $_->abs_low   if !defined($low)  or $low  < $_->abs_low;
     $high = $_->abs_high  if !defined($high) or $high > $_->abs_high;
   }
+
   return unless $low < $high;
-  $self->new(-factory=> $self->factory,
-	     -seq    => $ref,
-	     -start  => $low,
-	     -stop   => $high);
+  return Bio::DB::GFF::RelSegment->new(-factory => $self->factory,
+				       -seq     => $ref,
+				       -start   => $low,
+				       -stop    => $high,
+				      );
 }
 
 sub overlaps {
@@ -1192,6 +1133,8 @@ sub union {
 	     -start  => $low,
 	     -stop   => $high);
 }
+
+sub version { 0 }
 
 
 1;

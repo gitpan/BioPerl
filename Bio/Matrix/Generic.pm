@@ -1,4 +1,4 @@
-# $Id: Generic.pm,v 1.3 2003/09/08 12:17:12 heikki Exp $
+# $Id: Generic.pm,v 1.14.4.1 2006/10/02 23:10:21 sendu Exp $
 #
 # BioPerl module for Bio::Matrix::Generic
 #
@@ -12,17 +12,17 @@
 
 =head1 NAME
 
-Bio::Matrix::GenericMatrix - A generic matrix implementation
+Bio::Matrix::Generic - A generic matrix implementation
 
 =head1 SYNOPSIS
 
   # A matrix has columns and rows 
-  my $matrix = new Bio::Matrix::GenericMatrix();
-  $matrix->add_column_num(1,$column1);
-  $matrix->add_column_num(2,$column2);
+  my $matrix = Bio::Matrix::Generic->new;
+  $matrix->add_column(1,$column1);
+  $matrix->add_column(2,$column2);
 
-  my $element = $matrix->element(1,2);
-  $matrix->element(1,2,$newval);
+  my $element = $matrix->entry_by_num(1,2);
+  $matrix->entry_by_num(1,2,$newval);
 
   my $entry = $matrix->entry('human', 'mouse');
 
@@ -36,7 +36,7 @@ data which is typical when enumerating all the pairwise combinations
 and desiring to get slices of the data.
 
 Data can be accessed by column and row names or indexes.  Matrix
-indexes start at 1.
+indexes start at 0.
 
 =head1 FEEDBACK
 
@@ -46,26 +46,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
 Email jason-at-bioperl-dot-org
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -75,13 +69,10 @@ Internal methods are usually preceded with a _
 =cut
 
 package Bio::Matrix::Generic;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
-use Bio::Matrix::MatrixI;
 
-@ISA = qw(Bio::Root::Root Bio::Matrix::MatrixI  );
+use base qw(Bio::Root::Root Bio::Matrix::MatrixI);
 
 =head2 new
 
@@ -89,8 +80,12 @@ use Bio::Matrix::MatrixI;
  Usage   : my $obj = new Bio::Matrix::Generic();
  Function: Builds a new Bio::Matrix::Generic object 
  Returns : an instance of Bio::Matrix::Generic
- Args    :
-
+ Args    : -values     => arrayref of arrayrefs of data initialization 
+           -rownames   => arrayref of row names
+           -colnames   => arrayref of col names
+           -matrix_id  => id of the matrix
+           -matrix_name=> name of the matrix
+           -matrix_init_value => default value to initialize empty cells
 
 =cut
 
@@ -99,12 +94,13 @@ sub new {
 
   my $self = $class->SUPER::new(@args);
   my ($values, $rownames, $colnames,
-      $id,$name) = 
-      $self->_rearrange([qw(VALUES ROWNAMES COLNAMES 
-			    MATRIX_ID MATRIX_NAME)],@args);
+      $id,$name,$init_val) = 
+	  $self->_rearrange([qw(VALUES ROWNAMES COLNAMES 
+			        MATRIX_ID MATRIX_NAME 
+                                MATRIX_INIT_VALUE)],@args);
   $self->matrix_id($id) if  defined $id;
   $self->matrix_name($name) if defined $name;
-  if( defined $rownames && defined $colnames && defined $values ) {
+  if( defined $rownames && defined $colnames ) {
       if( ref($rownames) !~ /ARRAY/i ) {
 	  $self->throw("need an arrayref for the -rownames option");
       }
@@ -120,19 +116,28 @@ sub new {
       $self->{'_colnames'} = [ @$colnames ];
       $count = 0;
       %{$self->{'_colnamesmap'}} = map { $_ => $count++ } @$colnames; 
-      if( ref($values) !~ /ARRAY/i ) {
-	  $self->throw("Need an arrayref of arrayrefs (matrix) for -values option");
-      }
+
       $self->{'_values'} = [];
-      foreach my $v ( @$values ) {
-	  if( ref($v) !~ /ARRAY/i ) {
-	      $self->throw("Need and array of arrayrefs (matrix) for -values option");
+      if( defined $values ) {
+	  if( ref($values) !~ /ARRAY/i ) {
+	      $self->throw("Need an arrayref of arrayrefs (matrix) for -values option");
+	  }	  
+	  for my $v ( @$values ) {
+	      if( ref($v) !~ /ARRAY/i ) {
+		  $self->throw("Need and array of arrayrefs (matrix) for -values option");
+	      }
+	      push @{$self->{'_values'}}, [@$v];
 	  }
-	  push @{$self->{'_values'}}, [@$v];
+      } else {
+	  my @fill = ($init_val) x scalar @$colnames; # undef init_val will be default
+	  for ( @$rownames ) {
+	      push @{$self->{'_values'}}, [@fill];
+	  }
       }
   } elsif( ! defined $rownames && ! defined $colnames && ! defined $values ) {
-      $self->{'_values'} = [];
-      $self->{'_rownames'} = $self->{'_colnames'} = [];
+      $self->{'_values'}   = [];
+      $self->{'_rownames'} = [];
+      $self->{'_colnames'} = [];
   } else { 
       $self->throw("Must have either provided no values/colnames/rownames or provided all three");
   }
@@ -195,7 +200,6 @@ sub entry{
    my ($self,$row,$column,$newvalue) = @_;
    if( ! defined $row || ! defined $column ) {
        $self->throw("Need at least 2 ids");
-       return undef;
    }
 
    my ($rownum) = $self->row_num_for_name($row);
@@ -219,8 +223,8 @@ sub get_entry{ $_[0]->entry($_[1],$_[2]) }
 
 =head2 entry_by_num
 
- Title   : entry_by_name
- Usage   : my $entry = $matrix->entry_by_name($rowname,$colname)
+ Title   : entry_by_num
+ Usage   : my $entry = $matrix->entry_by_num($rownum,$colnum)
  Function: Get an entry by row and column numbers instead of by name
            (rows and columns start at 0)
  Returns : scalar value or undef if row or column name does not
@@ -237,7 +241,7 @@ sub entry_by_num {
 	$row !~ /^\d+$/ ||
 	$col !~ /^\d+$/ ) {
 	$self->warn("expected to get 2 number for entry_by_num");
-	return undef;
+	return;
     }
     
     if( defined $newvalue ) {
@@ -247,7 +251,10 @@ sub entry_by_num {
    }
 }
 
-sub get_element { $_[0]->entry($_[1]) }
+sub get_element { 
+    my $self = shift;
+    $self->entry(@_);
+}
 
 
 =head2 column
@@ -271,12 +278,12 @@ sub column{
 
     if( ! defined $column ) {
 	$self->warn("Need at least a column id");
-	return undef;
+	return;
     }
     my $colnum  = $self->column_num_for_name($column);
     if( ! defined $colnum ) { 
 	$self->warn("could not find column number for $column");
-	return undef;
+	return;
     }
     return $self->column_by_num($colnum,$newcol);
 }
@@ -316,19 +323,20 @@ sub column_by_num{
     my ($self,$colnum,$newcol) = @_;
     if( ! defined $colnum ) {
 	$self->warn("need at least a column number");
-	return undef;
+	return;
     }
     my $rowcount = $self->num_rows;
+    my $colcount = $self->num_columns;
     my $ret;
     
     if( defined $newcol ) {
 	if( ref($newcol) !~ /ARRAY/i) {
 	    $self->warn("expected a valid arrayref for resetting a column");
-	    return undef;
+	    return;
 	}
 	if( scalar @$newcol != $rowcount ) {
 	    $self->warn("new column is not the correct length ($rowcount) - call add or remove row to shrink or grow the number of rows first");
-	    return undef;
+	    return;
 	}
 	for(my $i=0; $i < $rowcount; $i++) {
 	    $self->entry_by_num($i,$colnum,$newcol->[$i]);
@@ -363,7 +371,7 @@ sub row {
     my ($self,$row,$newrow) = @_;
     if( ! defined $row) {
 	$self->warn("Need at least a row id");
-	return undef;
+	return;
     }
     my $rownum = $self->row_num_for_name($row);
     return $self->row_by_num($rownum,$newrow);
@@ -400,18 +408,18 @@ sub row_by_num{
    my ($self,$rownum,$newrow) = @_;
    if( ! defined $rownum ) {
        $self->warn("need at least a row number");
-       return undef;
+       return;
    }
     my $colcount = $self->num_columns;
     my $ret;
     if( defined $newrow ) {
 	if( ref($newrow) !~ /ARRAY/i) {
 	    $self->warn("expected a valid arrayref for resetting a row");
-	    return undef;
+	    return;
 	}
 	if( scalar @$newrow != $colcount ) {
 	    $self->warn("new row is not the correct length ($colcount) - call add or remove column to shrink or grow the number of columns first");
-	    return undef;
+	    return;
 	}
 	for(my $i=0; $i < $colcount; $i++) {
 	    $self->entry_by_num($rownum,$i, $newrow->[$i]);
@@ -478,13 +486,13 @@ sub add_row{
    if( !defined $index || 
        $index !~ /^\d+$/ ) {
        $self->warn("expected a valid row index in add_row");
-       return undef;
+       return;
    } elsif( ! defined $name) {
        $self->warn("Need a row name or heading");
-       return undef;
+       return;
    } elsif( defined $self->row_num_for_name($name) ) {
        $self->warn("Need a unqiue name for the column heading, $name is already used");
-       return undef;
+       return;
    }
    my $colcount = $self->num_columns;
    my $rowcount = $self->num_rows;
@@ -532,13 +540,15 @@ sub remove_row{
    my $rowcount = $self->num_rows;
    
    if( $rowindex > $rowcount ) {
-       $self->warn("colindex $rowindex is greater than number of rows $rowcount, cannot process");
+       $self->warn("rowindex $rowindex is greater than number of rows $rowcount, cannot process");
        return 0;
    } else { 
        splice(@{$self->_values},$rowindex,1);
        delete $self->{'_rownamesmap'}->{$self->{'_rownames'}->[$rowindex]};
        splice(@{$self->{'_rownames'}},$rowindex,1);
    }
+   my $ct = 0;
+   %{$self->{'_rownamesmap'}} = map { $_ => $ct++} @{$self->{'_rownames'}};
    return $self->num_rows;
 }
 
@@ -566,13 +576,13 @@ sub add_column{
    if( !defined $index ||
        $index !~ /^\d+$/ ) {
        $self->warn("expected a valid col index in add_column");
-       return undef;
+       return;
    } elsif( ! defined $name) {
        $self->warn("Need a column name or heading");
-       return undef;
+       return;
    } elsif( defined $self->column_num_for_name($name) ) {
        $self->warn("Need a unqiue name for the column heading, $name is already used");
-       return undef;
+       return;
    }
    my $colcount = $self->num_columns;
    my $rowcount = $self->num_rows;
@@ -610,25 +620,26 @@ sub add_column{
  Returns : Updated number of columns in the matrix
  Args    : column index
 
-
 =cut
 
 sub remove_column{
    my ($self,$colindex) = @_;
 
+   my $colcount = $self->num_columns;
    my $rowcount = $self->num_rows;
-   
-   if( $colindex > $rowcount ) {
-       $self->warn("colindex $colindex is greater than number of rows $rowcount, cannot process");
-       return 0;
+   if( $colindex > $colcount ) {
+		$self->warn("colindex $colindex is greater than number of columns ($colcount), cannot process");
+		return 0;
    } else { 
-       for(my $i = 0; $i < $rowcount; $i++ ) {
-	   splice(@{$self->_values->[$i]},$colindex,1);
-       }
-       delete $self->{'_colnamesmap'}->{$self->{'_colnames'}->[$colindex]};
-       splice(@{$self->{'_colnames'}},$colindex,1);
+		for(my $i = 0; $i < $rowcount; $i++ ) {
+			splice(@{$self->_values->[$i]},$colindex,1);
+		}
+		delete $self->{'_colnamesmap'}->{$self->{'_colnames'}->[$colindex]};
+		splice(@{$self->{'_colnames'}},$colindex,1);
    }
-   return $self->column_count;
+   my $ct = 0;
+   %{$self->{'_colnamesmap'}} = map {$_ => $ct++} @{$self->{'_colnames'}};
+   return $self->num_columns;
 }
 
 =head2 column_num_for_name
@@ -728,7 +739,7 @@ sub num_rows{
 
 sub num_columns{
    my ($self) = @_;
-   return scalar @{$self->_values->[0]};
+   return scalar @{$self->_values->[0] || []};
 }
 
 

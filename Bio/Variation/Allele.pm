@@ -1,8 +1,8 @@
-# $Id: Allele.pm,v 1.10 2003/06/04 08:36:44 heikki Exp $
+# $Id: Allele.pm,v 1.15.4.1 2006/10/02 23:10:38 sendu Exp $
 #
 # BioPerl module for Bio::Variation::Allele
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Heikki Lehvaslaiho
 #
@@ -47,27 +47,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the 
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
-report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email:  heikki@ebi.ac.uk
-Address: 
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom 
-
+Email:  heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -81,15 +74,12 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Variation::Allele;
 
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inheritance
 
-use Bio::PrimarySeq;
-use Bio::DBLinkContainerI;
 
-@ISA = qw( Bio::PrimarySeq Bio::DBLinkContainerI );
+use base qw(Bio::PrimarySeq Bio::DBLinkContainerI);
 
 sub new {
     my($class, @args) = @_;

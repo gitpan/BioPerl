@@ -1,8 +1,17 @@
+# $Id: pICalculator.pm,v 1.9.4.1 2006/10/02 23:10:32 sendu Exp $
 #
+# BioPerl module for Bio::Tools::pICalculator
+#
+# Copyright (c) 2002, Merck & Co. Inc. All Rights Reserved.
+#
+#
+# You may distribute this module under the same terms as perl itself
+
+# POD documentation - main docs before the code
 
 =head1 NAME
 
-pICalculator
+Bio::Tools::pICalculator - calculate the isoelectric point of a protein
 
 =head1 DESCRIPTION
 
@@ -15,7 +24,8 @@ at a given pH. Can use built-in sets of pK values or custom pK sets.
   use Bio::Tools::pICalculator;
   use Bio::SeqIO;
 
-  my $in = Bio::SeqIO->new( -fh => \*STDIN ,-format => 'Fasta' );
+  my $in = Bio::SeqIO->new( -fh => \*STDIN ,
+                            -format => 'Fasta' );
 
   my $calc = Bio::Tools::pICalculator->new(-places => 2,
                                            -pKset => 'EMBOSS');
@@ -38,43 +48,42 @@ at a given pH. Can use built-in sets of pK values or custom pK sets.
 =head1 SEE ALSO
 
 http://fields.scripps.edu/DTASelect/20010710-pI-Algorithm.pdf
-http://www.hgmp.mrc.ac.uk/Software/EMBOSS/Apps/iep.html
+http://emboss.sourceforge.net/apps/cvs/iep.html
 http://us.expasy.org/tools/pi_tool.html
 
 =head1 LIMITATIONS
 
-There are various sources for the pK values of the amino acids. The set of
-pK values chosen will affect the pI reported.
+There are various sources for the pK values of the amino acids. 
+The set of pK values chosen will affect the pI reported.
 
-The charge state of each residue is assumed to be independent of the others.
-Protein modifications (such as a phosphate group) that have a charge are
-ignored.
+The charge state of each residue is assumed to be independent of 
+the others. Protein modifications (such as a phosphate group) that 
+have a charge are ignored.
 
 =head1 FEEDBACK
 
 =head2 Mailing Lists
 
 User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
-to one of the Bioperl mailing lists.
+and other Bioperl modules. Send your comments and suggestions 
+preferably to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html     - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.
-Bug reports can be submitted via email or the web:
+the bugs and their resolution. Bug reports can be submitted via the 
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
-Mark Southern (mark_southern@merck.com). From an algorithm by David Tabb found
-at http://fields.scripps.edu/DTASelect/20010710-pI-Algorithm.pdf.
+Mark Southern (mark_southern@merck.com). From an algorithm by David 
+Tabb found at http://fields.scripps.edu/DTASelect/20010710-pI-Algorithm.pdf.
 Modification for Bioperl, additional documentation by Brian Osborne.
 
 =head1 COPYRIGHT
@@ -93,12 +102,10 @@ Private methods are usually preceded by a _.
 # Let the code begin...
 
 package Bio::Tools::pICalculator;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 # pK values from the DTASelect program from Scripps
 # http://fields.scripps.edu/DTASelect
@@ -114,7 +121,7 @@ my $DTASelect_pK = {  N_term   =>  8.0,
                     };
 
 # pK values from the iep program from EMBOSS
-# http://www.hgmp.mrc.ac.uk/Software/EMBOSS/
+# http://emboss.sourceforge.net/apps/cvs/iep.html
 my $Emboss_pK  = { N_term   =>  8.6,
                    K        => 10.8, # Lys
                    R        => 12.5, # Arg
@@ -192,7 +199,7 @@ sub new {
 sub seq {
    my( $this, $seq ) = @_;
    unless( defined $seq && UNIVERSAL::isa($seq,'Bio::Seq') ){
-      die $seq . " is not a valid Bio::Seq object\n";
+      $this->throw("$seq is not a valid Bio::Seq object");
    }
    $this->{-seq} = $seq;
    $this->{-count} = count_charged_residues( $seq );

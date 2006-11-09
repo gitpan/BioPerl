@@ -1,4 +1,4 @@
-# $Id: OntologyIO.pm,v 1.7 2003/11/20 06:34:11 allenday Exp $
+# $Id: OntologyIO.pm,v 1.12.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::OntologyIO
 #
@@ -16,7 +16,7 @@
 # Refer to the Perl Artistic License (see the license accompanying this
 # software package, or see http://www.perl.com/language/misc/Artistic.html)
 # for the terms under which you may use, modify, and redistribute this module.
-# 
+#
 # THIS PACKAGE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
 # WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 # MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
@@ -26,7 +26,7 @@
 
 =head1 NAME
 
-Bio::OntologyIO - Parser factory for Ontology formats 
+Bio::OntologyIO - Parser factory for Ontology formats
 
 =head1 SYNOPSIS
 
@@ -56,8 +56,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -65,17 +65,11 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
 Email hlapp at gmx.net
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -89,25 +83,24 @@ Internal methods are usually preceded with a _
 
 
 package Bio::OntologyIO;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::Root::Root;
-use Bio::Root::IO;
 
-@ISA = qw(Bio::Root::Root Bio::Root::IO);
+use base qw(Bio::Root::Root Bio::Root::IO);
 
 #
 # Maps from format name to driver suitable for the format.
 #
 my %format_driver_map = (
-			 "go"       => "goflat",
-			 "so"       => "soflat",
-			 "interpro" => "InterProParser",
-			 "evoc"     => "simplehierarchy",
-			 );
+                         "go"          => "goflat",
+                         "so"          => "soflat",
+                         "interpro"    => "InterProParser",
+                         "interprosax" => "Handlers::InterPro_BioSQL_Handler",
+                         "evoc"        => "simplehierarchy",
+                         "obo"        => "obo"
+                         );
 
 =head2 new
 
@@ -119,9 +112,21 @@ my %format_driver_map = (
            for the specified format.
  Args    : Named parameters. Common parameters are
 
-              -format    - the format of the input; supported right now are
-                          'go' (synonymous with goflat), 'so' (synonymous
-                          with soflat), and 'interpro'
+              -format    - the format of the input; the following are
+                           presently supported:
+                  goflat: DAG-Edit Gene Ontology flat files
+                  go    : synonymous to goflat
+                  soflat: DAG-Edit Sequence Ontology flat files
+                  so    : synonymous to soflat
+                  simplehierarchy: text format with one term per line
+                          and indentation giving the hierarchy
+                  evoc  : synonymous to simplehierarchy
+                  interpro: InterPro XML
+                  interprosax: InterPro XML - this is actually not a
+                          Bio::OntologyIO compliant parser; instead it
+                          persists terms as they are encountered.
+                          L<Bio::OntologyIO::Handlers::InterPro_BioSQL_Handler>
+                  obo   : OBO format style from Gene Ontology Consortium
               -file      - the file holding the data
               -fh        - the stream providing the data (-file and -fh are
                           mutually exclusive)
@@ -153,17 +158,17 @@ sub new {
     # or do we want to call SUPER on an object if $caller is an
     # object?
     if( $class =~ /Bio::OntologyIO::(\S+)/ ) {
-	my ($self) = $class->SUPER::new(@args);	
-	$self->_initialize(@args);
-	return $self;
-    } else { 
-	my %param = @args;
-	@param{ map { lc $_ } keys %param } = values %param; # lowercase keys
-	my $format = $class->_map_format($param{'-format'});
+        my ($self) = $class->SUPER::new(@args);
+        $self->_initialize(@args);
+        return $self;
+    } else {
+        my %param = @args;
+        @param{ map { lc $_ } keys %param } = values %param; # lowercase keys
+        my $format = $class->_map_format($param{'-format'});
 
-	# normalize capitalization
-	return undef unless( $class->_load_format_module($format) );
-	return "Bio::OntologyIO::$format"->new(@args);
+        # normalize capitalization
+        return unless( $class->_load_format_module($format) );
+        return "Bio::OntologyIO::$format"->new(@args);
     }
 
 }
@@ -173,8 +178,8 @@ sub _initialize {
 
     # initialize factories etc
     my ($eng,$fact,$ontname) =
-	$self->_rearrange([qw(TERM_FACTORY)
-			   ], @args);
+        $self->_rearrange([qw(TERM_FACTORY)
+                           ], @args);
     # term object factory
     $self->term_factory($fact) if $fact;
 
@@ -213,7 +218,7 @@ sub next_ontology {
            way is to simply call
            $ontio->term_factory->type("Bio::Ontology::MyTerm").
 
- Example : 
+ Example :
  Returns : value of term_factory (a Bio::Factory::ObjectFactoryI object)
  Args    : on set, new value (a Bio::Factory::ObjectFactoryI object, optional)
 
@@ -252,10 +257,10 @@ sub _load_format_module {
     my $ok;
 
     eval {
-	$ok = $self->_load_module($module);
+        $ok = $self->_load_module($module);
     };
     if ( $@ ) {
-	print STDERR <<END;
+        print STDERR <<END;
 $self: $format cannot be found
 Exception $@
 For more information about the OntologyIO system please see the docs.
@@ -277,10 +282,10 @@ sub _map_format {
     my $mod;
 
     if($format) {
-	$mod = $format_driver_map{lc($format)};
-	$mod = lc($format) unless $mod;
+        $mod = $format_driver_map{lc($format)};
+        $mod = lc($format) unless $mod;
     } else {
-	$self->throw("unable to guess ontology format, specify -format");
+        $self->throw("unable to guess ontology format, specify -format");
     }
     return $mod;
 }

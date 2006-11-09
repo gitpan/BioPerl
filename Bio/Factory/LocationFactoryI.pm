@@ -1,4 +1,4 @@
-# $Id: LocationFactoryI.pm,v 1.2 2002/10/22 07:45:14 lapp Exp $
+# $Id: LocationFactoryI.pm,v 1.7.4.1 2006/10/02 23:10:18 sendu Exp $
 #
 # BioPerl module for Bio::Factory::LocationFactoryI
 #
@@ -26,15 +26,20 @@
 
 =head1 NAME
 
-Bio::Factory::LocationFactoryI - DESCRIPTION of Interface
+Bio::Factory::LocationFactoryI - A factory interface for generating locations from a string
 
 =head1 SYNOPSIS
 
-Give standard usage here
+ # Do not use directly, see Bio::Factory::LocationFactory for example
+ use Bio::Factory::FTLocationFactory;
+ my $locfact = Bio::Factory::FTLocationFactory->new();
+ my $location = $locfact->from_string("1..200");
+ print $location->start(), " ", $location->end(), " ", $location->strand,"\n";
 
 =head1 DESCRIPTION
 
-Describe the interface here
+An interface for Location Factories which generate Bio::LocationI
+objects from a string.
 
 =head1 FEEDBACK
 
@@ -44,25 +49,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
 Email hlapp at gmx.net
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -76,12 +76,10 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Factory::LocationFactoryI;
-use vars qw(@ISA);
 use strict;
 use Carp;
-use Bio::Root::RootI;
 
-@ISA = qw( Bio::Root::RootI );
+use base qw(Bio::Root::RootI);
 
 =head2 from_string
 
@@ -105,3 +103,5 @@ sub from_string{
 
     $self->throw_not_implemented();
 }
+
+1;

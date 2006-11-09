@@ -1,4 +1,4 @@
-# $Id: Meta.pm,v 1.4 2003/11/13 16:57:31 heikki Exp $
+# $Id: Meta.pm,v 1.12.4.2 2006/11/08 19:00:33 cjfields Exp $
 #
 # BioPerl module for Bio::Seq::Meta
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::Seq::MetaI - Generic superclass for sequence objects with
+Bio::Seq::Meta - Generic superclass for sequence objects with
 residue-based meta information
 
 =head1 SYNOPSIS
@@ -25,7 +25,7 @@ residue-based meta information
   my $seq = Bio::LocatableSeq->new(-id=>'test',
                                    -seq=>'ACTGCTAGCT',
                                    -start=>2434,
-                                   -start=>2443,
+                                   -end=>2443,
                                    -strand=>1,
                                    -verbose=>1, # to see warnings
                                   );
@@ -37,10 +37,18 @@ residue-based meta information
   $seq->isa("Bio::Seq::Meta")
       || $seq->throw("$seq is not a Bio::Seq::Meta");
 
+
   $seq->meta('1234567890');
+  $seq = Bio::Seq::Meta->new(-id=>'test',
+                             -seq=>'HACILMIFGT',
+                             -start=>2434,
+                             -end=>2443,
+                             -strand=>1,
+                             -meta=>'1234567890',
+                             -verbose=>1, # to see warnings
+                            );
 
   # accessors
-
   $string     = $seq->meta_text();
   $substring  = $seq->submeta_text(2,5);
   $unique_key = $seq->accession_number();
@@ -64,16 +72,20 @@ L<Bio::LocatableSeq> and L<Bio::Seq::MetaI>.
 The meta information in this class is always one character per residue
 long and blank values are space characters (ASCII 32).
 
-The length of the meta data sequence is not dependent on the amount of
-the meta information.  The meta information always covers all the
-residues. If necessary, the implementation quietly truncates or extends
-meta information with blank values.
+After the latest rewrite, the meta information no longer covers all
+the residues automatically. Methods to check the length of meta
+information (L<meta_length>)and to see if the ends are flushed to the
+sequence have been added (L<is_flush>). To force the old
+functionality, set L<force_flush> to true.
 
 It is assumed that meta data values do not depend on the nucleotide
 sequence strand value.
 
 Application specific implementations should inherit from this class to
 override and add to these methods.
+
+L<Bio::Seq::Meta::Array> allows for more complex meta values (scalars
+or objects) to be used.
 
 =head2 Method naming
 
@@ -99,7 +111,7 @@ region of the sequence range and takes start and end as arguments.
 Unlike subseq(), these methods are able to set values.  If the range
 is not defined, it defaults to the complete sequence.
 
-=item named_
+=item named
 
 Prefix B<named_> in method names allows the used to attach multiple
 meta strings to one sequence by explicitly naming them. The name is
@@ -115,7 +127,9 @@ name will silently store the data under a wrong name. The used names
 
 =head1 SEE ALSO
 
-L<Bio::LocatableSeq>
+L<Bio::LocatableSeq>, 
+L<Bio::Seq::MetaI>, 
+L<Bio::Seq::Meta::Array>
 
 =head1 FEEDBACK
 
@@ -125,25 +139,25 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                      - General discussion
-  http://bio.perl.org/MailList.html          - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email heikki@ebi.ac.uk
+Email heikki-at-bioperl-dot-org
 
 =head1 CONTRIBUTORS
 
 Chad Matsalla, bioinformatics@dieselwurks.com
+
 Aaron Mackey, amackey@virginia.edu
 
 =head1 APPENDIX
@@ -158,14 +172,12 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Seq::Meta;
-use vars qw(@ISA $DEFAULT_NAME $GAP $META_GAP);
+use vars qw($DEFAULT_NAME $GAP $META_GAP);
 use strict;
-use Bio::LocatableSeq;
-use Bio::Seq::MetaI;
 
 #use overload '""' => \&to_string;
 
-@ISA = qw( Bio::LocatableSeq Bio::Seq::MetaI );
+use base qw(Bio::LocatableSeq Bio::Seq::MetaI);
 
 
 BEGIN {
@@ -196,15 +208,17 @@ sub new {
 
     my $self = $class->SUPER::new(@args);
 
-    my($meta) =
+    my($meta, $forceflush) =
         $self->_rearrange([qw(META
+                              FORCE_FLUSH
                               )],
                           @args);
 
     #$self->{'_meta'} = {};
-    $self->{'_meta'}->{$DEFAULT_NAME} = undef;
+    $self->{'_meta'}->{$DEFAULT_NAME} = "";
 
     $meta && $self->meta($meta);
+    $forceflush && $self->force_flush($forceflush);
 
     return $self;
 }
@@ -221,7 +235,7 @@ sub new {
            sequence, it needs to be manipulated after the sequence.
 
            The length of the returned value always matches the length
-           of the sequence.
+           of the sequence, if force_flush() is set. See L<force_flush>.
 
  Returns : meta data in a string
  Args    : new value, string, optional
@@ -278,10 +292,14 @@ sub named_meta {
 
        #$self->_test_gap_positions($name) if $self->verbose > 0;
    }
-   return substr($self->{'_meta'}->{$name}, 0, $self->length)
-       if defined $self->{'_meta'}->{$name} and
-           CORE::length($self->{'_meta'}->{$name}) > $self->length;
-   return $self->{'_meta'}->{$name} || (" " x $self->length);
+
+   return " " x $self->length 
+    if $self->force_flush && not defined $self->{'_meta'}->{$name};
+
+
+   $self->_do_flush if $self->force_flush;
+
+   return $self->{'_meta'}->{$name};
 }
 
 =head2 _test_gap_positions
@@ -314,7 +332,6 @@ sub _test_gap_positions {
         my $m = substr $self->{_meta}->{$name}, $i, 1;
         $self->warn("Gap mismatch [$m/$s] in column [". ($i+1). "] of [$name] meta data in seq [". $self->id. "]")
             and $success = 0
-                #if ($s eq $GAP || $m eq $GAP) && $s ne $m;
                 if ($s eq $META_GAP) && $s ne $m;
     }
     return $success;
@@ -405,30 +422,35 @@ sub named_submeta {
 
     $name ||= $DEFAULT_NAME;
     $start ||=1;
+
+
     $start =~ /^[+]?\d+$/ and $start > 0 or
         $self->throw("Need at least a positive integer start value");
 
     if ($value) {
+        $end ||= $start+length($value)-1;
         $self->warn("You are setting meta values beyond the length of the sequence\n".
                     "[$start > ". length($self->seq)."] in sequence ". $self->id)
             if $start > length $self->seq;
 
         # pad meta data if needed
+        $self->{_meta}->{$name} = () unless defined $self->{_meta}->{$name};
         if (length($self->{_meta}->{$name}) < $start) {
-            $self->{'_meta'}->{$name} .=  " " x ( $start - length($self->{'_meta'}->{$name}));
+            $self->{'_meta'}->{$name} .=  " " x ( $start - length($self->{'_meta'}->{$name}) -1);
         }
 
-        my $tail = substr ($self->{_meta}->{$name}, $start-1+length($value));
-
+        my $tail = '';
+        $tail = substr ($self->{_meta}->{$name}, $start-1+length($value))
+            if length($self->{_meta}->{$name}) >= $start-1+length($value);
+        
         substr ($self->{_meta}->{$name}, --$start) = $value;
         $self->{_meta}->{$name} .= $tail;
 
-        return $value;
+        return substr ($self->{_meta}->{$name}, $start, $end - $start + 1);
 
     } else {
 
         $end or $end = length $self->seq;
-        $end = length $self->seq if $end > length $self->seq;
 
         # pad meta data if needed
         if (length($self->{_meta}->{$name}) < $end) {
@@ -463,8 +485,7 @@ sub named_submeta_text {
  Title   : meta_names
  Usage   : @meta_names  = $obj->meta_names()
  Function: Retrieves an array of meta data set names. The default
-           (unnamed) set name is guarantied to be the first name if it
-           contains any data.
+           (unnamed) set name is guarantied to be the first name.
  Returns : an array of names
  Args    : none
 
@@ -479,7 +500,140 @@ sub meta_names {
     }
     unshift @r, $DEFAULT_NAME if $self->{'_meta'}->{$DEFAULT_NAME};
     return @r;
- }
+}
+
+
+=head2 meta_length
+
+ Title   : meta_length()
+ Usage   : $meeta_len  = $obj->meta_length();
+ Function: return the number of elements in the meta set
+ Returns : integer
+ Args    : -
+
+=cut
+
+sub meta_length {
+   my ($self) = @_;
+   return $self->named_meta_length($DEFAULT_NAME);
+}
+
+
+=head2 named_meta_length
+
+ Title   : named_meta_length()
+ Usage   : $meta_len  = $obj->named_meta_length($name);
+ Function: return the number of elements in the named meta set
+ Returns : integer
+ Args    : -
+
+=cut
+
+sub named_meta_length {
+   my ($self, $name) = @_;
+   $name ||= $DEFAULT_NAME;
+   return length ($self->{'_meta'}->{$name});
+}
+
+
+=head2 force_flush
+
+ Title   : force_flush()
+ Usage   : $force_flush = $obj->force_flush(1);
+ Function: Automatically pad with empty values or truncate meta values
+           to sequence length. Not done by default.
+ Returns : boolean 1 or 0
+ Args    : optional boolean value
+
+Note that if you turn this forced padding off, the previously padded
+values are not changed.
+
+=cut
+
+sub force_flush {
+    my ($self, $value) = @_;
+
+    if (defined $value) {
+        if ($value) {
+            $self->{force_flush} = 1;
+            $self->_do_flush;
+        } else {
+            $self->{force_flush} = 0;
+        }
+    }
+    return $self->{force_flush};
+}
+
+
+=head2 _do_flush
+
+ Title   : _do_flush
+ Usage   : 
+ Function: internal method to do the force that meta values are same 
+           length as the sequence . Called from L<force_flush>
+ Returns : 
+ Args    : 
+
+=cut
+
+
+sub _do_flush {
+    my ($self) = @_;
+
+    foreach my $name ( ('DEFAULT', $self->meta_names) ) {
+
+        # elongnation
+        if ($self->length > $self->named_meta_length($name)) {
+            $self->{'_meta'}->{$name} .= $META_GAP x ($self->length - $self->named_meta_length($name)) ;
+        }
+        # truncation
+        elsif ( $self->length < $self->named_meta_length($name) ) {
+            $self->{_meta}->{$name} = substr($self->{_meta}->{$name}, 0, $self->length-1);
+        }
+    }
+
+}
+
+
+=head2 is_flush
+
+ Title   : is_flush
+ Usage   : $is_flush  = $obj->is_flush()
+           or  $is_flush = $obj->is_flush($my_meta_name)
+ Function: Boolean to tell if all meta values are in
+           flush with the sequence length.
+           Returns true if force_flush() is set
+           Set verbosity to a positive value to see failed meta sets
+ Returns : boolean 1 or 0
+ Args    : optional name of the meta set
+
+=cut
+
+
+sub is_flush {
+
+    my ($self, $name) = shift;
+
+    return 1 if $self->force_flush;
+
+    my $sticky = '';
+
+
+    if ($name) {
+        $sticky .= "$name " if $self->length != $self->named_meta_length($name);
+    } else {
+        foreach my $m ($self->meta_names) {
+            $sticky .= "$m " if $self->length != $self->named_meta_length($m);
+        }
+    }
+
+    if ($sticky) {
+        print "These meta set are not flush: $sticky\n" if $self->verbose; 
+        return 0;
+    }
+
+    return 1;
+}
 
 
 =head1 Bio::PrimarySeqI methods
@@ -492,11 +646,17 @@ sub meta_names {
            the order of residues and their meta information is reversed.
  Returns : A new (fresh) Bio::Seq::Meta object
  Args    : none
+ Throws  : if the object returns false on is_flush()
+
+Note: The method does nothing to meta values, it reorders them, only.
 
 =cut
 
 sub revcom {
     my $self = shift;
+
+    $self->throw("Can not get a reverse complement. The object is not flush.")
+        unless $self->is_flush;
 
     my $new = $self->SUPER::revcom;
     foreach (keys %{$self->{_meta}}) {
@@ -544,7 +704,6 @@ sub to_string {
     my $out = Bio::SeqIO->new(-format=>'metafasta');
     $out->write_seq($self);
     return 1;
-#    undef;
 }
 
 1;

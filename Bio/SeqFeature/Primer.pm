@@ -1,3 +1,6 @@
+# $Id: Primer.pm,v 1.21.4.1 2006/10/02 23:10:28 sendu Exp $
+#
+# BioPerl module for Bio::SeqFeature::Primer
 #
 # This is the original copyright statement. I have relied on Chad's module
 # extensively for this module.
@@ -22,7 +25,6 @@
 # You may distribute this module under the same terms as perl itself
 # POD documentation - main docs before the code
 
-
 =head1 NAME
 
 Bio::SeqFeature::Primer - Primer Generic SeqFeature
@@ -43,8 +45,8 @@ Bio::SeqFeature::Primer - Primer Generic SeqFeature
  $primer->location(500);
  my $location=$primer->location(500);
 
- # get or set the 5' end of the primer homology, as the primer doesn't have to be the
- # same as the target sequence
+ # get or set the 5' end of the primer homology, as the primer doesn't 
+ # have to be the same as the target sequence
  $primer->start(2);
  my $start=$primer->start;
 
@@ -94,17 +96,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
- bioperl-l@bioperl.org          - General discussion
- http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-    bioperl-bugs@bio.perl.org
-    http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR 
 
@@ -127,13 +128,11 @@ Chad Matsalla, bioinformatics1@dieselwurks.com
 package Bio::SeqFeature::Primer;
 use strict;
 
-use Bio::Root::Root;
-use Bio::SeqFeature::Generic;
 use Bio::Seq;
 use Bio::Tools::SeqStats;
 
 
-use vars qw ($AUTOLOAD @RES %OK_FIELD @ISA $ID);
+use vars qw ($AUTOLOAD @RES %OK_FIELD $ID);
 
 BEGIN {
  @RES=qw(); # nothing here yet, not sure what we want!
@@ -141,7 +140,7 @@ BEGIN {
  foreach my $attr (@RES) {$OK_FIELD{$attr}++}
 }
 
-@ISA = qw(Bio::Root::Root Bio::SeqFeature::Generic);
+use base qw(Bio::Root::Root Bio::SeqFeature::Generic);
 
 $ID = 'Bio::SeqFeature::Primer';
 
@@ -338,14 +337,112 @@ sub display_id {
      return $self->seq()->display_id();
 }
 
+
 =head2 Tm()
 
- Title   : Tm()
- Usage   : $tm = $primer->Tm(-salt=>'0.05')
+  Title   : Tm()
+  Usage   : $tm = $primer->Tm(-salt=>'0.05', -oligo=>'0.0000001')
+  Function: Calculates and returns the Tm (melting temperature) of the primer
+  Returns : A scalar containing the Tm.
+  Args    : -salt set the Na+ concentration on which to base the calculation (default=0.05 molar).
+          : -oligo set the oligo concentration on which to base the calculation (default=0.00000025 molar).
+  Notes   : Calculation of Tm as per Allawi et. al Biochemistry 1997 36:10581-10594.  Also see
+            documentation at http://biotools.idtdna.com/analyzer/ as they use this formula and
+            have a couple nice help pages.  These Tm values will be about are about 0.5-3 degrees
+            off from those of the idtdna web tool.  I don't know why.
+
+            This was suggested by Barry Moore (thanks!). See the discussion on the bioperl-l
+            with the subject "Bio::SeqFeature::Primer Calculating the PrimerTM"
+
+=cut
+
+sub Tm  {
+     my ($self, %args) = @_;
+     my $salt_conc = 0.05; #salt concentration (molar units)
+     my $oligo_conc = 0.00000025; #oligo concentration (molar units)
+     if ($args{'-salt'}) {$salt_conc = $args{'-salt'}} #accept object defined salt concentration
+     if ($args{'-oligo'}) {$oligo_conc = $args{'-oligo'}} #accept object defined oligo concentration
+     my $seqobj = $self->seq();
+     my $length = $seqobj->length();
+     my $sequence = uc $seqobj->seq();
+     my @dinucleotides;
+     my $enthalpy;
+     my $entropy;
+     #Break sequence string into an array of all possible dinucleotides
+     while ($sequence =~ /(.)(?=(.))/g) {
+         push @dinucleotides, $1.$2;
+     }
+     #Build a hash with the thermodynamic values
+     my %thermo_values = ('AA' => {'enthalpy' => -7.9,
+                                   'entropy'  => -22.2},
+                          'AC' => {'enthalpy' => -8.4,
+                                   'entropy'  => -22.4},
+                          'AG' => {'enthalpy' => -7.8,
+                                   'entropy'  => -21},
+                          'AT' => {'enthalpy' => -7.2,
+                                   'entropy'  => -20.4},
+                          'CA' => {'enthalpy' => -8.5,
+                                   'entropy'  => -22.7},
+                          'CC' => {'enthalpy' => -8,
+                                   'entropy'  => -19.9},
+                          'CG' => {'enthalpy' => -10.6,
+                                   'entropy'  => -27.2},
+                          'CT' => {'enthalpy' => -7.8,
+                                   'entropy'  => -21},
+                          'GA' => {'enthalpy' => -8.2,
+                                   'entropy'  => -22.2},
+                          'GC' => {'enthalpy' => -9.8,
+                                   'entropy'  => -24.4},
+                          'GG' => {'enthalpy' => -8,
+                                   'entropy'  => -19.9},
+                          'GT' => {'enthalpy' => -8.4,
+                                   'entropy'  => -22.4},
+                          'TA' => {'enthalpy' => -7.2,
+                                   'entropy'  => -21.3},
+                          'TC' => {'enthalpy' => -8.2,
+                                   'entropy'  => -22.2},
+                          'TG' => {'enthalpy' => -8.5,
+                                   'entropy'  => -22.7},
+                          'TT' => {'enthalpy' => -7.9,
+                                   'entropy'  => -22.2},
+                          'A' =>  {'enthalpy' => 2.3,
+                                   'entropy'  => 4.1},
+                          'C' =>  {'enthalpy' => 0.1,
+                                   'entropy'  => -2.8},
+                          'G' =>  {'enthalpy' => 0.1,
+                                   'entropy'  => -2.8},
+                          'T' =>  {'enthalpy' => 2.3,
+                                   'entropy'  => 4.1}
+                         );
+     #Loop through dinucleotides and calculate cumulative enthalpy and entropy values
+     for (@dinucleotides) {
+        $enthalpy += $thermo_values{$_}{enthalpy};
+        $entropy += $thermo_values{$_}{entropy};
+     }
+     #Account for initiation parameters
+     $enthalpy += $thermo_values{substr($sequence, 0, 1)}{enthalpy};
+     $entropy += $thermo_values{substr($sequence, 0, 1)}{entropy};
+     $enthalpy += $thermo_values{substr($sequence, -1, 1)}{enthalpy};
+     $entropy += $thermo_values{substr($sequence, -1, 1)}{entropy};
+     #Symmetry correction
+     $entropy -= 1.4;
+     my $r = 1.987; #molar gas constant
+     my $tm = ($enthalpy * 1000 / ($entropy + ($r * log($oligo_conc))) - 273.15 + (12* (log($salt_conc)/log(10))));
+     $self->{'Tm'}=$tm;
+     return $tm;
+ }
+
+=head2 Tm_estimate
+
+ Title   : Tm_estimate
+ Usage   : $tm = $primer->Tm_estimate(-salt=>'0.05')
  Function: Calculates and returns the Tm (melting temperature) of the primer
  Returns : A scalar containing the Tm.
  Args    : -salt set the Na+ concentration on which to base the calculation.
- Notes   : This Tm calculations are taken from the Primer3 docs: They are
+ Notes   : This is an estimate of the Tm that is kept in for comparative reasons.
+           You should probably use Tm instead!
+
+	   This Tm calculations are taken from the Primer3 docs: They are
 	   based on Bolton and McCarthy, PNAS 84:1390 (1962) 
 	   as presented in Sambrook, Fritsch and Maniatis,
 	   Molecular Cloning, p 11.46 (1989, CSHL Press).
@@ -366,7 +463,7 @@ sub display_id {
 
 =cut
 
-sub Tm {
+sub Tm_estimate {
 
  # note I really think that this should be put into seqstats as it is more generic, but what the heck.
 

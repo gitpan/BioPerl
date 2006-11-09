@@ -1,4 +1,4 @@
-# $Id: GeneStructureI.pm,v 1.8 2002/10/22 07:38:41 lapp Exp $
+# $Id: GeneStructureI.pm,v 1.12.4.1 2006/10/02 23:10:28 sendu Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::GeneStructureI
 #
@@ -12,12 +12,12 @@
 
 =head1 NAME
 
-Bio::SeqFeature::Gene::GeneStructure - A feature representing an arbitrarily
+Bio::SeqFeature::Gene::GeneStructureI - A feature representing an arbitrarily
            complex structure of a gene
 
 =head1 SYNOPSIS
 
-  #documentaion needed
+  #documentation needed
 
 =head1 DESCRIPTION
 
@@ -29,26 +29,22 @@ A feature representing a gene structure.
 
 User feedback is an integral part of the evolution of this
 and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+to one of the Bioperl mailing lists. Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
 Email hlapp@gmx.net
-
-Describe contact details here
 
 =head1 APPENDIX
 
@@ -62,13 +58,11 @@ Internal methods are usually preceded with a _
 
 
 package Bio::SeqFeature::Gene::GeneStructureI;
-use vars qw(@ISA);
 use strict;
 
 use Carp;
-use Bio::SeqFeatureI;
 
-@ISA = qw(Bio::SeqFeatureI);
+use base qw(Bio::SeqFeatureI);
 
 =head2 transcripts
 

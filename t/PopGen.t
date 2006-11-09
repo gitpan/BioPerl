@@ -1,5 +1,5 @@
 # -*-Perl-*- mode for emacs
-# $Id: PopGen.t,v 1.18 2003/11/11 02:37:40 jason Exp $
+# $Id: PopGen.t,v 1.27 2006/06/08 02:11:21 jason Exp $
 
 # This will outline many tests for the population genetics
 # objects in the Bio::PopGen namespace
@@ -19,7 +19,7 @@ BEGIN {
 	use lib 't';
     }
     use vars qw($NTESTS);
-    $NTESTS = 74;
+    $NTESTS = 89;
     $error = 0;
 
     use Test;
@@ -37,8 +37,28 @@ use Bio::PopGen::Genotype;
 use Bio::PopGen::Population;
 use Bio::PopGen::IO;
 use Bio::PopGen::PopStats;
-
+use Bio::AlignIO;
 use Bio::PopGen::Statistics;
+use Bio::PopGen::Utilities;
+
+
+# test Fu and Li's D using data from the paper
+
+ok(sprintf("%.3f",
+	   Bio::PopGen::Statistics->fu_and_li_D_counts(24, 18, 9)),
+   -1.529);
+
+ok(sprintf("%.3f",
+	   Bio::PopGen::Statistics->fu_and_li_D_star_counts(24, 18, 10)),
+   -1.558);
+
+ok(sprintf("%.3f",
+	   Bio::PopGen::Statistics->fu_and_li_F_counts(24, 3.16, 18, 9)),
+   -1.735);
+
+ok(sprintf("%.2f",
+	   Bio::PopGen::Statistics->fu_and_li_F_star_counts(24, 3.16, 18, 10)),
+   -1.71);
 
 my ($FILE1) = qw(popgentst1.out);
 
@@ -145,7 +165,7 @@ my $envpop = new Bio::PopGen::Population(-name        => 'NC',
 					  -individuals => \@envinds);
 
 my $stats = new Bio::PopGen::PopStats(-haploid => 1);
-my $fst = $stats->Fst([$mrsapop,$mssapop],[qw(AFLP1 )]);
+my $fst = $stats->Fst([$mrsapop,$mssapop],[qw(AFLP1)]);
 # We're going to check the values against other programs first
 ok(sprintf("%.3f",$fst),0.077,'mrsa,mssa aflp1'); 
   
@@ -234,8 +254,7 @@ $poptst2->set_Allele_Frequency(-name      => 'marker1',
 			       -frequency => '0.40');
 
 #$fst = $stats->Fst([$poptst1,$poptst2],[qw(marker1 marker2) ]);
-skip('Fst not calculated yet',1,'marker1 test'); # 
-
+skip('Fst not calculated yet for just allele freqs',1,'marker1 test'); # 
 
 $io = new Bio::PopGen::IO(-format => 'csv',
 			  -file   => ">$FILE1");
@@ -274,7 +293,7 @@ unlink($FILE1);
 $io = new Bio::PopGen::IO(-format          => 'prettybase',
 			  -no_header       => 1,
 			  -file            => Bio::Root::IO->catfile
-			  (qw(t data popstats.prettybase)));
+			  (qw(t data popstats.prettybase )));
 my (@ingroup,@outgroup);
 my $sitecount;
 while( my $ind = $io->next_individual ) {
@@ -305,19 +324,21 @@ ok(Bio::PopGen::Statistics->pi($ingroup,$sitecount),0.4);
 ok(Bio::PopGen::Statistics->theta($ingroup),1.92);
 ok(Bio::PopGen::Statistics->theta($ingroup,$sitecount),0.384);
 
+my $haploidpop = $ingroup->haploid_population;
+ok(sprintf("%.5f",Bio::PopGen::Statistics->tajima_D($haploidpop)), 0.27345);
+
 # to fix
 ok(sprintf("%.5f",Bio::PopGen::Statistics->tajima_D(\@ingroup)),0.27345);
 ok(sprintf("%.5f",Bio::PopGen::Statistics->tajima_D($ingroup)),0.27345);
-
 
 ok(sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_D_star(\@ingroup)),
    0.27345);
 ok(sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_D_star($ingroup)),
    0.27345);
 
-skip(sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_F_star(\@ingroup)),
-   0.27834);
-skip(sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_F_star($ingroup)),
+ok(sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_F_star(\@ingroup)),
+     0.27834);
+ok(sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_F_star($ingroup)),
    0.27834);
 
 ok((Bio::PopGen::Statistics->derived_mutations(\@ingroup,\@outgroup))[0], 1);
@@ -326,6 +347,8 @@ ok((Bio::PopGen::Statistics->derived_mutations(\@ingroup,$outgroup))[0], 1);
 ok((Bio::PopGen::Statistics->derived_mutations($ingroup,$outgroup))[0], 1);
 
 # expect to have 1 external mutation
+@ingroup = $haploidpop->get_Individuals;
+
 ok(sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_D(\@ingroup,1)),0.75653);
 ok(sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_D($ingroup,1)),0.75653);
 
@@ -338,12 +361,13 @@ ok(sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_D($ingroup,
 ok(sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_D(\@ingroup,
 						       $outgroup)),0.75653);
 
-skip(sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_F(\@ingroup,1)),0.77499);
-skip(sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_F($ingroup,1)),0.77499);
-skip(sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_F($ingroup,
+ok(sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_F(\@ingroup,1)),
+     0.77499);
+ok(sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_F($haploidpop,1)),0.77499);
+ok(sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_F($ingroup,
 						       \@outgroup)),0.77499);
-skip(sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_F($ingroup,
-						       $outgroup)),0.77499);
+ok( sprintf("%.5f",Bio::PopGen::Statistics->fu_and_li_F($ingroup,
+							 $outgroup)),0.77499);
 
 
 # Test composite LD
@@ -372,3 +396,68 @@ $pop = $io->next_population;
 
 ok(sprintf("%.4f",$LD{'ProC9198EA'}->{'ProcR2973EA'}->[0]), -0.0375);
 ok(sprintf("%.2f",$LD{'ProC9198EA'}->{'ProcR2973EA'}->[1]), 2.56);
+
+
+
+# build a population from an alignment
+
+my $alnin = Bio::AlignIO->new(-format => 'clustalw',
+			      -file   => Bio::Root::IO->catfile(qw(t data T7.aln)));
+my $aln = $alnin->next_aln;
+$population = Bio::PopGen::Utilities->aln_to_population(-alignment => $aln);
+ok($population->get_number_individuals,9);
+#warn($aln->match_line,"\n");
+my $matchline = $aln->match_line;
+ok( $population->get_marker_names, $matchline =~ tr/ //);
+for my $name ( $population->get_marker_names ) {
+    my $marker = $population->get_Marker($name); 
+#    warn("$name ",join(" ",$marker->get_Alleles()),"\n");
+}
+
+
+# test Rich's phase and hap parsers
+
+$io = new Bio::PopGen::IO(-format   => 'hapmap',
+			  -verbose  => 1,
+			  -no_header=> 1,
+			  -starting_column => 10,
+			  -file     => Bio::Root::IO->catfile(qw(t data
+								example.hap)));
+
+# Some IO might support reading in a population at a time
+
+my @population;
+while( my $ind = $io->next_individual ) {
+    push @population, $ind;
+}
+ok(@population, 90);
+ok($population[3]->unique_id, 'NA06994');
+ok($population[3]->get_Genotypes, 34);
+$population = Bio::PopGen::Population->new(-individuals => \@population);
+
+ok(sprintf("%.3f",$stats->pi($population)),12.335);
+# if forced haploid population is called within pi
+# need to decide about that...
+# ok(sprintf("%.3f",$stats->pi($population)),12.266);
+
+ok(sprintf("%.3f",$stats->theta($population)),5.548);
+skip(1,'tjd inconsistency, need to recalculate');
+skip(1,'tjd inconsistency, need to recalculate');
+#ok(sprintf("%.3f",$stats->tajima_D($population)),2.926);
+#ok(sprintf("%.3f",$stats->tajima_D($population->haploid_population)),3.468);
+
+$io = new Bio::PopGen::IO(-format => 'phase',
+			  -file   => Bio::Root::IO->catfile(qw(t data
+							       example.phase)));
+
+# Some IO might support reading in a population at a time
+
+@population = ();
+while( my $ind = $io->next_individual ) {
+    push @population, $ind;
+}
+ok(@population, 4);
+
+
+# test diploid data
+

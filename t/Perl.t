@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: Perl.t,v 1.7 2003/10/25 14:52:22 heikki Exp $
+# $Id: Perl.t,v 1.8.6.1 2006/10/16 17:08:15 sendu Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -13,39 +13,39 @@ $DEBUG = $ENV{'BIOPERLDEBUG'} || 0;
 my $error;
 
 BEGIN { 
-    # to handle systems with no installed Test module
-    # we include the t dir (where a copy of Test.pm is located)
-    # as a fallback
-    eval { require Test; };
-    $error = 0;
-    if( $@ ) {
-	use lib 't';
-    }
-    use Test;
-
-    $NUMTESTS = 14;
-    $BIODBTESTS = 5;
-    plan tests => $NUMTESTS;
-    eval { require IO::String };
-    if( $@ ) {
-	print STDERR "IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping some tests.\n";
-	for( 1..$BIODBTESTS ) {
-	    skip("IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping some tests",1);
+	# to handle systems with no installed Test module
+	# we include the t dir (where a copy of Test.pm is located)
+	# as a fallback
+	eval { require Test; };
+	$error = 0;
+	if( $@ ) {
+		use lib 't';
 	}
-       $error = 1; 
-    }
+	use Test;
+
+	$NUMTESTS = 14;
+	$BIODBTESTS = 5;
+	plan tests => $NUMTESTS;
+	eval { require IO::String };
+	if( $@ ) {
+		print STDERR "IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping some tests.\n";
+		for( 1..$BIODBTESTS ) {
+			skip("IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping some tests",1);
+		}
+		$error = 1;
+	}
 }
 
 END {
-    # clean up after oneself
-    unlink (  'Perltmp' );
-
-    for ( $Test::ntest..$NUMTESTS ) {
-	skip("Unable to run db access tests - probably no network connection.",1);
-    }
+	# clean up after oneself
+	unlink (  'Perltmp' );
+	for ( $Test::ntest..$NUMTESTS ) {
+		skip("Unable to run database access tests",1);
+	}
 }
 
 use Bio::Perl;
+use File::Spec;
 
 ## End of black magic.
 ##
@@ -58,13 +58,13 @@ my ($seq_object,$filename,@seq_object_array);
 
 
 # will guess file format from extension
-$filename = 't/data/cysprot1.fa';
+$filename = File::Spec->catfile(qw(t data cysprot1.fa));
 ok ($seq_object = read_sequence($filename)); 
 # forces genbank format
-$filename = 't/data/AF165282.gb';
+$filename = File::Spec->catfile(qw(t data AF165282.gb));
 ok  ($seq_object = read_sequence($filename,'genbank')); 
 # reads an array of sequences
-$filename = 't/data/amino.fa';
+$filename = File::Spec->catfile(qw(t data amino.fa));
 ok (@seq_object_array = read_all_sequences($filename,'fasta'), 2); 
 $filename = 'Perltmp';
 ok write_sequence(">$filename",'genbank',$seq_object);

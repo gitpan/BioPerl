@@ -1,4 +1,4 @@
-# $Id: InstanceSiteI.pm,v 1.3 2003/10/25 15:00:57 heikki Exp $
+# $Id: InstanceSiteI.pm,v 1.10.4.1 2006/10/02 23:10:21 sendu Exp $
 
 =head1 NAME
 
@@ -7,13 +7,15 @@ Bio::Matrix::PSM::InstanceSiteI - InstanceSite interface, holds an instance of a
 =head1 SYNOPSIS
 
   use Bio::Matrix::PSM::InstanceSite;
-  #You can get an InstanceSite object either from a file:
+  #Y ou can get an InstanceSite object either from a file:
   my ($instances,$matrix)=$SomePSMFile->parse_next;
   #or from memory
-  my %params=(seq=>'TATAAT',
-              id=>"TATAbox1", accession='ENSG00000122304', mid=>'TB1',
-              desc=>'TATA box, experimentally verified in PRM1 gene',
-              relpos=>-35);
+  my %params=(seq       => 'TATAAT',
+              id        => "TATAbox1", 
+              accession => 'ENSG00000122304', 
+              mid       => 'TB1',
+              desc      => 'TATA box, experimentally verified in PRM1 gene',
+              relpos    => -35);
 
 =head1 DESCRIPTION
 
@@ -39,17 +41,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html     - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Stefan Kirov
 
@@ -66,13 +67,10 @@ L<Bio::Matrix::PSM::SiteMatrix>, L<Bio::Matrix::PSM::Psm>, L<Bio::Matrix::PSM::I
 
 # Let the code begin...
 package Bio::Matrix::PSM::InstanceSiteI;
-use Bio::LocatableSeq;
-use Bio::Root::RootI;
-use vars qw(@ISA);
 use strict;
 
-@ISA=qw(Bio::Root::RootI  Bio::LocatableSeq);
- 
+use base qw(Bio::Root::RootI);
+
 =head2 mid
 
  Title   : mid

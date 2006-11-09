@@ -1,4 +1,4 @@
-# $Id: Generic.pm,v 1.85 2003/10/23 02:30:49 lstein Exp $
+# $Id: Generic.pm,v 1.103.4.1 2006/10/02 23:10:28 sendu Exp $
 #
 # BioPerl module for Bio::SeqFeature::Generic
 #
@@ -16,15 +16,17 @@ Bio::SeqFeature::Generic - Generic SeqFeature
 
 =head1 SYNOPSIS
 
-   $feat = new Bio::SeqFeature::Generic ( -start => 10, -end => 100,
-                                -strand => -1, -primary => 'repeat',
-                                -source_tag   => 'repeatmasker',
-				-display_name => 'alu family',
-                                -score  => 1000,
-                                -tag    => {
-                                    new => 1,
-                                    author => 'someone',
-                                    sillytag => 'this is silly!' } );
+   $feat = new Bio::SeqFeature::Generic ( 
+            -start        => 10, 
+            -end          => 100,
+            -strand       => -1, 
+            -primary      => 'repeat', # -primary_tag is a synonym
+            -source_tag   => 'repeatmasker',
+            -display_name => 'alu family',
+            -score        => 1000,
+            -tag          => { new => 1,
+                               author => 'someone',
+                               sillytag => 'this is silly!' } );
 
    $feat = new Bio::SeqFeature::Generic ( -gff_string => $string );
    # if you want explicitly GFF1
@@ -33,8 +35,6 @@ Bio::SeqFeature::Generic - Generic SeqFeature
    # add it to an annotated sequence
 
    $annseq->add_SeqFeature($feat);
-
-
 
 =head1 DESCRIPTION
 
@@ -46,8 +46,8 @@ For many Features, this is all you will need to use (for example, this
 is fine for Repeats in DNA sequence or Domains in protein
 sequence). For other features, which have more structure, this is a
 good base class to extend using inheritence to have new things: this
-is what is done in the Bio::SeqFeature::Gene,
-Bio::SeqFeature::Transcript and Bio::SeqFeature::Exon, which provide
+is what is done in the L<Bio::SeqFeature::Gene>,
+L<Bio::SeqFeature::Transcript> and L<Bio::SeqFeature::Exon>, which provide
 well coordinated classes to represent genes on DNA sequence (for
 example, you can get the protein sequence out from a transcript
 class).
@@ -56,16 +56,16 @@ For many Features, you want to add some piece of information, for
 example a common one is that this feature is 'new' whereas other
 features are 'old'.  The tag system, which here is implemented using a
 hash can be used here.  You can use the tag system to extend the
-SeqFeature::Generic programmatically: that is, you know that you have
+L<Bio::SeqFeature::Generic> programmatically: that is, you know that you have
 read in more information into the tag 'mytag' which you can then
-retrieve. This means you do not need to know how to write inherieted
+retrieve. This means you do not need to know how to write inherited
 Perl to provide more complex information on a feature, and/or, if you
 do know but you do not want to write a new class every time you need
 some extra piece of information, you can use the tag system to easily
 store and then retrieve information.
 
 The tag system can be written in/out of GFF format, and also into EMBL
-format via the SeqIO system
+format via the L<Bio::SeqIO> system
 
 =head1 Implemented Interfaces
 
@@ -73,13 +73,13 @@ This class implementes the following interfaces.
 
 =over 4
 
-=item Bio::SeqFeatureI
+=item L<Bio::SeqFeatureI>
 
 Note that this includes implementing Bio::RangeI.
 
-=item Bio::AnnotatableI
+=item L<Bio::AnnotatableI>
 
-=item Bio::FeatureHolderI
+=item L<Bio::FeatureHolderI>
 
 Features held by a feature are essentially sub-features.
 
@@ -93,17 +93,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via 
+the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
@@ -111,7 +110,7 @@ Ewan Birney E<lt>birney@sanger.ac.ukE<gt>
 
 =head1 DEVELOPERS
 
-This class has been written with an eye out of inheritence. The fields
+This class has been written with an eye out for inheritance. The fields
 the actual object hash are:
 
    _gsf_tag_hash  = reference to a hash for the tags
@@ -129,24 +128,20 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::SeqFeature::Generic;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
-use Bio::SeqFeatureI;
 use Bio::AnnotatableI;
-use Bio::FeatureHolderI;
 use Bio::Annotation::Collection;
 use Bio::Location::Simple;
+use Bio::Location::Split;
 use Bio::Tools::GFF;
 #use Tie::IxHash;
 
-@ISA = qw(Bio::Root::Root Bio::SeqFeatureI 
-          Bio::AnnotatableI Bio::FeatureHolderI);
+use base qw(Bio::Root::Root Bio::SeqFeatureI Bio::FeatureHolderI);
 
 sub new {
-    my ( $caller, @args) = @_;   
-    my ($self) = $caller->SUPER::new(@args); 
+    my ( $caller, @args) = @_;
+    my ($self) = $caller->SUPER::new(@args);
     $self->_register_for_cleanup(\&cleanup_generic);
     $self->{'_parse_h'}       = {};
     $self->{'_gsf_tag_hash'}  = {};
@@ -169,10 +164,11 @@ sub new {
  Args    : Named parameters, in the form as they would otherwise be passed
            to new(). Currently recognized are:
 
-                  -start          start position
+                    -start          start position
                     -end            end position
                     -strand         strand
-                    -primary        primary tag
+                    -primary_tag    primary tag 
+                    -primary        (synonym for -primary_tag)
                     -source         source tag
                     -frame          frame
                     -score          score value
@@ -187,8 +183,8 @@ sub new {
 
 sub set_attributes {
     my ($self,@args) = @_;
-    my ($start, $end, $strand, $primary_tag, $source_tag, $primary, $source, $frame, 
-        $score, $tag, $gff_string, $gff1_string,
+    my ($start, $end, $strand, $primary_tag, $source_tag, $primary, 
+		  $source, $frame, $score, $tag, $gff_string, $gff1_string,
         $seqname, $seqid, $annot, $location,$display_name) =
             $self->_rearrange([qw(START
                                   END
@@ -214,17 +210,17 @@ sub set_attributes {
         $self->gff_format(Bio::Tools::GFF->new('-gff_version' => 1));
         $self->_from_gff_stream($gff1_string);
     };
-    $primary_tag    && $self->primary_tag($primary_tag);
-    $source_tag     && $self->source_tag($source_tag);
-    $primary        && $self->primary_tag($primary);
-    $source         && $self->source_tag($source);
-    defined $start  && $self->start($start);
-    defined $end    && $self->end($end);
-    defined $strand && $self->strand($strand);
-    defined $frame  && $self->frame($frame);
+    $primary_tag            && $self->primary_tag($primary_tag);
+    $source_tag             && $self->source_tag($source_tag);
+    $primary                && $self->primary_tag($primary);
+    $source                 && $self->source_tag($source);
+    defined $start          && $self->start($start);
+    defined $end            && $self->end($end);
+    defined $strand         && $self->strand($strand);
+    defined $frame          && $self->frame($frame);
     defined $display_name   && $self->display_name($display_name);
     defined $score          && $self->score($score);
-    $annot          && $self->annotation($annot);
+    $annot                  && $self->annotation($annot);
     if($seqname) {
         $self->warn("-seqname is deprecated. Please use -seq_id instead.");
         $seqid = $seqname unless $seqid;
@@ -232,7 +228,7 @@ sub set_attributes {
     $seqid          && $self->seq_id($seqid);
     $tag            && do {
         foreach my $t ( keys %$tag ) {
-            $self->add_tag_value($t,$tag->{$t});
+            $self->add_tag_value($t, UNIVERSAL::isa($tag->{$t}, "ARRAY") ? @{$tag->{$t}} : $tag->{$t});
         }
     };
 }
@@ -251,7 +247,7 @@ sub set_attributes {
 =cut
 
 sub direct_new {
-    my ( $class) = @_;   
+    my ( $class) = @_;
     my ($self) = {};
 
     bless $self,$class;
@@ -450,106 +446,6 @@ sub source_tag {
     return $self->{'_source_tag'};
 }
 
-=head2 has_tag
-
- Title   : has_tag
- Usage   : $value = $self->has_tag('some_tag')
- Function: Tests wether a feature contaings a tag
- Returns : TRUE if the SeqFeature has the tag,
-           and FALSE otherwise.
- Args    : The name of a tag
-
-
-=cut
-
-sub has_tag {
-    my ($self, $tag) = @_;
-    return exists $self->{'_gsf_tag_hash'}->{$tag};
-}
-
-=head2 add_tag_value
-
- Title   : add_tag_value
- Usage   : $self->add_tag_value('note',"this is a note");
- Returns : TRUE on success
- Args    : tag (string) and one or more values (any scalar(s))
-
-
-=cut
-
-sub add_tag_value {
-    my $self = shift;
-    my $tag = shift;
-    $self->{'_gsf_tag_hash'}->{$tag} ||= [];
-    push(@{$self->{'_gsf_tag_hash'}->{$tag}},@_);
-}
-
-
-=head2 get_tag_values
-
- Title   : get_tag_values
- Usage   : @values = $gsf->get_tag_values('note');
- Function: Returns a list of all the values stored
-           under a particular tag.
- Returns : A list of scalars
- Args    : The name of the tag
-
-
-=cut
-
-sub get_tag_values {
-   my ($self, $tag) = @_;
-
-   if( ! defined $tag ) { return (); }
-   if ( ! exists $self->{'_gsf_tag_hash'}->{$tag} ) {
-       $self->throw("asking for tag value that does not exist $tag");
-   }
-   return @{$self->{'_gsf_tag_hash'}->{$tag}};
-}
-
-
-=head2 get_all_tags
-
- Title   : get_all_tags
- Usage   : @tags = $feat->get_all_tags()
- Function: Get a list of all the tags in a feature
- Returns : An array of tag names
- Args    : none
-
-# added a sort so that tags will be returned in a predictable order
-# I still think we should be able to specify a sort function
-# to the object at some point
-# -js
-
-=cut
-
-sub get_all_tags {
-   my ($self, @args) = @_;   
-   return sort keys %{ $self->{'_gsf_tag_hash'}};
-}
-
-=head2 remove_tag
-
- Title   : remove_tag
- Usage   : $feat->remove_tag('some_tag')
- Function: removes a tag from this feature
- Returns : the array of values for this tag before removing it
- Args    : tag (string)
-
-
-=cut
-
-sub remove_tag {
-   my ($self, $tag) = @_;
-
-   if ( ! exists $self->{'_gsf_tag_hash'}->{$tag} ) {
-       $self->throw("trying to remove a tag that does not exist: $tag");
-   }
-   my @vals = @{$self->{'_gsf_tag_hash'}->{$tag}};
-   delete $self->{'_gsf_tag_hash'}->{$tag};
-   return @vals;
-}
-
 =head2 attach_seq
 
  Title   : attach_seq
@@ -601,7 +497,7 @@ sub seq {
    }
 
    if ( ! exists $self->{'_gsf_seq'} ) {
-       return undef;
+       return;
    }
 
    # assumming our seq object is sensible, it should not have to yank
@@ -756,7 +652,10 @@ sub get_SeqFeatures {
 #'
 sub add_SeqFeature{
     my ($self,$feat,$expand) = @_;
-
+    unless( defined $feat ) {
+	$self->warn("Called add_SeqFeature with no feature, ignoring");
+	return;
+    }
     if ( !$feat->isa('Bio::SeqFeatureI') ) {
         $self->warn("$feat does not implement Bio::SeqFeatureI. Will add it anyway, but beware...");
     }
@@ -860,27 +759,27 @@ sub gff_string{
    return $formatter->gff_string($self);
 }
 
-#  =head2 slurp_gff_file
-#
-#   Title   : slurp_file
-#   Usage   : @features = Bio::SeqFeature::Generic::slurp_gff_file(\*FILE);
-#   Function: Sneaky function to load an entire file as in memory objects.
-#             Beware of big files.
-#
-#             This method is deprecated. Use Bio::Tools::GFF instead, which can
-#             also handle large files.
-#
-#   Example :
-#   Returns :
-#   Args    :
-#
-#  =cut
+=head2 slurp_gff_file
+
+ Title   : slurp_file
+ Usage   : @features = Bio::SeqFeature::Generic::slurp_gff_file(\*FILE);
+ Function: Sneaky function to load an entire file as in memory objects.
+           Beware of big files.
+
+           This method is deprecated. Use Bio::Tools::GFF instead, which can
+           also handle large files.
+
+ Example :
+ Returns :
+ Args    :
+
+=cut
 
 sub slurp_gff_file {
    my ($f) = @_;
    my @out;
    if ( !defined $f ) {
-       die "Must have a filehandle";
+       Bio::Root::Root->throw("Must have a filehandle");
    }
 
    Bio::Root::Root->warn("deprecated method slurp_gff_file() called in Bio::SeqFeature::Generic. Use Bio::Tools::GFF instead.");
@@ -938,16 +837,15 @@ sub _expand_region {
         $self->warn("$feat does not implement Bio::SeqFeatureI");
     }
     # if this doesn't have start/end set - forget it!
-    if((! defined($self->start())) && (! defined $self->end())) {
-        $self->start($feat->start());
-        $self->end($feat->end());
-#        $self->strand($feat->strand) unless defined($self->strand());
-        $self->strand($feat->strand) unless $self->strand();
+    if((! defined($self->start)) && (! defined $self->end)) {
+        $self->start($feat->start);
+        $self->end($feat->end);
+        $self->strand($feat->strand) unless $self->strand;
     } else {
-        my $range = $self->union($feat);
-        $self->start($range->start);
-        $self->end($range->end);
-        $self->strand($range->strand);
+        my ($start,$end,$strand) = $self->union($feat);
+        $self->start($start);
+        $self->end($end);
+        $self->strand($strand);
     }
 }
 
@@ -1008,7 +906,7 @@ sub display_id {
     return $self->display_name(@_);
 }
 
-# this is towards consistent naming
+# # this is towards consistent naming
 sub each_tag_value { return shift->get_tag_values(@_); }
 sub all_tags { return shift->get_all_tags(@_); }
 
@@ -1029,6 +927,30 @@ sub cleanup_generic {
     $self->{'_gsf_seq'} = undef;
     foreach my $t ( keys %{$self->{'_gsf_tag_hash'} || {}} ) {
 	$self->{'_gsf_tag_hash'}->{$t} = undef;
+	delete($self->{'_gsf_tag_hash'}->{$t}); # bug 1720 fix
     }
 }
+
+=head1 INHERITED METHODS FOR L<Bio::AnnotatableI> VIA L<Bio::SeqFeatureI>
+
+=head2 has_tag()
+
+=cut
+
+=head2 add_tag_value()
+
+=cut
+
+=head2 get_tag_values()
+
+=cut
+
+=head2 get_all_tags()
+
+=cut
+
+=head2 remove_tag()
+
+=cut
+
 1;

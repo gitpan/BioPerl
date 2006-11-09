@@ -1,4 +1,4 @@
-# $Id: RandomFactory.pm,v 1.16 2003/12/15 11:50:39 heikki Exp $
+# $Id: RandomFactory.pm,v 1.18.4.1 2006/10/02 23:10:37 sendu Exp $
 #
 # BioPerl module for Bio::Tree::RandomFactory
 #
@@ -59,8 +59,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -68,7 +68,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -91,7 +91,7 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Tree::RandomFactory;
-use vars qw(@ISA $PRECISION_DIGITS $DefaultNodeType %Defaults);
+use vars qw($PRECISION_DIGITS $DefaultNodeType %Defaults);
 use strict;
 
 $PRECISION_DIGITS = 3; # Precision for the branchlength
@@ -101,12 +101,10 @@ $DefaultNodeType = 'Bio::Tree::Node';
 	     'DefaultTreeMethod' => 'yule',
 	     );
 
-use Bio::Factory::TreeFactoryI;
-use Bio::Root::Root;
 use Bio::Tools::RandomDistFunctions;
 use Bio::Tree::Tree;
 
-@ISA = qw(Bio::Root::Root Bio::Factory::TreeFactoryI );
+use base qw(Bio::Root::Root Bio::Factory::TreeFactoryI);
 
 =head2 new
 

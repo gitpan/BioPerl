@@ -1,6 +1,5 @@
-
 #
-# $Id: Abstract.pm,v 1.42 2003/10/15 12:01:33 jason Exp $
+# $Id: Abstract.pm,v 1.49.4.1 2006/10/02 23:10:20 sendu Exp $
 #
 # BioPerl module for Bio::Index::Abstract
 #
@@ -45,17 +44,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via
-email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney, James Gilbert
 
@@ -76,38 +74,36 @@ package Bio::Index::Abstract;
 use strict;
 use Fcntl qw( O_RDWR O_CREAT O_RDONLY );
 use vars qw( $TYPE_AND_VERSION_KEY
-             @ISA $USE_DBM_TYPE $DB_HASH );
+             $USE_DBM_TYPE $DB_HASH );
 
-# Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::Root;
 use Bio::Root::IO;
 use Symbol();
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 # Generate accessor methods for simple object fields
 BEGIN {
-    foreach my $func (qw(filename write_flag)) {
-        no strict 'refs';
-        my $field = "_$func";
+	foreach my $func (qw(filename write_flag)) {
+		no strict 'refs';
+		my $field = "_$func";
 
-        *$func = sub {
-            my( $self, $value ) = @_;
-            
-            if (defined $value) {
-                $self->{$field} = $value;
-            }
-            return $self->{$field};
-        }
-    }
+		*$func = sub {
+			my( $self, $value ) = @_;
+
+			if (defined $value) {
+				$self->{$field} = $value;
+			}
+			return $self->{$field};
+		}
+	}
 }
 
 =head2 new
 
   Usage   : $index = Bio::Index::Abstract->new(
                 -filename    => $dbm_file,
-                -write_flag  => 0,  
+                -write_flag  => 0,
                 -dbm_package => 'DB_File',
                 -verbose     => 0);
   Function: Returns a new index object.  If filename is
@@ -130,12 +126,12 @@ sub new {
     my $self = $class->SUPER::new(@args);
     my( $filename, $write_flag, $dbm_package, $cachesize, $ffactor ) =
         $self->_rearrange([qw(FILENAME 
-			      WRITE_FLAG
-			      DBM_PACKAGE
-			      CACHESIZE
-			      FFACTOR
+			                     WRITE_FLAG
+			                     DBM_PACKAGE
+			                     CACHESIZE
+			                     FFACTOR
 			      )], @args);
-    
+
     # Store any parameters passed
     $self->filename($filename)       if $filename;
     $self->cachesize($cachesize)     if $cachesize;
@@ -145,7 +141,7 @@ sub new {
 
     $self->{'_filehandle'} = []; # Array in which to cache SeqIO objects
     $self->{'_DB'}         = {}; # Gets tied to the DBM file
-    
+
     # Open database
     $self->open_dbm() if $filename;
     return $self;
@@ -195,26 +191,26 @@ sub new {
 =cut
 
 sub dbm_package {
-    my( $self, $value ) = @_;
-    my $to_require = 0;
-    if( $value || ! $self->{'_dbm_package'} ) {
-	my $type = $value || $USE_DBM_TYPE || 'DB_File';	
-	if( $type =~ /DB_File/i ) {
-	    eval { 
-		require DB_File;
-	    };
-	    $type = ( $@ ) ? 'SDBM_File' : 'DB_File';
-	} 	
-	if( $type ne 'DB_File' ) {
-	    eval { require "$type.pm"; };
-	    $self->throw($@) if( $@ );
-	}
-	$self->{'_dbm_package'} = $type;
-	if( ! defined $USE_DBM_TYPE ) {
-	    $USE_DBM_TYPE = $self->{'_dbm_package'};
-	}	
-    } 
-    return $self->{'_dbm_package'};
+	my( $self, $value ) = @_;
+	my $to_require = 0;
+	if( $value || ! $self->{'_dbm_package'} ) {
+		my $type = $value || $USE_DBM_TYPE || 'DB_File';
+		if( $type =~ /DB_File/i ) {
+			eval {
+				require DB_File;
+			};
+			$type = ( $@ ) ? 'SDBM_File' : 'DB_File';
+		}
+		if( $type ne 'DB_File' ) {
+			eval { require "$type.pm"; };
+			$self->throw($@) if( $@ );
+		}
+		$self->{'_dbm_package'} = $type;
+		if( ! defined $USE_DBM_TYPE ) {
+			$USE_DBM_TYPE = $self->{'_dbm_package'};
+		}
+    }
+	return $self->{'_dbm_package'};
 }
 
 =head2 db
@@ -233,7 +229,7 @@ sub dbm_package {
 =cut
 
 sub db {
-    return $_[0]->{'_DB'};
+	return $_[0]->{'_DB'};
 }
 
 
@@ -278,20 +274,19 @@ sub get_stream {
    my $db = $self->db();
 
    if (my $rec = $db->{ $id }) {
-       my( @record );
-       
-       my ($file, $begin, $end) = $self->unpack_record( $rec );
-        
-       # Get the (possibly cached) filehandle
-       my $fh = $self->_file_handle( $file );
-       
-       # move to start
-       seek($fh, $begin, 0);
-       
-       return $fh;
-   }
-   else {
-       $self->throw("Unable to find a record for $id in the flat file index");
+		my( @record );
+
+		my ($file, $begin, $end) = $self->unpack_record( $rec );
+
+		# Get the (possibly cached) filehandle
+		my $fh = $self->_file_handle( $file );
+
+		# move to start
+		seek($fh, $begin, 0);
+
+		return $fh;
+   } else {
+		$self->throw("Unable to find a record for $id in the flat file index");
    }
 }
 
@@ -307,13 +302,12 @@ sub get_stream {
 =cut
 
 sub cachesize {
-    my( $self, $size ) = @_;
+	my( $self, $size ) = @_;
 
 	if(defined $size){
 		$self->{'_cachesize'} = $size;
 	}
 	return ( $self->{'_cachesize'} );
-	
 }
 
 
@@ -329,13 +323,12 @@ sub cachesize {
 =cut
 
 sub ffactor {
-    my( $self, $size ) = @_;
+	my( $self, $size ) = @_;
 
 	if(defined $size){
 		$self->{'_ffactor'} = $size;
 	}
 	return ( $self->{'_ffactor'} );
-	
 }
 
 
@@ -356,27 +349,27 @@ sub ffactor {
 =cut
 
 sub open_dbm {
-    my( $self ) = @_;
-    
-    my $filename = $self->filename()
-        or $self->throw("filename() not set");
+	my( $self ) = @_;
 
-    my $db = $self->db();
-    
-    # Close the dbm file if already open (maybe we're getting
-    # or dropping write access
-    if (ref($db) ne 'HASH') {
-        untie($db);
-    }
-    
-    # What kind of DBM file are we going to open?
-    my $dbm_type = $self->dbm_package;
-    
-    # Choose mode for opening dbm file (read/write+create or read-only).
-    my $mode_flags = $self->write_flag ? O_RDWR|O_CREAT : O_RDONLY;
-    
-    # Open the dbm file
-    if ($dbm_type eq 'DB_File') {
+	my $filename = $self->filename()
+	  or $self->throw("filename() not set");
+
+	my $db = $self->db();
+
+	# Close the dbm file if already open (maybe we're getting
+	# or dropping write access
+	if (ref($db) ne 'HASH') {
+		untie($db);
+	}
+
+	# What kind of DBM file are we going to open?
+	my $dbm_type = $self->dbm_package;
+
+	# Choose mode for opening dbm file (read/write+create or read-only).
+	my $mode_flags = $self->write_flag ? O_RDWR|O_CREAT : O_RDONLY;
+ 
+	# Open the dbm file
+	if ($dbm_type eq 'DB_File') {
 		my $hash_inf = DB_File::HASHINFO->new();
 		my $cache = $self->cachesize();
 		my $ffactor = $self->ffactor();
@@ -386,29 +379,29 @@ sub open_dbm {
 		if ($ffactor){
 			$hash_inf->{'ffactor'} = $ffactor;
 		}
-        tie( %$db, $dbm_type, $filename, $mode_flags, 0644, $hash_inf )
-            or $self->throw("Can't open '$dbm_type' dbm file '$filename' : $!");
-    } else {
-        tie( %$db, $dbm_type, $filename, $mode_flags, 0644 )
-            or $self->throw("Can't open '$dbm_type' dbm file '$filename' : $!");
-    }
+		tie( %$db, $dbm_type, $filename, $mode_flags, 0644, $hash_inf )
+		  or $self->throw("Can't open '$dbm_type' dbm file '$filename' : $!");
+	} else {
+		tie( %$db, $dbm_type, $filename, $mode_flags, 0644 )
+		  or $self->throw("Can't open '$dbm_type' dbm file '$filename' : $!");
+	}
 
-    # The following methods access data in the dbm file:
+	# The following methods access data in the dbm file:
 
-    # Now, if we're a Bio::Index::Abstract caterpillar, then we
-    # transform ourselves into a Bio::Index::<something> butterfly!
-    if( ref($self) eq "Bio::Index::Abstract" ) { 
-	my $pkg = $self->_code_base();
-	bless $self, $pkg;
-    }
+	# Now, if we're a Bio::Index::Abstract caterpillar, then we
+	# transform ourselves into a Bio::Index::<something> butterfly!
+	if( ref($self) eq "Bio::Index::Abstract" ) { 
+		my $pkg = $self->_code_base();
+		bless $self, $pkg;
+	}
 
-    # Check or set this is the right kind and version of index
-    $self->_type_and_version();
-    
-    # Check files haven't changed size since they were indexed
-    $self->_check_file_sizes();
+	# Check or set this is the right kind and version of index
+	$self->_type_and_version();
 
-    return 1;
+	# Check files haven't changed size since they were indexed
+	$self->_check_file_sizes();
+
+	return 1;
 }
 
 =head2 _version
@@ -426,9 +419,8 @@ sub open_dbm {
 =cut
 
 sub _version {
-    my $self = shift;
-    
-    $self->throw("In Bio::Index::Abstract, no _version method in sub class");
+	my $self = shift;
+	$self->throw("In Bio::Index::Abstract, no _version method in sub class");
 }
 
 =head2 _code_base
@@ -474,23 +466,23 @@ sub _code_base {
 =cut
 
 sub _type_and_version {
-    my $self    = shift;
-    my $key     = '__TYPE_AND_VERSION';
-    my $version = $self->_version();
-    my $type    = ref $self;
-    
-    # Run check or add type and version key if missing
-    if (my $rec = $self->db->{ $key }) {
-        my( $db_type, $db_version ) = $self->unpack_record($rec);
-        $self->throw("This index file is from version [$db_version] - You need to rebuild it to use module version [$version]")
-            unless $db_version == $version;
-        $self->throw("This index file is type [$db_type] - Can't access it with module for [$type]")
-            unless $db_type eq $type;
-    } else {
-        $self->add_record( $key, $type, $version )
-            or $self->throw("Can't add Type and Version record");
-    }
-    return 1;
+	my $self    = shift;
+	my $key     = '__TYPE_AND_VERSION';
+	my $version = $self->_version();
+	my $type    = ref $self;
+
+	# Run check or add type and version key if missing
+	if (my $rec = $self->db->{ $key }) {
+		my( $db_type, $db_version ) = $self->unpack_record($rec);
+		$self->throw("This index file is from version [$db_version] - You need to rebuild it to use module version [$version]")
+		  unless $db_version == $version;
+		$self->throw("This index file is type [$db_type] - Can't access it with module for [$type]")
+		  unless $db_type eq $type;
+	} else {
+		$self->add_record( $key, $type, $version )
+		  or $self->throw("Can't add Type and Version record");
+	}
+	return 1;
 }
 
 
@@ -509,17 +501,17 @@ sub _type_and_version {
 =cut
 
 sub _check_file_sizes {
-    my $self = shift;
-    my $num  = $self->_file_count() || 0;
-    
-    for (my $i = 0; $i < $num; $i++) {
-        my( $file, $stored_size ) = $self->unpack_record( $self->db->{"__FILE_$i"} );
-        my $size = -s $file;
-        unless ($size == $stored_size) {
-            $self->throw("file $i [ $file ] has changed size $stored_size -> $size. This probably means you need to rebuild the index.");
-        }
-    }
-    return 1;
+	my $self = shift;
+	my $num  = $self->_file_count() || 0;
+
+	for (my $i = 0; $i < $num; $i++) {
+		my( $file, $stored_size ) = $self->unpack_record( $self->db->{"__FILE_$i"} );
+		my $size = -s $file;
+		unless ($size == $stored_size) {
+			$self->throw("file $i [ $file ] has changed size $stored_size -> $size. This probably means you need to rebuild the index.");
+		}
+	}
+	return 1;
 }
 
 
@@ -540,84 +532,81 @@ sub _check_file_sizes {
 =cut
 
 sub make_index {
-    my($self, @files) = @_;
-    my $count = 0;
+	my($self, @files) = @_;
+	my $count = 0;
 	my $recs = 0;
-    # blow up if write flag is not set. EB fix
+	# blow up if write flag is not set. EB fix
 
-    if( !defined $self->write_flag ) {
-	$self->throw("Attempting to make an index on a read-only database. What about a WRITE flag on opening the index?");
-    }
-
-    # We're really fussy/lazy, expecting all file names to be fully qualified
-    $self->throw("No files to index provided") unless @files;
-    for(my $i=0;$i<scalar @files; $i++)  {
-	if( $Bio::Root::IO::FILESPECLOADED && File::Spec->can('rel2abs') ) {	    
-	    if( ! File::Spec->file_name_is_absolute($files[$i]) ) {
-		$files[$i] = File::Spec->rel2abs($files[$i]);
-	    }
-	} else { 
-	    if(  $^O =~ /MSWin/i ) {
-		($files[$i] =~ m|^[A-Za-z]:/|) || 
-		    $self->throw("Not an absolute file path '$files[$i]'");
-	    } else {
-		($files[$i] =~ m|^/|) || 
-		    $self->throw("Not an absolute file path '$files[$i]'"); 
-	    }
+	if( !defined $self->write_flag ) {
+		$self->throw("Attempting to make an index on a read-only database. What about a WRITE flag on opening the index?");
 	}
-        $self->throw("File does not exist '$files[$i]'")   unless -e $files[$i];
-    }
 
-    # Add each file to the index
-    FILE :
-    foreach my $file (@files) {
+	# We're really fussy/lazy, expecting all file names to be fully qualified
+	$self->throw("No files to index provided") unless @files;
+	for(my $i=0;$i<scalar @files; $i++)  {
+		if( $Bio::Root::IO::FILESPECLOADED && File::Spec->can('rel2abs') ) {	    
+			if( ! File::Spec->file_name_is_absolute($files[$i]) ) {
+				$files[$i] = File::Spec->rel2abs($files[$i]);
+			}
+		} else {
+			if(  $^O =~ /MSWin/i ) {
+				($files[$i] =~ m|^[A-Za-z]:/|) || 
+				  $self->throw("Not an absolute file path '$files[$i]'");
+			} else {
+				($files[$i] =~ m|^/|) || 
+				  $self->throw("Not an absolute file path '$files[$i]'"); 
+			}
+		}
+		$self->throw("File does not exist '$files[$i]'")   unless -e $files[$i];
+	}
 
-        my $i; # index for this file
-    
-        # Get new index for this file and increment file count
-        if ( defined(my $count = $self->_file_count) ) {
-            $i = $count;
-        } else {
-            $i = 0; $self->_file_count(0);
+	# Add each file to the index
+	FILE :
+		 foreach my $file (@files) {
+
+			 my $i; # index for this file
+
+			 # Get new index for this file and increment file count
+			 if ( defined(my $count = $self->_file_count) ) {
+				 $i = $count;
+			 } else {
+				 $i = 0; $self->_file_count(0);
         }
 
-	# see whether this file has been already indexed
-	my ($record,$number,$size);
+			 # see whether this file has been already indexed
+			 my ($record,$number,$size);
 
-	if( ($record = $self->db->{"__FILENAME_$file"}) ) {
-	    ($number,$size) = $self->unpack_record($record);
+			 if( ($record = $self->db->{"__FILENAME_$file"}) ) {
+				 ($number,$size) = $self->unpack_record($record);
 
-	    # if it is the same size - fine. Otherwise die 
-	    if( -s $file == $size ) {
-		warn "File $file already indexed. Skipping...\n" 
-		    if $self->verbose >= 0;
-		next FILE;
-	    } else {
-		$self->throw("In index, $file has changed size ($size). Indicates that the index is out of date");
-	    }
-	}
+				 # if it is the same size - fine. Otherwise die 
+				 if( -s $file == $size ) {
+					 warn "File $file already indexed. Skipping...\n" 
+						if $self->verbose >= 0;
+					 next FILE;
+				 } else {
+					 $self->throw("In index, $file has changed size ($size). Indicates that the index is out of date");
+				 }
+			 }
 
-	# index this file
-	warn "Indexing file $file\n" if( $self->verbose > 0);
+			 # index this file
+			 warn "Indexing file $file\n" if( $self->verbose > 0);
 
-	# this is supplied by the subclass and does the serious work
-        $recs += $self->_index_file( $file, $i ); # Specific method for each type of index
+			 # this is supplied by the subclass and does the serious work
+			 $recs += $self->_index_file( $file, $i ); # Specific method for each type of index
 
-
-        # Save file name and size for this index
-        $self->add_record("__FILE_$i", $file, -s $file)
+			 # Save file name and size for this index
+			 $self->add_record("__FILE_$i", $file, -s $file)
             or $self->throw("Can't add data to file: $file");
-        $self->add_record("__FILENAME_$file", $i, -s $file)
+			 $self->add_record("__FILENAME_$file", $i, -s $file)
             or $self->throw("Can't add data to file: $file");
 
-        # increment file lines
-	$i++; $self->_file_count($i);
-	my $temp;
-	$temp = $self->_file_count();
-	
-
-    }
-    return ($count, $recs);
+			 # increment file lines
+			 $i++; $self->_file_count($i);
+			 my $temp;
+			 $temp = $self->_file_count();
+		 }
+	return ($count, $recs);
 }
 
 =head2 _filename
@@ -632,10 +621,10 @@ sub make_index {
 =cut
 
 sub _index_file {
-    my $self = shift;
-    
-    my $pkg = ref($self);
-    $self->throw("Error: '$pkg' does not provide the _index_file() method");
+	my $self = shift;
+
+	my $pkg = ref($self);
+	$self->throw("Error: '$pkg' does not provide the _index_file() method");
 }
 
 
@@ -656,17 +645,18 @@ sub _index_file {
 =cut
 
 sub _file_handle {
-    my( $self, $i ) = @_;
-    
-    unless ($self->{'_filehandle'}[$i]) {
-        my $fh = Symbol::gensym();
-        my @rec = $self->unpack_record($self->db->{"__FILE_$i"})
-            or $self->throw("Can't get filename for index : $i");
-        my $file = $rec[0];
-        open $fh, $file or $self->throw("Can't read file '$file' : $!");
-        $self->{'_filehandle'}[$i] = $fh; # Cache filehandle
-    }
-    return $self->{'_filehandle'}[$i];
+	my( $self, $i ) = @_;
+
+	unless ($self->{'_filehandle'}[$i]) {
+		my @rec = $self->unpack_record($self->db->{"__FILE_$i"})
+		  or $self->throw("Can't get filename for index : $i");
+		my $file = $rec[0];
+#		my $fh = Symbol::gensym();
+#		open $fh, '<', $file or $self->throw("Can't read file '$file' : $!");
+		open my $fh, '<', $file or $self->throw("Can't read file '$file' : $!");
+		$self->{'_filehandle'}[$i] = $fh; # Cache filehandle
+	}
+	return $self->{'_filehandle'}[$i];
 }
 
 
@@ -685,11 +675,11 @@ sub _file_handle {
 =cut
 
 sub _file_count {
-    my $self = shift;
-    if (@_) {
-        $self->db->{'__FILE_COUNT'} = shift;
-    }
-    return $self->db->{'__FILE_COUNT'};
+	my $self = shift;
+	if (@_) {
+		$self->db->{'__FILE_COUNT'} = shift;
+	}
+	return $self->db->{'__FILE_COUNT'};
 }
 
 
@@ -709,10 +699,13 @@ sub _file_count {
 =cut
 
 sub add_record {
-    my( $self, $id, @rec ) = @_;
-    $self->debug( "Adding key $id\n") if( $self->verbose > 0 );
-    $self->db->{$id} = $self->pack_record( @rec );
-    return 1;
+	my( $self, $id, @rec ) = @_;
+	$self->debug( "Adding key $id\n") if( $self->verbose > 0 );
+	if( exists $self->db->{$id} ) {
+		$self->warn("overwriting a current value stored for $id\n");
+	}
+	$self->db->{$id} = $self->pack_record( @rec );
+	return 1;
 }
 
 
@@ -730,8 +723,8 @@ sub add_record {
 =cut
 
 sub pack_record {
-    my( $self, @args ) = @_;
-    return join "\034", @args;
+	my( $self, @args ) = @_;
+	return join "\034", @args;
 }
 
 =head2 unpack_record
@@ -747,8 +740,8 @@ sub pack_record {
 =cut
 
 sub unpack_record {
-    my( $self, @args ) = @_;
-    return split /\034/, $args[0];
+	my( $self, @args ) = @_;
+	return split /\034/, $args[0];
 }
 
 =head2 count_records
@@ -768,13 +761,12 @@ sub count_records {
    my $db = $self->db;
    my $c = 0;
    while (my($id, $rec) = each %$db) {
-       if( $id =~ /^__/ ) {
-           # internal info
-           next;
-       }
+		if( $id =~ /^__/ ) {
+			# internal info
+			next;
+		}
 		$c++;
    }
-
    return ($c);
 }
 
@@ -792,8 +784,8 @@ sub count_records {
 =cut
 
 sub DESTROY {
-    my $self = shift;
-    untie($self->{'_DB'});
+	my $self = shift;
+	untie($self->{'_DB'});
 }
 
 1;

@@ -1,4 +1,4 @@
-# $Id: Genewise.pm,v 1.18 2003/08/21 14:53:13 jason Exp $
+# $Id: Genewise.pm,v 1.25.4.1 2006/10/02 23:10:32 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Genewise
 #
@@ -29,8 +29,9 @@ Bio::Tools::Genewise - Results of one Genewise run
 
 =head1 DESCRIPTION
 
-This is the parser for the output of Genewise. It takes either a file handle or
-a file name and returns a Bio::SeqFeature::Gene::GeneStructure object.
+This is the parser for the output of Genewise. It takes either a file
+handle or a file name and returns a 
+Bio::SeqFeature::Gene::GeneStructure object.
 
 =head1 FEEDBACK
 
@@ -40,25 +41,26 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
-=head1 AUTHOR - Fugu Team 
+=head1 AUTHOR - Fugu Team, Jason Stajich 
 
  Email: fugui@worf.fugu-sg.org
+ Email: jason-at-bioperl.org
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -67,12 +69,10 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::Tools::Genewise;
-use vars qw(@ISA $Srctag);
+use vars qw($Srctag);
 use strict;
 use Symbol;
 
-use Bio::Root::Root;
-use Bio::Root::IO;
 use Bio::Tools::AnalysisResult;
 use Bio::SeqFeature::Generic;
 use Bio::SeqFeature::Gene::Exon;
@@ -80,7 +80,7 @@ use Bio::SeqFeature::FeaturePair;
 use Bio::SeqFeature::Gene::Transcript;
 use Bio::SeqFeature::Gene::GeneStructure;
 
-@ISA = qw(Bio::Root::Root Bio::Root::IO);
+use base qw(Bio::Root::Root Bio::Root::IO);
 $Srctag = 'genewise';
 
 =head2 new
@@ -90,7 +90,9 @@ $Srctag = 'genewise';
            $obj->new(-fh=>\*GW);
  Function: Constructor for genewise wrapper. Takes either a file or filehandle
  Example :
- Returns : L<Bio::Tools::Genewise>
+ Returns : Bio::Tools::Genewise object
+
+See L<Bio::Tools::Genewise>
 
 =cut
 
@@ -105,7 +107,8 @@ sub new {
 
  Title   : _get_strand
  Usage   : $obj->_get_strand
- Function: takes start and end values, swap them if start>end and returns end
+ Function: takes start and end values, swap them if start>end and 
+           returns end
  Example :
  Returns :$start,$end,$strand
 
@@ -113,8 +116,8 @@ sub new {
 
 sub _get_strand {
   my ($self,$start,$end) = @_;
-  $start || $self->throw("Need a start");
-  $end   || $self->throw("Need an end");
+  defined($start) || $self->throw("Need a start");
+  defined($end)   || $self->throw("Need an end");
   my $strand;
   if ($start > $end) {
     my $tmp = $start;
@@ -188,6 +191,8 @@ sub _target_id {
  Returns : a Bio::SeqFeature::Gene::GeneStructure object
  Args    :
 
+See L<Bio::SeqFeature::Gene::GeneStructure>
+
 =cut
 
 
@@ -208,57 +213,60 @@ sub parsed {
 }
   
 sub _parse_genes {
-    my ($self) = @_;
-    my @genes;
-    local ($/) = "//";
-    my ($score,$prot_id,$target_id);
+	my ($self) = @_;
+	my @genes;
+	local ($/) = "//";
 
-    while ( defined($_ = $self->_readline) ) {
-      	$self->debug( $_ ) if( $self->verbose > 0);
-        ($score) = $_=~ m/Score\s+(\d+[\.][\d]+)/o;
-        $self->_score($score) unless defined $self->_score;
-        ($prot_id) = $_=~ m/Query (?:protein|model):\s+(\S+)/o;
-        $self->_prot_id($prot_id) unless defined $self->_prot_id;
-        ($target_id) = $_=~  m/Target Sequence\s+(\S+)/o;	
-        $self->_target_id($target_id) unless defined $self->_target_id;
-        next unless /Gene\s+\d+\n/o;
+	while ( defined($_ = $self->_readline) ) {
+		$self->debug( $_ ) if( $self->verbose > 0);
+		if( /Score\s+(\-?\d+(\.\d+)?)/ ) {
+	      $self->_score($1);# unless defined $self->_score;    
+      } 
+      if( /Query\s+(?:protein|model)\:\s+(\S+)/ ) {
+	      $self->_prot_id($1); #unless defined $self->_prot_id;
+	   } 
+	
+     if( /Target Sequence\s+(\S+)/ ) {	
+	    $self->_target_id($1);# unless defined $self->_target_id;
+	  }
+     next unless /Gene\s+\d+\n/;
 
-        my @genes_txt = split(/Gene\s+\d+\n/);
-        shift @genes_txt; #remove first empty entry
+     my @genes_txt = split(/Gene\s+\d+\n/,$_);
+     shift @genes_txt; #remove first empty entry
        
-        foreach my $gene_txt (@genes_txt) {
+     foreach my $gene_txt (@genes_txt) {
 	    # If genewise has assigned a strand to the gene as a whole
 	    # overall gene start and end
-	    my ($g_start, $g_end, 
-		$type) = $gene_txt =~ m/Gene\s+
-		                       (\d+)\s+       # start (1-based)
-				       (\d+)\s+       # end
-				       (?:\[(\w+)\])? # 
-				       /ox;
+	    my ($g_start, $g_end, $type) = 
+			$gene_txt =~ m/Gene\s+
+								(\d+)[\s-]+    # start (1-based)
+								(\d+)\s+       # end
+								(?:\[(\w+)\])? # 
+								/x;
 	    my $g_strand;
 	    my $source_tag = $type ? "$Srctag". "_$type" : $Srctag;
 	    my $genes = new Bio::SeqFeature::Gene::GeneStructure
-		(-source => $source_tag);
+		 (-source => $source_tag);
 	    my $transcript = new Bio::SeqFeature::Gene::Transcript
-		(-source => $source_tag,
+		 (-source => $source_tag,
 		 -score  => $self->_score);
 	    ($g_start, $g_end, $g_strand) = $self->_get_strand($g_start,$g_end);
 	    $genes->strand($g_strand);
 
-	    #grab exon + supporting feature info
+	    # grab exon + supporting feature info
 	    my @exons;
 	    unless ( @exons = $gene_txt =~ m/(Exon .+\s+Supporting .+)/g ) {
-		@exons = $gene_txt =~ m/(Exon .+\s+)/g;
+	 	    @exons = $gene_txt =~ m/(Exon .+\s+)/g;
 	    }
 	    my $nbr = 1;
-	    #loop through each exon-supporting feature pair
+	    # loop through each exon-supporting feature pair
 	    foreach my $e (@exons){
-		my ($e_start,$e_end,
-		    $phase) = $e =~ m/Exon\s+
-			             (\d+)\s+        # start (1 based)
-				     (\d+)\s+        # end
-				     phase\s+(\d+)   # phase
-				     /ox;
+		   my ($e_start,$e_end,$phase) = 
+                 $e =~ m/Exon\s+
+			                (\d+)[\s-]+     # start (1 based)
+				             (\d+)\s+        # end
+				             phase\s+(\d+)   # phase
+				             /x;
 		my $e_strand;
 		($e_start,$e_end,$e_strand) = $self->_get_strand($e_start,
 								 $e_end);
@@ -278,7 +286,7 @@ sub _parse_genes {
 		    $exon->add_tag_value('Target',"Protein:".$self->_prot_id);
 		}
 		$exon->add_tag_value("Exon",$nbr++);
-		if( $e =~ m/Supporting\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/o) {
+		if( $e =~ m/Supporting\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/) {
 		    my ($geno_start,$geno_end,
 			$prot_start, $prot_end) = ($1,$2,$3,$4);
 		    my $prot_strand;
@@ -315,6 +323,7 @@ sub _parse_genes {
 		$transcript->add_exon($exon);
 	    }
 	    $transcript->seq_id($self->_target_id);
+	    $transcript->add_tag_value('Id', $self->_prot_id);
 	    $genes->add_transcript($transcript);
 	    $genes->seq_id($self->_target_id);
 	    push @genes, $genes;
@@ -322,4 +331,5 @@ sub _parse_genes {
     }
     $self->{'_genes'} = \@genes;
 }
+
 1;

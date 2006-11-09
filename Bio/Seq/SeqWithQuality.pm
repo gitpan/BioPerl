@@ -1,4 +1,4 @@
-# $Id: SeqWithQuality.pm,v 1.18 2003/03/31 11:35:28 heikki Exp $
+# $Id: SeqWithQuality.pm,v 1.27.4.1 2006/10/02 23:10:27 sendu Exp $
 #
 # BioPerl module for Bio::Seq::QualI
 #
@@ -18,6 +18,7 @@ Bio::Seq::SeqWithQuality - Bioperl object packaging a sequence with its quality
 
 	use Bio::PrimarySeq;
 	use Bio::Seq::PrimaryQual;
+        use Bio::Seq::SeqWithQuality;
 
 		# make from memory
 	my $qual = Bio::Seq::SeqWithQuality->new
@@ -76,17 +77,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bio.perl.org/MailList.html - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Chad Matsalla
 
@@ -106,16 +106,12 @@ Internal methods are usually preceded with a _
 
 package Bio::Seq::SeqWithQuality;
 
-use vars qw(@ISA);
 
 use strict;
-use Bio::Root::Root;
-use Bio::Seq::QualI;
-use Bio::PrimarySeqI;
 use Bio::PrimarySeq;
 use Bio::Seq::PrimaryQual;
 
-@ISA = qw(Bio::Root::Root Bio::PrimarySeqI Bio::Seq::QualI);
+use base qw(Bio::Root::Root Bio::PrimarySeqI Bio::Seq::QualI);
 
 =head2 new()
 
@@ -206,9 +202,12 @@ sub new {
 	     -alphabet          =>  $alphabet
 	     );
     }
-    elsif (ref($seq) eq "Bio::PrimarySeq" ) {
+    elsif (UNIVERSAL::isa($seq,"Bio::PrimarySeq") ||  UNIVERSAL::isa($seq,"Bio::Seq")) {
 	$self->{seq_ref} = $seq;
     }
+	elsif (ref($seq)) {
+		$self->throw("You passed a seq argument into a SeqWithQUality object and it was a reference ($seq) which did not inherit from Bio::Seq or Bio::PrimarySeq. I don't know what to do with this.");
+	}
 
     else {
 	my $seqobj = Bio::PrimarySeq->new
@@ -222,7 +221,7 @@ sub new {
 	$self->{seq_ref} = $seqobj;
     }
 
-    if (!$qual) {
+    if (!defined($qual)) {
 	$self->{qual_ref} = Bio::Seq::PrimaryQual->new
 	    (
 	     -qual		=>	"",
@@ -251,6 +250,7 @@ sub new {
     # now try to set the descriptors for this object
     $self->_set_descriptors($qual,$seq,$id,$acc,$pid,$desc,$given_id,$alphabet);
     $self->length();
+    $self->deprecated("deprecated class- use Bio::Seq::Quality instead");
 
     return $self;
 }

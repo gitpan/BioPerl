@@ -1,4 +1,4 @@
-# $Id: Transcript.pm,v 1.32 2003/08/10 17:13:43 jason Exp $
+# $Id: Transcript.pm,v 1.38.4.1 2006/10/02 23:10:28 sendu Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::Transcript
 #
@@ -22,33 +22,28 @@ Bio::SeqFeature::Gene::Transcript - A feature representing a transcript
 
 A feature representing a transcript.
 
-
 =head1 FEEDBACK
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+ the bugs and their resolution.  Bug reports can be submitted via the
+ web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
 Email hlapp@gmx.net
-
-Describe contact details here
 
 =head1 APPENDIX
 
@@ -60,16 +55,12 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 package Bio::SeqFeature::Gene::Transcript;
-use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::Object
 
-use Bio::SeqFeature::Gene::TranscriptI;
-use Bio::SeqFeature::Generic;
 use Bio::PrimarySeq;
 
-@ISA = qw(Bio::SeqFeature::Generic Bio::SeqFeature::Gene::TranscriptI);
+use base qw(Bio::SeqFeature::Generic Bio::SeqFeature::Gene::TranscriptI);
 
 sub new {
     my ($caller, @args) = @_;
@@ -294,7 +285,8 @@ sub introns {
     if((! defined($strand)) || ($strand != -1) || (! $rev_order)) {
 	# always sort forward for plus-strand transcripts, and for negative-
 	# strand transcripts that appear to be unsorted or forward sorted
-        @exons = map { $_->[0] } sort { $a->[1] <=> $b->[1] } map { [ $_, $_->start()] } @exons;
+        @exons = map { $_->[0] } sort { $a->[1] <=> $b->[1] } 
+	         map { [ $_, $_->start * ($_->strand || 1)] } @exons;
     } else {
 	# sort in reverse order for transcripts on the negative strand and
 	# found to be in reverse order
@@ -479,7 +471,7 @@ sub flush_sub_SeqFeature {
  Function: Returns the CDS (coding sequence) as defined by the exons
            of this transcript and the attached sequence.
 
-           If no sequence is attached this method will return undef.
+           If no sequence is attached this method will return false.
 
            Note that the implementation provided here returns a
            concatenation of all coding exons, thereby assuming that
@@ -500,7 +492,7 @@ sub cds {
     my @exons = $self->exons_ordered();  #this is always sorted properly according to strand
     my $strand;
 
-    return undef unless(@exons);
+    return  unless(@exons);
     # record strand (a minus-strand transcript must have the exons sorted in
     # reverse order)
     foreach my $exon (@exons) {
@@ -513,7 +505,7 @@ sub cds {
 	}
     }
     my $cds = $self->_make_cds(@exons);
-    return undef unless $cds;
+    return unless $cds;
     return Bio::PrimarySeq->new('-id' => $self->seq_id(),
 				'-seq' => $cds,
 				'-alphabet' => "dna");
@@ -540,7 +532,7 @@ sub protein {
 
     $seq = $self->cds();
     return $seq->translate() if $seq;
-    return undef;
+    return;
 }
 
 =head2 mrna
@@ -586,7 +578,7 @@ sub mrna {
     if($self->poly_A_site()) {
 	$seq->seq($seq->seq() . $self->poly_A_site()->seq()->seq());
     }
-    return undef if($seq->length() == 0);
+    return if($seq->length() == 0);
     return $seq;
 }
 

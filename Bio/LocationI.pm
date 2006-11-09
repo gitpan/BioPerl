@@ -1,4 +1,4 @@
-# $Id: LocationI.pm,v 1.18 2002/12/01 00:05:19 jason Exp $
+# $Id: LocationI.pm,v 1.25.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::LocationI
 # Cared for by Jason Stajich <jason@bioperl.org>
@@ -35,21 +35,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bio.perl.org/MailList.html - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
+Email jason-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -61,25 +60,18 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LocationI;
-use vars qw(@ISA $coord_policy);
 use strict;
 
-use Bio::RangeI;
-use Bio::Location::WidestCoordPolicy;
 use Carp;
 
-@ISA = qw(Bio::RangeI);
-
-BEGIN {
-    $coord_policy = Bio::Location::WidestCoordPolicy->new();
-}
+use base qw(Bio::RangeI);
 
 =head2 location_type
 
   Title   : location_type
   Usage   : my $location_type = $location->location_type();
   Function: Get location type encoded as text
-  Returns : string ('EXACT', 'WITHIN', 'BETWEEN')
+  Returns : string ('EXACT', 'WITHIN', 'IN-BETWEEN')
   Args    : none
 
 =cut
@@ -219,6 +211,23 @@ sub start_pos_type {
     $self->throw_not_implemented();
 }
 
+
+=head2 flip_strand
+
+  Title   : flip_strand
+  Usage   : $location->flip_strand();
+  Function: Flip-flop a strand to the opposite
+  Returns : None
+  Args    : None
+
+=cut
+
+
+sub flip_strand {
+    my $self= shift;
+    $self->strand($self->strand * -1);
+}
+
 =head2 min_end
 
   Title   : min_end
@@ -291,11 +300,8 @@ sub end_pos_type {
 =cut
 
 sub seq_id {
-    my ($self, $seqid) = @_;
-    if( defined $seqid ) {
-	$self->{'_seqid'} = $seqid;
-    }
-    return $self->{'_seqid'};
+    my($self) = @_;
+    $self->throw_not_implemented();
 }
 
 =head2 is_remote
@@ -360,22 +366,7 @@ See L<Bio::Location::CoordinatePolicyI> for more information
 =cut
 
 sub coordinate_policy {
-    my ($self, $policy) = @_;
-
-    if(defined($policy)) {
-	if(! $policy->isa('Bio::Location::CoordinatePolicyI')) {
-	    $self->throw("Object of class ".ref($policy)." does not implement".
-			 " Bio::Location::CoordinatePolicyI");
-	}
-	if(ref($self)) {
-	    $self->{'_coordpolicy'} = $policy;
-	} else {
-	    # called as class method
-	    $coord_policy = $policy;
-	}
-    }
-    return (ref($self) && exists($self->{'_coordpolicy'}) ?
-	    $self->{'_coordpolicy'} : $coord_policy);
+    shift->throw_not_implemented();
 }
 
 =head2 to_FTstring

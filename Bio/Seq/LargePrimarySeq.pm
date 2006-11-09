@@ -1,4 +1,4 @@
-# $Id: LargePrimarySeq.pm,v 1.27 2002/12/01 00:05:21 jason Exp $
+# $Id: LargePrimarySeq.pm,v 1.32.4.1 2006/10/02 23:10:27 sendu Exp $
 #
 # BioPerl module for Bio::Seq::LargePrimarySeq
 #
@@ -25,35 +25,33 @@ Bio::Root::Root
 
 This object stores a sequence as a series of files in a temporary
 directory. The aim is to allow someone the ability to store very large
-sequences (eg, E<gt> 100MBases) in a file system without running out of memory
-(eg, on a 64 MB real memory machine!). 
+sequences (eg, E<gt> 100MBases) in a file system without running out
+of memory (eg, on a 64 MB real memory machine!).
 
 Of course, to actually make use of this functionality, the programs
-which use this object B<must> not call $primary_seq-E<gt>seq otherwise the
-entire sequence will come out into memory and probably paste your
-machine. However, calls $primary_seq-E<gt>subseq(10,100) will cause only
-90 characters to be brought into real memory.
+which use this object B<must> not call $primary_seq-E<gt>seq otherwise
+the entire sequence will come out into memory and probably paste your
+machine. However, calls $primary_seq-E<gt>subseq(10,100) will cause
+only 90 characters to be brought into real memory.
 
 =head1 FEEDBACK
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org               - General discussion
-  http://bio.perl.org/MailList.html   - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney, Jason Stajich
 
@@ -72,13 +70,11 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Seq::LargePrimarySeq;
-use vars qw($AUTOLOAD @ISA);
+use vars qw($AUTOLOAD);
 use strict;
 
-use Bio::PrimarySeq;
-use Bio::Root::IO;
 
-@ISA = qw(Bio::PrimarySeq Bio::Root::IO);
+use base qw(Bio::PrimarySeq Bio::Root::IO Bio::Seq::LargeSeqI);
 
 sub new {
     my ($class, %params) = @_;
@@ -105,12 +101,23 @@ sub new {
 }
 
 
+=head2 length
+
+ Title   : length
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
 sub length {
    my ($obj,$value) = @_;
    if( defined $value) {
       $obj->{'length'} = $value;
     }
-   
     return (defined $obj->{'length'}) ? $obj->{'length'} : 0;
 }
 
@@ -154,7 +161,7 @@ sub subseq{
    my ($self,$start,$end) = @_;
    my $string;
    my $fh = $self->_fh();
-   
+
    if( ref($start) && $start->isa('Bio::LocationI') ) {
        my $loc = $start;
        if( $loc->length == 0 ) { 
@@ -177,7 +184,7 @@ sub subseq{
 	       if( $subloc->strand < 0 ) { 
 		   $string = Bio::PrimarySeq->new(-seq => $string)->revcom()->seq();
 	       }
-	       $seq .= $string;		   
+	       $seq .= $string;
 	   }
        } else { 
 	   if(! seek($fh,$loc->start()-1,0)) {
@@ -204,7 +211,7 @@ sub subseq{
    if( $end < $start ) {
        $self->throw("Attempting to subseq with end ($end) less than start ($start). To revcom use the revcom function with trunc");
    }
-   
+
    if(! seek($fh,$start-1,0)) {
        $self->throw("Unable to seek on file $start:$end $!");
    }
@@ -219,7 +226,7 @@ sub subseq{
 
  Title   : add_sequence_as_string
  Usage   : $seq->add_sequence_as_string("CATGAT");
- Function: Appends additional residues to an existing LargePrimarySeq object.  
+ Function: Appends additional residues to an existing LargePrimarySeq object.
            This allows one to build up a large sequence without storing
            entire object in memory.
  Returns : Current length of sequence
@@ -259,6 +266,8 @@ sub _filename{
     return $obj->{'_filename'};
 
 }
+
+
 =head2 alphabet
 
  Title   : alphabet
@@ -285,7 +294,8 @@ sub DESTROY {
     my $fh = $self->_fh();
     close($fh) if( defined $fh );
     # this should be handled by Tempfile removal, but we'll unlink anyways.
-    unlink $self->_filename() if defined $self->_filename() && -e $self->_filename;
+    unlink $self->_filename()
+        if defined $self->_filename() && -e $self->_filename;
     $self->SUPER::DESTROY();
 }
 

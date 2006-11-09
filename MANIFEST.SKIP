@@ -6,6 +6,7 @@
 \.bak$
 \.dist$
 ^pm_to_blib
+Makefile$
 bioperl.lisp
-Makefile
 bioperl.conf
+Bio/Tools/WebBlat.pm

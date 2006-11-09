@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: AnalysisResultI.pm,v 1.5 2002/10/22 07:38:24 lapp Exp $
+# $Id: AnalysisResultI.pm,v 1.10.4.1 2006/10/02 23:10:11 sendu Exp $
 #
 # BioPerl module Bio::AnalysisResultI
 #
@@ -48,17 +48,15 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Steve Chervitz, Hilmar Lapp
 
@@ -86,11 +84,9 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::AnalysisResultI;
 use strict;
-use vars qw(@ISA);
 
-use Bio::Root::RootI;
 
-@ISA = qw( Bio::Root::RootI );
+use base qw(Bio::Root::RootI);
 
 
 =head2 analysis_query
@@ -132,7 +128,7 @@ sub analysis_query {
 sub analysis_subject { 
 #---------------
     my ($self) = @_; 
-    return undef;
+    return;
 }
 
 =head2 analysis_subject_version
@@ -150,7 +146,7 @@ sub analysis_subject {
 sub analysis_subject_version { 
 #---------------
     my ($self) = @_; 
-    return undef;
+    return;
 }
 
 

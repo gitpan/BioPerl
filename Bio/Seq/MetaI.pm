@@ -1,4 +1,4 @@
-# $Id: MetaI.pm,v 1.3 2003/11/13 16:57:31 heikki Exp $
+# $Id: MetaI.pm,v 1.10.4.1 2006/10/02 23:10:27 sendu Exp $
 #
 # BioPerl module for Bio::Seq::MetaI
 #
@@ -100,10 +100,10 @@ name will silently store the data under a wrong name. The used names
 =head1 SEE ALSO
 
 L<Bio::Seq::Meta>, 
+L<Bio::Seq::Meta::Array>, 
 L<Bio::Seq::EncodedSeq>, 
 L<Bio::Tools::OddCodes>, 
-L<Bio::Seq::PrimaryQual>, 
-L<Bio::Seq::SeqWithQuality>
+L<Bio::Seq::Quality>
 
 
 =head1 FEEDBACK
@@ -114,21 +114,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                      - General discussion
-  http://bio.perl.org/MailList.html          - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email heikki@ebi.ac.uk
+Email heikki-at-bioperl-dot-org
 
 =head1 CONTRIBUTORS
 
@@ -149,11 +148,9 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Seq::MetaI;
-use vars qw(@ISA);
 use strict;
-use Bio::Root::RootI;
 
-@ISA = qw( Bio::Root::RootI );
+use base qw(Bio::Root::RootI);
 
 =head2 meta
 
@@ -319,9 +316,63 @@ sub named_submeta_text { shift->throw_not_implemented }
 
 =cut
 
-sub submeta_names { shift->throw_not_implemented }
+sub meta_names { shift->throw_not_implemented }
 
 
+=head2 force_flush
+
+ Title   : force_flush()
+ Usage   : $force_flush = $obj->force_flush(1);
+ Function: Automatically pad with empty values or truncate meta values to
+            sequence length
+ Returns : boolean 1 or 0
+ Args    : optional boolean value
+
+=cut
+
+sub force_flush { shift->throw_not_implemented }
+
+
+=head2 is_flush
+
+ Title   : is_flush
+ Usage   : $is_flush  = $obj->is_flush()
+           or  $is_flush = $obj->is_flush($my_meta_name)
+ Function: Boolean to tell if all meta values are in
+           flush with the sequence length.
+           Returns true if force_flush() is set
+           Set verbosity to a positive value to see failed meta sets
+ Returns : boolean 1 or 0
+ Args    : optional name of the meta set
+
+=cut
+
+sub is_flush { shift->throw_not_implemented }
+
+
+=head2 meta_length
+
+ Title   : meta_length()
+ Usage   : $meeta_len  = $obj->meta_length();
+ Function: return the number of elements in the meta set
+ Returns : integer
+ Args    : -
+
+=cut
+
+sub meta_length { shift->throw_not_implemented }
+
+=head2 named_meta_length
+
+ Title   : named_meta_length()
+ Usage   : $meeta_len  = $obj->named_meta_length($name);
+ Function: return the number of elements in the named meta set
+ Returns : integer
+ Args    : -
+
+=cut
+
+sub named_meta_length { shift->throw_not_implemented }
 
 
 =head1 Bio::PrimarySeqI methods

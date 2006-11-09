@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: CytoMap.t,v 1.1 2002/02/11 09:36:23 heikki Exp $
+## $Id: CytoMap.t,v 1.5 2006/07/05 18:20:53 sendu Exp $
 #
 
 use strict;
@@ -16,7 +16,7 @@ BEGIN {
         use lib 't';
     }
     use Test;
-    plan tests => 109;
+    plan tests => 110;
 }
 
 END {
@@ -32,7 +32,7 @@ ok 1;
 ok my $map = new Bio::Map::CytoMap(-name  => 'my');
 ok $map->type, 'cyto'; 
 ok $map->units, ''; 
-ok $map->length, undef;
+ok $map->length, 0;
 ok $map->name, 'my';
 ok $map->species('human'), 'human';
 ok $map->species, 'human';
@@ -65,7 +65,7 @@ eval {
 ok $@;
 $a->verbose(0);
 
-ok $a->value('X'), 'X'; 
+ok $a->value('X'), 'X';
 $r = $a->cytorange;
 ok $r->isa('Bio::Range');
 ok $r->start, 100000000;
@@ -224,8 +224,7 @@ use Bio::Map::CytoMarker;
 ok 1;
 
 ok my $marker1 = new Bio::Map::CytoMarker();
-ok $marker1->name('gene1'), 'Unnamed marker' ;
-ok $marker1->name(), 'gene1';
+ok $marker1->name('gene1'), 'gene1' ;
 ok $marker1->position($map, '10p33.13-q15');
 
 ok my $marker2 = new Bio::Map::CytoMarker(-name => 'gene2' );
@@ -255,4 +254,13 @@ ok $marker1->overlaps($marker3);
 
 ok ! $marker4->contains($marker3);
 ok $marker1->contains($marker3);
+
+# 
+# Test throw() in some private functions
+#
+
+eval { Bio::Map::CytoPosition::_pad('string', -1, 'x'); };
+ok($@ =~ m/positive integer/);
+eval { Bio::Map::CytoPosition::_pad('string', +1, 'toolong'); };
+ok($@ =~ m/single character/);
 

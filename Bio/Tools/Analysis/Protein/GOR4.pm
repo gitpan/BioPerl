@@ -111,17 +111,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                       - General discussion
-  http://bio.perl.org/MailList.html           - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS
 
@@ -137,17 +136,15 @@ methods. Internal methods are usually preceded with a _
 use strict;
 
 package Bio::Tools::Analysis::Protein::GOR4;
-use vars qw(@ISA );
 
 use IO::String;
 use Bio::SeqIO;
 use HTTP::Request::Common qw(POST);
 use Bio::SeqFeature::Generic;
-use Bio::Tools::Analysis::SimpleAnalysisBase;
 use Bio::Seq::Meta::Array;
 
 
-@ISA = qw(Bio::Tools::Analysis::SimpleAnalysisBase);
+use base qw(Bio::Tools::Analysis::SimpleAnalysisBase);
 
 use constant MIN_STRUC_LEN => 3;
 my $URL = 'http://npsa-pbil.ibcp.fr/cgi-bin/secpred_gor4.pl';
@@ -222,12 +219,12 @@ sub result {
         if (!exists($self->{'_parsed'}) ) {
             my $result = IO::String->new($self->{'_result'});
             while (my $line = <$result>) {
-                next unless $line =~ /^\s\w\s/; # or for sopma/hnn  /^[A-Z]\s/
-                $line =~/(\w)\s+(\d\.\d+)\s+(\d\.\d+)\s+(\d\.\d+)$/; # or for so
+                next unless $line =~ /^\w\s/; # or for sopma/hnn  /^[A-Z]\s/
+                $line =~/(\w)\s+(\d+)\s+(\d+)\s+(\d+)/; # or for so
                 push @scores, { struc => $1,
                                 helix => $2,
                                 sheet => $3,
-                                coil => $4,
+                                coil  => $4,
                               };
             }
             $self->{'_parsed'} = \@scores;
@@ -238,9 +235,9 @@ sub result {
                 next if $type =~  /\w{2,}/; #if not H,C,E or T
                 for my $loc (@{$self->{'_parsed_coords'}{$type}} ) {
                     push @fts, Bio::SeqFeature::Generic->new
-                        (-start => $loc->{'start'},
-                         -end => $loc->{'end'},
-                         -source => 'GOR4',
+                        (-start   => $loc->{'start'},
+                         -end     => $loc->{'end'},
+                         -source  => 'GOR4',
                          -primary => 'Region',
                          -tag => {
                                   type => $type,

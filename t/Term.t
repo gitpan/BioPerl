@@ -1,24 +1,43 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Term.t,v 1.9 2003/12/22 08:50:35 juguang Exp $
+## $Id: Term.t,v 1.11 2005/09/17 02:11:21 bosborne Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
 use strict;
+use vars qw($HAVEGRAPHDIRECTED $DEBUG $NUMTESTS);
+$DEBUG = $ENV{'BIOPERLDEBUG'} || 0;
+
 BEGIN {
-    # to handle systems with no installed Test module
-    # we include the t dir (where a copy of Test.pm is located)
-    # as a fallback
-    eval { require Test; };
-    if( $@ ) {
-        use lib 't';
-    }
-    use Test;
-    plan tests => 51;
+	# to handle systems with no installed Test module
+	# we include the t dir (where a copy of Test.pm is located)
+	# as a fallback
+	eval { require Test; };
+	if( $@ ) {
+		use lib 't';
+	}
+	use Test;
+	eval {require Graph::Directed;
+			$HAVEGRAPHDIRECTED=1;
+		};
+
+	if ($@) {
+		$HAVEGRAPHDIRECTED = 0;
+		warn "Cannot run tests as Graph::Directed is not installed\n";
+	}
+	plan tests => ($NUMTESTS = 51);
 }
 
-use Bio::Ontology::Term;
+END {
+	foreach ( $Test::ntest..$NUMTESTS) {
+		skip('Cannot complete Term tests',1);
+	}
+}
+
+exit 0 unless $HAVEGRAPHDIRECTED;
+
+require Bio::Ontology::Term;
 use Bio::Ontology::TermFactory;
 use Bio::Annotation::DBLink;
 use Bio::Annotation::Reference;

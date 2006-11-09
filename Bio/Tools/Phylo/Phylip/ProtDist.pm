@@ -1,3 +1,4 @@
+# $Id: ProtDist.pm,v 1.9.4.1 2006/10/02 23:10:34 sendu Exp $
 # BioPerl module for Bio::Tools::Phylo::Phylip::ProtDist
 #
 # Cared for by Shawn Hoon <shawnh@fugu-sg.org>
@@ -10,19 +11,20 @@
 
 =head1 NAME
 
-Bio::Tools::Phylo::Phylip::ProtDist - DESCRIPTION of Object
+Bio::Tools::Phylo::Phylip::ProtDist - parser for ProtDist output
 
 =head1 SYNOPSIS
 
     use Bio::Tools::Phylo::Phylip::ProtDist;
     my $parser = new Bio::Tools::Phylo::Phylip::ProtDist(-file => 'outfile');
     while( my $result = $parser->next_matrix) {
-
+      # do something with it
     }
 
 =head1 DESCRIPTION
 
-A parser for ProtDist  output into a Bio::Matrix::PhylipDist object
+A parser for ProtDist output into a L<Bio::Matrix::PhylipDist> object.
+See also L<Bio::Matrix::IO::phylip> this module may go away.
 
 =head1 FEEDBACK
 
@@ -32,27 +34,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Shawn Hoon 
 
 Email shawnh@fugu-sg.org 
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -66,15 +61,12 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Tools::Phylo::Phylip::ProtDist;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
 use Bio::Matrix::PhylipDist;
 
-use Bio::Root::IO;
 
-@ISA = qw(Bio::Root::Root Bio::Root::IO );
+use base qw(Bio::Root::Root Bio::Root::IO);
 
 =head2 new
 
@@ -138,19 +130,18 @@ sub next_matrix{
    $#names>=0 || return;
    my %dist;
    my $i=0;
-   foreach my $name(@names){
+   for my $name (@names){
        my $j=0;
-       foreach my $n(@names) {
+       for my $n (@names) {
 	   $dist{$name}{$n} = [$i,$j];
 	   $j++;
        }
        $i++;
    }
-   my $matrix = Bio::Matrix::PhylipDist->new(-program => $self->{'_program'},
+   return Bio::Matrix::PhylipDist->new(-program => $self->{'_program'},
 					     -matrix  => \%dist,
 					     -names   => \@names,
 					     -values  => \@values);
-    return $matrix;
 }
 
 1;

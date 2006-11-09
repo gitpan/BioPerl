@@ -1,6 +1,6 @@
 # POD documentation - main docs before the code
 #
-# $Id: RandomAccessI.pm,v 1.12 2002/10/22 07:38:29 lapp Exp $
+# $Id: RandomAccessI.pm,v 1.14.4.2 2006/10/02 23:10:15 sendu Exp $
 #
 
 =head1 NAME
@@ -22,7 +22,7 @@ Bio::DB::RandomAccessI - Abstract interface for a sequence database
 =head1 DESCRIPTION
 
 This is a pure interface class - in other words, all this does is define
-methods which other (concrete) classes will actually implement. 
+methods which other (concrete) classes will actually implement.
 
 The Bio::DB::RandomAccessI class defines what methods a generic database class
 should have. At the moment it is just the ability to make Bio::Seq objects
@@ -30,16 +30,14 @@ from a name (id) or a accession number.
 
 =head1 CONTACT
 
-Ewan Birney originally wrote this class.
+Ewan Birney E<lt>birney@ebi.ac.ukE<gt> originally wrote this class.
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution. Bug reports can be submitted via email
-or the web:
+the bugs and their resolution. Bug reports can be submitted via the web:
 
-    bioperl-bugs@bio.perl.org                   
-    http://bugzilla.bioperl.org/           
+  http://bugzilla.open-bio.org/
 
 =head1 APPENDIX
 
@@ -53,13 +51,11 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::DB::RandomAccessI;
 
-use vars qw(@ISA);
 use strict;
 
 use Bio::Root::RootI;
-use Bio::Root::Root;
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 =head2 get_Seq_by_id
 
@@ -116,8 +112,6 @@ sub get_Seq_by_version{
    my ($self,@args) = @_;
    $self->throw_not_implemented();
 }
-
-
 
 ## End of Package
 

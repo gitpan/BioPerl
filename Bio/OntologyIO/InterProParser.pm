@@ -1,4 +1,4 @@
-# $GNF: projects/gi/symgene/src/perl/seqproc/Bio/OntologyIO/InterProParser.pm,v 1.5 2003/02/07 22:05:58 pdimitro Exp $
+# $Id: InterProParser.pm,v 1.11.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for InterProParser
 #
@@ -21,7 +21,7 @@
 
 =head1 NAME
 
-InterProParser - Parser for InterPro xml files.
+Bio::OntologyIO::InterProParser - Parser for InterPro xml files.
 
 =head1 SYNOPSIS
 
@@ -35,8 +35,7 @@ InterProParser - Parser for InterPro xml files.
   Use InterProParser to parse InterPro files in xml format. Typical
   use is the interpro.xml file published by EBI. The xml records
   should follow the format described in interpro.dtd, although the dtd
-  file is not needed, and the XML file will not be validated against
-  it.
+  file is not needed, and the XML file will not be validated against it.
 
 =head1 FEEDBACK
 
@@ -46,25 +45,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Peter Dimitrov
 
 Email dimitrov@gnf.org
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -78,16 +72,14 @@ Internal methods are usually preceded with a _
 
 
 package Bio::OntologyIO::InterProParser;
-use vars qw(@ISA);
 use strict;
 #use Carp;
 use XML::Parser::PerlSAX;
 use Bio::Ontology::SimpleOntologyEngine;
 use Bio::Ontology::TermFactory;
-use Bio::OntologyIO;
 use Bio::OntologyIO::Handlers::InterProHandler;
 
-@ISA = qw( Bio::OntologyIO );
+use base qw(Bio::OntologyIO);
 
 =head2 new
 
@@ -128,6 +120,7 @@ sub _initialize{
 			                             -ontology_name => $name);
 
     if(! $eng) {
+	$eng_type = 'simple' unless $eng_type;
 	if(lc($eng_type) eq 'simple') {
 	    $eng = Bio::Ontology::SimpleOntologyEngine->new();
 	} else {
@@ -162,14 +155,23 @@ sub _initialize{
  Returns : 
  Args    :
 
-
 =cut
 
 sub parse{
    my $self = shift;
 
-   my $ret = $self->{_parser}->parse( Source => {
-       SystemId => $self->file() } );
+   my $ret;
+   if ($self->file()) {
+         $ret = $self->{_parser}->parse( Source => {
+	                SystemId => $self->file() } );
+   } elsif ($self->_fh()) {
+        $ret = $self->{_parser}->parse( Source => {
+                ByteStream => $self->_fh() } );
+   } else {
+        $ret = undef;
+        $self->throw("Only filenames and filehandles are understood here.\n");
+   }
+
    $self->_is_parsed(1);
    return $ret;
 }
@@ -185,10 +187,11 @@ sub parse{
            InterPro XML input.
 
  Example : $ipp->next_ontology();
- Returns : Returns the ontology as a L<Bio::Ontology::OntologyEngineI>
+ Returns : Returns the ontology as a Bio::Ontology::OntologyEngineI
            compliant object.
  Args    : 
 
+See L<Bio::Ontology::OntologyEngineI>.
 
 =cut
 
@@ -202,7 +205,7 @@ sub next_ontology{
       delete $self->{_ontology_engine};
       return $ont;
   }
-  return undef;
+  return;
 }
 
 =head2 _is_parsed
@@ -213,7 +216,6 @@ sub next_ontology{
  Example : 
  Returns : value of _is_parsed (a scalar)
  Args    : on set, new value (a scalar or undef, optional)
-
 
 =cut
 
@@ -228,13 +230,13 @@ sub _is_parsed{
 
  Title   : secondary_accessions_map
  Usage   : $obj->secondary_accessions_map()
- Function:  This method is merely for convenience, and one should
- normally use the InterProTerm secondary_ids method to access
- the secondary accessions.
+ Function: This method is merely for convenience, and one should
+           normally use the InterProTerm secondary_ids method to
+           access the secondary accessions.
  Example : $map = $interpro_parser->secondary_accessions_map;
  Returns : Reference to a hash that maps InterPro identifier to an
-  array reference of secondary accessions following the InterPro
- xml schema.
+           array reference of secondary accessions following the 
+           InterPro xml schema.
  Args    : Empty hash reference
 
 =cut

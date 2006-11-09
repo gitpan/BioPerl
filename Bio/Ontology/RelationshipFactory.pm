@@ -1,4 +1,4 @@
-# $Id: RelationshipFactory.pm,v 1.1 2003/03/27 08:55:06 lapp Exp $
+# $Id: RelationshipFactory.pm,v 1.5.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for Bio::Ontology::RelationshipFactory
 #
@@ -26,14 +26,16 @@
 
 =head1 NAME
 
-Bio::Ontology::RelationshipFactory - Instantiates a new Bio::Ontology::RelationshipI (or derived class) through a factory
+Bio::Ontology::RelationshipFactory - Instantiates a new
+Bio::Ontology::RelationshipI (or derived class) through a factory
 
 =head1 SYNOPSIS
 
     use Bio::Ontology::RelationshipFactory;
 
     # the default type is Bio::Ontology::Relationship
-    my $factory = new Bio::Ontology::RelationshipFactory(-type => 'Bio::Ontology::GOterm');
+    my $factory = new Bio::Ontology::RelationshipFactory(
+                                 -type => 'Bio::Ontology::GOterm');
     my $clu = $factory->create_object(-name => 'peroxisome',
                                       -ontology => 'Gene Ontology',
                                       -identifier => 'GO:0005777');
@@ -51,17 +53,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+the web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
@@ -80,13 +81,11 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Ontology::RelationshipFactory;
-use vars qw(@ISA);
 use strict;
 
 use Bio::Root::Root;
-use Bio::Factory::ObjectFactory;
 
-@ISA = qw(Bio::Factory::ObjectFactory);
+use base qw(Bio::Factory::ObjectFactory);
 
 =head2 new
 
@@ -94,9 +93,11 @@ use Bio::Factory::ObjectFactory;
  Usage   : my $obj = new Bio::Ontology::RelationshipFactory();
  Function: Builds a new Bio::Ontology::RelationshipFactory object 
  Returns : Bio::Ontology::RelationshipFactory
- Args    : -type => string, name of a L<Bio::Ontology::RelationshipI>
+ Args    : -type => string, name of a Bio::Ontology::RelationshipI
                     derived class.
-                    The default is L<Bio::Ontology::Relationship>.
+                    The default is Bio::Ontology::Relationship.
+
+See L<Bio::Ontology::Relationship>, L<Bio::Ontology::RelationshipI>.
 
 =cut
 

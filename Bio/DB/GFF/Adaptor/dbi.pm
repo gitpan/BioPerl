@@ -1,4 +1,4 @@
-# $Id: dbi.pm,v 1.49 2003/10/01 21:46:02 lstein Exp $
+# $Id: dbi.pm,v 1.60.4.1 2006/10/02 23:10:16 sendu Exp $
 
 =head1 NAME
 
@@ -22,14 +22,12 @@ package Bio::DB::GFF::Adaptor::dbi;
 use strict;
 
 use DBI;
-use Bio::DB::GFF;
 use Bio::DB::GFF::Util::Rearrange; # for rearrange()
 use Bio::DB::GFF::Util::Binning;
 use Bio::DB::GFF::Adaptor::dbi::iterator;
 use Bio::DB::GFF::Adaptor::dbi::caching_handle;
-use vars qw(@ISA);
 
-@ISA =  qw(Bio::DB::GFF);
+use base qw(Bio::DB::GFF);
 
 # constants for choosing
 
@@ -46,6 +44,10 @@ use constant STRAIGHT_JOIN_LIMIT => 200_000;
 
 # this is the size to which DNA should be shredded
 use constant DNA_CHUNK_SIZE  => 2000;
+
+# for debugging fbin optimization
+use constant EPSILON  => 1e-7;  # set to zero if you trust mysql's floating point comparisons
+use constant OPTIMIZE => 1;     # set to zero to turn off optimization completely
 
 ##############################################################################
 
@@ -80,7 +82,7 @@ sub new {
   my ($features_db,$username,$auth,$other) = rearrange([
 							[qw(FEATUREDB DB DSN)],
 							[qw(USERNAME USER)],
-							[qw(PASSWORD PASS)],
+							[qw(PASSWORD PASSWD PASS)],
 						       ],@_);
 
   $features_db  || $class->throw("new(): Provide a data source or DBI database");
@@ -173,12 +175,12 @@ sub get_dna {
   # special case, get it all
   if (!($has_start || $has_stop)) {
     $sth = $self->dbh->do_query('select fdna,foffset from fdna where fref=? order by foffset',$ref);
-  } 
+  }
 
   elsif (!$has_stop) {
     $sth = $self->dbh->do_query('select fdna,foffset from fdna where fref=? and foffset>=? order by foffset',
 				$ref,$offset_start);
-  } 
+  }
 
   else {  # both start and stop defined
     $sth = $self->dbh->do_query('select fdna,foffset from fdna where fref=? and foffset>=? and foffset<=? order by foffset',
@@ -218,28 +220,6 @@ list containing reference sequence name, class, start, stop and strand.
 
 =cut
 
-# given sequence name, return (reference,start,stop,strand)
-sub get_abscoords_b {
-  my $self = shift;
-  my ($name,$class,$refseq)  = @_;
-
-  my $sth = $self->make_abscoord_query($name,$class,$refseq);
-
-  my @result;
-  while ( my @row = $sth->fetchrow_array) {
-    push @result,\@row
-  }
-  $sth->finish;
-
-  if (@result == 0) {
-    $self->error("$name not found in database");
-    return;
-  } else {
-    return \@result;
-  }
-}
-
-
 sub get_abscoords {
   my $self = shift;
   my ($name,$class,$refseq)  = @_;
@@ -260,15 +240,13 @@ sub get_abscoords {
         push @result,\@row2
     }
     $sth->finish;
-    
+
     if (@result == 0){
         $self->error("$name not found in database");
         return;
     }
   }
-  #} else {
   return \@result;
-  #}
 }
 
 
@@ -386,6 +364,7 @@ by make_feature().  Internally, it invokes the following abstract procedures:
  make_features_select_part
  make_features_from_part
  make_features_by_name_where_part
+ make_features_by_alias_where_part  (for aliases)
  make_features_join_part
 
 =cut
@@ -404,16 +383,28 @@ sub _feature_by_name {
 								 class =>'',
 								 start=>$location->[1],
 								 stop =>$location->[2]}) if $location;
-  my $query  = "SELECT $select FROM $from WHERE $where AND $join";
-  $query    .= " AND $range" if $range;
-  my $sth    = $self->dbh->do_query($query,@args);
+  # group query
+  my $query1  = "SELECT $select FROM $from WHERE $where AND $join";
+  $query1    .= " AND $range" if $range;
+
+  # alias query
+  $from  = $self->make_features_from_part(undef,{attributes=>1});
+  ($where,@args) = $self->make_features_by_alias_where_part($class,$name);  # potential bug - @args1==@args2?
+
+  my $query2  = "SELECT $select FROM $from WHERE $where AND $join";
+  $query2    .= " AND $range" if $range;
 
   my $count = 0;
-  while (my @row = $sth->fetchrow_array) {
-    $callback->(@row);
-    $count++;
+
+  for my $query ($query1,$query2) {
+    my $sth    = $self->dbh->do_query($query,@args);
+    while (my @row = $sth->fetchrow_array) {
+      $callback->(@row);
+      $count++;
+    }
+    $sth->finish;
   }
-  $sth->finish;
+
   return $count;
 }
 
@@ -787,6 +778,59 @@ sub exact_match {
   my ($field,$value) = @_;
   return qq($field = ?);
 }
+
+=head2 search_notes
+
+ Title   : search_notes
+ Usage   : @search_results = $db->search_notes("full text search string",$limit)
+ Function: Search the notes for a text string, using mysql full-text search
+ Returns : array of results
+ Args    : full text search string, and an optional row limit
+ Status  : public
+
+This is a mysql-specific method.  Given a search string, it performs a
+full-text search of the notes table and returns an array of results.
+Each row of the returned array is a arrayref containing the following fields:
+
+  column 1     A Bio::DB::GFF::Featname object, suitable for passing to segment()
+  column 2     The text of the note
+  column 3     A relevance score.
+
+=cut
+
+sub search_notes {
+  my $self = shift;
+  my ($search_string,$limit) = @_;
+
+  $search_string =~ tr/*?//d; 
+
+  my @words  = $search_string =~ /(\w+)/g;
+  my $regex  = join '|',@words;
+  my @searches = map {"fattribute_value LIKE '%${_}%'"} @words;
+  my $search   = join(' OR ',@searches);
+
+  my $query = <<END;
+SELECT distinct gclass,gname,fattribute_value 
+  FROM fgroup,fattribute_to_feature,fdata
+  WHERE fgroup.gid=fdata.gid
+     AND fdata.fid=fattribute_to_feature.fid
+     AND ($search)
+END
+;
+
+  my $sth = $self->dbh->do_query($query);
+  my @results;
+  while (my ($class,$name,$note) = $sth->fetchrow_array) {
+     next unless $class && $name;    # sorry, ignore NULL objects
+     my @matches = $note =~ /($regex)/g;
+     my $relevance = 10*@matches;
+     my $featname = Bio::DB::GFF::Featname->new($class=>$name);
+     push @results,[$featname,$note,$relevance];
+     last if $limit && @results >= $limit;
+  }
+  @results;
+}
+
 
 =head2 meta
 
@@ -1224,11 +1268,26 @@ sub make_features_by_name_where_part {
   my $self = shift;
   my ($class,$name) = @_;
   if ($name =~ /\*/) {
-    $name =~ s/\*/%/g;
+    $name =~ s/%/\\%/g;
+    $name =~ s/_/\\_/g;
+    $name =~ tr/*/%/;
     return ("fgroup.gclass=? AND fgroup.gname LIKE ?",$class,$name);
   } else {
     return ("fgroup.gclass=? AND fgroup.gname=?",$class,$name);
   }
+}
+
+sub make_features_by_alias_where_part {
+  my $self = shift;
+  my ($class,$name) = @_;
+  if ($name =~ /\*/) {
+    $name =~ tr/*/%/;
+    $name =~ s/_/\\_/g;
+    return ("fgroup.gclass=? AND fattribute_to_feature.fattribute_value LIKE ? AND fgroup.gid=fdata.gid AND fattribute.fattribute_name in ('Alias','Name') AND fattribute_to_feature.fattribute_id=fattribute.fattribute_id AND fattribute_to_feature.fid=fdata.fid AND ftype.ftypeid=fdata.ftypeid",$class,$name)
+  } else {
+    return ("fgroup.gclass=? AND fattribute_to_feature.fattribute_value=? AND fgroup.gid=fdata.gid AND fattribute.fattribute_name in ('Alias','Name') AND fattribute_to_feature.fattribute_id=fattribute.fattribute_id AND fattribute_to_feature.fid=fdata.fid AND ftype.ftypeid=fdata.ftypeid",$class,$name);
+  }
+
 }
 
 sub make_features_by_attribute_where_part {
@@ -1593,19 +1652,30 @@ sub types_query {
   my @args;
   for my $type (@$types) {
     my ($method,$source) = @$type;
-    my $meth_query = $self->exact_match('fmethod',$method) if defined $method && length $method;
-    my $src_query  = $self->exact_match('fsource',$source) if defined $source && length $source;
+    my ($mlike, $slike) = (0, 0);
+    if ($method && $method =~ m/\.\*/) {
+      $method =~ s/%/\\%/g;
+      $method =~ s/_/\\_/g;
+      $method =~ s/\.\*\??/%/g;
+      $mlike++;
+    }
+    if ($source && $source =~ m/\.\*/) {
+      $source =~ s/%/\\%/g;
+      $source =~ s/_/\\_/g;
+      $source =~ s/\.\*\??/%/g;
+      $slike++;
+    }
     my @pair;
     if (defined $method && length $method) {
-      push @pair,$self->exact_match('fmethod',$method);
-      push @args,$method;
+	push @pair, $mlike ? qq(fmethod LIKE ?) : qq(fmethod = ?);
+	push @args, $method;
     }
     if (defined $source && length $source) {
-      push @pair,$self->exact_match('fsource',$source);
-      push @args,$source;
+	push @pair, $slike ? qq(fsource LIKE ?) : qq(fsource = ?);
+	push @args, $source;
     }
     push @method_queries,"(" . join(' AND ',@pair) .")" if @pair;
-  }
+}
   my $query = " (".join(' OR ',@method_queries).")\n" if @method_queries;
   return wantarray ? ($query,@args) : $self->dbh->dbi_quote($query,@args);
 }
@@ -1841,6 +1911,8 @@ sub make_abscoord_query {
   my $query = $self->getseqcoords_query();
   my $getforcedseqcoords = $self->getforcedseqcoords_query() ;
   if ($name =~ /\*/) {
+    $name =~ s/%/\\%/g;
+    $name =~ s/_/\\_/g;
     $name =~ tr/*/%/;
     $query =~ s/gname=\?/gname LIKE ?/;
   }
@@ -1854,6 +1926,8 @@ sub make_aliasabscoord_query {
   #my $query = GETALIASCOORDS;
   my $query = $self->getaliascoords_query();
   if ($name =~ /\*/) {
+    $name =~ s/%/\\%/g;
+    $name =~ s/_/\\_/g;
     $name =~ tr/*/%/;
     $query =~ s/gname=\?/gname LIKE ?/;
   }
@@ -1881,7 +1955,7 @@ sub bin_query {
   $maxbin = defined $maxbin ? $maxbin : $self->max_bin;
   my $tier = $maxbin;
   while ($tier >= $minbin) {
-    my ($tier_start,$tier_stop) = (bin_bot($tier,$start),bin_top($tier,$stop));
+    my ($tier_start,$tier_stop) = (bin_bot($tier,$start)-EPSILON(),bin_top($tier,$stop)+EPSILON());
     if ($tier_start == $tier_stop) {
       push @bins,'fbin=?';
       push @args,$tier_start;
@@ -1901,10 +1975,17 @@ sub overlap_query {
   my $self = shift;
   my ($start,$stop) = @_;
 
-  my ($bq,@bargs)   = $self->bin_query($start,$stop);
-  my ($iq,@iargs) = $self->overlap_query_nobin($start,$stop);
-  my $query = "($bq)\n\tAND $iq";
-  my @args  = (@bargs,@iargs);
+  my ($query,@args);
+  my ($iq,@iargs)   = $self->overlap_query_nobin($start,$stop);
+  if (OPTIMIZE) {
+    my ($bq,@bargs)   = $self->bin_query($start,$stop);
+    $query = "($bq)\n\tAND $iq";
+    @args  = (@bargs,@iargs);
+  }
+  else {
+    $query = $iq;
+    @args  = @iargs;
+  }
 
   return wantarray ? ($query,@args) : $self->dbh->dbi_quote($query,@args);
 }
@@ -1996,6 +2077,8 @@ sub _delete {
     my $result      = $dbh->selectall_arrayref($types_query);
     my @typeids     = map {$_->[0]} @$result;
     my $typelist    = join ',',map{$dbh->quote($_)} @typeids;
+    $typelist ||= "0"; # don't cause DBI to die with invalid SQL when
+                       # unknown feature types were requested.
     push @where,"(ftypeid in ($typelist))";
   }
   $self->throw("This operation would delete all feature data and -force not specified")
@@ -2003,6 +2086,7 @@ sub _delete {
   $query .= " where ".join(' and ',@where) if @where;
   warn "$query\n" if $self->debug;
   my $result = $dbh->do($query);
+
   defined $result or $self->throw($dbh->errstr);
   $result;
 }

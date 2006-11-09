@@ -1,4 +1,4 @@
-# $Id: OMIMentry.pm,v 1.10 2003/11/05 03:27:17 juguang Exp $
+# $Id: OMIMentry.pm,v 1.16.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for Bio::Phenotype::OMIM::OMIMentry
 #
@@ -22,7 +22,8 @@
 
 =head1 NAME
 
-OMIMentry - represents OMIM (Online Mendelian Inheritance in Man) database entries
+Bio::Phenotype::OMIM::OMIMentry - represents OMIM (Online Mendelian
+Inheritance in Man) database entries
 
 =head1 SYNOPSIS
 
@@ -44,17 +45,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the 
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -82,10 +82,8 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Phenotype::OMIM::OMIMentry;
-use vars qw( @ISA );
 use strict;
 
-use Bio::Phenotype::Phenotype;
 use Bio::Phenotype::OMIM::MiniMIMentry;
 use Bio::Phenotype::OMIM::OMIMentryAllelicVariant;
 
@@ -93,7 +91,7 @@ use constant TRUE              => 1;
 use constant FALSE             => 0;
 use constant DEFAULT_MIM_NUMER => 0;
 
-@ISA = qw( Bio::Phenotype::Phenotype );
+use base qw(Bio::Phenotype::Phenotype);
 
 
 
@@ -572,16 +570,26 @@ sub add_clinical_symptoms {
     push @{$self->{_clinical_symptoms}->{$part}}, @symptoms;
 }
 
-=head2 get_clinical_symptoms
+=head2 query_clinical_symptoms
 
   Title     : get_clinical_symptoms
-  Usage     : @symptoms = $self->get_clinical_symptoms('Ears');
+  Usage     : @symptoms = $self->query_clinical_symptoms('Ears');
   Function  : get all symptoms specific to one part/organism.
   Returns   : an array of text
-  Args      : $part
+  Args      : $organ
 
 =cut
 
+sub query_clinical_symptoms {
+    my ($self, $organ)=@_;
+    my $symptoms=$self->{_clinical_symptoms}->{$organ};
+    @$symptoms;
+}
+
+sub get_clinical_symptom_organs {
+    my ($self)=@_;
+    keys %{$self->{_clinical_symptoms}};
+}
 
 =head2 created
 
@@ -708,13 +716,8 @@ sub miniMIM {
 sub each_AllelicVariant {
     my ( $self ) = @_;
     
-    if ( $self->{ "_allelic_variants" } ) {
-        return @{ $self->{ "_allelic_variants" } };
-    }
-    else {
-        return my @a = (); 
-    }
-    
+    return @{$self->{"_allelic_variants"}} if exists($self->{"_allelic_variants"});
+    return ();    
 } # each_AllelicVariant
 
 

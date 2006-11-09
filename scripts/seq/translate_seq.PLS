@@ -1,7 +1,6 @@
 #!perl -w
 use strict;
-# $Id: translate_seq.PLS,v 1.2 2003/05/30 15:48:29 jason Exp $
-
+# $Id: translate_seq.PLS,v 1.7 2006/07/04 22:23:29 mauricio Exp $
 
 =head1 NAME
 
@@ -23,8 +22,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -32,7 +31,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
- http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -43,7 +42,7 @@ email or the web:
 use Bio::SeqIO;
 use Getopt::Long;
 
-my ($format);
+my ($format) = 'fasta';
 
 GetOptions(
 	   'format:s'  => \$format,
@@ -52,7 +51,7 @@ GetOptions(
 my $oformat = 'fasta';
 
 # this implicity uses the <> file stream
-my $seqin = Bio::SeqIO->new( -format => $format); 
+my $seqin = Bio::SeqIO->new( -format => $format, -file => shift); 
 my $seqout = Bio::SeqIO->new( -format => $oformat, -file => ">-" );
 
 
@@ -60,3 +59,5 @@ while( (my $seq = $seqin->next_seq()) ) {
 	my $pseq = $seq->translate();
 	$seqout->write_seq($pseq);
 }
+
+__END__

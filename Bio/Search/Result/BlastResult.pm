@@ -1,4 +1,4 @@
-# $Id: BlastResult.pm,v 1.15 2003/05/12 09:10:21 heikki Exp $
+# $Id: BlastResult.pm,v 1.22.4.3 2006/10/02 23:10:24 sendu Exp $
 #
 # BioPerl module for Bio::Search::Result::BlastResult
 #
@@ -50,25 +50,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Steve Chervitz
 
 Email sac@bioperl.org
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -82,12 +77,11 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Search::Result::BlastResult;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Search::Result::GenericResult;
+use Bio::Search::BlastStatistics;
 
-@ISA = qw( Bio::Search::Result::GenericResult );
+use base qw(Bio::Search::Result::GenericResult);
 
 =head2 new
 
@@ -183,7 +177,7 @@ sub next_hit {
         $iter_index = $self->{'_iter_index'};
     }
 
-    return undef if $iter_index >= scalar @{$self->{'_iterations'}};
+    return if $iter_index >= scalar @{$self->{'_iterations'}};
 
     my $it = $self->{'_iterations'}->[$iter_index];
     my $hit = $self->{'_last_hit'} = $it->next_hit;
@@ -216,6 +210,28 @@ sub num_hits{
     return scalar( $self->hits );
 }
 
+=head2 add_hit
+
+ Title   : add_hit
+ Usage   : $report->add_hit($hit)
+ Function: Adds a HitI to the stored list of hits
+ Returns : Number of HitI currently stored
+ Args    : Bio::Search::Hit::HitI
+
+=cut
+
+sub add_hit {
+    my ($self,$hit) = @_;
+    my $iter = $self->iteration;
+    if( $hit->isa('Bio::Search::Hit::HitI') ) { 
+	return $iter->add_hit(-hit => $hit);
+    } else { 
+        $self->throw("Passed in a " .ref($hit). 
+                     " as a Iteration which is not a Bio::Search::Hit::HitI.");
+    }
+    return $iter->num_hits;
+}
+
 =head2 add_iteration
 
  Title   : add_iteration
@@ -233,7 +249,7 @@ sub add_iteration {
         $self->{'_iteration_count'}++;
     } else { 
         $self->throw("Passed in a " .ref($i). 
-                     " as a Iteration which is not a Bio::Search::IterationI.");
+                     " as a Iteration which is not a Bio::Search::Iteration::IterationI.");
     }
     return scalar @{$self->{'_iterations'}};
 }
@@ -474,6 +490,5 @@ sub inclusion_threshold {
     my $self = shift;
     return $self->{'_inclusion_threshold'};
 }
-
 
 1;

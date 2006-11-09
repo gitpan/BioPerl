@@ -1,4 +1,4 @@
-# $Id: Unflattener.pm,v 1.19 2003/12/16 22:31:16 cjm Exp $
+# $Id: Unflattener.pm,v 1.37.4.2 2006/10/02 23:10:28 sendu Exp $
 #
 # bioperl module for Bio::SeqFeature::Tools::Unflattener
 #
@@ -583,17 +583,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Chris Mungall
 
@@ -610,17 +609,15 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::SeqFeature::Tools::Unflattener;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
-use Bio::Root::Root;
 use Bio::Location::Simple;
 use Bio::SeqFeature::Generic;
 use Bio::Range;
 
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 =head2 new
 
@@ -666,10 +663,10 @@ sub DESTROY {
     my @probs = $self->get_problems;
     if (!$self->{_problems_reported} &&
 	scalar(@probs)) {
-	print STDERR 
-	  "WARNING: There are UNREPORTED PROBLEMS.\n".
+	$self->warn(
+	    "WARNING: There are UNREPORTED PROBLEMS.\n".
 	    "You may wish to use the method report_problems(), \n",
-	      "or ignore_problems() on the Unflattener object\n";
+	    "or ignore_problems() on the Unflattener object\n");
     }
     return;
 }
@@ -774,6 +771,10 @@ sub _default_partonomy{
             CDS => 'mRNA',
 	    exon => 'mRNA',
 	    intron => 'mRNA',
+
+            pseudoexon => 'pseudogene',
+            pseudointron => 'pseudogene',
+            pseudotranscript => 'pseudogene',
            };
 }
 
@@ -828,8 +829,8 @@ typically contains
   source
   gene
   CDS
-  exon
-  intron
+  exon [optional]
+  intron [optional]
 
 there are no mRNA features
 
@@ -841,7 +842,7 @@ with this structure type, we want the seq_features to be nested like this
       intron
 
 exon and intron may or may not be present; they may be implicit from
-the mRNA 'join' location
+the CDS 'join' location
 
 =back
 
@@ -907,8 +908,8 @@ sub add_problem{
     my $self = shift;
 
     $self->{'_problems'} = [] unless exists($self->{'_problems'});
-    if ($self->verbose) {
-        print "PROBLEM: $_\n" foreach @_;
+    if ($self->verbose > 0) {
+        warn( "PROBLEM: $_\n") foreach @_;
     }
     push(@{$self->{'_problems'}}, @_);
 }
@@ -1143,6 +1144,10 @@ sub unflatten_seq{
        # use magic to guess the group tag
        my @sfs_with_locus_tag =
 	 grep {$_->has_tag("locus_tag")} @flat_seq_features;
+       my @sfs_with_gene_tag =
+	 grep {$_->has_tag("gene")} @flat_seq_features;
+       my @sfs_with_product_tag =
+	 grep {$_->has_tag("product")} @flat_seq_features;
        if (@sfs_with_locus_tag) {
 	   if ($group_tag && $group_tag ne 'locus_tag') {
 	       $self->throw("You have explicitly set group_tag to be '$group_tag'\n".
@@ -1151,14 +1156,27 @@ sub unflatten_seq{
 			    "You can resolve this by either NOT setting -group_tag\n".
 			    "OR you can unset -use_magic to regain control");
 	   }
-	   # I know what's best for you.
-	   # You want to be using /locus_tag=foo here
-	   #
+
+	   # use /locus_tag instead of /gene tag for grouping
 	   # see GenBank entry AE003677 (version 3) for an example
 	   $group_tag = 'locus_tag';
-           if ($self->verbose) {
-               print "Set group tag to: $group_tag\n";
+           if ($self->verbose > 0) {
+               warn "Set group tag to: $group_tag\n";
            }
+       }
+
+       # on rare occasions, records will have no /gene or /locus_tag
+       # but it WILL have /product tags. These serve the same purpose
+       # for grouping. For an example, see AY763288 (also in t/data)
+       if (@sfs_with_locus_tag==0 &&
+           @sfs_with_gene_tag==0 &&
+           @sfs_with_product_tag>0 &&
+           !$group_tag) {
+	   $group_tag = 'product';
+           if ($self->verbose > 0) {
+               warn "Set group tag to: $group_tag\n";
+           }
+           
        }
    }
    if (!$group_tag) {
@@ -1257,6 +1275,28 @@ sub unflatten_seq{
 
    # -
 
+   # PSEUDOGENES, PSEUDOEXONS AND PSEUDOINTRONS
+   # these are indicated with the /pseudo tag
+   # these are mapped to a different type; they should NOT
+   # be treated as normal genes
+   foreach my $sf (@all_seq_features) {
+       if ($sf->has_tag('pseudo')) {
+           my $type = $sf->primary_tag;
+           # SO type is typically the same as the normal
+           # type but preceeded by "pseudo"
+           if ($type eq 'misc_RNA') {
+               $sf->primary_tag("pseudotranscript");
+           }
+           else {
+               $sf->primary_tag("pseudo$type");
+           }
+       }
+   }
+   # now some of the post-processing that follows which applies to
+   # genes will NOT be applied to pseudogenes; this is deliberate
+   # for example, gene models are normalised to be gene-transcript-exon
+   # for pseudogenes we leave them as pseudogene-pseudoexon
+
    # --- MAGIC ---
    my $need_to_infer_exons = 0;
    my $need_to_infer_mRNAs = 0;
@@ -1276,27 +1316,43 @@ sub unflatten_seq{
 			$_->has_tag($group_tag)} @flat_seq_features);
        my $n_cdss =
 	 scalar(grep {$_->primary_tag eq 'CDS'} @flat_seq_features);
-	   
+       my $n_rnas =
+	 scalar(grep {$_->primary_tag =~ /RNA/} @flat_seq_features);  
        # Are there any CDS features in the record?
-       if ($n_cdss) {
+       if ($n_cdss > 0) {
            # YES
            
 	   # - a pc gene model should contain at the least a CDS
 
            # Are there any mRNA features in the record?
-	   if (!$n_mrnas) {
+	   if ($n_mrnas == 0) {
+               # NO mRNAs:
 	       # looks like structure_type == 1
 	       $structure_type = 1;
 	       $need_to_infer_mRNAs = 1;
 	   }
-	   elsif (!$n_mrnas_attached_to_gene) {
-               # The files _does_ have at least one mRNA feature,
-               # but none of them are part of a group, i.e. they
+	   elsif ($n_mrnas_attached_to_gene == 0) {
+               # $n_mrnas > 0
+               # $n_mrnas_attached_to_gene = 0
+               #
+               # The entries _do_ contain mRNA features,
+               # but none of them are part of a group/gene, i.e. they
                # are 'floating'
 
 	       # this is an annoying weird file that has some floating
 	       # mRNA features; 
 	       # eg ftp.ncbi.nih.gov/genomes/Schizosaccharomyces_pombe/
+               
+               if ($self->verbose) {
+                   my @floating_mrnas =
+                     grep {$_->primary_tag eq 'mRNA' &&
+                             !$_->has_tag($group_tag)} @flat_seq_features;
+                   printf STDERR "Unattached mRNAs:\n";
+                   foreach my $mrna (@floating_mrnas) {
+                       $self->_write_sf_detail($mrna);
+                   }
+                   printf STDERR "Don't know how to deal with these; filter at source?\n";
+               }
 
 	       foreach (@flat_seq_features) {
 		   if ($_->primary_tag eq 'mRNA') {
@@ -1319,6 +1375,9 @@ sub unflatten_seq{
        }
        else {
 	   # this doesn't seem to be any kind of protein coding gene model
+	   if ( $n_rnas > 0 ) {
+	       $need_to_infer_exons = 1;
+	   }
        }
 
        if ($need_to_infer_exons) {
@@ -1349,28 +1408,28 @@ sub unflatten_seq{
    }
 
    # LOGGING
-   if ($self->verbose) {
-       print "GROUPS:\n";
+   if ($self->verbose > 0) {
+       printf STDERR "GROUPS:\n";
        foreach my $group (@groups) {
 	   $self->_write_group($group, $group_tag);
        }
    }
    # -
 
-   # >>>>>>>>>                   <<<<<<<<<<<<<
    # --------- FINISHED GROUPING -------------
-   # >>>>>>>>>                   <<<<<<<<<<<<<
 
+
+   # TYPE CONTAINMENT HIERARCHY (aka partonomy)
    # set the containment hierarchy if desired
    # see docs for structure_type() method
    if ($structure_type) {
        if ($structure_type == 1) {
 	   $self->partonomy(
-					{CDS => 'gene',
-					 exon => 'CDS',
-					 intron => 'CDS',
-					}
-				       );
+                            {CDS => 'gene',
+                             exon => 'CDS',
+                             intron => 'CDS',
+                            }
+                           );
        }
        else {
 	   $self->throw("structure_type $structure_type is currently unknown");
@@ -1387,7 +1446,6 @@ sub unflatten_seq{
    }
 
    if ($use_magic) {
-       my @roots = $self->_get_partonomy_roots;
        # point all feature types without a container type to the root type.
        #
        # for example, if we have an unanticipated feature_type, say
@@ -1399,9 +1457,8 @@ sub unflatten_seq{
 		   my $type = $sf->primary_tag;
 		   next if $type eq 'gene';
 		   my $container_type = $self->get_container_type($type);
-		   my $root = $roots[0];
 		   if (!$container_type) {
-		       $self->partonomy->{$type} = $root;
+		       $self->partonomy->{$type} = 'gene';
 		   }
 	       }
 	   }
@@ -1435,16 +1492,16 @@ sub unflatten_seq{
    $seq->remove_SeqFeatures;
    $seq->add_SeqFeature(@top_sfs);
 
-   # >>>>>>>>>                       <<<<<<<<<<<<<
    # --------- FINISHED UNFLATTENING -------------
-   # >>>>>>>>>                       <<<<<<<<<<<<<
 
    # lets see if there are any post-unflattening tasks we need to do
 
+   
+
    # INFERRING mRNAs
    if ($need_to_infer_mRNAs) {
-       if ($self->verbose) {
-	   print "** INFERRING mRNA from CDS\n";
+       if ($self->verbose > 0) {
+	   printf STDERR "** INFERRING mRNA from CDS\n";
        }
        $self->infer_mRNA_from_CDS(-seq=>$seq);
    }
@@ -1517,7 +1574,9 @@ sub unflatten_seq{
 			   $exon->add_tag_value($tag, @vals);
 		       }
 		   }
-	       } else {
+	       } 
+               else {
+                   # no exons inferred at $locstr
 		   push(@problems,
 			[1, 
 			 "there is a conflict with exons; there was an explicitly ".
@@ -1541,7 +1600,7 @@ sub unflatten_seq{
 	       my $thresh = $self->error_threshold;
 	       my @bad_problems = grep {$_->[0] > $thresh} @problems;
 	       if (@bad_problems) {
-		   print STDERR "PROBLEM:\n";
+		   printf STDERR "PROBLEM:\n";
 		   $self->_write_hier(\@top_sfs);
 		   # TODO - allow more fine grained control over this
 		   $self->{_problems_reported} = 1;
@@ -1588,8 +1647,8 @@ sub _split_group_if_disconnected {
     else {
 	# @ranges > 1
 	# split the group into disconnected ranges
-	if ($self->verbose) {
-	    print "GROUP PRE-SPLIT:\n";
+	if ($self->verbose > 0) {
+	    printf STDERR "GROUP PRE-SPLIT:\n";
 	    $self->_write_group($group, $self->group_tag);
 	}
 	@groups =
@@ -1599,8 +1658,8 @@ sub _split_group_if_disconnected {
 		  $_->intersection($range);
 	      } @sfs]
 	  } @ranges;
-	if ($self->verbose) {
-	    print "SPLIT GROUPS:\n";
+	if ($self->verbose > 0) {
+	    printf STDERR "SPLIT GROUPS:\n";
 	    $self->_write_group($_, $self->group_tag) foreach @groups;	    
 	}
     }
@@ -1639,8 +1698,8 @@ sub _remove_duplicates_from_group {
 	# the latter is redundant with the CDS entry. So we shall get rid of
 	# the latter with the following filter
 
-	if ($self->verbose) {
-	    print "REMOVING DUPLICATES:\n";
+	if ($self->verbose > 0) {
+	    printf STDERR "REMOVING DUPLICATES:\n";
 	}
 
 	@genes =
@@ -1756,8 +1815,8 @@ sub unflatten_group{
                           )],
                           @args);
 
-   if ($self->verbose) {
-       print "UNFLATTENING GROUP:\n";
+   if ($self->verbose > 0) {
+       printf STDERR "UNFLATTENING GROUP:\n";
        $self->_write_group($group, $self->group_tag);
    }
 
@@ -1801,7 +1860,7 @@ sub unflatten_group{
 		 @container_sfs = 
 		   grep {
 		       my $match = 0;
-		       $self->_write_sf($_);
+		       $self->_write_sf($_) if $self->verbose > 0;
 		       foreach my $tag (qw(product symbol label)) {
 			   if ($_->has_tag($tag)) {
 			       my @vals =
@@ -1843,7 +1902,7 @@ sub unflatten_group{
    # CONDITION: there must be at most one root
    if (@top_sfs > 1) {
        $self->_write_group($group, $self->group_tag);
-       print "TOP SFS:\n";
+       printf STDERR "TOP SFS:\n";
        $self->_write_sf($_) foreach @top_sfs;
        $self->throw("multiple top-sfs in group");
    }
@@ -1993,8 +2052,8 @@ sub unflatten_group{
        if (%unresolved) {
            my %childh = map {$_=>1} keys %unresolved;
            my %parenth = map {$_->[0]=>1} map {@$_} values %unresolved;
-           if ($self->verbose) {
-               printf "MATCHING %d CHILDREN TO %d PARENTS\n",
+           if ($self->verbose > 0) {
+               printf STDERR "MATCHING %d CHILDREN TO %d PARENTS\n",
                  scalar(keys %childh), scalar(keys %parenth);
            }
            # 99.99% of the time in genbank genomic record of structure type 0, we
@@ -2014,21 +2073,19 @@ sub unflatten_group{
        }
    }
 
-   # CONDITION:
-   # The graph %container 
-
    # DEBUGGING CODE
-   if ($self->verbose && scalar(keys %unresolved)) {
-       print "UNRESOLVED PAIRS:\n";
+   if ($self->verbose > 0 && scalar(keys %unresolved)) {
+       printf STDERR "UNRESOLVED PAIRS:\n";
        foreach my $childsf (keys %unresolved) {
 	   my @poss = @{$unresolved{$childsf}};
 	   foreach my $p (@poss) {
 	       my $parentsf = $p->[0];
 	       $childsf = $idxsf{$childsf};
-               my @clabels = $childsf->get_tagset_values(qw(protein_id label product));
-               my @plabels = $parentsf->get_tagset_values(qw(transcript_id label product));
-	       printf("  PAIR: $clabels[0] => $plabels[0]  (of %d)\n", 
-		      scalar(@poss));
+               my @clabels = ($childsf->get_tagset_values(qw(protein_id label product)), "?");
+               my @plabels = ($parentsf->get_tagset_values(qw(transcript_id label product)), "?");
+	       printf STDERR
+                      ("  PAIR: $clabels[0] => $plabels[0]  (of %d)\n", 
+                       scalar(@poss));
 	   }
        }
    } # -- end of verbose
@@ -2053,8 +2110,8 @@ sub unflatten_group{
            $unresolved_problem_reported = 1;
        }
        foreach my $pair (@$new_pairs) {
-	   if ($self->verbose) {
-	       printf "  resolved pair @$pair\n";
+	   if ($self->verbose > 0) {
+	       printf STDERR "  resolved pair @$pair\n";
 	   }
 	   $container{$pair->[0]} = $pair->[1];
            delete $unresolved{$pair->[0]};
@@ -2073,20 +2130,28 @@ sub unflatten_group{
    foreach my $sf (@sfs) {
        my $container_sf = $container{$sf};
        if ($container_sf) {
-           eval {
-	       # make $sf nested inside $container_sf
-	       #
-	       # this will throw an exception if $sf is
-	       # not spatially within $container_sf
+           # make $sf nested inside $container_sf
+
+           # first check if the container spatially contains the containee
+           if ($container_sf->contains($sf)) {
+               # add containee
 	       $container_sf->add_SeqFeature($sf);
-	   };
-	   if ($@) {
-	       # probably a spatial containment problem
-	       $self->problem(2,
-			      "bioperl add_SeqFeature says:$@",
+           }
+           else {
+               # weird case - the container does NOT spatially
+               # contain the containee;
+               # we expand and throw a warning
+               #
+               # for an example of this see ZFP91-CNTF dicistronic gene
+               # in NCBI chrom 11 build 34.3
+	       $self->problem(1,
+			      "Container feature does not spatially contain ".
+                              "subfeature. Perhaps this is a dicistronic gene? ".
+                              "I am expanding the parent feature",
 			      $container_sf,
 			      $sf);
-	   }
+	       $container_sf->add_SeqFeature($sf, 'EXPAND');
+           }
        }
        else {
            push(@top, $sf);
@@ -2131,8 +2196,8 @@ sub find_best_matches {
 
     my $verbose = $self->verbose;
     #################################print "I";
-    if ($verbose) {
-	printf "find_best_matches: (/%d)\n", scalar(@$pairs);
+    if ($verbose > 0) {
+	printf STDERR "find_best_matches: (/%d)\n", scalar(@$pairs);
     }
 
     my %selected_children = map {($_->[0]=>1)} @$pairs;
@@ -2143,8 +2208,8 @@ sub find_best_matches {
     my %unresolved_parents = ();
     my %unresolved =
       map {
-          if ($verbose) {
-              printf "  $_ : %s\n", join("; ", map {"[@$_]"} @{$matrix->{$_}});
+          if ($verbose > 0) {
+              printf STDERR "  $_ : %s\n", join("; ", map {"[@$_]"} @{$matrix->{$_}});
           }
 	  if ($selected_children{$_}) {
 	      ();
@@ -2231,30 +2296,32 @@ sub _write_group {
     my $group_tag = shift || 'gene';
 
     my $f = $group->[0];
-    my $label = '';
+    my $label = '?';
     if ($f->has_tag($group_tag)) {
 	($label) = $f->get_tag_values($group_tag);
     }
-    printf("  GROUP [%s]:%s\n",
-	   $label,
-	   join(' ',
-		map { $_->primary_tag } @$group));
+    if( $self->verbose > 0 ) { 
+	printf STDERR ("  GROUP [%s]:%s\n",
+	       $label,
+	       join(' ',
+		    map { $_->primary_tag } @$group));
+    }
 
 }
 
 sub _write_sf {
     my $self = shift;
     my $sf = shift;
-    printf "TYPE:%s\n", $sf->primary_tag;
+    printf STDERR "TYPE:%s\n", $sf->primary_tag;
     return;
 }
 
 sub _write_sf_detail {
     my $self = shift;
     my $sf = shift;
-    printf "TYPE:%s\n", $sf->primary_tag;
+    printf STDERR "TYPE:%s\n", $sf->primary_tag;
     my @locs = $sf->location->each_Location;
-    printf "  %s,%s [%s]\n", $_->start, $_->end, $_->strand foreach @locs;
+    printf STDERR "  %s,%s [%s]\n", $_->start, $_->end, $_->strand foreach @locs;
     return;
 }
 
@@ -2262,14 +2329,16 @@ sub _write_hier {
     my $self = shift;
     my @sfs = @{shift || []};
     my $indent = shift || 0;
-    foreach my $sf (@sfs) {
-        my $label = '?';
-        if ($sf->has_tag('product')) {
-            ($label) = $sf->get_tag_values('product');
-        }
-        printf "%s%s $label\n", '  ' x $indent, $sf->primary_tag;
-        my @sub_sfs = $sf->sub_SeqFeature;
-        $self->_write_hier(\@sub_sfs, $indent+1);
+    if( $self->verbose > 0 ) {
+	foreach my $sf (@sfs) {
+	    my $label = '?';
+	    if ($sf->has_tag('product')) {
+		($label) = $sf->get_tag_values('product');
+	    }
+	    printf STDERR "%s%s $label\n", '  ' x $indent, $sf->primary_tag;
+	    my @sub_sfs = $sf->sub_SeqFeature;
+	    $self->_write_hier(\@sub_sfs, $indent+1);
+	}
     }
 }
 
@@ -2301,8 +2370,8 @@ sub _resolve_container_for_sf{
                $inside = 0;
            }
        }
-       if ($self->verbose) {
-	   print "    Checking containment:[$inside] (@container_coords) IN ($splice_uniq_str)\n";
+       if ($self->verbose > 0) {
+	   printf STDERR "    Checking containment:[$inside] (@container_coords) IN ($splice_uniq_str)\n";
        }
        if ($inside) {
 	   # SCORE: matching (ss-scoords+2)/(n-container-ss-coords+2)
@@ -2390,22 +2459,40 @@ sub feature_from_splitloc{
        $sf->isa("Bio::SeqFeatureI") || $self->throw("$sf NOT A SeqFeatureI");
        $sf->isa("Bio::FeatureHolderI") || $self->throw("$sf NOT A FeatureHolderI");
 
-       # so far, we only infer exons from mRNA
        my $type = $sf->primary_tag;
        next unless $type eq 'mRNA' or $type =~ /RNA/;
 
        # an mRNA from genbank will have a discontinuous location,
        # with each sub-location being equivalent to an exon
        my @locs = $sf->location;
+
        if ($sf->location->isa("Bio::Location::SplitLocationI")) {
            @locs = $sf->location->each_Location;
        }
-       
+
+       if (!@locs) {
+           use Data::Dumper;
+           print Dumper $sf;
+	   $self->throw("ASSERTION ERROR: sf has no location objects");
+       }
+
        # make exons from locations
        my @subsfs =
          map {
              my $subsf = Bio::SeqFeature::Generic->new(-location=>$_,
                                                        -primary_tag=>'exon');
+             ## Provide seq_id to new feature:
+             $subsf->seq_id($sf->seq_id) if $sf->seq_id;
+             $subsf->source_tag($sf->source_tag) if $sf->source_tag;
+             ## Transfer /locus_tag and /gene tag values to inferred
+             ## features.  TODO: Perhaps? this should not be done
+             ## indiscriminantly but rather by virtue of the setting
+             ## of group_tag.
+             foreach my $tag (grep /gene|locus_tag/, $sf->get_all_tags) {
+                 my @vals = $sf->get_tag_values($tag);
+                 $subsf->add_tag_value($tag, @vals);
+             }
+
 	     my $locstr = 'exon::'.$self->_locstr($subsf);
 
 	     # re-use feature if type and location the same
@@ -2419,16 +2506,12 @@ sub feature_from_splitloc{
          } @locs;
        
        # PARANOID CHECK
-       my $ok =
-	 $self->_check_order_is_consistent(@subsfs);
-       if (!$ok) {
-	   print "Unordered features:\n";
-	   $self->_write_sf_detail($_) foreach @subsfs;
-	   $self->throw("ASSERTION ERROR: inconsistent order");
-       }
+       $self->_check_order_is_consistent($sf->location->strand,@subsfs);
        #----
 
        $sf->location(Bio::Location::Simple->new());
+
+       # we allow the exons to define the boundaries of the transcript
        $sf->add_SeqFeature($_, 'EXPAND') foreach @subsfs;
 
 
@@ -2514,6 +2597,9 @@ sub infer_mRNA_from_CDS{
 
        $sf->isa("Bio::SeqFeatureI") || $self->throw("$sf NOT A SeqFeatureI");
        $sf->isa("Bio::FeatureHolderI") || $self->throw("$sf NOT A FeatureHolderI");
+       if ($self->verbose > 0) {
+           printf STDERR "    Checking $sf %s\n", $sf->primary_tag;
+       }
        
        if ($sf->primary_tag eq 'mRNA') {
 	   $self->problem(2,
@@ -2526,14 +2612,11 @@ sub infer_mRNA_from_CDS{
 	   my @mrnas = ();
 	   foreach my $cds (@cdsl) {
 	       
-	       my $ok;
-	       $ok =
-		 $self->_check_order_is_consistent($cds->location->each_Location);
-	       if (!$ok) {
-		   $self->_write_sf_detail($cds);
-		   $self->throw("inconsistent order");
-	       }
-
+               if ($self->verbose > 0) {
+                   print "    Inferring mRNA from CDS $cds\n";
+               }
+               $self->_check_order_is_consistent($cds->location->strand,$cds->location->each_Location);
+               
 	       my $loc = Bio::Location::Split->new;
 	       foreach my $cdsexonloc ($cds->location->each_Location) {
 		   my $subloc =
@@ -2547,12 +2630,16 @@ sub infer_mRNA_from_CDS{
 		 Bio::SeqFeature::Generic->new(-location=>$loc,
 					       -primary_tag=>'mRNA');
 	       
-	       $ok =
-		 $self->_check_order_is_consistent($mrna->location->each_Location);
-	       if (!$ok) {
-		   $self->throw("inconsistent order");
-	       }
+               ## Provide seq_id to new feature:
+               $mrna->seq_id($cds->seq_id) if $cds->seq_id;
+               $mrna->source_tag($cds->source_tag) if $cds->source_tag;
+
+               $self->_check_order_is_consistent($mrna->location->strand,$mrna->location->each_Location);
+
+               # make the mRNA hold the CDS; no EXPAND option,
+               # the CDS cannot be wider than the mRNA
 	       $mrna->add_SeqFeature($cds);
+
 	       # mRNA steals children of CDS
 	       foreach my $subsf ($cds->get_SeqFeatures) {
 		   $mrna->add_SeqFeature($subsf);
@@ -2609,29 +2696,67 @@ sub remove_types{
 }
 
 
+# _check_order_is_consistent($strand,$ranges) RETURNS BOOL
+#
+# note: the value of this test is moot - there are many valid,
+# if unusual cases where it would flag an anomaly. for example
+# transpliced genes such as mod(mdg4) in dmel on AE003744, and
+# the following spliced gene on NC_001284:
+#
+#     mRNA            complement(join(20571..20717,21692..22086,190740..190761,
+#                     140724..141939,142769..142998))
+#                     /gene="nad5"
+#                     /note="trans-splicing, RNA editing"
+#                     /db_xref="GeneID:814567"
+#
+# note how the exons are not in order
+#  this will flag a level-3 warning, the user of this module
+#  can ignore this and deal appropriately with the resulting
+#  unordered exons
 sub _check_order_is_consistent {
     my $self = shift;
+
+    my $parent_strand = shift; # this does nothing..?
     my @ranges = @_;
     return unless @ranges;
+    my $rangestr =
+      join(" ",map{sprintf("[%s,%s]",$_->start,$_->end)} @ranges);
     my $strand = $ranges[0]->strand;
     for (my $i=1; $i<@ranges;$i++) {
 	if ($ranges[$i]->strand != $strand) {
-	    return 1; # mixed ranges - autopass
+            $self->problem(1,"inconsistent strands. Trans-spliced gene? Range: $rangestr");
+	    return 1; 
+            # mixed ranges - autopass
+            # some mRNAs have exons on both strands; for
+            # example, the dmel mod(mdg4) gene which is
+            # trans-spliced (in actual fact two mRNAs)
 	}
     }
+    my $pass = 1;
     for (my $i=1; $i<@ranges;$i++) {
 	my $rangeP = $ranges[$i-1];
 	my $range = $ranges[$i];
-#	if ($strand < 0) {
-#	    if ($rangeP->end < $range->start) {
-#		return 0;
-#	    }
-#	}
-#	else {
 	    if ($rangeP->start > $range->end) {
-		return 0;
+                # failed - but still get one more chance..
+		$pass = 0;
+                $self->problem(2,"Ranges not in correct order. Strange ensembl genbank entry? Range: $rangestr");
+                last;
 	    }
-#	}
+    }
+    
+    if (!$pass) {
+        # sometimes (eg ensembl flavour genbank files)
+        # exons on reverse strand listed in reverse order
+        # eg join(complement(R1),...,complement(Rn))
+        # where R1 > R2
+        for (my $i=1; $i<@ranges;$i++) {
+            my $rangeP = $ranges[$i-1];
+            my $range = $ranges[$i];
+	    if ($rangeP->end < $range->start) {
+                $self->problem(3,"inconsistent order. Range: $rangestr");
+                return 0;
+	    }
+        }
     }
     return 1; # pass
 }
@@ -2670,3 +2795,4 @@ sub find_best_pairs {
     
 }
 
+1;

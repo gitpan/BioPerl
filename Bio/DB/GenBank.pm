@@ -1,4 +1,4 @@
-# $Id: GenBank.pm,v 1.50 2003/07/03 12:29:15 heikki Exp $
+# $Id: GenBank.pm,v 1.59.4.1 2006/10/02 23:10:14 sendu Exp $
 #
 # BioPerl module for Bio::DB::GenBank
 #
@@ -56,7 +56,7 @@ Bio::DB::GenBank - Database object interface to GenBank
     # also don't want features, just sequence so let's save bandwith
     # and request Fasta sequence
     $gb = new Bio::DB::GenBank(-retrievaltype => 'tempfile' , 
-			       -format => 'Fasta');
+			                      -format => 'Fasta');
     my $seqio = $gb->get_Stream_by_acc(['AC013798', 'AC021953'] );
     while( my $clone =  $seqio->next_seq ) {
       print "cloneid is ", $clone->display_id, " ", 
@@ -64,12 +64,40 @@ Bio::DB::GenBank - Database object interface to GenBank
     }
     # note that get_Stream_by_version is not implemented
 
+    # don't want the entire sequence or more options
+    my $gb = Bio::DB::GenBank->new(-format     => 'Fasta',
+                                   -seq_start  => 100,
+                                   -seq_stop   => 200,
+                                   -strand     => 1,
+                                   -complexity => 4));
+    my $seqi = $gb->get_Stream_by_query($query);
+
+These alternate methods are described at
+L<http://www.ncbi.nlm.nih.gov/entrez/query/static/efetchseq_help.html>
+
+NOTE: strand should be 1 for plus or 2 for minus.
+
+Complexity: gi is often a part of a biological blob, containing other gis
+
+complexity regulates the display:
+0 - get the whole blob
+1 - get the bioseq for gi of interest (default in Entrez)
+2 - get the minimal bioseq-set containing the gi of interest
+3 - get the minimal nuc-prot containing the gi of interest
+4 - get the minimal pub-set containing the gi of interest
+
+'seq_start' and 'seq_stop' will not work when setting complexity to any value
+other than 1.  'strand' works for any setting other than a complexity of 0
+(whole glob); when you try this with a GenBank return format nothing happens,
+whereas using FASTA works but causes display problems with the other sequences
+in the glob.  As Tao Tao says from NCBI, "Better left it out or set it to 1."
+
 =head1 DESCRIPTION
 
-Allows the dynamic retrieval of Sequence objects (Bio::Seq) from the
+Allows the dynamic retrieval of L<Bio::Seq> sequence objects from the
 GenBank database at NCBI, via an Entrez query.
 
-WARNING: Please do NOT spam the Entrez web server with multiple
+WARNING: Please do B<NOT> spam the Entrez web server with multiple
 requests.  NCBI offers Batch Entrez for this purpose.
 
 Note that when querying for GenBank accessions starting with 'NT_' you
@@ -91,17 +119,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Aaron Mackey, Jason Stajich
 
@@ -120,18 +147,16 @@ preceded with a _
 
 package Bio::DB::GenBank;
 use strict;
-use vars qw(@ISA %PARAMSTRING $DEFAULTFORMAT $DEFAULTMODE);
-use Bio::DB::NCBIHelper;
+use vars qw(%PARAMSTRING $DEFAULTFORMAT $DEFAULTMODE);
 
-@ISA = qw(Bio::DB::NCBIHelper);
+use base qw(Bio::DB::NCBIHelper);
 BEGIN {    
     $DEFAULTMODE   = 'single';
-    $DEFAULTFORMAT = 'gp';
-    %PARAMSTRING = ( 
-		     'batch' => { 'db'     => 'nucleotide',
+    $DEFAULTFORMAT = 'gbwithparts';
+    %PARAMSTRING = (
+			 'batch' => { 'db'     => 'nucleotide',
 				  'usehistory' => 'n',
-				  'tool'   => 'bioperl',
-				  'retmode' => 'text'},
+				  'tool'   => 'bioperl'},
 		     'query' => { 'usehistory' => 'y',
 				  'tool'   => 'bioperl',
 				  'retmode' => 'text'},
@@ -147,6 +172,13 @@ BEGIN {
 				   'usehistory' => 'n',
 				   'tool'   => 'bioperl',
 				   'retmode' => 'text'},
+			 'webenv' => {    
+				  'query_key'  => 'querykey',
+				  'WebEnv'  => 'cookie',
+				  'db'     => 'nucleotide',
+				  'usehistory' => 'n',
+				  'tool'   => 'bioperl',
+				  'retmode' => 'text'},
 		     );
 }
 
@@ -207,14 +239,6 @@ sub get_params {
   Args    : the accession number as a string
   Note    : For GenBank, this just calls the same code for get_Seq_by_id()
   Throws  : "id does not exist" exception
-
-=cut
-
-
-sub get_Seq_by_acc {
-   my ($self,$seqid) = @_;
-   $self->SUPER::get_Seq_by_acc("gb|$seqid");
-}
 
 =head2 get_Seq_by_gi
 
@@ -304,6 +328,22 @@ instead.
  Function: HTTP::Request
  Returns : 
  Args    : %qualifiers = a hash of qualifiers (ids, format, etc)
+
+=cut
+
+=head2 default_format
+
+ Title   : default_format
+ Usage   : my $format = $self->default_format
+ Function: Returns default sequence format for this module
+ Returns : string
+ Args    : none
+
+=cut
+
+sub default_format {
+    return $DEFAULTFORMAT;
+}
 
 1;
 __END__

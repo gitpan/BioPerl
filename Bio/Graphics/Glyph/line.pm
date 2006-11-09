@@ -2,9 +2,7 @@ package Bio::Graphics::Glyph::line;
 # an arrow without the arrowheads
 
 use strict;
-use vars '@ISA';
-@ISA = 'Bio::Graphics::Glyph::generic';
-use Bio::Graphics::Glyph::generic;
+use base qw(Bio::Graphics::Glyph::generic);
 
 sub bottom {
   my $self = shift;
@@ -14,7 +12,7 @@ sub bottom {
   $val;
 }
 
-sub draw {
+sub draw_component {
   my $self = shift;
   my $gd = shift;
   my ($x1,$y1,$x2,$y2) = $self->calculate_boundaries(@_);

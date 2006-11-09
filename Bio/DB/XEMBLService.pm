@@ -1,5 +1,5 @@
 #
-# $Id: XEMBLService.pm,v 1.4 2003/06/04 08:36:37 heikki Exp $
+# $Id: XEMBLService.pm,v 1.8.4.1 2006/10/02 23:10:15 sendu Exp $
 #
 # BioPerl module for Bio::DB::XEMBLService
 #
@@ -31,17 +31,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Lincoln Stein
 
@@ -73,12 +72,10 @@ my %methods = (
   },
 );
 use Bio::Root::Version;
-use SOAP::Lite;
-use Exporter;
 use Carp ();
 
-use vars qw(@ISA $AUTOLOAD @EXPORT_OK %EXPORT_TAGS);
-@ISA = qw(Exporter SOAP::Lite);
+use vars qw($AUTOLOAD @EXPORT_OK %EXPORT_TAGS);
+use base qw(Exporter SOAP::Lite);
 @EXPORT_OK = (keys %methods);
 %EXPORT_TAGS = ('all' => [@EXPORT_OK]);
 

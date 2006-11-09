@@ -1,4 +1,4 @@
-# $Id: WebDBSeqI.pm,v 1.37 2003/11/25 19:38:19 heikki Exp $
+# $Id: WebDBSeqI.pm,v 1.57.2.1 2006/10/02 23:10:15 sendu Exp $
 #
 # BioPerl module for Bio::DB::WebDBSeqI
 #
@@ -14,7 +14,7 @@
 =head1 NAME
 
 Bio::DB::WebDBSeqI - Object Interface to generalize Web Databases
-  for retrieving sequences
+for retrieving sequences
 
 =head1 SYNOPSIS
 
@@ -24,19 +24,14 @@ Bio::DB::WebDBSeqI - Object Interface to generalize Web Databases
 
 =head1 DESCRIPTION
 
-
-
-
 Provides core set of functionality for connecting to a web based
 database for retriving sequences.
 
 Users wishing to add another Web Based Sequence Dabatase will need to
-extend this class (see Bio::DB::SwissProt or Bio::DB::NCBIHelper for
+extend this class (see L<Bio::DB::SwissProt> or L<Bio::DB::NCBIHelper> for
 examples) and implement the get_request method which returns a
 HTTP::Request for the specified uids (accessions, ids, etc depending
 on what query types the database accepts).
-
-
 
 =head1 FEEDBACK
 
@@ -48,18 +43,16 @@ your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation
 is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to
 help us keep track the bugs and their resolution.
-Bug reports can be submitted via email or the
-web:
+Bug reports can be submitted via the web.
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -77,38 +70,39 @@ preceded with a _
 
 package Bio::DB::WebDBSeqI;
 use strict;
-use vars qw(@ISA $MODVERSION %RETRIEVAL_TYPES $DEFAULT_RETRIEVAL_TYPE
-	    $DEFAULTFORMAT $LAST_INVOCATION_TIME);
+use vars qw($MODVERSION %RETRIEVAL_TYPES $DEFAULT_RETRIEVAL_TYPE
+	    $DEFAULTFORMAT $LAST_INVOCATION_TIME @ATTRIBUTES);
 
-use Bio::DB::RandomAccessI;
 use Bio::SeqIO;
 use Bio::Root::IO;
 use LWP::UserAgent;
+use POSIX 'setsid';
 use HTTP::Request::Common;
 use HTTP::Response;
 use File::Spec;
+use IO::Pipe;
 use IO::String;
 use Bio::Root::Root;
 
-@ISA = qw(Bio::DB::RandomAccessI);
+use base qw(Bio::DB::RandomAccessI);
 
 BEGIN {
-    $MODVERSION = $Bio::Root::Version::VERSION;
-    %RETRIEVAL_TYPES = ( 'io_string' => 1,
-			 'tempfile'  => 1,
-			 'pipeline'  => 1,
-		       );
-    $DEFAULT_RETRIEVAL_TYPE = 'pipeline';
-    $DEFAULTFORMAT = 'fasta';
-    $LAST_INVOCATION_TIME = 0;
+	$MODVERSION = '0.8';
+	%RETRIEVAL_TYPES = ('io_string' => 1,
+								 'tempfile'  => 1,
+								 'pipeline'  => 1,
+							 );
+	$DEFAULT_RETRIEVAL_TYPE = 'pipeline';
+	$DEFAULTFORMAT = 'fasta';
+	$LAST_INVOCATION_TIME = 0;
 }
 
 sub new {
     my ($class, @args) = @_;
     my $self = $class->SUPER::new(@args);
     my ($baseaddress, $params, $ret_type, $format,$delay,$db) =
-	$self->_rearrange([qw(BASEADDRESS PARAMS RETRIEVALTYPE FORMAT DELAY DB)],
-			  @args);
+	 $self->_rearrange([qw(BASEADDRESS PARAMS RETRIEVALTYPE FORMAT DELAY DB)],
+							 @args);
 
     $ret_type = $DEFAULT_RETRIEVAL_TYPE unless ( $ret_type);
     $baseaddress   && $self->url_base_address($baseaddress);
@@ -122,12 +116,10 @@ sub new {
     # even though this will be immedietly overwritten by most sub classes
     $format = $self->default_format unless ( defined $format && 
 					     $format ne '' );
-    
+
     $self->request_format($format);
     my $ua = new LWP::UserAgent(env_proxy => 1);
-    my $nm = ref($self);
-    $nm =~ s/::/_/g;
-    $ua->agent("bioperl-$nm/$MODVERSION");
+    $ua->agent(ref($self) ."/$MODVERSION");
     $self->ua($ua);  
     $self->{'_authentication'} = [];
     return $self;
@@ -151,16 +143,15 @@ sub get_Seq_by_id {
     my ($self,$seqid) = @_;
     $self->_sleep;
     my $seqio = $self->get_Stream_by_id([$seqid]);
-    unless( defined $seqio ) {
-	$self->warn("id ($seqid) does not exist");
-	return undef;
+    $self->throw("id does not exist") if( !defined $seqio ) ;
+    if ($self->can('complexity') &&  defined $self->complexity && $self->complexity==0) {
+        $self->warn("When complexity is set to 0, use get_Stream_by_id\n".
+                    "Returning Bio::SeqIO object");
+        return $seqio;
     }
     my @seqs;
     while( my $seq = $seqio->next_seq() ) { push @seqs, $seq; }
-    unless( @seqs ) {
-	$self->warn("id ($seqid) does not exist");
-	return undef;
-    }
+    $self->throw("id does not exist") unless @seqs;
     if( wantarray ) { return @seqs } else { return shift @seqs }
 }
 
@@ -179,16 +170,15 @@ sub get_Seq_by_acc {
    my ($self,$seqid) = @_;
    $self->_sleep;
    my $seqio = $self->get_Stream_by_acc($seqid);
-   if( ! defined $seqio ) { 
-       $self->warn("acc ($seqid) does not exist");
-       return undef;
-   }
+   $self->throw("acc $seqid does not exist") if( ! defined $seqio );
+    if ($self->can('complexity') &&  defined $self->complexity && $self->complexity==0) {
+        $self->warn("When complexity is set to 0, use get_Stream_by_acc\n".
+                    "Returning Bio::SeqIO object");
+        return $seqio;
+    }
    my @seqs;
    while( my $seq = $seqio->next_seq() ) { push @seqs, $seq; }
-   unless( @seqs ) {
-       $self->warn("acc ($seqid) does not exist");
-       return undef;
-   }
+   $self->throw("acc $seqid does not exist") unless @seqs;
    if( wantarray ) { return @seqs } else { return shift @seqs }
 }
 
@@ -208,16 +198,15 @@ sub get_Seq_by_gi {
    my ($self,$seqid) = @_;
     $self->_sleep;
    my $seqio = $self->get_Stream_by_gi($seqid);
-   unless( defined $seqio ) {
-       $self->warn("gi ($seqid) does not exist");
-       return undef;
-   }
+   $self->throw("gi does not exist") if( !defined $seqio );
+    if ($self->can('complexity') &&  defined $self->complexity && $self->complexity==0) {
+        $self->warn("When complexity is set to 0, use get_Stream_by_gi\n".
+                    "Returning Bio::SeqIO object");
+        return $seqio;
+    }
    my @seqs;
    while( my $seq = $seqio->next_seq() ) { push @seqs, $seq; }
-   unless( @seqs ) {
-       $self->warn("gi ($seqid) does not exist");
-       return undef;
-   }
+   $self->throw("gi does not exist") unless @seqs;
    if( wantarray ) { return @seqs } else { return shift @seqs }
 }
 
@@ -236,16 +225,15 @@ sub get_Seq_by_version {
    my ($self,$seqid) = @_;
     $self->_sleep;
    my $seqio = $self->get_Stream_by_version($seqid);
-   unless( defined $seqio ) {
-       $self->warn("accession.version ($seqid) does not exist");
-       return undef;
-   }
-   my @seqs;
+   $self->throw("accession.version does not exist") if( !defined $seqio );
+    if ($self->can('complexity') &&  defined $self->complexity && $self->complexity==0) {
+        $self->warn("When complexity is set to 0, use get_Stream_by_version\n".
+                    "Returning Bio::SeqIO object");
+        return $seqio;
+    }
+    my @seqs;
    while( my $seq = $seqio->next_seq() ) { push @seqs, $seq; }
-   unless( @seqs ) {
-       $self->warn("accession.version ($seqid) does not exist");
-       return undef;
-   }
+   $self->throw("accession.version does not exist") unless @seqs;
    if( wantarray ) { return @seqs } else { return shift @seqs }
 }
 
@@ -423,95 +411,101 @@ sub request_format {
 =cut
 
 sub get_seq_stream {
-  my ($self, %qualifiers) = @_;
-  my ($rformat, $ioformat) = $self->request_format();
-  my $seen = 0;
-  foreach my $key ( keys %qualifiers ) {
-      if( $key =~ /format/i ) {
-      $rformat = $qualifiers{$key};
-      $seen = 1;
-    }
-  }
-  $qualifiers{'-format'} = $rformat if( ! $seen);
-  ($rformat, $ioformat) = $self->request_format($rformat);
+	my ($self, %qualifiers) = @_;
+	my ($rformat, $ioformat) = $self->request_format();
+	my $seen = 0;
+	foreach my $key ( keys %qualifiers ) {
+		if( $key =~ /format/i ) {
+			$rformat = $qualifiers{$key};
+			$seen = 1;
+		}
+	}
+	$qualifiers{'-format'} = $rformat if( !$seen);
+	($rformat, $ioformat) = $self->request_format($rformat);
+	# These parameters are implemented for Bio::DB::GenBank objects only
+	if($self->isa('Bio::DB::GenBank')) {
+		$self->seq_start() &&  ($qualifiers{'-seq_start'} = $self->seq_start());
+		$self->seq_stop() && ($qualifiers{'-seq_stop'} = $self->seq_stop());
+		$self->strand() && ($qualifiers{'-strand'} = $self->strand());
+		defined $self->complexity() && ($qualifiers{'-complexity'} = $self->complexity());
+	}
+	my $request = $self->get_request(%qualifiers);
+	$request->proxy_authorization_basic($self->authentication)
+	  if ( $self->authentication);
+	$self->debug("request is ". $request->as_string(). "\n");
 
-  my $request = $self->get_request(%qualifiers);
-  $request->proxy_authorization_basic($self->authentication)
-    if ( $self->authentication);
-  $self->debug("request is ". $request->as_string(). "\n");
+	# workaround for MSWin systems
+	$self->retrieval_type('io_string') if $self->retrieval_type =~ /pipeline/ && $^O =~ /^MSWin/;
 
-  # workaround for MSWin systems
-  $self->retrieval_type('io_string') if $self->retrieval_type =~ /pipeline/ && $^O =~ /^MSWin/;
+	if ($self->retrieval_type =~ /pipeline/) {
+		# Try to create a stream using POSIX fork-and-pipe facility.
+		# this is a *big* win when fetching thousands of sequences from
+		# a web database because we can return the first entry while 
+		# transmission is still in progress.
+		# Also, no need to keep sequence in memory or in a temporary file.
+		# If this fails (Windows, MacOS 9), we fall back to non-pipelined access.
 
-  if ($self->retrieval_type =~ /pipeline/) {
-    # Try to create a stream using POSIX fork-and-pipe facility.
-    # this is a *big* win when fetching thousands of sequences from
-    # a web database because we can return the first entry while 
-    # transmission is still in progress.
-    # Also, no need to keep sequence in memory or in a temporary file.
-    # If this fails (Windows, MacOS 9), we fall back to non-pipelined access.
+		# fork and pipe: _stream_request()=><STREAM>
+		my ($result,$stream) = $self->_open_pipe();
 
-    # fork and pipe: _stream_request()=><STREAM>
-    my $result =  eval { open(STREAM,"-|") };
+		if (defined $result) {
+			$DB::fork_TTY = File::Spec->devnull; # prevents complaints from debugge
+			if (!$result) { # in child process
+			        $self->_stream_request($request,$stream);
+			        POSIX::_exit(0); #prevent END blocks from executing in this forked child
+			}
+			else {
+				return Bio::SeqIO->new('-verbose' => $self->verbose,
+											  '-format'  => $ioformat,
+											  '-fh'      => $stream);
+			}
+		}
+		else {
+			$self->retrieval_type('io_string');
+		}
+	}
 
-    if (defined $result) {
-      $DB::fork_TTY = '/dev/null'; # prevents complaints from debugger
-      if (!$result) {	# in child process
-	$self->_stream_request($request); 
-	kill 9=>$$; # to prevent END{} blocks from executing in forked children
-	exit 0;
-      }
-      else {
-	  return Bio::SeqIO->new('-verbose' => $self->verbose,
-				 '-format'  => $ioformat,
-				 '-fh'      => \*STREAM);
-      }
-    }
-    else {
-      $self->retrieval_type('io_string');
-    }
-  }
+	if ($self->retrieval_type =~ /temp/i) {
+		my $dir = $self->io->tempdir( CLEANUP => 1);
+		my ( $fh, $tmpfile) = $self->io()->tempfile( DIR => $dir );
+		close $fh;
+		my $resp = $self->_request($request, $tmpfile);		
+		if( ! -e $tmpfile || -z $tmpfile || ! $resp->is_success() ) {
+			$self->throw("WebDBSeqI Error - check query sequences!\n");
+		}
+		$self->postprocess_data('type' => 'file',
+										'location' => $tmpfile);	
+		# this may get reset when requesting batch mode
+		($rformat,$ioformat) = $self->request_format();
+		if( $self->verbose > 0 ) {
+			open(my $ERR, "<", $tmpfile);
+			while(<$ERR>) { $self->debug($_);}
+		}
 
-  if ($self->retrieval_type =~ /temp/i) {
-    my $dir = $self->io->tempdir( CLEANUP => 1);
-    my ( $fh, $tmpfile) = $self->io()->tempfile( DIR => $dir );
-    close $fh;
-    my $resp = $self->_request($request, $tmpfile);		
-    if( ! -e $tmpfile || -z $tmpfile || ! $resp->is_success() ) {
-      $self->throw("WebDBSeqI Error - check query sequences!\n");
-    }
-    $self->postprocess_data('type' => 'file',
-			    'location' => $tmpfile);	
-    # this may get reset when requesting batch mode
-    ($rformat,$ioformat) = $self->request_format();
-    if( $self->verbose > 0 ) {
-      open(ERR, "<$tmpfile");
-      while(<ERR>) { $self->debug($_);}
-    }
-    return Bio::SeqIO->new('-verbose' => $self->verbose,
-			   '-format' => $ioformat,
-			   '-file'   => $tmpfile);
-  }
+		return Bio::SeqIO->new('-verbose' => $self->verbose,
+									  '-format' => $ioformat,
+									  '-file'   => $tmpfile);
+	}
 
-  if ($self->retrieval_type =~ /io_string/i ) {
-    my $resp = $self->_request($request);
-    my $content = $resp->content_ref;
-    $self->debug( "content is $$content\n");
-    if (!$resp->is_success() || length($$content) == 0) {
-      $self->throw("WebDBSeqI Error - check query sequences!\n");	
-    }
-    ($rformat,$ioformat) = $self->request_format();
-    $self->postprocess_data('type'=> 'string',
-			    'location' => $content);
-    $self->debug( "str is $$content\n");
-    return Bio::SeqIO->new('-verbose' => $self->verbose,
-			   '-format' => $ioformat,
-			   '-fh'   => new IO::String($$content));
-  }
+	if ($self->retrieval_type =~ /io_string/i ) {
+		my $resp = $self->_request($request);
+		my $content = $resp->content_ref;
+		$self->debug( "content is $$content\n");
+		if (!$resp->is_success() || length($$content) == 0) {
+			$self->throw("WebDBSeqI Error - check query sequences!\n");	
+		}
+		($rformat,$ioformat) = $self->request_format();
+		$self->postprocess_data('type'=> 'string',
+										'location' => $content);
+		$self->debug( "str is $$content\n");
+		return Bio::SeqIO->new('-verbose' => $self->verbose,
+									  '-format' => $ioformat,
+									  '-fh'   => new IO::String($$content));
+	}
 
-  # if we got here, we don't know how to handle the retrieval type
-  $self->throw("retrieval type " . $self->retrieval_type . 
-		 " unsupported\n");
+	# if we got here, we don't know how to handle the retrieval type
+	$self->throw("retrieval type " . $self->retrieval_type . 
+					 " unsupported\n");
 }
 
 =head2 url_base_address
@@ -549,7 +543,7 @@ sub url_base_address {
 
 sub proxy {
     my ($self,$protocol,$proxy,$username,$password) = @_;
-    return undef if ( !defined $self->ua || !defined $protocol 
+    return if ( !defined $self->ua || !defined $protocol 
 		      || !defined $proxy );
     $self->authentication($username, $password) 	
 	if ($username && $password);
@@ -635,10 +629,10 @@ sub retrieval_type {
 =cut
 
 sub url_params {
-    my ($self, $value) = @_;
-    if( defined $value ) {
-	$self->{'_urlparams'} = $value;
-    }    
+	my ($self, $value) = @_;
+	if( defined $value ) {
+		$self->{'_urlparams'} = $value;
+	}    
 }
 
 =head2 ua
@@ -653,11 +647,11 @@ sub url_params {
 =cut
 
 sub ua {
-    my ($self, $ua) = @_;
-    if( defined $ua && $ua->isa("LWP::UserAgent") ) {
-	$self->{'_ua'} = $ua;
-    }
-    return $self->{'_ua'};
+	my ($self, $ua) = @_;
+	if( defined $ua && $ua->isa("LWP::UserAgent") ) {
+		$self->{'_ua'} = $ua;
+	}
+	return $self->{'_ua'};
 }
 
 =head2 postprocess_data
@@ -674,66 +668,100 @@ sub ua {
 =cut
 
 sub postprocess_data {
-    my ( $self, %args) = @_;
-    return;
+	my ( $self, %args) = @_;
+	return;
 }
 
 # private methods
 sub _request {
-
-    my ($self, $url,$tmpfile) = @_;
-    my ($resp);
-    if( defined $tmpfile && $tmpfile ne '' ) { 
-	$resp =  $self->ua->request($url, $tmpfile);
-    } else { $resp =  $self->ua->request($url); } 
-
-    if( $resp->is_error  ) {
-	$self->throw("WebDBSeqI Request Error:\n".$resp->as_string);
-    }
-    return $resp;
+	my ($self, $url,$tmpfile) = @_;
+	my ($resp);
+	if( defined $tmpfile && $tmpfile ne '' ) { 
+		$resp =  $self->ua->request($url, $tmpfile);
+	} else { 
+		$resp =  $self->ua->request($url); 
+	} 
+	
+	if( $resp->is_error  ) {
+		$self->throw("WebDBSeqI Request Error:\n".$resp->as_string);
+	}
+	return $resp;
 }
 
-# send web request to stdout for streaming purposes
+#mod_perl-safe replacement for the open(BLEH,'-|') call.  if running
+#under mod_perl, detects it and closes the child's STDIN and STDOUT
+#handles
+sub _open_pipe {
+  my ($self) = @_;
+
+  if($ENV{MOD_PERL} and ! our $loaded_apache_sp) {
+    eval 'use Apache::SubProcess';
+    $@ and $self->throw("$@\nApache::SubProcess module required for running under mod_perl");
+    $loaded_apache_sp = 1;
+  }
+
+  my $pipe = IO::Pipe->new();
+
+  $SIG{CHLD} = 'IGNORE';
+  defined(my $pid = fork)
+    or $self->throw("Couldn't fork: $!");
+
+  unless($pid) {
+    #CHILD
+    $pipe->writer();
+
+    #if we're running under mod_perl, clean up some things after this fork
+    if ($ENV{MOD_PERL} and my $r = eval{Apache->request} ) {
+      $r->cleanup_for_exec;
+      #don't read or write the mod_perl parent's tied filehandles
+      close STDIN; close STDOUT;
+      setsid() or $self->throw('Could not detach from parent');
+    }
+  } else {
+    #PARENT
+    $pipe->reader();
+  }
+  return ( $pid, $pipe );
+}
+
+# send web request to specified filehandle, or stdout, for streaming purposes
 sub _stream_request {
   my $self    = shift;
   my $request = shift;
+  my $dest_fh = shift || \*STDOUT;
 
   # fork so as to pipe output of fetch process through to
   # postprocess_data method call.
-  my $child = open (FETCH,"-|");
-  $self->throw("Couldn't fork: $!") unless defined $child;
+  my ($child,$fetch) = $self->_open_pipe();
 
   if ($child) {
+    #PARENT
     local ($/) = "//\n";  # assume genbank/swiss format
     $| = 1;
     my $records = 0;
-    while (my $record = <FETCH>) {
+    while (my $record = <$fetch>) {
       $records++;
       $self->postprocess_data('type'     => 'string',
 			      'location' => \$record);
-      print STDOUT $record;
+      print $dest_fh $record;
     }
     $/ = "\n"; # reset to be safe;
-    close(FETCH);
-    close STDOUT; 
-    close STDERR;
-    kill 9=>$$;  # to prevent END{} blocks from executing in forked children
-    sleep;
+    close $dest_fh; #must explicitly close here, because the hard
+                    #exits don't cloes them for us
   }
   else {
+    #CHILD
     $| = 1;
     my $resp =  $self->ua->request($request,
-				   sub { print shift }
+				   sub { print $fetch $_[0] }
 				   );
     if( $resp->is_error  ) {
       $self->throw("WebDBSeqI Request Error:\n".$resp->as_string);
     }
-
-    close STDOUT; close STDERR;
-    kill 9=>$$;  # to prevent END{} blocks from executing in forked children
-    sleep;
+    close $fetch; #must explicitly close here, because the hard exists
+                  #don't close them for us
+    POSIX::_exit(0);
   }
-  exit 0;
 }
 
 sub io {

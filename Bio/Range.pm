@@ -1,8 +1,8 @@
-# $Id: Range.pm,v 1.18 2003/05/17 19:03:52 heikki Exp $
+# $Id: Range.pm,v 1.27.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::Range
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copywright Matthew Pocock
 #
@@ -51,21 +51,19 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via  the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email heikki@ebi.ac.uk
+Email heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -79,12 +77,9 @@ package Bio::Range;
 use strict;
 use Carp;
 use integer;
-use Bio::RangeI;
-use Bio::Root::Root;
 
-use vars qw(@ISA);
 
-@ISA = qw(Bio::Root::Root Bio::RangeI);
+use base qw(Bio::Root::Root Bio::RangeI);
 
 =head1 Constructors
 
@@ -94,8 +89,8 @@ use vars qw(@ISA);
   Usage   : $range = Bio::Range->new(-start => 100, -end=> 200, -strand = +1);
   Function: generates a new Bio::Range
   Returns : a new range
-  Args    : two of (-start, -end, '-length') - the third is calculated
-          : -strand (defaults to 0)
+  Args    : -strand (defaults to 0) and any two of (-start, -end, -length),
+            the third will be calculated
 
 =cut
 
@@ -123,6 +118,59 @@ sub new {
   }
   return $self;
 }
+
+=head2 unions
+
+ Title   : unions
+ Usage   : @unions = Bio::Range->unions(@ranges);
+ Function: generate a list of non-intersecting Bio::Range objects
+           from a list of Bio::Range objects which may intersect
+ Returns : a list of Bio::Range objects
+ Args    : a list of Bio::Range objects
+
+
+=cut
+
+sub unions {
+  my ($class,@i) = @_;
+
+  my $i = 0;
+  my %i = map { $i++ => $_ } @i;
+
+  my $lastsize = scalar(keys %i);
+
+  do {
+
+    foreach my $j (sort { $i{$a}->start <=> $i{$b}->start } keys %i){
+      foreach my $k (sort { $i{$a}->start <=> $i{$b}->start } keys %i){
+
+        #it may have been replaced by a union under the key of
+        #the overlapping range, we are altering the hash in-place
+        next unless $i{$j};
+
+        next if $i{$k}->end   < $i{$j}->start;
+        last if $i{$k}->start > $i{$j}->end;
+
+        if($i{$j}->overlaps($i{$k})){
+          my($start,$end,$strand) = $i{$j}->union($i{$k});
+          delete($i{$k});
+          $i{$j} = Bio::Range->new( -start => $start , -end => $end , -strand => $strand );
+        }
+      }
+    }
+
+    goto DONE if scalar(keys %i) == $lastsize;
+    $lastsize = scalar(keys %i);
+
+    #warn $lastsize;
+
+  } while(1);
+
+  DONE:
+
+  return values %i;
+}
+
 
 =head1 Member variable access
 
@@ -174,10 +222,10 @@ sub end {
 =head2 strand
 
   Title    : strand
-  Function : return or set the strandidness
+  Function : return or set the strandedness
   Example  : $st = $range->strand(); $range->strand(-1);
   Returns  : the value of the strandedness (-1, 0 or 1)
-  Args     : optionaly, the new strand - (-1, 0, 1) or (-, ., +).
+  Args     : optionally, the new strand - (-1, 0, 1) or (-, ., +).
   Overrides: Bio::RangeI::Strand
 
 =cut
@@ -202,7 +250,7 @@ sub strand {
   Function : returns the length of this range
   Example  : $length = $range->length();
   Returns  : the length of this range, equal to end - start + 1
-  Args     : if you attempt to set the length, and exeption will be thrown
+  Args     : if you attempt to set the length an exception will be thrown
   Overrides: Bio::RangeI::Length
 
 =cut
@@ -248,9 +296,9 @@ These methods return true or false.
 
   Title    : contains
   Usage    : if($r1->contains($r2) { do stuff }
-  Function : tests wether $r1 totaly contains $r2
+  Function : tests wether $r1 totally contains $r2
   Args     : a range to test for being contained
-  Returns  : true if the argument is totaly contained within this range
+  Returns  : true if the argument is totally contained within this range
   Inherited: Bio::RangeI
 
 =head2 equals
@@ -284,7 +332,7 @@ triplets (start, end, strand) from which new ranges could be built.
   Usage    : ($start, $stop, $strand) = $r1->union($r2);
            : ($start, $stop, $strand) = Bio::Range->union(@ranges);
   Function : finds the minimal range that contains all of the ranges
-  Args     : a range or list of ranges to find the union of
+  Args     : a range or list of ranges
   Returns  : the range containing all of the ranges
   Inherited: Bio::RangeI::union
 

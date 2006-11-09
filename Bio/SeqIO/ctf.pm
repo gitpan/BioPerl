@@ -1,4 +1,4 @@
-# $Id: ctf.pm,v 1.8 2002/10/22 07:38:42 lapp Exp $
+# $Id: ctf.pm,v 1.15.4.1 2006/10/02 23:10:29 sendu Exp $
 # BioPerl module for Bio::SeqIO::ctf
 #
 # Cared for by Aaron Mackey <amackey@virginia.edu>
@@ -30,17 +30,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org            - General discussion
-  http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.
+Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS - Aaron Mackey
 
@@ -58,7 +57,6 @@ methods. Internal methods are usually preceded with a _
 package Bio::SeqIO::ctf;
 use vars qw(@ISA $READ_AVAIL);
 use strict;
-# Object preamble - inherits from Bio::Root::Object
 
 use Bio::SeqIO;
 use Bio::Seq::SeqFactory;
@@ -79,7 +77,7 @@ sub _initialize {
   my($self,@args) = @_;
   $self->SUPER::_initialize(@args);  
   if( ! defined $self->sequence_factory ) {
-      $self->sequence_factory(new Bio::Seq::SeqFactory(-verbose => $self->verbose(), -type => 'Bio::Seq::SeqWithQuality'));      
+      $self->sequence_factory(new Bio::Seq::SeqFactory(-verbose => $self->verbose(), -type => 'Bio::Seq::Quality'));      
   }
   unless ($READ_AVAIL) {
       Bio::Root::Root->throw( -class => 'Bio::Root::SystemException',
@@ -93,7 +91,7 @@ sub _initialize {
  Title   : next_seq
  Usage   : $seq = $stream->next_seq()
  Function: returns the next sequence in the stream
- Returns : Bio::SeqWithQuality object
+ Returns : Bio::Seq::Quality object
  Args    : NONE
 
 =cut

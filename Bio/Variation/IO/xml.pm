@@ -1,7 +1,7 @@
-# $Id: xml.pm,v 1.14 2003/06/04 08:36:44 heikki Exp $
+# $Id: xml.pm,v 1.19.4.1 2006/10/02 23:10:38 sendu Exp $
 # BioPerl module for Bio::Variation::IO::xml
 #
-# Cared for by Heikki Lehvaslaiho <Heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Heikki Lehvaslaiho
 #
@@ -20,17 +20,17 @@ Do not use this module directly.  Use it via the Bio::Variation::IO class.
 
 =head1 DESCRIPTION
 
-This object can transform Bio::Variation::SeqDiff objects to and from XML
+This object can transform L<Bio::Variation::SeqDiff> objects to and from XML
 file databases.
 
 The XML format, although consistent, is still evolving. The current
-DTD for it is at L<http:E<sol>E<sol>www.ebi.ac.ukE<sol>mutationsE<sol>DTDE<sol>seqDiff.dtd>.
+DTD for it is at L<http://www.ebi.ac.uk/mutations/DTDE/seqDiff.dtd>.
 
 =head1 REQUIREMENTS
 
-To use this code you need the module XML::Twig which creates an
-interface to XML::Parser to read XML and modules XML::Writer and
-IO::String to write XML out.
+To use this code you need the module L<XML::Twig> which creates an
+interface to L<XML::Parser> to read XML and modules L<XML::Writer> and
+L<IO::String> to write XML out.
 
 =head1 FEEDBACK
 
@@ -40,26 +40,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email:  heikki@ebi.ac.uk
-Address:
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom
+Email:  heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -72,21 +66,19 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Variation::IO::xml;
 
-use vars qw(@ISA $seqdiff $var $prevdnaobj $prevrnaobj $prevaaobj);
+use vars qw($seqdiff $var $prevdnaobj $prevrnaobj $prevaaobj);
 use strict;
 
 use XML::Twig;
 use XML::Writer 0.4;
 use IO::String;
-use Bio::Variation::IO;
 use Bio::Variation::SeqDiff;
 use Bio::Variation::DNAMutation;
 use Bio::Variation::RNAChange;
 use Bio::Variation::AAChange;
 use Bio::Variation::Allele;
 
-# new() is inherited from Bio::Root::Object
-@ISA = qw( Bio::Variation::IO );
+use base qw(Bio::Variation::IO);
 
 # _initialize is where the heavy stuff will happen when new is called
 

@@ -1,4 +1,4 @@
-# $Id: FTLocationFactory.pm,v 1.12 2003/09/14 19:19:23 jason Exp $
+# $Id: FTLocationFactory.pm,v 1.21.4.2 2006/10/02 23:10:18 sendu Exp $
 #
 # BioPerl module for Bio::Factory::FTLocationFactory
 #
@@ -7,7 +7,6 @@
 # Copyright Hilmar Lapp
 #
 # You may distribute this module under the same terms as perl itself
-
 #
 # (c) Hilmar Lapp, hlapp at gnf.org, 2002.
 # (c) GNF, Genomics Institute of the Novartis Research Foundation, 2002.
@@ -31,12 +30,13 @@ Bio::Factory::FTLocationFactory - A FeatureTable Location Parser
 =head1 SYNOPSIS
 
     # parse a string into a location object
-    $loc = Bio::Factory::FTLocationFactory->from_string("join(100..200, 400..500");
+    $loc = Bio::Factory::FTLocationFactory->from_string("join(100..200, 
+                                                         400..500");
 
 =head1 DESCRIPTION
 
-Implementation of string-encoded location parsing for the Genbank feature table
-encoding of locations.
+Implementation of string-encoded location parsing for the Genbank feature
+table encoding of locations.
 
 =head1 FEEDBACK
 
@@ -46,17 +46,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
@@ -64,7 +63,8 @@ Email hlapp at gmx.net
 
 =head1 CONTRIBUTORS
 
-Additional contributors names and emails here
+Jason Stajich, jason-at-bioperl-dot-org
+Chris Fields, cjfields-at-uiuc-dot-edu
 
 =head1 APPENDIX
 
@@ -76,21 +76,31 @@ Internal methods are usually preceded with a _
 
 # Let the code begin...
 
-
 package Bio::Factory::FTLocationFactory;
-use vars qw(@ISA);
+use vars qw($LOCREG);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::Root::Root;
-use Bio::Factory::LocationFactoryI;
 use Bio::Location::Simple;
 use Bio::Location::Split;
 use Bio::Location::Fuzzy;
 
 
-@ISA = qw(Bio::Root::Root Bio::Factory::LocationFactoryI);
+use base qw(Bio::Root::Root Bio::Factory::LocationFactoryI);
+
+BEGIN {
+    # the below is an optimized regex obj. from J. Freidl's Mastering Reg Exp.
+    $LOCREG = qr{
+                (?>
+                [^()]+
+                |
+                \(
+                (??{$LOCREG})
+                \)
+                )*
+                }x;     
+}
 
 =head2 new
 
@@ -99,7 +109,6 @@ use Bio::Location::Fuzzy;
  Function: Builds a new Bio::Factory::FTLocationFactory object 
  Returns : an instance of Bio::Factory::FTLocationFactory
  Args    :
-
 
 =cut
 
@@ -116,45 +125,90 @@ use Bio::Location::Fuzzy;
  Returns : A Bio::LocationI implementing object.
  Args    : A string.
 
-
 =cut
 
-sub from_string{
-    # the third parameter is purely optional and indicates a recursive
-    # call if set
-    my ($self,$locstr,$is_rec) = @_;
+sub from_string {
+    my ($self,$locstr,$op) = @_;
     my $loc;
+    
+    #$self->debug("$locstr\n");
+    
+    # $op for operator (error handling)
+    
+    # run on first pass only
+    # Note : These location types are now deprecated in GenBank (Oct. 2006)
+    if (!defined($op)) {
+        # convert all (X.Y) to [X.Y]
+        $locstr =~ s{\((\d+\.\d+)\)}{\[$1\]}g;
+        # convert ABC123:(X..Y) to ABC123:[X..Y]
+        # we should never see the above
+        $locstr =~ s{:\((\d+\.{2}\d+)\)}{:\[$1\]}g;
+    }
+    
+    if ($locstr =~ m{(.*?)\(($LOCREG)\)(.*)}o) { # any matching parentheses?
 
-    # there is no place in FT-formatted location strings where whitespace 
-    # carries meaning, so strip it off entirely upfront
-    $locstr =~ s/\s+//g if ! $is_rec;
+        my ($beg, $mid, $end) = ($1, $2, $3);
+        my (@sublocs) = (split(q(,),$beg), $mid, split(q(,),$end));
+        
+        my @loc_objs;
+        my $loc_obj;
+        
+        SUBLOCS:
+        while (@sublocs) {
+            my $subloc = shift @sublocs;
+            next if !$subloc;
+            my $oparg = ($subloc eq 'join'   || $subloc eq 'bond' ||
+                         $subloc eq 'order'  || $subloc eq 'complement') ? $subloc : undef;
 
-    # does it contain an operator?
-    if($locstr =~ /^([A-Za-z]+)\((.*)\)$/) {
-	# yes:
-	my $op = $1;
-	my $oparg = $2;
-	if($op eq "complement") {
-	    # parse the argument recursively, then set the strand to -1
-	    $loc = $self->from_string($oparg, 1);
-	    $loc->strand(-1);
-	} elsif(($op eq "join") || ($op eq "order") || ($op eq "bond")) {
-	    # This is a split location. Split into components and parse each
-	    # one recursively, then gather into a SplitLocationI instance.
-	    #
-	    # Note: The following code will /not/ work with nested
-	    # joins (you want to have grammar-based parsing for that).
-	    $loc = Bio::Location::Split->new(-verbose   => $self->verbose,
-					     -splittype => $op);
-	    foreach my $substr (split(/,/, $oparg)) {
-		$loc->add_sub_Location($self->from_string($substr, 1));
-	    }
-	} else {
-	    $self->throw("operator \"$op\" unrecognized by parser");
-	}
-    } else {
-	# no operator, parse away
-	$loc = $self->_parse_location($locstr);
+            # has operator, requires further work (recurse)
+            if ($oparg) {
+                my $sub = shift @sublocs;
+                if (($oparg eq 'join' || $oparg eq 'order' || $oparg eq 'bond' )
+                     && $sub !~ m{$oparg}) {
+                    my @splitlocs = split(q(,), $sub);
+                    $loc_obj = Bio::Location::Split->new();
+                    while (my $splitloc = shift @splitlocs) {
+                        next unless $splitloc;
+                        #$loc_obj->add_sub_Location($self->from_string($splitloc, 1));
+                        # this should work but doesn't
+                        my $sobj;
+                        if ($splitloc =~ m{\(($LOCREG)\)}) {
+                            my $comploc = $1;
+                            $sobj = $self->_parse_location($comploc);
+                            $sobj->strand(-1);
+                        } else {
+                            $sobj = $self->_parse_location($splitloc);
+                        }
+                        $loc_obj->add_sub_Location($sobj);
+                    }
+                } else {
+                    $loc_obj = $self->from_string($sub, $oparg);
+                }
+            }
+            # no operator, simple or fuzzy 
+            else {
+                $loc_obj = $self->from_string($subloc,1);
+            }
+            $loc_obj->strand(-1) if ($op && $op eq 'complement');
+            push @loc_objs, $loc_obj;
+        }
+        my $ct = @loc_objs;
+        if ($op && !($op eq 'join' || $op eq 'order' || $op eq 'bond')
+                && $ct > 1 ) {
+            $self->throw("Bad operator $op: had multiple locations ".
+                         scalar(@loc_objs).", should be SplitLocationI");
+        }
+        if ($ct > 1) {
+            $loc = Bio::Location::Split->new();
+            $loc->add_sub_Location(shift @loc_objs) while (@loc_objs);
+            return $loc;
+        } else {
+            $loc = shift @loc_objs;
+            return $loc;
+        }
+    } else { # simple location(s)
+        $loc = $self->_parse_location($locstr);
+        $loc->strand(-1) if ($op && $op eq 'complement');
     }
     return $loc;
 }
@@ -175,14 +229,12 @@ sub from_string{
 sub _parse_location {
     my ($self, $locstr) = @_;
     my ($loc, $seqid);
-
-    $self->debug( "Location parse, processing $locstr\n");
-
+    #$self->debug( "Location parse, processing $locstr\n");
     # 'remote' location?
-    if($locstr =~ /^(\S+):(.*)$/) {
-	# yes; memorize remote ID and strip from location string
-	$seqid = $1;
-	$locstr = $2;
+    if($locstr =~ m{^(\S+):(.*)$}o) {
+        # yes; memorize remote ID and strip from location string
+        $seqid = $1;
+        $locstr = $2;
     }
     
     # split into start and end
@@ -190,43 +242,62 @@ sub _parse_location {
     # remove enclosing parentheses if any; note that because of parentheses
     # possibly surrounding the entire location the parentheses around start
     # and/or may be asymmetrical
-    $start =~ s/^\(+//;
-    $start =~ s/\)+$//;
-    $end   =~ s/^\(+// if $end;
-    $end   =~ s/\)+$// if $end;
+    # Note: these are from X.Y fuzzy locations, which are deprecated!
+    $start =~ s/(?:^\[+|\]+$)//g if $start;
+    $end   =~ s/(?:^\[+|\]+$)//g if $end;
 
     # Is this a simple (exact) or a fuzzy location? Simples have exact start
     # and end, or is between two adjacent bases. Everything else is fuzzy.
     my $loctype = ".."; # exact with start and end as default
+
+    $loctype = '?' if ( ($locstr =~ /\?/) && ($locstr !~ /\?\d+/) );
+
     my $locclass = "Bio::Location::Simple";
     if(! defined($end)) {
-	if($locstr =~ /(\d+)([\.\^])(\d+)/) {
-	    $start = $1;
-	    $end = $3;
-	    $loctype = $2;
-	    $locclass = "Bio::Location::Fuzzy"
-		unless (abs($end-$start) <= 1) && ($loctype eq "^");
-	} else {
-	    $end = $start;
-	}
+        if($locstr =~ /(\d+)([\.\^])(\d+)/) {
+            $start = $1;
+            $end = $3;
+            $loctype = $2;
+            $locclass = "Bio::Location::Fuzzy"
+              unless (abs($end-$start) <= 1) && ($loctype eq "^");
+        } else {
+            $end = $start;
+        }
     }
+    # start_num and end_num are for the numeric only versions of 
+    # start and end so they can be compared
+    # in a few lines
+    my ($start_num, $end_num) = ($start,$end);
     if ( ($start =~ /[\>\<\?\.\^]/) || ($end   =~ /[\>\<\?\.\^]/) ) {
-	$locclass = 'Bio::Location::Fuzzy';
+        $locclass = 'Bio::Location::Fuzzy';
+        if($start =~ /(\d+)/) {
+            ($start_num) = $1;
+        } else { 
+            $start_num = 0
+        }
+        if ($end =~ /(\d+)/) {
+            ($end_num)   = $1;
+        } else { $end_num = 0 }
     } 
+    my $strand = 1;
 
+    if( $start_num > $end_num && $loctype ne '?') {
+        ($start,$end,$strand) = ($end,$start,-1);
+    }
     # instantiate location and initialize
     $loc = $locclass->new(-verbose => $self->verbose,
-			  -start => $start, -end  => $end, 
-			  -strand => 1, -location_type => $loctype);
+                                 -start   => $start, 
+                                 -end     => $end, 
+                                 -strand  => $strand, 
+                                 -location_type => $loctype);
     # set remote ID if remote location
     if($seqid) {
-	$loc->is_remote(1);
-	$loc->seq_id($seqid);
+        $loc->is_remote(1);
+        $loc->seq_id($seqid);
     }
 
     # done (hopefully)
     return $loc;
-    
 }
 
 1;

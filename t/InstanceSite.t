@@ -1,6 +1,6 @@
 #-*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: InstanceSite.t,v 1.4 2003/10/16 16:45:31 heikki Exp $
+## $Id: InstanceSite.t,v 1.5 2004/11/01 21:09:49 bosborne Exp $
 
 use strict;
 

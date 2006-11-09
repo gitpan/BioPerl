@@ -1,4 +1,4 @@
-# $Id: Scaffold.pm,v 1.3 2003/06/04 08:36:36 heikki Exp $
+# $Id: Scaffold.pm,v 1.12.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 #  BioPerl module for Bio::Assembly::Scaffold
 #
@@ -12,7 +12,7 @@
 
 Bio::Assembly::Scaffold - Perl module to hold and manipulate sequence assembly data.
 
-=head1 SYNOPSYS
+=head1 SYNOPSIS
 
     # Module loading
     use Bio::Assembly::IO;
@@ -40,17 +40,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html     - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Robson Francisco de Souza
 
@@ -66,13 +65,10 @@ methods. Internal methods are usually preceded with a _
 package Bio::Assembly::Scaffold;
 
 use strict;
-use vars qw(@ISA);
 
-use Bio::Root::Root;
-use Bio::Assembly::ScaffoldI;
 use Bio::Annotation::Collection;
 
-@ISA = qw(Bio::Root::Root Bio::Assembly::ScaffoldI);
+use base qw(Bio::Root::Root Bio::Assembly::ScaffoldI);
 
 =head2 new ()
 
@@ -166,7 +162,6 @@ sub annotation {
 
 sub get_nof_contigs {
     my $self = shift;
-
     return scalar( $self->get_contig_ids() );
 }
 
@@ -248,7 +243,9 @@ sub get_seq_ids {
 sub get_contig_ids {
     my $self = shift;
 
-    return sort keys %{$self->{'_contigs'}};
+    return wantarray
+        ? sort keys %{$self->{'_contigs'}}
+        : scalar keys %{$self->{'_contigs'}};
 }
 
 =head2 get_singlet_ids
@@ -265,7 +262,9 @@ sub get_contig_ids {
 sub get_singlet_ids {
     my $self = shift;
 
-    return sort keys %{$self->{'_singlets'}};
+    return wantarray
+        ? sort keys %{$self->{'_singlets'}}
+        : scalar keys %{$self->{'_singlets'}};
 }
 
 =head2 get_seq_by_id
@@ -289,7 +288,7 @@ sub get_seq_by_id {
     my $self = shift;
     my $seqID = shift;
 
-    return undef unless (exists $self->{'_seqs'}{$seqID});
+    return unless (exists $self->{'_seqs'}{$seqID});
 
     return $self->{'_seqs'}{$seqID}->get_seq_by_name($seqID);
 }
@@ -308,7 +307,7 @@ sub get_contig_by_id {
     my $self = shift;
     my $contigID = shift;
 
-    return undef unless (exists $self->{'_contigs'}{$contigID});
+    return unless (exists $self->{'_contigs'}{$contigID});
 
     return $self->{'_contigs'}{$contigID};
 }
@@ -328,7 +327,7 @@ sub get_singlet_by_id {
 
     my $singletID = shift;
 
-    return undef unless (exists $self->{'_singlets'}{$singletID});
+    return unless (exists $self->{'_singlets'}{$singletID});
 
     return $self->{'_singlets'}{$singletID};
 }
@@ -353,7 +352,7 @@ sub add_contig {
     my $contig = shift;
 
     if( !ref $contig || ! $contig->isa('Bio::Assembly::Contig') ) {
-	$self->throw("Unable to process non Bio::Assembly::Contig object [", ref($contig), "]");
+	$self->throw("Scaffold::add_contig is unable to process non Bio::Assembly::Contig object [", ref($contig), "]");
     }
     my $contigID  = $contig->id();
     if( !defined $contigID ) {
@@ -390,14 +389,12 @@ sub add_contig {
 =cut
 
 sub add_singlet {
-    my $self = shift;
-    my $singlet = shift;
+    my ($self,$singlet) = @_;
 
-    if( !ref $singlet || ! $singlet->isa('Bio::PrimarySeqI') ) {
-	$self->warn("Unable to process non Bio::SeqI object [", ref($singlet), "]");
+    if ( !ref $singlet || ! $singlet->isa('Bio::Assembly::Singlet') ) {
+	$self->warn("Scaffold::add_singlet is unable to add a singlet ($singlet) because it was not a Bio::Assembly::Singlet object.");
 	return 0;
     }
-
     my $singletID = $singlet->id();
     $self->warn("Replacing singlet $singletID wih a new sequence object")
 	if (exists $self->{'_contigs'}{$singletID});

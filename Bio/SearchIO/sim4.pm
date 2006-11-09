@@ -1,4 +1,4 @@
-# $Id $
+# $Id: sim4.pm,v 1.13.4.1 2006/10/02 23:10:26 sendu Exp $
 #
 # BioPerl module for Bio::SearchIO::sim4
 #
@@ -34,6 +34,8 @@ Bio::SearchIO::sim4 - parser for Sim4 alignments
 This is a driver for the SearchIO system for parsing Sim4.
 http://globin.cse.psu.edu/html/docs/sim4.html
 
+Cannot parse LAV or 'exon file' formats (A=2 or A=5)
+
 =head1 FEEDBACK
 
 =head2 Mailing Lists
@@ -42,17 +44,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -76,14 +77,13 @@ Internal methods are usually preceded with a _
 package Bio::SearchIO::sim4;
 
 use strict;
-use vars qw(@ISA $DEFAULTFORMAT %ALIGN_TYPES
+use vars qw($DEFAULTFORMAT %ALIGN_TYPES
             %MAPPING %MODEMAP $DEFAULT_WRITER_CLASS);
 
 use POSIX;
-use Bio::SearchIO;
 use Bio::SearchIO::SearchResultEventBuilder;
 
-@ISA = qw(Bio::SearchIO );
+use base qw(Bio::SearchIO);
 
 $DEFAULTFORMAT = 'SIM4';
 $DEFAULT_WRITER_CLASS = 'Bio::Search::Writer::HitTableWriter';
@@ -153,6 +153,8 @@ $DEFAULT_WRITER_CLASS = 'Bio::Search::Writer::HitTableWriter';
 
 sub next_result {
     my ($self) = @_;
+    local $/ = "\n";
+    local $_;
 
     # Declare/adjust needed variables
     $self->{'_last_data'} = '';
@@ -162,7 +164,7 @@ sub next_result {
     # Start document and main element
     $self->start_document();
     $self->start_element({'Name' => 'Sim4Output'});
-
+    my $lastquery = '';
     # Read output report until EOF
     while( defined($_ = $self->_readline) ) {       
         # Skip empty lines, chomp filled ones
@@ -170,21 +172,26 @@ sub next_result {
 
         # Make sure sim4 output format is not 2 or 5
         if (!$seentop) {
-	    if ( /^#:lav/ ) { $format = 2; }
+	    if ( /^\#:lav/ ) { $format = 2; }
             elsif ( /^<|>/ ) { $format = 5; }
             $self->throw("Bio::SearchIO::sim4 module cannot parse 'type $format' outputs.") if $format;
 	}
 
         # This line indicates the start of a new hit
 	if( /^seq1\s*=\s*(\S+),\s+(\d+)/ ) {
+	    my ($nm,$desc) = ($1,$2);
             # First hit? Adjust some parameters if so
-	    if ( !$seentop ) {
+	    if ( ! $seentop ) {
 	        $self->element( {'Name' => 'Sim4Output_query-def', 
-				 'Data' => $1} );
+				 'Data' => $nm} );
 	        $self->element( {'Name' => 'Sim4Output_query-len', 
-				 'Data' => $2} );
+				 'Data' => $desc} );
                 $seentop = 1;
+	    } elsif( $nm ne $lastquery ) {
+		$self->_pushback($_);
+		last;
 	    }
+	    $lastquery = $nm;
             # A previous HSP may need to be ended
             $self->end_element({'Name' => 'Hsp'}) if ( $self->in_element('hsp') );
             # A previous hit exists? End it and reset needed variables
@@ -312,8 +319,17 @@ sub next_result {
 		}
 	    }
             # Current alignment block does not contain HSPs boundary
-            # We only need to adjust details of the current HSP
             else {
+                # Start a new HSP if none is currently open
+	        # (Happens if last boundary finished at the very end of previous block)
+	        if ( !$self->in_element('hsp') ) {
+     	            $self->start_element({'Name' => 'Hsp'});
+                    $self->{'_currentHSP'} = @hsps ? shift @hsps : {
+                        'Hsp_query-from' => $alignment{Query}{start},
+                        'Hsp_hit-from' => $alignment{Sbjct}{start},
+     	            }
+		}
+                # Adjust details of the current HSP
                 $self->{'_currentHSP'}{'Hsp_query-from'} ||= 
 		    $alignment{Query}{start} - 
 		    length($self->{'_currentHSP'}{'Hsp_qseq'} || '');
@@ -353,7 +369,7 @@ sub next_result {
 	$self->end_element({'Name' => 'Sim4Output'});
 	return $self->end_document();
     } 
-    return undef;
+    return;
 }
 
 =head2 start_element

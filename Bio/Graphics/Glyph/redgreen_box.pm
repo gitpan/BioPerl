@@ -1,10 +1,8 @@
 package Bio::Graphics::Glyph::redgreen_box;
-#$Id: redgreen_box.pm,v 1.5 2003/09/17 17:11:30 lstein Exp $
+#$Id: redgreen_box.pm,v 1.5.8.1 2006/10/02 23:10:20 sendu Exp $
 
 use strict;
-use Bio::Graphics::Glyph::generic;
-use vars '@ISA';
-@ISA = 'Bio::Graphics::Glyph::generic';
+use base qw(Bio::Graphics::Glyph::generic);
 
 sub bgcolor {
   my $self = shift;

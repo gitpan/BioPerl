@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: primaryqual.t,v 1.12 2002/12/19 22:10:34 matsallac Exp $
+## $Id: primaryqual.t,v 1.15 2005/07/13 12:29:17 heikki Exp $
 #
 # modeled after the t/Allele.t test script
 
@@ -17,23 +17,23 @@ BEGIN {
         use lib 't';
     }
     use Test;
-    plan tests => 31;
+    plan tests => 32;
 }
 
-END { 
-    unlink qw(batch_write_qual.qual write_qual.qual);
-	
+END {
+	unlink qw(batch_write_qual.qual write_qual.qual);
 }
 # redirect STDERR to STDOUT
 open (STDERR, ">&STDOUT");
 use Bio::Root::IO;
 use Bio::SeqIO;
-use Bio::Seq::SeqWithQuality;
+use Bio::Seq::Quality;
 use Bio::Seq::PrimaryQual;
 
 my $string_quals = "10 20 30 40 50 40 30 20 10";
-print("Quals are $string_quals\n") if($DEBUG); 
-my $qualobj = Bio::Seq::PrimaryQual->new( '-qual' => $string_quals,
+print("Quals are $string_quals\n") if($DEBUG);
+my $qualobj = Bio::Seq::PrimaryQual->new(
+					  '-qual' => $string_quals,
 					  '-id'  => 'QualityFragment-12',
 					  '-accession_number' => 'X78121',
 					  );
@@ -44,10 +44,11 @@ ok($qualobj->accession_number, 'X78121');
 my @q2 = split/ /,$string_quals;
 $qualobj = Bio::Seq::PrimaryQual->new
     ( '-qual'             => \@q2,
-      '-primary_id'	  =>	'chads primary_id',			
-      '-desc'		  =>	'chads desc',
+      '-primary_id'	     => 'chads primary_id',
+      '-desc'		        => 'chads desc',
       '-accession_number' => 'chads accession_number',
-      '-id'		  =>	'chads id'
+      '-id'		           => 'chads id',
+		'-header'           => 'chads header'
       );
 
 ok($qualobj->primary_id, 'chads primary_id');
@@ -78,13 +79,15 @@ ok(!$@);
 eval { $qualobj->qual(" 4"); };
 ok(!$@);
 
+$qualobj->qual("4 10");
+
 ok($qualobj->length(),2 );
+
 $qualobj->qual("10 20 30 40 50 40 30 20 10");
 my @subquals = @{$qualobj->subqual(3,6);};
 ok(@subquals, 4);
      # chad, note to self, evaluate border conditions
 ok ("30 20 10" eq join(' ',@{$qualobj->subqual(7,9)}));
-
 
 
 my @false_comparator = qw(30 40 70 40);
@@ -117,9 +120,12 @@ $qualobj->desc("chads new desc");
 ok($qualobj->desc(), "chads new desc");
 ok($qualobj->display_id(), "chads new display_id");
 $qualobj->display_id("chads new id");
-ok($qualobj->display_id(), "chads new id"); 
+ok($qualobj->display_id(), "chads new id");
 
-my $in_qual  = Bio::SeqIO->new(-file => "<" . Bio::Root::IO->catfile("t","data","qualfile.qual") , 
+ok($qualobj->header(), "chads header");
+
+my $in_qual  = Bio::SeqIO->new(-file => "<" . 
+					Bio::Root::IO->catfile("t","data","qualfile.qual") ,
 			       '-format' => 'qual',
 			       '-verbose' => $verbose);
 ok($in_qual);
@@ -128,22 +134,21 @@ ok($pq->qual()->[99], '39'); # spot check boundary
 ok($pq->qual()->[100], '39'); # spot check boundary
 
 my $out_qual = Bio::SeqIO->new('-file'    => ">write_qual.qual",
-			       '-format'  => 'qual',
-			       '-verbose' => $verbose);
+                               '-format'  => 'qual',
+                               '-verbose' => $verbose);
 $out_qual->write_seq(-source	=>	$pq);
 
-my $swq545 = Bio::Seq::SeqWithQuality->new (	-seq	=>	"ATA",
-						-qual	=>	$pq
-					);
+my $swq545 = Bio::Seq::Quality->new (	-seq	=>	"ATA",
+                                        -qual	=>	$pq
+                                    );
 $out_qual->write_seq(-source	=>	$swq545);
 
-
-
-$in_qual = Bio::SeqIO->new('-file' => Bio::Root::IO->catfile("t","data","qualfile.qual") , 
+$in_qual = Bio::SeqIO->new('-file' => 
+			  Bio::Root::IO->catfile("t","data","qualfile.qual") , 
 			   '-format' => 'qual',
 			   '-verbose' => $verbose);
 
-my $out_qual2 = Bio::SeqIO->new('-file'    => ">batch_write_qual.qual",
+my $out_qual2 = Bio::SeqIO->new('-file' => ">batch_write_qual.qual",
 				'-format'  => 'qual',
 				'-verbose' => $verbose);
 
@@ -167,11 +172,11 @@ sub display {
 # dumpValue($qualobj);
 
 sub compare_arrays {
-    my ($a1,$a2) = @_;
-    return 1 if (scalar(@{$a1}) != scalar(@{$a2}));
-    my ($v1,$v2,$diff,$curr);
-    for ($curr=0;$curr<scalar(@{$a1});$curr++){
-	return 1 if ($a1->[$curr] ne $a2->[$curr]);
-    }
-    return 0;
+	my ($a1,$a2) = @_;
+	return 1 if (scalar(@{$a1}) != scalar(@{$a2}));
+	my ($v1,$v2,$diff,$curr);
+	for ($curr=0;$curr<scalar(@{$a1});$curr++){
+		return 1 if ($a1->[$curr] ne $a2->[$curr]);
+	}
+	return 0;
 }

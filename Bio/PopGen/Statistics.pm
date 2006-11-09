@@ -1,4 +1,4 @@
-# $Id: Statistics.pm,v 1.16 2003/12/06 18:08:46 jason Exp $
+# $Id: Statistics.pm,v 1.34.4.1 2006/10/02 23:10:23 sendu Exp $
 #
 # BioPerl module for Bio::PopGen::Statistics
 #
@@ -25,12 +25,12 @@ Bio::PopGen::Statistics - Population Genetics statistical tests
 
   my $tree = $sim->next_tree;
 
-  $factory->add_Mutations($tree,20);
+  $sim->add_Mutations($tree,20);
 
   my $stats = new Bio::PopGen::Statistics();
   my $individuals = [ $tree->get_leaf_nodes];
   my $pi = $stats->pi($individuals);
-  my $D  = $stats->tajima_d($individuals);
+  my $D  = $stats->tajima_D($individuals);
 
   # Alternatively to do this on input data from
   # See the tests in t/PopGen.t for more examples
@@ -40,15 +40,26 @@ Bio::PopGen::Statistics - Population Genetics statistical tests
   # Note that you can also call the stats as a class method if you like
   # the only reason to instantiate it (as above) is if you want
   # to set the verbosity for debugging
-  $pi     = Bio::PopGen::Statistics->pi($pop);   
+  $pi     = Bio::PopGen::Statistics->pi($pop);
   $theta  = Bio::PopGen::Statistics->theta($pop);
 
   # Pi and Theta also take additional arguments,
-  # see the documentation for more information  
+  # see the documentation for more information
 
+  use Bio::PopGen::Utilities;
+  use Bio::AlignIO;
 
-  # To come -- examples for creating pops/individuals from
-  # Aligned sequence data
+  my $in = new Bio::AlignIO(-file   => 't/data/t7.aln',
+                            -format => 'clustalw');
+  my $aln = $in->next_aln;
+  # get a population, each sequence is an individual and 
+  # for the default case, every site which is not monomorphic
+  # is a 'marker'.  Each individual will have a 'genotype' for the
+  # site which will be the specific base in the alignment at that
+  # site
+
+  my $pop = Bio::PopGen::Utilities->aln_to_population(-alignment => $aln);
+
 
 =head1 DESCRIPTION
 
@@ -63,13 +74,16 @@ aligned sequence data given that you can calculate alleles, number of
 segregating sites.
 
 Currently implemented:
- Fu and Li's D  (fu_and_li_D)
- Fu and Li's D* (fu_and_li_D_star)
- Fu and Li's F  (fu_and_li_F)
- Tajima's D     (tajima_D)
- theta          (theta)
- pi             (pi) - number of pairwise differences
- composite_LD   (composite_LD)
+ Fu and Li's D    (fu_and_li_D)
+ Fu and Li's D*   (fu_and_li_D_star)
+ Fu and Li's F    (fu_and_li_F)
+ Fu and Li's F*   (fu_and_li_F_star)
+ Tajima's D       (tajima_D)
+ Watterson's theta (theta)
+ pi               (pi) - number of pairwise differences
+ composite_LD     (composite_LD)
+
+Count based methods also exist in case you have already calculated the key statistics (seg sites, num individuals, etc) and just want to compute the statistic.
 
 In all cases where a the method expects an arrayref of
 L<Bio::PopGen::IndividualI> objects and L<Bio::PopGen::PopulationI>
@@ -86,6 +100,15 @@ from a Population." Genetics 143:557-570.
 Tajima F. (1989) "Statistical method for testing the neutral mutation
 hypothesis by DNA polymorphism." Genetics 123:585-595.
 
+=head2 CITING THIS WORK
+
+Please see this reference for use of this implementation.
+
+Stajich JE and Hahn MW "Disentangling the Effects of Demography and Selection in Human History." (2005) Mol Biol Evol 22(1):63-73. 
+
+If you use these Bio::PopGen modules please cite the Bioperl
+publication (see FAQ) and the above reference.
+
 
 =head1 FEEDBACK
 
@@ -95,8 +118,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -104,16 +127,12 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich, Matthew Hahn
 
 Email jason-at-bioperl-dot-org
-Matt Hahn E<lt>matthew.hahn-at-duke.dukeE<gt>
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
+Email matthew-dot-hahn-at-duke-dot-edu
 
 =head1 APPENDIX
 
@@ -127,12 +146,10 @@ Internal methods are usually preceded with a _
 
 
 package Bio::PopGen::Statistics;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
 
-@ISA = qw(Bio::Root::Root );
+use base qw(Bio::Root::Root);
 
 =head2 new
 
@@ -149,12 +166,12 @@ use Bio::Root::Root;
 =head2 fu_and_li_D
 
  Title   : fu_and_li_D
- Usage   : my $D = $statistics->fu_an_li_D(\@ingroup,$extmutations);
+ Usage   : my $D = $statistics->fu_and_li_D(\@ingroup,$extmutations);
  Function: Fu and Li D statistic for a list of individuals
            given an outgroup and the number of external mutations
            (either provided or calculated from list of outgroup individuals)
  Returns : decimal
- Args    : $individuals - array refence which contains ingroup individuals 
+ Args    : $individuals - array reference which contains ingroup individuals 
            (L<Bio::PopGen::Individual> or derived classes)
            $extmutations - number of external mutations OR
            arrayref of outgroup individuals
@@ -164,16 +181,14 @@ use Bio::Root::Root;
 sub fu_and_li_D { 
     my ($self,$ingroup,$outgroup) = @_;
 
-    my ($seg_sites,$pi,$sample_size,$ancestral,$derived);
+    my ($seg_sites,$n,$ancestral,$derived) = (0,0,0,0);
     if( ref($ingroup) =~ /ARRAY/i ) {
-	$sample_size = scalar @$ingroup;
+	$n = scalar @$ingroup;
 	# pi - all pairwise differences 
-	$pi          = $self->pi($ingroup);  
 	$seg_sites   = $self->segregating_sites_count($ingroup);
     } elsif( ref($ingroup) && 
 	     $ingroup->isa('Bio::PopGen::PopulationI')) {
-	$sample_size = $ingroup->get_number_individuals;
-	$pi          = $self->pi($ingroup);
+	$n = $ingroup->get_number_individuals;
 	$seg_sites   = $self->segregating_sites_count($ingroup);
     } else { 
 	$self->throw("expected an array reference of a list of Bio::PopGen::IndividualI OR a Bio::PopGen::PopulationI object to fu_and_li_D");
@@ -190,31 +205,55 @@ sub fu_and_li_D {
 	return 0;
     } elsif( ref($outgroup) ) {
 	($ancestral,$derived) = $self->derived_mutations($ingroup,$outgroup);
+	$ancestral = 0 unless defined $ancestral;
     } else { 
 	$ancestral = $outgroup;
     }
-    my $a = 0;
-    for(my $k= 1; $k < $sample_size; $k++ ) {
-        $a += ( 1 / $k );
-    }
+   
+    return $self->fu_and_li_D_counts($n,$seg_sites,
+				     $ancestral,$derived);
+}
 
+=head2 fu_and_li_D_counts
+
+ Title   : fu_li_D_counts
+ Usage   : my $D = $statistics->fu_and_li_D_counts($samps,$sites,
+                                                   $external);
+ Function: Fu and Li D statistic for the raw counts of the number
+           of samples, sites, external and internal mutations
+ Returns : decimal number
+ Args    : number of samples (N)
+           number of segregating sites (n)
+           number of external mutations (n_e)
+
+=cut
+
+
+sub fu_and_li_D_counts {
+    my ($self,$n,$seg_sites, $external_mut) = @_;
+    my $a_n = 0;
+    for(my $k= 1; $k < $n; $k++ ) {
+	$a_n += ( 1 / $k );
+    }
     my $b = 0;
-    for(my $k= 1; $k < $sample_size; $k++ ) {
+    for(my $k= 1; $k < $n; $k++ ) {
         $b += ( 1 / $k**2 );
     }
 
-    my $c = 2 * ( ( ( $sample_size * $a ) - (2 * ( $sample_size -1 ))) /
-                  ( ( $sample_size - 1) * ( $sample_size - 2 ) ) );
+    my $c = 2 * ( ( ( $n * $a_n ) - (2 * ( $n -1 ))) /
+                  ( ( $n - 1) * ( $n - 2 ) ) );
 
-    my $v = 1 + ( ( $a**2 / ( $b + $a**2 ) ) * ( $c - ( ( $sample_size + 1) /
-                                                        ( $sample_size - 1) ) ));
+    my $v = 1 + ( ( $a_n**2 / ( $b + $a_n**2 ) ) * 
+		  ( $c - ( ( $n + 1) /
+			   ( $n - 1) ) ));
+    
+    my $u = $a_n - 1 - $v;
 
-    my $u = $a - 1 - $v;
-    my $D = ( $seg_sites - (  $a * $ancestral) ) /
-	( sqrt ( ($u * $seg_sites ) + ( $v * $seg_sites **2) ) );
-
-    return $D;
+    ($seg_sites - $a_n * $external_mut) / 
+	sqrt( ($u * $seg_sites) + ($v * $seg_sites*$seg_sites));
+    
 }
+
 
 =head2 fu_and_li_D_star
 
@@ -235,18 +274,15 @@ sub fu_and_li_D {
 sub fu_and_li_D_star {
     my ($self,$individuals) = @_;
 
-    my ($seg_sites,$pi,$sample_size,$singletons);
+    my ($seg_sites,$n,$singletons);
     if( ref($individuals) =~ /ARRAY/i ) {
-	$sample_size = scalar @$individuals;
-	# pi - all pairwise differences 
-	$pi          = $self->pi($individuals);  
+	$n = scalar @$individuals;
 	$seg_sites   = $self->segregating_sites_count($individuals);
 	$singletons  = $self->singleton_count($individuals);
     } elsif( ref($individuals) && 
 	     $individuals->isa('Bio::PopGen::PopulationI')) {
 	my $pop = $individuals;
-	$sample_size = $pop->get_number_individuals;
-	$pi          = $self->pi($pop);
+	$n = $pop->get_number_individuals;
 	$seg_sites   = $self->segregating_sites_count($pop);
 	$singletons  = $self->singleton_count($pop);
     } else { 
@@ -254,47 +290,66 @@ sub fu_and_li_D_star {
 	return 0;
     }
 
-    my $a = 0;
-    for(my $k= 1; $k < $sample_size; $k++ ) {
-	$a += ( 1 / $k );
+    return $self->fu_and_li_D_star_counts($n,$seg_sites, $singletons);
+}
+
+=head2 fu_and_li_D_star_counts
+
+ Title   : fu_li_D_star_counts
+ Usage   : my $D = $statistics->fu_and_li_D_star_counts($samps,$sites,
+                                                        $singletons);
+
+ Function: Fu and Li D statistic for the raw counts of the number
+           of samples, sites, external and internal mutations
+ Returns : decimal number
+ Args    : number of samples (N)
+           number of segregating sites (n)
+           singletons (n_s)
+
+=cut
+
+
+sub fu_and_li_D_star_counts {
+    my ($self,$n,$seg_sites, $singletons) = @_;
+    my $a_n;
+    for(my $k = 1; $k < $n; $k++ ) {
+	$a_n += ( 1 / $k );
     }
 
-    my $a1 = 0;
-    for(my $k= 1; $k <= $sample_size; $k++ ) {
-	$a1 += ( 1 / $k );
-    }
+    my $a1 = $a_n + 1 / $n;
 
     my $b = 0;
-    for(my $k= 1; $k < $sample_size; $k++ ) {
-	$b += ( 1 / $k**2 );
+    for(my $k= 1; $k < $n; $k++ ) {
+        $b += ( 1 / $k**2 );
     }
 
-    my $c = 2 * ( ( ( $sample_size * $a ) - (2 * ( $sample_size -1 ))) / 
-		  ( ( $sample_size - 1) * ( $sample_size - 2 ) ) );
+    my $c = 2 * ( ( ( $n * $a_n ) - (2 * ( $n -1 ))) /
+                  ( ( $n - 1) * ( $n - 2 ) ) );
 
-    my $d = $c + ( ($sample_size -2) / ($sample_size - 1)**2 ) +
-	( 2 / ($sample_size -1) * 
-	  ( (3/2) - ( (2*$a1 - 3) / ($sample_size -2) ) - 
-	    ( 1/ $sample_size) ) 
-	  );
-    my $v_star = ( ( ($sample_size/($sample_size-1) )**2)*$b + (($a**2)*$d) -
-		 (2*( ($sample_size*$a*($a+1)) )/(($sample_size-1)**2)) )  /
-		   (($a**2) + $b);
+    my $d = $c + ($n -2) / ($n - 1)**2 +
+	2 / ($n -1) * 
+	( 1.5 - ( (2*$a1 - 3) / ($n -2) ) - 
+	  1 / $n ); 
+    
+    my $v_star = ( ( ($n/($n-1) )**2)*$b + (($a_n**2)*$d) -
+		 (2*( ($n*$a_n*($a_n+1)) )/(($n-1)**2)) )  /
+		   (($a_n**2) + $b);
 
-    my $u_star = ( ($sample_size/($sample_size-1))*
-		   ($a - ($sample_size/
-			  ($sample_size-1)))) - $v_star;
+    my $u_star = ( ($n/($n-1))*
+		   ($a_n - ($n/
+			  ($n-1)))) - $v_star;
 
-    my $D_star = ( (($sample_size/($sample_size-1))*$seg_sites) -
-		   ($a*$singletons) ) / 
-		   ( sqrt( ($u_star*$seg_sites) + ($v_star*($seg_sites**2)) ));
-    return $D_star;
+
+    return (($n / ($n - 1)) * $seg_sites - 
+	    $a_n * $singletons) / 
+	    sqrt( ($u_star * $seg_sites) + ($v_star * $seg_sites*$seg_sites));
 }
+
 
 =head2 fu_and_li_F
 
  Title   : fu_and_li_F
- Usage   : my $D = Bio::PopGen::Statistics->fu_and_li_F(\@ingroup,$ext_muts);
+ Usage   : my $F = Bio::PopGen::Statistics->fu_and_li_F(\@ingroup,$ext_muts);
  Function: Calculate Fu and Li's F on an ingroup with either the set of 
            outgroup individuals, or the number of external mutations
  Returns : decimal number
@@ -308,19 +363,19 @@ sub fu_and_li_D_star {
 
 sub fu_and_li_F {
     my ($self,$ingroup,$outgroup) = @_;
-    my ($seg_sites,$pi,$sample_size,$external,$internal);
+    my ($seg_sites,$pi,$n,$external,$internal);
     if( ref($ingroup) =~ /ARRAY/i ) {
-	$sample_size = scalar @$ingroup;
+	$n = scalar @$ingroup;
 	# pi - all pairwise differences 
 	$pi          = $self->pi($ingroup);  
 	$seg_sites   = $self->segregating_sites_count($ingroup);
     } elsif( ref($ingroup) && 
 	     $ingroup->isa('Bio::PopGen::PopulationI')) {
-	$sample_size = $ingroup->get_number_individuals;
+	$n = $ingroup->get_number_individuals;
 	$pi          = $self->pi($ingroup);
 	$seg_sites   = $self->segregating_sites_count($ingroup);
     } else { 
-	$self->throw("expected an array reference of a list of Bio::PopGen::IndividualI OR a Bio::PopGen::PopulationI object to tajima_D");
+	$self->throw("expected an array reference of a list of Bio::PopGen::IndividualI OR a Bio::PopGen::PopulationI object to Fu and Li's F");
 	return 0;
     }
     
@@ -332,34 +387,53 @@ sub fu_and_li_F {
     } else { 
 	$external = $outgroup;
     }
-    
-    my $a = 0;
-    for(my $k= 1; $k < $sample_size; $k++ ) {
-	$a += ( 1 / $k );
+    $self->fu_and_li_F_counts($n,$pi,$seg_sites,$external);
+}
+
+=head2 fu_and_li_F_counts
+
+ Title   : fu_li_F_counts
+ Usage   : my $F = $statistics->fu_and_li_F_counts($samps,$pi,
+                                                   $sites,
+                                                   $external);
+ Function: Fu and Li F statistic for the raw counts of the number
+           of samples, sites, external and internal mutations
+ Returns : decimal number
+ Args    : number of samples (N)
+           average pairwise differences (pi)
+           number of segregating sites (n)
+           external mutations (n_e)
+
+=cut
+
+
+sub fu_and_li_F_counts {
+    my ($self,$n,$pi,$seg_sites, $external) = @_;
+    my $a_n = 0;
+    for(my $k= 1; $k < $n; $k++ ) {
+	$a_n += ( 1 / $k );
     }
 
-    my $a1 = 0;
-    for(my $k= 1; $k <= $sample_size; $k++ ) {
-	$a1 += ( 1 / $k );
-    }
+    my $a1 = $a_n + (1 / $n );
 
     my $b = 0;
-    for(my $k= 1; $k < $sample_size; $k++ ) {
+    for(my $k= 1; $k < $n; $k++ ) {
 	$b += ( 1 / $k**2 );
     }
 
-    my $c = 2 * ( ( ( $sample_size * $a ) - (2 * ( $sample_size -1 ))) / 
-		  ( ( $sample_size - 1) * ( $sample_size - 2 ) ) );
+    my $c = 2 * ( ( ( $n * $a_n ) - (2 * ( $n -1 ))) / 
+		  ( ( $n - 1) * ( $n - 2 ) ) );
 
-    my $v_F = ( $c + ( (2*(($sample_size**2)+$sample_size+3)) / 
-		       ( (9*$sample_size)*($sample_size-1) ) ) -
-		(2/($sample_size-1)) ) / ( ($a**2)+$b );
+    my $v_F = ( $c + ( (2*(($n**2)+$n+3)) / 
+		       ( (9*$n)*($n-1) ) ) -
+		(2/($n-1)) ) / ( ($a_n**2)+$b );
 
-    my $u_F = ( 1 + ( ($sample_size+1)/(3*($sample_size-1)) )-
-		( 4*( ($sample_size+1)/(($sample_size-1)**2) ))*
-		($a1 - ((2*$sample_size)/($sample_size+1))) ) /
-		($a - $v_F);
+    my $u_F = ( 1 + ( ($n+1)/(3*($n-1)) )-
+		( 4*( ($n+1)/(($n-1)**2) ))*
+		($a1 - ((2*$n)/($n+1))) ) /
+		$a_n - $v_F;
 
+    # warn("$v_F vf $u_F uf n = $n\n");
     my $F = ($pi - $external) / ( sqrt( ($u_F*$seg_sites) +
 					($v_F*($seg_sites**2)) ) );
 
@@ -369,7 +443,7 @@ sub fu_and_li_F {
 =head2 fu_and_li_F_star
 
  Title   : fu_and_li_F_star
- Usage   : my $D = Bio::PopGen::Statistics->fu_and_li_F_star(\@ingroup);
+ Usage   : my $F = Bio::PopGen::Statistics->fu_and_li_F_star(\@ingroup);
  Function: Calculate Fu and Li's F* on an ingroup without an outgroup
            It uses count of singleton alleles instead 
  Returns : decimal number
@@ -384,9 +458,9 @@ sub fu_and_li_F {
 sub fu_and_li_F_star {
     my ($self,$individuals) = @_;
 
-    my ($seg_sites,$pi,$sample_size,$singletons);
+    my ($seg_sites,$pi,$n,$singletons);
     if( ref($individuals) =~ /ARRAY/i ) {
-	$sample_size = scalar @$individuals;
+	$n = scalar @$individuals;
 	# pi - all pairwise differences 
 	$pi          = $self->pi($individuals);  
 	$seg_sites   = $self->segregating_sites_count($individuals);
@@ -394,54 +468,74 @@ sub fu_and_li_F_star {
     } elsif( ref($individuals) && 
 	     $individuals->isa('Bio::PopGen::PopulationI')) {
 	my $pop = $individuals;
-	$sample_size = $pop->get_number_individuals;
+	$n = $pop->get_number_individuals;
 	$pi          = $self->pi($pop);
 	$seg_sites   = $self->segregating_sites_count($pop);
 	$singletons  = $self->singleton_count($pop);
     } else { 
-	$self->throw("expected an array reference of a list of Bio::PopGen::IndividualI OR a Bio::PopGen::PopulationI object to tajima_D");
+	$self->throw("expected an array reference of a list of Bio::PopGen::IndividualI OR a Bio::PopGen::PopulationI object to fu_and_li_F_star");
 	return 0;
     }
-    my $a = 0;
-    for(my $k= 1; $k < $sample_size; $k++ ) {
-	$a += ( 1 / $k );
+    return $self->fu_and_li_F_star_counts($n,
+					  $pi,
+					  $seg_sites,
+					  $singletons);
+} 
+
+=head2 fu_and_li_F_star_counts
+
+ Title   : fu_li_F_star_counts
+ Usage   : my $F = $statistics->fu_and_li_F_star_counts($samps,
+                                                   $pi,$sites,
+                                                   $singletons);
+ Function: Fu and Li F statistic for the raw counts of the number
+           of samples, sites, external and internal mutations
+ Returns : decimal number
+ Args    : number of samples (N)
+           average pairwise differences (pi)
+           number of segregating sites (n)
+           singleton  mutations (n_s)
+
+=cut
+
+
+sub fu_and_li_F_star_counts {
+    my ($self,$n,$pi,$seg_sites, $singletons) = @_;
+    if( $n <= 1 ) {
+	$self->warn("N must be > 1\n");
+	return;
     }
+    if( $n == 2) { 
+	return 0;
+    } 
+
+    my $a_n = 0;
     
-    my $a1 = 0;
-    for(my $k= 1; $k <= $sample_size; $k++ ) {
-	$a1 += ( 1 / $k );
-    }
 
     my $b = 0;
-    for(my $k= 1; $k < $sample_size; $k++ ) {
-	$b += ( 1 / $k**2 );
+    for(my $k= 1; $k < $n; $k++ ) {
+	$b += (1 / ($k**2));
+	$a_n += ( 1 / $k );     # Eq (2)
     }
-    # eq (14) 
-    my $c = 2 * ( (($sample_size * $a) - (2 * ( $sample_size -1 ))) / 
-		  (( $sample_size - 1) * ($sample_size - 2)) );
-    # eq (46) 
-    my $d = $c + ( ($sample_size -2)/ (($sample_size - 1)**2)) +
-	     ((2/($sample_size -1))*
-	      ((3/2) - ((2*$a1 - 3)/($sample_size -2)) - 
-	       (1/$sample_size)));
+    my $a1 = $a_n + (1 / $n );
+
+    # warn("a_n is $a_n a1 is $a1 n is $n b is $b\n");
+
+    # From Simonsen et al (1995) instead of Fu and Li 1993
+    my $v_F_star = ( (( 2 * $n ** 3 + 110 * $n**2 - (255 * $n) + 153)/
+		      (9 * ($n ** 2) * ( $n - 1))) +
+		     ((2 * ($n - 1) * $a_n ) / $n ** 2) -
+		     (8 * $b / $n) ) / 
+		     ( ($a_n ** 2) + $b );
     
-    my $v_F_star = ( $d + ( 2*($sample_size**2+$sample_size+3) /
-			    (9*$sample_size*($sample_size-1))) -
-		     ( (2/($sample_size-1))*
-		       (4*$b - 6 + (8/$sample_size))) )/
-		       ($a**2 + $b);
-    
-    my $u_F_star = ( ($sample_size / ($sample_size-1)) + 
-		     (($sample_size+1)/(3*($sample_size-1))) -
-		     ( 2 * (2 / ($sample_size * ($sample_size-1)))) +
-		     (2*( ($sample_size+1)/($sample_size-1)**2)*
-		      ($a1 - ((2*$sample_size)/($sample_size+1))) )) /
-		      ($a - $v_F_star);
-    
-    my $F_star = ( $pi - (( ($sample_size-1)/ $sample_size)*$singletons)) /
-	sqrt ( ($u_F_star*$seg_sites) + ($v_F_star*($seg_sites**2)));
+    my $u_F_star = ((( (4* ($n**2)) + (19 * $n) + 3 - (12 * ($n + 1)* $a1)) /
+		    (3 * $n * ( $n - 1))) / $a_n) - $v_F_star;
+
+    # warn("vf* = $v_F_star uf* = $u_F_star n = $n\n");
+    my $F_star = ( $pi - ($singletons*( ( $n-1) / $n)) ) /
+	sqrt ( $u_F_star*$seg_sites + $v_F_star*$seg_sites**2);
     return $F_star;
-} 
+}
 
 =head2 tajima_D
 
@@ -460,10 +554,10 @@ sub fu_and_li_F_star {
 
 sub tajima_D {
     my ($self,$individuals) = @_;
-    my ($seg_sites,$pi,$sample_size);
+    my ($seg_sites,$pi,$n);
 
     if( ref($individuals) =~ /ARRAY/i ) {
-	$sample_size = scalar @$individuals;
+	$n = scalar @$individuals;
 	# pi - all pairwise differences 
 	$pi          = $self->pi($individuals);  
 	$seg_sites = $self->segregating_sites_count($individuals);
@@ -471,30 +565,49 @@ sub tajima_D {
     } elsif( ref($individuals) && 
 	     $individuals->isa('Bio::PopGen::PopulationI')) {
 	my $pop = $individuals;
-	$sample_size = $pop->get_number_individuals;
+	$n = $pop->get_number_individuals;
 	$pi          = $self->pi($pop);
 	$seg_sites = $self->segregating_sites_count($pop);
     } else { 
 	$self->throw("expected an array reference of a list of Bio::PopGen::IndividualI OR a Bio::PopGen::PopulationI object to tajima_D");
 	return 0;
     }
+    $self->tajima_D_counts($n,$seg_sites,$pi);
+}
+
+=head2 tajima_D_counts
+
+ Title   : tajima_D_counts
+ Usage   : my $D = $statistics->tajima_D_counts($samps,$sites,$pi);
+ Function: Tajima's D statistic for the raw counts of the number
+           of samples, sites, and avg pairwise distances (pi)
+ Returns : decimal number
+ Args    : number of samples (N)
+           number of segregating sites (n)
+           average pairwise differences (pi)
+
+=cut
+
+#'
+
+sub tajima_D_counts {
+    my ($self,$n,$seg_sites,$pi) = @_;
     my $a1 = 0; 
-    for(my $k= 1; $k < $sample_size; $k++ ) {
+    for(my $k= 1; $k < $n; $k++ ) {
 	$a1 += ( 1 / $k );
     }
 
      my $a2 = 0;
-     for(my $k= 1; $k < $sample_size; $k++ ) {
+     for(my $k= 1; $k < $n; $k++ ) {
 	 $a2 += ( 1 / $k**2 );
      }
-
     
-    my $b1 = ( $sample_size + 1 ) / ( 3* ( $sample_size - 1) );
-    my $b2 = ( 2 * ( $sample_size ** 2 + $sample_size + 3) ) / 
-	     ( ( 9 * $sample_size) * ( $sample_size - 1) );
+    my $b1 = ( $n + 1 ) / ( 3* ( $n - 1) );
+    my $b2 = ( 2 * ( $n ** 2 + $n + 3) ) / 
+	     ( ( 9 * $n) * ( $n - 1) );
     my $c1 = $b1 - ( 1 / $a1 );
-    my $c2 = $b2 - ( ( $sample_size + 2 ) /
-		     ( $a1 * $sample_size))+( $a2 / $a1 ** 2);
+    my $c2 = $b2 - ( ( $n + 2 ) /
+		     ( $a1 * $n))+( $a2 / $a1 ** 2);
     my $e1 = $c1 / $a1;
     my $e2 = $c2 / ( $a1**2 + $a2 );
     
@@ -504,14 +617,15 @@ sub tajima_D {
     return $D;
 }
 
+
 =head2 pi
 
  Title   : pi
  Usage   : my $pi = Bio::PopGen::Statistics->pi(\@inds)
- Function: Calculate pi (...explain here...) given a list of individuals 
-           which have the same number of markers/sites/mutation as 
-           available from the get_Genotypes() call in 
-           L<Bio::PopGen::IndividualI>
+ Function: Calculate pi (average number of pairwise differences) given
+           a list of individuals which have the same number of markers
+           (also called sites) as available from the get_Genotypes()
+           call in L<Bio::PopGen::IndividualI>
  Returns : decimal number
  Args    : Arg1= array ref of L<Bio::PopGen::IndividualI> objects
              which have markers/mutations.  We expect all individuals to
@@ -527,14 +641,14 @@ sub tajima_D {
 
 sub pi {
     my ($self,$individuals,$numsites) = @_;
-    my (%data,@marker_names,$sample_size);
+    my (%data,@marker_names,$n);
 
     if( ref($individuals) =~ /ARRAY/i ) {
 	# one possible argument is an arrayref of Bio::PopGen::IndividualI objs
 	@marker_names = $individuals->[0]->get_marker_names;
-	$sample_size = scalar @$individuals;
+	$n = scalar @$individuals;
 
-	# Here we're calculating the allele frequencies
+	# Here we are calculating the allele frequencies
 	my %marker_total;
 	foreach my $ind ( @$individuals ) {
 	    if( ! $ind->isa('Bio::PopGen::IndividualI') ) {
@@ -558,7 +672,7 @@ sub pi {
     } elsif( ref($individuals) && 
 	     $individuals->isa('Bio::PopGen::PopulationI') ) {
 	my $pop = $individuals;
-	$sample_size = $pop->get_number_individuals;
+	$n = $pop->get_number_individuals;
 	foreach my $marker( $pop->get_Markers ) {
 	    push @marker_names, $marker->name;
 	    $data{$marker->name} = {$marker->get_Allele_Frequencies};
@@ -578,7 +692,7 @@ sub pi {
 	foreach my $al ( @alleles ) { $totalalleles += $markerdat->{$al} }
 	for( my $i =0; $i < scalar @alleles -1; $i++ ) {
 	    my ($a1,$a2) = ( $alleles[$i], $alleles[$i+1]);
-	    $pi += $self->heterozygosity($sample_size, 
+	    $pi += $self->heterozygosity($n, 
 					 $markerdat->{$a1} / $totalalleles,
 					 $markerdat->{$a2} / $totalalleles);
 	}
@@ -591,14 +705,16 @@ sub pi {
     }
 }
 
+
 =head2 theta
 
  Title   : theta
  Usage   : my $theta = Bio::PopGen::Statistics->theta($sampsize,$segsites);
- Function: Calculates theta (...explanation here... ) from the sample size 
+ Function: Calculates Watterson's theta from the sample size 
            and the number of segregating sites.
            Providing the third parameter, total number of sites will
-           return theta per site          
+           return theta per site.
+           This is also known as K-hat = K / a_n   
  Returns : decimal number 
  Args    : sample size (integer),
            num segregating sites (integer)
@@ -612,28 +728,30 @@ sub pi {
 
 =cut
 
+#'
+
 sub theta {
     my $self = shift;    
-    my ( $sample_size, $seg_sites,$totalsites) = @_;
-    if( ref($sample_size) =~ /ARRAY/i ) {
-	my $samps = $sample_size;
+    my ( $n, $seg_sites,$totalsites) = @_;
+    if( ref($n) =~ /ARRAY/i ) {
+	my $samps = $n;
 	$totalsites = $seg_sites; # only 2 arguments if one is an array
 	my %data;
 	my @marker_names = $samps->[0]->get_marker_names;
 	# we need to calculate number of polymorphic sites
 	$seg_sites = $self->segregating_sites_count($samps);
-	$sample_size = scalar @$samps;
+	$n = scalar @$samps;
 
-    } elsif(ref($sample_size) &&
-	    $sample_size->isa('Bio::PopGen::PopulationI') ) {
+    } elsif(ref($n) &&
+	    $n->isa('Bio::PopGen::PopulationI') ) {
 	# This will handle the case when we pass in a PopulationI object
-	my $pop = $sample_size;
+	my $pop = $n;
 	$totalsites = $seg_sites; # shift the arguments over by one
-	$sample_size = $pop->get_number_individuals;
+	$n = $pop->haploid_population->get_number_individuals;
 	$seg_sites = $self->segregating_sites_count($pop);
     }
     my $a1 = 0; 
-    for(my $k= 1; $k < $sample_size; $k++ ) {
+    for(my $k= 1; $k < $n; $k++ ) {
 	$a1 += ( 1 / $k );
     }    
     if( $totalsites ) { # 0 and undef are the same can't divide by them
@@ -745,7 +863,7 @@ sub segregating_sites_count{
 	   $seg_sites++ if( keys %$site > 1 );
        }
    } elsif( $type && $individuals->isa('Bio::PopGen::PopulationI') ) {
-       foreach my $marker ( $individuals->get_Markers ) {  
+       foreach my $marker ( $individuals->haploid_population->get_Markers ) {  
 	   my @alleles = $marker->get_Alleles;	    
 	   $seg_sites++ if ( scalar @alleles > 1 );
        }
@@ -783,6 +901,7 @@ sub heterozygosity {
     my $h = ( $samp_size*(1- $sum) ) / ($samp_size - 1) ;
     return $h;
 }
+
 
 =head2 derived_mutations
 
@@ -832,7 +951,7 @@ sub derived_mutations{
        }	   
    } elsif( ref($ingroup) && $ingroup->isa('Bio::PopGen::PopulationI') ) {
        @marker_names = $ingroup->get_marker_names;
-       for my $ind ( $ingroup->get_Individuals() ) {
+       for my $ind ( $ingroup->haploid_population->get_Individuals() ) {
 	   for my $m ( @marker_names ) {
 	       for my $allele ( map { $_->get_Alleles} 
 				    $ind->get_Genotypes($m) ) {
@@ -861,7 +980,7 @@ sub derived_mutations{
        }
    
    } elsif( $otype->isa('Bio::PopGen::PopulationI') ) {
-       for my $ind ( $outgroup->get_Individuals() ) {
+       for my $ind ( $outgroup->haploid_population->get_Individuals() ) {
 	   for my $m ( @marker_names ) {
 	       for my $allele ( map { $_->get_Alleles} 
 				    $ind->get_Genotypes($m) ) {
@@ -952,6 +1071,10 @@ sub composite_LD {
 
 	foreach my $ind ( @inds ) {
 	    my ($genotype) = $ind->get_Genotypes(-marker => $marker_name);
+	    if( ! defined $genotype ) { 
+		$self->warn("no genotype for marker $marker_name for individual ". $ind->unique_id. "\n");
+		next;
+	    }
 	    my @alleles  = sort $genotype->get_Alleles;
 	    next if( scalar @alleles != 2);
 	    my $genostr  = join(',', @alleles);
@@ -1082,7 +1205,7 @@ sub composite_LD {
 
 	    my $homozA_site1 = join(",", ($allele1_site1,$allele1_site1));
 	    my $homozB_site2 = join(",", ($allele1_site2,$allele1_site2));
-	   	my $p_AA = ($genotypes{$site1}->{$homozA_site1} || 0) / $n;
+	my $p_AA = ($genotypes{$site1}->{$homozA_site1} || 0) / $n;
 	    my $p_BB = ($genotypes{$site2}->{$homozB_site2} || 0) / $n;
 	    my $p_A  = $allele_freqs{$site1}->{$allele1_site1} || 0;	# an individual allele freq
 	    my $p_a  =  1 - $p_A;
@@ -1119,6 +1242,7 @@ sub composite_LD {
     }
     return %stats_for_sites;
 }
+
 
 
 1;

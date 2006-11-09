@@ -1,4 +1,4 @@
-# $Id: OntologyTerm.pm,v 1.8 2003/10/13 20:02:43 lapp Exp $
+# $Id: OntologyTerm.pm,v 1.15.4.3 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::Annotation::OntologyTerm
 #
@@ -8,7 +8,7 @@
 #
 # You may distribute this module under the same terms as perl itself
 
-# 
+#
 # (c) Hilmar Lapp, hlapp at gmx.net, 2002.
 # (c) GNF, Genomics Institute of the Novartis Research Foundation, 2002.
 #
@@ -16,7 +16,7 @@
 # Refer to the Perl Artistic License (see the license accompanying this
 # software package, or see http://www.perl.com/language/misc/Artistic.html)
 # for the terms under which you may use, modify, and redistribute this module.
-# 
+#
 # THIS PACKAGE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
 # WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 # MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
@@ -48,12 +48,13 @@ Bio::Annotation::OntologyTerm - An ontology term adapted to AnnotationI
    my $term = $annterm->term(); # term is-a Bio::Ontology::TermI
    print "ontology term ",$term->name()," (ID ",$term->identifier(),
          "), ontology ",$term->ontology()->name(),"\n";
-   $term = Bio::Ontology::Term->new(-name => 'ABC2', -ontology => 'Gene Name');
+   $term = Bio::Ontology::Term->new(-name => 'ABC2',
+                                    -ontology => 'Gene Name');
    $annterm->term($term);
 
 =head1 DESCRIPTION
 
-Ontology term annotation object 
+Ontology term annotation object
 
 =head1 FEEDBACK
 
@@ -63,27 +64,26 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bio.perl.org/MailList.html  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via
+the web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
-Email bioperl-l@bio.perl.org
 Email hlapp at gmx.net
 
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods.
+Internal methods are usually preceded with a _
 
 =cut
 
@@ -92,17 +92,15 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::Annotation::OntologyTerm;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::AnnotationI;
-use Bio::Ontology::TermI;
 use Bio::Ontology::Term;
-use Bio::Root::Root;
+use overload '""' => sub { $_[0]->identifier || ''};
+use overload 'eq' => sub { "$_[0]" eq "$_[1]" };
 
-@ISA = qw(Bio::Root::Root Bio::AnnotationI Bio::Ontology::TermI);
+use base qw(Bio::Root::Root Bio::AnnotationI Bio::Ontology::TermI);
 
 =head2 new
 
@@ -119,9 +117,8 @@ use Bio::Root::Root;
 
 sub new{
     my ($class,@args) = @_;
-    
+
     my $self = $class->SUPER::new(@args);
-    
     my ($term,$name,$label,$identifier,$definition,$ont,$tag) =
 	$self->_rearrange([qw(TERM
                           NAME
@@ -139,7 +136,6 @@ sub new{
         $self->definition($definition) if $definition;
     }
     $self->ontology($ont || $tag) if $ont || $tag;
-    
     return $self;
 }
 
@@ -152,7 +148,11 @@ sub new{
 
  Title   : as_text
  Usage   : my $text = $obj->as_text
- Function: return the string "Name: $v" where $v is the name of the term
+ Function: Returns a textual representation of the annotation that
+           this object holds. Presently, it is tag name, name of the
+           term, and the is_obsolete attribute concatenated togather
+           with a delimiter (|).
+
  Returns : string
  Args    : none
 
@@ -162,7 +162,7 @@ sub new{
 sub as_text{
    my ($self) = @_;
 
-   return $self->tagname()."|".$self->name()."|".$self->identifier();
+   return $self->tagname()."|".$self->name()."|".($self->is_obsolete()||'');
 }
 
 =head2 hash_tree
@@ -179,7 +179,7 @@ sub as_text{
 
 sub hash_tree{
    my ($self) = @_;
-   
+
    my $h = {};
    $h->{'name'} = $self->name();
    $h->{'identifier'} = $self->identifier();
@@ -198,7 +198,7 @@ sub hash_tree{
            a tag to AnnotationCollection when adding this object.
 
            This is aliased to ontology() here.
- Example : 
+ Example :
  Returns : value of tagname (a scalar)
  Args    : new value (a scalar, optional)
 
@@ -226,7 +226,7 @@ sub tagname{
 
            We implement TermI by composition, and this method sets/gets the
            object we delegate to.
- Example : 
+ Example :
  Returns : value of term (a Bio::Ontology::TermI compliant object)
  Args    : new value (a Bio::Ontology::TermI compliant object, optional)
 
@@ -297,7 +297,7 @@ sub definition {
 
  Title   : ontology
  Usage   : $term->ontology( $top );
-           or 
+           or
            $top = $term->ontology();
  Function: Set/get for a relationship between this Term and
            another Term (e.g. the top level of the ontology).
@@ -331,7 +331,7 @@ sub is_obsolete {
 
  Title   : comment
  Usage   : $term->comment( "Consider the term ..." );
-           or 
+           or
            print $term->comment();
  Function: Set/get for an arbitrary comment about this Term.
  Returns : A comment.
@@ -346,7 +346,7 @@ sub comment {
 =head2 get_synonyms
 
  Title   : get_synonyms()
- Usage   : @aliases = $term->get_synonyms();                 
+ Usage   : @aliases = $term->get_synonyms();
  Function: Returns a list of aliases of this Term.
  Returns : A list of aliases [array of [scalar]].
  Args    :
@@ -362,9 +362,9 @@ sub get_synonyms {
  Title   : add_synonym
  Usage   : $term->add_synonym( @asynonyms );
            or
-           $term->add_synonym( $synonym );                  
+           $term->add_synonym( $synonym );
  Function: Pushes one or more synonyms into the list of synonyms.
- Returns : 
+ Returns :
  Args    : One synonym [scalar] or a list of synonyms [array of [scalar]].
 
 =cut
@@ -408,10 +408,10 @@ sub get_dblinks {
  Title   : add_dblink
  Usage   : $term->add_dblink( @dbls );
            or
-           $term->add_dblink( $dbl );                  
+           $term->add_dblink( $dbl );
  Function: Pushes one or more dblinks
            into the list of dblinks.
- Returns : 
+ Returns :
  Args    : One  dblink [scalar] or a list of
             dblinks [array of [scalars]].
 
@@ -460,9 +460,9 @@ sub get_secondary_ids {
  Title   : add_secondary_id
  Usage   : $term->add_secondary_id( @ids );
            or
-           $term->add_secondary_id( $id );                  
+           $term->add_secondary_id( $id );
  Function: Adds one or more secondary identifiers to this term.
- Returns : 
+ Returns :
  Args    : One or more secondary identifiers [scalars]
 
 =cut

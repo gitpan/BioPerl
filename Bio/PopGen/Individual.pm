@@ -1,4 +1,4 @@
-# $Id: Individual.pm,v 1.10 2003/07/31 14:55:37 jason Exp $
+# $Id: Individual.pm,v 1.15.4.1 2006/10/02 23:10:23 sendu Exp $
 #
 # BioPerl module for Bio::PopGen::Individual
 #
@@ -19,7 +19,7 @@ Genotype or Sequence Results
 
   use Bio::PopGen::Individual;
 
-  my $ind = new Bio::PopGen::Individual(-unqiue_id => $id,
+  my $ind = new Bio::PopGen::Individual(-unique_id => $id,
                                         -genotypes => \@genotypes);
 
 =head1 DESCRIPTION
@@ -34,8 +34,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -43,7 +43,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -65,16 +65,14 @@ Internal methods are usually preceded with a _
 
 
 package Bio::PopGen::Individual;
-use vars qw(@ISA $UIDCOUNTER);
+use vars qw($UIDCOUNTER);
 use strict;
 BEGIN { $UIDCOUNTER = 1 }
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::Root::Root;
-use Bio::PopGen::IndividualI;
 
-@ISA = qw(Bio::Root::Root Bio::PopGen::IndividualI);
+use base qw(Bio::Root::Root Bio::PopGen::IndividualI);
 
 =head2 new
 
@@ -147,7 +145,7 @@ sub num_of_results {
  Usage   : $individual->add_Genotype
  Function: add a genotype value
  Returns : count of the number of genotypes associated with this individual
- Args    : @genotypes - Bio::PopGen::GenotypeI object(s) containing 
+ Args    : @genotypes - L<Bio::PopGen::GenotypeI> object(s) containing 
                         alleles plus a marker name
 
 =cut
@@ -171,6 +169,9 @@ sub add_Genotype {
 	   # a warning when we have verbosity cranked up 
 	   $self->debug("Overwriting the previous value for $mname for this individual");
        }
+       # this will force Genotype individual_id to be set to 
+       # the Individual it has been added for
+       $g->individual_id($self->unique_id);
        $self->{'_genotypes'}->{$mname} = $g;
    }
    return scalar keys %{$self->{'_genotypes'}};

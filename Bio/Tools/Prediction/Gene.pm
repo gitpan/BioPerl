@@ -1,4 +1,4 @@
-# $Id: Gene.pm,v 1.11 2003/05/17 19:03:58 heikki Exp $
+# $Id: Gene.pm,v 1.15.4.1 2006/10/02 23:10:35 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Prediction::Gene
 #
@@ -41,27 +41,25 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bio.perl.org/MailList.html - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
-Email hlapp@gmx.net or hilmar.lapp@pharma.novartis.com
-
-Describe contact details here
+Email hlapp-at-gmx.net or hilmar.lapp-at-pharma.novartis.com
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -70,13 +68,11 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::Tools::Prediction::Gene;
-use vars qw(@ISA);
 use strict;
 
-use Bio::SeqFeature::Gene::Transcript;
 
 
-@ISA = qw(Bio::SeqFeature::Gene::Transcript);
+use base qw(Bio::SeqFeature::Gene::Transcript);
 
 sub new {
     my($class,@args) = @_;

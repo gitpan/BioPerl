@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: SearchWriterI.pm,v 1.8 2003/04/13 17:38:54 jason Exp $
+# $Id: SearchWriterI.pm,v 1.10.4.1 2006/10/02 23:10:26 sendu Exp $
 #
 # BioPerl module Bio::SearchIO::SearchWriterI
 #
@@ -25,12 +25,12 @@ you can do the following things with it:
 =head1 DESCRIPTION
 
 This module defines abstract methods that all subclasses must implement
-to be used for outputting results from B<Bio::Search::Result::ResultI>
+to be used for outputting results from L<Bio::Search::Result::ResultI>
 objects.
 
 =head1 AUTHOR
 
-Steve Chervitz E<lt>sac@bioperl.orgE<gt>
+Steve Chervitz E<lt>sac-at-bioperl.orgE<gt>
 
 =head1 DISCLAIMER
 
@@ -44,9 +44,8 @@ The rest of the documentation details each of the object methods.
 
 package Bio::SearchIO::SearchWriterI;
 
-use Bio::Root::RootI;
 
-@ISA = qw( Bio::Root::RootI );
+use base qw(Bio::Root::RootI);
 
 =head2 to_string
 
@@ -117,13 +116,13 @@ sub end_report {  return '' }
 
 sub filter {
     my ($self,$method,$code) = @_;    
-    return undef unless $method;
+    return unless $method;
     $method = uc($method);
     if( $method ne 'HSP' &&
 	$method ne 'HIT' &&
 	$method ne 'RESULT' ) {
 	$self->warn("Unknown method $method");
-	return undef;
+	return;
     }
     if( $code )  {
 	$self->throw("Must provide a valid code reference") unless ref($code) =~ /CODE/;

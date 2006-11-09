@@ -1,26 +1,43 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Relationship.t,v 1.2 2002/11/26 22:54:12 czmasek Exp $
+## $Id: Relationship.t,v 1.4 2005/09/17 02:11:21 bosborne Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
 use strict;
-BEGIN {
-    # to handle systems with no installed Test module
-    # we include the t dir (where a copy of Test.pm is located)
-    # as a fallback
-    eval { require Test; };
-    if( $@ ) {
-        use lib 't';
-    }
-    use Test;
-    plan tests => 9;
-}
+use vars qw($HAVEGRAPHDIRECTED $NUMTESTS $DEBUG);
+$DEBUG = $ENV{'BIOPERLDEBUG'} || 0;
 
-use Bio::Ontology::Relationship;
-use Bio::Ontology::GOterm;  
-use Bio::Ontology::RelationshipType;
+BEGIN {
+	# to handle systems with no installed Test module
+	# we include the t dir (where a copy of Test.pm is located)
+	# as a fallback
+	eval { require Test; };
+	if( $@ ) {
+		use lib 't';
+	}
+	use Test;
+	eval {
+		require Graph::Directed;
+		$HAVEGRAPHDIRECTED = 1;
+	};
+	if ($@) {
+		$HAVEGRAPHDIRECTED = 0;
+		warn "Cannot run tests, Graph::Directed is not installed\n";
+	}
+	plan tests => ($NUMTESTS = 9);
+}
+END {
+	foreach ( $Test::ntest..$NUMTESTS) {
+		skip('Cannot complete Relationship tests',1);
+   }
+}
+exit(0) unless $HAVEGRAPHDIRECTED;
+
+require Bio::Ontology::Relationship;
+require Bio::Ontology::GOterm;  
+require Bio::Ontology::RelationshipType;
 
 my $IS_A = Bio::Ontology::RelationshipType->get_instance( "IS_A" );
 ok( $IS_A->isa( "Bio::Ontology::RelationshipType" ) );

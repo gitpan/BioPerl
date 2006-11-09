@@ -1,5 +1,5 @@
 #------------------------------------------------------------------
-# $Id: IteratedSearchResultEventBuilder.pm,v 1.6 2003/12/06 18:12:49 jason Exp $
+# $Id: IteratedSearchResultEventBuilder.pm,v 1.10.4.2 2006/10/02 23:10:26 sendu Exp $
 #
 # BioPerl module for Bio::SearchIO::IteratedSearchResultEventBuilder
 #
@@ -35,26 +35,27 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Steve Chervitz
 
-Email sac@bioperl.org
+Email sac-at-bioperl.org
 
 =head1 CONTRIBUTORS
 
 Parts of code based on SearchResultEventBuilder by Jason Stajich
 jason@bioperl.org
+
+Sendu Bala, bix@sendu.me.uk
 
 =head1 APPENDIX
 
@@ -68,17 +69,15 @@ Internal methods are usually preceded with a _
 
 
 package Bio::SearchIO::IteratedSearchResultEventBuilder;
-use vars qw(@ISA %KNOWNEVENTS 
-            $DEFAULT_INCLUSION_THRESHOLD
+use vars qw(%KNOWNEVENTS             $DEFAULT_INCLUSION_THRESHOLD
             $MAX_HSP_OVERLAP
 );
 
 use strict;
 
-use Bio::SearchIO::SearchResultEventBuilder;
 use Bio::Factory::ObjectFactory;
 
-@ISA = qw(Bio::SearchIO::SearchResultEventBuilder);
+use base qw(Bio::SearchIO::SearchResultEventBuilder);
 
 # e-value threshold for inclusion in the PSI-BLAST score matrix model (blastpgp)
 # NOTE: Executing `blastpgp -` incorrectly reports that the default is 0.005.
@@ -256,6 +255,7 @@ sub end_result {
     $args{'-iterations'} = $self->{'_iterations'};
 
     my $result = $self->factory('result')->create_object(%args);
+    $result->hit_factory($self->factory('hit'));
     $self->{'_iterations'} = [];
     return $result;
 }
@@ -267,37 +267,36 @@ sub end_result {
 
 sub _add_hit {
     my ($self, $hit) = @_;
-
-    my $hit_name = uc($hit->name);
-    my $hit_signif = $hit->significance;
+	
+    my $hit_name = uc($hit->{-name});
+    my $hit_signif = $hit->{-significance};
     my $ithresh = $self->{'_inclusion_threshold'};
-
-#    print STDERR "_add_hit():name=$hit_name, thresh=$ithresh, signif=$hit_signif.\n";
-
+	
     # Test significance using custom function (if supplied)
     my $add_hit = 1;
-
+	
     my $hit_filter = $self->{'_hit_filter'};
-
+	
     if($hit_filter) {
+        # since &hit_filter is out of our control and would expect a HitI object,
+        # we're forced to make one for it
+        $hit = $self->factory('hit')->create_object(%{$hit});
         $add_hit = 0 unless &$hit_filter($hit);
-
     } else {
         if($self->{'_confirm_significance'}) {
             $add_hit = 0 unless $hit_signif <= $self->{'_max_significance'};
         }
         if($self->{'_confirm_score'}) {
-            my $hit_score  = $hit->score;
+            my $hit_score = $hit->{-score} || $hit->{-hsps}->[0]->{-score};
             $add_hit = 0 unless $hit_score >= $self->{'_min_score'};
         }
         if($self->{'_confirm_bits'}) {
-            my $hit_bits  = $hit->bits;
+            my $hit_bits = $hit->{-bits} || $hit->{-hsps}->[0]->{-bits};
             $add_hit = 0 unless $hit_bits >= $self->{'_min_bits'};
         }
     }
-
+	
     $add_hit && $self->_store_hit($hit, $hit_name, $hit_signif);
-
     # Building hit lookup hashes for determining if the hit is old/new and 
     # above/below threshold.
     $self->{'_old_hit_names'}->{$hit_name}++;
@@ -352,6 +351,7 @@ sub _store_hit {
             push @{$self->{'_newhits_not_below'}}, $hit;
         }
     }
+    $self->{'_hitcount'}++;
 }
 
 =head2 start_iteration
@@ -377,6 +377,7 @@ sub start_iteration {
     $self->{'_oldhits_below'}        = [];
     $self->{'_oldhits_newly_below'}  = [];
     $self->{'_oldhits_not_below'}    = [];
+    $self->{'_hitcount'} = 0;
     return;
 }
 
@@ -406,6 +407,7 @@ sub end_iteration {
     $args{'-oldhits_not_below'} = $self->{'_oldhits_not_below'};
     $args{'-newhits_below'} = $self->{'_newhits_below'};
     $args{'-newhits_not_below'} = $self->{'_newhits_not_below'};
+    $args{'-hit_factory'} = $self->factory('hit');
 
     my $it = $self->factory('iteration')->create_object(%args);
     push @{$self->{'_iterations'}}, $it;

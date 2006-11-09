@@ -1,8 +1,8 @@
-# $Id: UniGene.pm,v 1.28 2003/09/11 23:51:40 andrew Exp $
+# $Id: UniGene.pm,v 1.38.4.1 2006/10/02 23:10:13 sendu Exp $
 #
 # BioPerl module for Bio::Cluster::UniGene.pm
 #
-# Cared for by Andrew Macgregor <andrew@anatomy.otago.ac.nz>
+# Cared for by Andrew Macgregor <andrew at cbbc.murdoch.edu.au>
 #
 # Copyright Andrew Macgregor, Jo-Ann Stanton, David Green
 # Molecular Embryology Group, Anatomy & Structural Biology, University of Otago
@@ -68,6 +68,8 @@ cytoband() - set/get cytoband
 mgi() - set/get mgi
 
 locuslink() - set/get locuslink
+
+homol() - set/get homologene
 
 gnm_terminus() - set/get gnm_terminus
 
@@ -138,21 +140,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bio.perl.org/MailList.html  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Andrew Macgregor
 
-Email andrew@anatomy.otago.ac.nz
+Email andrew at cbbc.murdoch.edu.au
 
 =head1 CONTRIBUTORS
 
@@ -170,54 +171,69 @@ methods. Internal methods are usually preceded with a "_".
 
 
 package Bio::Cluster::UniGene;
-use vars qw(@ISA);
 use strict;
 
-
-use Bio::Root::Root;
-use Bio::IdentifiableI;
-use Bio::DescribableI;
-use Bio::AnnotatableI;
 use Bio::Annotation::Collection;
 use Bio::Annotation::DBLink;
 use Bio::Annotation::SimpleValue;
 use Bio::Species;
-use Bio::Factory::SequenceStreamI;
 use Bio::Seq::SeqFactory;
-use Bio::Cluster::UniGeneI;
 
-@ISA = qw(Bio::Root::Root Bio::Cluster::UniGeneI
-	  Bio::IdentifiableI Bio::DescribableI Bio::AnnotatableI
-	  Bio::Factory::SequenceStreamI);
+use base qw(Bio::Root::Root Bio::Cluster::UniGeneI Bio::IdentifiableI Bio::DescribableI Bio::AnnotatableI Bio::Factory::SequenceStreamI);
 
 my %species_map = (
 		   'Aga' => "Anopheles gambiae",
+		   'Ame' => "Apis mellifera",
 		   'At'  => "Arabidopsis thaliana",
+		   'Bmo' => "Bombyx mori",
 		   'Bt'  => "Bos taurus",
 		   'Cel' => "Caenorhabditis elegans",
+		   'Cfa' => "Canine familiaris",
 		   'Cin' => "Ciona intestinalis",
 		   'Cre' => "Chlamydomonas reinhardtii",
-		   'Ddi'  => "Dictyostelium discoideum",
+		   'Csa' => "Ciona savignyi",
+		   'Csi' => "Citrus sinensis",
+		   'Ddi' => "Dictyostelium discoideum",
 		   'Dr'  => "Danio rerio",
 		   'Dm'  => "Drosophila melanogaster",
 		   'Gga' => "Gallus gallus",
 		   'Gma' => "Glycine max",
+		   'Han' => "Helianthus annus",
 		   'Hs'  => "Homo sapiens",
+		   'Hma' => "Hydra magnipapillata",
 		   'Hv'  => "Hordeum vulgare",
+		   'Lco' => "Lotus corniculatus",
 		   'Les' => "Lycopersicon esculentum",
-		   'Mtr' => "Medicago truncatula",
+		   'Lsa' => "Lactuca sativa",
+		   'Mdo' => "Malus x domestica",
+                   'Mgr' => "Magnaporthe grisea",
 		   'Mm'  => "Mus musculus",
+		   'Mtr' => "Medicago truncatula",
+                   'Ncr' => "Neurospora crassa",
+		   'Oar' => "Ovis aries",
+		   'Omy' => "Oncorhynchus mykiss",
 		   'Os'  => "Oryza sativa",
 		   'Ola' => "Oryzias latipes",
+		   'Ppa' => "Physcomitrella patens",
+		   'Pta' => "Pinus taeda",
+		   'Ptp' => "Populus tremula x Populus tremuloides",
 		   'Rn'  => "Rattus norvegicus",
-		   'Str' => "Silurana tropicalis",
 		   'Sbi' => "Sorghum bicolor",
+		   'Sma' => "Schistosoma mansoni",
+		   'Sof' => "Saccharum officinarum",
+		   'Spu' => "Strongylocentrotus purpuratus",
+		   'Ssa' => "Salmo salar",
 		   'Ssc' => "Sus scrofa",
+		   'Str' => "Xenopus tropicalis",
+		   'Stu' => "Solanum tuberosum",
 		   'Ta'  => "Triticum aestivum",
+		   'Tgo' => "Toxoplasma gondii",
+                   'Tru' => "Takifugu rubripes",
+		   'Vvi' => "Vitis vinifera",
 		   'Xl'  => "Xenopus laevis",
 		   'Zm'  => "Zea mays",
 		   );
-		 
+
 
 =head2 new
 
@@ -410,6 +426,40 @@ sub locuslink {
 	$ll = [@accs];
     }
     return $ll;
+}
+
+
+=head2 homol
+
+ Title   : homol
+ Usage   : homol();
+ Function: Returns the homol entry associated with the object.
+ Example : $homol = $unigene->homol or $unigene->homol($homol)
+ Returns : A string
+ Args    : None or a homol entry
+
+=cut
+
+sub homol {
+    my $self = shift;
+    return $self->_annotation_value('homol', @_);
+}
+
+
+=head2 restr_expr
+
+ Title   : restr_expr
+ Usage   : restr_expr();
+ Function: Returns the restr_expr entry associated with the object.
+ Example : $restr_expr = $unigene->restr_expr or $unigene->restr_expr($restr_expr)
+ Returns : A string
+ Args    : None or a restr_expr entry
+
+=cut
+
+sub restr_expr {
+    my $self = shift;
+    return $self->_annotation_value('restr_expr', @_);
 }
 
 
@@ -1000,7 +1050,7 @@ sub _next_element{
     if(! @$queue) {
 	# yes, remove queue and signal to the caller
 	delete $self->{$queuename};
-	return undef;
+	return;
     }
     return shift(@$queue);
 }
@@ -1037,7 +1087,7 @@ sub object_id {
            later and more relevant, but a single object described
            the same identifier should represent the same concept
 
-           Unigene clusters usually won''t have a version, so this
+           Unigene clusters usually won't have a version, so this
            will be mostly undefined.
 
  Returns : A number
@@ -1181,7 +1231,7 @@ sub next_seq {
     if(! @$queue) {
 	# yes, remove queue and signal to the caller
 	delete $obj->{'_seq_queue'};
-	return undef;
+	return;
     }
     # no, still data in the queue: get the next one from the queue
     my $seq_h = shift(@$queue);
@@ -1206,7 +1256,7 @@ sub next_seq {
 	  -primary_id       => $seq_h->{nid} && $seq_h->{nid} =~ /^g\d+$/ ?
 				     substr($seq_h->{nid},1) : $seq_h->{nid},
 	  -display_id       => $seq_h->{acc},
-	  -seq_version		=> $seq_h->{version},
+	  -seq_version	    => $seq_h->{version},
 	  -alphabet         => $obj->{'_alphabet'},
 	  -namespace        => $seq_h->{acc} =~ /^NM_/ ? 'RefSeq' : 'GenBank',
 	  -authority        => $obj->authority(), # default is NCBI

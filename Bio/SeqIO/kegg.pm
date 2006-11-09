@@ -1,4 +1,4 @@
-# $Id: kegg.pm,v 1.5 2003/12/15 11:50:38 heikki Exp $
+# $Id: kegg.pm,v 1.18.4.1 2006/10/02 23:10:29 sendu Exp $
 #
 # BioPerl module for Bio::SeqIO::kegg
 #
@@ -16,8 +16,10 @@ Bio::SeqIO::kegg - KEGG sequence input/output stream
 
 =head1 SYNOPSIS
 
-  #It is probably best not to use this object directly, but
-  #rather go through the SeqIO handler system. Go:
+  # It is probably best not to use this object directly, but
+  # rather go through the SeqIO handler system. Go:
+
+  use Bio::SeqIO;
 
   $stream = Bio::SeqIO->new(-file => $filename, -format => 'KEGG');
 
@@ -42,31 +44,38 @@ record.
 
 =item 'ENTRY'
 
-$seq-E<gt>primary_id
+ $seq->primary_id
 
 =item 'NAME'
 
-$seq-E<gt>display_id
+ $seq->display_id
 
 =item 'DEFINITION'
 
-$seq-E<gt>annotation-E<gt>get_Annotations('description');
+ $seq->annotation->get_Annotations('description');
 
 =item 'ORTHOLOG'
 
-grep {$_-E<gt>database eq 'KO'} $seq-E<gt>annotation-E<gt>get_Annotations('dblink')
+ grep {$_->database eq 'KO'} $seq->annotation->get_Annotations('dblink')
 
 =item 'CLASS'
 
-grep {$_-E<gt>database eq 'PATH'} $seq-E<gt>annotation-E<gt>get_Annotations('dblink')
+ grep {$_->database eq 'PATH'}
+          $seq->annotation->get_Annotations('dblink')
 
 =item 'POSITION'
 
 FIXME, NOT IMPLEMENTED
 
+=item 'PATHWAY'
+
+ for my $pathway ( $seq->annotation->get_Annotations('pathway') ) {
+    #
+ }
+
 =item 'DBLINKS'
 
-$seq-E<gt>annotation-E<gt>get_Annotations('dblink')
+ $seq->annotation->get_Annotations('dblink')
 
 =item 'CODON_USAGE'
 
@@ -74,11 +83,11 @@ FIXME, NOT IMPLEMENTED
 
 =item 'AASEQ'
 
-$seq-E<gt>translate-E<gt>seq
+ $seq->translate->seq
 
 =item 'NTSEQ'
 
-$seq-E<gt>seq
+ $seq-E<gt>seq
 
 =back
 
@@ -86,22 +95,19 @@ $seq-E<gt>seq
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
-  http://www.bioperl.org/MailList.shtml  - About the mailing lists
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution. Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Allen Day
 
@@ -117,10 +123,8 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::SeqIO::kegg;
-use vars qw(@ISA);
 use strict;
 
-use Bio::SeqIO;
 use Bio::SeqFeature::Generic;
 use Bio::Species;
 use Bio::Seq::SeqFactory;
@@ -128,19 +132,19 @@ use Bio::Annotation::Collection;
 use Bio::Annotation::Comment;
 use Bio::Annotation::DBLink;
 
-@ISA = qw(Bio::SeqIO);
- 
+use base qw(Bio::SeqIO);
+
 sub _initialize {
-    my($self,@args) = @_;
-    
-    $self->SUPER::_initialize(@args); 
-    # hash for functions for decoding keys.
-    $self->{'_func_ftunit_hash'} = {}; 
-    if( ! defined $self->sequence_factory ) {
-	$self->sequence_factory(new Bio::Seq::SeqFactory
-				(-verbose => $self->verbose(), 
-				 -type => 'Bio::Seq::RichSeq'));
-    }
+	my($self,@args) = @_;
+
+	$self->SUPER::_initialize(@args);
+	# hash for functions for decoding keys.
+	$self->{'_func_ftunit_hash'} = {};
+	if( ! defined $self->sequence_factory ) {
+		$self->sequence_factory(new Bio::Seq::SeqFactory
+										(-verbose => $self->verbose(),
+										 -type => 'Bio::Seq::RichSeq'));
+	}
 }
 
 =head2 next_seq
@@ -154,75 +158,135 @@ sub _initialize {
 =cut
 
 sub next_seq {
-  my ($self,@args) = @_;
-  my $builder = $self->sequence_builder();
-  my $seq;
-  my %params;
+	my ($self,@args) = @_;
+	my $builder = $self->sequence_builder();
+	my $seq;
+	my %params;
 
-  my $buffer;
-  my (@acc, @features);
-  my ($display_id, $annotation);
-  my $species;
+	my $buffer;
+	my (@acc, @features);
+	my ($display_id, $annotation);
+	my $species;
 
-  # initialize; we may come here because of starting over
-  @features = ();
-  $annotation = undef;
-  @acc = ();
-  $species = undef;
-  %params = (-verbose => $self->verbose); # reset hash
-  local($/) = "///\n";
+	# initialize; we may come here because of starting over
+	@features = ();
+	$annotation = undef;
+	@acc = ();
+	$species = undef;
+	%params = (-verbose => $self->verbose); # reset hash
+	local($/) = "///\n";
 
-  $buffer = $self->_readline();
+	$buffer = $self->_readline();
 
-  return undef if( !defined $buffer ); # end of file
-  $buffer =~ /^ENTRY/ ||
-	$self->throw("KEGG stream with bad ENTRY line. Not KEGG in my book. Got '$buffer'");
+	return if( !defined $buffer ); # end of file
+	$buffer =~ /^ENTRY/ ||
+	  $self->throw("KEGG stream with bad ENTRY line. Not KEGG in my book. Got $buffer'");
 
-  my %FIELDS;
-  my @chunks = split /\n(?=\S)/, $buffer;
+	my %FIELDS;
+	my @chunks = split /\n(?=\S)/, $buffer;
 
-  foreach my $chunk (@chunks){
-	my($key) = $chunk =~ /^(\S+)/;
-	$FIELDS{$key} = $chunk;
+	foreach my $chunk (@chunks){
+		my($key) = $chunk =~ /^(\S+)/;
+		$FIELDS{$key} = $chunk;
+	}
+
+	# changing to split method to get entry_ids that include
+	# sequence version like Whatever.1
+	my(undef,$entry_id,$entry_seqtype,$entry_species) =
+	  split(' ',$FIELDS{ENTRY});
+
+	my($name);
+	if ($FIELDS{NAME}) {
+          ($name) = $FIELDS{NAME} =~ /^NAME\s+(.+)$/;
+	}
+
+        my( $definition, $aa_length, $aa_seq, $nt_length, $nt_seq );
+
+        if(( exists $FIELDS{DEFINITION} ) and ( $FIELDS{DEFINITION} =~ /^DEFINITION/ )) {
+          ($definition) = $FIELDS{DEFINITION} =~ /^DEFINITION\s+(.+)$/s;
+          $definition =~ s/\s+/ /gs;
+        }
+        if(( exists $FIELDS{AASEQ} ) and ( $FIELDS{AASEQ} =~ /^AASEQ/ )) {
+          ($aa_length,$aa_seq) = $FIELDS{AASEQ} =~ /^AASEQ\s+(\d+)\n(.+)$/s;
+          $aa_seq =~ s/\s+//g;
+        }
+        if(( exists  $FIELDS{NTSEQ} ) and ( $FIELDS{NTSEQ} =~ /^NTSEQ/ )) {
+          ($nt_length,$nt_seq) = $FIELDS{NTSEQ} =~ /^NTSEQ\s+(\d+)\n(.+)$/s;
+          $nt_seq =~ s/\s+//g;
+        }
+
+	$annotation = Bio::Annotation::Collection->new();
+
+	$annotation->add_Annotation('description',
+						Bio::Annotation::Comment->new(-text => $definition));
+
+	$annotation->add_Annotation('aa_seq',
+						Bio::Annotation::Comment->new(-text => $aa_seq));
+
+	my($ortholog_db,$ortholog_id,$ortholog_desc);
+	if ($FIELDS{ORTHOLOG}) {
+		($ortholog_db,$ortholog_id,$ortholog_desc) = $FIELDS{ORTHOLOG}
+		  =~ /^ORTHOLOG\s+(\S+):\s+(\S+)\s+(.*?)$/;
+
+        $annotation->add_Annotation('dblink',Bio::Annotation::DBLink->new(
+                     -database => $ortholog_db,
+                     -primary_id => $ortholog_id,
+                     -comment => $ortholog_desc) );
   }
 
-  my($entry_id,$entry_seqtype,$entry_species) = $FIELDS{ENTRY} =~ /^ENTRY\s+(\d+)\s+(\S+)\s+(\S+)\s*$/;
+  if($FIELDS{MOTIF}){
+     $FIELDS{MOTIF} =~ s/^MOTIF\s+//;
+     while($FIELDS{MOTIF} =~/\s*?(\S+):\s+(.+?)$/mg){
+         my $db = $1;
+         my $ids = $2;
+         foreach my $id (split(/\s+/, $ids)){
 
-  my($name) = $FIELDS{NAME} =~ /^NAME\s+(.+)$/;
-
-  my($definition) = $FIELDS{DEFINITION} =~ /^DEFINITION\s+(.+)$/s;
-  $definition =~ s/\s+/ /gs;
-
-  my($aa_length,$aa_seq) = $FIELDS{AASEQ} =~ /^AASEQ\s+(\d+)\n(.+)$/s;
-  $aa_seq =~ s/\s+//g;
-  my($nt_length,$nt_seq) = $FIELDS{NTSEQ} =~ /^NTSEQ\s+(\d+)\n(.+)$/s;
-  $nt_seq =~ s/\s+//g;
-
-  $annotation = Bio::Annotation::Collection->new();
-  $annotation->add_Annotation('description',Bio::Annotation::Comment->new(-text => $definition));
-
-  my($ortholog_db,$ortholog_id,$ortholog_desc) = $FIELDS{ORTHOLOG} =~ /^ORTHOLOG\s+(\S+):\s+(\S+)\s+(\S*)\s*$/;
-  $annotation->add_Annotation('dblink',Bio::Annotation::DBLink->new(-database => $ortholog_db,
-																	-primary_id => $ortholog_id,
-																	-comment => $ortholog_desc
-																   )
-							 );
-
-  $FIELDS{CLASS} =~ s/^CLASS\s+//;
-  while($FIELDS{CLASS} =~ /.+?\[(\S+):(\S+)\]/gs){
-	$annotation->add_Annotation('dblink',Bio::Annotation::DBLink->new(-database => $1, -primary_id => $2));
+     $annotation->add_Annotation('dblink',Bio::Annotation::DBLink->new(
+              -database =>$db,
+              -primary_id => $id,
+              -comment => "")   );
+        }
+     }
   }
 
-  $FIELDS{DBLINKS} =~ s/^DBLINKS/       /;
-  while($FIELDS{DBLINKS} =~ /\s+(\S+):\s+(\S+)\n/gs){
-	$annotation->add_Annotation('dblink',Bio::Annotation::DBLink->new(-database => $1, -primary_id => $2));
+  if($FIELDS{PATHWAY}) {
+     $FIELDS{PATHWAY} =~ s/^PATHWAY\s+//;
+     while($FIELDS{PATHWAY} =~ /\s*PATH:\s+(.+)$/mg){
+        $annotation->add_Annotation('pathway',
+           Bio::Annotation::Comment->new(-text => "$1"));
+     }
+  }
+
+  if ($FIELDS{CLASS}) {
+      $FIELDS{CLASS} =~ s/^CLASS\s+//;
+      $FIELDS{'CLASS'} =~ s/\n//g;
+      while($FIELDS{CLASS} =~ /(.*?)\[(\S+):(\S+)\]/g){
+          my ($pathway,$db,$id) = ($1,$2,$3);
+          $pathway =~ s/\s+/ /g;
+          $pathway =~ s/\s$//g;
+          $pathway =~ s/^\s+//;
+          $annotation->add_Annotation('pathway',
+                  Bio::Annotation::Comment->new(-text => $pathway));
+
+          $annotation->add_Annotation('dblink',Bio::Annotation::DBLink->new(
+                      -database => $db, -primary_id => $id));
+      }
+  }
+
+  if($FIELDS{DBLINKS}) {
+      $FIELDS{DBLINKS} =~ s/^DBLINKS/       /;
+      while($FIELDS{DBLINKS} =~ /\s+(\S+):\s+(\S+)\n?/gs){ ### modified
+           $annotation->add_Annotation('dblink',Bio::Annotation::DBLink->new(
+                    -database => $1, -primary_id => $2)) if $1;
+      }
   }
 
   $params{'-alphabet'}         = 'dna';
   $params{'-seq'}              = $nt_seq;
   $params{'-display_id'}       = $name;
   $params{'-accession_number'} = $entry_id;
-  $params{'-species'}          = Bio::Species->new(-common_name => $entry_species);
+  $params{'-species'}          = Bio::Species->new(
+											  -common_name => $entry_species);
   $params{'-annotation'}       = $annotation;
 
   $builder->add_slot_value(%params);

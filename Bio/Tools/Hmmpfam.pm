@@ -1,4 +1,5 @@
-#BioPerl module for Bio::Tools::Hmmpfam
+# $Id: Hmmpfam.pm,v 1.8.4.1 2006/10/02 23:10:32 sendu Exp $
+# BioPerl module for Bio::Tools::Hmmpfam
 #
 # Cared for by  Balamurugan Kumarasamy
 #
@@ -8,7 +9,7 @@
 
 =head1 NAME
 
-Bio::Tools::Hmmpfam  
+Bio::Tools::Hmmpfam - Parser for Hmmpfam program
 
 =head1 SYNOPSIS
 
@@ -20,7 +21,7 @@ Bio::Tools::Hmmpfam
 
 =head1 DESCRIPTION
 
- Parser for Hmmpfam  program
+Parser for Hmmpfam  program.  See also L<Bio::SearchIO::hmmer>.
 
 =head1 FEEDBACK
 
@@ -30,17 +31,16 @@ Bio::Tools::Hmmpfam
  Bioperl modules. Send your comments and suggestions preferably to
  the Bioperl mailing list.  Your participation is much appreciated.
 
- bioperl-l@bioperl.org              - General discussion
- http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
- Report bugs to the Bioperl bug tracking system to help us keep track
- of the bugs and their resolution. Bug reports can be submitted via
- email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
- bioperl-bugs@bioperl.org
- http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Balamurugan Kumarasamy
 
@@ -55,14 +55,11 @@ Bio::Tools::Hmmpfam
 =cut
 
 package Bio::Tools::Hmmpfam;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
 use Bio::SeqFeature::FeaturePair;
-use Bio::Root::IO;
 use Bio::SeqFeature::Generic;
-@ISA = qw(Bio::Root::Root Bio::Root::IO );
+use base qw(Bio::Root::Root Bio::Root::IO);
 
 
 
@@ -108,8 +105,10 @@ sub next_result {
          $line = $_;
          chomp $line;
     
-        
-        last if $line=~m/^Alignments of top-scoring domains/;
+        if ( $line=~m/^Alignments of top-scoring domains/ ) {
+          while( my $rest = $self->_readline() ) { last if $rest =~ m!^//! }
+        }
+
         next if ($line=~m/^Model/ || /^\-/ || /^$/);
         
         if ($line=~m/^Query sequence:\s+(\S+)/) {
@@ -121,8 +120,9 @@ sub next_result {
             my %feature;
             
             ($feature{name}) = $self->seqname;
-            $feature{score} = $score;
+            $feature{raw_score} = $score;
             $feature{p_value} = sprintf ("%.3e", $evalue);
+            $feature{score} = $feature{p_value};
             $feature{start} = $start;
             $feature{end} = $end;
             $feature{hname} = $hid;

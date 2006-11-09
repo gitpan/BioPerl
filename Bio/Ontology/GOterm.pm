@@ -1,4 +1,4 @@
-# $Id: GOterm.pm,v 1.17 2003/07/02 22:50:58 lapp Exp $
+# $Id: GOterm.pm,v 1.22.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for Bio::Ontology::GOterm
 #
@@ -23,7 +23,7 @@
 
 =head1 NAME
 
-GOterm - representation of GO terms 
+Bio::Ontology::GOterm - representation of GO terms 
 
 =head1 SYNOPSIS
 
@@ -46,8 +46,8 @@ GOterm - representation of GO terms
 
 =head1 DESCRIPTION
 
-This is "dumb" class for GO terms (it provides no functionality related to graphs).
-Implements Bio::Ontology::TermI.
+This is "dumb" class for GO terms (it provides no functionality 
+related to graphs). Implements Bio::Ontology::TermI.
 
 =head1 FEEDBACK
 
@@ -57,17 +57,15 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bio.perl.org/MailList.html - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -94,15 +92,13 @@ methods.
 # Let the code begin...
 
 package Bio::Ontology::GOterm;
-use vars qw( @ISA );
 use strict;
-use Bio::Ontology::Term;
 
 use constant GOID_DEFAULT => "GO:0000000";
 use constant TRUE         => 1;
 use constant FALSE        => 0;
 
-@ISA = qw( Bio::Ontology::Term );
+use base qw(Bio::Ontology::Term);
 
 
 
@@ -110,11 +106,12 @@ use constant FALSE        => 0;
 =head2 new
 
  Title   : new
- Usage   : $term = Bio::Ontology::GOterm->new( -go_id       => "GO:0016847",
-                                               -name        => "1-aminocyclopropane-1-carboxylate synthase",
-                                               -definition  => "Catalysis of ...",
-                                               -is_obsolete => 0,
-                                               -comment     => "" );                   
+ Usage   : $term = Bio::Ontology::GOterm->new( 
+       -go_id       => "GO:0016847",
+       -name        => "1-aminocyclopropane-1-carboxylate synthase",
+       -definition  => "Catalysis of ...",
+       -is_obsolete => 0,
+       -comment     => "" );                   
  Function: Creates a new Bio::Ontology::GOterm.
  Returns : A new Bio::Ontology::GOterm object.
  Args    : -go_id         => the goid of this GO term [GO:nnnnnnn] 
@@ -168,8 +165,6 @@ sub init {
     #$self->GO_id( GOID_DEFAULT );
   
 } # init
-
-
 
 
 =head2 GO_id
@@ -262,8 +257,6 @@ sub add_secondary_GO_id {
 sub remove_secondary_GO_ids {
     return shift->remove_secondary_ids(@_);
 } # remove_secondary_GO_ids
-
-
 
 
 =head2 to_string

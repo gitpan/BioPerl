@@ -1,4 +1,4 @@
-# $Id: Iteration.pm,v 1.17 2003/10/28 22:17:21 jason Exp $
+# $Id: Iteration.pm,v 1.18.4.1 2006/10/02 23:10:33 sendu Exp $
 # Bioperl module Bio::Tools::BPlite::Iteration
 #	based closely on the Bio::Tools::BPlite modules
 #	Ian Korf (ikorf@sapiens.wustl.edu, http://sapiens.wustl.edu/~ikorf), 
@@ -23,7 +23,7 @@ of a PSIBLAST report
 
    use Bio::Tools::BPpsilite;
 
-   open FH, "t/psiblastreport.out";
+   open my $FH, "t/psiblastreport.out";
    $report = Bio::Tools::BPpsilite->new(-fh=>\*FH);
 
    # determine number of iterations executed by psiblast
@@ -89,12 +89,10 @@ This software is provided "as is" without warranty of any kind.
 package Bio::Tools::BPlite::Iteration;
 
 use strict;
-use vars qw(@ISA);
-use Bio::Root::Root; # root object to inherit from
 use Bio::Tools::BPlite; #
 use Bio::Tools::BPlite::Sbjct;
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 sub new {
     my ($class, @args) = @_;
@@ -179,7 +177,7 @@ sub  oldhits  {shift->{'OLDHITS'}}
 
 sub nextSbjct {
     my ($self) = @_;
-    $self->_fastForward or return undef;
+    $self->_fastForward or return;
 
     #######################
     # get all sbjct lines #
@@ -239,9 +237,9 @@ sub nextSbjct {
 sub Align {
     use Bio::SimpleAlign;
     my ($self) = @_;
-    $self->_fastForward or return undef;
+    $self->_fastForward or return;
     my $lastline = $self->_readline();
-    return undef unless $lastline =~ /^QUERY/; # If psiblast not run correctly
+    return unless $lastline =~ /^QUERY/; # If psiblast not run correctly
     my (%sequence,%first,%last,$num);
 
     if ( $lastline =~ /^QUERY\s+(\d*)\s*([-\w]+)\s*(\d*)\s*$/){

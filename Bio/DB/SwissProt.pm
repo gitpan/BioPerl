@@ -1,5 +1,5 @@
 #
-# $Id: SwissProt.pm,v 1.20 2003/05/15 08:13:54 heikki Exp $
+# $Id: SwissProt.pm,v 1.30.4.1 2006/10/02 23:10:15 sendu Exp $
 #
 # BioPerl module for Bio::DB::SwissProt
 #
@@ -42,18 +42,16 @@ Bio::DB::SwissProt - Database object interface to SwissProt retrieval
 =head1 DESCRIPTION
 
 SwissProt is a curated database of proteins managed by the Swiss
-Bioinformatics Institute.  This is in contrast to EMBL/GenBank/DDBJ
-which are archives of protein information.  Additional tools for
+Bioinformatics Institute. Additional tools for
 parsing and manipulating swissprot files can be found at
 ftp://ftp.ebi.ac.uk/pub/software/swissprot/Swissknife/.
 
 Allows the dynamic retrieval of Sequence objects (Bio::Seq) from the
-SwissProt database via an expasy retrieval.  Perhaps through SRS
-later.
+SwissProt database via an Expasy retrieval.
 
 In order to make changes transparent we have host type (currently only
-expasy) and location (default to switzerland) separated out.  This
-allows the user to pick the closest expasy mirror for running their
+expasy) and location (default to Switzerland) separated out.  This
+allows the user to pick the closest Expasy mirror for running their
 queries.
 
 
@@ -66,17 +64,16 @@ Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -86,8 +83,8 @@ Thanks go to Alexandre Gattiker E<lt>gattiker@isb-sib.chE<gt> of Swiss
 Institute of Bioinformatics for helping point us in the direction of
 the correct expasy scripts and for swissknife references.
 
-Also thanks to Heikki Lehvaslaiho E<lt>heikki@ebi.ac.ukE<gt> for help with
-adding EBI swall server.
+Also thanks to Heikki Lehvaslaiho E<lt>heikki-at-bioperl-dot-orgE<gt> 
+for help with adding EBI swall server.
 
 =head1 APPENDIX
 
@@ -100,13 +97,12 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::DB::SwissProt;
 use strict;
-use vars qw(@ISA $MODVERSION %HOSTS $DEFAULTFORMAT $DEFAULTSERVERTYPE);
+use vars qw($MODVERSION %HOSTS $DEFAULTFORMAT $DEFAULTSERVERTYPE);
 
 $MODVERSION = '0.8.1';
 use HTTP::Request::Common;
-use Bio::DB::WebDBSeqI;
 
-@ISA = qw(Bio::DB::WebDBSeqI);
+use base qw(Bio::DB::WebDBSeqI);
 
 # global vars
 $DEFAULTSERVERTYPE = 'ebi';
@@ -140,7 +136,7 @@ $DEFAULTFORMAT = 'swissprot';
 	       },
 	       'jointype' => ',',
 	       'idvar'    => 'id',
-	       'basevars' => [ 'db'    => 'swall',
+	       'basevars' => [ 'db'    => 'UniProtKB',
 			       'style' => 'raw' ],
 	   }
 	   );
@@ -232,12 +228,15 @@ sub new {
   Args    : $ref : either an array reference, a filename, or a filehandle
             from which to get the list of unique ids/accession numbers.
 
+NOTE: deprecated API.  Use get_Stream_by_id() instead.
+
 =cut
 
-sub get_Stream_by_batch {
-    my ($self, $ids) = @_;
-    return $self->get_Stream_by_id( $ids);
-}
+*get_Stream_by_batch = sub { 
+   my $self = shift;
+   $self->deprecated('get_Stream_by_batch() is deprecated; use get_Stream_by_id() instead');
+   $self->get_Stream_by_id(@_) 
+};
 
 =head2 Implemented Routines from Bio::DB::WebDBSeqI interface
 
@@ -409,10 +408,11 @@ sub location_url {
  Usage   : my ($req_format, $ioformat) = $self->request_format;
            $self->request_format("genbank");
            $self->request_format("fasta");
- Function: Get/Set sequence format retrieval. The get-form will normally not
-           be used outside of this and derived modules.
+ Function: Get/Set sequence format retrieval. The get-form will normally
+           not be used outside of this and derived modules.
  Returns : Array of two strings, the first representing the format for
-           retrieval, and the second specifying the corresponding SeqIO format.
+           retrieval, and the second specifying the corresponding SeqIO 
+           format.
  Args    : $format = sequence format
 
 =cut
@@ -444,4 +444,5 @@ sub request_format {
 }
 
 1;
+
 __END__

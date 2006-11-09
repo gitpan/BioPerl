@@ -1,4 +1,4 @@
-# $Id: ExonI.pm,v 1.7 2003/04/21 15:00:46 jason Exp $
+# $Id: ExonI.pm,v 1.11.4.1 2006/10/02 23:10:28 sendu Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::ExonI
 #
@@ -33,23 +33,20 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
 Email hlapp@gmx.net
-
-Describe contact details here
 
 =head1 APPENDIX
 
@@ -63,11 +60,9 @@ Internal methods are usually preceded with a _
 
 
 package Bio::SeqFeature::Gene::ExonI;
-use vars qw(@ISA);
 use strict;
-use Bio::SeqFeatureI;
 
-@ISA = qw(Bio::SeqFeatureI);
+use base qw(Bio::SeqFeatureI);
 
 
 =head2 is_coding

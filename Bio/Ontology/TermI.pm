@@ -1,4 +1,4 @@
-# $Id: TermI.pm,v 1.11 2003/05/27 22:13:41 lapp Exp $
+# $Id: TermI.pm,v 1.17.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for Bio::Ontology::Term
 #
@@ -20,10 +20,9 @@
 
 # POD documentation - main docs before the code
 
-
 =head1 NAME
 
-TermI - interface for ontology terms
+Bio::Ontology::TermI - interface for ontology terms
 
 =head1 SYNOPSIS
 
@@ -53,17 +52,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bio.perl.org/MailList.html - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via
+the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -90,11 +88,9 @@ methods.
 # Let the code begin...
 
 package Bio::Ontology::TermI;
-use vars qw( @ISA );
 use strict;
-use Bio::Root::RootI;
 
-@ISA = qw( Bio::Root::RootI );
+use base qw(Bio::Root::RootI);
 
 
 
@@ -172,10 +168,12 @@ sub definition {
            take special precaution in order not to create cyclical
            references in memory.
 
- Returns : The ontology of this Term as a L<Bio::Ontology::OntologyI>
+ Returns : The ontology of this Term as a Bio::Ontology::OntologyI
            implementing object.
- Args    : On set, the  ontology of this Term as a L<Bio::Ontology::OntologyI>
+ Args    : On set, the  ontology of this Term as a Bio::Ontology::OntologyI
            implementing object or a string representing its name.
+
+See L<Bio::Ontology::OntologyI>.
 
 =cut
 
@@ -304,5 +302,51 @@ sub get_secondary_ids {
     shift->throw_not_implemented();
 } # get_secondary_ids
 
+
+=head1  Deprecated methods
+
+Used for looking up the methods that supercedes them.
+
+=cut
+
+=head2 category
+
+ Title   : category
+ Usage   :
+ Function: This method is deprecated. Use ontology() instead. We provide
+           an implementation here that preserves backwards compatibility,
+           but if you do not have legacy code using it you should not be
+           calling this method.
+ Example :
+ Returns :
+ Args    :
+
+=cut
+
+sub category {
+    my $self = shift;
+
+    $self->warn("TermI::category is deprecated and being phased out. ".
+		"Use TermI::ontology instead.");
+
+    # called in set mode?
+    if(@_) {
+	# yes; what is incompatible with ontology() is if we were given
+	# a TermI object
+	my $arg = shift;
+	$arg = $arg->name() if ref($arg) && $arg->isa("Bio::Ontology::TermI");
+	return $self->ontology($arg,@_);
+    } else {
+	# No, called in get mode. This is always incompatible with ontology()
+	# since category is supposed to return a TermI.
+	my $ont = $self->ontology();
+	my $term;
+	if(defined($ont)) {
+	    $term = Bio::Ontology::Term->new(-name => $ont->name(),
+					     -identifier =>$ont->identifier());
+	}
+	return $term;
+    }
+} # category
 
 1;

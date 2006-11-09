@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: EMBL_DB.t,v 1.12 2002/12/02 15:38:31 jason Exp $
+# $Id: EMBL_DB.t,v 1.16 2006/06/29 15:20:44 sendu Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -25,7 +25,8 @@ BEGIN {
 
     $NUMTESTS = 15;
     plan tests => $NUMTESTS;
-    eval { require 'IO/String.pm' };
+    eval { require IO::String;
+			  require HTTP::Request::Common;   };
     if( $@ ) {
 	for( $Test::ntest..$NUMTESTS ) {
 	    skip("IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping tests",1);
@@ -33,6 +34,7 @@ BEGIN {
        $error = 1; 
     }
 }
+
 END { 
     foreach ( $Test::ntest..$NUMTESTS) {
 	skip('unable to run all of the Biblio_biofetch tests',1);
@@ -64,7 +66,7 @@ eval {
     ok( $seq->length, 408); 
     ok defined ($db->request_format('fasta'));
     ok(defined($seq = $db->get_Seq_by_acc('J02231')));
-    ok( $seq->id, qr/embl.+BUM/);
+    ok( $seq->id, 'embl|J02231|J02231');
     ok( $seq->length, 200); 
     ok( defined($db = new Bio::DB::EMBL(-verbose=>$verbose, 
 					-retrievaltype => 'tempfile')));
@@ -92,9 +94,15 @@ eval {
 			    -format => 'fasta'
 			    ); 
     ok( defined($seqio = $db->get_Stream_by_acc(['J00522 AF303112 J02231'])));
-    ok($seqio->next_seq->length, 408);
-    ok($seqio->next_seq->length, 1611);
-    ok($seqio->next_seq->length, 200);
+    my %seqs;
+    # don't assume anything about the order of the sequences
+    while ( my $s = $seqio->next_seq ) {
+	my ($type,$x,$name) = split(/\|/,$s->display_id);
+	$seqs{$x} = $s->length;
+    }
+    ok($seqs{'J00522'},408);
+    ok($seqs{'AF303112'},1611);
+    ok($seqs{'J02231'},200);
 };
 
 if ($@) {

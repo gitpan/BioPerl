@@ -1,4 +1,4 @@
-# $Id: BookArticle.pm,v 1.8 2003/05/30 15:33:00 jason Exp $
+# $Id: BookArticle.pm,v 1.13.4.3 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::Biblio::BookArticle
 #
@@ -14,7 +14,7 @@ Bio::Biblio::BookArticle - Representation of a book article
 =head1 SYNOPSIS
 
     $obj = new Bio::Biblio::BookArticle (-identifier => '123abc',
-					 -book => new Bio::Biblio::Book);
+                                         -book => new Bio::Biblio::Book);
   #--- OR ---
 
     $obj = new Bio::Biblio::BookArticle;
@@ -25,7 +25,7 @@ Bio::Biblio::BookArticle - Representation of a book article
 
 A storage object for a book article.
 See its place in the class hierarchy in
-http://industry.ebi.ac.uk/openBQS/images/bibobjects_perl.gif
+http://www.ebi.ac.uk/~senger/openbqs/images/bibobjects_perl.gif
 
 =head2 Attributes
 
@@ -40,11 +40,11 @@ The following attributes are specific to this class
 
 =item *
 
-OpenBQS home page: http://industry.ebi.ac.uk/openBQS
+OpenBQS home page: http://www.ebi.ac.uk/~senger/openbqs/
 
 =item *
 
-Comments to the Perl client: http://industry.ebi.ac.uk/openBQS/Client_perl.html
+Comments to the Perl client: http://www.ebi.ac.uk/~senger/openbqs/Client_perl.html
 
 =back
 
@@ -56,21 +56,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS
 
-Heikki Lehvaslaiho (heikki@ebi.ac.uk),
+Heikki Lehvaslaiho (heikki-at-bioperl-dot-org),
 Martin Senger (senger@ebi.ac.uk)
 
 =head1 COPYRIGHT
@@ -92,11 +91,9 @@ This software is provided "as is" without warranty of any kind.
 
 package Bio::Biblio::BookArticle;
 use strict;
-use vars qw(@ISA);
 
-use Bio::Biblio::Article;
 
-@ISA = qw(Bio::Biblio::Article);
+use base qw(Bio::Biblio::Article);
 
 #
 # a closure with a list of allowed attribute names (these names

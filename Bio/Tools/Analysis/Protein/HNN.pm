@@ -11,7 +11,7 @@
 
 =head1 NAME
 
-Bio::Tools::Analysis::Protein::HNN - a wrapper around HNN protein
+Bio::Tools::Analysis::Protein::HNN - a wrapper around the HNN protein
 secondary structure prediction server
 
 =head1  SYNOPSIS
@@ -44,19 +44,19 @@ creates a new object
 submits the query to the server and obtains raw text output.
 
 Given an amino acid sequence the results can be obtained in 4 formats,
-determined by the argument to the result method
+determined by the argument to the result method:
 
 =over 4
 
 =item 1
 
-The raw text of the program output	
+The raw text of the program output.
 
   my $rawdata = $analysis_object->result;				
 
 =item 2
 
-An reference to an array of hashes of scores for each state and the
+A reference to an array of hashes of scores for each state and the
 assigned state.
 
   my $data_ref = $analysis_object->result('parsed');					
@@ -83,15 +83,16 @@ This is a Bio::Seq object that can also hold data about each residue
 in the sequence In this case, the sequence can be associated with a
 single array of HNN prediction scores.  e.g.,
 
-  my $meta_sequence = $analysis_object->result('meta');					
+  my $meta_sequence = $analysis_object->result('meta');
+
   print "helix scores from residues 10-20 are ",
-      $meta_sequence->named_submeta_text("HNN_helix",10,20), "\n";			
+      $meta_sequence->named_submeta_text("HNN_helix",10,20), "\n";
 
 Meta sequence default names are : HNN_helix, HNN_sheet, HNN_coil,
 HNN_struc, representing the scores for each residue.
 
 Many methods common to all analyses are inherited from
-Bio::Tools::Analysis::SimpleAnalysisBase.
+L<Bio::Tools::Analysis::SimpleAnalysisBase>.
 
 =back
 
@@ -110,17 +111,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                       - General discussion
-  http://bio.perl.org/MailList.html           - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS
 
@@ -137,17 +137,15 @@ methods. Internal methods are usually preceded with a _
 use strict;
 
 package Bio::Tools::Analysis::Protein::HNN;
-use vars qw(@ISA );
 
 use IO::String;
 use Bio::SeqIO;
 use HTTP::Request::Common qw (POST);
 use Bio::SeqFeature::Generic;
-use Bio::Tools::Analysis::SimpleAnalysisBase;
 use Bio::Seq::Meta::Array;
 
 
-@ISA = qw(Bio::Tools::Analysis::SimpleAnalysisBase);
+use base qw(Bio::Tools::Analysis::SimpleAnalysisBase);
 
 #extends array for 2struc.
 
@@ -225,14 +223,14 @@ argument:
 
 =item undef
 
-Returns the raw ASCII data stream but without HTML tags
+Returns the raw ASCII data stream but without HTML tags.
 
 =item 'Bio::SeqFeatureI'
 
 The argument string defines the type of bioperl objects returned in an
 array.  The objects are L<Bio::SeqFeature::Generic>.  Feature primary
 tag is "2ary".  Feature tags are "type" (which can be helix, sheet or
-coil) "method" (HNN)
+coil) "method" (HNN).
 
 =item 'parsed'
 

@@ -1,4 +1,4 @@
-# $Id: maf.pm,v 1.4 2003/11/15 13:05:58 heikki Exp $
+# $Id: maf.pm,v 1.10.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::AlignIO::maf
 #
@@ -51,11 +51,10 @@ Spec of MAF format is here:
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS - Allen Day
 
@@ -71,15 +70,14 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::AlignIO::maf;
-use vars qw(@ISA $seen_header);
+use vars qw($seen_header);
 use strict;
 
 use Bio::SimpleAlign;
-use Bio::AlignIO;
 
 $seen_header = 0;
 
-@ISA = qw(Bio::AlignIO);
+use base qw(Bio::AlignIO);
 
 =head2 new
 
@@ -114,50 +112,52 @@ sub _initialize {
 =cut
 
 sub next_aln {
-  my $self = shift;
+    my $self = shift;
 
-  if(!$seen_header){
+    if(!$seen_header){
 	my $line = $self->_readline;
 	$self->throw("This doesn't look like a MAF file.  First line should start with ##maf, but it was: ".$line)
-	  unless $line =~ /^##maf/;
+	    unless $line =~ /^##maf/;
 	$seen_header = 1;
-  }
+    }
 
-  my $aln =  Bio::SimpleAlign->new(-source => 'maf');
+    my $aln =  Bio::SimpleAlign->new(-source => 'maf');
 
-  my($aline, @slines);
-  while(my $line = $self->_readline()){
+    my($aline, @slines);
+    while(my $line = $self->_readline()){
 	$aline = $line if $line =~ /^a/;
 	push @slines, $line if $line =~ /^s /;
 	last if $line !~ /\S/;
 
-  }
+    }
 
-  return undef unless $aline;
+    return unless $aline;
 
-  my($kvs) = $aline =~ /^a\s+(.+)$/;
-  my @kvs  = split /\s+/, $kvs if $kvs;
-  my %kv;
-  foreach my $kv (@kvs){
-    my($k,$v) = $kv =~ /(.+)=(.+)/;
-    $kv{$k} = $v;
-  }
+    my($kvs) = $aline =~ /^a\s+(.+)$/;
+    my @kvs  = split /\s+/, $kvs if $kvs;
+    my %kv;
+    foreach my $kv (@kvs){
+	my($k,$v) = $kv =~ /(.+)=(.+)/;
+	$kv{$k} = $v;
+    }
 
-  $aln->score($kv{score});
+    $aln->score($kv{score});
 
-  foreach my $sline (@slines){
+    foreach my $sline (@slines){
 	my($s,$src,$start,$size,$strand,$srcsize,$text) =
-	  split /\s+/, $sline;
-
-	my $seq = new Bio::LocatableSeq('-seq'   => $text,
-									'-id'    => $src,
-									'-start' => $start,
-									'-end'   => $start + $size,
-								   );
+	    split /\s+/, $sline;
+	# adjust coordinates to be one-based inclusive
+        $start = $start + 1;
+	my $seq = new Bio::LocatableSeq('-seq'    => $text,
+					'-id'     => $src,
+					'-start'  => $start,
+					'-end'    => $start + $size - 1,
+					'-strand' => $strand,
+					);
 	$aln->add_seq($seq);
-  }
+    }
 
-  return $aln;
+    return $aln;
 }
 
 sub write_aln {

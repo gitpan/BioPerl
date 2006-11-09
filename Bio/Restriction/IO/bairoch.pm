@@ -1,4 +1,4 @@
-# $Id: bairoch.pm,v 1.1 2003/12/15 02:57:22 redwards Exp $
+# $Id: bairoch.pm,v 1.8.4.1 2006/10/02 23:10:23 sendu Exp $
 # BioPerl module for Bio::Restriction::IO::withrefm
 #
 # Cared for by Rob Edwards <redwards@utmem.edu>
@@ -34,17 +34,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                    - General discussion
-  http://bio.perl.org/MailList.html        - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -52,7 +51,7 @@ Rob Edwards, redwards@utmem.edu
 
 =head1 CONTRIBUTORS
 
-Heikki Lehvaslaiho, heikki@ebi.ac.uk
+Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -65,11 +64,9 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Restriction::IO::bairoch;
 
-use vars qw(@ISA %WITH_REFM_FIELD);
+use vars qw(%WITH_REFM_FIELD);
 use strict;
 
-#use Bio::Restriction::IO;
-use Bio::Restriction::IO::base;
 use Bio::Restriction::Enzyme;
 use Bio::Restriction::Enzyme::MultiCut;
 use Bio::Restriction::Enzyme::MultiSite;
@@ -77,7 +74,7 @@ use Bio::Restriction::EnzymeCollection;
 
 use Data::Dumper;
 
-@ISA = qw(Bio::Restriction::IO::base);
+use base qw(Bio::Restriction::IO::base);
 
 
 sub new {
@@ -112,7 +109,7 @@ sub _initialize {
 sub read {
     my $self = shift;
 
-    my $renzs = new Bio::Restriction::EnzymeCollection(-empty => 1);
+    my $renzs = Bio::Restriction::EnzymeCollection->new(-empty => 1);
 
     local $/ = '//';
     while (defined(my $entry=$self->_readline()) ) {
@@ -126,52 +123,46 @@ sub read {
         next unless ($name && $site);
        
         # the standard sequence format for these guys is:
-	# GATC, 2;
-	# or, for enzymes that cut more than once
-	# GATC, 2; GTAC, 2; 
+        # GATC, 2;
+        # or, for enzymes that cut more than once
+        # GATC, 2; GTAC, 2; 
 
         # there are a couple of sequences that have multiple
         # recognition sites. 
 
-
         my @sequences;
         if ($site =~ /\;/) {
             @sequences = split /\;/, $site;
+            $self->debug(@sequences,"\n");
             $site=shift @sequences;
         }
         
-	my ($seq, $cut)=split /,\s+/, $site;
-	print STDERR "SITE: |$site| GAVE: |$seq| and |$cut|\n";
-	if ($seq eq '?') {
-	   $self->warn("$name: no site. Skipping") if $self->verbose > 1;
-	   next;
-	}
-	
-        # this is mainly an error check to make sure that I am adding what I think I am!	
-	if ($seq !~ /[NGATC]/i) {
-	  $self->throw("Sequence $name has weird sequence: |$seq|");
-	}
-	my $re;
-	if ($cut eq "?") {
-          $re = new Bio::Restriction::Enzyme(-name=>$name, -seq => $seq);
-	}
-	else {
-           if ($cut !~ /^-?\d+$/) {
-	     $self->throw("Cut site from $name is weird: |$cut|\n");
-           }
-	
-           $re = new Bio::Restriction::Enzyme(-name=>$name,
-                                              -cut => $cut,
-                                              -seq => $seq
-                                              );
-	}
+        my ($seq, $cut)=split /,\s+/, $site;
+        $self->debug("SITE: |$site| GAVE: |$seq| and |$cut|\n");
+        if ($seq eq '?') {
+           $self->warn("$name: no site. Skipping") if $self->verbose > 1;
+           next;
+        }
+        
+            # this is mainly an error check to make sure that I am adding what I think I am!	
+        if ($seq !~ /[NGATC]/i) {
+          $self->throw("Sequence $name has weird sequence: |$seq|");
+        }
+        my $re;
+        if ($cut eq "?") {
+              $re = Bio::Restriction::Enzyme->new(-name=>$name, -seq => $seq);
+        }
+        else {
+               if ($cut !~ /^-?\d+$/) {
+             $self->throw("Cut site from $name is weird: |$cut|\n");
+               }
+        
+               $re = Bio::Restriction::Enzyme->new(-name=>$name,
+                                                  -cut => $cut,
+                                                  -seq => $seq
+                                                  );
+        }
         $renzs->enzymes($re);
-
-        #
-        # create special types of Enzymes
-        #
-        $self->_make_multisites($renzs, $re, \@sequences, \@meths) if @sequences;
-
 
         #
         # prototype / isoschizomers
@@ -234,7 +225,12 @@ sub read {
         #my ($refs) = $entry =~ /<8>(.+)/s;
         #$re->references(map {split /\n+/} $refs) if $refs;
 
-
+        #
+        # create special types of Enzymes
+        #
+        $self->warn("Current issues with multisite enzymes using bairoch format\n".
+                    "Recommend using itype2 or withrefm formats for now") if @sequences;
+        #$self->_make_multisites($renzs, $re, \@sequences, \@meths) if @sequences;
 
     }
 

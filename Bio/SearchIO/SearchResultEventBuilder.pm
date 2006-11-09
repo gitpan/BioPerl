@@ -1,4 +1,4 @@
-# $Id: SearchResultEventBuilder.pm,v 1.33 2003/06/10 17:52:44 jason Exp $
+# $Id: SearchResultEventBuilder.pm,v 1.41.4.2 2006/10/02 23:10:26 sendu Exp $
 #
 # BioPerl module for Bio::SearchIO::SearchResultEventBuilder
 #
@@ -32,25 +32,24 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
+Email jason-at-bioperl.org
 
 =head1 CONTRIBUTORS
 
-Additional contributors names and emails here
+Sendu Bala, bix@sendu.me.uk
 
 =head1 APPENDIX
 
@@ -64,14 +63,12 @@ Internal methods are usually preceded with a _
 
 
 package Bio::SearchIO::SearchResultEventBuilder;
-use vars qw(@ISA %KNOWNEVENTS);
+use vars qw(%KNOWNEVENTS);
 use strict;
 
-use Bio::Root::Root;
-use Bio::SearchIO::EventHandlerI;
 use Bio::Factory::ObjectFactory;
 
-@ISA = qw(Bio::Root::Root Bio::SearchIO::EventHandlerI);
+use base qw(Bio::Root::Root Bio::SearchIO::EventHandlerI);
 
 =head2 new
 
@@ -149,6 +146,7 @@ sub start_result {
    $self->{'_resulttype'} = $type;
    $self->{'_hits'} = [];   
    $self->{'_hsps'} = [];
+   $self->{'_hitcount'} = 0;
    return;
 }
 
@@ -174,7 +172,9 @@ sub end_result {
         if( $data->{'runid'} !~ /^lcl\|/) { 
             $data->{"RESULT-query_name"}= $data->{'runid'};
         } else { 
-            ($data->{"RESULT-query_name"},$data->{"RESULT-query_description"}) = split(/\s+/,$data->{"RESULT-query_description"},2);
+            ($data->{"RESULT-query_name"},
+	     $data->{"RESULT-query_description"}) = 
+		 split(/\s+/,$data->{"RESULT-query_description"},2);
         }
         
         if( my @a = split(/\|/,$data->{'RESULT-query_name'}) ) {
@@ -192,6 +192,7 @@ sub end_result {
                                $data->{'RESULT-algorithm_name'} || $type);
     $args{'-hits'}      =  $self->{'_hits'};
     my $result = $self->factory('result')->create_object(%args);
+    $result->hit_factory($self->factory('hit'));
     $self->{'_hits'} = [];
     return $result;
 }
@@ -225,6 +226,27 @@ sub start_hsp {
 
 sub end_hsp {
     my ($self,$type,$data) = @_;
+
+    if( defined $data->{'runid'} &&
+        $data->{'runid'} !~ /^\s+$/ ) {        
+
+        if( $data->{'runid'} !~ /^lcl\|/) { 
+            $data->{"RESULT-query_name"}= $data->{'runid'};
+        } else { 
+            ($data->{"RESULT-query_name"},
+	     $data->{"RESULT-query_description"}) = 
+		 split(/\s+/,$data->{"RESULT-query_description"},2);
+        }
+        
+        if( my @a = split(/\|/,$data->{'RESULT-query_name'}) ) {
+            my $acc = pop @a ; # this is for accession |1234|gb|AAABB1.1|AAABB1
+            # this is for |123|gb|ABC1.1|
+            $acc = pop @a if( ! defined $acc || $acc =~ /^\s+$/);
+            $data->{"RESULT-query_accession"}= $acc;
+        }
+        delete $data->{'runid'};
+    }
+
     # this code is to deal with the fact that Blast XML data
     # always has start < end and one has to infer strandedness
     # from the frame which is a problem for the Search::HSP object
@@ -257,8 +279,11 @@ sub end_hsp {
     $data->{'HSP-query_frame'} ||= 0;
     $data->{'HSP-hit_frame'} ||= 0;
     # handle Blast 2.1.2 which did not support data member: hsp_align-len
+    $data->{'HSP-query_length'} ||= $data->{'RESULT-query_length'};
     $data->{'HSP-query_length'} ||= length ($data->{'HSP-query_seq'} || '');
+    $data->{'HSP-hit_length'}   ||= $data->{'HIT-length'};
     $data->{'HSP-hit_length'}   ||= length ($data->{'HSP-hit_seq'} || '');
+    
     $data->{'HSP-hsp_length'}   ||= length ($data->{'HSP-homology_seq'} || '');
     
     my %args = map { my $v = $data->{$_}; s/HSP//; ($_ => $v) } 
@@ -271,9 +296,14 @@ sub end_hsp {
     $args{'-hit_name'} = $data->{'HIT-name'};
     my ($rank) = scalar @{$self->{'_hsps'} || []} + 1;
     $args{'-rank'} = $rank;
-
-    my $hsp = $self->factory('hsp')->create_object(%args);
+    
+    $args{'-hit_desc'} = $data->{'HIT-description'};
+    $args{'-query_desc'} = $data->{'RESULT-query_description'};
+    
+    my $bits = $args{'-bits'};
+    my $hsp = \%args;
     push @{$self->{'_hsps'}}, $hsp;
+    
     return $hsp;
 }
 
@@ -321,15 +351,15 @@ sub end_hit{
                                $data->{'RESULT-algorithm_name'} || $type);
     $args{'-hsps'}      = $self->{'_hsps'};
     $args{'-query_len'} =  $data->{'RESULT-query_length'};
-    my ($hitrank) = scalar @{$self->{'_hits'} || []} + 1;
-    $args{'-rank'} = $hitrank;
+    $args{'-rank'}      = $self->{'_hitcount'} + 1;
     unless( defined $args{'-significance'} ) {
 	if( defined $args{'-hsps'} && 
 	    $args{'-hsps'}->[0] ) {
-	    $args{'-significance'} = $args{'-hsps'}->[0]->evalue;
+	    $args{'-significance'} = $args{'-hsps'}->[0]->{'-evalue'};
 	}
     }
-    my $hit = $self->factory('hit')->create_object(%args);
+    my $hit = \%args;
+    $hit->{'-hsp_factory'} = $self->factory('hsp');
     $self->_add_hit($hit);
     $self->{'_hsps'} = [];
     return $hit;
@@ -339,6 +369,7 @@ sub end_hit{
 sub _add_hit {
     my ($self, $hit) = @_;
     push @{$self->{'_hits'}}, $hit;
+    $self->{'_hitcount'} = scalar @{$self->{'_hits'}};
 }
 
 =head2 Factory methods

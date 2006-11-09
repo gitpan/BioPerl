@@ -1,9 +1,9 @@
-# $Id: pfam.pm,v 1.10 2002/10/22 07:38:26 lapp Exp $
+# $Id: pfam.pm,v 1.12.4.3 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::AlignIO::pfam
 
-#	based on the Bio::SeqIO:: modules
-#       by Ewan Birney <birney@sanger.ac.uk>
+#   based on the Bio::SeqIO:: modules
+#       by Ewan Birney <birney@ebi.ac.uk>
 #       and Lincoln Stein  <lstein@cshl.org>
 #
 #       and the SimpleAlign.pm module of Ewan Birney
@@ -33,11 +33,10 @@ file databases.
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS - Peter Schattner
 
@@ -54,12 +53,10 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::AlignIO::pfam;
-use vars qw(@ISA);
 use strict;
 
-use Bio::AlignIO;
 use Bio::SimpleAlign;
-@ISA = qw(Bio::AlignIO);
+use base qw(Bio::AlignIO);
 
 =head2 next_aln
 
@@ -86,8 +83,8 @@ sub next_aln {
 
     while( $entry = $self->_readline) {
 	chomp $entry;
-	$entry =~ /^\/\// && last;
-	if($entry !~ /^(\S+)\/(\d+)-(\d+)\s+(\S+)\s*/ ) {
+	$entry =~ m{^//} && last;
+	if($entry !~ m{^(\S+)/(\d+)-(\d+)\s+(\S+)\s*} ) {
 	    $self->throw("Found a bad line [$_] in the pfam format alignment");
 	    next;
 	}
@@ -105,7 +102,7 @@ sub next_aln {
 			    );
 
 	$aln->add_seq($add);
-	
+
     }
 
 #  If $end <= 0, we have either reached the end of
@@ -133,14 +130,14 @@ sub write_aln {
    my ($self,@aln) = @_;
    if( @aln > 1 ) { $self->warn("Only the 1st pfam alignment will be output since the format does not support multiple alignments in the same file"); }
    my $aln = shift @aln;
-   if( ! $aln || ! $aln->isa('Bio::Align::AlignI')  ) { 
+   if( ! $aln || ! $aln->isa('Bio::Align::AlignI')  ) {
        $self->warn("Must provide a Bio::Align::AlignI object when calling write_aln");
        next;
    }
    my ($namestr,$seq,$add);
    my ($maxn);
    $maxn = $aln->maxdisplayname_length();
-   
+
    foreach $seq ( $aln->each_seq() ) {
        $namestr = $aln->displayname($seq->get_nse());
        $add = $maxn - length($namestr) + 2;

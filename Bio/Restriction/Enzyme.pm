@@ -1,4 +1,4 @@
-# $Id: Enzyme.pm,v 1.8 2003/12/15 11:50:38 heikki Exp $
+# $Id: Enzyme.pm,v 1.16.4.1 2006/10/02 23:10:23 sendu Exp $
 #------------------------------------------------------------------
 #
 # BioPerl module Bio::Restriction::Enzyme
@@ -211,17 +211,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation is much appreciated.
 
-   bioperl-l@bioperl.org              - General discussion
-   http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution. Bug reports can be submitted via email
-or the web:
+the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-    bioperl-bugs@bio.perl.org
-    http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -229,7 +228,7 @@ Rob Edwards, redwards@utmem.edu
 
 =head1 CONTRIBUTORS
 
-Heikki Lehvaslaiho, heikki@ebi.ac.uk
+Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 Peter Blaiklock, pblaiklo@restrictionmapper.org
 
 =head1 COPYRIGHT
@@ -257,14 +256,12 @@ purposes only.
 package Bio::Restriction::Enzyme;
 use strict;
 
-use Bio::Root::Root;
 use Bio::PrimarySeq;
-use Bio::Restriction::EnzymeI;
 
 use Data::Dumper;
 
-use vars qw (@ISA %TYPE );
-@ISA = qw(Bio::Root::Root Bio::Restriction::EnzymeI);
+use vars qw (%TYPE);
+use base qw(Bio::Root::Root Bio::Restriction::EnzymeI);
 
 BEGIN {
     my %TYPE = (I => 1, II => 1, III => 1);
@@ -815,8 +812,6 @@ sub cutter {
     return $cutter;
 }
 
-=cut
-
 
 =head2 is_palindromic
 
@@ -1106,7 +1101,14 @@ REBASE
 sub isoschizomers {
     my ($self) = shift;
     push @{$self->{_isoschizomers}}, @_ if @_;
-    return @{$self->{_isoschizomers}};
+          # make sure that you don't dereference if null
+          # chad believes quite strongly that you should return
+          # a reference to an array anyway. don't bother dereferencing.
+          # i'll post that to the list.
+     if ($self->{'_isoschizomers'}) {
+         return @{$self->{_isoschizomers}};
+     }
+     
 }
 
 
@@ -1246,7 +1248,9 @@ Added for compatibility to REBASE
 sub vendors {
     my $self = shift;
     push @{$self->{_vendors}}, @_ if @_;
-    return @{$self->{'_vendors'}};
+    if ($self->{'_vendors'}) {
+         return @{$self->{'_vendors'}};
+    }
 }
 
 

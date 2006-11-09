@@ -1,4 +1,4 @@
-# $Id: Storable.pm,v 1.3 2003/09/08 12:17:13 heikki Exp $
+# $Id: Storable.pm,v 1.7.4.1 2006/10/02 23:10:23 sendu Exp $
 #
 # BioPerl module for Bio::Root::Storable
 #
@@ -65,11 +65,10 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution. Bug reports can be submitted via email
-or the web:
+the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Will Spooner
 
@@ -90,13 +89,11 @@ package Bio::Root::Storable;
 use strict;
 use Data::Dumper qw( Dumper );
 
-use vars qw(@ISA);
 
-use Bio::Root::Root;
 use Bio::Root::IO;
 
 use vars qw( $BINARY );
-@ISA = qw( Bio::Root::Root );
+use base qw(Bio::Root::Root);
 
 BEGIN{
   if( eval "require Storable" ){
@@ -353,8 +350,8 @@ sub store{
   my $statefile = $self->statefile;
   my $store_obj = $self->serialise;
   my $io = Bio::Root::IO->new( ">$statefile" );
-  $io->_print( $self->_freeze( $store_obj ) );
-  $self->debug( "STORING $store_obj to $statefile\n" );
+  $io->_print( $store_obj );
+  $self->debug( "STORING $self to $statefile\n" );
   return $statefile;
 }
 
@@ -433,7 +430,7 @@ sub serialise{
     else{ $store_obj->{$key} = $value }
   }
   $store_obj->retrievable(0); # Once deserialised, obj not retrievable
-  return $store_obj;
+  return $self->_freeze( $store_obj );
 }
 
 
@@ -472,7 +469,7 @@ sub retrieve{
   }
   my $io = Bio::Root::IO->new( $statefile );
   local $/ = undef();
-  my $state_str = $io->_readline;
+  my $state_str = $io->_readline('-raw'=>1);
 
   # Dynamic-load modules required by stored object
   my $stored_obj;
@@ -481,10 +478,10 @@ sub retrieve{
     eval{ $stored_obj = $self->_thaw( $state_str ) };
     if( ! $@ ){ $success=1; last }
     my $package;
-    if( $@ =~ /Cannot restore overloading/i ){
-      my $postmatch = $';
+    if( $@ =~ /Cannot restore overloading(.*)/i ){
+      my $postmatch = $1; #'
       if( $postmatch =~ /\(package +([\w\:]+)\)/ ) {
-	$package = $1;
+        $package = $1;
       }
     }
     if( $package ){
@@ -599,7 +596,7 @@ sub _thaw {
     my $code; 
     $code = eval( $data ) ;
     if($@) {
-      die( "eval: $@" );
+      $self->throw( "eval: $@" );
     }   
     ref( $code ) eq 'REF' || 
       $self->throw( "Serialised string was not a scalar ref" );

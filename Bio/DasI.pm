@@ -1,4 +1,4 @@
-# $Id: DasI.pm,v 1.15 2002/11/11 18:16:29 lapp Exp $
+# $Id: DasI.pm,v 1.18.4.4 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::DasI
 #
@@ -77,16 +77,14 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bio.perl.org
+  bioperl-l@bioperl.org
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Lincoln Stein
 
@@ -105,12 +103,9 @@ methods. Internal methods are usually preceded with a _
 package Bio::DasI;
 use strict;
 
-use vars qw(@ISA);
-use Bio::Root::RootI;
 use Bio::Das::SegmentI;
-use Bio::SeqFeature::CollectionI;
 # Object preamble - inherits from Bio::Root::Root;
-@ISA = qw(Bio::Root::RootI Bio::SeqFeature::CollectionI);
+use base qw(Bio::Root::RootI Bio::SeqFeature::CollectionI);
 
 =head2 new
 
@@ -166,6 +161,32 @@ feature appears in the database.
 =cut
 
 sub types {  shift->throw_not_implemented; }
+
+=head2 parse_types
+
+ Title   : parse_types
+ Usage   : $db->parse_types(@args)
+ Function: parses list of types
+ Returns : an array ref containing ['method','source'] pairs
+ Args    : a list of types in 'method:source' form
+ Status  : internal
+
+This method takes an array of type names in the format "method:source"
+and returns an array reference of ['method','source'] pairs.  It will
+also accept a single argument consisting of an array reference with
+the list of type names.
+
+=cut
+
+# turn feature types in the format "method:source" into a list of [method,source] refs
+sub parse_types {
+  my $self  = shift;
+  return []   if !@_ or !defined($_[0]);
+  return $_[0] if ref $_[0] eq 'ARRAY' && ref $_[0][0];
+  my @types = ref($_[0]) ? @{$_[0]} : @_;
+  my @type_list = map { [split(':',$_,2)] } @types;
+  return \@type_list;
+}
 
 =head2 segment
 

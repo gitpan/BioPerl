@@ -1,11 +1,13 @@
 package Bio::Graphics::Glyph;
-#use GD;
+
+# $Id: Glyph.pm,v 1.113.4.5 2006/11/01 21:25:44 lstein Exp $
 
 use strict;
-use Carp 'croak';
+use Carp 'croak','cluck';
 use constant BUMP_SPACING => 2; # vertical distance between bumped glyphs
 use Bio::Root::Version;
-use Bio::Root::Root;
+
+use base qw(Bio::Root::Root);
 
 my %LAYOUT_COUNT;
 
@@ -15,6 +17,7 @@ use constant CM1 => 200; # big bin, x axis
 use constant CM2 => 50;  # big bin, y axis
 use constant CM3 => 50;  # small bin, x axis
 use constant CM4 => 50;  # small bin, y axis
+use constant DEBUG => 0;
 
 use constant QUILL_INTERVAL => 8;  # number of pixels between Jim Kent style intron "quills"
 
@@ -28,7 +31,7 @@ sub new {
   my $class = shift;
   my %arg = @_;
 
-  my $feature = $arg{-feature} or die "No feature $class";
+  my $feature = $arg{-feature} or $class->throw("No feature $class");
   my $factory = $arg{-factory} || $class->default_factory;
   my $level   = $arg{-level} || 0;
   my $flip    = $arg{-flip};
@@ -40,36 +43,65 @@ sub new {
   $self->{flip}++  if $flip;
   $self->{top} = 0;
 
+  my $panel = $factory->panel;
+  my $p_start = $panel->start;
+  my $p_end   = $panel->end;
+
+  my @subfeatures;
   my @subglyphs;
-  my @subfeatures = $self->subseq($feature);
 
-  if (@subfeatures) {
+  warn $self if DEBUG;
+  warn $feature if DEBUG;
 
+  @subfeatures         = $self->subfeat($feature);
+
+  if ($self->option('ignore_sub_part')) {
+    my @tmparray;
+    foreach (@subfeatures) {
+      my $type = $_->method;
+
+      my @ignore_list = split /\s+/, $self->option('ignore_sub_part');
+      my $ignore_str  = join('|', @ignore_list);
+
+      unless ($type =~ /$ignore_str/) {
+        push @tmparray, $_;
+      }
+    }
+    @subfeatures = @tmparray;
+  }
+
+  my @visible_subfeatures = grep {$p_start <= $_->end && $p_end >= $_->start} @subfeatures;
+
+  $self->feature_has_subparts(@subfeatures>0);
+
+  if (@visible_subfeatures) {
     # dynamic glyph resolution
     @subglyphs = map { $_->[0] }
           sort { $a->[1] <=> $b->[1] }
-             map { [$_, $_->left ] } 
-    $factory->make_glyph($level+1,@subfeatures);
-
+	    map { [$_, $_->left ] }
+	      $factory->make_glyph($level+1,@visible_subfeatures);
     $self->{parts}   = \@subglyphs;
   }
 
   my ($start,$stop) = ($self->start, $self->stop);
-  if (defined $start && defined $stop) {
+  if (defined $start && defined $stop && $start ne '') {  # more paranoia
     ($start,$stop) = ($stop,$start) if $start > $stop;  # sheer paranoia
     # the +1 here is critical for allowing features to meet nicely at nucleotide resolution
     my ($left,$right) = $factory->map_pt($start,$stop+1);
     $self->{left}    = $left;
     $self->{width}   = $right - $left + 1;
   }
+
   if (@subglyphs) {
       my $l            = $subglyphs[0]->left;
-      $self->{left}    = $l if !defined($self->{left}) || $l < $self->{left};
+      # this clashes with the pad_left calculation and is unecessary
+      # $self->{left}    = $l if !defined($self->{left}) || $l < $self->{left};
       my $right        = (
 			  sort { $b<=>$a } 
 			  map {$_->right} @subglyphs)[0];
       my $w            = $right - $self->{left} + 1;
-      $self->{width}   = $w if !defined($self->{width}) || $w > $self->{width};
+      # this clashes with the pad_right calculation and is unecessary
+      # $self->{width}   = $w if !defined($self->{width}) || $w > $self->{width};
   }
 
   $self->{point} = $arg{-point} ? $self->height : undef;
@@ -83,17 +115,40 @@ sub parts      {
   return wantarray ? @{$self->{parts}} : $self->{parts};
 }
 
+# this is different than parts(). parts() will return subglyphs
+# that are contained within the current viewing range. feature_has_subparts()
+# will return true if the feature has any subparts, even if they are off the
+# screen.
+sub feature_has_subparts {
+  my $self = shift;
+
+  return $self->{feature_has_subparts} = shift if @_;
+  return 0 if $self->maxdepth == 0;
+
+  # $feature->compound is an artefact from aggregators. Sadly, an aggregated feature can miss
+  # parts that are out of the query range - this is a horrible feature. Aggregated features have
+  # a compound flag to hack around this.
+  my $feature = $self->feature;
+  $self->{feature_has_subparts} || ($feature->can('compound') && $feature->compound)
+}
+
 sub feature { shift->{feature} }
 sub factory { shift->{factory} }
 sub panel   { shift->factory->panel }
 sub point   { shift->{point}   }
 sub scale   { shift->factory->scale }
+sub flip    {
+  my $self      = shift;
+  my $d         = $self->{flip};
+  $self->{flip} = shift if @_;
+  $d;
+}
 sub start   {
   my $self = shift;
   return $self->{start} if exists $self->{start};
   if ($self->{flip}) {
     $self->{start} = defined $self->{feature}->end
-                     ? $self->panel->end + 1 - $self->{feature}->end 
+                     ? $self->panel->end + 1 - $self->{feature}->end
                      : 0;
   } else {
     $self->{start} = defined $self->{feature}->start
@@ -103,12 +158,13 @@ sub start   {
 
   return $self->{start};
 }
+
 sub stop    {
   my $self = shift;
   return $self->{stop} if exists $self->{stop};
   if ($self->{flip}) {
     $self->{stop} = defined $self->{feature}->start 
-      ? $self->panel->end + 1 - $self->{feature}->start 
+      ? $self->panel->end + 1 - $self->{feature}->start
       : $self->panel->offset - 1;
   } else {
     $self->{stop} = defined $self->{feature}->end
@@ -137,10 +193,12 @@ sub map_no_trunc { shift->{factory}->map_no_trunc(@_) }
 sub add_feature {
   my $self       = shift;
   my $factory    = $self->factory;
+
   for my $feature (@_) {
     if (ref $feature eq 'ARRAY') {
       $self->add_group(@$feature);
     } else {
+      warn $factory if DEBUG;
       push @{$self->{parts}},$factory->make_glyph(0,$feature);
     }
   }
@@ -152,7 +210,7 @@ sub add_group {
   my @features = ref($_[0]) eq 'ARRAY' ? @{$_[0]} : @_;
   my $f    = Bio::Graphics::Feature->new(
 					 -segments=>\@features,
-					 -type => 'group'
+					 -type => 'group',
 					);
   $self->add_feature($f);
   $f;
@@ -211,28 +269,26 @@ sub bounds {
    $dy + $self->bottom - $self->pad_bottom);
 }
 
-
 sub box {
   my $self = shift;
-  return ($self->left,$self->top,$self->right,$self->bottom);
+  my @result = ($self->left,$self->top,$self->right,$self->bottom);
+  return @result;
 }
-
 
 sub unfilled_box {
   my $self = shift;
   my $gd   = shift;
-  my ($x1,$y1,$x2,$y2,$fg,$bg) = @_;
-
-  my $linewidth = $self->option('linewidth') || 1;
+  my ($x1,$y1,$x2,$y2,$fg,$bg,$lw) = @_;
+  $lw = $self->linewidth;
 
   unless ($fg) {
       $fg ||= $self->fgcolor;
-  $fg = $self->set_pen($linewidth,$fg) if $linewidth > 1;
+  $fg = $self->set_pen($lw,$fg) if $lw > 1;
   }
 
   unless ($bg) {
       $bg ||= $self->bgcolor;
-      $bg = $self->set_pen($linewidth,$bg) if $linewidth > 1;
+      $bg = $self->set_pen($lw,$bg) if $lw > 1;
   }
 
   # draw a box
@@ -242,39 +298,49 @@ sub unfilled_box {
   # the leftmost line
   my ($width) = $gd->getBounds;
 
-  $gd->line($x1,$y1+$linewidth,$x1,$y2-$linewidth,$bg)
+  $gd->line($x1,$y1+$lw,$x1,$y2-$lw,$bg)
     if $x1 < $self->panel->pad_left;
 
-  $gd->line($x2,$y1+$linewidth,$x2,$y2-$linewidth,$bg)
+  $gd->line($x2,$y1+$lw,$x2,$y2-$lw,$bg)
     if $x2 > $width - $self->panel->pad_right;
 }
-
 
 # return boxes surrounding each part
 sub boxes {
   my $self = shift;
-  my ($left,$top) = @_;
+
+  my ($left,$top,$parent) = @_;
   $top  += 0; $left += 0;
   my @result;
 
   $self->layout;
-  my @parts = $self->parts;
-  @parts    = $self if !@parts && $self->option('box_subparts') && $self->level>0;
+  $parent         ||= $self;
+  my $subparts = $self->box_subparts || 0;
 
   for my $part ($self->parts) {
-    if (eval{$part->feature->primary_tag} eq 'group' or
-	($part->level == 0 && $self->option('box_subparts'))) {
-      push @result,$part->boxes($left+$self->left+$self->pad_left,$top+$self->top+$self->pad_top,$self);
-    } else {
-      my ($x1,$y1,$x2,$y2) = $part->box;
-      push @result,[$part->feature,
-		    $x1,$top+$self->top+$self->pad_top+$y1,
-		    $x2,$top+$self->top+$self->pad_top+$y2,
-		    $self];
+    my $type = $part->feature->primary_tag || '';
+    if ($type eq 'group' or $subparts > $part->level) {
+      push @result,$part->boxes($left,$top+$self->top+$self->pad_top,$parent);
+      next if $type eq 'group';
     }
+    my ($x1,$y1,$x2,$y2) = $part->box;
+    $x2++ if $x1==$x2;
+    push @result,[$part->feature,
+		  $left + $x1,$top+$self->top+$self->pad_top+$y1,
+		  $left + $x2,$top+$self->top+$self->pad_top+$y2,
+		  $parent];
   }
+
   return wantarray ? @result : \@result;
 }
+
+sub box_subparts {
+  my $self = shift;
+  return $self->{box_subparts} if exists $self->{box_subparts};
+  return $self->{box_subparts} = $self->_box_subparts;
+}
+
+sub _box_subparts { shift->option('box_subparts') }
 
 # this should be overridden for labels, etc.
 # allows glyph to make itself thicker or thinner depending on
@@ -289,11 +355,16 @@ sub pad_bottom {
 }
 sub pad_left {
   my $self = shift;
-  return 0;
+  my @parts = $self->parts or return 0;
+  my $max = 0;
+  foreach (@parts) {
+    my $pl = $_->pad_left;
+    $max = $pl if $max < $pl;
+  }
+  $max;
 }
 sub pad_right {
   my $self = shift;
-# this shouldn't be necessary
   my @parts = $self->parts or return 0;
   my $max = 0;
   foreach (@parts) {
@@ -319,9 +390,9 @@ sub move {
 sub option {
   my $self = shift;
   my $option_name = shift;
-  my $factory = $self->factory;
-  return unless $factory;
-  $factory->option($self,$option_name,@{$self}{qw(partno total_parts)});
+  my @args = ($option_name,@{$self}{qw(partno total_parts)});
+  my $factory = $self->{factory} or return;
+  return $factory->option($self,@args)
 }
 
 # get an option that might be a code reference
@@ -363,16 +434,24 @@ sub connector {
 #              0    no bumping
 #              +1   bump down
 #              -1   bump up
+#              +2   simple bump down
+#              -2   simple bump up
 sub bump {
   my $self = shift;
   return $self->option('bump');
 }
 
+# control horizontal and vertical collision control
+sub hbumppad {
+  my $self = shift;
+  return $self->{_hbumppad} if exists $self->{_hbumppad};
+  return $self->{_hbumppad}= $self->option('hbumppad');
+}
+
 # we also look for the "color" option for Ace::Graphics compatibility
 sub fgcolor {
-  my $self = shift;
-  my $color = $self->option('fgcolor');
-  my $index = defined $color ? $color : $self->option('color');
+  my $self  = shift;
+  my $index   = $self->option('color') || $self->option('fgcolor');
   $index = 'black' unless defined $index;
   $self->factory->translate_color($index);
 }
@@ -392,28 +471,35 @@ sub bgcolor {
   $self->factory->translate_color($index);
 }
 
-sub font {
-  my $self = shift;
-  my $font = $self->option('font');
+sub getfont {
+  my $self    = shift;
+  my $option  = shift || 'font';
+  my $default = shift;
+
+  my $font = $self->option($option) || $default;
+  return unless $font;
 
   my $img_class = $self->image_class;
-  # Bring in the appropriate image package...yuck...
-  eval "use $img_class; 1" or die $@;
 
   unless (UNIVERSAL::isa($font,$img_class . '::Font')) {
     my $ref    = {
-		  gdTinyFont       => gdTinyFont(),
-		  gdSmallFont      => gdSmallFont(),
-		  gdMediumBoldFont => gdMediumBoldFont(),
-    		  gdLargeFont      => gdLargeFont(),
-    		  gdGiantFont      => gdGiantFont(),
+		  gdTinyFont       => $img_class->gdTinyFont(),
+		  gdSmallFont      => $img_class->gdSmallFont(),
+		  gdMediumBoldFont => $img_class->gdMediumBoldFont(),
+		  gdLargeFont      => $img_class->gdLargeFont(),
+		  gdGiantFont      => $img_class->gdGiantFont(),
     		 };
 
-    my $gdfont = $ref->{$font} || $font;
-    $self->configure(font=>$gdfont);
+    my $gdfont = $ref->{$font};
+    $self->configure($option => $gdfont);
     return $gdfont;
   }
   return $font;
+}
+
+sub font {
+  my $self = shift;
+  return $self->getfont('font','gdSmallFont');
 }
 
 sub fontcolor {
@@ -448,7 +534,7 @@ sub layout_sort {
     if (!$opt) {
        $sortfunc = sub { $a->left <=> $b->left };
     } elsif (ref $opt eq 'CODE') {
-      Bio::Root::Root->throw('sort_order subroutines must use the $$ prototype') unless prototype($opt) eq '$$';
+      $self->throw('sort_order subroutines must use the $$ prototype') unless prototype($opt) eq '$$';
       $sortfunc = $opt;
     } elsif ($opt =~ /^sub\s+\{/o) {
        $sortfunc = eval $opt;
@@ -491,7 +577,8 @@ sub layout_sort {
     # cache this
     # $self->factory->set_option(sort_order => $sortfunc);
 
-    return sort $sortfunc @_;
+    my @things = sort $sortfunc @_;
+    return @things;
 }
 
 # handle collision detection
@@ -500,8 +587,7 @@ sub layout {
   return $self->{layout_height} if exists $self->{layout_height};
 
   my @parts = $self->parts;
-  return $self->{layout_height}
-    = $self->height + $self->pad_top + $self->pad_bottom unless @parts;
+  return $self->{layout_height} = $self->height + $self->pad_top + $self->pad_bottom unless @parts;
 
   my $bump_direction = $self->bump;
   my $bump_limit = $self->option('bump_limit') || -1;
@@ -519,13 +605,25 @@ sub layout {
   }
 
   my (%bin1,%bin2);
+  my $limit = 0;
+
   for my $g ($self->layout_sort(@parts)) {
 
+    my $height = $g->{layout_height};
+
+    # Simple +/- 2 bumping.  Every feature gets its very own line
+    if (abs($bump_direction) >= 2) {
+      $g->move(0,$limit);
+      $limit += $height + BUMP_SPACING if $bump_direction > 0;
+      $limit -= $height + BUMP_SPACING if $bump_direction < 0;
+      next;
+    }
+
+    # we get here for +/- 1 bumping
     my $pos = 0;
     my $bumplevel = 0;
     my $left   = $g->left;
     my $right  = $g->right;
-    my $height = $g->{layout_height};
 
     while (1) {
 
@@ -545,11 +643,11 @@ sub layout {
 
       if ($bump_direction > 0) {
 	$pos += $collision->[3]-$collision->[1] + BUMP_SPACING;    # collision, so bump
-
       } else {
 	$pos -= BUMP_SPACING;
       }
 
+      $pos++ if $pos % 2; # correct for GD rounding errors
     }
 
     $g->move(0,$pos);
@@ -573,7 +671,8 @@ sub layout {
   foreach (@parts) {
     $bottom = $_->bottom if $_->bottom > $bottom;
   }
-  return $self->{layout_height} = $self->pad_bottom + $self->pad_top + $bottom - $self->top  + 1;
+  # return $self->{layout_height} = $self->pad_bottom + $self->pad_top + $bottom - $self->top  + 1;
+  return $self->{layout_height} = $bottom + $self->pad_top + $self->pad_bottom;
 }
 
 # the $%occupied structure is a hash of {left,top} = [left,top,right,bottom]
@@ -581,12 +680,14 @@ sub collides {
   my $self = shift;
   my ($occupied,$cm1,$cm2,$left,$top,$right,$bottom) = @_;
   my @keys = $self->_collision_keys($cm1,$cm2,$left,$top,$right,$bottom);
+  my $hspacing = $self->hbumppad || 0;
   my $collides = 0;
   for my $k (@keys) {
     next unless exists $occupied->{$k};
     for my $bounds (@{$occupied->{$k}}) {
       my ($l,$t,$r,$b) = @$bounds;
-      next unless $right >= $l and $left <= $r and $bottom >= $t and $top <= $b;
+      next unless $right+$hspacing >= $l and $left-$hspacing <= $r 
+	and $bottom >= $t and $top <= $b;
       $collides = $bounds;
       last;
     }
@@ -623,25 +724,22 @@ sub draw {
   my $gd = shift;
   my ($left,$top,$partno,$total_parts) = @_;
 
-  local($self->{partno},$self->{total_parts});
-  @{$self}{qw(partno total_parts)} = ($partno,$total_parts);
-
-  my $connector =  $self->connector;
+  my $connector = $self->connector;
 
   if (my @parts = $self->parts) {
 
-    # invoke sorter if use wants to sort always and we haven't already sorted
+    # invoke sorter if user wants to sort always and we haven't already sorted
     # during bumping.
     @parts = $self->layout_sort(@parts) if !$self->bump && $self->option('always_sort');
 
     my $x = $left;
     my $y = $top  + $self->top + $self->pad_top;
+
     $self->draw_connectors($gd,$x,$y) if $connector && $connector ne 'none';
 
     my $last_x;
     for (my $i=0; $i<@parts; $i++) {
-      # lie just a little bit to avoid lines overlapping and
-      # make the picture prettier
+      # lie just a little bit to avoid lines overlapping and make the picture prettier
       my $fake_x = $x;
       $fake_x-- if defined $last_x && $parts[$i]->left - $last_x == 1;
       $parts[$i]->draw($gd,$fake_x,$y,$i,scalar(@parts));
@@ -651,9 +749,10 @@ sub draw {
 
   else {  # no part
     $self->draw_connectors($gd,$left,$top)
-      if $connector && $connector ne 'none' && $self->{level} == 0;
-    $self->draw_component($gd,$left,$top) unless eval{$self->feature->compound};
+      if $connector && $connector ne 'none'; # && $self->{level} == 0;
+    $self->draw_component($gd,$left,$top,$partno,$total_parts) unless $self->feature_has_subparts;
   }
+
 }
 
 # the "level" is the level of testing of the glyph
@@ -664,11 +763,14 @@ sub level {
 
 sub draw_connectors {
   my $self = shift;
+
   return if $self->{overbumped};
   my $gd = shift;
   my ($dx,$dy) = @_;
   my @parts = sort { $a->left <=> $b->left } $self->parts;
   for (my $i = 0; $i < @parts-1; $i++) {
+    # don't let connectors double-back on themselves
+    next if ($parts[$i]->bounds)[2] > ($parts[$i+1]->bounds)[0];
     $self->_connector($gd,$dx,$dy,$parts[$i]->bounds,$parts[$i+1]->bounds);
   }
 
@@ -678,7 +780,10 @@ sub draw_connectors {
     my($xl,$xt,$xr,$xb) = $parts[0]->bounds;
     $self->_connector($gd,$dx,$dy,$x1,$xt,$x1,$xb,$xl,$xt,$xr,$xb)      if $x1 < $xl;
     my ($xl2,$xt2,$xr2,$xb2) = $parts[-1]->bounds;
-    $self->_connector($gd,$dx,$dy,$parts[-1]->bounds,$x2,$xt2,$x2,$xb2) if $x2 > $xr;
+
+    my $feature = $self->feature;
+    my @p       = map {$_->feature} @parts;
+    $self->_connector($gd,$dx,$dy,$parts[-1]->bounds,$x2,$xt2,$x2,$xb2) if $x2 > $xr2;
   } else {
     my ($x1,$y1,$x2,$y2) = $self->bounds($dx,$dy);
     $self->draw_connector($gd,$y1,$y2,$x1,$y1,$y2,$x2);
@@ -718,6 +823,7 @@ sub _connector {
   my $bottom1  = $dy + $xb;
   my $top2     = $dy + $yt;
   my $bottom2  = $dy + $yb;
+
   # restore this comment if you don't like the group dash working
   # its way backwards.
   return if $right-$left < 1 && !$self->isa('Bio::Graphics::Glyph::group');
@@ -743,6 +849,8 @@ sub draw_connector {
     $self->draw_dashed_connector($gd,$color,@_);
   } elsif ($connector_type eq 'quill') {
     $self->draw_quill_connector($gd,$color,@_);
+  } elsif ($connector_type eq 'crossed') {
+    $self->draw_crossed_connector($gd,$color,@_);
   } else {
     ; # draw nothing
   }
@@ -753,6 +861,8 @@ sub draw_hat_connector {
   my $gd   = shift;
   my $color = shift;
   my ($top1,$bottom1,$left,$top2,$bottom2,$right) = @_;
+
+  cluck "gd object is $gd" unless ref $gd;
 
   my $center1  = ($top1 + $bottom1)/2;
   my $quarter1 = $top1 + ($bottom1-$top1)/4;
@@ -794,8 +904,11 @@ sub draw_dashed_connector {
 
   my $center1  = ($top1 + $bottom1)/2;
   my $center2  = ($top2 + $bottom2)/2;
-  $gd->setStyle($color,$color,gdTransparent(),gdTransparent());
-  $gd->line($left,$center1,$right,$center2,gdStyled());
+  my $image_class   = $self->panel->image_class;
+  my $gdTransparent = $image_class->gdTransparent;
+  my $gdStyled      = $image_class->gdStyled;
+  $gd->setStyle($color,$color,$gdTransparent,$gdTransparent);
+  $gd->line($left,$center1,$right,$center2,$gdStyled);
 }
 
 sub draw_quill_connector {
@@ -810,6 +923,7 @@ sub draw_quill_connector {
   $gd->line($left,$center1,$right,$center2,$color);
   my $direction = $self->feature->strand;
   return unless $direction;
+  $direction *= -1 if $self->{flip};
 
   if ($direction > 0) {
     my $start = $left+4;
@@ -828,18 +942,42 @@ sub draw_quill_connector {
   }
 }
 
+sub draw_crossed_connector {
+  my $self = shift;
+  my $gd = shift;
+  my $color = shift;
+  my ($top1,$bottom1,$left,$top2,$bottom2,$right) = @_;
+
+  #Draw the horizontal line
+  my $center1  = ($top1 + $bottom1)/2;
+  my $center2  = ($top2 + $bottom2)/2;
+
+  $gd->line($left,$center1,$right,$center2,$color);
+
+  #Extra validations
+  ($left, $right)   = ($right, $left)   if ($right < $left);
+  ($top1, $bottom1) = ($bottom1, $top1) if ($bottom1 < $top1);
+  ($top2, $bottom2) = ($bottom2, $top2) if ($bottom2 < $top2);
+
+  #Draw the "X"
+  my $middle = int(($right - $left) / 2) + $left;
+  my $midLen = int(($bottom1 - $top1) / 2);
+
+  $gd->line($middle-$midLen,$top1,   $middle+$midLen,$bottom2,$color);
+  $gd->line($middle-$midLen,$bottom1,$middle+$midLen,$top2,$color);
+}
+
 sub filled_box {
   my $self = shift;
   my $gd = shift;
-  my ($x1,$y1,$x2,$y2,$bg,$fg) = @_;
+  my ($x1,$y1,$x2,$y2,$bg,$fg,$lw) = @_;
 
   $bg ||= $self->bgcolor;
   $fg ||= $self->fgcolor;
-  my $linewidth = $self->option('linewidth') || 1;
+  $lw ||= $self->option('linewidth') || 1;
 
   $gd->filledRectangle($x1,$y1,$x2,$y2,$bg);
-
-  $fg = $self->set_pen($linewidth,$fg) if $linewidth > 1;
+  $fg = $self->set_pen($lw,$fg) if $lw > 1;
 
   # draw a box
   $gd->rectangle($x1,$y1,$x2,$y2,$fg);
@@ -848,31 +986,39 @@ sub filled_box {
   # the leftmost line
   my ($width) = $gd->getBounds;
 
-  $bg = $self->set_pen($linewidth,$bg) if $linewidth > 1;
+  $bg = $self->set_pen($lw,$bg) if $lw > 1;
 
-  $gd->line($x1,$y1+$linewidth,$x1,$y2-$linewidth,$bg)
+  $gd->line($x1,$y1+$lw,$x1,$y2-$lw,$bg)
     if $x1 < $self->panel->pad_left;
 
-  $gd->line($x2,$y1+$linewidth,$x2,$y2-$linewidth,$bg)
+  $gd->line($x2,$y1+$lw,$x2,$y2-$lw,$bg)
     if $x2 > $width - $self->panel->pad_right;
 }
 
 sub filled_oval {
   my $self = shift;
   my $gd = shift;
-  my ($x1,$y1,$x2,$y2,$bg,$fg) = @_;
+  my ($x1,$y1,$x2,$y2,$bg,$fg,$lw) = @_;
   my $cx = ($x1+$x2)/2;
   my $cy = ($y1+$y2)/2;
 
   $fg ||= $self->fgcolor;
   $bg ||= $self->bgcolor;
-  my $linewidth = $self->linewidth;
+  $lw ||= $self->linewidth;
 
-  $fg = $self->set_pen($linewidth) if $linewidth > 1;
-  $gd->filledEllipse($cx,$cy,$x2-$x1,$y2-$y1,$bg);
+  $fg = $self->set_pen($lw) if $lw > 1;
 
-  # Draw the edge around the ellipse
-  $gd->ellipse($cx,$cy,$x2-$x1,$y2-$y1,$fg);
+  # Maintain backwards compatability with gd 1.8.4
+  # which does not support the ellipse methods.
+  # can() method fails with GD::SVG...
+  if ($gd->can('ellipse') || $gd =~ /SVG/ ) {
+    $gd->filledEllipse($cx,$cy,$x2-$x1,$y2-$y1,$bg);
+    # Draw the edge around the ellipse
+    $gd->ellipse($cx,$cy,$x2-$x1,$y2-$y1,$fg);
+  } else {
+    $gd->arc($cx,$cy,$x2-$x1,$y2-$y1,0,360,$fg);
+    $gd->fillToBorder($cx,$cy,$fg,$bg);
+  }
 }
 
 sub oval {
@@ -884,18 +1030,24 @@ sub oval {
 
   my $fg = $self->fgcolor;
   my $linewidth = $self->linewidth;
-
   $fg = $self->set_pen($linewidth) if $linewidth > 1;
-  $gd->ellipse($cx,$cy,$x2-$x1,$y2-$y1,$fg);
+
+  # Maintain backwards compatability with gd 1.8.4 which does not
+  # support the ellipse method.
+  if ($gd->can('ellipse') || $gd =~ /SVG/ ) {
+    $gd->ellipse($cx,$cy,$x2-$x1,$y2-$y1,$fg);
+  } else {
+    $gd->arc($cx,$cy,$x2-$x1,$y2-$y1,0,360,$fg);
+  }
 }
 
 sub filled_arrow {
   my $self = shift;
-  my $gd  = shift;
+  my $gd   = shift;
   my $orientation = shift;
-  $orientation *= -1 if $self->{flip};
+  my ($x1,$y1,$x2,$y2,$fg,$bg)  = @_;
 
-  my ($x1,$y1,$x2,$y2) = @_;
+  $orientation *= -1 if $self->{flip};
 
   my ($width) = $gd->getBounds;
   my $indent = $y2-$y1 < $x2-$x1 ? $y2-$y1 : ($x2-$x1)/2;
@@ -907,7 +1059,8 @@ sub filled_arrow {
 	  or ($indent <= 0)
 	    or ($x2 - $x1 < 3);
 
-  my $fg   = $self->fgcolor;
+  $fg   ||= $self->fgcolor;
+  $bg   ||= $self->bgcolor;
   my $pkg  = $self->polygon_package;
   my $poly = $pkg->new();
   if ($orientation >= 0) {
@@ -923,8 +1076,14 @@ sub filled_arrow {
     $poly->addPt($x1,($y2+$y1)/2);
     $poly->addPt($x1+$indent,$y1);
   }
-  $gd->filledPolygon($poly,$self->bgcolor);
+  $gd->filledPolygon($poly,$bg);
   $gd->polygon($poly,$fg);
+
+  # blunt it a bit if off the end
+  # good idea - but isn't inuitive
+  # if ($orientation >= 0 && $x2 > $width - $self->panel->pad_right) {
+  # $gd->filledRectangle($x2-3,$y1,$x2,$y2,$self->panel->bgcolor);
+  #}
 }
 
 sub linewidth {
@@ -950,8 +1109,8 @@ sub set_pen {
 
 sub draw_component {
   my $self = shift;
-  my $gd = shift;
-  my($x1,$y1,$x2,$y2) = $self->bounds(@_);
+  my ($gd,$left,$top,$partno,$total_parts) = @_;
+  my($x1,$y1,$x2,$y2) = $self->bounds($left,$top);
 
   # clipping
   my $panel = $self->panel;
@@ -968,26 +1127,56 @@ sub draw_component {
   }
 }
 
-# memoize _subseq -- it's a bottleneck with segments
-sub subseq {
+
+sub no_subparts {
+  return shift->option('no_subparts');
+}
+
+sub maxdepth {
+  my $self = shift;
+  return $self->option('maxdepth');
+}
+
+sub exceeds_depth {
+  my $self = shift;
+  my $max_depth     = $self->maxdepth;
+  return unless defined $max_depth;
+
+  my $current_depth = $self->level || 0;
+  return $current_depth >= $max_depth;
+}
+
+# memoize _subfeat -- it's a bottleneck with segments
+sub subfeat {
   my $self    = shift;
   my $feature = shift;
-  return $self->_subseq($feature) unless ref $self;  # protect against class invocation
-  return @{$self->{cached_subseq}{$feature}} if $self->{cached_subseq}{$feature};
-  my @ss = $self->_subseq($feature);
-  $self->{cached_subseq}{$feature} = \@ss;
+
+  return $self->_subfeat($feature) unless ref $self;  # protect against class invocation
+
+  return if $self->level == 0 && $self->no_subparts;
+  return if $self->exceeds_depth;
+
+  return @{$self->{cached_subfeat}{$feature}} if exists $self->{cached_subfeat}{$feature};
+  my @ss = $self->_subfeat($feature);
+  $self->{cached_subfeat}{$feature} = \@ss;
   @ss;
 }
 
-sub _subseq {
+sub _subfeat {
   my $class   = shift;
   my $feature = shift;
-  return $feature->merged_segments         if $feature->can('merged_segments');
-  return $feature->segments                if $feature->can('segments');
+
+  return $feature->segments     if $feature->can('segments');
+
   my @split = eval { my $id   = $feature->location->seq_id;
 		     my @subs = $feature->location->sub_Location;
-		     grep {$id eq $_->seq_id} @subs};
+		     grep {$id eq $_->seq_id} @subs;
+		   };
+
   return @split if @split;
+
+  # Either the APIs have changed, or I got confused at some point...
+  return $feature->get_SeqFeatures         if $feature->can('get_SeqFeatures');
   return $feature->sub_SeqFeature          if $feature->can('sub_SeqFeature');
   return;
 }
@@ -1013,20 +1202,50 @@ sub make_key_feature {
   # one segments, at pixels 0->80
   my $offset = $self->panel->offset;
 
-
   my $feature =
     Bio::Graphics::Feature->new(-start =>0 * $scale +$offset,
 				-end   =>80*$scale+$offset,
-				-name => $self->option('key'),
+				-name => $self->make_key_name(),
 				-strand => '+1');
   return $feature;
 }
 
+sub make_key_name {
+  my $self = shift;
+
+  # breaking encapsulation - this should be handled by the panel
+  my $key      = $self->option('key') || '';
+  return $key unless $self->panel->add_category_labels;
+
+  my $category = $self->option('category');
+  my $name     = defined $category ? "$key ($category)" : $key;
+  return $name;
+}
+
 sub all_callbacks {
+  my $self = shift;
+  return $self->{all_callbacks} if exists $self->{all_callbacks}; # memoize
+  return $self->{all_callbacks} = $self->_all_callbacks;
+}
+
+sub _all_callbacks {
   my $self = shift;
   my $track_level = $self->option('all_callbacks');
   return $track_level if defined $track_level;
   return $self->panel->all_callbacks;
+}
+
+sub subpart_callbacks {
+  my $self = shift;
+  return $self->{subpart_callbacks} if exists $self->{subpart_callbacks}; # memoize
+  return $self->{subpart_callbacks} = $self->_subpart_callbacks;
+}
+
+sub _subpart_callbacks {
+  my $self = shift;
+  return 1 if $self->all_callbacks;
+  my $do_subparts = $self->option('subpart_callbacks');
+  return $self->{level} == 0 || ($self->{level} > 0 && $do_subparts);
 }
 
 sub default_factory {
@@ -1036,9 +1255,10 @@ sub default_factory {
 sub finished {
   my $self = shift;
   delete $self->{factory};
-  foreach (@{$self->{parts}}) {
+  foreach (@{$self->{parts} || []}) {
     $_->finished;
   }
+  delete $self->{parts};
 }
 
 1;
@@ -1306,6 +1526,23 @@ the GD::Image object.
 Draw the label for the glyph onto the provided GD::Image object,
 optionally offsetting by the amounts indicated in $left and $right.
 
+=item $glyph-E<gt>maxdepth()
+
+This returns the maximum number of levels of feature subparts that the
+glyph will recurse through. For example, returning 0 indicates that
+the glyph will only draw the top-level feature. Returning 1 indicates
+that it will only draw the top-level feature and one level of
+subfeatures. Returning 2 will descend down two levels. Overriding this
+method will speed up rendering by avoiding creating of a bunch of
+subglyphs that will never be drawn.
+
+The default behavior is to return undef (unlimited levels of descent)
+unless the -maxdepth option is passed, in which case this number is
+returned.
+
+Note that Bio::Graphics::Glyph::generic overrides maxdepth() to return
+0, meaning no descent into subparts will be performed.
+
 =back
 
 These methods are useful utility routines:
@@ -1326,6 +1563,11 @@ the provided rectangle coordinates.
 =item $glyph-E<gt>filled_oval($gd,$x1,$y1,$x2,$y2)
 
 As above, but draws an oval inscribed on the rectangle.
+
+=item $glyph-E<gt>exceeds_depth
+
+Returns true if descending into another level of subfeatures will
+exceed the value returned by maxdepth().
 
 =back
 
@@ -1363,6 +1605,18 @@ glyph pages for more options.
 
   -description  Whether to draw a description  undef (false)
 
+  -no_subparts  Set to true to prevent         undef (false)
+                drawing of the subparts
+                of a feature.
+
+  -ignore_sub_part Give the types/methods of   undef
+                subparts to ignore (as a 
+                space delimited list).
+
+  -maxdepth     Specifies the maximum number   undef (unlimited) 
+                child-generations to decend
+                when getting subfeatures
+
   -sort_order   Specify layout sort order      "default"
 
   -always_sort  Sort even when bumping is off  undef (false)
@@ -1370,6 +1624,10 @@ glyph pages for more options.
   -bump_limit   Maximum number of levels to bump undef (unlimited)
 
   -hilite       Highlight color                undef (no color)
+
+  -link, -title, -target
+               These options are used when creating imagemaps
+               for display on the web.  See L<Bio::Graphics::Panel/"Creating Imagemaps">.
 
 For glyphs that consist of multiple segments, the B<-connector> option
 controls what's drawn between the segments.  The default is undef (no
@@ -1379,7 +1637,10 @@ connector).  Options include:
    "solid"   a straight horizontal connector
    "quill"   a decorated line with small arrows indicating strandedness
              (like the UCSC Genome Browser uses)
-   "dashed"  a horizontal dashed line.  
+   "dashed"  a horizontal dashed line.
+   "crossed" a straight horizontal connector with an "X" on it
+              (Can be used when segments are not yet validated
+               by some internal experiments...)
 
 The B<-connector_color> option controls the color of the connector, if
 any.
@@ -1468,6 +1729,10 @@ color name.  For example:
   -hilite => sub { my $name = shift->display_name; 
                    return 'yellow' if $name =~ /XYZ/ }
 
+The B<-no_subparts> option will prevent the glyph from searching its
+feature for subfeatures. This may enhance performance if you know in
+advance that none of your features contain subfeatures.
+
 =head1 SUBCLASSING Bio::Graphics::Glyph
 
 By convention, subclasses are all lower-case.  Begin each subclass
@@ -1476,8 +1741,7 @@ with a preamble like this one:
  package Bio::Graphics::Glyph::crossbox;
 
  use strict;
- use vars '@ISA';
- @ISA = 'Bio::Graphics::Glyph';
+ use base qw(Bio::Graphics::Glyph);
 
 Then override the methods you need to.  Typically, just the draw()
 method will need to be overridden.  However, if you need additional
@@ -1548,6 +1812,7 @@ L<Bio::Graphics::Glyph::transcript>,
 L<Bio::Graphics::Glyph::transcript2>,
 L<Bio::Graphics::Glyph::wormbase_transcript>
 L<Bio::Graphics::Glyph::xyplot>
+L<Bio::Graphics::Glyph::whiskerplot>
 
 =head1 AUTHOR
 

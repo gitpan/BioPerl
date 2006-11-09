@@ -1,5 +1,5 @@
 #---------------------------------------------------------
-# $Id: Psm.pm,v 1.4 2003/10/25 15:00:57 heikki Exp $
+# $Id: Psm.pm,v 1.14.4.1 2006/10/02 23:10:22 sendu Exp $
 
 #ISA SiteMatrix, HAS InstanceSite
 
@@ -83,17 +83,16 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Stefan Kirov
 
@@ -115,15 +114,10 @@ SiteMatrix, meme, transfac, InstanceSite
 
 # Let the code begin...
 package Bio::Matrix::PSM::Psm;
-use Bio::Root::Root;
-use Bio::Root::IO;
-use Bio::Matrix::PSM::SiteMatrix;
 use Bio::Matrix::PSM::InstanceSite;
-use Bio::Matrix::PSM::PsmI;
-use vars qw(@ISA);
 use strict;
 
-@ISA=qw( Bio::Matrix::PSM::SiteMatrix Bio::Root::Root Bio::Matrix::PSM::PsmI);
+use base qw(Bio::Matrix::PSM::SiteMatrix Bio::Matrix::PSM::PsmI Bio::Annotation::Collection);
 
 @Bio::Matrix::PSM::Psm::HEADER = qw(e_val sites IC width);
 
@@ -149,6 +143,8 @@ sub new {
     my ($caller,@args) = @_;
     my $class = ref($caller) || $caller;
     my $self = $class->SUPER::new(@args);
+    $self->{'_annotation'} = {};  #Init from Annotation::Collection
+    $self->_typemap(Bio::Annotation::TypeManager->new()); #same
     ($self->{instances})=$self->_rearrange(['INSTANCES'], @args);
     return $self;
 }
@@ -196,7 +192,7 @@ sub instances {
 
 sub header {
     my $self = shift;
-    return undef if ($self->{end});
+    return  if ($self->{end});
     my %header;
     if (@_) {my $key=shift; return $self->{$key}; }
     foreach my $key (@Bio::Matrix::PSM::Psm::HEADER) {
@@ -225,6 +221,10 @@ sub matrix {
 						-pC=>$self->{probC},
 						-pG=>$self->{probG},
 						-pT=>$self->{probT},
+						-lA=>$self->{logA},
+						-lC=>$self->{logC},
+						-lG=>$self->{logG},
+						-lT=>$self->{logT},
 						-IC=>$self->{IC},
 						-e_val=>$self->{e_val},
 						-id=>$self->{id});

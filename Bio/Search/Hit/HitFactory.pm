@@ -1,4 +1,4 @@
-# $Id: HitFactory.pm,v 1.3 2002/10/22 07:45:17 lapp Exp $
+# $Id: HitFactory.pm,v 1.6.4.1 2006/10/02 23:10:24 sendu Exp $
 #
 # BioPerl module for Bio::Search::Hit::HitFactory
 #
@@ -36,27 +36,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
 Email jason@bioperl.org
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -70,13 +63,11 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Search::Hit::HitFactory;
-use vars qw(@ISA $DEFAULT_TYPE);
+use vars qw($DEFAULT_TYPE);
 use strict;
 
-use Bio::Root::Root;
-use Bio::Factory::ObjectFactoryI;
 
-@ISA = qw(Bio::Root::Root Bio::Factory::ObjectFactoryI );
+use base qw(Bio::Root::Root Bio::Factory::ObjectFactoryI);
 
 BEGIN { 
     $DEFAULT_TYPE = 'Bio::Search::Hit::GenericHit'; 

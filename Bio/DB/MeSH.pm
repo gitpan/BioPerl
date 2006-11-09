@@ -1,8 +1,8 @@
-# $Id: MeSH.pm,v 1.2 2003/09/08 12:17:12 heikki Exp $
+# $Id: MeSH.pm,v 1.8.4.1 2006/10/02 23:10:15 sendu Exp $
 #
 # BioPerl module for Bio::DB::MeSH
 #
-# Cared for by Heikki Lehvaslaiho, heikki@ebi.ac.uk
+# Cared for by Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -15,24 +15,22 @@ Bio::DB::MeSH - Term retrieval from a Web MeSH database
 =head1 SYNOPSIS
 
  my $mesh = new Bio::DB::MeSH();
- my $term=$mesh->get_exact_term('Butter');
+ my $term = $mesh->get_exact_term('Butter');
  print $term->description;
-
 
 =head1 DESCRIPTION
 
 This class retrieves a term from the Medical Subject Headings database
-by the National Library of Medicine of USA.  See
-http://www.nlm.nih.gov/mesh/meshhome.html.
+by the National Library of Medicine of USA. 
+See L<http://www.nlm.nih.gov/mesh/meshhome.html>.
 
-This class implements Bio::SimpleAnalysisI and wraps its methods under
-get_exact_term().
+This class implements L<Bio::SimpleAnalysisI> and wraps its methods under
+L<get_exact_term()>.
 
-The web access uses my favorite, WWW::Mechanize, but in its absense
-falls back to bioperl module Bio::WebAgent which is a subclass of
-LWP::UserAgent. If not even that is not installed, it uses
-Bio::Root::HTTPget.
-
+By default, web access uses L<WWW::Mechanize>, but in its absense
+falls back to bioperl module L<Bio::WebAgent> which is a subclass of
+L<LWP::UserAgent>. If not even that is not installed, it uses
+L<Bio::Root::HTTPget>.
 
 =head1 SEE ALSO
 
@@ -46,21 +44,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                       - General discussion
-  http://bio.perl.org/MailList.html           - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
-Heikki Lehvaslaiho, heikki@ebi.ac.uk
+Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -74,17 +71,16 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::DB::MeSH;
-use vars qw( @ISA );
 use strict;
 
-use Bio::Tools::Analysis::SimpleAnalysisBase;
 use Bio::Phenotype::MeSH::Term;
 use Bio::Phenotype::MeSH::Twig;
 
-@ISA = qw(Bio::Tools::Analysis::SimpleAnalysisBase );
+use base qw(Bio::Tools::Analysis::SimpleAnalysisBase);
 
 
 my $URL = 'http://www.nlm.nih.gov/mesh/MBrowser.html';
+
 my $ANALYSIS_SPEC= {name => 'MeSH term retrival',
                     type => 'Entry retrieval'};
 my $INPUT_SPEC = [
@@ -99,6 +95,7 @@ my  $RESULT_SPEC =
      '' => 'Bio::Phenotype::MeSH::Term',
      raw => 'raw output',
     };
+
 
 sub _init {
     my $self = shift;
@@ -170,6 +167,13 @@ sub run {
 }
 
 
+sub _cgi_url {
+  my($self, $field, $term) = @_;
+  # we don't bother to URI::Escape $field and $term as this is an untainted private sub
+  return 'http://www.nlm.nih.gov/cgi/mesh/2003/MB_cgi?field='.$field.'&term='.$term;
+}
+
+
 sub  _run {
     my ($self, $value)  = @_;
     $self->throw('Need a value [$value]')
@@ -180,11 +184,11 @@ sub  _run {
     $self->status('TERMINATED_BY_ERROR');
 
     if ($self->{'_webmodule'} eq 'WWW::Mechanize') {
-        print "using WWW::Mechanize...\n" if $self->verbose > 0;
+        $self->debug("using WWW::Mechanize...\n");
         my $agent = WWW::Mechanize->new();
         $agent->get($self->url);
         $agent->status == 200
-            or print STDERR "Could not connect to the server\n" and return;
+            or $self->warn("Could not connect to the server\n") and return;
 
         $agent->form_name('MB');
 
@@ -201,21 +205,21 @@ sub  _run {
         return;
     }
     elsif ($self->{'_webmodule'} eq 'Bio::WebAgent') {
-        print "using LWP::UserAgent...\n" if $self->verbose > 0;
+        $self->debug("using LWP::UserAgent...\n");
         my $response;
         if ($value =~ /\w\d{6}/) {
             $self->{'_content'} =
                 $response = eval {
-                    $self->get("http://www.nlm.nih.gov/cgi/mesh/2003/MB_cgi?field=uid&term=$value")
+                    $self->get( $self->_cgi_url('uid', $value) )
                 };
-            print STDERR "Could not connect to the server\n" and return
+            $self->warn("Could not connect to the server\n") and return
                 if $@;
         } else {
             $self->{'_content'} =
                 eval {
-                    $response = $self->get("http://www.nlm.nih.gov/cgi/mesh/2003/MB_cgi?field=entry&term=$value")
+                    $response = $self->get( $self->_cgi_url('entry', $value) )
                 };
-            print STDERR "Could not connect to the server\n" and return
+            $self->warn("Could not connect to the server\n") and return
                 if $@;
         }
         if ($response->is_success) {
@@ -224,21 +228,21 @@ sub  _run {
         }
         return;
     } else {
-        print "using Bio::Root::HTTPget...\n" if $self->verbose > 0;
-        my $agent = new Bio::Root::HTTPget;
+        $self->debug("using Bio::Root::HTTPget...\n");
+        my $agent = Bio::Root::HTTPget->new();
         if ($value =~ /\w\d{6}/) {
             $self->{'_content'} =
                 eval {
-                    $agent->get("http://www.nlm.nih.gov/cgi/mesh/2003/MB_cgi?field=uid&term=$value")
+                    $agent->get( $self->_cgi_url('uid', $value) )
                 };
-            print STDERR "Could not connect to the server\n" and return
+            $self->warn("Could not connect to the server\n") and return
                 if $@;
         } else {
             $self->{'_content'} =
                 eval {
-                    $agent->get("http://www.nlm.nih.gov/cgi/mesh/2003/MB_cgi?field=entry&term=$value")
+                    $agent->get( $self->_cgi_url('entry', $value) )
                 };
-            print STDERR "Could not connect to the server\n" and return
+            $self->debug("Could not connect to the server\n") and return
                 if $@;
         }
         $self->status('COMPLETED');
@@ -256,11 +260,12 @@ sub result {
 
     # create a MeSH::Term object
     $_ = $self->{'_content'};
-    print substr ($_, 0, 100), "\n" if $self->verbose > 0;
+    $self->debug( substr($_, 0, 100) . "\n");
     my ($id) = m|Unique ID</TH><TD>(.*?)</TD>|i;
     my ($name) = m|MeSH Heading</TH><TD>([^<]+)|i;
-    my ($desc) = m|Scope Note</TH><TD>(.*?)</TD>|i;
+    my ($desc) = m|Scope Note</TH><TD>(.*?)</TD>|is;
     $desc =~ s/<.*?>//sg;
+	 $desc =~ s/\n/ /g;
 
     my $term = Bio::Phenotype::MeSH::Term->new(-id => $id,
                                                -name => $name,
@@ -270,7 +275,7 @@ sub result {
 
     while (m|Entry Term</TH><TD>([^<]+)|ig) {
         $term->add_synonym($1);
-        print "Synonym: |$1|\n" if $self->verbose > 0;
+        $self->debug("Synonym: |$1|\n");
     }
 
     foreach (split /<HR>/i, $trees ) {
@@ -286,16 +291,16 @@ sub result {
         my $twig = Bio::Phenotype::MeSH::Twig->new(-parent => $parent);
         $term->add_twig($twig);
 
-        print "Parent: |$parent|\n" if $self->verbose > 0;
+        $self->debug("Parent: |$parent|\n");
         while (/\n +(\w.+) \[$treeno\./g ) {
             $twig->add_child($1);
-            print "Child: |$1|\n" if $self->verbose > 0;
+            $self->debug("Child: |$1|\n");
         }
 
         while (/\n +(\w.+) \[$parent_treeno\./g ) {
             next if $name eq $1;
             $twig->add_sister($1);
-            print "Sister: |$1|\n" if $self->verbose > 0;
+            $self->debug("Sister: |$1|\n");
         }
     }
     return $term;

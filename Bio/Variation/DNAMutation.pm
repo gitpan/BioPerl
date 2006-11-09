@@ -1,8 +1,8 @@
-# $Id: DNAMutation.pm,v 1.12 2003/06/04 08:36:44 heikki Exp $
+# $Id: DNAMutation.pm,v 1.18.4.1 2006/10/02 23:10:38 sendu Exp $
 #
 # BioPerl module for Bio::Variation::DNAMutation
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Heikki Lehvaslaiho
 #
@@ -58,26 +58,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the 
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
-report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email:  heikki@ebi.ac.uk
-Address: 
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom 
+Email:  heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -91,13 +85,11 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Variation::DNAMutation;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inheritance
-use Bio::Variation::VariantI;
 
-@ISA = qw( Bio::Variation::VariantI );
+use base qw(Bio::Variation::VariantI);
 
 sub new {
     my($class,@args) = @_;
@@ -217,7 +209,7 @@ sub _CpG_value {
 	}
     } else {
 	$self->warn('CpG makes sense only in the context of point mutation');
-	return undef;
+	return;
     }
 }
 
@@ -239,14 +231,14 @@ sub RNAChange {
   if (defined $value) {
       if( ! $value->isa('Bio::Variation::RNAChange') ) {
 	  $self->throw("Is not a Bio::Variation::RNAChange object but a [$self]");
-	  return (undef);
+	  return;
       }
       else {
 	  $self->{'RNAChange'} = $value;
       }
   }
   unless (exists $self->{'RNAChange'}) {
-      return (undef);
+      return;
   } else {
       return $self->{'RNAChange'};
   }
@@ -332,7 +324,7 @@ sub _point_type_label {
            'systematic name' of the mutation. Systematic name is
            specified in Antonorakis & MDI Nomenclature Working Group:
            Human Mutation 11:1-3, 1998. 
-           http://www.interscience.wiley.com/jpages/1059-7794/nomenclature.html
+           http://www3.interscience.wiley.com/cgi-bin/abstract/5001291/ABSTRACT
  Returns : string
 
 =cut
@@ -348,12 +340,15 @@ sub sysname {
 	my $sysname = '';
 	# show the alphabet only if $self->SeqDiff->alphabet is set;
 	my $mol = '';
-	if ($self->SeqDiff->alphabet && $self->SeqDiff->alphabet eq 'dna') {
+
+if ($self->SeqDiff ) {
+	if ($self->SeqDiff && $self->SeqDiff->alphabet && $self->SeqDiff->alphabet eq 'dna') {
 	    $mol = 'g.';
 	}
 	elsif ($self->SeqDiff->alphabet && $self->SeqDiff->alphabet eq 'rna') {
 	    $mol = 'c.';
 	}
+    }
 	my $sep;
 	if ($self->isMutation) {
 	    $sep = '>';

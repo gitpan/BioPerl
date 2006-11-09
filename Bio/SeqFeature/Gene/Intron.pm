@@ -1,4 +1,4 @@
-# $Id: Intron.pm,v 1.6 2003/08/01 18:06:18 jason Exp $
+# $Id: Intron.pm,v 1.10.4.1 2006/10/02 23:10:28 sendu Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::Intron
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::SeqFeature::Gene::Intron - DESCRIPTION of Object
+Bio::SeqFeature::Gene::Intron - An intron feature
 
 =head1 SYNOPSIS
 
@@ -30,27 +30,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - David Block
 
 Email dblock@gene.pbi.nrc.ca
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -64,13 +57,11 @@ Internal methods are usually preceded with a _
 
 
 package Bio::SeqFeature::Gene::Intron;
-use vars qw(@ISA);
 use strict;
 
 use Bio::SeqFeature::Gene::Exon;
-use Bio::SeqFeature::Gene::NC_Feature;
 
-@ISA = qw(Bio::SeqFeature::Gene::NC_Feature);
+use base qw(Bio::SeqFeature::Gene::NC_Feature);
 
 sub new {
     my($class,@args) = @_;
@@ -168,8 +159,8 @@ sub phase {
 
 sub acceptor_splice_site {
   my ($self,$ss_start,$ss_end) = @_;
-  $ss_start ||= 21;
-  $ss_end   ||= 3;
+  $ss_start = 21 unless defined $ss_start;
+  $ss_end   = 3 unless defined $ss_end;
   if($self->strand < 0){
     my $tmp= $ss_start;
     $ss_start = $ss_end;
@@ -221,8 +212,8 @@ sub acceptor_splice_site {
 
 sub donor_splice_site {
   my ($self,$ss_start,$ss_end) = @_;
-  $ss_start ||= 3;
-  $ss_end   ||= 10;
+  $ss_start = 3 unless defined $ss_start;
+  $ss_end   = 10 unless defined $ss_end;
   if($self->strand < 0){
     my $tmp= $ss_start;
     $ss_start = $ss_end;

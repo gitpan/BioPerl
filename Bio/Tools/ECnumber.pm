@@ -1,4 +1,4 @@
-# $Id: ECnumber.pm,v 1.7 2002/12/12 18:27:02 czmasek Exp $
+# $Id: ECnumber.pm,v 1.11.4.1 2006/10/02 23:10:31 sendu Exp $
 #
 # BioPerl module for Bio::Tools::ECnumber
 #
@@ -22,79 +22,55 @@
 
 =head1 NAME
 
-ECnumber - representation of EC numbers
+Bio::Tools::ECnumber - representation of EC numbers (Enzyme Classification)
 
 =head1 SYNOPSIS
 
   use Bio::Tools::ECnumber;
 
-
   # Creation of ECnumber objects
-  # ----------------------------
-
   my $EC1 = Bio::Tools::ECnumber->new( -ec_string => "4.3.2.1" );
   my $EC2 = Bio::Tools::ECnumber->new( -ec_string => "EC 1.1.1.1" );
   my $EC3 = Bio::Tools::ECnumber->new();
 
-
   # Copying
-  # -------
-
   my $EC4 = $EC1->copy();
 
-
-  # Modification of ECnumber objects
-  # --------------------------------
-
+  # Modification/canonicalization of ECnumber objects
   print $EC3->EC_string( "1.01.01.001" ); # Prints "1.1.1.1".
 
-
-  # To string
-  # ---------
-
+  # Stringify
   print $EC3->EC_string();
-
-  # or:
-
+  # or
   print $EC3->to_string();
 
-
-
   # Test for equality
-  # -----------------
-
-  # Against ECnumber object:
+  # -- Against ECnumber object:
   if ( $EC3->is_equal( $EC2 ) ) { # Prints "equal".
       print "equal";
   }
-
-  # Against string representation of EC number:
+  # -- Against string representation of EC number:
   if ( ! $EC3->is_equal( "1.1.1.-" ) ) { # Prints "not equal".
       print "not equal";
   }
 
-
   # Test for membership
-  # -------------------
-
   my $EC5 = Bio::Tools::ECnumber->new( -ec_string => "4.3.2.-" ); 
-
-  # Against ECnumber object.
+  # -- Against ECnumber object.
   if ( $EC1->is_member( $EC5 ) ) { # Prints "member".
       print "member"; 
   }
-
-
-  # Against string representation of EC number.
+  # -- Against string representation of EC number.
   if ( ! $EC1->is_member( "4.3.1.-" ) ) { # Prints "not member".
       print "not member";
   }
 
-
-
 =head1 DESCRIPTION
 
-ECnumber is a representation of EC numbers [http://www.chem.qmul.ac.uk/iubmb/enzyme/].
+L<Bio::Tools::ECnumber> is a representation of EC numbers, 
+the numerical heirarchy for Enzyme Classification.
+
+See L<http://www.chem.qmul.ac.uk/iubmb/enzyme/> for more details.
 
 =head1 FEEDBACK
 
@@ -104,17 +80,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bio.perl.org/MailList.html - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -141,19 +116,13 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Tools::ECnumber;
-use vars qw( @ISA );
 use strict;
-use Bio::Root::Object;
 
 use constant DEFAULT => "-";
 use constant TRUE    => 1;
 use constant FALSE   => 0;
 
-@ISA = qw( Bio::Root::Root );
-
-
-
-
+use base qw(Bio::Root::Root);
 
 =head2 new
 
@@ -168,7 +137,7 @@ use constant FALSE   => 0;
            Parses a EC number from "x.x.x.x", "EC x.x.x.x",
            "ECx.x.x.x", or "EC:x.x.x.x";
            x being either a positive integer or a "-".
- Returns : A new Ecnumber object.
+ Returns : A new ECnumber object.
  Args    : A string representing a EC number, e.g. "4.3.2.1"
            or "EC 4.3.2.1" or "1.-.-.-".
 

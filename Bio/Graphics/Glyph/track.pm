@@ -1,9 +1,7 @@
 package Bio::Graphics::Glyph::track;
 
 use strict;
-use Bio::Graphics::Glyph;
-use vars '@ISA';
-@ISA = 'Bio::Graphics::Glyph';
+use base qw(Bio::Graphics::Glyph);
 
 # track sets connector to empty
 sub connector {
@@ -15,11 +13,29 @@ sub connector {
 sub draw {
   my $self = shift;
   my ($gd,$left,$top,$partno,$total_parts) = @_;
+
+  # the clipping code here prevents poorly-behaving glyphs from
+  # drawing outside the track
+  my @clip;
+  if ($gd->can('clip')) {
+    @clip = $gd->clip();
+    # glyphs are allowed a slop area of ~3 on either side and 6 on the top and bottom
+    # in order to spill out over their boundaries.  Beyond this they start overlapping
+    # with other glyphs in an ugly way.
+    my @cliprect = ($left-$self->panel->pad_left,
+		    $top-6,
+		    $self->panel->right+$self->panel->pad_right,
+		    $top+$self->layout_height+6);
+    $gd->clip(@cliprect);
+  }
+
   my @parts = $self->parts;
   for (my $i=0; $i<@parts; $i++) {
     $parts[$i]->draw_highlight($gd,$left,$top);
     $parts[$i]->draw($gd,$left,$top,0,1);
   }
+
+  $gd->clip(@clip) if @clip;
 }
 
 # do nothing for components

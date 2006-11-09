@@ -53,7 +53,7 @@ Bio::Graphics - Generate GD images of Bio::Seq objects
  		  -double=>1,
  		  -tick => 2);
 
- $panel->add_track($seq,
+ $panel->add_track($wholeseq,
  		  -glyph  => 'generic',
  		  -bgcolor => 'blue',
  		  -label  => 1,
@@ -94,6 +94,25 @@ L<Bio::Das>,
 L<Bio::DB::GFF::Feature>,
 L<Ace::Sequence>,
 L<GD>
+
+=head1 FEEDBACK
+
+=head2 Mailing Lists
+
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to
+the Bioperl mailing list.  Your participation is much appreciated.
+
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Reporting Bugs
+
+Report bugs to the Bioperl bug tracking system to help us keep track
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
+
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 

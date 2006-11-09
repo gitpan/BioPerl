@@ -1,4 +1,4 @@
-# $Id: Relationship.pm,v 1.9 2003/03/26 09:08:55 lapp Exp $
+# $Id: Relationship.pm,v 1.14.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for Relationship
 #
@@ -22,7 +22,7 @@
 
 =head1 NAME
 
-Relationship - a relationship for an ontology
+Bio::Ontology::Relationship - a relationship for an ontology
 
 =head1 SYNOPSIS
 
@@ -59,17 +59,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the 
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
-report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via
+the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -101,14 +100,10 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Ontology::Relationship;
-use vars qw( @ISA );
 use strict;
-use Bio::Root::Root;
 use Bio::Ontology::TermI;
-use Bio::Ontology::RelationshipI;
 
-@ISA = qw( Bio::Root::Root
-           Bio::Ontology::RelationshipI );
+use base qw(Bio::Root::Root Bio::Ontology::RelationshipI);
 
 
 
@@ -137,12 +132,12 @@ sub new {
    
     my ( $identifier,
          $subject_term,
-	 $child,        # for backwards compatibility
+			$child,        # for backwards compatibility
          $object_term,
-	 $parent,       # for backwards compatibility
+			$parent,       # for backwards compatibility
          $predicate_term,
-	 $reltype,      # for backwards compatibility
-	 $ont)
+			$reltype,      # for backwards compatibility
+			$ont)
 	= $self->_rearrange( [qw( IDENTIFIER
 				  SUBJECT_TERM
 				  CHILD_TERM
@@ -317,8 +312,9 @@ sub predicate_term {
  Example : 
  Returns : an object implementing L<Bio::Ontology::OntologyI>
  Args    : on set, undef or an object implementing 
-           L<Bio::Ontology::OntologyI> (optional)
+           Bio::Ontology::OntologyI (optional)
 
+See L<Bio::Ontology::OntologyI>.
 
 =cut
 

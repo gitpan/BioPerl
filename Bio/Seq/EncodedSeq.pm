@@ -1,4 +1,4 @@
-# $Id: EncodedSeq.pm,v 1.8 2003/11/18 16:32:27 amackey Exp $
+# $Id: EncodedSeq.pm,v 1.11.4.1 2006/10/02 23:10:27 sendu Exp $
 #
 # BioPerl module for Bio::Seq::EncodedSeq
 #
@@ -16,7 +16,7 @@ Bio::Seq::EncodedSeq - subtype of L<Bio::LocatableSeq|Bio::LocatableSeq> to stor
 
 =head1 SYNOPSIS
 
-  $obj = new Bio::Seq::EncodedSeq(-seq => $dna, 
+  $obj = new Bio::Seq::EncodedSeq(-seq => $dna,
                                   -encoding => "CCCCCCCIIIIICCCCC",
                                   -start => 1,
                                   -strand => 1,
@@ -109,22 +109,20 @@ position/phase specific nucleotides:
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                     - General discussion
-  http://www.bioperl.org/MailList.html      - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Aaron Mackey
 
@@ -143,11 +141,9 @@ methods. Internal methods are usually preceded with a _
 package Bio::Seq::EncodedSeq;
 
 use strict;
-use vars qw(@ISA);
 
-use Bio::LocatableSeq;
 
-@ISA = qw(Bio::LocatableSeq);
+use base qw(Bio::LocatableSeq);
 
 =head2 new
 
@@ -273,7 +269,7 @@ sub encoding {
 	    if (ref $locs eq 'ARRAY') {
 	    } elsif (UNIVERSAL::isa($locs, "Bio::LocationI")) {
 	    } else {
-		$self->throw("Only a scalar or a ref to a hash; not a ref to a @{{lc ref $enc}}");		
+		$self->throw("Only a scalar or a ref to a hash; not a ref to a @{{lc ref $enc}}");
 	    }
 	}
     } elsif (! ref $enc) {
@@ -343,17 +339,17 @@ sub encoding {
 	    substr($currenc, $spanstart, $spanend - $spanstart + ($loc->location_type eq 'IN-BETWEEN' ? -1 : 1),
 		   $self->strand >= 0 ? $enc : reverse $enc);
 	    $currenc = reverse $currenc if $self->strand < 0;
-	    
+
 	    $self->{_encoding} = $currenc;
 	    $self->_recheck_encoding;
-	
+
 	    $currenc = $self->{_encoding};
 	    $currenc = reverse $currenc if $self->strand < 0;
 	    $enc = substr($currenc, $spanstart, length $enc);
 	    $enc = reverse $enc if $self->strand < 0;
 
 	    return $exp ? $enc: $self->_convert2implicit($enc);
-	    
+
 	} else {
 	    # presume a global redefinition; strip any current gap
 	    # characters in the sequence so they don't corrupt the
@@ -509,7 +505,7 @@ sub cds {
 	    $nt[$i] = $nogaps ? undef : 'N';
 	}
     }
-    
+
     return ($self->can_call_new ? ref($self) : __PACKAGE__)->new
 	(-seq => join('', grep { defined } @nt[$start..--$end]),
 	 -start => $self->start,
@@ -593,3 +589,5 @@ sub trunc {
     $new->encoding($enc);
     return $new;
 }
+
+1;

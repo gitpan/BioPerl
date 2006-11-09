@@ -1,6 +1,6 @@
 # BioPerl module for Bio::Matrix::PhylipDist
 #
-# $Id: PhylipDist.pm,v 1.10 2003/08/12 20:25:11 jason Exp $
+# $Id: PhylipDist.pm,v 1.16.4.1 2006/10/02 23:10:21 sendu Exp $
 #
 # Cared for by Shawn Hoon <shawnh@fugu-sg.org>
 #
@@ -61,17 +61,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bio.perl.org/MailList.html  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Shawn Hoon
 
@@ -94,11 +93,8 @@ methods. Internal methods are usually preceded with a "_".
 package Bio::Matrix::PhylipDist;
 use strict;
 
-use vars qw(@ISA);
-use Bio::Matrix::MatrixI;
-use Bio::Root::Root;
 
-@ISA = qw(Bio::Root::Root Bio::Matrix::MatrixI);
+use base qw(Bio::Root::Root Bio::Matrix::MatrixI);
 
 =head2 new
 
@@ -115,11 +111,13 @@ sub new {
     my $self = $class->SUPER::new(@args);
     my ($matrix,$values, $names,
 	$program,$matname,
-	$matid) = $self->_rearrange([qw(MATRIX VALUES 
-					NAMES PROGRAM
+	$matid) = $self->_rearrange([qw(MATRIX 
+					VALUES 
+					NAMES 
+					PROGRAM
 					MATRIX_NAME
 					MATRIX_ID
-					  )],@args);
+					)],@args);
     
     ($matrix && $values && $names) || 
 	$self->throw("Need matrix, values, and names fields all provided!");
@@ -254,13 +252,17 @@ sub print_matrix {
     if( length($name) >= 15 ) { $newname .= " " }
     $str.=$newname;
     my $count = 0;
-    foreach my $n (@names){
+    foreach my $n (@names) {
       my ($i,$j) = @{$matrix{$name}{$n}};
       if($count < $#names){
-        $str.= $values[$i][$j]. "  ";
+        $str .= $values[$i][$j]. "  ";
       }
       else {
-        $str.= $values[$i][$j];
+	  if( ! defined $values[$i][$j] ) { 
+	      $self->debug("no value for $i,$j cell\n");
+	  } else { 
+	      $str .= $values[$i][$j];
+	  }
       }
       $count++;
     }
@@ -434,7 +436,7 @@ sub column_num_for_name{
        return $ct if $n eq $name;
        $ct++;
    }
-   return undef;
+   return;
 }
 
 =head2 row_num_for_name

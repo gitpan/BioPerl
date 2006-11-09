@@ -1,15 +1,13 @@
 package Bio::Graphics::Glyph::transcript;
-# $Id: transcript.pm,v 1.16 2003/09/17 17:11:30 lstein Exp $
+# $Id: transcript.pm,v 1.23.4.1 2006/10/02 23:10:20 sendu Exp $
 
 use strict;
-use Bio::Graphics::Glyph::segments;
-use vars '@ISA';
-@ISA = qw( Bio::Graphics::Glyph::segments);
+use base qw(Bio::Graphics::Glyph::segments);
 
 sub pad_left  {
   my $self = shift;
+  return 0 unless $self->{level} == 0;
   my $pad  = $self->SUPER::pad_left;
-  return $pad if $self->{level} > 0;
   my $strand = $self->feature->strand;
   return $pad unless defined $strand && $strand < 0;
   return $self->arrow_length > $pad ? $self->arrow_length : $pad;
@@ -17,8 +15,8 @@ sub pad_left  {
 
 sub pad_right {
   my $self = shift;
-  my $pad  = $self->SUPER::pad_right;
-  return $pad if $self->{level} > 0;
+  return 0 unless $self->{level} == 0;
+  my $pad = $self->SUPER::pad_right;
   my $strand = $self->feature->strand;
   return $pad unless defined($strand) && $strand > 0;
   return $self->arrow_length > $pad ? $self->arrow_length : $pad;
@@ -30,35 +28,47 @@ sub draw_component {
   $self->SUPER::draw_component(@_);
 }
 
+sub part_label_merge {
+  my $self = shift;
+  my $label = $self->SUPER::part_label_merge;
+  return $label if defined $label;
+  1;
+}
+
 sub draw_connectors {
   my $self = shift;
   my $gd = shift;
   my ($left,$top) = @_;
+
   $self->SUPER::draw_connectors($gd,$left,$top);
-  my @parts = $self->parts;
+  my @parts = $self->parts; # or return;
 
   # H'mmm.  No parts.  Must be in an intron, so draw intron
   # spanning entire range
   if (!@parts) {
+    return unless $self->feature_has_subparts;
     my($x1,$y1,$x2,$y2) = $self->bounds(0,0);
     $self->_connector($gd,$left,$top,$x1,$y1,$x1,$y2,$x2,$y1,$x2,$y2);
-    @parts = $self;
+    @parts = ($self);
   }
 
   # flip argument makes this confusing
   # certainly there's a simpler way to express this idea
   my $strand    = $self->feature->strand;
   my ($first,$last) = ($parts[0],$parts[-1]);
+
   ($first,$last) = ($last,$first) if exists $self->{flip};
 
-  if ($strand >= 0) {
+  if ($strand > 0) {
     my($x1,$y1,$x2,$y2) = $last->bounds(@_);
     my $center = ($y2+$y1)/2;
     $self->{flip} ?
 	$self->arrow($gd,$x1,$x1-$self->arrow_length,$center)
       :
 	$self->arrow($gd,$x2,$x2+$self->arrow_length,$center);
-  } else {
+  }
+
+  elsif ($strand < 0) {
     my($x1,$y1,$x2,$y2) = $first->bounds(@_);
     my $center = ($y2+$y1)/2;
     $self->{flip } ?

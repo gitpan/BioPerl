@@ -1,4 +1,4 @@
-# $Id: RelationshipType.pm,v 1.11 2003/06/20 18:31:44 allenday Exp $
+# $Id: RelationshipType.pm,v 1.17.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for Bio::Ontology::RelationshipType  
 #
@@ -22,7 +22,7 @@
 
 =head1 NAME
 
-RelationshipType - a relationship type for an ontology
+Bio::Ontology::RelationshipType  - a relationship type for an ontology
 
 =head1 SYNOPSIS
 
@@ -31,7 +31,7 @@ RelationshipType - a relationship type for an ontology
 =head1 DESCRIPTION
 
 This class can be used to model various types of relationships
-(such as "IS_A", "PART_OF", "CONTAINS", "FOUND_IN").
+(such as "IS_A", "PART_OF", "CONTAINS", "FOUND_IN", "RELATED_TO").
 
 This class extends L<Bio::Ontology::Term>, so it essentially is-a
 L<Bio::Ontology::TermI>. In addition, all methods are overridden such
@@ -45,17 +45,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the 
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
-report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via
+the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -82,18 +81,17 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Ontology::RelationshipType;
-use vars qw( @ISA );
 use strict;
-use Bio::Ontology::Term;
 
 
-use constant PART_OF  => "PART_OF";
-use constant IS_A     => "IS_A";
-use constant CONTAINS => "CONTAINS";
-use constant FOUND_IN => "FOUND_IN";
+use constant PART_OF    => "PART_OF";
+use constant RELATED_TO => "RELATED_TO";
+use constant IS_A       => "IS_A";
+use constant CONTAINS   => "CONTAINS";
+use constant FOUND_IN   => "FOUND_IN";
 
 
-@ISA = qw( Bio::Ontology::Term );
+use base qw(Bio::Ontology::Term);
 
 
 #
@@ -105,13 +103,15 @@ my %term_name_map = ();
 =head2 get_instance
 
  Title   : get_instance
- Usage   : $IS_A     = Bio::Ontology::RelationshipType->get_instance( "IS_A" );
-           $PART_OF  = Bio::Ontology::RelationshipType->get_instance( "PART_OF" );
-           $CONTAINS = Bio::Ontology::RelationshipType->get_instance( "CONTAINS" );
-           $FOUND_IN = Bio::Ontology::RelationshipType->get_instance( "FOUND_IN" );
+ Usage   : $IS_A       = Bio::Ontology::RelationshipType->get_instance( "IS_A" );
+           $PART_OF    = Bio::Ontology::RelationshipType->get_instance( "PART_OF" );
+           $RELATED_TO = Bio::Ontology::RelationshipType->get_instance( "RELATED_TO" );
+           $CONTAINS   = Bio::Ontology::RelationshipType->get_instance( "CONTAINS" );
+           $FOUND_IN   = Bio::Ontology::RelationshipType->get_instance( "FOUND_IN" );
  Function: Factory method to create instances of RelationshipType
  Returns : [Bio::Ontology::RelationshipType]
- Args    : "IS_A" or "PART_OF" or "CONTAINS" or "FOUND_IN" [scalar]
+ Args    : "IS_A" or "PART_OF" or "CONTAINS" or "FOUND_IN" or 
+           "RELATED_TO" [scalar]
            the ontology [Bio::Ontology::OntologyI] (optional)
 
 =cut
@@ -422,7 +422,6 @@ sub _check_class {
  Args    : The name of the attribute that was attempted to change.
            Optionally, the old value and the new value for reporting
            purposes only.
-
 
 =cut
 

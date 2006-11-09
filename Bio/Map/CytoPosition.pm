@@ -1,8 +1,8 @@
-# $Id: CytoPosition.pm,v 1.5 2003/06/04 08:36:41 heikki Exp $
+# $Id: CytoPosition.pm,v 1.16.4.1 2006/10/02 23:10:21 sendu Exp $
 #
 # BioPerl module for Bio::Map::CytoPosition
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Sendu Bala <bix@sendu.me.uk>
 #
 # Copyright Heikki Lehvaslaiho
 #
@@ -58,27 +58,24 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email:  heikki@ebi.ac.uk
-Address:
+Email:  heikki-at-bioperl-dot-org
 
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom
+=head1 CONTRIBUTORS
 
+Sendu Bala  bix@sendu.me.uk
 
 =head1 APPENDIX
 
@@ -87,30 +84,20 @@ methods. Internal methods are usually preceded with a _
 
 =cut
 
-
 # Let the code begin...
 
 package Bio::Map::CytoPosition;
-use vars qw(@ISA);
 
 use strict;
 use integer;
 
-# Object preamble - inheritance
-
-use Bio::Variation::VariantI;
-use Bio::RangeI;
-use Bio::Map::Position;
-
-@ISA = qw(  Bio::Map::Position Bio::Variation::VariantI );
-
+use base qw(Bio::Map::Position);
 
 =head2 cytorange
 
  Title   : cytorange
- Usage   : $obj->cytorange();
+ Usage   : my $range = $obj->cytorange();
  Function:
-
             Converts cytogenetic location set by value method into
             an integer range. The chromosome number determines the
             "millions" in the values.  Human X and Y chromosome
@@ -147,21 +134,20 @@ use Bio::Map::Position;
                pad char for start is '9', for end '0'
                range is chromosome + 100,000 - padded range start or end
 
- Example : Returns : Bio::Range object or undef
+ Returns : Bio::Range object or undef
  Args    : none
 
 =cut
 
-
 sub cytorange {
     my ($self) = @_;
-    my ($chr, $r, $band, $band2, $arm, $arm2, $lc, $uc, $lcchar, $ucchar) = undef;
+    my ($chr, $r, $band, $band2, $arm, $arm2, $lc, $uc, $lcchar, $ucchar);
 
-    return $r if not defined $self->value; # returns undef
-    $self->value =~
+    return $r if not defined $self->{_value}; # returns undef
+    $self->{_value} =~
 	#  -----1-----  --------2---------   -----3-----     -------4-------   ---6---
 	m/([XY]|[0-9]+)(cen|qcen|pcen|[pq])?(ter|[.0-9]+)?-?([pq]?(cen|ter)?)?([.0-9]+)?/;
-    $self->warn("Not a valid value: ". $self->value), return $r
+    $self->warn("Not a valid value: ". $self->{_value}), return $r
 	if not defined $1 ; # returns undef
 
     $chr = uc $1;
@@ -184,8 +170,9 @@ sub cytorange {
 	$arm2 = $2 if $4 eq ''; # it is not necessary to repeat the arm [p|q]
 	$band2 = $6;
 	$band2 =~ tr/\.//d;
+    
 	#find the correct order
-#	print STDERR "-|$&|----2|$2|-----3|$band|---4|$4|--------arm2|$arm2|-------------\n";
+    #print STDERR "-|$&|----2|$2|-----3|$band|---4|$4|--------arm2|$arm2|-------------\n";
 	if ($band ne '' and (defined $arm2 and $2 ne $arm2 and $arm2 eq 'q') ) {
 	    $lc = 'start'; $lcchar = '9';
 	    $uc = 'end'; $ucchar = '9';
@@ -331,12 +318,12 @@ sub cytorange {
     # e.g. 10p
     #
     elsif (defined $2 ) { # e.g. 10p
-	if ($2 eq'p' ) {
+	if ($2 eq 'p' ) {
 	    $r = new Bio::Range('-start' => $chr,
 				'-end' => 100000  + $chr
 				);
 	}
-	elsif ($2 eq'q' )  {
+	elsif ($2 eq 'q' )  {
 	    $r = new Bio::Range('-start' => 100000 + $chr,
 				'-end' => 200000 + $chr
 				);
@@ -354,37 +341,31 @@ sub cytorange {
 			    '-end' => 200000 + $chr
 			    );
     }
+    
+    if ($r) {
+        $self->start($r->start);
+        $self->end($r->end);
+    }
     return $r;
 }
 
 
 sub _pad {
     my ($string, $len, $pad_char) = @_;
-    die "function _pad needs a positive integer length, not [$len]" 
+    __PACKAGE__->throw("function _pad needs a positive integer length, not [$len]") 
 	unless $len =~ /^\+?\d+$/;
-    die "function _pad needs a single character pad_char, not [$pad_char]" 
+    __PACKAGE__->throw("function _pad needs a single character pad_char, not [$pad_char]") 
 	unless length $pad_char == 1;
     $string ||= '';
-#    $padded = $text . $pad_char x ( $pad_len - length( $text ) );
     return $string . $pad_char x ( $len - length( $string ) );
-
-#    my $slen = length $string;
-#    my $add = $len - $slen;
-#    return $string if $add <= 0;
-#    return $string .= $char x $add;
 }
-
 
 =head2 range2value
 
  Title   : range2value
- Usage   : $obj->range2value();
- Function:
-
-            Sets and returns the value string based on start and end
-            values of the Bio::Range object passes as an argument.
-
- Example :
+ Usage   : my $value = $obj->range2value($range);
+ Function: Sets and returns the value string based on start and end values of
+           the Bio::Range object passes as an argument.
  Returns : string or false
  Args    : Bio::Range object
 
@@ -395,30 +376,27 @@ sub range2value {
     if( defined $value) {
 	if( ! $value->isa('Bio::Range') ) {
 	    $self->throw("Is not a Bio::Range object but a [$value]");
-	    return undef;
+	    return;
 	}
 	if( ! $value->start ) {
 	    $self->throw("Start is not defined in [$value]");
-	    return undef;
+	    return;
 	}
 	if( ! $value->end ) {
 	    $self->throw("End is not defined in [$value]");
-	    return undef;
+	    return;
 	}
 	if( $value->start < 100000 ) {
 	    $self->throw("Start value has to be in millions, not ". $value->start);
-	    return undef;
+	    return;
 	}
 	if( $value->end < 100000 ) {
 	    $self->throw("End value has to be in millions, not ". $value->end);
-	    return undef;
+	    return;
 	}
 
 	my ($chr, $arm, $band) = $value->start =~ /(\d+)(\d)(\d{5})/;	
 	my ($chr2, $arm2, $band2) = $value->end =~ /(\d+)(\d)(\d{5})/;	
-
-	#print STDERR join ("\t", $value->start, $value->end ),"\n";
-	#print STDERR join ("\t", $chr, $arm, $band, $chr2, $arm2, $band2), "\n";
 
 	my ($chrS, $armS, $bandS, $arm2S, $band2S, $sep) = ('', '', '', '', '', '' );
       LOC: {
@@ -528,7 +506,7 @@ sub range2value {
  Usage   : my $pos = $position->value;
  Function: Get/Set the value for this postion
  Returns : scalar, value
- Args    : [optional] new value to set
+ Args    : none to get, OR scalar to set
 
 =cut
 
@@ -536,7 +514,7 @@ sub value {
    my ($self,$value) = @_;
    if( defined $value ) {
        $self->{'_value'} = $value;
-       $self->{'_numeric'} = $self->cytorange($value);
+       $self->cytorange;
    }
    return $self->{'_value'};
 }
@@ -546,30 +524,16 @@ sub value {
  Title   : numeric
  Usage   : my $num = $position->numeric;
  Function: Read-only method that is guarantied to return a numeric 
-           representation for this position. 
-
-           This instanse of the method can also be set, but you better
-           know what you are doing.
-
- Returns : Bio::RangeI object 
+           representation of the start of this position.
+ Returns : int (the start of the range)
  Args    : optional Bio::RangeI object 
-
-See L<Bio::RangeI> for more information.
 
 =cut
 
 sub numeric {
-   my ($self, $value) = @_;
-
-   if ($value) {
-       $self->throw("This is not a Bio::RangeI object but a [$value]")
-	   unless $value->isa('Bio::RangeI');
-       $self->{'_numeric'} = $value;
-       $self->{'_value'} = $self->range2value($value);
-   }
-   return $self->{'_numeric'};
+   my $self = shift;
+   return $self->start(@_);
 }
-
 
 =head2 chr
 
@@ -577,7 +541,7 @@ sub numeric {
  Usage   : my $mychr = $position->chr();
  Function: Get/Set method for the chromosome string of the location.
  Returns : chromosome value
- Args    : [optional] new chromosome value
+ Args    : none to get, OR scalar to set
 
 =cut
 

@@ -1,9 +1,9 @@
-# $Id: prodom.pm,v 1.8 2002/10/22 07:38:26 lapp Exp $
+# $Id: prodom.pm,v 1.10.4.3 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::AlignIO::prodom
 
-#	based on the Bio::SeqIO::prodom module
-#       by Ewan Birney <birney@sanger.ac.uk>
+#   based on the Bio::SeqIO::prodom module
+#       by Ewan Birney <birney@ebi.ac.uk>
 #       and Lincoln Stein  <lstein@cshl.org>
 #
 #       and the SimpleAlign.pm module of Ewan Birney
@@ -33,11 +33,10 @@ file databases.
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS - Peter Schattner
 
@@ -54,12 +53,10 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::AlignIO::prodom;
-use vars qw(@ISA);
 use strict;
 
-use Bio::AlignIO;
 
-@ISA = qw(Bio::AlignIO);
+use base qw(Bio::AlignIO);
 
 =head2 next_aln
 
@@ -89,7 +86,7 @@ sub next_aln {
 	   $start=$3;
 	   $end=$4;
 	   $seq=$5;
-	
+
 	   $names{'fake_id'} = $fake_id;
 
 	   $add = new Bio::LocatableSeq('-seq'=>$seq,
@@ -97,7 +94,7 @@ sub next_aln {
 			       '-start'=>$start,
 			       '-end'=>$end,
 			       );
-	
+
 	   $aln->add_seq($add);
        }
        elsif ($entry =~ /^CO/) {
@@ -130,8 +127,7 @@ sub next_aln {
 
 sub write_aln {
     my ($self,@aln) = @_;
-
-    $self->throw("Sorry: prodom-format output, not yet implemented! /n");
+    $self->throw_not_implemented();
 }
 
 1;

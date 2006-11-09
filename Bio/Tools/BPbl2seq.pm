@@ -1,4 +1,4 @@
-# $Id: BPbl2seq.pm,v 1.23 2003/06/03 14:37:50 jason Exp $
+# $Id: BPbl2seq.pm,v 1.29.4.1 2006/10/02 23:10:31 sendu Exp $
 #
 # Bioperl module Bio::Tools::BPbl2seq
 #	based closely on the Bio::Tools::BPlite modules
@@ -48,17 +48,21 @@ alignment using the BLAST algorithm.
 
 =head1 DESCRIPTION
 
-BPbl2seq is a package for parsing BLAST bl2seq reports. BLAST bl2seq is a
-program for comparing and aligning two sequences using BLAST.  Although
-the report format is similar to that of a conventional BLAST, there are a
-few differences so that BPlite is unable to read bl2seq reports directly.
+B<NOTE:> This module's functionality has been implemented in
+L<Bio::SearchIO::blast> and therefore is not actively maintained.
 
-From the user's perspective, one difference between bl2seq and
-other blast reports is that the bl2seq report does not print out the
-name of the first of the two aligned sequences.  (The second sequence
-name is given in the report as the name of the "hit").  Consequently,
-BPbl2seq has no way of identifying the name of the initial sequence
-unless it is passed to constructor as a second argument as in:
+BPbl2seq is a package for parsing BLAST bl2seq reports. BLAST bl2seq
+is a program for comparing and aligning two sequences using BLAST.
+Although the report format is similar to that of a conventional BLAST,
+there are a few differences so that BPlite is unable to read bl2seq
+reports directly.
+
+From the user's perspective, one difference between bl2seq and other
+blast reports is that the bl2seq report does not print out the name of
+the first of the two aligned sequences.  (The second sequence name is
+given in the report as the name of the "hit").  Consequently, BPbl2seq
+has no way of identifying the name of the initial sequence unless it
+is passed to constructor as a second argument as in:
 
 	my $report = Bio::Tools::BPbl2seq->new(\*FH, "ALEU_HORVU");
 
@@ -89,17 +93,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Peter Schattner
 
@@ -113,7 +116,7 @@ Lorenz Pollak (lorenz@ist.org, bioperl port)
 
 =head1 CONTRIBUTORS
 
-Jason Stajich, jason@cgt.mc.duke.edu
+Jason Stajich, jason-at-bioperl.org
 
 =cut
 
@@ -121,15 +124,11 @@ Jason Stajich, jason@cgt.mc.duke.edu
 package Bio::Tools::BPbl2seq;
 
 use strict;
-use vars qw(@ISA);
 use Bio::Tools::BPlite;
-use Bio::Root::Root;
-use Bio::Root::IO;
 use Bio::Tools::BPlite::Sbjct; # we want to use Sbjct
-use Bio::SeqAnalysisParserI;
 use Symbol;
 
-@ISA = qw(Bio::Root::Root Bio::SeqAnalysisParserI Bio::Root::IO);
+use base qw(Bio::Root::Root Bio::SeqAnalysisParserI Bio::Root::IO);
 
 #@ISA = qw(Bio::Tools::BPlite);
 
@@ -148,6 +147,8 @@ use Symbol;
 sub new {
     my ($class, @args) = @_;
     my $self = $class->SUPER::new(@args);
+    $self->warn("Use of Bio::Tools::BPbl2seq is deprecated".
+                   "Use Bio::SearchIO classes instead");
     # initialize IO
     $self->_initialize_io(@args);
 
@@ -159,7 +160,6 @@ sub new {
     } else { 
 	$self->warn("Must provide which type of BLAST was run (blastp,blastn, tblastn, tblastx, blastx) if you want strand information to get set properly for DNA query or subjects");
     }
-
     my $sbjct = $self->getSbjct();
     $self->{'_current_sbjct'} = $sbjct;
 
@@ -174,14 +174,14 @@ sub new {
  Usage    : $sbjct = $obj->getSbjct();
  Function : Method of obtaining single "subject" of a bl2seq report
  Example  : my $sbjct = $obj->getSbjct ) {}
- Returns  : Sbjct object or null if finished
+ Returns  : Sbjct object or undef if finished
  Args     :
 
 =cut
 
 sub getSbjct {
   my ($self) = @_;
-#  $self->_fastForward or return undef;
+#  $self->_fastForward or return;
 
   #######################
   # get bl2seq "sbjct" name and length #
@@ -202,7 +202,7 @@ sub getSbjct {
 	last READLOOP;
      }
   }
-  return undef if ! defined $def;
+  return if ! defined $def;
   $def =~ s/\s+/ /g;
   $def =~ s/\s+$//g;
   
@@ -238,7 +238,7 @@ sub next_feature{
    $sbjct = $self->{'_current_sbjct'};
    unless( defined $sbjct ) {
        $self->debug(" No hit object found for bl2seq report \n ");
-       return undef;
+       return;
    }
    $hsp = $sbjct->nextHSP;
    return $hsp || undef;
@@ -278,7 +278,7 @@ sub  sbjctName {
 	my $self = shift;
 #	unless( defined  $self->{'_current_sbjct'} ) {
 #       		my $sbjct = $self->{'_current_sbjct'} = $self->nextSbjct;
-#       		return undef unless defined $sbjct;
+#       		return unless defined $sbjct;
 #   	}
 	$self->{'_current_sbjct'}->{'NAME'} || '';
 }
@@ -298,7 +298,7 @@ sub sbjctLength {
 	my $self = shift;
 #	unless( defined  $self->{'_current_sbjct'} ) {
 #       		my $sbjct = $self->{'_current_sbjct'} = $self->nextSbjct;
-#       		return undef unless defined $sbjct;
+#       		return unless defined $sbjct;
 #   	}
 	$self->{'_current_sbjct'}->{'LENGTH'};
 }
@@ -443,6 +443,15 @@ sub _fastForward {
 	}
     }
     $self->warn("Possible error (1) while parsing BLAST report!");
+}
+
+sub DESTROY { 
+    my $self = shift; 
+    if( defined  $self->{'_current_sbjct'} ) { 
+	$self->{'_current_sbjct'}->{'PARENT'} = undef;
+	$self->{'_current_sbjct'} = undef;
+    }
+    $self->_io_cleanup(); 
 }
 
 1;

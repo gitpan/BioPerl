@@ -1,4 +1,4 @@
-# $Id: OMIMparser.pm,v 1.12 2003/11/05 04:19:03 juguang Exp $
+# $Id: OMIMparser.pm,v 1.20.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for Bio::Phenotype::OMIM::OMIMparser
 #
@@ -22,7 +22,7 @@
 
 =head1 NAME
 
-OMIMparser - parser for the OMIM database
+Bio::Phenotype::OMIM::OMIMparser - parser for the OMIM database
 
 =head1 SYNOPSIS
 
@@ -128,17 +128,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the 
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -167,11 +166,9 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Phenotype::OMIM::OMIMparser;
 
-use vars qw( @ISA );
 use strict;
 
 use Bio::Root::IO;
-use Bio::Root::Root;
 use Bio::Species;
 use Bio::Annotation::Reference;
 use Bio::Map::CytoPosition;
@@ -179,7 +176,7 @@ use Bio::Phenotype::OMIM::OMIMentry;
 use Bio::Phenotype::OMIM::OMIMentryAllelicVariant;
 use Bio::Phenotype::Correlate;
 
-@ISA = qw( Bio::Root::Root );
+use base qw(Bio::Root::Root);
 
 
 use constant DEFAULT_STATE               => 0;
@@ -255,7 +252,7 @@ sub next_phenotype {
     }
     
     if ( $self->_done() == TRUE ) {
-        return undef;
+        return;
     }
 
     my $fieldtag          = "";
@@ -543,18 +540,21 @@ sub _createOMIMentry {
 sub _finer_parse_symptoms {
     my ($self, $omim_entry) = @_;
     my $text = $omim_entry->clinical_symptoms_raw;
-
-    my $part;
-    foreach(split /\n/, $text){
-        my $line = $_;
-        if($line =~ /^(\w+)\:/){
-            $part = $1;
-        }else{
-            if($line =~ /(\s+)([^;]+)/){
-                my $symptom = $2;
-                $omim_entry->add_clinical_symptoms($part, $symptom);
-            }
-        }
+    if( $text ) { 
+	my $part;
+	for my $line (split /\n/, $text){
+		if ($line =~ /^([\w\s,]+)\:\s*$/) {
+		$part = $1;
+	    } elsif( $line =~ /^\s+$/ ) {
+	    } elsif($line =~ /^(\s+)([^;]+)\;?\s*$/){
+		my $symptom = $2;
+		if( ! $part ) { 
+		    # $self->warn("$text\nline='$line'\n");
+		    next;
+		}
+		$omim_entry->add_clinical_symptoms($part, $symptom);
+	    }
+	}
     }
     $omim_entry->clinical_symptoms_raw('');
 }
@@ -575,7 +575,7 @@ sub _parse_genemap {
                push( @cps, $cp ); 
           }
           $omim_entry->add_CytoPositions( @cps );
-     }
+      }
 
      my $gene_symbols = $a[ 5 ];
      if ( defined ( $gene_symbols ) ) {
@@ -699,8 +699,8 @@ sub _create_allelic_variant {
          $symbol = $symbol_mut_line;
     }
     
-    if ( ! defined( $description ) ) { die( "undef desc" ); }
-    if ( ! defined( $mutation ) )   { die( "undef mutation" ); }
+    if ( ! defined( $description ) ) { $self->throw("undef desc"); }
+    if ( ! defined( $mutation ) )   { $self->throw("undef mutation"); }
   
     
     my $allelic_variant = Bio::Phenotype::OMIM::OMIMentryAllelicVariant->new();

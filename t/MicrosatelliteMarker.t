@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: MicrosatelliteMarker.t,v 1.1 2002/02/11 09:31:34 heikki Exp $
+## $Id: MicrosatelliteMarker.t,v 1.2 2005/09/16 12:44:34 bosborne Exp $
 #
 
 use strict;
@@ -19,8 +19,9 @@ BEGIN {
     plan tests => 6;
 }
 
-END {
-}
+#END {
+#}
+
 require 'dumpvar.pl';
 use Bio::Map::SimpleMap;
 use Bio::Map::Position;

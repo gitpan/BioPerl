@@ -1,5 +1,6 @@
-#!/usr/bin/perl -w
+#!perl -w
 #-*-Perl-*-
+
 =head1 NAME
 
 dbsplit - script to split an input set of database(s) into smaller pieces
@@ -37,8 +38,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -46,11 +47,11 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
- http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
-Jason Stajich, jason@bioperl.org
+Jason Stajich, jason-at-bioperl-dot-org
 
 =cut
 
@@ -61,7 +62,7 @@ use Bio::SeqIO::MultiFile;
 use Getopt::Long;
 my $dbsize = 100;
 my $prefix;
-my ($informat,$outformat,$infile);
+my ($informat,$outformat,$infile) = ( 'fasta', 'fasta');
 
 GetOptions (
 	    's|size:s'     => \$dbsize,
@@ -102,3 +103,5 @@ while( my $seq = $in->next_seq ) {
     $out->write_seq($seq);
 }
 
+
+__END__

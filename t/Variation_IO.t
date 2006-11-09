@@ -1,56 +1,68 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Variation_IO.t,v 1.13 2001/12/14 17:52:44 jason Exp $
+## $Id: Variation_IO.t,v 1.20 2005/09/17 02:11:21 bosborne Exp $
 
 use strict;
-use vars qw($NUMTESTS);
-BEGIN { 
-    eval { require Test; };
-    if( $@ ) {
-	use lib 't';
-    }
-    use Test;
 
-    eval { require 'Text/Wrap.pm' };
-    if( $@ || $Text::Wrap::VERSION < 98 ) {
-	print STDERR "Must have at least Text::Wrap 98 installed\n";
-	plan tests => 1;
-	ok(1);
-	exit(0);
-    }
-    $NUMTESTS = 25;
-    plan tests => $NUMTESTS;
+BEGIN {
+	use vars qw($NUMTESTS $error);
+	$error = 0;
+	eval { require Test; };
+	if( $@ ) {
+		use lib 't';
+	}
+	use Test;
+
+	eval {
+		require Text::Wrap;
+		require XML::Writer;
+	};
+	if ( $@ || $Text::Wrap::VERSION < 98 ) {
+		print STDERR "Skip tests - missing Text::Wrap 98 installed or XML::Writer\n";
+		$error = 1;
+	}
+	$NUMTESTS = 25;
+	plan tests => $NUMTESTS;
 }
 
-use Text::Wrap 98;
+END {
+	foreach ( $Test::ntest..$NUMTESTS) {
+		skip("Cannot complete Variation_IO tests",1);
+	}
+}
+
+if ($error == 1 ) {
+	exit(0);
+}
+
 use Bio::Variation::IO;
 use Bio::Root::IO;
 
 sub fileformat ($) {
-    my ($file) = shift;
-    my $format;
-    if ($file =~ /.*dat$/) {
-	$format = 'flat';
-    }
-    elsif ($file =~ /.*xml$/ ) {
-	$format = 'xml';
-    } else {
-	print "Wrong extension! [$file]";
-	exit;
-    }
-    return $format;
+	my ($file) = shift;
+	my $format;
+	if ($file =~ /.*dat$/) {
+		$format = 'flat';
+	}
+	elsif ($file =~ /.*xml$/ ) {
+		$format = 'xml';
+	} else {
+		print "Wrong extension! [$file]";
+		exit;
+	}
+	return $format;
 }
 
 sub ext ($) {
-    my ($file) = @_;
-    my ($name) = $file =~ /.*.(...)$/;
-    return $name;
+	my ($file) = @_;
+	my ($name) = $file =~ /.*.(...)$/;
+	return $name;
 }
 
 sub filename ($) {
-    my ($file) = @_;
-    my ($name) = $file =~ /(.*)....$/;
-    return $name;
+	my ($file) = @_;
+	my ($name) = $file =~ /(.*)....$/;
+	return $name;
 }
 
 sub io {
@@ -82,7 +94,7 @@ sub io {
     }
     my $count = scalar @entries;
     ok @entries > 0;# "No SeqDiff objects [$count]";
-    
+
     my $out = Bio::Variation::IO->new( -FILE => "> $o_file", 
 				       -FORMAT => $o_format);
     my $out_ok = 1;
@@ -102,21 +114,15 @@ sub io {
     }
 
     ok $after;# "Error in reading in again the output file [$o_file]";
-
     ok $before, $after, "test output file differs from input";
     print STDERR `diff $t_file $o_file` if $before ne $after;
     unlink($o_file); 
 }
 
-
-
-
 io  (Bio::Root::IO->catfile("t","data","mutations.dat"), 
-   Bio::Root::IO->catfile("t","data","mutations.out.dat")); #1..5
-
+     Bio::Root::IO->catfile("t","data","mutations.out.dat")); #1..5
 io  (Bio::Root::IO->catfile("t","data","polymorphism.dat"), 
-   Bio::Root::IO->catfile("t","data","polymorphism.out.dat")); #6..10
-
+     Bio::Root::IO->catfile("t","data","polymorphism.out.dat")); #6..10
 
 eval {
     require Bio::Variation::IO::xml;
@@ -134,19 +140,32 @@ if( $@ ) {
 }
 
 eval {
-    io  (Bio::Root::IO->catfile("t","data","mutations.xml"), 
-	Bio::Root::IO->catfile("t","data","mutations.out.xml")); #10..12
+    if( $XML::Writer::VERSION >= 0.5 ) { 
+	io  (Bio::Root::IO->catfile("t","data","mutations.xml"), 
+	     Bio::Root::IO->catfile("t","data","mutations.out.xml")); #10..12
+    } else { 
+	io  (Bio::Root::IO->catfile("t","data","mutations.old.xml"), 
+	     Bio::Root::IO->catfile("t","data","mutations.out.xml")); #10..12
+    }
 };
 
 eval {
-    io  (Bio::Root::IO->catfile("t","data","polymorphism.xml"), 
-	Bio::Root::IO->catfile("t","data","polymorphism.out.xml")); #13..14
-};
+    if( $XML::Writer::VERSION >= 0.5 ) { 
+	io  (Bio::Root::IO->catfile("t","data","polymorphism.xml"), 
+	     Bio::Root::IO->catfile("t","data","polymorphism.out.xml")); #13..14
+    } else { 
+	io  (Bio::Root::IO->catfile("t","data","polymorphism.old.xml"), 
+	     Bio::Root::IO->catfile("t","data","polymorphism.out.xml")); #13..14
 
+    }
+};
 
 eval { 
-	 io  (Bio::Root::IO->catfile("t","data","mutations.dat"), 
-	    Bio::Root::IO->catfile("t","data","mutations.out.xml")); #15..25
+    if( $XML::Writer::VERSION >= 0.5 ) { 
+	io  (Bio::Root::IO->catfile("t","data","mutations.dat"), 
+	     Bio::Root::IO->catfile("t","data","mutations.out.xml")); #15..25
+    } else { 
+	io  (Bio::Root::IO->catfile("t","data","mutations.old.dat"), 
+	     Bio::Root::IO->catfile("t","data","mutations.old.out.xml")); #15..25
+    }
 };
-
-

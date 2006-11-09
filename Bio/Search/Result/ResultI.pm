@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: ResultI.pm,v 1.17 2003/04/09 03:30:45 sac Exp $
+# $Id: ResultI.pm,v 1.23.4.1 2006/10/02 23:10:24 sendu Exp $
 #
 # BioPerl module Bio::Search::Result::ResultI
 #
@@ -67,17 +67,16 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bio.perl.org/MailList.html  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR 
 
@@ -108,11 +107,9 @@ The rest of the documentation details each of the object methods. Internal metho
 package Bio::Search::Result::ResultI;
 
 use strict;
-use vars qw(@ISA);
 
-use Bio::AnalysisResultI;
 
-@ISA = qw( Bio::AnalysisResultI );
+use base qw(Bio::AnalysisResultI);
 
 
 =head2 next_hit
@@ -130,6 +127,68 @@ use Bio::AnalysisResultI;
 sub next_hit {
     my ($self,@args) = @_;
     $self->throw_not_implemented;
+}
+
+=head2 sort_hits
+
+ Title		: sort_hits
+ Usage		: $result->sort_hits(\&sort_function)
+ Function	: Sorts the available hit objects by a user-supplied function. Defaults to sort
+                  by descending score.
+ Returns	: n/a
+ Args		: A coderef for the sort function.  See the documentation on the Perl sort() 
+                  function for guidelines on writing sort functions.  
+ Note		: To access the special variables $a and $b used by the Perl sort() function 
+                  the user function must access Bio::Search::Result::ResultI namespace. 
+                  For example, use : 
+                  $result->sort_hits( sub{$Bio::Search::Result::ResultI::a->length <=> 
+					      $Bio::Search::Result::ResultI::b->length});
+                   NOT $result->sort_hits($a->length <=>$b->length);
+
+=cut
+
+sub sort_hits {
+    my ($self, $coderef) = @_;
+    my @sorted_hits;
+
+    if ($coderef)  {
+	$self->throw('sort_hits requires a sort function passed as a subroutine reference')
+	    unless (ref($coderef) eq 'CODE');
+    }
+    else {
+	$coderef = \&_default_sort_hits;
+	# throw a warning?
+    }
+
+    my @hits = $self->hits();
+    
+    eval {@sorted_hits = sort $coderef @hits };
+
+   if ($@) {
+       $self->throw("Unable to sort hits: $@");
+   }
+   else {
+       $self->{'_hits'} = \@sorted_hits;
+       $self->{'_no_iterations'} = 1; # to bypass iteration checking in hits() method
+       1;
+   }
+}
+
+=head2 _default sort_hits
+
+  Title	: _default_sort_hits
+  Usage	: Do not call directly.
+  Function: Sort hits in descending order by score
+  Args	: None
+  Returns: 1 on success
+  Note	: Used by $result->sort_hits()
+
+=cut
+
+sub _default_sort_hits {
+    $Bio::Search::Result::ResultI::b->score <=> 
+	    $Bio::Search::Result::ResultI::a->score;
+
 }
 
 =head2 query_name

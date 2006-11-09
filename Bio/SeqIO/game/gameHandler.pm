@@ -2,9 +2,7 @@
 #
 # BioPerl module for Bio::SeqIO::game::gameHandler
 #
-# Cared for by Sheldon McKay <smckay@bcgsc.bc.ca>
-#
-# Copyright Sheldon McKay
+# Cared for by Sheldon McKay <mckays@cshl.edu>
 #
 # You may distribute this module under the same terms as perl itself
 #
@@ -34,21 +32,19 @@ to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
-  http://bioperl.org/MailList.shtml      - About the mailing lists
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution.
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-Bug reports can be submitted via email or the web:
-
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Sheldon McKay
 
-Email smckay@bcgsc.bc.ca
+Email mckays@cshl.edu
 
 =head1 APPENDIX
 
@@ -59,12 +55,11 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::SeqIO::game::gameHandler;
 
-use Bio::SeqIO::game::gameSubs;
 use Bio::SeqIO::game::seqHandler;
 use strict;
-use vars qw { @ISA };
+use vars qw {};
 
-@ISA = qw{ Bio::SeqIO::game::gameSubs };
+use base qw(Bio::SeqIO::game::gameSubs);
 
 =head2 start_document
 
@@ -118,11 +113,9 @@ sub load {
     for ( 1..$self->{game} ) {
         my $seq  = $self->{sequences}->{$_} 
 	  or $self->throw("No sequences defined");
-        my $ann  = $self->{annotations}->{$_}
-	  or $self->throw("No annotations");
+        my $ann  = $self->{annotations}->{$_};
         my $comp = $self->{computations}->{$_};
-	my $map  = $self->{map_position}->{$_}
-	  or $self->complain("No map position defined");
+	my $map  = $self->{map_position}->{$_};
         my $foc  = $self->{focus}->{$_}
 	  or $self->throw("No main sequence defined");
 	my $src  = $self->{has_source};
@@ -176,7 +169,7 @@ sub e_game {
     my ($self, $el) = @_;
     $self->flush( $el );
 }
- 
+
 =head2 e_seq
 
  Title   : e_seq

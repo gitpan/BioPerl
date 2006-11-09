@@ -1,4 +1,4 @@
-# $Id: AlignFactory.pm,v 1.8 2001/11/20 02:09:40 lstein Exp $
+# $Id: AlignFactory.pm,v 1.8.14.1 2006/10/02 23:10:31 sendu Exp $
 #
 # BioPerl module for Bio::Tools::AlignFactory
 #
@@ -38,11 +38,9 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Tools::AlignFactory;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 BEGIN {
     eval {

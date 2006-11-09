@@ -1,4 +1,4 @@
-# $Id: RelationshipI.pm,v 1.5 2003/03/26 09:08:55 lapp Exp $
+# $Id: RelationshipI.pm,v 1.9.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for RelationshipI
 #
@@ -22,7 +22,7 @@
 
 =head1 NAME
 
-RelationshipI - Interface for a relationship between ontology terms
+Bio::Ontology::RelationshipI - Interface for a relationship between ontology terms
 
 =head1 SYNOPSIS
 
@@ -58,17 +58,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+the web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Peter Dimitrov
 
@@ -90,11 +89,9 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Ontology::RelationshipI;
-use vars qw(@ISA);
 use strict;
-use Bio::Root::RootI;
 
-@ISA = qw( Bio::Root::RootI );
+use base qw(Bio::Root::RootI);
 
 =head2 identifier
 
@@ -178,9 +175,10 @@ sub predicate_term{
  Function: Get the ontology that defined (is the scope for) this
            relationship.
  Example : 
- Returns : an object implementing L<Bio::Ontology::OntologyI>
+ Returns : an object implementing Bio::Ontology::OntologyI
  Args    : 
 
+See L<Bio::Ontology::OntologyI>.
 
 =cut
 

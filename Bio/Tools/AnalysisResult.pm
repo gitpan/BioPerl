@@ -1,8 +1,8 @@
-# $Id: AnalysisResult.pm,v 1.13 2003/05/17 19:03:57 heikki Exp $
+# $Id: AnalysisResult.pm,v 1.17.4.1 2006/10/02 23:10:31 sendu Exp $
 #
 # BioPerl module for Bio::Tools::AnalysisResult
 #
-# Cared for by Hilmar Lapp <hlapp@gmx.net>
+# Cared for by Hilmar Lapp <hlapp-at-gmx.net>
 #
 # Copyright Hilmar Lapp
 #
@@ -38,24 +38,24 @@ Bio::Tools::AnalysisResult - Base class for analysis result objects and parsers
 =head1 DESCRIPTION
 
 The AnalysisResult module is supposed to be the base class for modules
-encapsulating parsers and interpreters for the result of a analysis that was
-carried out with a query sequence.
+encapsulating parsers and interpreters for the result of a analysis
+that was carried out with a query sequence.
 
-The notion of an analysis represented by this base class is that of a unary or
-binary operator, taking either one query or a query and a subject and producing
-a result. The query is e.g. a sequence, and a subject is either a sequence,
-too, or a database of sequences. 
+The notion of an analysis represented by this base class is that of a
+unary or binary operator, taking either one query or a query and a
+subject and producing a result. The query is e.g. a sequence, and a
+subject is either a sequence, too, or a database of sequences.
 
-This module also implements the Bio::SeqAnalysisParserI interface, and thus
-can be used wherever such an object fits. 
-See L<Bio::SeqAnalysisParserI|Bio::SeqAnalysisParserI>.
-Developers will find a ready-to-use B<parse()> method, but need to implement 
-B<next_feature()> in an inheriting class. Support for initialization with input
-file names and reading from streams is also ready to use.
+This module also implements the Bio::SeqAnalysisParserI interface, and
+thus can be used wherever such an object fits.  See
+L<Bio::SeqAnalysisParserI>.  Developers will
+find a ready-to-use B<parse()> method, but need to implement
+B<next_feature()> in an inheriting class. Support for initialization
+with input file names and reading from streams is also ready to use.
 
-Note that this module does not provide support for B<running> an analysis.
-Rather, it is positioned in the subsequent parsing step (concerned with
-turning raw results into BioPerl objects).
+Note that this module does not provide support for B<running> an
+analysis.  Rather, it is positioned in the subsequent parsing step
+(concerned with turning raw results into BioPerl objects).
 
 =head1 FEEDBACK
 
@@ -65,27 +65,25 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
-Email hlapp@gmx.net
-
-Describe contact details here
+Email hlapp-at-gmx.net
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -94,16 +92,9 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::Tools::AnalysisResult;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
-use Bio::Root::IO;
-use Bio::SeqAnalysisParserI;
-use Bio::AnalysisResultI;
-
-@ISA = qw(Bio::Root::Root Bio::SeqAnalysisParserI 
-	Bio::AnalysisResultI Bio::Root::IO);
+use base qw(Bio::Root::Root Bio::SeqAnalysisParserI Bio::AnalysisResultI Bio::Root::IO);
 
 sub new {
     my ($class, @args) = @_;
@@ -130,7 +121,7 @@ sub _initialize {
 
            Performs initialization or reset of the state of this object. The
            difference to _initialize() is that it may be called at any time,
-           and repeatedly within the lifetime of this object. B<Note, however,
+           and repeatedly within the lifetime of this object. B<Note>, however,
            that this is potentially dangerous in a multi-threading
            environment. In general, calling this method twice is discouraged
            for this reason.
@@ -178,7 +169,7 @@ sub _initialize_state {
 #   Title   : parse
 #   Usage   : $obj->parse(-input=>$inputobj, [ -params=>[@params] ],
 #  		       [ -method => $method ] )
-#   Function: Sets up parsing for feature retrieval from an analysis file, 
+#   Function: Sets up parsing for feature retrieval from an analysis file,
 #             or object.
 #
 #             This method was originally required by SeqAnalysisParserI, but
@@ -201,7 +192,7 @@ sub _initialize_state {
 sub parse {
     my ($self, @args) = @_;
 
-    my ($input, $params, $method) = 
+    my ($input, $params, $method) =
 	$self->_rearrange([qw(INPUT
 			      PARAMS
 			      METHOD
@@ -223,7 +214,7 @@ sub parse {
  Purpose   : Set/Get the name of the query used to generate the result, that
              is, the entity on which the analysis was performed. Will mostly
              be a sequence object (Bio::PrimarySeq compatible).
- Argument  : 
+ Argument  :
  Returns   : The object set before. Mostly a Bio::PrimarySeq compatible object.
 
 =cut
@@ -247,14 +238,14 @@ sub analysis_query {
              may be a collection of models or homologous sequences that were
              used, or undefined.
  Returns   : The object that was set before, or undef.
- Argument  : 
+ Argument  :
 
 =cut
 
 #---------------
-sub analysis_subject { 
+sub analysis_subject {
 #---------------
-    my ($self, $sbjct_obj) = @_; 
+    my ($self, $sbjct_obj) = @_;
     if($sbjct_obj) {
 	$self->{'_analysis_sbjct'} = $sbjct_obj;
     }
@@ -267,8 +258,8 @@ sub analysis_subject {
  Usage     : $result->analysis_date();
  Purpose   : Set/Get the date on which the analysis was performed.
  Returns   : String
- Argument  : 
- Comments  : 
+ Argument  :
+ Comments  :
 
 =cut
 
@@ -294,13 +285,13 @@ sub analysis_date {
 =cut
 
 #-------------
-sub analysis_method { 
+sub analysis_method {
 #-------------
-    my ($self, $method) = @_;  
+    my ($self, $method) = @_;
     if($method) {
 	$self->{'_analysis_prog'} = $method;
     }
-    return $self->{'_analysis_prog'}; 
+    return $self->{'_analysis_prog'};
 }
 
 =head2 analysis_method_version
@@ -316,11 +307,11 @@ sub analysis_method {
 #---------------------
 sub analysis_method_version {
 #---------------------
-    my ($self, $version) = @_; 
+    my ($self, $version) = @_;
     if($version) {
 	$self->{'_analysis_progVersion'} = $version;
     }
-    return $self->{'_analysis_progVersion'}; 
+    return $self->{'_analysis_progVersion'};
 }
 
 

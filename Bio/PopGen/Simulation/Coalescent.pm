@@ -1,4 +1,4 @@
-# $Id: Coalescent.pm,v 1.6 2003/12/15 16:15:00 jason Exp $
+# $Id: Coalescent.pm,v 1.11.4.1 2006/10/02 23:10:23 sendu Exp $
 #
 # BioPerl module for Bio::PopGen::Simulation::Coalescent
 #
@@ -16,19 +16,22 @@ Bio::PopGen::Simulation::Coalescent - A Coalescent simulation factory
 
 =head1 SYNOPSIS
 
-  use Bio::PopGen::Simulation::Coalescent;
-  my @taxonnames;
-  my $sim = new Bio::PopGen::Simluation::Coalescent( -samples => \@taxonnames);
+    use Bio::PopGen::Simulation::Coalescent;
+    my @taxonnames = qw(SpeciesA SpeciesB SpeciesC SpeciesD);
+    my $sim1 = Bio::PopGen::Simulation::Coalescent->new(-samples => \@taxonnames);
 
-  # or for anonymous samples
+    my $tree = $sim1->next_tree;
 
-  my $factory = new Bio::PopGen::Simluation::Coalescent( -sample_size => 6,
-                                                         -maxcount => 50);
+    # add 20 mutations randomly to the tree
+    $sim1->add_Mutations($tree,20);
 
-  my $tree = $factory->next_tree;
+    # or for anonymous samples
 
-  # add 20 mutations randomly to the tree
-  $factory->add_Mutations($tree,20);
+    my $sim2 = Bio::PopGen::Simulation::Coalescent->new( -sample_size => 6,
+							 -maxcount => 50);
+    my $tree2 = $sim2->next_tree;
+    # add 20 mutations randomly to the tree
+    $sim2->add_Mutations($tree2,20);
 
 =head1 DESCRIPTION
 
@@ -54,8 +57,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -63,16 +66,12 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich, Matthew Hahn
 
 Email jason-at-bioperl-dot-org
 Email matthew-dot-hahn-at-duke-dot-edu
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -86,18 +85,16 @@ Internal methods are usually preceded with a _
 
 
 package Bio::PopGen::Simulation::Coalescent;
-use vars qw(@ISA $PRECISION_DIGITS);
+use vars qw($PRECISION_DIGITS);
 use strict;
 
 $PRECISION_DIGITS = 3; # Precision for the branchlength
 
-use Bio::Factory::TreeFactoryI;
-use Bio::Root::Root;
 use Bio::Tree::AlleleNode;
 use Bio::PopGen::Genotype;
 use Bio::Tree::Tree;
 
-@ISA = qw(Bio::Root::Root Bio::Factory::TreeFactoryI );
+use base qw(Bio::Root::Root Bio::Factory::TreeFactoryI);
 
 
 =head2 new
@@ -127,11 +124,11 @@ sub new{
    
    if( ! defined $samps ) { 
        if( ! defined $samplesize || $samplesize <= 0 ) { 
-	   $self->throw("Must specify a valid samplesize if parameter -SAMPLE is not specified");
+	   $self->throw("Must specify a valid samplesize if parameter -SAMPLE is not specified (sampsize is $samplesize)");
        }
        foreach ( 1..$samplesize ) { push @samples, "Samp$_"; }      
    } else { 
-       if( ref($samps) =~ /ARRAY/i ) { 
+       if( ref($samps) !~ /ARRAY/i ) { 
 	   $self->throw("Must specify a valid ARRAY reference to the parameter -SAMPLES, did you forget a leading '\\'?");
        }
        @samples = @$samps;
@@ -282,7 +279,7 @@ sub add_Mutations{
        $i++;
    }
    # sanity check
-    die("branch len is $branchlen arraylen is $last")
+   $self->throw("branch len is $branchlen arraylen is $last")
         unless ( $branchlen == $last );
    my @mutations;
    for( my $j = 0; $j < $nummut; $j++)  {

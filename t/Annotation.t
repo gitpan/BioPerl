@@ -1,11 +1,14 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: Annotation.t,v 1.11 2003/12/22 08:50:35 juguang Exp $
+## $Id: Annotation.t,v 1.18 2006/06/07 21:25:14 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
 use strict;
+use vars qw($HAVEGRAPHDIRECTED $DEBUG $NUMTESTS);
+$DEBUG = $ENV{'BIOPERLDEBUG'} || 0;
+
 BEGIN { 
     # to handle systems with no installed Test module
     # we include the t dir (where a copy of Test.pm is located)
@@ -15,7 +18,13 @@ BEGIN {
 	use lib 't';
     }
     use Test;
-    plan tests => 63;
+    eval {require Graph::Directed; 
+	  $HAVEGRAPHDIRECTED=1;
+	  require Bio::Annotation::OntologyTerm; };
+    if ($@) {
+	$HAVEGRAPHDIRECTED = 0;
+    }
+    plan tests => ($NUMTESTS = 89);
 }
 
 use Bio::Annotation::Collection;
@@ -23,15 +32,35 @@ use Bio::Annotation::DBLink;
 use Bio::Annotation::Comment;
 use Bio::Annotation::Reference;
 use Bio::Annotation::SimpleValue;
-use Bio::Annotation::OntologyTerm;
+use Bio::Annotation::Target;
+use Bio::Annotation::AnnotationFactory;
+
+ok(1);
+
 use Bio::Annotation::StructuredValue;
 use Bio::Seq;
 use Bio::SeqFeature::Generic;
 use Bio::Cluster::UniGene;
 
-ok(1);
 
-my $link1 = new Bio::Annotation::DBLink(-database => 'TSC',
+
+# simple value
+
+ok my $simple = Bio::Annotation::SimpleValue->new(
+						  -tagname => 'colour',
+						  -value   => '1'
+						 ), ;
+ok $simple, 1;
+ok $simple->value, 1;
+ok $simple->tagname, 'colour';
+
+ok $simple->value(0), 0;
+ok $simple->value, 0;
+ok $simple, 0;
+
+# link
+
+ok my $link1 = new Bio::Annotation::DBLink(-database => 'TSC',
 					-primary_id => 'TSC0000030'
 					);
 ok $link1->isa('Bio::AnnotationI');
@@ -50,6 +79,15 @@ my $comment = Bio::Annotation::Comment->new( '-text' => 'sometext');
 ok $comment->text, 'sometext';
 ok $comment->as_text, 'Comment: sometext';
 $ac->add_Annotation('comment', $comment);
+
+
+
+ok my $target = new Bio::Annotation::Target(-target_id  => 'F321966.1',
+                                         -start      => 1,
+                                         -end        => 200,
+                                         -strand     => 1,
+					 );
+ok $ac->add_Annotation('target', $target);
 
 
 my $ref = Bio::Annotation::Reference->new( '-authors' => 'author line',
@@ -75,13 +113,13 @@ ok ($n, 2);
 
 $n = 0;
 my @keys = $ac->get_all_annotation_keys();
-ok (scalar(@keys), 3);
+ok (scalar(@keys), 4);
 foreach my $ann ( $ac->get_Annotations() ) {
     shift(@keys) if ($n > 0) && ($ann->tagname ne $keys[0]);
     ok $ann->tagname(), $keys[0];
     $n++;
 }
-ok ($n, 4);
+ok ($n, 5);
 
 $ac->add_Annotation($link1);
 
@@ -122,10 +160,10 @@ $nested_ac->add_Annotation('nested', $ac);
 ok (scalar($nested_ac->get_Annotations()), 1);
 ($ac) = $nested_ac->get_Annotations();
 ok $ac->isa("Bio::AnnotationCollectionI");
-ok (scalar($nested_ac->get_all_Annotations()), 5);
+ok (scalar($nested_ac->get_all_Annotations()), 6);
 $nested_ac->add_Annotation('gene names', $ann);
 ok (scalar($nested_ac->get_Annotations()), 2);
-ok (scalar($nested_ac->get_all_Annotations()), 6);
+ok (scalar($nested_ac->get_all_Annotations()), 7);
 ok (scalar($nested_ac->get_Annotations('dblink')), 0);
 my @anns = $nested_ac->get_Annotations('gene names');
 ok $anns[0]->isa("Bio::Annotation::StructuredValue");
@@ -133,19 +171,25 @@ ok $anns[0]->isa("Bio::Annotation::StructuredValue");
 	  } $nested_ac->get_Annotations('nested');
 ok (scalar(@anns), 3);
 ok (scalar($nested_ac->flatten_Annotations()), 2);
-ok (scalar($nested_ac->get_Annotations()), 6);
-ok (scalar($nested_ac->get_all_Annotations()), 6);
+ok (scalar($nested_ac->get_Annotations()), 7);
+ok (scalar($nested_ac->get_all_Annotations()), 7);
 
+if( $HAVEGRAPHDIRECTED ) {
 # OntologyTerm annotation
-my $termann = Bio::Annotation::OntologyTerm->new(-label => 'test case',
-						 -identifier => 'Ann:00001',
-						 -ontology => 'dumpster');
-ok ($termann->term);
-ok ($termann->term->name, 'test case');
-ok ($termann->term->identifier, 'Ann:00001');
-ok ($termann->tagname, 'dumpster');
-ok ($termann->ontology->name, 'dumpster');
-ok ($termann->as_text, "dumpster|test case|Ann:00001");
+    my $termann = Bio::Annotation::OntologyTerm->new(-label => 'test case',
+						     -identifier => 'Ann:00001',
+						     -ontology => 'dumpster');
+    ok ($termann->term);
+    ok ($termann->term->name, 'test case');
+    ok ($termann->term->identifier, 'Ann:00001');
+    ok ($termann->tagname, 'dumpster');
+    ok ($termann->ontology->name, 'dumpster');
+    ok ($termann->as_text, "dumpster|test case|");
+} else { 
+    for (1..6 ) { 
+	skip('Graph::Directed not installed cannot test Bio::Annotation::OntologyTerm module',1);
+    }
+}
 
 # AnnotatableI
 my $seq = Bio::Seq->new();
@@ -154,3 +198,48 @@ my $fea = Bio::SeqFeature::Generic->new();
 ok ($fea->isa("Bio::AnnotatableI"));
 my $clu = Bio::Cluster::UniGene->new();
 ok ($clu->isa("Bio::AnnotatableI"));
+
+
+
+
+# tests for Bio::Annotation::AnnotationFactory
+
+ok my $factory = Bio::Annotation::AnnotationFactory->new;
+
+
+# defaults to SimpleValue
+ok $ann = $factory->create_object(-value => 'peroxisome',
+                                  -tagname => 'cellular component');
+ok ref $ann, 'Bio::Annotation::SimpleValue';
+
+ok $factory->type('Bio::Annotation::OntologyTerm');
+
+$ann = $factory->create_object(-name => 'peroxisome',
+			       -tagname => 'cellular component');
+ok(defined $ann);
+ok ref($ann), 'Bio::Annotation::OntologyTerm';
+
+#ok $ann = $factory->create_object(-text => 'this is a comment');
+#ok ref $ann, 'Bio::Annotation::Comment';
+
+
+ok $factory->type('Bio::Annotation::Comment');
+ok $ann = $factory->create_object(-text => 'this is a comment');
+ok ref $ann, 'Bio::Annotation::Comment';
+
+
+# factory guessing the type: Comment
+$factory = new Bio::Annotation::AnnotationFactory();
+ok $ann = $factory->create_object(-text => 'this is a comment');
+ok ref $ann, 'Bio::Annotation::Comment';
+
+# factory guessing the type: Target
+$factory = new Bio::Annotation::AnnotationFactory();
+ok $ann = $factory->create_object(-target_id => 'F1234', -start => 1, -end => 10);
+ok ref $ann, 'Bio::Annotation::Target';
+
+# factory guessing the type: OntologyTerm
+$factory = new Bio::Annotation::AnnotationFactory();
+ok(defined ($ann = $factory->create_object(-name => 'peroxisome',
+					  -tagname => 'cellular component')));
+ok ref $ann, 'Bio::Annotation::OntologyTerm';

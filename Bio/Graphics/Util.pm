@@ -1,12 +1,18 @@
 package Bio::Graphics::Util;
 
-# $Id: Util.pm,v 1.3 2003/06/04 08:36:39 heikki Exp $
+# $Id: Util.pm,v 1.4.4.1 2006/10/02 23:10:19 sendu Exp $
 # Non object-oriented utilities used here-and-there in Bio::Graphics modules
+
+=head1 NAME
+
+Bio::Graphics::Util - non-object-oriented utilities used in Bio::Graphics modules
+
+=cut
 
 use strict;
 require Exporter;
-use vars '@ISA','@EXPORT','@EXPORT_OK';
-@ISA = 'Exporter';
+use base qw(Exporter);
+use vars '@EXPORT','@EXPORT_OK';
 @EXPORT = 'frame_and_offset';
 use Bio::Root::Version;
 
@@ -28,11 +34,14 @@ sub frame_and_offset {
   my ($pos,$strand,$phase) = @_;
   $strand ||= +1;
   $phase  ||= 0;
-  my $frame = $strand >= 0 
-    ? ($pos - $phase - 1) % 3
-    : (1 - $pos - $phase) % 3;
-  my $offset = -$phase % 3;
-  $offset   *= -1 if $strand < 0;
+  my $codon_start =  $strand >= 0
+                   ? $pos + $phase
+	           : $pos - $phase;  # probably wrong
+  my $frame  = ($codon_start-1) % 3;
+#  my $frame = $strand >= 0
+#    ? ($pos - $phase - 1) % 3
+#    : (1 - $pos - $phase) % 3;
+  my $offset = $strand >= 0 ? $phase : -$phase;
   return wantarray ? ($frame,$offset) : $frame;
 }
 

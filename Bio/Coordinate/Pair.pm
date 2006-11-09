@@ -1,8 +1,8 @@
-# $Id: Pair.pm,v 1.13 2003/12/19 02:59:17 jason Exp $
+# $Id: Pair.pm,v 1.19.4.1 2006/10/02 23:10:14 sendu Exp $
 #
 # bioperl module for Bio::Coordinate::Pair
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Heikki Lehvaslaiho
 #
@@ -63,30 +63,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email:  heikki@ebi.ac.uk
-Address:
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
+Email:  heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -99,17 +89,14 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Coordinate::Pair;
-use vars qw(@ISA );
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
-use Bio::Root::Root;
-use Bio::Coordinate::MapperI;
 use Bio::Coordinate::Result;
 use Bio::Coordinate::Result::Match;
 use Bio::Coordinate::Result::Gap;
 
-@ISA = qw(Bio::Root::Root Bio::Coordinate::MapperI);
+use base qw(Bio::Root::Root Bio::Coordinate::MapperI);
 
 
 sub new {
@@ -226,8 +213,7 @@ sub test {
        unless $self->out;
    $self->warn("Incoming coordinates are not defined")
        unless $self->in;
-
-   1 if $self->in->end - $self->in->start == $self->out->end - $self->out->start;
+   return ($self->in->end - $self->in->start) == ($self->out->end - $self->out->start);
 }
 
 

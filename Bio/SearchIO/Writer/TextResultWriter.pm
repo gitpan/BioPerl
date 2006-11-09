@@ -1,4 +1,4 @@
-# $Id: TextResultWriter.pm,v 1.13 2003/11/25 17:52:36 jason Exp $
+# $Id: TextResultWriter.pm,v 1.18.4.1 2006/10/02 23:10:27 sendu Exp $
 #
 # BioPerl module for Bio::SearchIO::Writer::TextResultWriter
 #
@@ -86,17 +86,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -114,8 +113,7 @@ Internal methods are usually preceded with a _
 
 
 package Bio::SearchIO::Writer::TextResultWriter;
-use vars qw(@ISA $MaxNameLen $MaxDescLen $AlignmentLineWidth 
-	    $DescLineLen $TextWrapLoaded);
+use vars qw($MaxNameLen $MaxDescLen $AlignmentLineWidth 	    $DescLineLen $TextWrapLoaded);
 use strict;
 
 # Object preamble - inherits from Bio::Root::RootI
@@ -129,11 +127,9 @@ BEGIN {
     }
 }
 
-use Bio::Root::Root;
-use Bio::SearchIO::SearchWriterI;
 use POSIX;
 
-@ISA = qw(Bio::Root::Root Bio::SearchIO::SearchWriterI);
+use base qw(Bio::Root::Root Bio::SearchIO::SearchWriterI);
 
 =head2 new
 
@@ -217,7 +213,8 @@ sub to_string {
 	     $alg =~ /(WABA|EXONERATE)/i ) {
 	$qtype      = $dbtype = '';
 	$type = $dbseqtype  = 'NUCLEOTIDE';
-    } elsif( $alg =~ /(FAST|BLAST)P/  || $alg =~ /SSEARCH/i ) {
+    } elsif( $alg =~ /(FAST|BLAST)P/  || 
+	     $alg =~ /SSEARCH|(HMM|SEARCH|PFAM)/i ) {
 	$qtype      = $dbtype = '';
 	$type = $dbseqtype  = 'PROTEIN';
     } elsif( $alg =~ /(FAST|BLAST)[XY]/i ) {
@@ -355,7 +352,7 @@ Sequences producing significant alignments:                      (bits)    value
 
 		my @hspvals = ( {'name'  => 'Query:',
 				 'seq'   => $hsp->query_string,
-				 'start' => ( $hstrand >= 0 ? 
+				 'start' => ( $qstrand >= 0 ? 
 					      $hsp->query->start : 
 					      $hsp->query->end),
 					      'end'   => ($qstrand >= 0 ? 

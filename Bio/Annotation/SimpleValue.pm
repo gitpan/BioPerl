@@ -1,8 +1,8 @@
-# $Id: SimpleValue.pm,v 1.10 2003/03/10 21:53:56 lapp Exp $
+# $Id: SimpleValue.pm,v 1.18.4.3 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::Annotation::SimpleValue
 #
-# Cared for by bioperl <bioperl-l@bio.perl.org>
+# Cared for by bioperl <bioperl-l@bioperl.org>
 #
 # Copyright bioperl
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::Annotation::SimpleValue - A simple scalar 
+Bio::Annotation::SimpleValue - A simple scalar
 
 =head1 SYNOPSIS
 
@@ -20,12 +20,12 @@ Bio::Annotation::SimpleValue - A simple scalar
    use Bio::Annotation::Collection;
 
    my $col = new Bio::Annotation::Collection;
-   my $sv = new Bio::Annotation::SimpleValue(-value => 'someval');   
+   my $sv = new Bio::Annotation::SimpleValue(-value => 'someval');
    $col->add_Annotation('tagname', $sv);
 
 =head1 DESCRIPTION
 
-Scalar value annotation object 
+Scalar value annotation object
 
 =head1 FEEDBACK
 
@@ -35,23 +35,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bio.perl.org/MailList.html  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via
+the web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
-=head1 AUTHOR - bioperl
+=head1 AUTHOR  - Ewan Birney 
 
-Email bioperl-l@bio.perl.org
-
-Describe contact details here
+Email birney@ebi.ac.uk
 
 =head1 APPENDIX
 
@@ -64,16 +61,15 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::Annotation::SimpleValue;
-use vars qw(@ISA);
 use strict;
+use overload '""' => sub { $_[0]->value};
+use overload 'eq' => sub { "$_[0]" eq "$_[1]" };
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::AnnotationI;
 #use Bio::Ontology::TermI;
-use Bio::Root::Root;
 
-@ISA = qw(Bio::Root::Root Bio::AnnotationI);
+use base qw(Bio::Root::Root Bio::AnnotationI);
 
 =head2 new
 
@@ -112,7 +108,7 @@ sub new{
 
  Title   : as_text
  Usage   : my $text = $obj->as_text
- Function: return the string "Value: $v" where $v is the value 
+ Function: return the string "Value: $v" where $v is the value
  Returns : string
  Args    : none
 
@@ -138,10 +134,11 @@ sub as_text{
 =cut
 
 sub hash_tree{
-   my ($self) = @_;
-   
-   my $h = {};
-   $h->{'value'} = $self->value;
+    my $self = shift;
+
+    my $h = {};
+    $h->{'value'} = $self->value;
+    return $h;
 }
 
 =head2 tagname
@@ -154,7 +151,7 @@ sub hash_tree{
            provide a tag to AnnotationCollection when adding this
            object.
 
- Example : 
+ Example :
  Returns : value of tagname (a scalar)
  Args    : new value (a scalar, optional)
 
@@ -193,7 +190,7 @@ sub tagname{
 
 sub value{
    my ($self,$value) = @_;
-   
+
    if( defined $value) {
       $self->{'value'} = $value;
     }
@@ -219,7 +216,7 @@ sub value{
            is not needed. Once it is set to a valid value, tagname()
            will actually delegate to the name() of this term.
 
- Example : 
+ Example :
  Returns : a L<Bio::Ontology::TermI> compliant object, or undef
  Args    : on set, new value (a L<Bio::Ontology::TermI> compliant
            object or undef, optional)

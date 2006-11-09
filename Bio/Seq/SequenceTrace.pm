@@ -1,4 +1,4 @@
-# $Id: SequenceTrace.pm,v 1.6 2003/06/06 12:25:03 heikki Exp $
+# $Id: SequenceTrace.pm,v 1.14.4.1 2006/10/02 23:10:27 sendu Exp $
 #
 # BioPerl module for Bio::Seq::SequenceTrace
 #
@@ -30,17 +30,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bio.perl.org/MailList.html - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Chad Matsalla
 
@@ -55,21 +54,17 @@ Internal methods are usually preceded with a _
 
 package Bio::Seq::SequenceTrace;
 
-use vars qw(@ISA);
 
 use strict;
-use Bio::Root::Root;
 use Bio::Seq::QualI;
 use Bio::PrimarySeqI;
 use Bio::PrimarySeq;
 use Bio::Seq::PrimaryQual;
-use Bio::Seq::TraceI;
-use Bio::Seq::SeqWithQuality;
 use Dumpvalue();
 
 my $dumper = new Dumpvalue();
 
-@ISA = qw(Bio::Root::Root Bio::Seq::SeqWithQuality Bio::Seq::TraceI);
+use base qw(Bio::Root::Root Bio::Seq::Quality Bio::Seq::TraceI);
 
 =head2 new()
 
@@ -112,12 +107,12 @@ sub new {
                ACCURACY_G
                ACCURACY_C )], @args);
           # first, deal with the sequence and quality information
-     if ($swq && ref($swq) eq "Bio::Seq::SeqWithQuality") {
+     if ($swq && ref($swq) eq "Bio::Seq::Quality") {
           $self->{swq} = $swq;
      }
      else {
           $self->throw("A Bio::Seq::SequenceTrace object must be created with a
-               Bio::Seq::SeqWithQuality object. You provided this type of object: "
+               Bio::Seq::Quality object. You provided this type of object: "
                .ref($swq));
      }
      if (!$acc_a) {
@@ -174,7 +169,7 @@ sub trace {
           $self->throw('You must provide a valid base channel (atgc) to use trace()');
      }
      $base_channel =~ tr/A-Z/a-z/;
-     if ($base_channel !~ /a|t|g|c/) {
+     if ($base_channel !~ /[acgt]/) {
           $self->throw('You must provide a valid base channel (atgc) to use trace()');
      }
      if ($values) {
@@ -190,7 +185,7 @@ sub trace {
           return $self->{trace}->{$base_channel};
      }
      else {
-          return undef;
+          return;
      }
 }
 
@@ -293,7 +288,7 @@ sub peak_index_at {
 
 sub alphabet {
 	my $self = shift;
-	return $self->{swq}->{seq_ref}->alphabet();	
+	return $self->{swq}->{seq_ref}->alphabet(@_);
 }
 
 =head2 display_id()
@@ -313,10 +308,10 @@ sub alphabet {
 	field for example, or extending the sequence object) to solve
 	this. Notice that $seq->id() maps to this function, mainly for
         legacy/convience issues.
-	This method sets the display_id for the SeqWithQuality object.
+	This method sets the display_id for the Quality object.
  Returns : A string
  Args    : If a scalar is provided, it is set as the new display_id for
-	the SeqWithQuality object.
+	the Quality object.
  Status  : Virtual
 
 =cut
@@ -341,11 +336,11 @@ sub display_id {
         for the implemetation, allowing multiple objects to have the same
         accession number in a particular implementation. For sequences
         with no accession number, this method should return "unknown".
-	This method sets the accession_number for the SeqWithQuality
+	This method sets the accession_number for the Quality
 	object. 
  Returns : A string (the value of accession_number)
  Args    : If a scalar is provided, it is set as the new accession_number
-	for the SeqWithQuality object.
+	for the Quality object.
  Status  : Virtual
 
 
@@ -371,11 +366,11 @@ sub accession_number {
         way the implementaiton can control clients can expect one id to
         map to one object. For sequences with no accession number, this
         method should return a stringified memory location.
-	This method sets the primary_id for the SeqWithQuality
+	This method sets the primary_id for the Quality
 	object.
  Returns : A string. (the value of primary_id)
  Args    : If a scalar is provided, it is set as the new primary_id for
-	the SeqWithQuality object.
+	the Quality object.
 
 =cut
 
@@ -393,15 +388,15 @@ sub primary_id {
  Title   : desc()
  Usage   : $qual->desc($newval); _or_ 
            $description = $qual->desc();
- Function: Get/set description text for this SeqWithQuality object.
+ Function: Get/set description text for this Quality object.
  Returns : A string. (the value of desc)
  Args    : If a scalar is provided, it is set as the new desc for the
-	SeqWithQuality object.
+	   Quality object.
 
 =cut
 
 sub desc {
-	# a mechanism to set the desc for the SeqWithQuality object.
+	# a mechanism to set the desc for the Quality object.
 	# probably will be used most often by set_common_features()
    my ($self,$value) = @_;
    if( defined $value) {
@@ -419,7 +414,7 @@ sub desc {
         for display_id().
  Returns : A string. (the value of id)
  Args    : If a scalar is provided, it is set as the new id for the
-	SeqWithQuality object.
+	   Quality object.
 
 =cut
 
@@ -438,9 +433,9 @@ sub id {
  Usage   : $string    = $obj->seq(); _or_
 	$obj->seq("atctatcatca");
  Function: Returns the sequence that is contained in the imbedded in the
-	PrimarySeq object within the SeqWithQuality object
+	PrimarySeq object within the Quality object
  Returns : A scalar (the seq() value for the imbedded PrimarySeq object.)
- Args    : If a scalar is provided, the SeqWithQuality object will
+ Args    : If a scalar is provided, the Quality object will
 	attempt to set that as the sequence for the imbedded PrimarySeq
 	object. Otherwise, the value of seq() for the PrimarySeq object
 	is returned.
@@ -456,9 +451,9 @@ sub id {
 sub seq {
 	my ($self,$value) = @_;
 	if( defined $value) {
-		$self->{swq}->{seq_ref}->seq($value);
+		$self->{swq}->seq($value);
 	}
-	return $self->{swq}->{seq_ref}->seq();
+	return $self->{swq}->seq();
 }
 
 =head2 qual()
@@ -467,10 +462,10 @@ sub seq {
  Usage   : @quality_values  = @{$obj->qual()}; _or_
 	$obj->qual("10 10 20 40 50");
  Function: Returns the quality as imbedded in the PrimaryQual object
-	within the SeqWithQuality object.
+	within the Quality object.
  Returns : A reference to an array containing the quality values in the 
 	PrimaryQual object.
- Args    : If a scalar is provided, the SeqWithQuality object will
+ Args    : If a scalar is provided, the Quality object will
 	attempt to set that as the quality for the imbedded PrimaryQual
 	object. Otherwise, the value of qual() for the PrimaryQual
 	object is returned.
@@ -486,9 +481,9 @@ sub qual {
 	my ($self,$value) = @_;
 
 	if( defined $value) {
-		$self->{swq}->{qual_ref}->qual($value);
+		$self->{swq}->qual($value);
 	}
-	return $self->{swq}->{qual_ref}->qual();
+	return $self->{swq}->qual();
 }
 
 
@@ -498,9 +493,8 @@ sub qual {
 
  Title   : length()
  Usage   : $length = $seqWqual->length();
- Function: Get the length of the SeqWithQuality sequence/quality.
- Returns : Returns the length of the sequence and quality if they are
-	both the same. Returns "DIFFERENT" if they differ.
+ Function: Get the length of the Quality sequence/quality.
+ Returns : Returns the length of the sequence and quality
  Args    : None.
 
 =cut
@@ -518,35 +512,37 @@ sub length {
  Usage   : $qualobj = $seqWqual->qual_obj(); _or_
 	$qualobj = $seqWqual->qual_obj($ref_to_primaryqual_obj);
  Function: Get the PrimaryQual object that is imbedded in the
-	SeqWithQuality object or if a reference to a PrimaryQual object
+	Quality object or if a reference to a PrimaryQual object
 	is provided, set this as the PrimaryQual object imbedded in the
-	SeqWithQuality object.
- Returns : A reference to a Bio::Seq::SeqWithQuality object.
+	Quality object.
+ Returns : A reference to a Bio::Seq::Quality object.
 
 =cut
 
 sub qual_obj {
     my ($self,$value) = @_;
-    return $self->{swq}->qual_obj($value);
+#    return $self->{swq}->qual_obj($value);
+    return $self->{swq};
 }
 
 
 =head2 seq_obj
 
  Title   : seq_obj()
- Usage   : $seqobj = $seqWqual->qual_obj(); _or_
+ Usage   : $seqobj = $seqWqual->seq_obj(); _or_
 	$seqobj = $seqWqual->seq_obj($ref_to_primary_seq_obj);
  Function: Get the PrimarySeq object that is imbedded in the
-	SeqWithQuality object or if a reference to a PrimarySeq object is
+	Quality object or if a reference to a PrimarySeq object is
 	provided, set this as the PrimarySeq object imbedded in the
-	SeqWithQuality object.
+	Quality object.
  Returns : A reference to a Bio::PrimarySeq object.
 
 =cut
 
 sub seq_obj {
     my ($self,$value) = @_;
-    return $self->{swq}->seq_obj($value);
+#    return $self->{swq}->seq_obj($value);
+    return $self->{swq};
 }
 
 =head2 _set_descriptors
@@ -554,7 +550,7 @@ sub seq_obj {
  Title   : _set_descriptors()
  Usage   : $seqWqual->_qual_obj($qual,$seq,$id,$acc,$pid,$desc,$given_id,
 	$alphabet);
- Function: Set the descriptors for the SeqWithQuality object. Try to
+ Function: Set the descriptors for the Quality object. Try to
 	match the descriptors in the PrimarySeq object and in the
 	PrimaryQual object if descriptors were not provided with
 	construction.
@@ -766,7 +762,7 @@ sub sub_trace_object {
         $start2 = shift(@subs);
         $end2 =  pop(@subs);
      my $new_object =  new Bio::Seq::SequenceTrace(
-               -swq =>   new Bio::Seq::SeqWithQuality(
+               -swq =>   new Bio::Seq::Quality(
                              -seq => $self->subseq($start,$end),
                              -qual     =>   $self->subqual($start,$end),
                              -id    =>   $self->id()
@@ -800,13 +796,13 @@ sub sub_trace_object {
 sub _synthesize_traces {
      my ($self) = shift;
      $self->peak_indices(qw());
-     my $version = 2;
+#ml     my $version = 2;
           # the user should be warned if traces already exist
           #
           #
-     ( my $sequence = $self->seq() ) =~ tr/a-z/A-Z/;
-     my @quals = @{$self->qual()};
-     my $info;
+#ml     ( my $sequence = $self->seq() ) =~ tr/a-z/A-Z/;
+#ml     my @quals = @{$self->qual()};
+#ml     my $info;
          # build the ramp for the first base.
          # a ramp looks like this "1 4 13 29 51 71 80 71 51 29 13 4 1" times the quality score.
          # REMEMBER: A C G T
@@ -827,10 +823,10 @@ sub _synthesize_traces {
      $self->initialize_traces("0",$total_length+2);
          # now populate them
     my ($current_base,$place_base_at,$peak_quality,$ramp_counter,$current_ramp,$ramp_position);
-    my $sequence_length = $self->length();
+#ml    my $sequence_length = $self->length();
     my $half_ramp = int($ramp_data->{'ramp_width'}/2);
     for ($pos = 0; $pos<$self->length();$pos++) {
-          $current_base = $self->seq_obj()->subseq($pos+1,$pos+1);
+          $current_base = uc $self->seq_obj()->subseq($pos+1,$pos+1);
                # print("Synthesizing the ramp for $current_base\n");
           my $all_bases = "ATGC";
           $peak_quality = $self->qual_obj()->qualat($pos+1);
@@ -851,7 +847,7 @@ sub _synthesize_traces {
           $self->peak_index_at($pos+1,
               $place_base_at+1
           );
-          my $other_bases = $self->_get_other_bases($current_base);
+#ml          my $other_bases = $self->_get_other_bases($current_base);
           # foreach ( split('',$other_bases) ) {
           #          push @{$self->{'text'}->{"v3_base_accuracy"}->{$_}},0;
           #}

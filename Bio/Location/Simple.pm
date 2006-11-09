@@ -1,7 +1,7 @@
-# $Id: Simple.pm,v 1.35 2003/12/18 13:15:20 jason Exp $
+# $Id: Simple.pm,v 1.41.4.1 2006/10/02 23:10:21 sendu Exp $
 #
 # BioPerl module for Bio::Location::Simple
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Heikki Lehvaslaiho
 #
@@ -30,7 +30,7 @@ Bio::Location::Simple - Implementation of a Simple Location on a Sequence
 This is an implementation of Bio::LocationI to manage exact location
 information on a Sequence: '22' or '12..15' or '16^17'.
 
-You can test the type of the location using lenght() function () or
+You can test the type of the location using length() function () or
 directly location_type() which can one of two values: 'EXACT' or
 'IN-BETWEEN'.
 
@@ -41,21 +41,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bio.perl.org/MailList.html - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email heikki@ebi.ac.uk
+Email heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -68,23 +67,15 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Location::Simple;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Location::Atomic;
+use base qw(Bio::Location::Atomic);
 
-@ISA = qw( Bio::Location::Atomic );
+our %RANGEENCODE  = ('\.\.' => 'EXACT',
+		     '\^'   => 'IN-BETWEEN' );
 
-BEGIN {
-    use vars qw(  %RANGEENCODE  %RANGEDECODE  );
-
-    %RANGEENCODE  = ('\.\.' => 'EXACT',
-		     '\^' => 'IN-BETWEEN' );
-
-    %RANGEDECODE  = ('EXACT' => '..',
+our %RANGEDECODE  = ('EXACT'      => '..',
 		     'IN-BETWEEN' => '^' );
-
-}
 
 sub new { 
     my ($class, @args) = @_;
@@ -153,7 +144,7 @@ sub end {
   Title   : strand
   Usage   : $strand = $loc->strand();
   Function: get/set the strand of this range
-  Returns : the strandidness (-1, 0, +1)
+  Returns : the strandedness (-1, 0, +1)
   Args    : optionaly allows the strand to be set
           : using $loc->strand($strand)
 
@@ -211,7 +202,7 @@ sub length {
   Function: Get start position type (ie <,>, ^).
 
   Returns : type of position coded as text 
-            ('BEFORE', 'AFTER', 'EXACT','WITHIN', 'BETWEEN', 'IN-BETWEEN')
+            ('BEFORE', 'AFTER', 'EXACT','WITHIN', 'BETWEEN')
   Args    : none
 
 =cut
@@ -247,7 +238,7 @@ sub length {
   Function: Get end position type (ie <,>, ^) 
 
   Returns : type of position coded as text 
-            ('BEFORE', 'AFTER', 'EXACT','WITHIN', 'BETWEEN', 'IN-BETWEEN')
+            ('BEFORE', 'AFTER', 'EXACT','WITHIN', 'BETWEEN')
   Args    : none
 
 =cut

@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.4 2003/09/08 13:05:00 radams Exp $
+# $Id: IO.pm,v 1.11.4.1 2006/10/02 23:10:13 sendu Exp $
 #
 # BioPerl module for Bio::CodonUsage::IO
 #
@@ -15,22 +15,23 @@ Bio::CodonUsage::IO - for reading and writing codon usage tables to file
 
 =head1 SYNOPSIS
 
-        use Bio::CodonUsage::IO;
+  use Bio::CodonUsage::IO;
 
-        ##read in a codon usage file
-        my $io = Bio::CodonUsage::IO->new(-file => "in");
-        my $cut = $io->next_data();
+  ## read in a codon usage file
+  my $io = Bio::CodonUsage::IO->new(-file => "in");
+  my $cut = $io->next_data();
 
-        ##write it out again
-        my $out = Bio::CodonUsage::IO->new(-file => ">out");
-        $out->write_data($cut);
+  ## write it out again
+  my $out = Bio::CodonUsage::IO->new(-file => ">out");
+  $out->write_data($cut);
 
 =head1 DESCRIPTION
 
 This class provides standard IO methods for reading and writing text files
 of codon usage tables. These tables can initially be retrieved using
 Bio::DB::CUTG. At present only this format is supported for read/write. 
- Reading a CUTG will return a Bio::CodonUsage::Table object. 
+
+Reading a CUTG will return a Bio::CodonUsage::Table object. 
 
 =head1 SEE ALSO
 
@@ -43,22 +44,20 @@ L<Bio::CodonUsage::IO>
 
 =head2 Mailing Lists
 
-
 User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                       - General discussion
-  http://bio.perl.org/MailList.html           - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS
 
@@ -75,10 +74,9 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin
 
 package Bio::CodonUsage::IO;
-use Bio::Root::IO;
-use vars qw(@ISA);
+use Bio::CodonUsage::Table;
 
-@ISA = qw(Bio::Root::IO);
+use base qw(Bio::Root::IO);
 
 =head2  new
 
@@ -110,7 +108,7 @@ sub next_data {
 	my $self = shift;
 	my $cut = $self->_parse;
 	return $cut;
-	}
+}
 
 =head2  write_data
 
@@ -164,12 +162,11 @@ sub write_data {
 	$outstring .= "3rd letter GC ". $cut->get_coding_gc(3). "%\n";
 	$outstring .= "Genetic code " . $cut->genetic_code() ."\n\n\n";
 
-	
-			
 $self->_print ($outstring);
 $self->flush();
 
 }
+
 sub _parse {
 	my $self = shift;
 	my $cdtableobj = Bio::CodonUsage::Table->new();
@@ -178,7 +175,7 @@ sub _parse {
 		$line =~ s/End/Ter/;
 		## now parse in species name, cds number
 
-		if ($line =~ /^(.+?)\[(\w+)\].+?(\d+)/) {
+		if ($line =~ /^(.+?)\s*\[(\w+)\].+?(\d+)/) {
 			$cdtableobj->species($1);
 			$cdtableobj->{'_gb_db'} = $2;
 			$cdtableobj->cds_count($3);
@@ -222,5 +219,7 @@ sub _parse {
 		
 }
 
+1;
 
+__END__
 

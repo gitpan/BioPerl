@@ -1,6 +1,6 @@
 # BioPerl module for Bio::Map::LinkagePosition
 #
-# Cared for by Chad Matsalla <bioinformatics1@dieselwurks.com>
+# Cared for by Sendu Bala <bix@sendu.me.uk>
 #
 # Copyright Chad Matsalla
 #
@@ -11,7 +11,7 @@
 =head1 NAME
 
 Bio::Map::LinkagePosition - Create a Position for a Marker that will be placed
-	on a Bio::Map::LinkageMap
+	                        on a Bio::Map::LinkageMap
 
 =head1 SYNOPSIS
 
@@ -19,7 +19,7 @@ Bio::Map::LinkagePosition - Create a Position for a Marker that will be placed
     my $position = new Bio::Map::LinkagePosition(-positions => 1,
 						 -distance => 22.1 );
 
-	    # can get listing of positions
+	# can get listing of positions
     my @positions = $position->each_position;
 
 
@@ -37,17 +37,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Chad Matsalla
 
@@ -56,8 +55,9 @@ Email bioinformatics1@dieselwurks.com
 =head1 CONTRIBUTORS
 
 Lincoln Stein, lstein@cshl.org
-Heikki Lehvaslaiho, heikki@ebi.ac.uk
+Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 Jason Stajich jason@bioperl.org
+Sendu Bala bix@sendu.me.uk
 
 =head1 APPENDIX
 
@@ -66,28 +66,23 @@ Internal methods are usually preceded with a _
 
 =cut
 
-
 # Let the code begin...
 
-
 package Bio::Map::LinkagePosition;
-use vars qw(@ISA);
 use strict;
-require 'dumpvar.pl';
 
-use Bio::Map::OrderedPosition;
 
-@ISA = qw(Bio::Map::OrderedPosition);
+use base qw(Bio::Map::OrderedPosition);
 
 =head2 new
 
  Title   : new
  Usage   : my $obj = new Bio::Map::LinkagePosition(-positions => $position,
-				-distance => $distance );
+				                                   -distance => $distance);
  Function: Builds a new Bio::Map::LinkagePosition object
  Returns : Bio::Map::LinkagePosition
  Args    : -order => the relative order of this marker on a linkage map
- 	   -positions => positions on a map
+ 	       -positions => positions on a map
 
 =cut
 
@@ -98,12 +93,11 @@ use Bio::Map::OrderedPosition;
 =head2 order
 
  Title   : order
- Usage   : $o_position->order($new_position) _or_
-           $o_position->order()
+ Usage   : $o_position->order($order)
+           my $order = $o_position->order()
  Function: get/set the order position of this position in a map
- Returns :
- Args    : If $new_position is provided, the current position of this Position
-           will be set to $new_position.
+ Returns : int
+ Args    : none to get, int to set
 
 =cut
 

@@ -1,4 +1,4 @@
-# $Id: BiblioBase.pm,v 1.9 2002/10/22 07:45:11 lapp Exp $
+# $Id: BiblioBase.pm,v 1.13.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::Biblio::BiblioBase
 #
@@ -51,17 +51,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -86,11 +85,10 @@ This software is provided "as is" without warranty of any kind.
 
 package Bio::Biblio::BiblioBase;
 use strict;
-use vars qw(@ISA $AUTOLOAD);
+use vars qw($AUTOLOAD);
 
-use Bio::Root::Root;
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 # these methods should not be called here;
 # they should be implemented by a subclass
@@ -102,7 +100,6 @@ sub _attr_type { shift->throw_not_implemented(); }
 #
 sub AUTOLOAD {
     my ($self, $newval) = @_;
-
     if ($AUTOLOAD =~ /.*::(\w+)/ && $self->_accessible ("_$1")) {
 	my $attr_name = "_$1";
 	my $attr_type = $self->_attr_type ($attr_name);

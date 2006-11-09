@@ -1,4 +1,4 @@
-# $Id: pdb.pm,v 1.10 2003/11/26 00:57:17 jason Exp $
+# $Id: pdb.pm,v 1.17.4.1 2006/10/02 23:10:31 sendu Exp $
 #
 # BioPerl module for Bio::Structure::IO::pdb
 #
@@ -7,7 +7,7 @@
 # Copyright 2001, 2002 Kris Boulez
 #
 # Framework is a copy of Bio::SeqIO::embl.pm
-# 
+#
 # You may distribute this module under the same terms as perl itself
 
 # POD documentation - main docs before the code
@@ -21,38 +21,36 @@ Bio::Structure::IO::pdb - PDB input/output stream
 It is probably best not to use this object directly, but
 rather go through the Bio::Structure::IO handler system. Go:
 
-    $stream = Bio::Structure::IO->new(-file => $filename, 
-    				      -format => 'PDB');
+    $stream = Bio::Structure::IO->new(-file => $filename,
+                                      -format => 'PDB');
 
-    while ( (my $structure = $stream->next_structure()) ) {
-	# do something with $structure
+    while (my $structure = $stream->next_structure) {
+	    # do something with $structure
     }
 
 =head1 DESCRIPTION
 
 This object can transform Bio::Structure objects to and from PDB flat
-file databases. The working is similar to that of the Bio::SeqIO handlers. 
+file databases. The working is similar to that of the Bio::SeqIO handlers.
 
 =head1 FEEDBACK
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
-to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://www.bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Kris Boulez
 
@@ -60,7 +58,8 @@ Email kris.boulez@algonomics.com
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods.
+Internal methods are usually preceded with a _
 
 =cut
 
@@ -69,9 +68,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::Structure::IO::pdb;
-use vars qw(@ISA);
 use strict;
-use Bio::Structure::IO;
 use Bio::Structure::Entry;
 #use Bio::Structure::Model;
 #use Bio::Structure::Chain;
@@ -80,12 +77,12 @@ use Bio::Structure::Atom;
 use Bio::SeqFeature::Generic;
 use Bio::Annotation::Reference;
 
-@ISA = qw(Bio::Structure::IO);
+use base qw(Bio::Structure::IO);
 
 sub _initialize {
   my($self,@args) = @_;
 
-  $self->SUPER::_initialize(@args);  
+  $self->SUPER::_initialize(@args);
 
   my ($noheader, $noatom) =
   	$self->_rearrange([qw(
@@ -106,7 +103,6 @@ sub _initialize {
  Returns : Bio::Structure object
  Args    :
 
-
 =cut
 
 sub next_structure {
@@ -124,16 +120,16 @@ sub next_structure {
    $line = $self->_readline;   # This needs to be before the first eof() test
 
    if( !defined $line ) {
-       return undef; # no throws - end of file
+       return; # no throws - end of file
    }
 
    if( $line =~ /^\s+$/ ) {
        while( defined ($line = $self->_readline) ) {
 	   $line =~/\S/ && last;
        }
-   }   
+   }
    if( !defined $line ) {
-       return undef; # end of file
+       return; # end of file
    }
    $line =~ /^HEADER\s+\S+/ || $self->throw("PDB stream with no HEADER. Not pdb in my book");
    my($header_line) = unpack "x10 a56", $line;
@@ -141,10 +137,10 @@ sub next_structure {
    my($class, $depdate, $idcode) = unpack "x10 a40 a9 x3 a4", $line;
    $idcode =~ s/^\s*(\S+)\s*$/$1/;
    $struc->id($idcode);
-$self->debug("PBD c $class d $depdate id $idcode\n"); # XXX KB
+	$self->debug("PBD c $class d $depdate id $idcode\n"); # XXX KB
 
    my $buffer = $line;
-   
+
    BEFORE_COORDINATES :
    until( !defined $buffer ) {
        $_ = $buffer;
@@ -194,7 +190,7 @@ $self->debug("get COMPND $compnd\n");
 		$expdta = $self->_read_PDB_singlecontline("EXPDTA","11-70",\$buffer);
 		$header{'expdta'} = $expdta;
 	}
-	
+
 	# AUTHOR line(s)
 	if (/^AUTHOR / && $all_headers) {
 		$author = $self->_read_PDB_singlecontline("AUTHOR","11-70",\$buffer);
@@ -239,7 +235,7 @@ $self->debug("get COMPND $compnd\n");
 			# $_ still holds the REMARK_1 line, $buffer now contains the first non
 			#  REMARK_1 line. We need to parse it in this pass (so no else block)
 			$_ = $buffer;
-		} 
+		}
 		# for the moment I don't see a better solution (other then using goto)
 		if (/^REMARK\s+(\d+)\s*/) {
 			my $r_num = $1;
@@ -279,7 +275,7 @@ $self->debug("get COMPND $compnd\n");
 		my ($rol) = unpack "x8 a62", $_;
 		$header{'seqres'} .= $rol;
 	} # SEQRES
-	
+
 	# MODRES line(s)
 	if (/^MODRES / && $all_headers) {
 		my ($rol) = unpack "x7 a63", $_;
@@ -309,14 +305,14 @@ $self->debug("get COMPND $compnd\n");
 		my ($rol) = unpack "x8 a62", $_;
 		$header{'formul'} .= $rol;
 	} # FORMUL
-	
+
 	# HELIX line(s)
 	#  store as specific object ??
 	if (/^HELIX / && $all_headers) {
 		my ($rol) = unpack "x7 a69", $_;
 		$header{'helix'} .= $rol;
 	} # HELIX
-	
+
 	# SHEET line(s)
 	#  store as specific object ??
 	if (/^SHEET / && $all_headers) {
@@ -400,7 +396,7 @@ $self->debug("get COMPND $compnd\n");
 		my ($rol) = unpack "x10 a45", $_;
 		$header{$scalen} .= $rol;
 	} # SCALEn
-	
+
 	# MTRIXn line(s) (n=1,2,3)
 	if (/^(MTRIX\d) / && $all_headers) {
 		my $mtrixn = lc($1);
@@ -418,7 +414,7 @@ $self->debug("get COMPND $compnd\n");
 	# Get next line.
 	$buffer = $self->_readline;
    }
-   
+
    # store %header entries a annotations
    if (%header) {
 	for my $record (keys %header) {
@@ -435,7 +431,7 @@ $self->debug("get COMPND $compnd\n");
 		$struc->annotation->add_Annotation("remark_$remark_num", $sim);
 	}
    }
-	
+
    # Coordinate section, the real meat
    #
    #  $_ contains a line beginning with (ATOM|MODEL)
@@ -453,16 +449,16 @@ $self->debug("get COMPND $compnd\n");
 		   if ($buffer !~ /^MODEL /) { # if we get here we have multiple MODELs
 			   last;
 		   }
-	}	
-   } 
+	}
+   }
    else {
 	   $self->throw("Could not find a coordinate section in this record\n");
    }
-      
+
 
    until( !defined $buffer ) {
 	$_ = $buffer;
-	
+
    	# CONNECT records
 	if (/^CONECT/) {
 		# do not differentiate between different type of connect (column dependant)
@@ -503,10 +499,10 @@ $self->debug("get COMPND $compnd\n");
 	if (/^END/) {
 		# this it the end ...
 	}
-   
+
    	$buffer = $self->_readline;
    }
-   	
+
 
    return $struc;
 }
@@ -518,7 +514,6 @@ $self->debug("get COMPND $compnd\n");
  Function: writes the $struc object (must be a Bio::Structure) to the stream
  Returns : 1 for success and 0 for error
  Args    : Bio::Structure object
-
 
 =cut
 
@@ -534,7 +529,7 @@ sub write_structure {
 	my ($ann, $string, $output_string, $key);
 	# HEADER
 	($ann) = $struc->annotation->get_Annotations("header");
-	if ($ann) { 
+	if ($ann) {
 		$string = $ann->as_text;
 		$string =~ s/^Value: //;
 		$output_string = pack ("A10 A56", "HEADER", $string);
@@ -560,19 +555,19 @@ sub write_structure {
 
 	exists $header{'obslte'} && $self->_write_PDB_simple_record(-name => "OBSLTE  ", -cont => "9-10",
 					-annotation => $struc->annotation->get_Annotations("obslte"), -rol => "11-70");
-					
+
 	exists $header{'title'} && $self->_write_PDB_simple_record(-name => "TITLE   ", -cont => "9-10",
 					-annotation => $struc->annotation->get_Annotations("title"), -rol => "11-70");
-					
+
 	exists $header{'caveat'} && $self->_write_PDB_simple_record(-name => "CAVEAT  ", -cont => "9-10",
 					-annotation => $struc->annotation->get_Annotations("caveat"), -rol => "12-70");
-					
+
 	exists $header{'compnd'} && $self->_write_PDB_simple_record(-name => "COMPND  ", -cont => "9-10",
 					-annotation => $struc->annotation->get_Annotations("compnd"), -rol => "11-70");
-					
+
 	exists $header{'source'} && $self->_write_PDB_simple_record(-name => "SOURCE  ", -cont => "9-10",
 					-annotation => $struc->annotation->get_Annotations("source"), -rol => "11-70");
-					
+
 	exists $header{'keywds'} && $self->_write_PDB_simple_record(-name => "KEYWDS  ", -cont => "9-10",
 					-annotation => $struc->annotation->get_Annotations("keywds"), -rol => "11-70");
 
@@ -705,7 +700,7 @@ sub write_structure {
 	}
 	exists $header{'tvect'} && $self->_write_PDB_simple_record(-name => "TVECT  ",
 					-annotation => $struc->annotation->get_Annotations("tvect"), -rol => "8-70");
-				
+
 	# write out coordinate section
 	#
 	my %het_res;  # hetero residues
@@ -729,17 +724,18 @@ sub write_structure {
 		for my $chain ($struc->get_chains($model)) {
 			my ($residue, $atom, $resname, $resnum, $atom_line, $atom_serial, $atom_icode, $chain_id);
 			my ($prev_resname, $prev_resnum, $prev_atomicode); # need these for TER record
-			my $wr_ter = 0; # have we already written out a TER for this chain
+			my $last_record = ""; # Used to spot an ATOM -> HETATM change within a chain
 			$chain_id = $chain->id;
 			if ( $chain_id eq "default" ) {
-				$chain_id = " "; 
+				$chain_id = " ";
 			}
-$self->debug("model_id: $model->id chain_id: $chain_id\n");
+			$self->debug("model_id: $model->id chain_id: $chain_id\n");
 			for $residue ($struc->get_residues($chain)) {
 				($resname, $resnum) = split /-/, $residue->id;
 				for $atom ($struc->get_atoms($residue)) {
 					if ($het_res{$resname}) {  # HETATM
-						if ( ! $wr_ter && $resname ne "HOH" ) { # going from ATOM -> HETATM, we have to write TER
+						if ( $resname ne "HOH" && $last_record eq "ATOM  " ) {
+							# going from ATOM -> HETATM, we have to write TER
 							my $ter_line = "TER   ";
 							$ter_line .= sprintf("%5d", $atom_serial + 1);
 							$ter_line .= "      ";
@@ -749,12 +745,12 @@ $self->debug("model_id: $model->id chain_id: $chain_id\n");
 							$ter_line .= $atom_icode ? $prev_atomicode : " "; # 27
 							$ter_line .= " " x (80 - length $ter_line);  # extend to 80 chars
 							$self->_print($ter_line,"\n");
-							$wr_ter = 1;
 						}
 						$atom_line = "HETATM";
 					} else {
 						$atom_line = "ATOM  ";
 					}
+					$last_record = $atom_line;
 					$atom_line .= sprintf("%5d ", $atom->serial);
 					$atom_serial = $atom->serial; # we need it for TER record
 					$atom_icode = $atom->icode;
@@ -776,7 +772,7 @@ $self->debug("model_id: $model->id chain_id: $chain_id\n");
 							# element should be at first two positions (right justified)
 							# ie. Calcium should be "CA  "
 							#     C alpha should be " CA "
-							if( length($element) == 2 ) { 
+							if( length($element) == 2 ) {
 								$atom_line .= sprintf("%-4s", $atom->id);
 							} else {
 								$atom_line .= sprintf(" %-3s", $atom->id);
@@ -811,18 +807,18 @@ $self->debug("model_id: $model->id chain_id: $chain_id\n");
 					$atom_line .= $atom->segID ? 			# segID 73-76
 							sprintf("%-4s",  $atom->segID) :
 							"    ";
-					$atom_line .= $atom->element ? 
+					$atom_line .= $atom->element ?
 							sprintf("%2s", $atom->element) :
 							"  ";
-					$atom_line .= $atom->charge ? 
+					$atom_line .= $atom->charge ?
 							sprintf("%2s", $atom->charge) :
 							"  ";
 
 					$self->_print($atom_line,"\n");
 				}
 			}
-			# write out TER record if it hasn't been written yet
-			if ( $resname ne "HOH" && ! $wr_ter ) {
+			# write out TER record
+			if ( $resname ne "HOH" ) {
 				my $ter_line = "TER   ";
 				$ter_line .= sprintf("%5d", $atom_serial + 1);
 				$ter_line .= "      ";
@@ -832,7 +828,6 @@ $self->debug("model_id: $model->id chain_id: $chain_id\n");
 				$ter_line .= $atom_icode ? $atom_icode : " "; # 27
 				$ter_line .= " " x (80 - length $ter_line);  # extend to 80 chars
 				$self->_print($ter_line,"\n");
-				$wr_ter = 1;
 			}
 		}
 		if ($struc->get_models > 1) { # we need ENDMDL
@@ -886,28 +881,25 @@ $self->debug("model_id: $model->id chain_id: $chain_id\n");
 			$self->_print($conect_line, "\n");
 		}
 	}
-		
 
 	# MASTER line contains checksums, we should calculate them of course :)
 	my $master_line = "MASTER    " . $struc->master;
 	$master_line .= " " x (80 - length($master_line) );
 	$self->_print($master_line, "\n");
-	
+
 	my $end_line = "END" . " " x 77;
 	$self->_print($end_line,"\n");
 
-	#$self->throw("write_structure is not yet implemented, start holding your breath\n");
 }
 
 =head2 _filehandle
 
  Title   : _filehandle
  Usage   : $obj->_filehandle($newval)
- Function: 
- Example : 
+ Function:
+ Example :
  Returns : value of _filehandle
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -924,9 +916,9 @@ sub _filehandle{
 
  Title   : _noatom
  Usage   : $obj->_noatom($newval)
- Function: 
- Example : 
- Returns : value of _noatom 
+ Function:
+ Example :
+ Returns : value of _noatom
  Args    : newvalue (optional)
 
 
@@ -945,9 +937,9 @@ sub _noatom{
 
  Title   : _noheader
  Usage   : $obj->_noheader($newval)
- Function: 
- Example : 
- Returns : value of _noheader 
+ Function:
+ Example :
+ Returns : value of _noheader
  Args    : newvalue (optional)
 
 
@@ -992,16 +984,16 @@ sub _read_PDB_singlecontline {
 		       		$rol =~ s/^\s//; # strip leading space
 			}
 			## no space (store litteraly) $concat_line .= $rol . " ";
-			$concat_line .= $rol; 
+			$concat_line .= $rol;
 		} else {
 			last;
 		}
-	
+
 		$_ = undef;
 	}
-		$concat_line =~ s/\s$//;  # remove trailing space
+	$concat_line =~ s/\s$//;  # remove trailing space
 	$$buffer = $_;
-	
+
 	return $concat_line;
 }
 
@@ -1012,13 +1004,13 @@ sub _read_PDB_singlecontline {
  Usage   : $obj->_read_PDB_jrnl($\buffer))
  Function: read jrnl record from PDB
  Returns : Bio::Annotation::Reference object
- Args    : 
+ Args    :
 
 =cut
 
 sub _read_PDB_jrnl {
 	my ($self, $buffer) = @_;
-	
+
 	$_ = $$buffer;
 	my ($auth, $titl,$edit,$ref,$publ,$refn);
 	while (defined( $_ ||= $self->_readline )) {
@@ -1048,7 +1040,7 @@ sub _read_PDB_jrnl {
 	$jrnl_ref->publisher($publ);
 	$jrnl_ref->editors($edit);
 	$jrnl_ref->encoded_ref($refn);
-	
+
 	return $jrnl_ref;
 } # sub _read_PDB_jrnl
 
@@ -1059,13 +1051,13 @@ sub _read_PDB_jrnl {
  Usage   : $obj->_read_PDB_remark_1($\buffer))
  Function: read "remark 1"  record from PDB
  Returns : array of Bio::Annotation::Reference objects
- Args    : 
+ Args    :
 
 =cut
 
 sub _read_PDB_remark_1 {
 	my ($self, $buffer) = @_;
-	
+
 	$_ = $$buffer;
 	my ($auth, $titl,$edit,$ref,$publ,$refn,$refnum);
 	my @refs;
@@ -1118,7 +1110,7 @@ sub _read_PDB_remark_1 {
 	} # while
 
 	$$buffer = $_;
-	
+
 	return @refs;
 } # sub _read_PDB_jrnl
 
@@ -1129,7 +1121,7 @@ sub _read_PDB_remark_1 {
  Usage   : $obj->_read_PDB_coordinate_section($\buffer))
  Function: read one model from a PDB
  Returns : Bio::Structure::Model object
- Args    : 
+ Args    :
 
 =cut
 
@@ -1160,7 +1152,7 @@ $self->debug("_read_PDB_coor: parsing model $model_num\n");
 			if (/^MODEL\s+\d+\s+\S+/) { # old format (pre 2.1)
 				$old = 1;
 			}
-		} 
+		}
 		# old hier ook setten XXX
 		# ATOM lines, if first set chain
 		if (/^(ATOM |HETATM|SIGATM)/) {
@@ -1171,14 +1163,14 @@ $self->debug("_read_PDB_coor: parsing model $model_num\n");
 				$line_elements[$k] =~ s/\s+$//; # remove trailing space
 				$line_elements[$k] = undef if ($line_elements[$k] =~ /^\s*$/);
 			}
-			my ($serial, $atomname, $altloc, $resname, $chainID, $resseq, $icode, $x, $y, $z, 
+			my ($serial, $atomname, $altloc, $resname, $chainID, $resseq, $icode, $x, $y, $z,
 				$occupancy, $tempfactor, $segID, $element, $charge) = @line_elements;
-			$chainID = 'default' if ( !defined $chainID ); 
+			$chainID = 'default' if ( !defined $chainID );
 			if ($chainID ne $chain_name) { # possibly a new chain
 				# fix for bug #1187
 				#  we can have ATOM/HETATM of an already defined chain (A B A B)
 				#  e.g. 1abm
-				
+
 				if (exists $_ch_in_model{$chainID} ) { # we have already seen this chain in this model
 					$chain = $_ch_in_model{$chainID};
 				} else {  # we create a new chain
@@ -1189,13 +1181,15 @@ $self->debug("_read_PDB_coor: parsing model $model_num\n");
 				}
 				$chain_name = $chain->id;
 			}
+			#my $res_name_num = $resname."-".$resseq;
 			my $res_name_num = $resname."-".$resseq;
+			$res_name_num .= '.'.$icode if $icode;
 			if ($res_name_num ne $residue_name) { # new residue
 				$residue = Bio::Structure::Residue->new;
 				$struc->add_residue($chain,$residue);
 				$residue->id($res_name_num);
 				$residue_name = $res_name_num;
-				$atom_name = ""; # only needed inside a residue 
+				$atom_name = ""; # only needed inside a residue
 			}
 			# get out of here if we don't want the atom objects
 			if ($noatom) {
@@ -1241,7 +1235,7 @@ $self->debug("_read_PDB_coor: parsing model $model_num\n");
 				$atom->sigocc($sigocc);
 				$atom->sigtemp($sigtemp);
 
-			} 
+			}
 		} # ATOM|HETARM|SIGATM
 
 		# ANISOU | SIGUIJ  lines
@@ -1256,7 +1250,7 @@ $self->debug("_read_PDB_coor: parsing model $model_num\n");
 				$line_elements[$k] =~ s/\s+$//; # remove trailing space
 				$line_elements[$k] = undef if ($line_elements[$k] =~ /^\s*$/);
 			}
-			my ($serial, $atomname, $altloc, $resname, $chainID, $resseq, $icode, 
+			my ($serial, $atomname, $altloc, $resname, $chainID, $resseq, $icode,
 				$u11,$u22, $u33, $u12, $u13, $u23, $segID, $element, $charge) = @line_elements;
 $self->debug("read_PDB_coor: parsing ANISOU record: $serial $atomname\n");
 			if ( $altloc && ($altloc =~ /\S+/) && ($atomname eq $atom_name) ) {
@@ -1273,7 +1267,7 @@ $self->debug("read_PDB_coor: parsing ANISOU record: $serial $atomname\n");
 				$atom->aniso("u12",$u12);
 				$atom->aniso("u13",$u13);
 				$atom->aniso("u23",$u23);
-			} 
+			}
 			else { # SIGUIJ
 				if ($atom_name ne $atomname) {  # something wrong with PDB file
 					$self->throw("A SIGUIJ record should have the same $atomname as the previous record $atom_name\n");
@@ -1304,7 +1298,7 @@ $self->debug("read_PDB_coor: parsing ANISOU record: $serial $atomname\n");
 		}
 		$_ = undef;
 
-	} # while 
+	} # while
 
 	$$buffer = $_;
 
@@ -1314,7 +1308,7 @@ $self->debug("read_PDB_coor: parsing ANISOU record: $serial $atomname\n");
 
 sub _write_PDB_simple_record {
 	my ($self, @args) = @_;
-	my ($name, $cont , $annotation, $rol, $string) = 
+	my ($name, $cont , $annotation, $rol, $string) =
 		$self->_rearrange([qw(
 				NAME
 				CONT
@@ -1359,7 +1353,7 @@ $self->debug("ann_string: $ann_string~~\nstring: $string~~\n");
 	}
 	# ann_string contains the thing to write out, writing out happens below
 	my $ann_length = length $ann_string;
-	
+
 $self->debug("ann_string: $ann_string\n");
 	if ($cont) {
 		my ($c_begin, $c_end) = $cont =~ /^(\d+)-(\d+)$/;
@@ -1369,7 +1363,7 @@ $self->debug("ann_string: $ann_string\n");
 			my $out_line;
 			my $num_pos = $rol_length;
 			my $i = 0;
-			while( $i < $ann_length ) { 
+			while( $i < $ann_length ) {
 				$t_string = substr($ann_string, $i, $num_pos);
 $self->debug("t_string: $t_string~~$i $num_pos\n");
 				if ($first_line) {

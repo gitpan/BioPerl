@@ -1,4 +1,4 @@
-# $Id: SplitLocationI.pm,v 1.14 2002/12/01 00:05:20 jason Exp $
+# $Id: SplitLocationI.pm,v 1.18.4.1 2006/10/02 23:10:21 sendu Exp $
 #
 # BioPerl module for Bio::Location::SplitLocationI
 # Cared for by Jason Stajich <jason@bioperl.org>
@@ -10,7 +10,7 @@
 
 =head1 NAME
 
-Bio::SplitLocationI - Abstract interface of a Location on a Sequence
+Bio::Location::SplitLocationI - Abstract interface of a Location on a Sequence
 which has multiple locations (start/end points)
 
 =head1 SYNOPSIS
@@ -40,21 +40,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bio.perl.org/MailList.html - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
+Email jason-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -67,13 +66,11 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Location::SplitLocationI;
-use vars qw(@ISA);
 use strict;
 
-use Bio::LocationI;
 use Carp;
 
-@ISA = qw(Bio::LocationI);
+use base qw(Bio::LocationI);
 
 
 =head2 sub_Location

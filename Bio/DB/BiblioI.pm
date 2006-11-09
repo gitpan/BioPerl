@@ -1,4 +1,4 @@
-# $Id: BiblioI.pm,v 1.6 2003/06/04 08:36:37 heikki Exp $
+# $Id: BiblioI.pm,v 1.10.4.1 2006/10/02 23:10:14 sendu Exp $
 #
 # BioPerl module for Bio::DB::BiblioI
 #
@@ -29,7 +29,7 @@ objects using I<Bio::Biblio::IO>.
 
 The interface complies (with some simplifications) with the
 specification described in the B<OpenBQS> project. Its home page is at
-http://industry.ebi.ac.uk/openBQS
+http://www.ebi.ac.uk/~senger/openbqs/.
 
 =head1 FEEDBACK
 
@@ -39,21 +39,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
-Martin Senger (senger@ebi.ac.uk)
+Martin Senger (martin.senger@gmail.com)
 
 =head1 COPYRIGHT
 
@@ -80,15 +79,9 @@ message. You need to call them on a Bio::Biblio object.
 # Let the code begin...
 
 package Bio::DB::BiblioI;
-use vars qw(@ISA $Revision);
 use strict;
-use Bio::Root::RootI;
 
-@ISA = qw(Bio::Root::RootI);
-
-BEGIN {
-    $Revision = q$Id: BiblioI.pm,v 1.6 2003/06/04 08:36:37 heikki Exp $;
-}
+use base qw(Bio::Root::RootI);
 
 # -----------------------------------------------------------------------------
 
@@ -195,7 +188,7 @@ sub reset_retrieval { shift->throw_not_implemented; }
 
 It returns the next available citation from the underlying query
 collection. It throws an exception if there are no more citations. In
-order to avoid this use it together with the I<has_next> method:
+order to avoid this, use it together with the I<has_next> method:
 
   my $result = $biblio->find ('brazma', 'authors');
   while ( $result->has_next ) {
@@ -283,11 +276,9 @@ sub get_all_ids { shift->throw_not_implemented; }
 
 =head2 get_by_id
 
- Usage   : my $citation = $biblio->get_by_id ('94033980');
+ Usage   : my $citation = $biblio->get_by_id ('12368254');
  Returns : a citation in an XML format
- Args    : a citation identifier
-           (e.g. for MEDLINE it is a MedlineID
-            - at least for the time being)
+ Args    : a citation identifier (PMID for Medline)
 
 It returns a citation - disregarding if the citation is or is not in
 the underlying query collection (of course, it must be in the
@@ -469,7 +460,7 @@ vocabulary. It throws an exception if the vocabulary does not exist.
 
 This is one way how to get it and print it:
 
-    my $name = 'MEDLINE2002/JournalArticle/properties';
+    my $name = 'MEDLINE2005/JournalArticle/properties';
     use Data::Dumper;
     print Data::Dumper->Dump ( [$biblio->get_all_entries ($name)],
 			       ['All entries']);

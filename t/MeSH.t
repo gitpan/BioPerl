@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: MeSH.t,v 1.3 2003/08/29 17:03:50 birney Exp $
+# $Id: MeSH.t,v 1.6 2006/03/27 21:07:21 bosborne Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -16,45 +16,40 @@ BEGIN {
     # to handle systems with no installed Test module
     # we include the t dir (where a copy of Test.pm is located)
     # as a fallback
-    eval { require Test; };
-    $error = 0;
-    if( $@ ) {
-	use lib 't';
-    }
-    use Test;
-    $NUMTESTS = 26;
-
-    plan tests => $NUMTESTS;
-
-    eval { require IO::String; 
-	   require LWP::UserAgent;
-	   require HTTP::Request::Common;
-       };
-    if( $@ ) {
-	print STDERR "IO::String or LWP::UserAgent or HTTP::Request not installed. This means the MeSH modules are not usable. Skipping tests.\n";
-	for( 1..$NUMTESTS ) {
-	    skip("IO::String, LWP::UserAgent,or HTTP::Request not installed",1);
+	eval { require Test; };
+	$error = 0;
+	if( $@ ) {
+		use lib 't';
 	}
-       $error = 1; 
-    }
+	use Test;
+	$NUMTESTS = 23;
 
+	plan tests => $NUMTESTS;
 
-
-
+	eval { require IO::String; 
+			 require LWP::UserAgent;
+			 require HTTP::Request::Common;
+       };
+	if( $@ ) {
+		print STDERR "IO::String or LWP::UserAgent or HTTP::Request not installed. This means the MeSH modules are not usable. Skipping tests.\n";
+		for( 1..$NUMTESTS ) {
+			skip("IO::String, LWP::UserAgent,or HTTP::Request not installed",1);
+		}
+		$error = 1;
+	}
 }
+# For tests of Bio::DB::MeSH see t/DB.t
 
 if( $error ==  1 ) {
     exit(0);
 }
 
 END {
-    foreach ( $Test::ntest..$NUMTESTS) {
-	skip('unable to run all of the tests depending on web access',1);
+	foreach ( $Test::ntest..$NUMTESTS) {
+		skip('unable to run all of the MeSH.t tests, skipping',1);
     }
 }
 
-
-use Data::Dumper;
 require Bio::Phenotype::MeSH::Term;
 require Bio::Phenotype::MeSH::Twig;
 require Bio::DB::MeSH;
@@ -91,9 +86,3 @@ ok $twig->purge_children();
 ok $twig->each_child(), 0;
 
 
-eval {
-    ok my $mesh = new Bio::DB::MeSH(-verbose => $verbose);
-    ok my $t=$mesh->get_exact_term('Dietary Fats');
-    ok $t->each_twig(), 2;
-    #print Dumper $t;
-};

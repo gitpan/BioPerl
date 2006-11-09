@@ -1,4 +1,4 @@
-# $Id: GuessSeqFormat.pm,v 1.5 2003/12/16 16:58:51 smckay Exp $
+# $Id: GuessSeqFormat.pm,v 1.15.4.1 2006/10/02 23:10:32 sendu Exp $
 #------------------------------------------------------------------
 #
 # BioPerl module Bio::Tools::GuessSeqFormat
@@ -197,17 +197,16 @@ other Bioperl modules.  Send your comments and suggestions
 preferably to one of the Bioperl mailing lists.  Your
 participation is much appreciated.
 
-   bioperl-l@bioperl.org              - General discussion
-   http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us
 keep track the bugs and their resolution.  Bug reports can be
-submitted via email or the web:
+submitted via the web:
 
-    bioperl-bugs@bio.perl.org
-    http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -215,7 +214,7 @@ Andreas Kähäri, andreas.kahari@ebi.ac.uk
 
 =head1 CONTRIBUTORS
 
-Heikki Lehväslaiho, heikki@ebi.ac.uk
+Heikki Lehväslaiho, heikki-at-bioperl-dot-org
 
 =cut
 
@@ -225,10 +224,8 @@ package Bio::Tools::GuessSeqFormat;
 use strict;
 use warnings;
 
-use Bio::Root::Root;
 
-use vars qw(@ISA);
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 =head1 METHODS
 
@@ -444,7 +441,7 @@ sub guess
     } elsif (defined $self->{-file}) {
         # If given a filename, open the file.
         open($fh, $self->{-file}) or
-            die "Can not open '$self->{-file}' for reading: $!";
+            $self->throw("Can not open '$self->{-file}' for reading: $!");
     } elsif (defined $self->{-fh}) {
         # If given a filehandle, figure out if it's a plain GLOB
         # or a IO::Handle which is seekable.  In the case of a
@@ -511,13 +508,12 @@ number of the same line, return 1 if the line possibly is from a
 file of the type that they perform a test of.
 
 A zero return value does not mean that the line is not part
-of a certain type of file, just that the test didn't find any
+of a certain type of file, just that the test did not find any
 characteristics of that type of file in the line.
 
 =head2 _possibly_ace
 
-From bioperl test data, and
-from
+From bioperl test data, and from
 "http://www.isrec.isb-sib.ch/DEA/module8/B_Stevenson/Practicals/transcriptome_recon/transcriptome_recon.html".
 
 =cut
@@ -530,7 +526,7 @@ sub _possibly_ace
 
 =head2 _possibly_blast
 
-From various blast results.
+ From various blast results.
 
 =cut
 
@@ -564,7 +560,7 @@ sub _possibly_codata
     my ($line, $lineno) = (shift, shift);
     return (($lineno == 1 && $line =~ /^ENTRY/) ||
             ($lineno == 2 && $line =~ /^SEQUENCE/) ||
-            $line =~ /^(?:ENTRY|SEQUENCE|\/\/\/)/);
+            $line =~ m{^(?:ENTRY|SEQUENCE|///)});
 }
 
 =head2 _possibly_embl
@@ -590,7 +586,7 @@ sub _possibly_fasta
 {
     my ($line, $lineno) = (shift, shift);
     return (($lineno != 1 && $line =~ /^[A-IK-NP-Z]+$/i) ||
-            $line =~ /^>\w/);
+            $line =~ /^>\s*\w/);
 }
 
 =head2 _possibly_fastxy
@@ -621,8 +617,6 @@ sub _possibly_game
 =head2 _possibly_gcg
 
 From bioperl, Bio::SeqIO::gcg.
-Example at
-"http://bioweb.cgb.indiana.edu/seqanal/formats/examples.html#gcg".
 
 =cut
 
@@ -775,21 +769,18 @@ sub _possibly_mega
 
 From "http://www.ebi.ac.uk/help/formats.html".
 
-Contradiction at
-"http://bioweb.cgb.indiana.edu/seqanal/formats/examples.html#msf".
-
 =cut
 
 sub _possibly_msf
 {
     my ($line, $lineno) = (shift, shift);
-    return ($line =~ /^\/\// ||
+    return ($line =~ m{^//} ||
             $line =~ /MSF:.*Type:.*Check:|Name:.*Len:/);
 }
 
 =head2 _possibly_phrap
 
-From "http://www.ccgb.umn.edu/biodata/docs/contigimage.html".
+From "http://biodata.ccgb.umn.edu/docs/contigimage.html".
 From "http://genetics.gene.cwru.edu/gene508/Lec6.htm".
 From bioperl test data ("*.ace.1" files).
 
@@ -825,7 +816,7 @@ From bioperl test data.
 sub _possibly_pfam
 {
     my ($line, $lineno) = (shift, shift);
-    return ($line =~ /^\w+\/\d+-\d+\s+[A-IK-NP-Z.]+/i);
+    return ($line =~ m{^\w+/\d+-\d+\s+[A-IK-NP-Z.]+}i);
 }
 
 =head2 _possibly_phylip
@@ -840,7 +831,9 @@ sub _possibly_phylip
 {
     my ($line, $lineno) = (shift, shift);
     return (($lineno == 1 && $line =~ /^\s*\d+\s\d+/) ||
-            ($line =~ /^seq\d/));
+            ($lineno == 2 && $line =~ /^\w\s+[A-IK-NP-Z\s]+/) ||
+            ($lineno == 3 && $line =~ /(?:^\w\s+[A-IK-NP-Z\s]+|\s+[A-IK-NP-Z\s]+)/)
+           );
 }
 
 =head2 _possibly_prodom
@@ -884,9 +877,7 @@ sub _possibly_rsf
 
 =head2 _possibly_selex
 
-From
-"http://www-ccmr-nmr.bioc.cam.ac.uk/private/arcr1/hmmer-html/node35.html"
-and "http://www.ebc.ee/WWW/hmmer2-html/node27.html".
+From "http://www.ebc.ee/WWW/hmmer2-html/node27.html".
 
 Assuming precense of Selex file header.  Data exported by
 Bioperl on Pfam and Selex formats are identical, but Pfam file

@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: BioGraphics.t,v 1.14 2003/11/15 19:12:09 lstein Exp $
+# $Id: BioGraphics.t,v 1.17.4.1 2006/10/16 17:08:15 sendu Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -10,8 +10,9 @@ use strict;
 use vars qw($NUMTESTS $DEBUG);
 
 use lib '..','.','./blib/lib';
-use constant IMAGES => './t/data/biographics';
-use constant FILES  => './t/data/biographics';
+use File::Spec;
+use constant IMAGES => File::Spec->catfile(qw(t data biographics));
+use constant FILES => File::Spec->catfile(qw(t data biographics));
 use constant IMAGE_TESTS => 0;
 
 my $error;
@@ -31,24 +32,25 @@ BEGIN {
     plan tests => $NUMTESTS;
 
     eval {
-	require GD;
+        require GD;
 	require Text::Shellwords;
-	require Bio::Graphics::FeatureFile;
-	require Bio::Graphics;
     };
     if( $@ ) {
 	print STDERR "GD or Text::Shellwords modules are not installed. This means that Bio::Graphics module is unusable. Skipping tests.\n";
       $error = 1;
     }
-}
 
-exit 0 if $error;
+    require Bio::Graphics::FeatureFile;
+    require Bio::Graphics;
+}
 
 END { 
     foreach ( $Test::ntest..$NUMTESTS) {
 	skip('unable to run all of the Bio::Graphics tests',1);
     }
 }
+
+exit 0 if $error;
 
 my $verbose = -1;
 my $write   = 0;

@@ -1,5 +1,5 @@
 #
-# $Id: UpdateableSeqI.pm,v 1.6 2002/12/01 00:05:19 jason Exp $
+# $Id: UpdateableSeqI.pm,v 1.8.4.1 2006/10/02 23:10:15 sendu Exp $
 #
 # BioPerl module for Bio::DB::UpdateableSeqI
 #
@@ -47,11 +47,10 @@ Jason Stajich E<lt>jason@bioperl.orgE<gt>
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution. Bug reports can be submitted via email
-or the web:
+the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-    bioperl-bugs@bioperl.org                   
-    http://bugzilla.bioperl.org/           
+  http://bugzilla.open-bio.org/           
 
 =head1 APPENDIX
 
@@ -65,11 +64,9 @@ package Bio::DB::UpdateableSeqI;
 
 use strict;
 
-use vars qw( @ISA );
 
-use Bio::DB::SeqI;
 
-@ISA = qw(Bio::DB::SeqI);
+use base qw(Bio::DB::SeqI);
 
 =head2 write_seq
 

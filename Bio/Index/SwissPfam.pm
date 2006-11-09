@@ -1,6 +1,5 @@
-
 #
-# $Id: SwissPfam.pm,v 1.17 2003/06/04 08:36:40 heikki Exp $
+# $Id: SwissPfam.pm,v 1.24.4.1 2006/10/02 23:10:20 sendu Exp $
 #
 # BioPerl module for Bio::Index::SwissPfam
 #
@@ -21,7 +20,7 @@ Bio::Index::SwissPfam - Interface for indexing swisspfam files
 
     my $Index_File_Name = shift;
     my $inx = Bio::Index::SwissPfam->new('-filename' => $Index_File_Name, 
-					 '-write_flag' => 'WRITE');
+                         					 '-write_flag' => 'WRITE');
     $inx->make_index(@ARGV);
 
     use Bio::Index::SwissPfam;
@@ -32,12 +31,12 @@ Bio::Index::SwissPfam - Interface for indexing swisspfam files
 
     foreach my $id (@ARGV) {
         my $seq = $inx->fetch($id); # Returns stream
-	while( <$seq> ) {
-	    if(/^>/) {
-	    	print;
-		last;
-	    }
-	}
+	     while( <$seq> ) {
+	         if(/^>/) {
+	    	       print;
+		          last;
+	         }
+	     }
     }
 
 
@@ -46,16 +45,11 @@ Bio::Index::SwissPfam - Interface for indexing swisspfam files
 SwissPfam is one of the flat files released with Pfam. This modules
 provides a way of indexing this module.
 
-Inherits functions for managing dbm files from
-Bio::Index::Abstract.pm, and provides the basic funtionallity for
-indexing SwissPfam files.  Only retrieves FileStreams at the
-moment. Once we have something better (ie, an object!), will use
-that. Heavily snaffled from James Gilbert's Fasta system. Note: for
-best results 'use strict'.
-
-Details on configuration and additional example code are available in the
-biodatabases.pod file.
-
+Inherits functions for managing dbm files from Bio::Index::Abstract.pm, and 
+provides the basic funtionallity for indexing SwissPfam files.  Only 
+retrieves FileStreams at the moment. Once we have something better 
+(ie, an object!), will use that. Heavily snaffled from Index::Fasta system of 
+James Gilbert. Note: for best results 'use strict'.
 
 =head1 FEED_BACK
 
@@ -65,17 +59,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via
-email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
@@ -93,13 +86,11 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::Index::SwissPfam;
 
-use vars qw(@ISA);
 use strict;
 
-use Bio::Index::Abstract;
 use Bio::Seq;
 
-@ISA = qw(Bio::Index::Abstract);
+use base qw(Bio::Index::Abstract);
 
 sub _version {
     return 0.1;
@@ -136,14 +127,14 @@ sub _index_file {
     $begin = 0;
     $end   = 0;
 
-    open SP, $file or $self->throw("Can't open file for read : $file");
+    open my $SP, '<', $file or $self->throw("Can't open file for read : $file");
 
     # Main indexing loop
-    while (<SP>) {
+    while (<$SP>) {
         if (/^>(\S+)\s+\|=*\|\s+(\S+)/) {
 	    $nid = $1;
 	    $nacc = $2;
-            my $new_begin = tell(SP) - length( $_ );
+            my $new_begin = tell($SP) - length( $_ );
             $end = $new_begin - 1;
 
 	    if( $id ) {
@@ -158,10 +149,10 @@ sub _index_file {
         }
     }
     # Don't forget to add the last record
-    $end = tell(SP);
+    $end = tell($SP);
     $self->add_record($id, $i, $begin, $end) if $id;
 
-    close SP;
+    close $SP;
     return 1;
 }
 

@@ -1,8 +1,8 @@
-# $Id: Result.pm,v 1.8 2003/12/19 03:02:43 jason Exp $
+# $Id: Result.pm,v 1.15.4.1 2006/10/02 23:10:14 sendu Exp $
 #
 # bioperl module for Bio::Coordinate::Result
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Heikki Lehvaslaiho
 #
@@ -39,30 +39,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email:  heikki@ebi.ac.uk
-Address:
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
+Email:  heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -75,13 +65,10 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Coordinate::Result;
-use vars qw(@ISA );
 use strict;
 
-use Bio::Location::Split;
-use Bio::Coordinate::ResultI;
 
-@ISA = qw(Bio::Location::Split Bio::Coordinate::ResultI);
+use base qw(Bio::Location::Split Bio::Coordinate::ResultI);
 
 
 =head2 add_location
@@ -100,6 +87,10 @@ use Bio::Coordinate::ResultI;
 
 sub add_sub_Location {
   my ($self,$value) = @_;
+  if( ! $value ) {
+      $self->warn("provding an empty value for location\n");
+      return;
+  }
   $self->throw("Is not a Bio::LocationI but [$value]")
       unless $value->isa('Bio::LocationI');
 
@@ -155,7 +146,7 @@ sub seq_id {
     if (@ls) {
 	return $ls[0]->seq_id;
     } else {
-	return undef;
+	return;
     }
 }
 

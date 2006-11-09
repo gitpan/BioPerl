@@ -1,4 +1,4 @@
-# $Id: IUPAC.pm,v 1.20 2003/03/06 11:02:21 bosborne Exp $
+# $Id: IUPAC.pm,v 1.29.2.1 2006/10/02 23:10:32 sendu Exp $
 #
 # BioPerl module for IUPAC
 #
@@ -32,7 +32,7 @@ IUPAC is a tool that produces a stream of unique, "strict"-satisfying Seq
 objects from an ambiquous Seq object (containing non-standard characters given
 the meaning shown below)
 
-        Extended Dna / Rna alphabet :
+        Extended DNA / RNA alphabet :
         (includes symbols for nucleotide ambiguity)
         ------------------------------------------
         Symbol       Meaning      Nucleic Acid
@@ -73,15 +73,18 @@ the meaning shown below)
         G        Glycine
         H        Histidine
         I        Isoleucine
+        J        Isoleucine/Leucine
         K        Lysine
         L        Leucine
         M        Methionine
         N        Asparagine
+        O        Pyrrolysine
         P        Proline
         Q        Glutamine
         R        Arginine
         S        Serine
         T        Threonine
+        U        Selenocysteine
         V        Valine
         W        Tryptophan
         X        Unknown
@@ -102,21 +105,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://www.bioperl.org/MailList.html - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://www.bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Aaron Mackey
 
-Email amackey@virginia.edu
+Email amackey-at-virginia.edu
 
 =head1 APPENDIX
 
@@ -131,7 +133,7 @@ methods. Internal methods are usually preceded with a _
 package Bio::Tools::IUPAC;
 
 use strict;
-use vars qw(@ISA %IUP %IUB $AUTOLOAD);
+use vars qw(%IUP %IUB %REV_IUB $AUTOLOAD);
 
 BEGIN {
     %IUB = ( A => [qw(A)],
@@ -152,6 +154,24 @@ BEGIN {
 	     X => [qw(G A T C)],
 	     N => [qw(G A T C)]
 	     );
+	%REV_IUB = (A	=> 'A',
+				T	=> 'T',
+				C	=> 'C',
+				G 	=> 'G',
+				AC	=> 'M',
+				AG	=> 'R',
+				AT	=> 'W',
+				CG	=> 'S',
+				CT	=> 'Y',
+				'GT'	=> 'K',
+				ACG	=> 'V',
+				ACT	=> 'H',
+				AGT	=> 'D',
+				CGT	=> 'B',
+				ACGT=> 'N',
+				N	=> 'N'
+				);
+
 
     %IUP = (A => [qw(A)],
 	    B => [qw(D N)],
@@ -162,10 +182,12 @@ BEGIN {
 	    G => [qw(G)],
 	    H => [qw(H)],
 	    I => [qw(I)],
+        J => [qw(I L)],
 	    K => [qw(K)],
 	    L => [qw(L)],
 	    M => [qw(M)],
 	    N => [qw(N)],
+        O => [qw(O)],
 	    P => [qw(P)],
 	    Q => [qw(Q)],
 	    R => [qw(R)],
@@ -179,10 +201,9 @@ BEGIN {
 	    Z => [qw(E Q)],
 	    '*' => ['*']
 	    );
-    
+
 }
-use Bio::Root::Root;
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 =head2 new
 
@@ -199,23 +220,23 @@ use Bio::Root::Root;
 
 sub new {
     my($class,@args) = @_;
-    my $self = $class->SUPER::new(@args);    
+    my $self = $class->SUPER::new(@args);
 
     my ($seq) = $self->_rearrange([qw(SEQ)],@args);
     if((! defined($seq)) && @args && ref($args[0])) {
 	# parameter not passed as named parameter?
 	$seq = $args[0];
     }
-    $seq->isa('Bio::Seq') or 
+    $seq->isa('Bio::Seq') or
 	$self->throw("Must supply a Seq.pm object to IUPAC!");
     $self->{'_SeqObj'} = $seq;
-    if ($self->{'_SeqObj'}->alphabet() =~ m/^[dr]na$/i ) { 
+    if ($self->{'_SeqObj'}->alphabet() =~ m/^[dr]na$/i ) {
         # nucleotide seq object
-	$self->{'_alpha'} = [ map { $IUB{uc($_)} } 
+	$self->{'_alpha'} = [ map { $IUB{uc($_)} }
 			      split('', $self->{'_SeqObj'}->seq()) ];
-    } elsif ($self->{'_SeqObj'}->alphabet() =~ m/^protein$/i ) { 
+    } elsif ($self->{'_SeqObj'}->alphabet() =~ m/^protein$/i ) {
         # amino acid seq object
-	$self->{'_alpha'} = [ map { $IUP{uc($_)} } 
+	$self->{'_alpha'} = [ map { $IUP{uc($_)} }
 			       split('', $self->{'_SeqObj'}->seq()) ];
     } else { # unknown type: we could make a guess, but let's not.
 	$self->throw("You must specify the 'type' of sequence provided to IUPAC");
@@ -244,7 +265,7 @@ sub next_seq{
 	next unless $self->{'_string'}->[$i] || @{$self->{'_alpha'}->[$i]} > 1;
 	if ( $self->{'_string'}->[$i] == $#{$self->{'_alpha'}->[$i]} ) { # rollover
 	    if ( $i == $#{$self->{'_string'}} ) { # end of possibilities
-		return undef;
+		return;
 	    } else {
 		$self->{'_string'}->[$i] = 0;
 		next;
@@ -294,6 +315,41 @@ sub iupac_iup{
 sub iupac_iub{
    return %IUB;
 }
+
+=head2 iupac_rev_iub
+
+ Title   : iupac_rev_iub
+ Usage   : my %dnasymbols = $iupac->iupac_rev_iub
+ Function: Returns a hash of nucleotide combinations -> IUPAC code
+           (a reverse of the iupac_iub hash).
+ Returns : Hash
+ Args    : none
+
+=cut
+
+sub iupac_rev_iub{
+   return %REV_IUB;
+}
+
+=head2 count
+
+ Title   : count
+ Usage   : my $total = $iupac->count();
+ Function: Calculates the number of unique, unambiguous sequences that
+           this ambiguous sequence could generate
+ Return  : int
+ Args    : none
+
+=cut
+
+sub count {
+    my ($self) = @_;
+
+    my $count = 1;
+    $count *= scalar(@$_) for (@{$self->{'_alpha'}});
+    return $count;
+}
+
 
 sub AUTOLOAD {
 

@@ -1,4 +1,4 @@
-# $Id: FeaturePair.pm,v 1.21 2003/08/10 17:13:43 jason Exp $
+# $Id: FeaturePair.pm,v 1.22.4.1 2006/10/02 23:10:28 sendu Exp $
 #
 # BioPerl module for Bio::SeqFeature::FeaturePair
 #
@@ -87,14 +87,13 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::SeqFeature::FeaturePair;
-use vars qw(@ISA $AUTOLOAD);
+use vars qw($AUTOLOAD);
 use strict;
 
 use Bio::SeqFeatureI;
-use Bio::SeqFeature::Generic;
 use Bio::Factory::ObjectFactory;
 
-@ISA = qw(Bio::SeqFeature::Generic);
+use base qw(Bio::SeqFeature::Generic);
 
 =head2 new
 
@@ -510,7 +509,7 @@ sub invert {
     
     $self->feature1($self->feature2);
     $self->feature2($tmp);
-    return undef;
+    return;
 }
 
 =head2 feature_factory

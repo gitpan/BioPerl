@@ -1,9 +1,9 @@
 
-# $Id: Ace.pm,v 1.11 2003/03/06 13:27:53 bosborne Exp $
+# $Id: Ace.pm,v 1.15.4.2 2006/10/02 23:10:14 sendu Exp $
 #
 # BioPerl module for Bio::DB::Ace
 #
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
+# Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
 # Copyright Ewan Birney
 #
@@ -58,21 +58,20 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
-Email birney@sanger.ac.uk
+Email birney@ebi.ac.uk
 
 =head1 APPENDIX
 
@@ -83,25 +82,21 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 package Bio::DB::Ace;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::DB::RandomAccessI
 
-use Bio::DB::RandomAccessI;
 use Bio::Seq;
 
-BEGIN { 
-  eval {
-    require Ace;
-  };
+BEGIN {
+  eval "require Ace;";
   if( $@) {
     print STDERR "You have not installed Ace.pm.\n Read the docs in Bio::DB::Ace for more information about how to do this.\n It is very easy\n\nError message $@";
   }
 }
 
 
-@ISA = qw(Bio::DB::RandomAccessI);
+use base qw(Bio::DB::RandomAccessI);
 
 # new() is inherited from Bio::DB::Abstract
 
@@ -152,7 +147,7 @@ sub get_Seq_by_id {
   # get out the sequence somehow!
 
   $dna = $seq->asDNA();
-  
+
   $dna =~ s/^>.*\n//;
   $dna =~ s/\n//g;
 
@@ -176,7 +171,7 @@ sub get_Seq_by_acc {
 
   my $self = shift;
   my $acc = shift or $self->throw("Must supply an accesion number!\n");
-  
+
   return $self->get_Seq_by_id($acc);
 }
 
@@ -184,7 +179,7 @@ sub get_Seq_by_acc {
 
   Title   : _aceobj
   Usage   : $ace = $db->_aceobj();
-  Function: Get/Set on the acedb object 
+  Function: Get/Set on the acedb object
   Returns : Ace object
   Args    : New value of the ace object
 
@@ -195,7 +190,7 @@ sub _aceobj {
 
   if( $arg ) {
     $self->{'_aceobj'} = $arg;
-  } 
+  }
 
   return $self->{'_aceobj'};
 }

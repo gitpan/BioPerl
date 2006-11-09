@@ -1,8 +1,8 @@
-# $Id: AnalysisI.pm,v 1.5 2003/06/04 08:36:35 heikki Exp $
+# $Id: AnalysisI.pm,v 1.10.4.1 2006/10/02 23:10:11 sendu Exp $
 #
 # BioPerl module for Bio::AnalysisI
 #
-# Cared for by Martin Senger <senger@ebi.ac.uk>
+# Cared for by Martin Senger <martin.senger@gmail.com>
 # For copyright and disclaimer see below.
 #
 
@@ -34,21 +34,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
-Martin Senger (senger@ebi.ac.uk)
+Martin Senger (martin.senger@gmail.com)
 
 =head1 COPYRIGHT
 
@@ -64,13 +63,7 @@ This software is provided "as is" without warranty of any kind.
 
 =head1 SEE ALSO
 
-=over
-
-=item *
-
-http://industry.ebi.ac.uk/soaplab/Perl_Client.html
-
-=back
+L<http://www.ebi.ac.uk/soaplab/Perl_Client.html>.
 
 =head1 APPENDIX
 
@@ -86,15 +79,9 @@ message. You need to call them on a C<Bio::Tools::Run::Analysis> object instead.
 # Let the code begin...
 
 package Bio::AnalysisI;
-use vars qw(@ISA  $Revision);
 use strict;
-use Bio::Root::RootI;
 
-@ISA = qw(Bio::Root::RootI);
-
-BEGIN {
-    $Revision = q$Id: AnalysisI.pm,v 1.5 2003/06/04 08:36:35 heikki Exp $;
-}
+use base qw(Bio::Root::RootI);
 
 # -----------------------------------------------------------------------------
 
@@ -122,7 +109,7 @@ C<supplier>, C<installation>, C<description>.
 
 Here is an example output:
 
-  Analysis 'edit::seqret':
+  Analysis 'edit.seqret':
         installation => EMBL-EBI
         description => Reads and writes (returns) sequences
         supplier => EMBOSS
@@ -181,7 +168,7 @@ The DTD used for returned metadata is based on the adopted standard
 
 But the DTD may be extended by provider-specific metadata. For
 example, the EBI experimental SOAP-based service on top of EMBOSS uses
-DTD explained at C<http://industry.ebi.ac.uk/applab>.
+DTD explained at C<http://www.ebi.ac.uk/~senger/applab>.
 
 =cut
 
@@ -298,7 +285,7 @@ The analysis results are named and can be retrieved using their names
 by methods C<results> and C<result>.
 
 Here is an example of the result specification (again for the service
-I<edit::seqret>):
+I<edit.seqret>):
 
   $result_spec = {
           'outseq' => 'String',
@@ -436,11 +423,8 @@ C<Bio::Tools::Run::Analysis::Job> object:
 
 =cut
 
-use vars qw(@ISA);
 use strict;
-use Bio::Root::RootI;
-
-@ISA = qw(Bio::Root::RootI);
+use base qw(Bio::Root::RootI);
 
 # -----------------------------------------------------------------------------
 
@@ -553,7 +537,7 @@ started, but before it finishes (note that the example uses an
 analysis 'showdb' which does not need any input data):
 
    use Bio::Tools::Run::Analysis;
-   print new Bio::Tools::Run::Analysis (-name => 'display::showdb')
+   print new Bio::Tools::Run::Analysis (-name => 'display.showdb')
              ->run
 	     ->last_event;
 
@@ -568,7 +552,7 @@ It prints:
 The same example but now after it finishes:
 
    use Bio::Tools::Run::Analysis;
-   print new Bio::Tools::Run::Analysis (-name => 'display::showdb')
+   print new Bio::Tools::Run::Analysis (-name => 'display.showdb')
              ->wait_for
 	     ->last_event;
 
@@ -686,11 +670,11 @@ An example - both for unformatted and formatted times:
 
    use Data::Dumper;
    use Bio::Tools::Run::Analysis;
-   my $rh = new Bio::Tools::Run::Analysis (-name => 'nucleic_cpg_islands::cpgplot')
+   my $rh = new Bio::Tools::Run::Analysis (-name => 'nucleic_cpg_islands.cpgplot')
              ->wait_for ( { 'sequence_usa' => 'embl:hsu52852' } )
 	     ->times (1);
    print Data::Dumper->Dump ( [$rh], ['Times']);
-   $rh = new Bio::Tools::Run::Analysis (-name => 'nucleic_cpg_islands::cpgplot')
+   $rh = new Bio::Tools::Run::Analysis (-name => 'nucleic_cpg_islands.cpgplot')
              ->wait_for ( { 'sequence_usa' => 'embl:AL499624' } )
 	     ->times;
    print Data::Dumper->Dump ( [$rh], ['Times']);

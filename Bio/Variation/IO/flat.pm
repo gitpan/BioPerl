@@ -1,7 +1,7 @@
-# $Id: flat.pm,v 1.13 2003/06/04 08:36:44 heikki Exp $
+# $Id: flat.pm,v 1.19.4.1 2006/10/02 23:10:38 sendu Exp $
 # BioPerl module for Bio::Variation::IO::flat
 #
-# Cared for by Heikki Lehvaslaiho <Heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Heikki Lehvaslaiho
 #
@@ -37,28 +37,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the 
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email:  heikki@ebi.ac.uk
-Address: 
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom 
-
-
+Email:  heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -71,11 +63,9 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Variation::IO::flat;
 
-use vars qw(@ISA);
 use strict;
 
 use Text::Wrap;
-use Bio::Variation::IO;
 use Bio::Variation::SeqDiff;
 use Bio::Variation::DNAMutation;
 use Bio::Variation::RNAChange;
@@ -83,7 +73,7 @@ use Bio::Variation::AAChange;
 use Bio::Variation::Allele;
 
 
-@ISA = qw(Bio::Variation::IO);
+use base qw(Bio::Variation::IO);
 
 sub new {
     my($class, @args) = @_;
@@ -165,7 +155,7 @@ sub next {
 	    #$self->warn($s);
 	    #exit;
 	    my ($start, $sep, $end) = $location =~ /(-?\d+)(.)?\D?(-?\d+)?/;
-	    $end = $start if not $end ;
+	    $end = $start if not defined $end ;
 	    my ($len) = $end - $start +1; 
 	    $len = 0, $start = $end if defined $sep and $sep eq '^';
 	    my $ismut = 0;
@@ -230,7 +220,7 @@ sub next {
 	    $prevrnaobj->add_Allele($a3);
 	} else {
 	    my ($start, $sep, $end) = $location =~ /(-?\d+)(.)?\D?(-?\d+)?/;
-	    $end = $start if not $end ;
+	    $end = $start if not defined $end ;
 	    my ($len) = $end - $start + 1; 
 	    $len = 0, $start = $end if defined $sep and $sep eq '^'; 
 	    my $ismut;
@@ -305,7 +295,7 @@ sub next {
 	    $prevaaobj->add_Allele($a3);
 	} else {
 	    my ($start, $sep, $end) = $location =~ /(-?\d+)(.)?\D?(-?\d+)?/;
-	    $end = $start if not $end ;
+	    $end = $start if not defined $end ;
 	    my ($len) = $end - $start + 1; 
 	    $len = 0, $start = $end if defined $sep and $sep eq '^'; 
 	    my $ismut;

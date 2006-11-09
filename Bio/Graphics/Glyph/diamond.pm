@@ -2,9 +2,7 @@ package Bio::Graphics::Glyph::diamond;
 # DAS-compatible package to use for drawing a colored diamond
 
 use strict;
-use vars '@ISA';
-use Bio::Graphics::Glyph::generic;
-@ISA = 'Bio::Graphics::Glyph::generic';
+use base qw(Bio::Graphics::Glyph::generic);
 
 sub draw_component {
   my $self = shift;
@@ -13,6 +11,7 @@ sub draw_component {
 
   # find the center and vertices
   my ($x1,$y1,$x2,$y2) = $self->calculate_boundaries(@_);
+
   my $xmid = ($x1+$x2)/2;
   my $ymid = ($y1+$y2)/2;
 
@@ -21,7 +20,7 @@ sub draw_component {
   $y2 = $ymid + $h;
 
   # if it's a point-like feature, then draw symmetrically
-  # around the midpoing
+  # around the midpoint
   if ($self->option('point') || $x2 - $x1 < $h*2) {
     $x1 = $xmid - $h;
     $x2 = $xmid + $h;
@@ -30,6 +29,7 @@ sub draw_component {
   elsif ($self->option('fallback_to_rectangle')) {
     return $self->SUPER::draw_component($gd,@_);
   }
+
 
   my $poly_pkg = $self->polygon_package;
   my $polygon   = $poly_pkg->new();

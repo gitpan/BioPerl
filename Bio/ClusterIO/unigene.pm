@@ -1,7 +1,7 @@
-# $Id: unigene.pm,v 1.19 2003/09/11 04:41:47 andrew Exp $
+# $Id: unigene.pm,v 1.29.4.1 2006/10/02 23:10:13 sendu Exp $
 # BioPerl module for Bio::ClusterIO::unigene
 #
-# Cared for by Andrew Macgregor <andrew@anatomy.otago.ac.nz>
+# Cared for by Andrew Macgregor <andrew at cbbc.murdoch.edu.au>
 #
 # Copyright Andrew Macgregor, Jo-Ann Stanton, David Green
 # Molecular Embryology Group, Anatomy & Structural Biology, University of Otago
@@ -24,9 +24,9 @@ Do not use this module directly.  Use it via the Bio::ClusterIO class.
 
 =head1 DESCRIPTION
 
-This object reads from Unigene *.data files downloaded from ftp://ftp.ncbi.nih.gov/repository/UniGene/.
-It doesn't download and decompress the file, you have to do that yourself.
-
+This object reads from Unigene *.data files downloaded from
+ftp://ftp.ncbi.nih.gov/repository/UniGene/.  It does not download and
+decompress the file, you have to do that yourself.
 
 =head1 FEEDBACK
 
@@ -36,21 +36,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org			   - General discussion
-  http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS - Andrew Macgregor
 
-Email: andrew@anatomy.otago.ac.nz
+Email: andrew at cbbc.murdoch.edu.au
 
 
 =head1 APPENDIX
@@ -64,14 +63,12 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::ClusterIO::unigene;
-use vars qw(@ISA);
 use strict;
 
-use Bio::ClusterIO;
 use Bio::Cluster::UniGene;
 use Bio::Cluster::ClusterFactory;
 
-@ISA = qw(Bio::ClusterIO);
+use base qw(Bio::ClusterIO);
 
 my %line_is = (
 		ID			=>	q/ID\s+(\w{2,3}\.\d+)/,
@@ -80,7 +77,9 @@ my %line_is = (
 		CYTOBAND		=>	q/CYTOBAND\s+(\S.*)/,
 		MGI			=>	q/MGI\s+(\S.*)/,
 		LOCUSLINK		=>	q/LOCUSLINK\s+(\S.*)/,
+		HOMOL		=>	q/HOMOL\s+(\S.*)/,
 		EXPRESS			=>	q/EXPRESS\s+(\S.*)/,
+		RESTR_EXPR		=>	q/RESTR_EXPR\s+(\S.*)/,
 		GNM_TERMINUS		=>	q/GNM_TERMINUS\s+(\S.*)/,
 		CHROMOSOME		=>	q/CHROMOSOME\s+(\S.*)/,
 		STS			=>	q/STS\s+(\S.*)/,
@@ -88,7 +87,7 @@ my %line_is = (
 		PROTSIM			=>	q/PROTSIM\s+(\S.*)/,
 		SCOUNT			=>	q/SCOUNT\s+(\S.*)/,
 		SEQUENCE		=>	q/SEQUENCE\s+(\S.*)/,
-		ACC			=>	q/ACC=(\w+)\.?(\d*)/,
+		ACC			=>	q/ACC=(\w+)(\.\d+)?/,
 		NID			=>	q/NID=\s*(\S.*)/,
 		PID			=>	q/PID=\s*(\S.*)/,
 		CLONE			=>	q/CLONE=\s*(\S.*)/,
@@ -97,7 +96,8 @@ my %line_is = (
 		MGC			=>	q/MGC=\s*(\S.*)/,
 		SEQTYPE		=>	q/SEQTYPE=\s*(\S.*)/,
 		TRACE			=>	q/TRACE=\s*(\S.*)/,
-		DELIMITER		=>	q/^\/\//
+		PERIPHERAL		=>	q/PERIPHERAL=\s*(\S.*)/,
+		DELIMITER		=>	q{^//},
 );
 
 # we set the right factory here
@@ -123,7 +123,7 @@ sub _initialize {
 
 sub next_cluster {
 	my( $self) = @_;
-	local $/ = "//";
+	local $/ = "\n//";
 	return unless my $entry = $self->_readline;
 	
 # set up the variables we'll need
@@ -164,11 +164,17 @@ sub next_cluster {
 		elsif ($line =~ /$line_is{LOCUSLINK}/gcx) {
 			@locuslink = split /;/, $1;
 		}
+		elsif ($line =~ /$line_is{HOMOL}/gcx) {
+			$unigene{HOMOL} = $1;
+		}
 		elsif ($line =~ /$line_is{EXPRESS}/gcx) {
 			my $express = $1;
 			# remove initial semicolon if present
 			$express =~ s/^;//; 
 			@express = split /\s*;/, $express;
+		}
+		elsif ($line =~ /$line_is{RESTR_EXPR}/gcx) {
+			$unigene{RESTR_EXPR} = $1;
 		}
 		elsif ($line =~ /$line_is{GNM_TERMINUS}/gcx) {
 			$unigene{GNM_TERMINUS} = $1;
@@ -193,36 +199,40 @@ sub next_cluster {
 			my $seq = {};
 			# add unigene id to each seq
 			#$seq->{unigene_id} = $unigene{ID}; 
-			my @items = split /;/,$1;
+			my @items = split(/;/, $1);
 			foreach (@items) {
-				if (/$line_is{ACC}/gcx) {
-					$seq->{acc} = $1;
-					$seq->{version} = $2 if defined $2;
-				}
-				elsif (/$line_is{NID}/gcx) {
-					$seq->{nid} = $1;
-				}
-				elsif (/$line_is{PID}/gcx) {
-					$seq->{pid} = $1;
-				}
-				elsif (/$line_is{CLONE}/gcx) {
-					$seq->{clone} = $1;
-				}
-				elsif (/$line_is{END}/gcx) {
-					$seq->{end} = $1;
-				}
-				elsif (/$line_is{LID}/gcx) {
-					$seq->{lid} = $1;
-				}
-				elsif (/$line_is{MGC}/gcx) {
-					$seq->{mgc} = $1;
-				}
-				elsif (/$line_is{SEQTYPE}/gcx) {
-					$seq->{seqtype} = $1;
-				}
-				elsif (/$line_is{TRACE}/gcx) {
-					$seq->{trace} = $1;
-				}								
+                            if (/$line_is{ACC}/gcx) {
+                                $seq->{acc} = $1;
+                                # remove leading dot if version pattern matched
+                                $seq->{version} = substr($2,1) if defined $2;
+                            }
+                            elsif (/$line_is{NID}/gcx) {
+                                $seq->{nid} = $1;
+                            }
+                            elsif (/$line_is{PID}/gcx) {
+                                $seq->{pid} = $1;
+                            }
+                            elsif (/$line_is{CLONE}/gcx) {
+                                $seq->{clone} = $1;
+                            }
+                            elsif (/$line_is{END}/gcx) {
+                                $seq->{end} = $1;
+                            }
+                            elsif (/$line_is{LID}/gcx) {
+                                $seq->{lid} = $1;
+                            }
+                            elsif (/$line_is{MGC}/gcx) {
+                                $seq->{mgc} = $1;
+                            }
+                            elsif (/$line_is{SEQTYPE}/gcx) {
+                                $seq->{seqtype} = $1;
+                            }
+                            elsif (/$line_is{TRACE}/gcx) {
+                                $seq->{trace} = $1;
+                            }
+                            elsif (/$line_is{PERIPHERAL}/gcx) {
+                                $seq->{peripheral} = $1;
+                            }
 			}
 			push @sequence, $seq;			
 		}
@@ -237,7 +247,9 @@ sub next_cluster {
 			$UGobj->cytoband($unigene{CYTOBAND}) if defined($unigene{CYTOBAND});
 			$UGobj->mgi($unigene{MGI}) if defined ($unigene{MGI});
 			$UGobj->locuslink(\@locuslink);
+			$UGobj->homol($unigene{HOMOL}) if defined ($unigene{HOMOL});
 			$UGobj->express(\@express);
+			$UGobj->restr_expr($unigene{RESTR_EXPR}) if defined ($unigene{RESTR_EXPR});
 			$UGobj->gnm_terminus($unigene{GNM_TERMINUS}) if defined ($unigene{GNM_TERMINUS});
 			$UGobj->chromosome(\@chromosome);
 			$UGobj->sts(\@sts);

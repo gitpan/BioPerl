@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## # $Id: OMIMparser.t,v 1.5 2003/11/05 04:19:49 juguang Exp $
+## # $Id: OMIMparser.t,v 1.5.8.1 2006/10/16 17:08:15 sendu Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -18,12 +18,12 @@ BEGIN {
     plan tests => 173;
 }
 
+use File::Spec;
 use Bio::Phenotype::OMIM::OMIMparser;
 
 
-
-my $omim_parser = Bio::Phenotype::OMIM::OMIMparser->new( -genemap  => "./t/data/omim_genemap_test",
-                                                         -omimtext => "./t/data/omim_text_test" );
+my $omim_parser = Bio::Phenotype::OMIM::OMIMparser->new( -genemap  => File::Spec->catfile(qw(t data omim_genemap_test)),
+                                                         -omimtext => File::Spec->catfile(qw(t data omim_text_test)) );
 
 
 ok( $omim_parser->isa( "Bio::Phenotype::OMIM::OMIMparser" ) );

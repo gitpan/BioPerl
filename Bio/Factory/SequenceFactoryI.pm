@@ -1,4 +1,4 @@
-# $Id: SequenceFactoryI.pm,v 1.7 2003/12/06 18:09:34 jason Exp $
+# $Id: SequenceFactoryI.pm,v 1.10.4.1 2006/10/02 23:10:18 sendu Exp $
 #
 # BioPerl module for Bio::Factory::SequenceFactoryI
 #
@@ -43,17 +43,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -72,11 +71,9 @@ Internal methods are usually preceded with a _
 
 package Bio::Factory::SequenceFactoryI;
 
-use vars qw(@ISA);
 use strict;
-use Bio::Factory::ObjectFactoryI;
 
-@ISA = qw(Bio::Factory::ObjectFactoryI);
+use base qw(Bio::Factory::ObjectFactoryI);
 
 =head2 create
 

@@ -1,4 +1,4 @@
-# $Id: Statistics.pm,v 1.9 2003/09/08 12:17:15 heikki Exp $
+# $Id: Statistics.pm,v 1.12.4.1 2006/10/02 23:10:37 sendu Exp $
 #
 # BioPerl module for Bio::Tree::Statistics
 #
@@ -35,8 +35,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -44,7 +44,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -66,12 +66,10 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Tree::Statistics;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 =head2 new
 
@@ -83,6 +81,55 @@ use Bio::Root::Root;
 
 
 =cut
+
+
+=head2 assess_bootstrap
+
+ Title   : assess_bootstrap
+ Usage   : my $tree_with_bs = $stats->assess_bootstrap(\@bs_trees);
+ Function: Calculates the bootstrap for internal nodes based on
+ Returns : L<Bio::Tree::TreeI>
+ Args    : Arrayref of L<Bio::Tree::TreeI>s
+
+
+=cut
+
+sub assess_bootstrap{
+   my ($self,$bs_trees,$guide_tree) = @_;
+   my @consensus;
+
+   # internal nodes are defined by their children
+   
+   my (%lookup,%internal);
+   my $i = 0;
+   for my $tree ( $guide_tree, @$bs_trees ) {
+       # Do this as a top down approach, can probably be
+       # improved by caching internal node states, but not going
+       # to worry about it right now.
+       
+       my @allnodes = $tree->get_nodes;
+       my @internalnodes = grep { ! $_->is_Leaf } @allnodes;
+       for my $node ( @internalnodes ) {
+	   my @tips = sort map { $_->id } 
+	              grep { $_->is_Leaf() } $node->get_all_Descendents;
+	   my $id = "(".join(",", @tips).")";
+	   if( $i == 0 ) {
+	       $internal{$id} = $node->internal_id;
+	   } else { 
+	       $lookup{$id}++;
+	   }
+       }
+       $i++;
+   }
+   my @save;
+   for my $l ( keys %lookup ) {
+       if( defined $internal{$l} ) {#&& $lookup{$l} > $min_seen ) {
+	   my $intnode = $guide_tree->find_node(-internal_id => $internal{$l});
+	   $intnode->bootstrap(sprintf("%d",100 * $lookup{$l} / $i));
+       }
+   }
+   return $guide_tree;
+}
 
 
 1;

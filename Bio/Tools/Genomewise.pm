@@ -1,8 +1,8 @@
-# $Id: Genomewise.pm,v 1.2 2003/03/25 14:41:53 heikki Exp $
+# $Id: Genomewise.pm,v 1.6.4.1 2006/10/02 23:10:32 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Genomewise
 #
-# Copyright Jason Stajich <jason@bioperl.org>
+# Copyright Jason Stajich <jason-at-bioperl.org>
 #
 # You may distribute this module under the same terms as perl itself
 #
@@ -43,21 +43,21 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
-=head1 AUTHOR - Fugu Team 
+=head1 AUTHOR - Fugu Team, Jason Stajich 
 
- Email: fugui@worf.fugu-sg.org
+ Email: fugui-at-worf.fugu-sg.org
+        jason-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -70,10 +70,9 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::Tools::Genomewise;
-use vars qw(@ISA $Srctag);
+use vars qw($Srctag);
 use strict;
 
-use Bio::Tools::Genewise;
 use Bio::Tools::AnalysisResult;
 use Bio::SeqFeature::Generic;
 use Bio::SeqFeature::Gene::Exon;
@@ -81,7 +80,7 @@ use Bio::SeqFeature::FeaturePair;
 use Bio::SeqFeature::Gene::Transcript;
 use Bio::SeqFeature::Gene::GeneStructure;
 
-@ISA = qw(Bio::Tools::Genewise);
+use base qw(Bio::Tools::Genewise);
 
 $Srctag = 'genomewise';
 
@@ -165,7 +164,7 @@ sub next_prediction {
     my $genes;
     while ($_ = $self->_readline) {
 	$self->debug( $_ ) if( $self->verbose > 0);
-	last if( /^\/\//);
+	last if m{^//};
 
 	if( /^Gene\s+\d+\s*$/ ) {
 	    $genes = new Bio::SeqFeature::Gene::GeneStructure
@@ -216,4 +215,5 @@ sub next_prediction {
     }
     return $genes;
 }
+
 1;

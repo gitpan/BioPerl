@@ -22,14 +22,9 @@ module.
 package Bio::DB::GFF::Segment;
 
 use strict;
-use Bio::Root::Root;
 use Bio::Annotation::Collection;
-use Bio::RangeI;
-use Bio::Das::SegmentI;
-use Bio::SeqI;
 
-use vars qw(@ISA);
-@ISA = qw(Bio::Root::Root Bio::RangeI Bio::SeqI Bio::Das::SegmentI);
+use base qw(Bio::Root::Root Bio::RangeI Bio::SeqI Bio::Das::SegmentI);
 
 use overload 
   '""'     => 'asString',
@@ -297,27 +292,50 @@ sub subseq {
  Title   : seq
  Usage   : $s->seq
  Function: get the sequence string for this segment
- Returns : a string
+ Returns : a Bio::PrimarySeq
  Args    : none
  Status  : Public
 
-Returns the sequence for this segment as a simple string.  (-) strand
-segments are automatically reverse complemented
+Returns the sequence for this segment as a Bio::PrimarySeq.  (-)
+strand segments are automatically reverse complemented
 
-This method is also called dna() and protein() for backward
-compatibility with AceDB.
+The method is called dna() return the data as a simple sequence
+string.
 
 =cut
 
 sub seq {
   my $self = shift;
-  my ($ref,$class,$start,$stop,$strand) 
-    = @{$self}{qw(sourceseq class start stop strand)};
-#  ($start,$stop) = ($stop,$start) if $strand eq '-';
-  $self->factory->dna($ref,$start,$stop,$class);
+  my $dna = $self->dna;
+  require Bio::PrimarySeq unless Bio::PrimarySeq->can('new');
+  return Bio::PrimarySeq->new(-seq => $dna,
+			      -id  => $self->display_name);
 }
 
-*protein = *dna = \&seq;
+=head2 dna
+
+ Title   : dna
+ Usage   : $s->dna
+ Function: get the DNA string for this segment
+ Returns : a string
+ Args    : none
+ Status  : Public
+
+Returns the sequence for this segment as a simple string. (-) strand
+segments are automatically reverse complemented
+
+The method is also called protein().
+
+=cut
+
+sub dna {
+  my $self = shift;
+  my ($ref,$class,$start,$stop,$strand) 
+    = @{$self}{qw(sourceseq class start stop strand)};
+  return $self->factory->dna($ref,$start,$stop,$class);
+}
+
+*protein = \&dna;
 
 
 =head2 primary_seq

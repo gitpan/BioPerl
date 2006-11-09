@@ -1,4 +1,4 @@
-# $Id: Loader.pm,v 1.16 2003/06/04 08:36:41 heikki Exp $
+# $Id: Loader.pm,v 1.19.4.1 2006/10/02 23:10:21 sendu Exp $
 #
 # bioperl module for Bio::LiveSeq::IO::Loader
 #
@@ -20,19 +20,13 @@ Bio::LiveSeq::IO::Loader - Parent Loader for LiveSeq
 
 =head1 DESCRIPTION
 
-This package holds common methods used by BioPerl, SRS and file loaders.
+This package holds common methods used by BioPerl and file loaders.
 It contains methods to create LiveSeq objects out of entire entries or from a
 localized sequence region surrounding a particular gene.
 
 =head1 AUTHOR - Joseph A.L. Insana
 
 Email:  Insana@ebi.ac.uk, jinsana@gmx.net
-
-Address: 
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom 
 
 =head1 APPENDIX
 
@@ -47,7 +41,6 @@ package Bio::LiveSeq::IO::Loader;
 
 use strict;
 use Carp qw(cluck croak carp);
-use vars qw(@ISA);
 use Bio::LiveSeq::DNA;
 use Bio::LiveSeq::Exon;
 use Bio::LiveSeq::Transcript ;
@@ -59,8 +52,6 @@ use Bio::LiveSeq::Repeat_Region;
 use Bio::LiveSeq::Repeat_Unit;
 use Bio::LiveSeq::AARange;
 use Bio::Tools::CodonTable;
-
-#@ISA=qw(Bio::LiveSeq::); # not useful now
 
 =head2 entry2liveseq
 
@@ -505,11 +496,8 @@ sub transexonscreation {
             loader. Mainly used for testing purposes.
   Args    : a hashref containing the SWISSPROT entry datas
   Note    : the hashref can be obtained with a call to the method
-               $loader->get_swisshash()      (only with SRS loader or
-                                              BioPerl via Bio::DB::EMBL.pm)
-	    that takes as argument a string like "SWISS-PROT:P10275" or
-	    from $loader->swissprot2hash() that takes an SRS query string
-	    as its argument (e.g. "swissprot-acc:P10275")
+               $loader->get_swisshash()      (BioPerl via Bio::DB::EMBL.pm)
+	    that takes as argument a string like "SWISS-PROT:P10275"
 
 =cut
 
@@ -689,7 +677,7 @@ sub swisshash2liveseq {
     #print "Processing SwissProtFeature: $i\n"; # debug
     ($start,$end)=split(/ /,$feature->{'location'});
     # Note: cleavedmet is taken in account for updating numbering
-    $aarangeobj=Bio::LiveSeq::AARange->new(-start => $start+$cleavedmet, -end => $end+$cleavedmet, -name => $feature->{'name'}, -desc => $feature->{'desc'}, -translation => $translation, -translength => $translength);
+    $aarangeobj=Bio::LiveSeq::AARange->new(-start => $start+$cleavedmet, -end => $end+$cleavedmet, -name => $feature->{'name'}, -description => $feature->{'description'}, -translation => $translation, -translength => $translength);
     if ($aarangeobj != -1) {
       push(@aarangeobjects,$aarangeobj);
     }
@@ -888,12 +876,12 @@ sub _get_alignment {
   my $fastafile2="/tmp/tmpfastafile2";
   my $grepcut='egrep -v "[[:digit:]]|^ *$|sequences" | cut -c8-'; # grep/cut
   my $alignprogram="/usr/local/etc/bioinfo/fasta2/align -s /usr/local/etc/bioinfo/fasta2/idnaa.mat $fastafile1 $fastafile2 2>/dev/null | $grepcut"; # ALIGN
-  open TMPFASTAFILE1,">$fastafile1" || croak "Cannot write into $fastafile1 for aa alignment";
-  open TMPFASTAFILE2,">$fastafile2" || croak "Cannot write into $fastafile1 for aa alignment";
-  print TMPFASTAFILE1 ">firstseq\n$seq1\n";
-  print TMPFASTAFILE2 ">secondseq\n$seq2\n";
-  close TMPFASTAFILE1;
-  close TMPFASTAFILE2;
+  open my $TMPFASTAFILE1,">$fastafile1" || croak "Cannot write into $fastafile1 for aa alignment";
+  open my $TMPFASTAFILE2,">$fastafile2" || croak "Cannot write into $fastafile1 for aa alignment";
+  print $TMPFASTAFILE1 ">firstseq\n$seq1\n";
+  print $TMPFASTAFILE2 ">secondseq\n$seq2\n";
+  close $TMPFASTAFILE1;
+  close $TMPFASTAFILE2;
   my $alignment=`$alignprogram`;
   my @alignlines=split(/\n/,$alignment);
   my ($linecount,$seq1_aligned,$seq2_aligned,$codes);

@@ -1,9 +1,9 @@
 #---------------------------------------------------------
-# $Id: transfac.pm,v 1.6 2003/12/18 18:59:24 skirov Exp $
+# $Id: transfac.pm,v 1.14.4.3 2006/10/02 23:10:22 sendu Exp $
 
 =head1 NAME
 
-Bio::Matrix::PSM::transfac - PSM transfac parser
+Bio::Matrix::PSM::IO::transfac - PSM transfac parser
 
 =head1 SYNOPSIS
 
@@ -21,17 +21,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html     - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Stefan Kirov
 
@@ -45,13 +44,13 @@ Email skirov@utk.edu
 # Let the code begin...
 package Bio::Matrix::PSM::IO::transfac;
 use Bio::Matrix::PSM::Psm;
-use Bio::Matrix::PSM::IO;
-use Bio::Matrix::PSM::PsmHeader;
 use Bio::Root::Root;
-use vars qw(@ISA);
+use Bio::Annotation::Reference;
+use Bio::Annotation::Comment;
+use Bio::Annotation::DBLink;
 use strict;
 
-@ISA=qw(Bio::Matrix::PSM::PsmHeader Bio::Root::Root Bio::Matrix::PSM::IO);
+use base qw(Bio::Matrix::PSM::PsmHeader Bio::Matrix::PSM::IO);
 
 =head2 new
 
@@ -76,11 +75,11 @@ sub new {
     do {
 	$line=$self->_readline;
 	chomp $line;
-	push @{$self->{unstructured}},$line if (length($line)>2); } until ($line =~ /^\/\//) || (!defined($line)); #Unstructured header
+	push @{$self->{unstructured}},$line if (length($line)>2); } until ($line =~ m{^//}) || (!defined($line)); #Unstructured header
     $self->_initialize;
     return $self;
 }
-   
+
 
 =head2 next_psm
 
@@ -97,8 +96,8 @@ sub new {
 sub next_psm {
     my $self=shift;
     my $line;
-    return undef if ($self->{end});
-    my (@a,@c,@g,@t, $id, $tr1, $accn, $bf, $sites);
+    return if ($self->{end});
+    my (@a,@c,@g,@t, $id, $tr1, @refs,$accn, $bf, $sites);
     my $i=0;
     while (defined( $line=$self->_readline)) {
 	chomp($line);
@@ -113,21 +112,27 @@ sub next_psm {
     }
     if (!(defined($id) && defined($accn))) {
 	$self->{end}=1;
-	return undef;
+	return;
     }
     while (defined( $line=$self->_readline)) {	#How many sites?
 	if ($line=~/^BA\s/) {
 	    my ($tr1,$ba)=split(/\s{2}/,$line);
 	    ($sites)=split(/\s/,$ba);
-	    last;
 	}
-	last if ($line=~/^\/\//);
+   if ($line=~/^RN/) { #Adding a reference as Bio::Annotation object (self)
+    # not interested in RN line itself, since has only transfac-specific
+    # reference id? - no push back of line
+    my $ref=_parse_ref($self);
+    push @refs,$ref
+  }
+	last if ($line=~m{^//});
     }
     # We have the frequencies, let's create a SiteMatrix object
     my %matrix = &_make_matrix($self,\@a,\@c,\@g,\@t,$id, $accn);
     $matrix{-sites}=$sites if ($sites);
     $matrix{-width}=@a;
     my $psm=new Bio::Matrix::PSM::Psm(%matrix);
+    foreach my $ref (@refs) { $psm->add_Annotation('reference',$ref); }
     return $psm;
 }
 
@@ -202,6 +207,45 @@ sub _make_matrix {
     return (-pA=>\@fa,-pC=>\@fc,-pG=>\@fg,-pT=>\@ft, -id=>$id, -accession_number=>$accn)
     }
 
+sub _parse_ref {
+my $self=shift;
+my ($authors,$title,$loc,@refs,$tr,$db,$dbid);
+    while (my $refline=$self->_readline) { #Poorely designed, should go through an array with fields
+      chomp $refline;
+      my ($field,$arg)=split(/\s+/,$refline,2);
+      last if ($field=~/XX/);
+      $field.=' ';
+      REF: {
+          if ($field=~/RX/) {  #DB Reference
+              $refline=~s/[;\.]//g;
+              ($tr, $db, $dbid)=split(/\s+/,$refline);
+              last REF;
+          }
+         if ($field=~/RT/) {   #Title
+            $title .= $arg;
+            last REF;
+          }
+          if ($field=~/RA/) {  #Author
+            $authors .= $arg;
+            last REF;
+          }
+          if ($field=~/RL/) {  #Journal
+            $loc .= $arg;
+            last REF;
+          }
+        }
+     }
+     my $reference=new Bio::Annotation::Reference (-authors=>$authors, -title=>$title,
+                                                    -location=>$loc);
+     if ($db eq 'MEDLINE') {
+        # does it ever equal medline?
+        $reference->medline($dbid);
+     }
+     elsif ($dbid) {
+        $reference->pubmed($dbid);
+     }
+     return $reference;
+}
 
 sub DESTROY {
     my $self=shift;

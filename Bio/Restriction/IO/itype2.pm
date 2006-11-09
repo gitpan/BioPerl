@@ -1,4 +1,4 @@
-# $Id: itype2.pm,v 1.1 2003/07/11 14:18:26 heikki Exp $
+# $Id: itype2.pm,v 1.6.4.1 2006/10/02 23:10:23 sendu Exp $
 # BioPerl module for Bio::Restriction::IO::itype2
 #
 # Cared for by Rob Edwards <redwards@utmem.edu>
@@ -30,17 +30,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                    - General discussion
-  http://bio.perl.org/MailList.html        - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -48,7 +47,7 @@ Rob Edwards, redwards@utmem.edu
 
 =head1 CONTRIBUTORS
 
-Heikki Lehvaslaiho, heikki@ebi.ac.uk
+Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -61,16 +60,14 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Restriction::IO::itype2;
 
-use vars qw(@ISA);
 use strict;
 
-use Bio::Restriction::IO::base;
 use Bio::Restriction::Enzyme;
 use Bio::Restriction::EnzymeCollection;
 
 use Data::Dumper;
 
-@ISA = qw(Bio::Restriction::IO::base);
+use base qw(Bio::Restriction::IO::base);
 
 
 

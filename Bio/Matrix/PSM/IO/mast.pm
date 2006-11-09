@@ -1,5 +1,4 @@
-#---------------------------------------------------------
-# $Id: mast.pm,v 1.9 2003/12/11 22:04:54 skirov Exp $
+# $Id: mast.pm,v 1.21.4.2 2006/10/02 23:10:22 sendu Exp $
 
 =head1 NAME
 
@@ -7,7 +6,8 @@ Bio::Matrix::PSM::IO::mast - PSM mast parser implementation
 
 =head1 SYNOPSIS
 
-See Bio::Matrix::PSM::IO for detailed documentation on how to use PSM parsers
+See Bio::Matrix::PSM::IO for detailed documentation on how to 
+use PSM parsers
 
 =head1 DESCRIPTION
 
@@ -25,20 +25,18 @@ available, so we supply 'NNNNN....' as a seq which is not right.
 
 User feedback is an integral part of the evolution of this
 and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+to one of the Bioperl mailing lists. Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html     - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Stefan Kirov
 
@@ -55,19 +53,16 @@ methods. Internal methods are usually preceded with a _
 package Bio::Matrix::PSM::IO::mast;
 use Bio::Matrix::PSM::InstanceSite;
 use Bio::Matrix::PSM::Psm;
-use Bio::Matrix::PSM::IO;
-use Bio::Matrix::PSM::PsmHeader;
 use Bio::Root::Root;
 use strict;
-use vars qw(@ISA);
 
-@ISA=qw(Bio::Matrix::PSM::PsmHeader Bio::Root::Root Bio::Matrix::PSM::IO);
+use base qw(Bio::Matrix::PSM::PsmHeader Bio::Matrix::PSM::IO);
 
 =head2 new
 
  Title   : new
  Usage   : my $psmIO =  new Bio::Matrix::PSM::IO(-format=>'mast', 
-						 -file=>$file);
+						                               -file=>$file);
  Function: Associates a file with the appropriate parser
  Throws  : Throws if the file passed is in HTML format or if 
            some criteria for the file
@@ -83,17 +78,40 @@ use vars qw(@ISA);
 sub new {
     my($class, @args)=@_;
     my $self = $class->SUPER::new(@args);
-    my (%instances,@header);
+    my (%instances,@header,$n);
     my ($file)=$self->_rearrange(['FILE'], @args);
     $self->{file} = $file;
+    $self->{_factor}=1;
     $self->_initialize_io(@args) || warn "Did you intend to use STDIN?"; #Read only for now
     $self->{_end}=0;
     undef $self->{hid};
+    return $self if ($file=~/^>/);#Just writing
     my $buf=$self->_readline;
 	$self->throw('Cannot parse HTML format yet') if ($buf =~/^<HTML>/); 
     # this should probably be moved to its own function
     while ( defined($buf=$self->_readline)) {
 	chomp($buf);
+	if ($buf=~/DATABASE AND MOTIFS/) {
+		while ($buf=$self->_readline) {
+			if ($buf=~/DATABASE/) {
+					$buf=~s/^[\s\t]+//;
+					chomp $buf;
+					($n,$self->{_dbname},$self->{_dbtype})=split(/\s/,$buf);
+					$self->{_dbtype}=~s/[\(\)]//g;
+			}
+			if ($buf=~/MOTIFS/) {
+					$buf=~s/^[\s\t]+//;
+					chomp $buf;
+					($n,$self->{_mrsc},$self->{_msrctype})=split(/\s/,$buf);
+					$self->{_msrctype}=~s/[\(\)]//g;
+					last;
+			}
+		}
+		if ($self->{_msrctype} ne $self->{_dbtype}) {#Assume we have protein motifs, nuc DB (not handling opp.)
+			$self->{_factor}=3;
+			$self->{_mixquery}=1;
+		}
+	}
 	if ($buf=~m/MOTIF WIDTH BEST POSSIBLE MATCH/) {
 	    $self->_readline;
 	    while (defined($buf=$self->_readline)) {
@@ -114,7 +132,7 @@ sub new {
 	    %instances=_get_genes($self);
 	    $self->{instances}=\%instances;
       	if (!(%instances)) {
-        	$self->warn ("Your MAST analysis did not find any matches satisfying the current thershold.\nSee MAST documentation for more information.\n");
+        	$self->warn ("Your MAST analysis did not find any matches satisfying the current threshold.\nSee MAST documentation for more information.\n");
         	return $self; #The header might be useful so we return the object, not undef
       	}
 	    next;
@@ -137,25 +155,32 @@ sub new {
 }
 
 
-#Get the file header and put store it as a hash, which later we'll use to create
-#the header for each Psm. See Bio::Matrix::PSM::PsmI for header function.
+# Get the file header and put store it as a hash, which later we'll use to create
+# the header for each Psm. See Bio::Matrix::PSM::PsmI for header function.
 sub _get_genes {
-    my $self=shift;
-    my %llid;
-    my $ok=0;
-    my $i=0;
-    my %instances;
-    while (my $line=$self->_readline) {
-	last if ($line=~/^\D{10,}/);
-	chomp($line);
-	$i++;
-	next if ($line eq '');
-	$line=~s/\s+/,/g;
-	my ($id,$key,$eval,$len)=split(/,/,$line);
-	$instances{$id}=new Bio::Matrix::PSM::InstanceSite ( -id=>$id,
-							     -desc=>$key,-score=>$eval, -width=>$len,-seq=>'ACGT');
-    }
-    return %instances;
+	my $self=shift;
+	my %llid;
+	my $ok=0;
+	my $i=0;
+	my %instances;
+	while (my $line=$self->_readline) {
+		last if ($line=~/^[\s\t*]/); # Well, ids can be nearly anything...???
+		chomp($line);
+		$i++;
+		next if ($line eq '');
+		$line=~s/\s+/,/g;
+		my ($id,$key,$eval,$len)=split(/,/,$line);
+		unless ($len) {
+			warn "Malformed data found: $line\n";
+			next;
+		}
+		$instances{$id}=new Bio::Matrix::PSM::InstanceSite (-id=>$id,
+																			  -desc=>$key,
+																			  -score=>$eval, 
+																			  -width=>$len,
+																			  -seq=>'ACGT');
+	}
+	return %instances;
 }
 
 
@@ -175,16 +200,15 @@ sub _get_genes {
 
 sub next_psm {
     my $self=shift;
-    return undef if ($self->{_end}==1);
+    return if ($self->{_end}==1);
     my (@lmotifsm,%index,$eval,$scheme,$sid);
-    my $i=0;
     %index= %{$self->{length}};
     my (@instances,%instances);
     my $line=$self->_readline;
     $line=~s/[\t\n]//;
     if ($line =~ /\*{10,}/) { #Endo of Section II if we do only section II
         $self->{_end}=1;
-        return undef;
+        return ;
     }
     do {
 	if ($line!~/^\s/) {
@@ -195,11 +219,10 @@ sub next_psm {
 	$line=$self->_readline;
 	$line=~s/[\t\n]//;
     } until ($line!~/^\s/);
-    my $pos=0;
+    my $pos=1;
     $scheme=~s/\s+//g;
     $scheme=~s/\n//g;
     my @motifs=split(/_/,$scheme);
-    $i++;
     while (@motifs) {
 	my $next=shift(@motifs);
 	if (!($next=~/\D/)) {
@@ -209,11 +232,19 @@ sub next_psm {
 	}
         my $id=$next;
 	my $score= $id=~m/\[/ ? 'strong' : 'weak' ;
+	my $frame;
+	my $strand = $id =~ m/\-\d/ ? -1 : 1 ;
+	if ($self->{_mixquery}) {
+		$frame = 0 if $id =~ m/\d+a/ ;
+		$frame = 1 if $id =~ m/\d+b/ ;
+		$frame = 2 if $id =~ m/\d+c/ ;
+	}
 	$id=~s/\D+//g;
+
 	my @s;
 	my $width=$index{$id};
-	foreach (1..$width) {push @s,'N';} #We don't know the sequence, but we know the length
-	my $seq=join('N',@s); #Future version will have to parse Section tree nad get the real seq
+    #We don't know the sequence, but we know the length
+	my $seq='N' x ($width*$self->{_factor}); #Future version will have to parse Section tree nad get the real seq
 	my $instance=new Bio::Matrix::PSM::InstanceSite 
 	    ( -id=>"$id\@$sid", 
 	      -mid=>$id, 
@@ -222,9 +253,11 @@ sub next_psm {
 	      -score=>$score, 
 	      -seq=>$seq,
 		  -alphabet => 'dna', 
-	      -start=>$pos);
+	      -start=>$pos,
+	      -strand=>$strand);
+	  $instance->frame($frame) if ($self->{_mixquery});
 	push @instances,$instance;
-	$pos+=$index{$id};
+	$pos+=$index{$id}*$self->{_factor};
     }
     my $psm= new Bio::Matrix::PSM::Psm (-instances=> \@instances, 
 					-e_val    => $eval, 
@@ -233,5 +266,38 @@ sub next_psm {
     return $psm;
 }
 
+
+=head2 write_psm
+
+ Title   : write_psm
+ Usage   : #Get SiteMatrix object somehow (see Bio::Matrix::PSM::SiteMatrix)
+            my $matrix=$psmin->next_matrix;
+            #Create the stream
+            my $psmio=new(-file=>">psms.mast",-format=>'mast');
+            $psmio->write_psm($matrix);
+            #Will warn if only PFM data is contained in $matrix, recalculate the PWM
+            #based on normal distribution (A=>0.25, C=>0.25, etc)
+ Function: writes pwm in mast format
+ Throws  :
+ Example : 
+ Args    : SiteMatrix object
+ Returns : 
+
+=cut
+
+sub write_psm {
+    my ($self,$matrix)=@_;
+#    my $idline=">". $matrix->id . "\n";
+    my $w=$matrix->width;
+    my $header="ALPHABET= ACGT\nlog-odds matrix: alength= 4 w= $w\n";
+    $self->_print($header);
+    unless ($matrix->get_logs_array('A')) {
+        warn "No log-odds data, available, using normal distribution to recalculate the PWM";
+        $matrix->calc_weight({A=>0.25, C=>0.25, G=>0.25,T=>0.25});
+    }
+    while (my %h=$matrix->next_pos) {
+	$self->_print (join("\t",$h{lA},$h{lC},$h{lG},$h{lT},"\n"));
+    }
+}
 
 1;

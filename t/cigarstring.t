@@ -1,4 +1,7 @@
+# -*-Perl-*-
+# $Id: cigarstring.t,v 1.2.6.1 2006/10/16 17:08:15 sendu Exp $
 # written by Juguang Xiao
+
 use strict;
 
 BEGIN {
@@ -7,13 +10,13 @@ BEGIN {
     plan tests => 3;
 }
 
-END { }
+# END { }
 
 use Bio::SearchIO;
 
 my $searchio = new Bio::SearchIO(
-    -format => 'blast',
-    -file => 't/data/blast.report'
+	 -format => 'blast',
+    -file => File::Spec->catfile(qw(t data blast.report))
 );
 
 my @hsps = ();

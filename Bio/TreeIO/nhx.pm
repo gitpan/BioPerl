@@ -1,4 +1,4 @@
-# $Id: nhx.pm,v 1.12 2003/09/25 16:12:51 jason Exp $
+# $Id: nhx.pm,v 1.18.4.1 2006/10/02 23:10:37 sendu Exp $
 #
 # BioPerl module for Bio::TreeIO::nhx
 #
@@ -34,27 +34,24 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted viax the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Aaron Mackey
 
-Email amackey@virginia.edu
-
-Describe contact details here
+Email amackey-at-virginia.edu
 
 =head1 CONTRIBUTORS
 
-Additional contributors names and emails here
+Email jason-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -68,18 +65,16 @@ Internal methods are usually preceded with a _
 
 
 package Bio::TreeIO::nhx;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::TreeIO;
 use Bio::Tree::NodeNHX;
 use Bio::Event::EventGeneratorI;
 #use XML::Handler::Subs;
 
 
-@ISA = qw(Bio::TreeIO );
+use base qw(Bio::TreeIO);
 
 sub _initialize {
   my($self, %args) = @_;
@@ -244,7 +239,7 @@ sub next_tree{
 	$prev_event = $lastevent;
 	$lastevent = $ch;
     }       
-    return undef;
+    return;
 }
 
 =head2 write_tree
@@ -259,42 +254,67 @@ sub next_tree{
 
 sub write_tree{
     my ($self,@trees) = @_;
+    my $nl = $self->newline_each_node;
    foreach my $tree ( @trees ) {
-       my @data = _write_tree_Helper($tree->get_root_node);
+       my @data = _write_tree_Helper($tree->get_root_node,$nl);
        # per bug # 1471 do not include enclosing brackets.
        # this is sort of cheating but it should work
        # remove first and last paren if the set ends in a paren
        if($data[-1] =~ s/\)$// ) {
 	   $data[0] =~ s/^\(//;
        }
-       $self->_print(join(',', @data), ";\n");
+       if( $nl ) {
+	   chomp($data[-1]);# remove last newline
+	   $self->_print(join(",\n", @data), ";\n");
+       } else {
+	   $self->_print(join(',', @data), ";\n");
+       }
    }
    $self->flush if $self->_flush_on_write && defined $self->_fh;
    return;
 }
 
 sub _write_tree_Helper {
-    my ($node) = @_;
+    my ($node,$nl) = @_;
     return () unless defined $node;
     # rebless
     $node = bless $node,'Bio::Tree::NodeNHX';
     my @data;
     
     foreach my $n ( $node->each_Descendent() ) {
-	push @data, _write_tree_Helper($n);
+	push @data, _write_tree_Helper($n,$nl);
     }
     
     if( @data > 1 ) {
-	$data[0] = "(" . $data[0];
-	$data[-1] .= ")";
-	$data[-1] .= ":". $node->branch_length if $node->branch_length;	
+	if( $nl ) {
+	    $data[0] = "(\n" . $data[0];
+	    $data[-1] .= ")\n";	
+	} else {
+	    $data[0] = "(" . $data[0];
+	    $data[-1] .= ")";
+	}
+
+	my $id = $node->id;
+	$data[-1] .= $id  if( defined $id );
+	my $blen  = $node->branch_length;
+	$data[-1] .= ":". $blen if $blen;	
 	# this is to not print out an empty NHX for the root node which is 
 	# a convience for how we get a handle to the whole tree
-	if( $node->ancestor || $node->id || defined $node->branch_length ) {
+	my @tags = $node->get_all_tags;
+	if( $node->ancestor || @tags ) {
 	    $data[-1] .= '[' . 
-		join(":", "&&NHX", 
+		join(":", "&&NHX",
 		     map { "$_=" .join(',',$node->get_tag_values($_)) } 
-		     $node->get_all_tags() ) . ']';
+		     @tags ) . ']';
+	    
+	} else {
+	    if( $nl ) {
+		$data[0] = "(\n" . $data[0];
+		$data[-1] .= ")\n";	
+	    } else {
+		$data[0] = "(" . $data[0];
+		$data[-1] .= ")";
+	    }
 	}
     } else { 
 	push @data, $node->to_string; # a leaf

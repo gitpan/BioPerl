@@ -1,4 +1,4 @@
-# $Id: waba.pm,v 1.11 2003/05/15 22:53:11 lapp Exp $
+# $Id: waba.pm,v 1.16.4.1 2006/10/02 23:10:26 sendu Exp $
 #
 # BioPerl module for Bio::SearchIO::waba
 #
@@ -42,27 +42,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
+Email jason-at-bioperl.org
 
 =head1 APPENDIX
 
@@ -76,12 +69,11 @@ Internal methods are usually preceded with a _
 
 
 package Bio::SearchIO::waba;
-use vars qw(@ISA  %MODEMAP %MAPPING @STATES);
+use vars qw(%MODEMAP %MAPPING @STATES);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::SearchIO;
 use Bio::Search::Result::ResultFactory;
 use Bio::Search::HSP::HSPFactory;
 
@@ -118,7 +110,7 @@ BEGIN {
 }
 
 
-@ISA = qw(Bio::SearchIO );
+use base qw(Bio::SearchIO);
 
 =head2 new
 
@@ -151,6 +143,8 @@ sub _initialize {
 
 sub next_result{
     my ($self) = @_;
+    local $/ = "\n";
+    local $_;
     
     my ($curquery,$curhit);
     my $state = -1;
@@ -267,7 +261,7 @@ sub next_result{
 	$self->end_element({'Name' => 'WABAOutput'});
 	return $self->end_document();
     }
-    return undef;
+    return;
 }
 
 =head2 start_element

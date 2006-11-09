@@ -1,4 +1,4 @@
-# $Id: Gene.pm,v 1.14 2003/06/04 08:36:40 heikki Exp $
+# $Id: Gene.pm,v 1.15.4.1 2006/10/02 23:10:21 sendu Exp $
 #
 # bioperl module for Bio::LiveSeq::Gene
 #
@@ -26,12 +26,6 @@ This is used as storage for all object references concerning a particular gene.
 
 Email:  Insana@ebi.ac.uk, jinsana@gmx.net
 
-Address: 
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom 
-
 =head1 APPENDIX
 
 The rest of the documentation details each of the object
@@ -44,7 +38,6 @@ methods. Internal methods are usually preceded with a _
 package Bio::LiveSeq::Gene;
 use strict;
 use Carp;
-use vars qw(@ISA);
 use Bio::LiveSeq::Prim_Transcript; # needed to create maxtranscript obj
 
 =head2 new

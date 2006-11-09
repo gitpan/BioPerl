@@ -1,8 +1,10 @@
 package Bio::DB::GFF::Adaptor::biofetch_oracle;
-#$Id: biofetch_oracle.pm,v 1.4 2003/08/12 00:24:27 mwilkinson Exp $
+
+#$Id: biofetch_oracle.pm,v 1.4.8.1 2006/10/02 23:10:16 sendu Exp $
+
 =head1 NAME
 
-Bio::DB::GFF::Adaptor::biofetch -- Cache BioFetch objects in a Bio::DB::GFF database
+Bio::DB::GFF::Adaptor::biofetch_oracle -- Cache BioFetch objects in a Bio::DB::GFF database
 
 =head1 SYNOPSIS
 
@@ -28,12 +30,11 @@ it under the same terms as Perl itself.
 
 use strict;
 use Bio::DB::GFF::Util::Rearrange; # for rearrange()
-use Bio::DB::GFF::Adaptor::dbi::oracle;
 use Bio::DB::BioFetch;
 use Bio::SeqIO;
 
-use vars qw(@ISA %default_preferred_tags);
-@ISA = qw(Bio::DB::GFF::Adaptor::dbi::oracle);
+use vars qw(%default_preferred_tags);
+use base qw(Bio::DB::GFF::Adaptor::dbi::oracle);
 
 # priority for choosing names of CDS tags, higher is higher priority
 %default_preferred_tags = (

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: Chain.pm,v 1.14 2003/06/04 08:36:40 heikki Exp $
+# $Id: Chain.pm,v 1.15 2005/11/17 09:54:47 heikki Exp $
 #
 # bioperl module for Bio::LiveSeq::Chain
 #
@@ -49,12 +49,6 @@ dramatically.
 =head1 AUTHOR - Joseph A.L. Insana
 
 Email:  Insana@ebi.ac.uk, jinsana@gmx.net
-
-Address: 
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom 
 
 =head1 APPENDIX
 

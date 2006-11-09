@@ -1,5 +1,5 @@
-
-
+# $Id: Feature.pm,v 1.5.4.1 2006/10/02 23:10:35 sendu Exp $
+#
 # BioPerl module for Bio::Tools::Primer::Feature
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
@@ -34,8 +34,9 @@ Bio::Tools::Primer::Feature - position of a single primer
 
 =head1 DESCRIPTION
 
-Primer Features represents one primer in a primer pair. This object is mainly for
-designing primers, and probably principly used in the primer design system
+Primer Features represents one primer in a primer pair. This object is
+mainly for designing primers, and probably principly used in the
+primer design system
 
 =head1 FEEDBACK
 
@@ -45,27 +46,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
-Email birney@ebi.ac.uk
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
+Email birney-at-ebi.ac.uk
 
 =head1 APPENDIX
 
@@ -77,13 +71,11 @@ Internal methods are usually preceded with a _
 
 # Let the code begin...
 
-use vars qw(@ISA);
 
-use Bio::SeqFeature::Generic;
 
 package Bio::Tools::Primer::Feature;
 
-@ISA = qw(Bio::SeqFeature::Generic);
+use base qw(Bio::SeqFeature::Generic);
 
 
 
@@ -142,7 +134,7 @@ sub inversion {
 	}
     }
 
-    return undef;
+    return;
 }
 
 1;

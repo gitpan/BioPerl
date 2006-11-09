@@ -1,6 +1,14 @@
 # Let the code begin...
 package Bio::Expression::FeatureGroup::FeatureGroupMas50;
 
+# $Id: FeatureGroupMas50.pm,v 1.2.8.1 2006/10/02 23:10:17 sendu Exp $
+
+=head1 NAME
+
+Bio::Expression::FeatureGroup::FeatureGroupMas50
+
+=cut
+
 use strict;
 
 use base qw(Bio::Expression::FeatureGroup);

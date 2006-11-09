@@ -1,4 +1,4 @@
-# $Id: Term.pm,v 1.18 2003/12/18 08:18:36 juguang Exp $
+# $Id: Term.pm,v 1.31.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for Bio::Ontology::Term
 #
@@ -20,10 +20,9 @@
 
 # POD documentation - main docs before the code
 
-
 =head1 NAME
 
-Term - interface for ontology terms
+Bio::Ontology::Term - implementation of the interface for ontology terms
 
 =head1 SYNOPSIS
 
@@ -41,9 +40,9 @@ Term - interface for ontology terms
 
 =head1 DESCRIPTION
 
-This is "dumb" interface for ontology terms providing basic methods
-(it provides no functionality related to graphs). It implements the
-L<Bio::Ontology::TermI> interface.
+This is a simple implementation for ontology terms providing basic
+methods (it provides no functionality related to graphs). It
+implements the L<Bio::Ontology::TermI> interface.
 
 This class also implements L<Bio::IdentifiableI> and
 L<Bio::DescribableI>.
@@ -56,17 +55,15 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bio.perl.org/MailList.html - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -93,30 +90,21 @@ methods.
 # Let the code begin...
 
 package Bio::Ontology::Term;
-use vars qw( @ISA );
 use strict;
-use Bio::Root::Object;
-use Bio::Ontology::TermI;
 use Bio::Ontology::Ontology;
 use Bio::Ontology::OntologyStore;
-use Bio::IdentifiableI;
-use Bio::DescribableI;
 
 use constant TRUE    => 1;
 use constant FALSE   => 0;
 
-@ISA = qw( Bio::Root::Root
-           Bio::Ontology::TermI
-           Bio::IdentifiableI
-           Bio::DescribableI
-         );
+use base qw(Bio::Root::Root Bio::Ontology::TermI Bio::IdentifiableI Bio::DescribableI);
 
 
 
 =head2 new
 
  Title   : new
- Usage   : $term = Bio::Ontology::Term->new( 
+ Usage   : $term = Bio::Ontology::Term->new(
                 -identifier  => "16847",
                 -name        => "1-aminocyclopropane-1-carboxylate synthase",
                 -definition  => "Catalysis of ...",
@@ -128,14 +116,17 @@ use constant FALSE   => 0;
            -name                  => the name of this term [scalar]
            -definition            => the definition of this term [scalar]
            -ontology              => the ontology this term lives in
-                                     (a L<Bio::Ontology::OntologyI> object)
+                                     (a Bio::Ontology::OntologyI object)
            -version               => version information [scalar]
            -is_obsolete           => the obsoleteness of this term [0 or 1]
            -comment               => a comment [scalar]
-           -dblinks               => L<Bio::Annotation::DBLink> objects
-                                     [reference to array] 
-           -references            => L<Bio::Annotation::Reference> objects
+           -dblinks               => Bio::Annotation::DBLink objects
                                      [reference to array]
+           -references            => Bio::Annotation::Reference objects
+                                     [reference to array]
+
+See L<Bio::Ontology::OntologyI>, L<Bio::Annotation::Reference>,
+L<Bio::Annotation::DBLink>.
 
 =cut
 
@@ -144,33 +135,30 @@ sub new {
     my( $class,@args ) = @_;
 
     my $self = $class->SUPER::new( @args );
-#    return $self;
-#}
-
-#sub _initialize {
-#    my ($self, @args) =@_;
     my ( $identifier,
          $name,
          $definition,
          $category,
-	 $ont,
+                        $ont,
          $version,
          $is_obsolete,
          $comment,
-	 $dblinks, $references)
-	= $self->_rearrange( [ qw( IDENTIFIER
-				   NAME
-				   DEFINITION
-				   CATEGORY
-                   ONTOLOGY
-				   VERSION
-				   IS_OBSOLETE
-				   COMMENT
-                   DBLINKS REFERENCES
+                        $dblinks,
+                        $references)
+        = $self->_rearrange( [ qw( IDENTIFIER
+                                                                                NAME
+                                                                                DEFINITION
+                                                                                CATEGORY
+                                                                                ONTOLOGY
+                                                                                VERSION
+                                                                                IS_OBSOLETE
+                                                                                COMMENT
+                                                                                DBLINKS
+                                                                                REFERENCES
        ) ], @args );
 
     $self->init();
-    
+
     defined($identifier)   && $self->identifier( $identifier );
     defined($name)         && $self->name( $name );
     defined($definition)   && $self->definition( $definition );
@@ -182,7 +170,7 @@ sub new {
     ref($dblinks)          && $self->add_dblink(@$dblinks);
     ref($references)       && $self->add_reference(@$references);
 
-return $self;
+    return $self;
 } # new
 
 
@@ -209,7 +197,7 @@ sub init {
 =head2 identifier
 
  Title   : identifier
- Usage   : $term->identifier( "0003947" );
+ Usage   : $term->identifier( "GO:0003947" );
            or
            print $term->identifier();
  Function: Set/get for the identifier of this Term.
@@ -224,8 +212,6 @@ sub identifier {
     return $self->{'identifier'} = shift if @_;
     return $self->{'identifier'};
 } # identifier
-
-
 
 
 =head2 name
@@ -246,9 +232,6 @@ sub name {
     return $self->{'name'} = shift if @_;
     return $self->{'name'};
 } # name
-
-
-
 
 
 =head2 definition
@@ -280,12 +263,14 @@ sub definition {
  Function: Get the ontology this term is in.
 
            Note that with the ontology in hand you can query for all
-           related terms etc. See L<Bio::Ontology::OntologyI>.
+           related terms etc.
 
- Returns : The ontology of this Term as a L<Bio::Ontology::OntologyI>
+ Returns : The ontology of this Term as a Bio::Ontology::OntologyI
            implementing object.
- Args    : On set, the  ontology of this Term as a L<Bio::Ontology::OntologyI>
+ Args    : On set, the  ontology of this Term as a Bio::Ontology::OntologyI
            implementing object or a string representing its name.
+
+See L<Bio::Ontology::OntologyI>.
 
 =cut
 
@@ -294,15 +279,15 @@ sub ontology {
     my $ont;
 
     if(@_) {
-	$ont = shift;
-	if($ont) {
-	    $ont = Bio::Ontology::Ontology->new(-name => $ont) if ! ref($ont);
-	    if(! $ont->isa("Bio::Ontology::OntologyI")) {
-		$self->throw(ref($ont)." does not implement ".
-			     "Bio::Ontology::OntologyI. Bummer.");
-	    }
-	}
-	return $self->{"_ontology"} = $ont;
+        $ont = shift;
+        if($ont) {
+            $ont = Bio::Ontology::Ontology->new(-name => $ont) if ! ref($ont);
+            if(! $ont->isa("Bio::Ontology::OntologyI")) {
+                $self->throw(ref($ont)." does not implement ".
+                             "Bio::Ontology::OntologyI. Bummer.");
+            }
+        }
+        return $self->{"_ontology"} = $ont;
     }
     return $self->{"_ontology"};
 } # ontology
@@ -347,9 +332,6 @@ sub is_obsolete{
     return $self->{'is_obsolete'} = shift if @_;
     return $self->{'is_obsolete'};
 } # is_obsolete
-
-
-
 
 
 =head2 comment
@@ -411,8 +393,8 @@ sub add_synonym {
 
     # avoid duplicates
     foreach my $syn (@values) {
-	next if grep { $_ eq $syn; } @{$self->{ "_synonyms" }};
-	push( @{ $self->{ "_synonyms" } }, $syn );
+        next if grep { $_ eq $syn; } @{$self->{ "_synonyms" }};
+        push( @{ $self->{ "_synonyms" } }, $syn );
     }
 
 } # add_synonym
@@ -443,17 +425,39 @@ sub remove_synonyms {
  Usage   : @ds = $term->get_dblinks();
  Function: Returns a list of each dblinks of this GO term.
  Returns : A list of dblinks [array of [scalars]].
- Args    :
+ Args    : A scalar indicating the context (optional).
+           If omitted, all dblinks will be returned.
 
 =cut
 
 sub get_dblinks {
     my $self = shift;
+    my $context = shift;
 
-    return @{$self->{ "_dblinks" }} if exists($self->{ "_dblinks" });
+    if (defined($context)) {
+        return @{$self->{_dblinks}->{$context}}
+            if exists($self->{_dblinks}->{$context});
+    } else {
+        return map { @$_ } values %{$self->{_dblinks}};
+    }
     return ();
 } # get_dblinks
 
+
+=head2 get_dblink_context
+
+  Title   : get_dblink_context
+  Usage   : @context = $term->get_dblink_context;
+  Function: Return all context existing in Term
+  Returns : a list of scalar
+  Args    : [none]
+
+=cut
+
+sub get_dblink_context {
+    my $self=shift;
+    return keys %{$self->{_dblinks}};
+}
 
 =head2 add_dblink
 
@@ -469,18 +473,63 @@ sub get_dblinks {
 =cut
 
 sub add_dblink {
-    my ( $self, @values ) = @_;
-
-    return unless( @values );
-
-    # avoid duplicates
-    foreach my $dbl (@values) {
-	next if grep { $_ eq $dbl; } @{$self->{ "_dblinks" }};
-	push( @{ $self->{ "_dblinks" } }, $dbl );
-    }
-
+    my $self = shift;
+    $self->add_dblink_context($_,'_default') foreach @_;
 } # add_dblink
 
+
+=head2 has_dblink
+
+  Title   : has_dblink
+  Usage   : $term->has_dblink($dblink);
+  Function: Checks if a DBXref is already existing in the OBOterm object
+  Return  : TRUE/FALSE
+  Args    : [arg1] A DBxref identifier
+
+=cut
+
+sub has_dblink {
+    my ( $self, $value ) = @_;
+    return unless defined $value;
+    my $context = "_default";
+    $self->throw("'all' is a reserved word for context.") if $context eq 'all';
+    $context ||= '_default';
+    if ( ( $self->{_dblinks}->{$context} ) && grep { $_ eq $value }
+        @{ $self->{_dblinks}->{$context} } )
+    {
+        return TRUE;
+    }
+    else {
+        return FALSE;
+    }
+}
+
+
+=head2 add_dblink_context
+
+  Title   : add_dblink_context
+  Usage   : $term->add_dblink_context($db, $context);
+  Function: add a dblink with its context
+  Return  : [none]
+  Args    : [arg1] an object of Bio::Annotation::DBLink
+            [arg2] a string for context; if omitted, the
+                   default/context-less one will be used.
+
+=cut
+
+sub add_dblink_context {
+    my ($self, $value, $context)=@_;
+    return unless defined $value;
+    $self->throw("'all' is a reserved word for context.") if $context eq 'all';
+    $context ||= '_default';
+    if (! exists($self->{_dblinks}->{$context})) {
+        $self->{_dblinks}->{$context} = [];
+    }
+    if (grep {$_ eq $value} @{$self->{_dblinks}->{$context}}) {
+        $self->warn("$value exists in the dblink of $context");
+    }
+    push @{$self->{_dblinks}->{$context}}, $value;
+}
 
 =head2 remove_dblinks
 
@@ -488,17 +537,21 @@ sub add_dblink {
  Usage   : $term->remove_dblinks();
  Function: Deletes (and returns) the definition references of this GO term.
  Returns : A list of definition references [array of [scalars]].
- Args    :
+ Args    : Context. If omitted or equal to 'all', all dblinks
+           will be removed.
 
 =cut
 
 sub remove_dblinks {
-    my ( $self ) = @_;
-
-    my @a = $self->get_dblinks();
-    $self->{ "_dblinks" } = [];
-    return @a;
-
+    my ($self, $context) = @_;
+    $context = undef if $context && ($context eq "all");
+    my @old = $self->get_dblinks($context);
+    if (defined($context)) {
+        $self->{_dblinks}->{$context}=[];
+    } else {
+        $self->{_dblinks} = {};
+    }
+    return @old;
 } # remove_dblinks
 
 
@@ -531,8 +584,9 @@ sub get_references {
 sub add_reference {
     my ($self, @values) =@_;
     return unless @values;
-    # Avoid duplicates
+    # avoid duplicates and undefs
     foreach my $reference (@values){
+        next unless $reference;
         next if grep{$_ eq $reference} @{$self->{_references}};
         push @{$self->{_references}}, $reference;
     }
@@ -596,8 +650,8 @@ sub add_secondary_id {
 
     # avoid duplicates
     foreach my $id (@_) {
-	next if grep { !$_ or $_ eq $id; } @{$self->{ "_secondary_ids" }};
-	push( @{ $self->{ "_secondary_ids" } }, $id );
+        next if grep { !$_ or $_ eq $id; } @{$self->{ "_secondary_ids" }};
+        push( @{ $self->{ "_secondary_ids" } }, $id );
     }
 
 } # add_secondary_id
@@ -679,8 +733,8 @@ sub authority {
 
     return $ont->authority(@_) if $ont;
     $self->throw("cannot manipulate authority prior to ".
-		 "setting the namespace or ontology") if @_;
-    return undef;
+                 "setting the namespace or ontology") if @_;
+    return;
 }
 
 
@@ -716,8 +770,8 @@ sub namespace {
  Usage   : $string    = $obj->display_name()
  Function: A string which is what should be displayed to the user.
 
-           The definition in L<Bio::DescribableI> states that the
-           string should not contain spaces. As this isn't very
+           The definition in Bio::DescribableI states that the
+           string should not contain spaces. As this is not very
            sensible for ontology terms, we relax this here. The
            implementation just forwards to name().
 
@@ -743,7 +797,7 @@ sub display_name {
            This forwards to definition(). The caveat is that the text
            will often be longer for ontology term definitions than the
            255 characters stated in the definition in
-           L<Bio::DescribableI>.
+           Bio::DescribableI.
 
  Returns : A scalar
  Args    : on set, the new value (a scalar)
@@ -763,44 +817,6 @@ sub description {
 Used for looking up the methods that supercedes them.
 
 =cut
-
-=head2 category
-
- Title   : category
- Usage   :
- Function: This method is deprecated. Use ontology() instead.
- Example :
- Returns :
- Args    :
-
-
-=cut
-
-sub category {
-    my $self = shift;
-
-    $self->warn("TermI::category is deprecated and being phased out. ".
-		"Use TermI::ontology instead.");
-
-    # called in set mode?
-    if(@_) {
-	# yes; what is incompatible with ontology() is if we were given
-	# a TermI object
-	my $arg = shift;
-	$arg = $arg->name() if ref($arg) && $arg->isa("Bio::Ontology::TermI");
-	return $self->ontology($arg,@_);
-    } else {
-	# No, called in get mode. This is always incompatible with ontology()
-	# since category is supposed to return a TermI.
-	my $ont = $self->ontology();
-	my $term;
-	if(defined($ont)) {
-	    $term = Bio::Ontology::Term->new(-name => $ont->name(),
-					     -identifier =>$ont->identifier());
-	}
-	return $term;
-    }
-} # category
 
 *each_synonym = \&get_synonyms;
 *add_synonyms = \&add_synonym;

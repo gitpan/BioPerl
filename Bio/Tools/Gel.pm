@@ -1,4 +1,5 @@
-# $Id: Gel.pm,v 1.6 2002/10/22 07:45:22 lapp Exp $
+# $Id: Gel.pm,v 1.11.4.1 2006/10/02 23:10:32 sendu Exp $
+# 
 # BioPerl module for Bio::Tools::Gel
 # Copyright Allen Day <allenday@ucla.edu>
 # You may distribute this module under the same terms as perl itself
@@ -11,26 +12,29 @@ Bio::Tools::Gel - Calculates relative electrophoretic migration distances
 
 =head1 SYNOPSIS
 
-    #An example of a virtual restriction digest and subsequent gel run
-    use Bio::Seq;
-    use Bio::Tools::RestrictionEnzyme;
+    use Bio::PrimarySeq;
+    use Bio::Tools::RestrictionAnalysis;
     use Bio::Tools::Gel;
 
+    # get a sequence
     my $d = 'AAAAAAAAAGAATTCTTTTTTTTTTTTTTGAATTCGGGGGGGGGGGGGGGGGGGG';
     my $seq1 = Bio::Seq->new(-id=>'groundhog day',-seq=>$d);
-    my $EcoRI = Bio::Tools::RestrictionEnzyme->new(-NAME=>'EcoRI');
-    my @cuts = $EcoRI->cut_seq($seq);
 
+    # cut it with an enzyme
+    my $ra=Bio::Restriction::Analysis->new(-seq=>$seq1);
+    @cuts = $ra->fragments('EcoRI'), 3;
+
+    # analyse the fragments in a gel
     my $gel = Bio::Tools::Gel->new(-seq=>\@cuts,-dilate=>10);
     my %bands = $gel->bands;
-    foreach my $band (keys %bands){
-      print $band,"\t",$bands{$band},"\n";
+    foreach my $band (sort {$b <=> $a} keys %bands){
+      print $band,"\t", sprintf("%.1f", $bands{$band}),"\n";
     }
 
     #prints:
-    #25      26.0205999132796
-    #10      30
-    #20      26.9897000433602
+    #20   27.0
+    #25   26.0
+    #10   30.0
 
 
 =head1 DESCRIPTION
@@ -55,17 +59,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org            - General discussion
-http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Allen Day
 
@@ -83,13 +86,11 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Tools::Gel;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
 use Bio::PrimarySeq;
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 =head2 new
 

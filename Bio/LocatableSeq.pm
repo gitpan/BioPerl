@@ -1,8 +1,8 @@
-# $Id: LocatableSeq.pm,v 1.31 2003/11/21 15:48:00 heikki Exp $
+# $Id: LocatableSeq.pm,v 1.39.4.4 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::LocatableSeq
 #
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
+# Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
 # Copyright Ewan Birney
 #
@@ -13,7 +13,8 @@
 =head1 NAME
 
 Bio::LocatableSeq - A Sequence object with start/end points on it
-  that can be projected into a MSA or have coordinates relative to another seq.
+that can be projected into a MSA or have coordinates relative to
+another seq.
 
 =head1 SYNOPSIS
 
@@ -27,7 +28,6 @@ Bio::LocatableSeq - A Sequence object with start/end points on it
 
 =head1 DESCRIPTION
 
-
     # a normal sequence object
     $locseq->seq();
     $locseq->id();
@@ -36,21 +36,19 @@ Bio::LocatableSeq - A Sequence object with start/end points on it
     $locseq->start();
     $locseq->end();
 
-    # inheriets off RangeI, so range operations possible
+    # inherits off RangeI, so range operations possible
 
 =head1 FEEDBACK
 
 
 =head2 Mailing Lists
 
-
 User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
-
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 The locatable sequence object was developed mainly because the
 SimpleAlign object requires this functionality, and in the rewrite
@@ -66,11 +64,10 @@ objects are used.
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 
 =head1 APPENDIX
@@ -84,16 +81,13 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::LocatableSeq;
-use vars qw(@ISA);
 use strict;
 
-use Bio::PrimarySeq;
-use Bio::RangeI;
 use Bio::Location::Simple;
 use Bio::Location::Fuzzy;
 
 
-@ISA = qw(Bio::PrimarySeq Bio::RangeI);
+use base qw(Bio::PrimarySeq Bio::RangeI);
 
 sub new {
     my ($class, @args) = @_;
@@ -163,7 +157,7 @@ Overriding value [$value] with value $len for Bio::LocatableSeq::end().")
 sub _ungapped_len {
     my $self = shift;
     my $string = $self->seq || '';
-    $string =~ s/[.-]+//g;
+    $string =~ s/[\.\-]+//g;
     $self->seq ? (return $self->start + CORE::length($string) - 1 ) : undef;
 }
 
@@ -303,7 +297,7 @@ sub column_from_residue_number {
 	}
 	# $i now holds the index of the column.
         # The actual column number is this index + 1
-	
+
 	return $i+1;
     }
 
@@ -361,31 +355,31 @@ sub location_from_column {
 
     my ($loc);
     my $s = $self->subseq(1,$column);
-    $s =~ s/\W//g;
+    $s =~ s/[^a-zA-Z\*]//g;
+
     my $pos = CORE::length $s;
 
     my $start = $self->start || 0 ;
     my $strand = $self->strand() || 1;
     my $relative_pos = ($strand == -1)
         ? ($self->end - $pos + 1)
-            : ($pos + $start - 1);
-    if ($self->subseq($column, $column) =~ /[a-zA-Z]/ ) {
+	: ($pos + $start - 1);
+    if ($self->subseq($column, $column) =~ /[a-zA-Z\*]/ ) {
 	$loc = new Bio::Location::Simple
-	    (-start => $relative_pos,
-	     -end => $relative_pos,
+	    (-start  => $relative_pos,
+	     -end    => $relative_pos,
 	     -strand => 1,
 	     );
-    }
-    elsif ($pos == 0 and $self->start == 1) {
+    } elsif ($pos == 0 and $self->start == 1) {
     } else {
       my ($start,$end) = ($relative_pos, $relative_pos + $strand);
       if ($strand == -1) {
 	($start,$end) = ($end,$start);
       }
 	$loc = new Bio::Location::Simple
-	    (-start => $start,
-	     -end => $end,
-	     -strand => 1,
+	    (-start         => $start,
+	     -end           => $end,
+	     -strand        => 1,
 	     -location_type => 'IN-BETWEEN'
 	     );
     }

@@ -1,4 +1,4 @@
-# $Id: scf.pm,v 1.27 2003/01/28 23:27:05 matsallac Exp $
+# $Id: scf.pm,v 1.36.4.2 2006/11/08 17:25:55 sendu Exp $
 #
 # Copyright (c) 1997-2001 bioperl, Chad Matsalla. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or
@@ -21,30 +21,28 @@ L<Bio::SeqIO> for more information.
 
 =head1 DESCRIPTION
 
-This object can transform .scf files to and from
-Bio::Seq::SeqWithQuality objects.  Mechanisms are present to retrieve
-trace data from scf files.
+This object can transform .scf files to and from Bio::Seq::SequenceTrace
+objects.  Mechanisms are present to retrieve trace data from scf
+files.
 
 =head1 FEEDBACK
 
 =head2 Mailing Lists
-
 
 User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
-  http://www.bioperl.org/MailList.shtml  - About the mailing lists
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via
+the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR Chad Matsalla
 
@@ -55,7 +53,8 @@ bioinformatics@dieselwurks.com
 
 Jason Stajich, jason@bioperl.org
 Tony Cox, avc@sanger.ac.uk
-Heikki Lehvaslaiho, heikki@ebi.ac.uk
+Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
+Nancy Hansen, nhansen at mail.nih.gov
 
 =head1 APPENDIX
 
@@ -67,9 +66,8 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::SeqIO::scf;
-use vars qw(@ISA $DEFAULT_QUALITY);
+use vars qw($DEFAULT_QUALITY);
 use strict;
-use Bio::SeqIO;
 use Bio::Seq::SeqFactory;
 use Bio::Seq::SequenceTrace;
 use Dumpvalue();
@@ -77,19 +75,19 @@ use Dumpvalue();
 my $dumper = new Dumpvalue();
 $dumper->veryCompact(1);
 
-BEGIN { 
+BEGIN {
     $DEFAULT_QUALITY= 10;
 }
 
-@ISA = qw(Bio::SeqIO);
+use base qw(Bio::SeqIO);
 
 sub _initialize {
   my($self,@args) = @_;
   $self->SUPER::_initialize(@args);
   if( ! defined $self->sequence_factory ) {
       $self->sequence_factory(new Bio::Seq::SeqFactory
-			      (-verbose => $self->verbose(), 
-			       -type => 'Bio::Seq::SeqWithQuality'));
+			      (-verbose => $self->verbose(),
+			       -type => 'Bio::Seq::Quality'));
   }
 }
 
@@ -101,142 +99,153 @@ sub _initialize {
  Returns : a Bio::Seq::SequenceTrace object
  Args    : NONE
  Notes   : Fills the interface specification for SeqIO.
-	   The SCF specification does not provide for having more then
+	        The SCF specification does not provide for having more then
            one sequence in a given scf. So once the filehandle has been open
-           and passed to SeqIO don't expect to run this function more then
+           and passed to SeqIO do not expect to run this function more then
            once on a given scf unless you embraced and extended the SCF
-  	   standard. (But that's just C R A Z Y talk, isn't it.)
+  	   standard.  SCF comments are accessible through the Bio::SeqI
+           interface method annotation().
 
 =cut
 
 #'
 sub next_seq {
-    my ($self) = @_;
-    my ($seq, $seqc, $fh, $buffer, $offset, $length, $read_bytes, @read,
-	%names);
-          # set up a filehandle to read in the scf    
-    $fh = $self->_filehandle();
-    unless ($fh) {		# simulate the <> function
-	if ( !fileno(ARGV) or eof(ARGV) ) {
-	    return unless my $ARGV = shift;
-	    open(ARGV,$ARGV) or
-		$self->throw("Could not open $ARGV for SCF stream reading $!");
+	my ($self) = @_;
+	my ($seq, $seqc, $fh, $buffer, $offset, $length, $read_bytes, @read,
+		 %names);
+	# set up a filehandle to read in the scf
+	$fh = $self->_filehandle();
+	unless ($fh) {		# simulate the <> function
+		if ( !fileno(ARGV) or eof(ARGV) ) {
+			return unless my $ARGV = shift;
+			open(ARGV,$ARGV) or
+			  $self->throw("Could not open $ARGV for SCF stream reading $!");
+		}
+		$fh = \*ARGV;
 	}
-	$fh = \*ARGV;
-    }
-    binmode $fh;		# for the Win32/Mac crowds
-    return unless read $fh, $buffer, 128; # no exception; probably end of file
-          # the different versions of scf.
+	binmode $fh;		# for the Win32/Mac crowds
+	return unless read $fh, $buffer, 128; # no exception; probably end of file
+	# now, the master data structure will be the creator
+	my $creator;
+	# he first thing to do is parse the header. This is common
+	# among all versions of scf.
+	# the rest of the the information is different between the
+	# the different versions of scf.
 
-          # now, the master data structure will be the creator
-    my $creator;
-          # the first thing to do is parse the header. This is common
-          # among all versions of scf.
-          # the rest of the the information is different between the
-    $creator->{header} = $self->_get_header($buffer);
-    if ($creator->{header}->{'version'} lt "3.00") {
-	          # first gather the trace information
-	    $length = $creator->{header}->{'samples'}*
-               $creator->{header}->{sample_size}*4;
-	    $buffer = $self->read_from_buffer($fh,$buffer,$length);
-	          # @read = unpack "n$length",$buffer;
-	          # these traces need to be split
-               # returns a reference to a hash
-         $creator->{traces} = $self->_parse_v2_traces(
-               $buffer,$creator->{header}->{sample_size});
-	          # now go and get the base information
-	    $offset = $creator->{header}->{bases_offset};
-	    $length = ($creator->{header}->{bases} * 12);
-	    seek $fh,$offset,0;
-	    $buffer = $self->read_from_buffer($fh,$buffer,$length);
-	          # now distill the information into its fractions.
-	          # the old way : $self->_set_v2_bases($buffer);
-               # ref to an array, ref to a hash, string
-          ($creator->{peak_indices},
-           $creator->{qualities},
-           $creator->{sequence},
-           $creator->{accuracies}) = $self->_parse_v2_bases($buffer);
-          
-    } else {
-	    my $transformed_read;
-	    foreach (qw(a c g t)) {
-	        $length = $creator->{header}->{'samples'}*
-                    $creator->{header}->{sample_size};
-	        $buffer = $self->read_from_buffer($fh,$buffer,$length);
-                my $byte = "n";
-                if ($creator->{header}->{sample_size} == 1){
-                    $byte = "c";
-                }
-	        @read = unpack "${byte}${length}",$buffer;
+	$creator->{header} = $self->_get_header($buffer);
+	if ($creator->{header}->{'version'} lt "3.00") {
+		$self->debug("scf.pm is working with a version 2 scf.\n");
+		# first gather the trace information
+		$length = $creator->{header}->{'samples'} *
+		  $creator->{header}->{sample_size}*4;
+		$buffer = $self->read_from_buffer($fh, $buffer, $length,
+													 $creator->{header}->{samples_offset});
+		# @read = unpack "n$length",$buffer;
+		# these traces need to be split
+		# returns a reference to a hash
+		$creator->{traces} = $self->_parse_v2_traces(
+													 $buffer,$creator->{header}->{sample_size});
+		# now go and get the base information
+		$offset = $creator->{header}->{bases_offset};
+		$length = ($creator->{header}->{bases} * 12);
+		seek $fh,$offset,0;
+		$buffer = $self->read_from_buffer($fh,$buffer,$length,$creator->{header}->{bases_offset});
+		# now distill the information into its fractions.
+		# the old way : $self->_set_v2_bases($buffer);
+		# ref to an array, ref to a hash, string
+		($creator->{peak_indices},
+		 $creator->{qualities},
+		 $creator->{sequence},
+		 $creator->{accuracies}) = $self->_parse_v2_bases($buffer);
 
-		# this little spurt of nonsense is because
-		# the trace values are given in the binary
-		# file as unsigned shorts but they really
-		# are signed deltas. 30000 is an arbitrary number
-		# (will there be any traces with a given
-		# point greater then 30000? I hope not.
-		# once the read is read, it must be changed
-		# from relative
-                foreach (@read) {
-		    if ($_ > 30000) {
-		        $_ -= 65536;
-		    }
-	        }
-	        $transformed_read = $self->_delta(\@read,"backward");
-                # For 8-bit data we need to emulate a signed/unsigned
-                # cast that is implicit in the C implementations.....
-                if($creator->{header}->{sample_size} == 1){
-                    foreach (@{$transformed_read}) {
-                        $_ += 256 if ($_ < 0);
-                    }
-                }
-                $creator->{'traces'}->{$_} = join(' ',@{$transformed_read});
-	    }
-
-	          # now go and get the peak index information
-	    $offset = $creator->{header}->{bases_offset};
-	    $length = ($creator->{header}->{bases} * 4);
-	    seek $fh,$offset,0;
-	    $buffer = $self->read_from_buffer($fh,$buffer,$length);
-          $creator->{peak_indices} = $self->_get_v3_peak_indices($buffer);
-	          # now go and get the accuracy information
-	    $buffer = $self->read_from_buffer($fh,$buffer,$length);
-	    $creator->{accuracies} = $self->_get_v3_base_accuracies($buffer);
-	          # OK, now go and get the base information.
-	    $length = $creator->{header}->{bases};
-	    $buffer = $self->read_from_buffer($fh,$buffer,$length);
-	    $creator->{'sequence'} = unpack("a$length",$buffer);
-	          # now, finally, extract the calls from the accuracy information.
-	    $creator->{qualities} = $self->_get_v3_quality(
-               $creator->{'sequence'},$creator->{accuracies});
-    }
-    # now go and get the comment information
+	} else {
+		$self->debug("scf.pm is working with a version 3+ scf.\n");
+		my $transformed_read;
+		my $current_read_position = $creator->{header}->{sample_offset};
+		$length = $creator->{header}->{'samples'}*
+		  $creator->{header}->{sample_size};
+		# $dumper->dumpValue($creator->{header});
+		foreach (qw(a c g t)) {
+			$buffer = $self->read_from_buffer($fh,$buffer,$length,$current_read_position);
+			my $byte = "n";
+			if ($creator->{header}->{sample_size} == 1) {
+				$byte = "c";
+			}
+			@read = unpack "${byte}${length}",$buffer;
+			# this little spurt of nonsense is because
+			# the trace values are given in the binary
+			# file as unsigned shorts but they really
+			# are signed deltas. 30000 is an arbitrary number
+			# (will there be any traces with a given
+			# point greater then 30000? I hope not.
+			# once the read is read, it must be changed
+			# from relative
+			foreach (@read) {
+				if ($_ > 30000) {
+					$_ -= 65536;
+				}
+			}
+			$transformed_read = $self->_delta(\@read,"backward");
+			# For 8-bit data we need to emulate a signed/unsigned
+			# cast that is implicit in the C implementations.....
+			if ($creator->{header}->{sample_size} == 1) {
+				foreach (@{$transformed_read}) {
+					$_ += 256 if ($_ < 0);
+				}
+			}
+			$current_read_position += $length;
+			$creator->{'traces'}->{$_} = join(' ',@{$transformed_read});
+		}
+		
+		# now go and get the peak index information
+		$offset = $creator->{header}->{bases_offset};
+		$length = ($creator->{header}->{bases} * 4);
+		$buffer = $self->read_from_buffer($fh,$buffer,$length,$offset);
+		$creator->{peak_indices} = $self->_get_v3_peak_indices($buffer);
+		$offset += $length;
+		# now go and get the accuracy information
+		$buffer = $self->read_from_buffer($fh,$buffer,$length,$offset);
+		$creator->{accuracies} = $self->_get_v3_base_accuracies($buffer);
+		# OK, now go and get the base information.
+		$offset += $length;
+		$length = $creator->{header}->{bases};
+		$buffer = $self->read_from_buffer($fh,$buffer,$length,$offset);
+		$creator->{'sequence'} = unpack("a$length",$buffer);
+		# now, finally, extract the calls from the accuracy information.
+		$creator->{qualities} = $self->_get_v3_quality(
+											  $creator->{'sequence'},$creator->{accuracies});
+	}
+	# now go and get the comment information
 	$offset = $creator->{header}->{comments_offset};
 	seek $fh,$offset,0;
-    $length = $creator->{header}->{comment_size};
-    $buffer = $self->read_from_buffer($fh,$buffer,$length);
-    $creator->{comments} = $self->_get_comments($buffer);
-          # can a bioperl person explain how this factory should create 
-          # a sequencetrace?  create a SeqWithQuality object
-     my $swq = Bio::Seq::SeqWithQuality->new(
-               -seq =>   $creator->{'sequence'},
-              -qual =>	$creator->{'qualities'},
-              -id   =>	$creator->{'comments'}->{'NAME'}
-              );
-     my $returner = Bio::Seq::SequenceTrace->new(
-          -swq =>   $swq,
-          -trace_a  =>   $creator->{'traces'}->{'a'},
-          -trace_t  =>   $creator->{'traces'}->{'t'},
-          -trace_g  =>   $creator->{'traces'}->{'g'},
-          -trace_c  =>   $creator->{'traces'}->{'c'},
-          -accuracy_a    => $creator->{'accuracies'}->{'a'},
-          -accuracy_t    => $creator->{'accuracies'}->{'t'},
-          -accuracy_g    => $creator->{'accuracies'}->{'g'},
-          -accuracy_c    => $creator->{'accuracies'}->{'c'},
-          -peak_indices =>   $creator->{'peak_indices'}
-     );
-     return $returner;
+	$length = $creator->{header}->{comment_size};
+	$buffer = $self->read_from_buffer($fh,$buffer,$length);
+	$creator->{comments} = $self->_get_comments($buffer);
+        my @name_comments = grep {$_->tagname() eq 'NAME'}
+                          $creator->{comments}->get_Annotations('comment');
+        my $name_comment = $name_comments[0]->as_text();
+        $name_comment =~ s/^Comment:\s+//;
 
+	my $swq = Bio::Seq::Quality->new(
+												-seq =>   $creator->{'sequence'},
+												-qual =>	$creator->{'qualities'},
+		-id   =>	$name_comment
+											  );
+	my $returner = Bio::Seq::SequenceTrace->new(
+										   -swq      =>   $swq,
+											-trace_a  =>   $creator->{'traces'}->{'a'},
+											-trace_t  =>   $creator->{'traces'}->{'t'},
+										   -trace_g  =>   $creator->{'traces'}->{'g'},
+										   -trace_c  =>   $creator->{'traces'}->{'c'},
+						               -accuracy_a    => $creator->{'accuracies'}->{'a'},
+		                           -accuracy_t    => $creator->{'accuracies'}->{'t'},
+					                  -accuracy_g    => $creator->{'accuracies'}->{'g'},
+			                        -accuracy_c    => $creator->{'accuracies'}->{'c'},
+                                 -peak_indices  => $creator->{'peak_indices'}
+															 );
+
+        $returner->annotation($creator->{'comments'}); # add SCF comments
+	return $returner;
 }
 
 
@@ -244,10 +253,10 @@ sub next_seq {
 
  Title   : _get_v3_quality()
  Usage   : $self->_get_v3_quality()
- Function: Set the base qualities from version3 scf's
+ Function: Set the base qualities from version3 scf
  Returns : Nothing. Alters $self.
  Args    : None.
- Notes   : 
+ Notes   :
 
 =cut
 
@@ -275,7 +284,7 @@ sub _get_v3_quality {
  Function: Unpacks the base accuracies for version3 scf
  Returns : Nothing. Alters $self
  Args    : A scalar containing binary data.
- Notes   : 
+ Notes   :
 
 =cut
 
@@ -293,7 +302,7 @@ sub _get_v3_peak_indices {
  Function: Set the base accuracies for version 3 scf's
  Returns : Nothing. Alters $self.
  Args    : A scalar containing binary data.
- Notes   : 
+ Notes   :
 
 =cut
 
@@ -308,7 +317,9 @@ sub _get_v3_base_accuracies {
 	     my @read;
 	     $last_base = $offset + $qlength;
 	     for (;$offset < $last_base; $offset += $qlength) {
-	          @read = unpack "c$qlength", substr($buffer,$offset,$qlength);
+                    # a bioperler (perhaps me?) changed the unpack string to include 'n' rather than 'C'
+                    # on 040322 I think that 'C' is correct. please email chad if you would like to accuse me of being incorrect
+	          @read = unpack "C$qlength", substr($buffer,$offset,$qlength);
 	          $accuracies->{$currbase} = \@read;
 	     }
     }
@@ -321,31 +332,37 @@ sub _get_v3_base_accuracies {
  Title   : _get_comments($buffer)
  Usage   : $self->_get_comments($buffer);
  Function: Gather the comments section from the scf and parse it into its
-	   components.
- Returns : Nothing. Modifies $self.
+	        components.
+ Returns : a Bio::Annotation::Collection object
  Args    : The buffer. It is expected that the buffer contains a binary
-	   string for the comments section of an scf file according to
-	   the scf file specifications.
- Notes   : None. Works like Jello.
+	        string for the comments section of an scf file according to
+	        the scf file specifications.
+ Notes   :
 
 =cut
 
 sub _get_comments {
-    my ($self,$buffer) = @_;
-     my $comments;
-    my $size = length($buffer);
-    my $comments_retrieved = unpack "a$size",$buffer;
-    $comments_retrieved =~ s/\0//;
-    my @comments_split = split/\n/,$comments_retrieved;
-    if (@comments_split) {
-	foreach (@comments_split) {
-	    /(\w+)=(.*)/;
-	    if ($1 && $2) {
-		$comments->{$1} = $2;
-	    }
+	my ($self,$buffer) = @_;
+    my $comments = new Bio::Annotation::Collection();
+	my $size = length($buffer);
+	my $comments_retrieved = unpack "a$size",$buffer;
+	$comments_retrieved =~ s/\0//;
+	my @comments_split = split/\n/,$comments_retrieved;
+	if (@comments_split) {
+		foreach (@comments_split) {
+			/(\w+)=(.*)/;
+			if ($1 && $2) {
+                my ($tagname, $text) = ($1, $2);
+                my $comment_obj = Bio::Annotation::Comment->new(
+                                     -text => $text,
+                                     -tagname => $tagname);
+
+                $comments->add_Annotation('comment', $comment_obj);
+			}
+		}
 	}
-    }
-    return $comments;
+	$self->{'comments'} = $comments;
+	return $comments;
 }
 
 =head2 _get_header()
@@ -354,7 +371,7 @@ sub _get_comments {
  Usage   : $self->_get_header($buffer);
  Function: Gather the header section from the scf and parse it into its
            components.
- Returns : Nothing. Modifies $self.
+ Returns : Reference to a hash containing the header components.
  Args    : The buffer. It is expected that the buffer contains a binary
            string for the header section of an scf file according to the
            scf file specifications.
@@ -363,23 +380,24 @@ sub _get_comments {
 =cut
 
 sub _get_header {
-    my ($self,$buffer) = @_;
-     my $header;
-    ($header->{'scf'},
-     $header->{'samples'},
-     $header->{'sample_offset'},
-     $header->{'bases'},
-     $header->{'bases_left_clip'},
-     $header->{'bases_right_clip'},
-     $header->{'bases_offset'},
-     $header->{'comment_size'},
-     $header->{'comments_offset'},
-     $header->{'version'},
-     $header->{'sample_size'},
-     $header->{'code_set'},
-     @{$header->{'header_spare'}} ) = unpack "a4 NNNNNNNN a4 NN N20", $buffer;
-    return $header;
+	my ($self,$buffer) = @_;
+	my $header;
+	($header->{'scf'},
+	 $header->{'samples'},
+	 $header->{'sample_offset'},
+	 $header->{'bases'},
+	 $header->{'bases_left_clip'},
+	 $header->{'bases_right_clip'},
+	 $header->{'bases_offset'},
+	 $header->{'comment_size'},
+	 $header->{'comments_offset'},
+	 $header->{'version'},
+	 $header->{'sample_size'},
+	 $header->{'code_set'},
+	 @{$header->{'header_spare'}} ) = unpack "a4 NNNNNNNN a4 NN N20", $buffer;
 
+	$self->{'header'} = $header;
+	return $header;
 }
 
 =head2 _parse_v2_bases($buffer)
@@ -388,7 +406,7 @@ sub _get_header {
  Usage   : $self->_parse_v2_bases($buffer);
  Function: Gather the bases section from the scf and parse it into its
            components.
- Returns : 
+ Returns :
  Args    : The buffer. It is expected that the buffer contains a binary
            string for the bases section of an scf file according to the
            scf file specifications.
@@ -436,7 +454,7 @@ sub _parse_v2_traces {
     my ($self,$buffer,$sample_size) = @_;
      my $byte;
      if ($sample_size == 1) { $byte = "c"; }
-     else { $byte = "n"; } 
+     else { $byte = "n"; }
      my $length = CORE::length($buffer);
      my @read = unpack "${byte}${length}",$buffer;
           # this will be an array to the reference holding the array
@@ -475,7 +493,7 @@ sub _deprecated_get_peak_indices_deprecated_use_the_sequencetrace_object_instead
  Title   : get_header()
  Usage   : %header = %{$obj->get_header()};
  Function: Return the header for this scf.
- Returns : A reference to a hash containing the header for this scf. 
+ Returns : A reference to a hash containing the header for this scf.
  Args    : None.
  Notes   :
 
@@ -483,31 +501,23 @@ sub _deprecated_get_peak_indices_deprecated_use_the_sequencetrace_object_instead
 
 sub get_header {
     my ($self) = shift;
-    my %header;
-    foreach (qw(scf samples sample_offset bases bases_left_clip 
-		bases_right_clip bases_offset comment_size comments_offset 
-		version sample_size code_set peak_indices)) {
-	$header{"$_"} = $self->{"$_"};
-    }
-    return \%header;
+    return $self->{'header'};
 }
 
-sub _dump_traces_incoming_deprecated_use_the_sequencetrace_object {
-    # my ($self) = @_;
-    # my (@sA,@sT,@sG,@sC);
-    # @sA = @{$self->{'traces'}->{'A'}};
-    # @sC = @{$self->{'traces'}->{'C'}};
-    # @sG = @{$self->{'traces'}->{'G'}};
-    # @sT = @{$self->{'traces'}->{'T'}};
-    # @sA = @{$self->get_trace('A')};
-    # @sC = @{$self->get_trace('C')};
-    # @sG = @{$self->get_trace('G')};
-    # @sT = @{$self->get_trace('t')};
-    # print ("Count\ta\tc\tg\tt\n");
-    # for (my $curr=0; $curr < scalar(@sG); $curr++) {
-    # 	print("$curr\t$sA[$curr]\t$sC[$curr]\t$sG[$curr]\t$sT[$curr]\n");
-    #}
-    #return;
+=head2 get_comments()
+
+ Title   : get_comments()
+ Usage   : %comments = %{$obj->get_comments()};
+ Function: Return the comments for this scf.
+ Returns : A Bio::Annotation::Collection object
+ Args    : None.
+ Notes   :
+
+=cut
+
+sub get_comments {
+    my ($self) = shift;
+    return $self->{'comments'};
 }
 
 sub _dump_traces_outgoing_deprecated_use_the_sequencetrace_object {
@@ -532,17 +542,35 @@ sub _dump_traces_outgoing_deprecated_use_the_sequencetrace_object {
     return;
 }
 
+sub _dump_traces_incoming_deprecated_use_the_sequencetrace_object {
+    # my ($self) = @_;
+    # my (@sA,@sT,@sG,@sC);
+    # @sA = @{$self->{'traces'}->{'A'}};
+    # @sC = @{$self->{'traces'}->{'C'}};
+    # @sG = @{$self->{'traces'}->{'G'}};
+    # @sT = @{$self->{'traces'}->{'T'}};
+    # @sA = @{$self->get_trace('A')};
+    # @sC = @{$self->get_trace('C')};
+    # @sG = @{$self->get_trace('G')};
+    # @sT = @{$self->get_trace('t')};
+    # print ("Count\ta\tc\tg\tt\n");
+    # for (my $curr=0; $curr < scalar(@sG); $curr++) {
+    # 	print("$curr\t$sA[$curr]\t$sC[$curr]\t$sG[$curr]\t$sT[$curr]\n");
+    #}
+    #return;
+}
+
 =head2 write_seq
 
- Title   : write_seq(-SeqWithQuality => $swq, <comments>)
+ Title   : write_seq(-Quality => $swq, <comments>)
  Usage   : $obj->write_seq(
                -target => $swq,
 			-version => 2,
 			-CONV => "Bioperl-Chads Mighty SCF writer.");
  Function: Write out an scf.
  Returns : Nothing.
- Args    : Requires: a reference to a SeqWithQuality object to form the
-           basis for the scf. 
+ Args    : Requires: a reference to a Bio::Seq::Quality object to form the
+           basis for the scf.
 	   if -version is provided, it should be "2" or "3". A SCF of that
 	   version will be written.
 	   Any other arguments are assumed to be comments and are put into
@@ -556,7 +584,7 @@ sub _dump_traces_outgoing_deprecated_use_the_sequencetrace_object {
           b) quality
           c) peak indices
           d) traces
-          - You _can_ write an scf with just a and b by passing in a 
+          - You _can_ write an scf with just a and b by passing in a
                SequenceWithQuality object- false traces will be synthesized
                for you.
 
@@ -568,8 +596,8 @@ sub write_seq {
     my ($label,$arg);
     my ($swq) = $self->_rearrange([qw(TARGET)], %args);
      my $writer_fodder;
-     if (ref($swq) =~ /Bio::Seq::SequenceTrace|Bio::Seq::SeqWithQuality/) {
-               if (ref($swq) eq "Bio::Seq::SeqWithQuality") {
+     if (ref($swq) =~ /Bio::Seq::SequenceTrace|Bio::Seq::Quality/) {
+               if (ref($swq) eq "Bio::Seq::Quality") {
                          # this means that the object *has no trace data*
                          # we might as well synthesize some now, ok?
                     my $swq2 = new Bio::Seq::SequenceTrace(
@@ -581,7 +609,7 @@ sub write_seq {
                }
      }
     else  {
-	$self->throw("You must pass a Bio::Seq::SeqWithQuality or a Bio::Seq::SequenceTrace object to write_seq as a parameter named \"target\"");
+	$self->throw("You must pass a Bio::Seq::Quality or a Bio::Seq::SequenceTrace object to write_seq as a parameter named \"target\"");
     }
           # all of the rest of the arguments are comments for the scf
     foreach $arg (sort keys %args) {
@@ -594,7 +622,7 @@ sub write_seq {
     $writer_fodder->{comments}->{'CONV'} = "Bioperl-Chads Mighty SCF writer." unless defined $comments{'CONV'};
           # now deal with the version of scf they want to write
     if ($writer_fodder->{comments}->{version}) {
-	     if ($writer_fodder->{comments}->{version} != 2 && $comments{version} != 3) {
+	     if ($writer_fodder->{comments}->{version} != 2 && $writer_fodder->{comments}->{version} != 3) {
 	          $self->warn("This module can only write version 2.0 or 3.0 scf's. Writing a version 2.0 scf by default.");
 	          $writer_fodder->{header}->{version} = "2.00";
 	     }
@@ -616,14 +644,14 @@ sub write_seq {
     $writer_fodder->{'header'}->{'bases_right_clip'} = "0";
     $writer_fodder->{'header'}->{'sample_size'} = "2";
     $writer_fodder->{'header'}->{'code_set'} = "9";
-    @{$writer_fodder->{'header'}->{'spare'}} = qw(0 0 0 0 0 0 0 0 0 0 
+    @{$writer_fodder->{'header'}->{'spare'}} = qw(0 0 0 0 0 0 0 0 0 0
 					 0 0 0 0 0 0 0 0 0 0);
     $writer_fodder->{'header'}->{'samples_offset'} = "128";
      $writer_fodder->{'header'}->{'samples'} = $swq->trace_length();
           # create the binary for the comments and file it in writer_fodder
     $writer_fodder->{comments} =  $self->_get_binary_comments(
                $writer_fodder->{comments});
-          # create the binary and the strings for the traces, bases, 
+          # create the binary and the strings for the traces, bases,
           # offsets (if necessary), and accuracies (if necessary)
     $writer_fodder->{traces} = $self->_get_binary_traces(
                $writer_fodder->{'header'}->{'version'},
@@ -640,72 +668,72 @@ sub write_seq {
 	     $samples_size = CORE::length($writer_fodder->{traces}->{'binary'});
 	     $bases_size = CORE::length($writer_fodder->{bases}->{binary});
 	     $writer_fodder->{'header'}->{'bases_offset'} = 128 + $samples_size;
-	     $writer_fodder->{'header'}->{'comments_offset'} = 128 + 
+	     $writer_fodder->{'header'}->{'comments_offset'} = 128 +
                $samples_size + $bases_size;
-	     $writer_fodder->{'header'}->{'comments_size'} = 
+	     $writer_fodder->{'header'}->{'comments_size'} =
                length($writer_fodder->{'comments'}->{binary});
 	     $writer_fodder->{'header'}->{'private_size'} = "0";
-	     $writer_fodder->{'header'}->{'private_offset'} = 128 + 
-               $samples_size + $bases_size + 
+	     $writer_fodder->{'header'}->{'private_offset'} = 128 +
+               $samples_size + $bases_size +
                $writer_fodder->{'header'}->{'comments_size'};
-          $writer_fodder->{'header'}->{'binary'} = 
-               $self->_get_binary_header($writer_fodder->{header});
-          $dumper->dumpValue($writer_fodder);
-	     $self->_print ($writer_fodder->{'header'}->{'binary'}) 
-               or print("Could not write binary header...\n"); 
-	     $self->_print ($writer_fodder->{'traces'}->{'binary'}) 
-               or print("Could not write binary traces...\n"); 
-	     $self->_print ($writer_fodder->{'bases'}->{'binary'}) 
-               or print("Could not write binary base structures...\n"); 
-	     $self->_print ($writer_fodder->{'comments'}->{'binary'}) 
+          $writer_fodder->{'header'}->{'binary'} =
+	      $self->_get_binary_header($writer_fodder->{header});
+          $dumper->dumpValue($writer_fodder) if $self->verbose > 0;
+	     $self->_print ($writer_fodder->{'header'}->{'binary'})
+               or print("Could not write binary header...\n");
+	     $self->_print ($writer_fodder->{'traces'}->{'binary'})
+               or print("Could not write binary traces...\n");
+	     $self->_print ($writer_fodder->{'bases'}->{'binary'})
+               or print("Could not write binary base structures...\n");
+	     $self->_print ($writer_fodder->{'comments'}->{'binary'})
                or print("Could not write binary comments...\n");
     }
     else {
           ($writer_fodder->{peak_indices},
            $writer_fodder->{accuracies},
            $writer_fodder->{bases},
-           $writer_fodder->{reserved} ) = 
+           $writer_fodder->{reserved} ) =
                $self->_get_binary_bases(
                     3,
                     $swq,
                     $writer_fodder->{'header'}->{'sample_size'}
                );
-	     $writer_fodder->{'header'}->{'bases_offset'} = 128 + 
+	     $writer_fodder->{'header'}->{'bases_offset'} = 128 +
                length($writer_fodder->{'traces'}->{'binary'});
-	     $writer_fodder->{'header'}->{'comments_size'} = 
+	     $writer_fodder->{'header'}->{'comments_size'} =
                length($writer_fodder->{'comments'}->{'binary'});
 	          # this is:
-	          # bases_offset + base_offsets + accuracies + called_bases + 
+	          # bases_offset + base_offsets + accuracies + called_bases +
                # reserved
 	     $writer_fodder->{'header'}->{'private_size'} = "0";
-    
-	     $writer_fodder->{'header'}->{'comments_offset'} = 
+
+	     $writer_fodder->{'header'}->{'comments_offset'} =
 	          128+length($writer_fodder->{'traces'}->{'binary'})+
 		         length($writer_fodder->{'peak_indices'}->{'binary'})+
 		         length($writer_fodder->{'accuracies'}->{'binary'})+
 			    length($writer_fodder->{'bases'}->{'binary'})+
 			    length($writer_fodder->{'reserved'}->{'binary'});
-	$writer_fodder->{'header'}->{'private_offset'} = 
-          $writer_fodder->{'header'}->{'comments_offset'} + 
+	$writer_fodder->{'header'}->{'private_offset'} =
+          $writer_fodder->{'header'}->{'comments_offset'} +
                $writer_fodder->{'header'}->{'comments_size'};
-	$writer_fodder->{'header'}->{'spare'}->[1] = 
+	$writer_fodder->{'header'}->{'spare'}->[1] =
 	     $writer_fodder->{'header'}->{'comments_offset'} +
 		     length($writer_fodder->{'comments'}->{'binary'});
-     $writer_fodder->{header}->{binary} = 
+     $writer_fodder->{header}->{binary} =
           $self->_get_binary_header($writer_fodder->{header});
-	$self->_print ($writer_fodder->{'header'}->{'binary'}) 
+	$self->_print ($writer_fodder->{'header'}->{'binary'})
           or print("Couldn't write header\n");
-	$self->_print ($writer_fodder->{'traces'}->{'binary'}) 
+	$self->_print ($writer_fodder->{'traces'}->{'binary'})
           or print("Couldn't write samples\n");
-	$self->_print ($writer_fodder->{'peak_indices'}->{'binary'}) 
+	$self->_print ($writer_fodder->{'peak_indices'}->{'binary'})
           or print("Couldn't write peak offsets\n");
-	$self->_print ($writer_fodder->{'accuracies'}->{'binary'}) 
+	$self->_print ($writer_fodder->{'accuracies'}->{'binary'})
           or print("Couldn't write accuracies\n");
-	$self->_print ($writer_fodder->{'bases'}->{'binary'}) 
+	$self->_print ($writer_fodder->{'bases'}->{'binary'})
           or print("Couldn't write called_bases\n");
-	$self->_print ($writer_fodder->{'reserved'}->{'binary'}) 
+	$self->_print ($writer_fodder->{'reserved'}->{'binary'})
           or print("Couldn't write reserved\n");
-	$self->_print ($writer_fodder->{'comments'}->{'binary'}) 
+	$self->_print ($writer_fodder->{'comments'}->{'binary'})
           or print ("Couldn't write comments\n");
     }
 
@@ -725,17 +753,17 @@ sub write_seq {
  Title   : _get_binary_header();
  Usage   : $self->_get_binary_header();
  Function: Provide the binary string that will be used as the header for
-	   a scfv2 document.
+	        a scfv2 document.
  Returns : A binary string.
  Args    : None. Uses the entries in the $self->{'header'} hash. These
-	   are set on construction of the object (hopefully correctly!).
- Notes   : 
+	        are set on construction of the object (hopefully correctly!).
+ Notes   :
 
 =cut
 
 sub _get_binary_header {
     my ($self,$header) = @_;
-    my $binary = pack "a4 NNNNNNNN a4 NN N20", 
+    my $binary = pack "a4 NNNNNNNN a4 NN N20",
     (
      $header->{'magic'},
      $header->{'samples'},
@@ -770,16 +798,16 @@ sub _get_binary_header {
 
 sub _get_binary_traces {
     my ($self,$version,$ref,$sample_size) = @_;
-          # ref _should_ be a Bio::Seq::SequenceTrace, but might be a 
-          # Bio::Seq::SeqWithQuality
+          # ref _should_ be a Bio::Seq::SequenceTrace, but might be a
+          # Bio::Seq::Quality
      my $returner;
      my $sequence = $ref->seq();
-     my $sequence_length = length($sequence);	
+     my $sequence_length = length($sequence);
           # first of all, do we need to synthesize the trace?
           # if so, call synthesize_base
      my ($traceobj,@traces,$current);
-     if ( ref($ref) eq "Bio::Seq::SeqWithQuality" ) {
-          $traceobj = new Bio::Seq::SeqWithQuality(
+     if ( ref($ref) eq "Bio::Seq::Quality" ) {
+          $traceobj = new Bio::Seq::Quality(
                -target   =>   $ref
           );
           $traceobj->_synthesize_traces();
@@ -791,7 +819,7 @@ sub _get_binary_traces {
                for ($current = 1; $current <= $trace_length; $current++) {
                     foreach (qw(a c g t)) {
                          push @traces,$traceobj->trace_value_at($_,$current);
-                    }      
+                    }
                }
           }
           elsif ($version == 3) {
@@ -810,7 +838,7 @@ sub _get_binary_traces {
                     }
                     push @traces,@{$transformed};
                }
-          } 
+          }
      }
      $returner->{version} = $version;
      $returner->{string} = \@traces;
@@ -818,7 +846,7 @@ sub _get_binary_traces {
      my $byte;
      if ($sample_size == 1) { $byte = "c"; } else { $byte = "n"; }
           # an unsigned integer should be I, but this is too long
-          # 
+          #
      $returner->{binary} = pack "n${length_of_traces}",@traces;
      $returner->{length} = CORE::length($returner->{binary});
      return $returner;
@@ -833,7 +861,7 @@ sub _get_binary_bases {
      my $length = $trace->length();
      if ($version == 2) {
           $returner->{'version'} = "2";
-         for (my $current_base =1; $current_base < $length; $current_base++) {
+         for (my $current_base =1; $current_base <= $length; $current_base++) {
                my @current_row;
                push @current_row,$trace->peak_index_at($current_base);
                push @current_row,$trace->accuracy_at("a",$current_base);
@@ -851,9 +879,9 @@ sub _get_binary_bases {
           $returner->{'version'} = "3.00";
           $returner->{peak_indices}->{string} = $trace->peak_indices();
           my $length = scalar(@{$returner->{peak_indices}->{string}});
-          $returner->{peak_indices}->{binary} = 
+          $returner->{peak_indices}->{binary} =
                pack "N$length",@{$returner->{peak_indices}->{string}};
-          $returner->{peak_indices}->{length} = 
+          $returner->{peak_indices}->{length} =
                CORE::length($returner->{peak_indices}->{binary});
           my @accuracies;
           foreach my $base (qw(a c g t)) {
@@ -864,7 +892,7 @@ sub _get_binary_bases {
           $length = scalar(@accuracies);
                # this really is "c" for samplesize == 2
           $returner->{accuracies}->{binary} = pack "c${length}",@accuracies;
-          $returner->{accuracies}->{length} = 
+          $returner->{accuracies}->{length} =
                CORE::length($returner->{accuracies}->{binary});
           $length = $trace->seq_obj()->length();
           for (my $count=0; $count< $length; $count++) {
@@ -873,9 +901,9 @@ sub _get_binary_bases {
      }
      $length = scalar(@{$returner->{reserved}->{string}});
                # this _must_ be "c"
-     $returner->{'reserved'}->{'binary'} = 
+     $returner->{'reserved'}->{'binary'} =
           pack "c$length",@{$returner->{reserved}->{string}};
-     $returner->{'reserved'}->{'length'} = 
+     $returner->{'reserved'}->{'length'} =
           CORE::length($returner->{'reserved'}->{'binary'});
           # $returner->{'bases'}->{'string'} = $trace->seq();
      my @bases = split('',$trace->seq());
@@ -899,7 +927,7 @@ sub _get_binary_bases {
 	   trace string. _requires_ $version
  Returns : Nothing. Alters $self.
  Args    : $version - a version number. "2" or "3"
- Notes   : 
+ Notes   :
 
 =cut
 
@@ -929,7 +957,7 @@ sub _make_trace_string {
 	my $length = scalar(@traces);
 	$self->{'text'}->{'samples_all'} = \@traces;
 
-}	
+}
 
 =head2 _get_binary_comments(\@comments)
 
@@ -939,7 +967,7 @@ sub _make_trace_string {
 	   the scf file. See the scf specifications for detailed
 	   specifications for the comments section of an scf file. Hint:
 	   CODE=something\nBODE=something\n\0
- Returns : 
+ Returns :
  Args    : A reference to an array containing comments.
  Notes   : None.
 
@@ -962,40 +990,40 @@ sub _get_binary_comments {
      return $returner;
 }
 
-=head2 _fill_missing_data($swq)
-
- Title   : _fill_missing_data($swq)
- Usage   : $self->_fill_missing_data($swq);
- Function: If the $swq with quality has no qualities, set all qualities
-	   to 0.
-	   If the $swq has no sequence, set the sequence to N's.
- Returns : Nothing. Modifies the SeqWithQuality that was passed as an
-	   argument.
- Args    : A reference to a Bio::Seq::SeqWithQuality
- Notes   : None.
-
-=cut
-
-#'
-sub _fill_missing_data {
-    my ($self,$swq) = @_;
-    my $qual_obj = $swq->qual_obj();
-    my $seq_obj = $swq->seq_obj();
-    if ($qual_obj->length() == 0 && $seq_obj->length() != 0) {
-	my $fake_qualities = ("$DEFAULT_QUALITY ")x$seq_obj->length();
-	$swq->qual($fake_qualities);
-    }
-    if ($seq_obj->length() == 0 && $qual_obj->length != 0) {
-	my $sequence = ("N")x$qual_obj->length();
-	$swq->seq($sequence);
-    }
-}
+#=head2 _fill_missing_data($swq)
+#
+# Title   : _fill_missing_data($swq)
+# Usage   : $self->_fill_missing_data($swq);
+# Function: If the $swq with quality has no qualities, set all qualities
+#	   to 0.
+#	   If the $swq has no sequence, set the sequence to N's.
+# Returns : Nothing. Modifies the Bio::Seq::Quality that was passed as an
+#	   argument.
+# Args    : A reference to a Bio::Seq::Quality
+# Notes   : None.
+#
+#=cut
+#
+##'
+#sub _fill_missing_data {
+#    my ($self,$swq) = @_;
+#    my $qual_obj = $swq->qual_obj();
+#    my $seq_obj = $swq->seq_obj();
+#    if ($qual_obj->length() == 0 && $seq_obj->length() != 0) {
+#	my $fake_qualities = ("$DEFAULT_QUALITY ")x$seq_obj->length();
+#	$swq->qual($fake_qualities);
+#    }
+#    if ($seq_obj->length() == 0 && $qual_obj->length != 0) {
+#	my $sequence = ("N")x$qual_obj->length();
+#	$swq->seq($sequence);
+#    }
+#}
 
 =head2 _delta(\@trace_data,$direction)
 
  Title   : _delta(\@trace_data,$direction)
  Usage   : $self->_delta(\@trace_data,$direction);
- Function: 
+ Function:
  Returns : A reference to an array containing modified trace values.
  Args    : A reference to an array containing trace data and a string
 	   indicating the direction of conversion. ("forward" or
@@ -1065,7 +1093,7 @@ sub _delta {
                     $samples[$i] = $p_sample1 + $p_sample2;
                     $p_sample2 = $samples[$i];
                 }
-                
+
             }
 	}
 	else {
@@ -1111,7 +1139,20 @@ sub _unpack_magik {
 =cut
 
 sub read_from_buffer {
-	my ($self,$fh,$buffer,$length) = @_;
+	my ($self,$fh,$buffer,$length,$start_position) = @_;
+          # print("Reading from a buffer!!! length($length) ");
+     if ($start_position) {
+               # print(" startposition($start_position)(".sprintf("%X", $start_position).")\n");
+     }
+          # print("\n");
+     if ($start_position) {
+               # print("seeking to this position in the file: (".$start_position.")\n");
+          seek ($fh,$start_position,0);
+               # print("done. here is where I am now: (".tell($fh).")\n");
+     }
+     else {
+          # print("You did not specify a start position. Going from this position (the current position) (".tell($fh).")\n");
+     }
 	read $fh, $buffer, $length;
 	unless (length($buffer) == $length) {
 		$self->warn("The read was incomplete! Trying harder.");
@@ -1119,11 +1160,11 @@ sub read_from_buffer {
 		my $buffer2;
 		read $fh,$buffer2,$missing_length;
 		$buffer .= $buffer2;
-		if (length($buffer) != $length) {	
+		if (length($buffer) != $length) {
 			$self->throw("Unexpected end of file while reading from SCF file. I should have read $length but instead got ".length($buffer)."! Current file position is ".tell($fh).".");
 		}
 	}
-	
+
 	return $buffer;
 }
 

@@ -1,8 +1,8 @@
-# $Id: Term.pm,v 1.2 2003/09/08 12:17:13 heikki Exp $
+# $Id: Term.pm,v 1.7.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for Bio::Phenotype::MeSH::Term
 #
-# Cared for by Heikki Lehvaslaiho, heikki@ebi.ac.uk
+# Cared for by Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -53,21 +53,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the 
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                       - General discussion
-  http://bio.perl.org/MailList.html           - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
-Heikki Lehvaslaiho, heikki@ebi.ac.uk
+Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -81,12 +80,10 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Phenotype::MeSH::Term;
-use vars qw( @ISA );
 use strict;
 
-use Bio::Root::Root;
 
-@ISA = qw( Bio::Root::Root );
+use base qw(Bio::Root::Root);
 
 sub new {
 

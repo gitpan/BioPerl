@@ -1,4 +1,4 @@
-# $Id: Version.pm,v 1.4 2003/12/22 20:03:24 heikki Exp $
+# $Id: Version.pm,v 1.9.4.3 2006/11/08 17:25:55 sendu Exp $
 #
 # BioPerl module for Bio::Root::Version
 #
@@ -52,32 +52,29 @@ variable set if it's not already.
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
-Your participation is much appreciated.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Aaron Mackey
 
 Email amackey@virginia.edu
 
-Describe contact details here
-
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -87,9 +84,9 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::Root::Version;
 use strict;
-use vars qw($VERSION);
 
-$VERSION = 1.4;
+our $VERSION = 1.005002_003;
+$VERSION = eval $VERSION;
 
 sub import {
     # try to handle multiple levels of inheritance:

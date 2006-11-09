@@ -1,4 +1,4 @@
-# $Id: psl.pm,v 1.5 2003/09/18 13:10:32 jason Exp $
+# $Id: psl.pm,v 1.13.4.1 2006/10/02 23:10:26 sendu Exp $
 #
 # BioPerl module for Bio::SearchIO::psl
 #
@@ -40,24 +40,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
 Email jason-at-bioperl-dot-org
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -71,10 +67,9 @@ Internal methods are usually preceded with a _
 
 
 package Bio::SearchIO::psl;
-use vars qw(@ISA %MAPPING %MODEMAP $DEFAULT_WRITER_CLASS $DefaultProgramName);
+use vars qw(%MAPPING %MODEMAP $DEFAULT_WRITER_CLASS $DefaultProgramName);
 
 use strict;
-use Bio::SearchIO;
 use Bio::Search::HSP::HSPFactory;
 use Bio::Search::Hit::HitFactory;
 use Bio::Search::Result::ResultFactory;
@@ -129,7 +124,7 @@ $DEFAULT_WRITER_CLASS = 'Bio::Search::Writer::HitTableWriter';
 	     'PSLOutput_db-let'   => 'RESULT-database_letters',
 	     );
 
-@ISA = qw(Bio::SearchIO );
+use base qw(Bio::SearchIO);
 
 =head2 new
 
@@ -168,19 +163,19 @@ sub _initialize {
 
 sub next_result{
    my ($self) = @_;
-   my ($lastquery,$lasthit) = undef;
-   local ($_);
-
-   #clear header if exists
-   my $head = $self->_readline;
-   if($head =~ /^psLayout/){
-       for(1..4){$self->_readline}
-   } else {
-     $self->_pushback($head);
-   }
+   my ($lastquery,$lasthit);
+   local $/ = "\n";
+   local $_;
 
    while( defined ($_ = $self->_readline) ) {
-       my ( $matches,$mismatches,$rep_matches,$n_count,
+	    #clear header if exists
+	    if(/^psLayout/){
+			#pass over header lines lines
+			while(!/^\d+\s+\d+\s+/) {
+				$_ = $self->_readline;
+			}
+	    } 
+		my ( $matches,$mismatches,$rep_matches,$n_count,
 	    $q_num_insert,$q_base_insert,
 	    $t_num_insert, $t_base_insert, 
 	    $strand, $q_name, $q_length, $q_start,
@@ -249,26 +244,26 @@ sub next_result{
 	   $self->element({'Name' => 'Hsp_query-from',
 			   'Data' => $q_start + 1});
 	   $self->element({'Name' => 'Hsp_query-to',
-			   'Data' => $q_end + 1});
+			   'Data' => $q_end});
        } else { 
 	   $self->element({'Name' => 'Hsp_query-to',
 			   'Data' => $q_start + 1});
 	   $self->element({'Name' => 'Hsp_query-from',
-			   'Data' => $q_end + 1});
+			   'Data' => $q_end});
        }
        my $hsplen = $q_base_insert + $t_base_insert + 
 	   abs( $t_end - $t_start) + abs( $q_end - $q_start);
        $self->element({'Name' => 'Hsp_hit-from',
 		       'Data' => $t_start + 1 });
        $self->element({'Name' => 'Hsp_hit-to',
-		       'Data' => $t_end + 1});
+		       'Data' => $t_end});
        $self->element({'Name' => 'Hsp_align-len',
 		       'Data' => $hsplen});
-       my @blocksizes = split(/,/,$block_sizes); # block sizes
        # cleanup trailing commas in some output
        $block_sizes =~ s/\,$//;
        $q_starts    =~ s/\,$//;
        $t_starts    =~ s/\,$//;
+       my @blocksizes = split(/,/,$block_sizes); # block sizes
        my @qstarts = split(/,/,$q_starts); # starting position of each block
                                            # in query
        my @tstarts = split(/,/,$t_starts); # starting position of each block

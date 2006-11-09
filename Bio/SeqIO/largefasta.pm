@@ -1,4 +1,4 @@
-# $Id: largefasta.pm,v 1.18 2002/12/27 19:42:32 birney Exp $
+# $Id: largefasta.pm,v 1.24.4.1 2006/10/02 23:10:29 sendu Exp $
 # BioPerl module for Bio::SeqIO::largefasta
 #
 # Cared for by Jason Stajich
@@ -46,17 +46,15 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org            - General discussion
-  http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS - Jason Stajich
 
@@ -72,15 +70,13 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::SeqIO::largefasta;
-use vars qw(@ISA $FASTALINELEN);
+use vars qw($FASTALINELEN);
 use strict;
-# Object preamble - inherits from Bio::Root::Object
 
-use Bio::SeqIO;
 use Bio::Seq::SeqFactory;
 
 $FASTALINELEN = 60;
-@ISA = qw(Bio::SeqIO);
+use base qw(Bio::SeqIO);
 
 sub _initialize {
   my($self,@args) = @_;
@@ -129,7 +125,7 @@ sub next_seq {
 	}
 	(++$count % 1000 == 0 && $self->verbose() > 0) && print "line $count\n";
     }
-    if( ! $seen ) { return undef; } 
+    return unless $seen;
     return $largeseq;
 }
 

@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.50 2003/11/21 03:03:38 lstein Exp $
+# $Id: IO.pm,v 1.61.4.1 2006/10/02 23:10:23 sendu Exp $
 #
 # BioPerl module for Bio::Root::IO
 #
@@ -70,23 +70,20 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
 Email hlapp@gmx.net
-
-Describe contact details here
 
 =head1 APPENDIX
 
@@ -99,26 +96,29 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::Root::IO;
-use vars qw(@ISA $FILESPECLOADED $FILETEMPLOADED $FILEPATHLOADED
-	    $TEMPDIR $PATHSEP $ROOTDIR $OPENFLAGS $VERBOSE);
+use vars qw($FILESPECLOADED $FILETEMPLOADED $FILEPATHLOADED
+	    $TEMPDIR $PATHSEP $ROOTDIR $OPENFLAGS $VERBOSE $ONMAC
+            $HAS_LWP
+           );
 use strict;
 
 use Symbol;
 use POSIX qw(dup);
 use IO::Handle;
-use Bio::Root::Root;
+use Bio::Root::HTTPget;
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 my $TEMPCOUNTER;
 my $HAS_WIN32 = 0;
+#my $HAS_LWP = 1;
 
 BEGIN {
     $TEMPCOUNTER = 0;
     $FILESPECLOADED = 0;
     $FILETEMPLOADED = 0;
     $FILEPATHLOADED = 0;
-    $VERBOSE = 1;
+    $VERBOSE = 0;
 
     # try to load those modules that may cause trouble on some systems
     eval { 
@@ -130,6 +130,15 @@ BEGIN {
 	# do nothing
     }
 
+    eval {
+        require LWP::Simple;
+    };
+    if( $@ ) {
+	print STDERR "Cannot load LWP::Simple: $@" if( $VERBOSE > 0 );
+        $HAS_LWP = 0;
+    } else {
+        $HAS_LWP = 1;
+    }
 
     # If on Win32, attempt to find Win32 package
 
@@ -192,6 +201,7 @@ BEGIN {
 	    $OPENFLAGS |= $bit if eval { $bit = &$func(); 1 };
 	}
     }
+    $ONMAC = "\015" eq "\n";
 }
 
 =head2 new
@@ -222,6 +232,7 @@ sub new {
 
            Currently recognizes the following named parameters:
               -file     name of file to open
+              -url      name of URL to open
               -input    name of file, or GLOB, or IO::Handle object
               -fh       file handle (mutually exclusive with -file)
               -flush    boolean flag to autoflush after each write
@@ -238,11 +249,37 @@ sub _initialize_io {
 
     $self->_register_for_cleanup(\&_io_cleanup);
 
-    my ($input, $noclose, $file, $fh, $flush) = $self->_rearrange([qw(INPUT 
+    my ($input, $noclose, $file, $fh, $flush, $url) = $self->_rearrange([qw(INPUT 
 							    NOCLOSE
 							    FILE FH 
-							    FLUSH)], @args);
-    
+							    FLUSH URL)], @args);
+
+    if($url){
+      my $trymax = 5;
+
+      if($HAS_LWP){ #use LWP::Simple::getstore()
+	require LWP::Simple;
+        #$self->warn("has lwp");
+        my $http_result;
+        my($handle,$tempfile) = $self->tempfile();
+        close($handle);
+
+        for(my $try = 1 ; $try <= $trymax ; $try++){
+          $http_result = LWP::Simple::getstore($url, $tempfile);
+          $self->warn("[$try/$trymax] tried to fetch $url, but server threw $http_result.  retrying...") if $http_result != 200;
+          last if $http_result == 200;
+        }
+        $self->throw("failed to fetch $url, server threw $http_result") if $http_result != 200;
+
+        $input = $tempfile;
+        $file  = $tempfile;
+      } else { #use Bio::Root::HTTPget
+        #$self->warn("no lwp");
+
+        $fh = Bio::Root::HTTPget->getFH($url);
+      }
+    }
+
     delete $self->{'_readbuffer'};
     delete $self->{'_filehandle'};
     $self->noclose( $noclose) if defined $noclose;
@@ -322,52 +359,29 @@ sub mode {
     my ($obj, @arg) = @_;
 	my %param = @arg;
     return $obj->{'_mode'} if defined $obj->{'_mode'} and !$param{-force};
-
-    print STDERR "testing mode... " if $obj->verbose;
-
-    # we need to dup() the original filehandle because
-    # doing fdopen() calls on an already open handle causes
-    # the handle to go stale. is this going to work for non-unix
-    # filehandles? -allen
-
-    my $fh = Symbol::gensym();
-
-    my $iotest = new IO::Handle;
-
-    #test for a readable filehandle;
-    $iotest->fdopen( dup(fileno($obj->_fh)) , 'r' );
-    if($iotest->error == 0){
-
-      # note the hack here, we actually have to try to read the line
-      # and if we get something, pushback() it into the readbuffer.
-      # this is because solaris and windows xp (others?) don't set
-      # IO::Handle::error.  for non-linux the r/w testing is done
-      # inside this read-test, instead of the write test below.  ugh.
-
-      if($^O eq 'linux'){
+    
+    # Previous system of:
+    #  my $iotest = new IO::Handle;
+    #  $iotest->fdopen( dup(fileno($fh)) , 'r' );
+    #  if ($iotest->error == 0) { ... }
+    # didn't actually seem to work under any platform, since there would no
+    # no error if the filehandle had been opened writable only. Couldn't be
+    # hacked around when dealing with unseekable (piped) filehandles.
+    #
+    # Just try and do a simple readline, turning io warnings off, instead:
+    
+    my $fh = $obj->_fh || return '?';
+    
+    no warnings "io"; # we expect a warning if this is writable only
+    my $line = <$fh>;
+    if (defined $line) {
+        $obj->_pushback($line);
         $obj->{'_mode'} = 'r';
-        my $line = $iotest->getline;
-        $obj->_pushback($line) if defined $line;
-        $obj->{'_mode'} = defined $line ? 'r' : 'w';
-        return $obj->{'_mode'};
-      } else {
-        my $line = $iotest->getline;
-        $obj->_pushback($line) if defined $line;
-        $obj->{'_mode'} = defined $line ? 'r' : 'w';
-	return $obj->{'_mode'};
-      }
     }
-    $iotest->clearerr;
-
-    #test for a writeable filehandle;
-    $iotest->fdopen( dup(fileno($obj->_fh)) , 'w' );
-    if($iotest->error == 0){
-      $obj->{'_mode'} = 'w';
-#      return $obj->{'_mode'};
+    else {
+        $obj->{'_mode'} = 'w';
     }
-
-    #wtf type of filehandle is this?
-#    $obj->{'_mode'} = '?';
+    
     return $obj->{'_mode'};
 }
 
@@ -397,14 +411,15 @@ sub file {
  Usage   : $obj->_print(@lines)
  Function:
  Example :
- Returns : writes output
+ Returns : 1 on success, undef on failure
 
 =cut
 
 sub _print {
     my $self = shift;
     my $fh = $self->_fh() || \*STDOUT;
-    print $fh @_;
+    my $ret = print $fh @_;
+    return $ret;
 }
 
 =head2 _readline
@@ -437,11 +452,19 @@ sub _readline {
 
     # if the buffer been filled by _pushback then return the buffer
     # contents, rather than read from the filehandle
-    $line = shift @{$self->{'_readbuffer'}} || <$fh>;
+    if( @{$self->{'_readbuffer'} || [] } ) {
+	$line = shift @{$self->{'_readbuffer'}};
+    } else {
+	$line = <$fh>;
+    }
 
     #don't strip line endings if -raw is specified
-    $line =~ s/\r\n/\n/g if( (!$param{-raw}) && (defined $line) );
-
+    # $line =~ s/\r\n/\n/g if( (!$param{-raw}) && (defined $line) );
+    # Dave Howorth's fix
+    if( (!$param{-raw}) && (defined $line) ) {
+        $line =~ s/\015\012/\012/g; # Change all CR/LF pairs to LF
+        $line =~ tr/\015/\n/ unless $ONMAC; # Change all single CRs to NEWLINE
+    }
     return $line;
 }
 
@@ -459,9 +482,8 @@ sub _readline {
 
 sub _pushback {
     my ($obj, $value) = @_;
-
-	$obj->{'_readbuffer'} ||= [];
-	push @{$obj->{'_readbuffer'}}, $value;
+    return unless $value;
+    push @{$obj->{'_readbuffer'}}, $value;
 }
 
 =head2 close

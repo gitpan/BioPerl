@@ -1,4 +1,4 @@
-# $Id: BioPerl.pm,v 1.18 2003/06/13 14:20:41 jason Exp $
+# $Id: BioPerl.pm,v 1.20.4.1 2006/10/02 23:10:21 sendu Exp $
 #
 # bioperl module for Bio::LiveSeq::IO::BioPerl
 #
@@ -64,12 +64,6 @@ to be installed.
 
 Email:  Insana@ebi.ac.uk, jinsana@gmx.net
 
-Address: 
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom 
-
 =head1 APPENDIX
 
 The rest of the documentation details each of the object
@@ -90,7 +84,7 @@ package Bio::LiveSeq::IO::BioPerl;
 
 use strict;
 use Carp qw(cluck croak carp);
-use vars qw(@ISA $DBEMBLLOADED);
+use vars qw($DBEMBLLOADED);
 use Bio::SeqIO; # for -file entry loading
 
 # Note, the following requires HTTP::Request. If the modules are not installed
@@ -100,9 +94,8 @@ eval {
     $DBEMBLLOADED = 1;
 };
 
-use Bio::LiveSeq::IO::Loader;
 
-@ISA=qw(Bio::LiveSeq::IO::Loader);
+use base qw(Bio::LiveSeq::IO::Loader);
 
 # This package can in the future host other databases loading subroutines.
 # e.g. ensembl2hash
@@ -175,7 +168,7 @@ sub load {
 	} else { 
 	    my $root = new Bio::Root::Root();
 	    $root->warn("Must have HTTP::Request::Common installed, cannot run load without the -filename option specified, see docs for Bio::LiveSeq::IO::BioPerl");
-	    return undef;
+	    return;
 	}
     }
 

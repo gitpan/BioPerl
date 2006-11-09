@@ -1,4 +1,4 @@
-# $Id: Exon.pm,v 1.10 2003/06/02 18:06:13 heikki Exp $
+# $Id: Exon.pm,v 1.15.4.1 2006/10/02 23:10:28 sendu Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::Exon
 #
@@ -42,22 +42,19 @@ and other Bioperl modules. Send your comments and suggestions preferably
 Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
-  http://bio.perl.org/MailList.html      - About the mailing lists
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
 Email hlapp@gmx.net
-
-Describe contact details here
 
 =head1 APPENDIX
 
@@ -71,13 +68,10 @@ Internal methods are usually preceded with a _
 
 
 package Bio::SeqFeature::Gene::Exon;
-use vars qw(@ISA);
 use strict;
 
-use Bio::SeqFeature::Generic;
-use Bio::SeqFeature::Gene::ExonI;
 
-@ISA = qw(Bio::SeqFeature::Generic Bio::SeqFeature::Gene::ExonI);
+use base qw(Bio::SeqFeature::Generic Bio::SeqFeature::Gene::ExonI);
 
 #
 # A list of allowed exon types. See primary_tag().
@@ -215,7 +209,7 @@ sub cds {
     my ($self) = @_;
 
     # UTR is not translated
-    return undef if(! $self->is_coding());
+    return if(! $self->is_coding());
 
     my $seq = $self->seq();
     if(defined($seq) && defined($self->frame()) && ($self->frame() != 0)) {

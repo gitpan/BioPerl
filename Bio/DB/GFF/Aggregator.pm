@@ -111,8 +111,7 @@ and "polymorphism" into an aggregate named "mutant":
   use strict;
   use Bio::DB::GFF::Aggregator;
 
-  use vars '@ISA';
-  @ISA = 'Bio::DB::GFF::Aggregator';
+  use base qw(Bio::DB::GFF::Aggregator);
 
   sub method { 'mutant' }
 
@@ -142,9 +141,8 @@ package Bio::DB::GFF::Aggregator;
 use strict;
 use Bio::DB::GFF::Util::Rearrange;  # for rearrange()
 use Bio::DB::GFF::Feature;
-use vars qw(@ISA);
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 my $ALWAYS_TRUE   = sub { 1 };
 
@@ -171,14 +169,16 @@ are as follows:
 
 sub new {
   my $class = shift;
-  my ($method,$main,$sub_parts) = rearrange(['METHOD',
-					     ['MAIN_PART','MAIN_METHOD'],
-					     ['SUB_METHODS','SUB_PARTS']
-					    ],@_);
+  my ($method,$main,$sub_parts,$whole_object) = rearrange(['METHOD',
+							   ['MAIN_PART','MAIN_METHOD'],
+							   ['SUB_METHODS','SUB_PARTS'],
+							   'WHOLE_OBJECT'
+							  ],@_);
   return bless {
 		method      => $method,
 		main_method => $main,
 		sub_parts   => $sub_parts,
+		require_whole_object => $whole_object,
 	       },$class;
 }
 
@@ -290,15 +290,20 @@ sub aggregate {
 
   my $main_method = $self->get_main_name;
   my $matchsub    = $self->match_sub($factory) or return;
+  my $strictmatch = $self->strict_match();
   my $passthru    = $self->passthru_sub($factory);
 
   my (%aggregates,@result);
   for my $feature (@$features) {
+
     if ($feature->group && $matchsub->($feature)) {
+      my $key = $strictmatch->{lc $feature->method,lc $feature->source} 
+          ? join ($;,$feature->group,$feature->refseq,$feature->source)
+          : join ($;,$feature->group,$feature->refseq);
       if ($main_method && lc $feature->method eq lc $main_method) {
-	$aggregates{$feature->group,$feature->refseq}{base} ||= $feature->clone;
+	$aggregates{$key}{base} ||= $feature->clone;
       } else {
-	push @{$aggregates{$feature->group,$feature->refseq}{subparts}},$feature;
+	push @{$aggregates{$key}{subparts}},$feature;
       }
       push @result,$feature if $passthru && $passthru->($feature);
 
@@ -349,10 +354,10 @@ This is the method that should be overridden in aggregator subclasses.
 
 =cut
 
-# no default method
+# default method - override in subclasses
 sub method {
   my $self = shift;
-  return;
+  $self->{method};
 }
 
 =head2 main_name
@@ -415,7 +420,12 @@ an object unless both its main part and its subparts are present.
 
 =cut
 
-sub require_whole_object {  0; }
+sub require_whole_object {
+  my $self = shift;
+  my $d    = $self->{require_whole_object};
+  $self->{require_whole_object} = shift if @_;
+  $d;
+}
 
 =head2 match_sub
 
@@ -433,12 +443,36 @@ we should aggregate it, false otherwise.
 
 =cut
 
+#' make emacs happy
+
 sub match_sub {
   my $self    = shift;
   my $factory = shift;
   my $types_to_aggregate = $self->components() or return;  # saved from disaggregate call
   return unless @$types_to_aggregate;
   return $factory->make_match_sub($types_to_aggregate);
+}
+
+=head2 strict_match
+
+ Title   : strict_match
+ Usage   : $strict = $a->strict_match
+ Function: generate a hashref that indicates which subfeatures
+           need to be tested strictly for matching sources before
+           aggregating
+ Returns : a hash ref
+ Status  : Internal
+
+=cut
+
+sub strict_match {
+  my $self = shift;
+  my $types_to_aggregate = $self->components();
+  my %strict;
+  for my $t (@$types_to_aggregate) {
+    $strict{lc $t->[0],lc $t->[1]}++ if defined $t->[1];
+  }
+  \%strict;
 }
 
 sub passthru_sub {

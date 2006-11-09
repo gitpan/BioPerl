@@ -1,4 +1,4 @@
-# $Id: FastHitEventBuilder.pm,v 1.7 2003/06/10 17:52:44 jason Exp $
+# $Id: FastHitEventBuilder.pm,v 1.13.4.1 2006/10/02 23:10:26 sendu Exp $
 #
 # BioPerl module for Bio::SearchIO::FastHitEventBuilder
 #
@@ -51,27 +51,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
+Email jason-at-bioperl.org
 
 =head1 APPENDIX
 
@@ -85,16 +78,14 @@ Internal methods are usually preceded with a _
 
 
 package Bio::SearchIO::FastHitEventBuilder;
-use vars qw(@ISA %KNOWNEVENTS);
+use vars qw(%KNOWNEVENTS);
 use strict;
 
-use Bio::Root::Root;
-use Bio::SearchIO::EventHandlerI;
 use Bio::Search::HSP::HSPFactory;
 use Bio::Search::Hit::HitFactory;
 use Bio::Search::Result::ResultFactory;
 
-@ISA = qw(Bio::Root::Root Bio::SearchIO::EventHandlerI);
+use base qw(Bio::Root::Root Bio::SearchIO::EventHandlerI);
 
 =head2 new
 
@@ -112,10 +103,17 @@ See L<Bio::Factory::ObjectFactoryI> for more information
 sub new { 
     my ($class,@args) = @_;
     my $self = $class->SUPER::new(@args);
-    my ($hspF,$hitF,$resultF) = $self->_rearrange([qw(HIT_FACTORY
+    my ($hitF,$resultF) = $self->_rearrange([qw(HIT_FACTORY
 						      RESULT_FACTORY)],@args);
-    $self->register_factory('hit', $hitF || Bio::Search::Hit::HitFactory->new());
-    $self->register_factory('result', $resultF || Bio::Search::Result::ResultFactory->new());
+    $self->register_factory('hit', $hitF ||
+                            Bio::Factory::ObjectFactory->new(
+                                      -type      => 'Bio::Search::Hit::GenericHit',
+                                      -interface => 'Bio::Search::Hit::HitI'));
+
+    $self->register_factory('result', $resultF ||
+                            Bio::Factory::ObjectFactory->new(
+                                      -type      => 'Bio::Search::Result::GenericResult',
+                                      -interface => 'Bio::Search::Result::ResultI'));
 
     return $self;
 }

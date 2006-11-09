@@ -1,4 +1,4 @@
-# $Id: Transcript.pm,v 1.19 2003/06/04 08:36:40 heikki Exp $
+# $Id: Transcript.pm,v 1.21.4.1 2006/10/02 23:10:21 sendu Exp $
 #
 # bioperl module for Bio::LiveSeq::Transcript
 #
@@ -28,12 +28,6 @@ Exon objects, inferring from them the nucleotide structure and sequence.
 
 Email:  Insana@ebi.ac.uk, jinsana@gmx.net
 
-Address: 
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom 
-
 =head1 APPENDIX
 
 The rest of the documentation details each of the object
@@ -47,10 +41,8 @@ package Bio::LiveSeq::Transcript;
 
 use strict;
 # use Carp qw(carp cluck);
-use vars qw(@ISA);
-use Bio::LiveSeq::SeqI; # uses SeqI, inherits from it
 use Bio::LiveSeq::Exon; # uses Exon to create new exon in case of deletion
-@ISA=qw(Bio::LiveSeq::SeqI);
+use base qw(Bio::LiveSeq::SeqI);
 
 =head2 new
 
@@ -783,7 +775,7 @@ sub translation_table {
     $self->{'translation_table'} = $value;
   }
   unless (exists $self->{'translation_table'}) {
-    return (undef);
+    return;
   } else {
     return $self->{'translation_table'};
   }

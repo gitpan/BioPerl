@@ -1,4 +1,4 @@
-# $Id: csv.pm,v 1.3 2003/07/28 20:01:20 jason Exp $
+# $Id: csv.pm,v 1.8.4.1 2006/10/02 23:10:23 sendu Exp $
 #
 # BioPerl module for Bio::PopGen::IO::csv
 #
@@ -16,7 +16,18 @@ Bio::PopGen::IO::csv -Extract individual allele data from a CSV parser
 
 =head1 SYNOPSIS
 
-Do not use directly, use through the Bio::PopGen::IO driver
+#Do not use directly, use through the Bio::PopGen::IO driver
+
+  use Bio::PopGen::IO;
+  my $io = new Bio::PopGen::IO(-format => 'csv',
+                               -file   => 'data.csv');
+
+  # Some IO might support reading in a population at a time
+
+  my @population;
+  while( my $ind = $io->next_individual ) {
+      push @population, $ind;
+  }
 
 =head1 DESCRIPTION
 
@@ -44,8 +55,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -53,7 +64,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -75,20 +86,19 @@ Internal methods are usually preceded with a _
 
 
 package Bio::PopGen::IO::csv;
-use vars qw(@ISA $FieldDelim $AlleleDelim $NoHeader);
+use vars qw($FieldDelim $AlleleDelim $NoHeader);
 use strict;
 
 ($FieldDelim,$AlleleDelim,$NoHeader) =( ',', '\s+',0);
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::PopGen::IO;
 
 use Bio::PopGen::Individual;
 use Bio::PopGen::Population;
 use Bio::PopGen::Genotype;
 
-@ISA = qw(Bio::PopGen::IO );
+use base qw(Bio::PopGen::IO);
 
 =head2 new
 
@@ -96,7 +106,10 @@ use Bio::PopGen::Genotype;
  Usage   : my $obj = new Bio::PopGen::IO::csv();
  Function: Builds a new Bio::PopGen::IO::csv object 
  Returns : an instance of Bio::PopGen::IO::csv
- Args    :
+ Args    : [optional, these are the current defaults] 
+           -field_delimiter => ','
+           -allele_delimiter=> '\s+'
+           -no_header       => 0,
 
 
 =cut
@@ -107,6 +120,7 @@ sub _initialize {
 	$noheader) = $self->_rearrange([qw(FIELD_DELIMITER
 					   ALLELE_DELIMITER
 					   NO_HEADER)],@args);
+
 
     $self->flag('no_header', defined $noheader ? $noheader : $NoHeader);
     $self->flag('field_delimiter',defined $fieldsep ? $fieldsep : $FieldDelim);
@@ -144,7 +158,7 @@ sub flag{
  Title   : next_individual
  Usage   : my $ind = $popgenio->next_individual;
  Function: Retrieve the next individual from a dataset
- Returns : Bio::PopGen::IndividualI object
+ Returns : L<Bio::PopGen::IndividualI> object
  Args    : none
 
 
@@ -159,7 +173,29 @@ sub next_individual{
     return if ! defined $_; 
     if( $self->flag('no_header') || 
 	defined $self->{'_header'} ) {
-	my ($samp,@marker_results) = split($self->flag('field_delimiter'),$_);
+
+	#########new (allows field delim to be the same as the allele delim
+
+	my ($samp,@marker_results);
+
+	if($self->flag('field_delimiter') ne $self->flag('allele_delimiter')){
+
+		($samp,@marker_results) = split($self->flag('field_delimiter'),$_);
+	}
+	else{
+
+		my $fielddelim = $self->flag('field_delimiter');
+		my $alleledelim = $self->flag('allele_delimiter');
+
+		($samp) = /(^.+?)$fielddelim/;
+		s/^.+?$fielddelim//;
+	
+		(@marker_results) = /([\d|\w]+$alleledelim[\d|\w]+)/g;
+	
+	}
+
+	#########end new
+
 	my $i = 1;
 	foreach my $m ( @marker_results ) {
 	    $m =~ s/^\s+//;
@@ -171,7 +207,9 @@ sub next_individual{
 		$markername = "Marker$i";
 	    }
 	    $self->debug( "markername is $markername alleles are $m\n");
+
 	    my @alleles = split($self->flag('allele_delimiter'), $m);
+		
 	    $m = new Bio::PopGen::Genotype(-alleles      => \@alleles,
 					   -marker_name  => $markername,
 					   -individual_id=> $samp); 
@@ -184,7 +222,7 @@ sub next_individual{
 	$self->{'_header'} = [split($self->flag('field_delimiter'),$_)];
 	return $self->next_individual; # rerun loop again
     }
-    return undef;
+    return;
 }
 
 
@@ -193,7 +231,7 @@ sub next_individual{
  Title   : next_population
  Usage   : my $ind = $popgenio->next_population;
  Function: Retrieve the next population from a dataset
- Returns : Bio::PopGen::PopulationI object
+ Returns : L<Bio::PopGen::PopulationI> object
  Args    : none
  Note    : Many implementation will not implement this
 
@@ -260,8 +298,6 @@ sub write_individual{
     }    
 }
 
-
-
 =head2 write_population
 
  Title   : write_population
@@ -276,8 +312,8 @@ sub write_individual{
 sub write_population{
     my ($self,@pops) = @_;
     my $fielddelim  = $self->flag('field_delimiter');
-    my $alleledelim= $self->flag('allele_delimiter');
-    
+#     my $alleledelim= $self->flag('allele_delimiter');
+    my $alleledelim = ' ';
     foreach my $pop ( @pops ) {
 	if (! ref($pop) || ! $pop->isa('Bio::PopGen::PopulationI') ) {
 	    $self->warn("Cannot write an object that is not a Bio::PopGen::PopulationI object");

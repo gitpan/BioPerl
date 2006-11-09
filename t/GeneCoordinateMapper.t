@@ -1,6 +1,6 @@
 #-*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: GeneCoordinateMapper.t,v 1.14 2003/03/11 08:00:59 heikki Exp $
+## $Id: GeneCoordinateMapper.t,v 1.15 2004/04/21 14:01:47 jason Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -309,8 +309,7 @@ ok $res->end, 10;
 #
 # chr to cds ; ranges into one
 #
-
-my $exons = new Bio::Location::Split;
+my $exons = new Bio::Location::Split(-seq_id => 'gene');
 $exons->add_sub_Location($e1);
 $exons->add_sub_Location($e2);
 $exons->add_sub_Location($e3);

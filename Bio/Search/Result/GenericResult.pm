@@ -1,4 +1,4 @@
-# $Id: GenericResult.pm,v 1.17 2003/04/09 03:34:03 sac Exp $
+# $Id: GenericResult.pm,v 1.23.2.7 2006/10/16 17:08:16 sendu Exp $
 #
 # BioPerl module for Bio::Search::Result::GenericResult
 #
@@ -12,7 +12,9 @@
 
 =head1 NAME
 
-Bio::Search::Result::GenericResult - Generic Implementation of Bio::Search::Result::ResultI interface applicable to most search results.
+Bio::Search::Result::GenericResult - Generic Implementation of
+Bio::Search::Result::ResultI interface applicable to most search
+results.
 
 =head1 SYNOPSIS
 
@@ -21,10 +23,10 @@ Bio::Search::Result::GenericResult - Generic Implementation of Bio::Search::Resu
     use Bio::SearchIO;
     my $io = new Bio::SearchIO(-format => 'blast',
                                 -file   => 't/data/HUMBETGLOA.tblastx');
-    while( my $result = $io->next_result) {
+    while( my $result = $io->next_result ) {
         # process all search results within the input stream
-        while( my $hit = $result->next_hits()) {  
-        # insert code here for hit processing
+        while( my $hit = $result->next_hit ) {  
+            # insert code here for hit processing
         }
     }
 
@@ -90,17 +92,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich and Steve Chervitz
 
@@ -109,7 +110,7 @@ Email sac@bioperl.org
 
 =head1 CONTRIBUTORS
 
-Additional contributors names and emails here
+Sendu Bala, bix@sendu.me.uk
 
 =head1 APPENDIX
 
@@ -123,17 +124,16 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Search::Result::GenericResult;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
-use Bio::Search::Result::ResultI;
+use Bio::Search::GenericStatistics;
+use Bio::Tools::Run::GenericParameters;
 
 # bug #1420
 #use overload 
 #    '""' => \&to_string;
 
-@ISA = qw(Bio::Root::Root Bio::Search::Result::ResultI);
+use base qw(Bio::Root::Root Bio::Search::Result::ResultI);
 
 =head2 new
 
@@ -154,6 +154,8 @@ use Bio::Search::Result::ResultI;
            -algorithm         => program name (blastx)
            -algorithm_version   => version of the algorithm (2.1.2)
            -algorithm_reference => literature reference string for this algorithm
+           -hit_factory       => Bio::Factory::ObjectFactoryI capable of making
+                                 Bio::Search::Hit::HitI objects
 
 =cut
 
@@ -164,13 +166,13 @@ sub new {
 
   $self->{'_hits'} = [];
   $self->{'_hitindex'} = 0;
-  $self->{'_statistics'} = {};
-  $self->{'_parameters'} = {};
+  $self->{'_statistics'} = new Bio::Search::GenericStatistics;
+  $self->{'_parameters'} = new Bio::Tools::Run::GenericParameters;
 
   my ($qname,$qacc,$qdesc,$qlen,
       $dbname,$dblet,$dbent,$params,   
       $stats, $hits, $algo, $algo_v,
-      $prog_ref, $algo_r) = $self->_rearrange([qw(QUERY_NAME
+      $prog_ref, $algo_r, $hit_factory) = $self->_rearrange([qw(QUERY_NAME
                                                   QUERY_ACCESSION
                                                   QUERY_DESCRIPTION
                                                   QUERY_LENGTH
@@ -184,6 +186,7 @@ sub new {
                                                   ALGORITHM_VERSION
                                                   PROGRAM_REFERENCE
                                                   ALGORITHM_REFERENCE
+                                                  HIT_FACTORY
                                                  )],@args);
 
   $algo_r ||= $prog_ref;         
@@ -199,20 +202,24 @@ sub new {
   defined $dblet  && $self->database_letters($dblet);
   defined $dbent  && $self->database_entries($dbent);
 
+  defined $hit_factory && $self->hit_factory($hit_factory);
+  
   if( defined $params ) {
       if( ref($params) !~ /hash/i ) {
-          $self->throw("Must specify a hash reference with the the parameter '-parameters");
+          $self->throw("Must specify a hash reference with the parameter '-parameters");
       }
       while( my ($key,$value) = each %{$params} ) {
-          $self->add_parameter($key,$value);
+          $self->{'_parameters'}->set_parameter($key   =>   $value);
+               # $self->add_parameter($key,$value);
       }
   }
   if( defined $stats ) {
       if( ref($stats) !~ /hash/i ) {
-          $self->throw("Must specify a hash reference with the the parameter '-statistics");
+          $self->throw("Must specify a hash reference with the parameter '-statistics");
       }
       while( my ($key,$value) = each %{$stats} ) {
-          $self->add_statistic($key,$value);
+          $self->{'_statistics'}->set_statistic($key   =>   $value); 
+          # $self->add_statistic($key,$value);
       }
   }
 
@@ -286,8 +293,16 @@ Bio::Search::Result::ResultI implementation
 sub next_hit {
     my ($self,@args) = @_;
     my $index = $self->_nexthitindex;
-    return undef if $index > scalar @{$self->{'_hits'}};
-    return $self->{'_hits'}->[$index];    
+    return if $index > scalar @{$self->{'_hits'}};
+    
+    my $hit = $self->{'_hits'}->[$index];
+    if (ref($hit) eq 'HASH') {
+        my $factory = $self->hit_factory || $self->throw("Tried to get a Hit, but it was a hash ref and we have no hit factory");
+        $hit = $factory->create_object(%{$hit});
+        $self->{'_hits'}->[$index] = $hit;
+        delete $self->{_hashes}->{$index};
+    }
+    return $hit;    
 }
 
 =head2 query_name
@@ -451,9 +466,9 @@ sub database_entries {
 
 =cut
 
-sub get_parameter{
+sub get_parameter {
    my ($self,$name) = @_;
-   return $self->{'_parameters'}->{$name};
+   return $self->{'_parameters'}->get_parameter($name);
 }
 
 =head2 available_parameters
@@ -468,7 +483,7 @@ sub get_parameter{
 
 sub available_parameters{
    my ($self) = @_;
-   return keys %{$self->{'_parameters'}};
+   return $self->{'_parameters'}->available_parameters;
 }
 
 
@@ -485,7 +500,7 @@ sub available_parameters{
 
 sub get_statistic{
    my ($self,$key) = @_;
-   return $self->{'_statistics'}->{$key};
+   return $self->{'_statistics'}->get_statistic($key);
 }
 
 =head2 available_statistics
@@ -500,7 +515,7 @@ sub get_statistic{
 
 sub available_statistics{
    my ($self) = @_;
-   return keys %{$self->{'_statistics'}};
+   return $self->{'_statistics'}->available_statistics;
 }
 
 =head2 Bio::Search::Report 
@@ -519,15 +534,34 @@ Bio::Search::Result::GenericResult specific methods
 
 sub add_hit {
     my ($self,$s) = @_;
-    if( $s->isa('Bio::Search::Hit::HitI') ) { 
+    if (ref($s) eq 'HASH' || $s->isa('Bio::Search::Hit::HitI') ) {
         push @{$self->{'_hits'}}, $s;
-    } else { 
-        $self->throw("Passed in " .ref($s). 
-                     " as a Hit which is not a Bio::Search::HitI.");
+    }
+    else { 
+        $self->throw("Passed in " .ref($s)." as a Hit which is not a Bio::Search::HitI.");
+    }
+    
+    if (ref($s) eq 'HASH') {
+        $self->{_hashes}->{$#{$self->{'_hits'}}} = 1;
     }
     return scalar @{$self->{'_hits'}};
 }
 
+=head2 hit_factory
+
+ Title   : hit_factory
+ Usage   : $hit->hit_factory($hit_factory)
+ Function: Get/set the factory used to build HitI objects if necessary.
+ Returns : Bio::Factory::ObjectFactoryI
+ Args    : Bio::Factory::ObjectFactoryI
+
+=cut
+
+sub hit_factory {
+    my $self = shift;
+    if (@_) { $self->{_hit_factory} = shift }
+    return $self->{_hit_factory} || return;
+}
 
 =head2 rewind
 
@@ -570,9 +604,9 @@ sub _nexthitindex{
 
 =cut
 
-sub add_parameter{
+sub add_parameter {
    my ($self,$key,$value) = @_;
-   $self->{'_parameters'}->{$key} = $value;
+   $self->{'_parameters'}->set_parameter($key => $value);
 }
 
 
@@ -589,7 +623,7 @@ sub add_parameter{
 
 sub add_statistic {
    my ($self,$key,$value) = @_;
-   $self->{'_statistics'}->{$key} = $value;
+   $self->{'_statistics'}->set_statistic($key => $value);
    return;
 }
 
@@ -625,12 +659,19 @@ sub num_hits{
 
 =cut
 
-sub hits{
-   my ($self) = shift;
-   my @hits = ();
-   if( ref $self->{'_hits'}) {
-       @hits = @{$self->{'_hits'}};
-   }
+sub hits {
+    my ($self) = shift;
+    
+    foreach my $i (keys %{$self->{_hashes} || {}}) {
+        my $factory = $self->hit_factory || $self->throw("Tried to get a Hit, but it was a hash ref and we have no hit factory");
+        $self->{'_hits'}->[$i] = $factory->create_object(%{$self->{'_hits'}->[$i]});
+        delete $self->{_hashes}->{$i};
+    }
+    
+    my @hits = ();
+    if (ref $self->{'_hits'}) {
+        @hits = @{$self->{'_hits'}};
+    }
     return @hits;   
 }
 

@@ -1,10 +1,8 @@
-# $Id: seqHandler.pm,v 1.18 2003/12/16 16:58:51 smckay Exp $
+# $Id: seqHandler.pm,v 1.27.4.1 2006/10/02 23:10:30 sendu Exp $
 #
 # BioPerl module for Bio::SeqIO::game::seqHandler
 #
-# Cared for by Sheldon McKay <smckay@bcgsc.bc.ca>
-#
-# Copyright Sheldon McKay
+# Cared for by Sheldon McKay <mckays@cshl.edu>
 #
 # You may distribute this module under the same terms as perl itself
 #
@@ -35,21 +33,19 @@ to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
-  http://bioperl.org/MailList.shtml      - About the mailing lists
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution.
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-Bug reports can be submitted via email or the web:
-
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Sheldon McKay
 
-Email smckay@bcgsc.bc.ca
+Email mckays@cshl.edu
 
 =head1 APPENDIX
 
@@ -60,16 +56,17 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::SeqIO::game::seqHandler;
 
+use Data::Dumper;
+
 use Bio::SeqIO::game::featHandler;
-use Bio::SeqIO::game::gameSubs;
 use Bio::SeqFeature::Generic;
 use Bio::Seq::RichSeq;
 use Bio::Species;
 use strict;
 
-use vars qw { @ISA };
+use vars qw {};
 
-@ISA = qw{ Bio::SeqIO::game::gameSubs };
+use base qw(Bio::SeqIO::game::gameSubs);
 
 =head2 new
 
@@ -117,7 +114,7 @@ sub new {
 
 sub convert {
     my $self = shift;
-    my @ann  = @{$self->{anns}};
+    my @ann  = @{$self->{anns}} if defined $self->{anns};;
     my @seq  = @{$self->{seqs}};
     
     # not used yet
@@ -143,8 +140,9 @@ sub convert {
 
  Title   : _order_feats
  Usage   : $self->_order_feats( $self->{seq_h} )
- Function: an internal method to ensure the source feature comes first 
- Returns : a ref. to a an array containing the sequence object and a ref. to a list of  features 
+ Function: an internal method to ensure the source feature comes first
+           and keep gene, mRNA and CDS features together 
+ Returns : a ref. to an array containing the sequence object and a ref. to a list of  features 
  Args    : a ref. to a hash of sequences
 
 =cut
@@ -155,11 +153,15 @@ sub _order_feats {
     my $id  = $seq->id;
     my $ann = $self->{ann_l};
 
-    # make sure source comes first
-    my @src = grep { $_->primary_tag =~ /source|origin|\bregion\b/ } @$ann;
-    my @other = grep { $_->primary_tag !~ /source|origin|\bregion\b/ } @$ann;
-
-    return [$seq, [@src, @other]];
+    # make sure source(s) come first
+    my @src   = grep { $_->primary_tag =~ /source|origin|\bregion\b/ } @$ann;
+    # preserve gene->mRNA->CDS or ncRNA->gene->transcript order
+    my @genes = grep { $_->primary_tag =~ /gene|CDS|[a-z]+RNA|transcript/ } @$ann;
+    my @other = sort { $a->start <=> $b->start || $b->end   <=> $a->end  } 
+                grep { $_->primary_tag !~ /source|origin|\bregion\b/ } 
+                grep { $_->primary_tag !~ /gene|mRNA|CDS/ } @$ann;
+    
+    return [$seq, [@src, @genes, @other]];
 }
 
 =head2 _add_seq
@@ -253,18 +255,18 @@ sub _add_seq {
     if ( defined($seq->species) ) {
 	$tags->{organism} = [$seq->species->binomial];
     }
-    elsif ($seq eq $self->{main_seq}) {
-	$self->warn("The source organism for this sequence was\n" .
-		    "not specified.  I will guess Drosophila melanogaster.\n" .
-		    "Otherwise, add <organism>Genus species</organism>\n" .
-		    "to the main sequence element");
-	my @class = qw/ Eukaryota Metazoa Arthropoda Insecta Pterygota
-	                Neoptera Endopterygota Diptera Brachycera 
-	                Muscomorpha Ephydroidea Drosophilidae Drosophila melanogaster/;
-	my $species = Bio::Species->new( -classification => [ reverse @class ],
-					 -common_name    => 'fruit fly' );
-	$seq->species( $species );
-    }
+#    elsif ($seq eq $self->{main_seq}) {
+#	$self->warn("The source organism for this sequence was\n" .
+#		    "not specified.  I will guess Drosophila melanogaster.\n" .
+#		    "Otherwise, add <organism>Genus species</organism>\n" .
+#		    "to the main sequence element");
+#	my @class = qw/ Eukaryota Metazoa Arthropoda Insecta Pterygota
+#	                Neoptera Endopterygota Diptera Brachycera 
+#	                Muscomorpha Ephydroidea Drosophilidae Drosophila melanogaster/;
+#	my $species = Bio::Species->new( -classification => [ reverse @class ],
+#					 -common_name    => 'fruit fly' );
+#	$seq->species( $species );
+#    }
     
     # convert GAME to bioperl molecule types
     my $alphabet = $el->{Attributes}->{type};
@@ -276,7 +278,7 @@ sub _add_seq {
 
     # add a source feature if req'd
     if ( !$self->{has_source} && $focus ) {
-	$self->{source} = $featHandler->add_source($seq->length, $tags);
+	#$self->{source} = $featHandler->add_source($seq->length, $tags);
     }
     
     if ( $focus ) {
@@ -301,7 +303,14 @@ sub _add_seq {
 
 sub _map_position {
     my ($self, $el) = @_;
- 
+
+    # we can live without it
+    if ( !$el ) {
+	$self->{offset}= 0;
+	return 0;
+    }
+
+
     # chromosome and coordinates
     my $arm   = $el->{_arm}->{Characters};
     my $type  = $el->{Attributes}->{type};
@@ -378,7 +387,7 @@ sub _annotation {
     my $gname   = $el->{_name}->{Characters} eq $id ? '' : $el->{_name}->{Characters};
 
     # 'transposable element' is too long (breaks Bio::SeqIO::GenBank)
-    $type =~ s/transposable_element/repeat_region/;
+    # $type =~ s/transposable_element/repeat_region/;
     
     # annotations must be on the main sequence
     my $seqid = $self->{main_seq}->id;
@@ -428,6 +437,11 @@ sub _annotation {
 
     }
 	
+    # add a gene annotation if required
+    unless ( $featHandler->has_gene || $type ne 'gene' ) {
+	$featHandler->has_gene( $el, $gname, $id )
+    }
+
     if ( $tags->{symbol} ) {
         if ( !$tags->{gene} ) {
 	   $tags->{gene} = $tags->{symbol};
@@ -441,6 +455,7 @@ sub _annotation {
 }
 
 # get/set the sequence object
+
 =head2 _seq
 
  Title   : _seq
@@ -468,6 +483,7 @@ sub _seq {
 }
 
 #get/set the feature handler
+
 =head2 _feat_handler
 
  Title   : _feat_handler

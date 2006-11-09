@@ -1,4 +1,4 @@
-# $Id: Comment.pm,v 1.9 2003/12/22 08:50:00 juguang Exp $
+# $Id: Comment.pm,v 1.12.6.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::Annotation::Comment
 #
@@ -27,9 +27,9 @@ Bio::Annotation::Comment - A comment object, holding text
 A holder for comments in annotations, just plain text. This is a very simple
 object, and justifiably so.
 
-=head1 CONTACT
+=head1 AUTHOR - Ewan Birney 
 
-Describe contact details here
+Email birney@ebi.ac.uk
 
 =head1 APPENDIX
 
@@ -42,14 +42,12 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Annotation::Comment;
-use vars qw(@ISA);
 use strict;
-# use overload '""' => \&as_text;
+use overload '""' => sub { $_[0]->text || ''};
+use overload 'eq' => sub { "$_[0]" eq "$_[1]" };
 
-use Bio::Root::Root;
-use Bio::AnnotationI;
 
-@ISA = qw(Bio::Root::Root Bio::AnnotationI);
+use base qw(Bio::Root::Root Bio::AnnotationI);
 
 =head2 new
 
@@ -112,10 +110,11 @@ sub as_text{
 =cut
 
 sub hash_tree{
-   my ($self) = @_;
+    my $self = shift;
    
-   my $h = {};
-   $h->{'text'} = $self->text;
+    my $h = {};
+    $h->{'text'} = $self->text;
+    return $h;
 }
 
 =head2 tagname
@@ -124,11 +123,13 @@ sub hash_tree{
  Usage   : $obj->tagname($newval)
  Function: Get/set the tagname for this annotation value.
 
-           Setting this is optional. If set, it obviates the need to provide
-           a tag to Bio::AnnotationCollectionI when adding this object. When
-           obtaining an AnnotationI object from the collection, the collection
-           will set the value to the tag under which it was stored unless the
-           object has a tag stored already.
+           Setting this is optional. If set, it obviates the need to
+           provide a tag to Bio::AnnotationCollectionI when adding
+           this object. When obtaining an AnnotationI object from the
+           collection, the collection will set the value to the tag
+           under which it was stored unless the object has a tag
+           stored already.
+
  Example : 
  Returns : value of tagname (a scalar)
  Args    : new value (a scalar, optional)

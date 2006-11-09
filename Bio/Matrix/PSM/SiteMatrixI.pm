@@ -1,73 +1,35 @@
+# $Id: SiteMatrixI.pm,v 1.16.4.1 2006/10/02 23:10:22 sendu Exp $
 
 =head1 NAME
 
-Bio::Matrix::PSM::SiteMatrixI - SiteMatrix interface, holds a position
-scoring matrix (or position weight matrix)
+Bio::Matrix::PSM::SiteMatrixI - SiteMatrixI implementation, holds a
+position scoring matrix (or position weight matrix) and log-odds
 
 =head1 SYNOPSIS
 
-  use Bio::Matrix::PSM::SiteMatrix;
-
-  # Create from memory by supplying probability matrix hash
-  # both as strings or arrays
-
-  my ($a,$c,$g,$t,$score,$ic, $mid)=@_;
-  # where $a,$c,$g and $t are either arrayref or string
-  # or
-  my ($a,$c,$g,$t,$score,$ic,$mid)=
-     ('05a011','110550','400001','100104',0.001,19.2,'CRE1');
-  # Where a stands for all (this frequency=1), see explanation bellow
-
-  my %param=(-pA=>$a,-pC=>$c,-pG=>$g,-pT=>$t,-IC=>$ic,
-             -e_val=>$score, -id=>$mid);
-  my $site=new Bio::Matrix::PSM::SiteMatrix(%param);
-
-  # Or get it from a file:
-
-  use Bio::Matrix::PSM::IO;
-  my $psmIO= new Bio::Matrix::PSM::IO(-file=>$file, -format=>'transfac');
-  while (my $psm=$psmIO->next_psm) {
-    # Now we have a Bio::Matrix::PSM::Psm object, see
-    # Bio::Matrix::PSM::PsmI for details
-    my $matrix=$psm->matrix;
-    # This is a Bio::Matrix::PSM::SiteMatrix object now
-  }
-
-  # Get a simple consensus, where alphabet is {A,C,G,T,N}, choosing
-  # the highest probability or N if prob is too low
-
-  my $consensus=$site->consensus;
-
-  #Getting/using regular expression
-  my $regexp=$site->regexp;
-  my $count=grep($regexp,$seq);
-  my $count=($seq=~ s/$regexp/$1/eg);
-  print "Motif $mid is present $count times in this sequence\n";
+  # You cannot use this module directly; see Bio::Matrix::PSM::SiteMatrix
+  # for an example implementation
 
 =head1 DESCRIPTION
 
-SiteMatrix is designed to provide some basic methods when working with
-position scoring (weight) matrices, such as transcription factor
-binding sites for example.  A DNA PSM consists of four vectors with
-frequencies {A,C,G,T). This is the minimum information you should
-provide to construct a PSM object. The vectors can be provided as
-strings with frequencies where the frequency is {0..a} and a=1. This
-is the way MEME compressed representation of a matrix and it is quite
-useful when working with relational DB.  If arrays are provided as an
-input (references to arrays actually) they can be any number, real or
-integer (frequency or count).
+SiteMatrix is designed to provide some basic methods when working with position
+scoring (weight) matrices, such as transcription factor binding sites for
+example. A DNA PSM consists of four vectors with frequencies {A,C,G,T}. This is
+the minimum information you should provide to construct a PSM object. The
+vectors can be provided as strings with frequenciesx10 rounded to an int, going
+from {0..a} and 'a' represents the maximum (10). This is like MEME's compressed
+representation of a matrix and it is quite useful when working with relational
+DB. If arrays are provided as an input (references to arrays actually) they can
+be any number, real or integer (frequency or count).
 
-When creating the object the constructor will check for positions that
-equal 0.  If such is found it will increase the count for all
-positions by one and recalculate the frequency.  Potential bug- if you
-are using frequencies and one of the positions is 0 it will change
-significantly.  However, you should never have frequency that equals
-0.
+When creating the object you can ask the constructor to make a simple pseudo
+count correction by adding a number (typically 1) to all positions (with the
+-correction option). After adding the number the frequencies will be
+calculated. Only use correction when you supply counts, not frequencies.
 
-Throws an exception if: You mix as an input array and string (for
-example A matrix is given as array, C - as string).  The position
-vector is (0,0,0,0).  One of the probability vectors is shorter than
-the rest.
+Throws an exception if: You mix as an input array and string (for example A
+matrix is given as array, C - as string). The position vector is (0,0,0,0). One
+of the probability vectors is shorter than the rest.
 
 Summary of the methods I use most frequently (details bellow):
 
@@ -76,14 +38,36 @@ Summary of the methods I use most frequently (details bellow):
   IC - information content. Returns a real number
   id - identifier. Returns a string
   accession - accession number. Returns a string
-  next_pos - return the sequence probably for each letter, IUPAC symbol,
-      IUPAC probability and simple sequence consenus letter for this
-      position. Rewind at the end. Returns a hash.
+  next_pos - return the sequence probably for each letter, IUPAC
+      symbol, IUPAC probability and simple sequence
+  consenus letter for this position. Rewind at the end. Returns a hash.
   pos - current position get/set. Returns an integer.
-  regexp- construct a regular expression based on IUPAC consensus.
-      For example AGWV will be [Aa][Gg][AaTt][AaCcGg] width- site width
-      get_string- gets the probability vector for a single base as a
-       string.
+  regexp - construct a regular expression based on IUPAC consensus.
+      For example AGWV will be [Aa][Gg][AaTt][AaCcGg]
+  width - site width
+  get_string - gets the probability vector for a single base as a string.
+  get_array - gets the probability vector for a single base as an array.
+  get_logs_array - gets the log-odds vector for a single base as an array.
+
+New methods, which might be of interest to anyone who wants to store PSM in a relational
+database without creating an entry for each position is the ability to compress the
+PSM vector into a string with losing usually less than 1% of the data.
+this can be done with:
+
+  my $str=$matrix->get_compressed_freq('A');
+
+or
+
+  my $str=$matrix->get_compressed_logs('A');
+
+Loading from a database should be done with new, but is not yest implemented.
+However you can still uncompress such string with:
+
+  my @arr=Bio::Matrix::PSM::_uncompress_string ($str,1,1); for PSM
+
+or
+
+  my @arr=Bio::Matrix::PSM::_uncompress_string ($str,1000,2); for log odds
 
 =head1 FEEDBACK
 
@@ -93,17 +77,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html     - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Stefan Kirov
 
@@ -118,32 +101,27 @@ Email skirov@utk.edu
 
 package Bio::Matrix::PSM::SiteMatrixI;
 
-use Bio::Root::RootI;
-use vars qw(@ISA);
 # use strict;
-@ISA=qw(Bio::Root::RootI);
+use base qw(Bio::Root::RootI);
 
+=head2 calc_weight
 
-=head2 new
-
- Title   : new
- Usage   : my $site=new Bio::Matrix::PSM::SiteMatrix
-              (-pA=>$a,-pC=>$c,-pG=>$g,-pT=>$t,
-               -IC=>$ic,-e_val=>$score, -id=>$mid);
- Function: Creates a new Bio::Matrix::PSM::SiteMatrix object from memory
- Throws  : If inconsistent data for all vectors (A,C,G and T) is provided,
-           if you mix input types (string vs array) or if a position freq is 0.
+ Title   : calc_weight
+ Usage   : $self->calc_weight({A=>0.2562,C=>0.2438,G=>0.2432,T=>0.2568});
+ Function: Recalculates the PSM (or weights) based on the PFM (the frequency matrix)
+           and user supplied background model.
+ Throws  : if no model is supplied
  Example :
- Returns : Bio::Matrix::PSM::SiteMatrix object
- Args    : hash
-
+ Returns :
+ Args    : reference to a hash with background frequencies for A,C,G and T
 
 =cut
 
-sub new {
+sub calc_weight {
   my $self = shift;
   $self->throw_not_implemented();
 }
+
 
 =head2 next_pos
 
@@ -151,14 +129,14 @@ sub new {
  Usage   : my %base=$site->next_pos;
  Function: 
 
-           Retrieves the next position features: frequencies for
+           Retrieves the next position features: frequencies and weights for
            A,C,G,T, the main letter (as in consensus) and the
            probabilty for this letter to occur at this position and
            the current position
 
  Throws  :
  Example :
- Returns : hash (pA,pC,pG,pT,base,prob,rel)
+ Returns : hash (pA,pC,pG,pT,lA,lC,lG,lT,base,prob,rel)
  Args    : none
 
 
@@ -207,12 +185,12 @@ sub e_val {
 =head2 consensus
 
  Title   : consensus
- Usage   :  my $consensus=$site->consensus;
+ Usage   :
  Function: Returns the consensus
- Throws  :
- Example :
  Returns : string
- Args    :
+ Args    : (optional) threshold value 1 to 10, default 5
+           '5' means the returned characters had a 50% or higher presence at
+           their position
 
 =cut
 
@@ -434,6 +412,118 @@ sub _to_cons {
 
 sub _calculate_consensus {
     my $self = shift;
+    $self->throw_not_implemented();
+}
+
+=head2 _compress_array
+
+ Title   : _compress_array
+ Usage   :
+ Function:  Will compress an array of real signed numbers to a string (ie vector of bytes)
+ 			-127 to +127 for bi-directional(signed) and 0..255 for unsigned ;
+ Throws  :
+ Example :  Internal stuff
+ Returns :  String
+ Args    :  array reference, followed by an max value and
+ 			direction (optional, default 1-unsigned),1 unsigned, any other is signed.
+
+=cut
+
+sub _compress_array {
+    my $self = shift;
+    $self->throw_not_implemented();
+}
+
+=head2 _uncompress_string
+
+ Title   : _uncompress_string
+ Usage   :
+ Function:  Will uncompress a string (vector of bytes) to create an array of real
+            signed numbers (opposite to_compress_array)
+ Throws  :
+ Example :  Internal stuff
+ Returns :  string, followed by an max value and
+ 			direction (optional, default 1-unsigned), 1 unsigned, any other is signed.
+ Args    :  array
+
+=cut
+
+sub _uncompress_string {
+    my $self = shift;
+    $self->throw_not_implemented();
+}
+
+=head2 get_compressed_freq
+
+ Title   : get_compressed_freq
+ Usage   :
+ Function:  A method to provide a compressed frequency vector. It uses one byte to
+ 			code the frequence for one of the probability vectors for one position.
+			Useful for relational database. Improvment of the previous 0..a coding.
+ Throws  :
+ Example :  my $strA=$self->get_compressed_freq('A');
+ Returns :  String
+ Args    :  char
+
+=cut
+
+sub get_compressed_freq {
+    my $self = shift;
+    $self->throw_not_implemented();
+}
+
+=head2 get_compressed_logs
+
+ Title   : get_compressed_logs
+ Usage   :
+ Function:  A method to provide a compressed log-odd vector. It uses one byte to
+ 			code the log value for one of the log-odds vectors for one position.
+ Throws  :
+ Example :  my $strA=$self->get_compressed_logs('A');
+ Returns :  String
+ Args    :  char
+
+=cut
+
+sub get_compressed_logs {
+    my $self = shift;
+    $self->throw_not_implemented();
+}
+
+=head2 sequence_match_weight
+
+ Title   : sequence_match_weight
+ Usage   :
+ Function:  This method will calculate the score of a match, based on the PWM
+            if such is associated with the matrix object. Returns undef if no
+             PWM data is available.
+ Throws  :   if the length of the sequence is different from the matrix width
+ Example :  my $score=$matrix->sequence_match_weight('ACGGATAG');
+ Returns :  Floating point
+ Args    :  string
+
+=cut
+
+sub sequence_match_weight {
+    my $self = shift;
+    $self->throw_not_implemented();
+}
+
+=head2 get_all_vectors
+
+ Title   : get_all_vectors
+ Usage   :
+ Function:  returns all possible sequence vectors to satisfy the PFM under
+            a given threshold
+ Throws  :  If threshold outside of 0..1 (no sense to do that)
+ Example :  my @vectors=$self->get_all_vectors(4);
+ Returns :  Array of strings
+ Args    :  (optional) floating
+
+=cut
+
+sub get_all_vectors {
+ my $self = shift;
     $self->throw_not_implemented();
 }
 1;

@@ -1,5 +1,5 @@
 package Bio::DB::GFF::Adaptor::biofetch;
-#$Id: biofetch.pm,v 1.17 2003/12/17 21:46:25 scain Exp $
+#$Id: biofetch.pm,v 1.17.8.1 2006/10/02 23:10:16 sendu Exp $
 =head1 NAME
 
 Bio::DB::GFF::Adaptor::biofetch -- Cache BioFetch objects in a Bio::DB::GFF database
@@ -28,15 +28,14 @@ it under the same terms as Perl itself.
 
 use strict;
 use Bio::DB::GFF::Util::Rearrange; # for rearrange()
-use Bio::DB::GFF::Adaptor::dbi::mysql;
 use Bio::DB::BioFetch;
 use Bio::SeqIO;
 
-use vars qw(@ISA %preferred_tags);
+use vars qw(%preferred_tags);
 
 # THIS IS WRONG: biofetch should delegate to an underlying
 # database adaptor, and not inherit from one.
-@ISA = qw(Bio::DB::GFF::Adaptor::dbi::mysql);
+use base qw(Bio::DB::GFF::Adaptor::dbi::mysql);
 
 # priority for choosing names of CDS tags, higher is higher priority
 %preferred_tags = (

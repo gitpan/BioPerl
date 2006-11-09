@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: fast_load_gff.PLS,v 1.11 2003/11/10 17:07:48 scain Exp $
+# $Id: fast_load_gff.PLS,v 1.30.4.1 2006/11/08 17:25:55 sendu Exp $
 
 use strict;
 # use lib './blib/lib';
@@ -65,9 +65,14 @@ If your MySQL is version 3.22.6 and was compiled using the "load local
 file" option, then you may be able to load remote databases with local
 data using the --local option.
 
-About maxbin: the default value is 100,000,000 bases.  If you have
+About maxfeature: the default value is 100,000,000 bases.  If you have
 features that are close to or greater that 100Mb in length, then the
-value of maxbin should be increased to 1,000,000,000.
+value of maxfeature should be increased to 1,000,000,000. This value
+must be a power of 10.
+
+If the list of GFF or fasta files exceeds the kernel limit for the
+maximum number of command-line arguments, use the
+--long_list /path/to/files option.
 
 The adaptor used is dbi::mysqlopt.  There is currently no way to
 change this.
@@ -83,7 +88,13 @@ e.g. -d instead of --database.
    --user                Username to log in as
    --fasta               File or directory containing fasta files to load
    --password            Password to use for authentication
-   --maxbin              Set the value of the maximum bin size
+   --long_list           Directory containing a very large number of
+                         GFF and/or FASTA files
+   --maxfeature          Set the value of the maximum feature size (default 100Mb; must be a power of 10)
+   --group               A list of one or more tag names (comma or space separated)
+                         to be used for grouping in the 9th column.
+   --gff3_munge          Activate GFF3 name munging (see Bio::DB::GFF)
+   --Temporary           Location of a writable scratch directory
 
 =head1 SEE ALSO
 
@@ -115,7 +126,10 @@ sub insert_sequence {
 
 package main;
 
-my ($DSN,$CREATE,$USER,$PASSWORD,$FASTA,$FAILED,$LOCAL,%PID,$MAX_BIN);
+eval "use Time::HiRes"; undef $@;
+my $timer = defined &Time::HiRes::time;
+
+my ($DSN,$CREATE,$USER,$PASSWORD,$FASTA,$FAILED,$LOCAL,%PID,$MAX_BIN,$GROUP_TAG,$LONG_LIST,$MUNGE,$TMPDIR);
 
 if ($DO_FAST) {
   $SIG{CHLD} = sub {
@@ -134,26 +148,49 @@ GetOptions ('database:s'    => \$DSN,
             'local'         => \$LOCAL,
 	    'password:s'    => \$PASSWORD,
 	    'fasta:s'       => \$FASTA,
-            'maxbin:s'      => \$MAX_BIN
+	    'group:s'       => \$GROUP_TAG,
+	    'long_list:s'   => \$LONG_LIST,
+            'maxbin|maxfeature:s'    => \$MAX_BIN,
+	    'gff3_munge'    => \$MUNGE,
+	    'Temporary:s'   => \$TMPDIR,
 	   ) or (system('pod2text',$0), exit -1);
 
 $DSN ||= 'test';
 
-my (@auth,$AUTH);
+my (@args,$AUTH);
 if (defined $USER) {
-  push @auth,(-user=>$USER);
+  push @args,(-user=>$USER);
   $AUTH .= " -u$USER";
 }
 if (defined $PASSWORD) {
-  push @auth,(-pass=>$PASSWORD);
+  push @args,(-pass=>$PASSWORD);
   $AUTH .= " -p$PASSWORD";
 }
+push @args,(-preferred_groups=>[split(/[,\s+]+/,$GROUP_TAG)]) if defined $GROUP_TAG;
 
-my $db = Bio::DB::GFF->new(-adaptor=>'faux',-dsn => $DSN,@auth)
+my $db = Bio::DB::GFF->new(-adaptor=>'faux',-dsn => $DSN,@args)
   or die "Can't open database: ",Bio::DB::GFF->error,"\n";
+
+$db->gff3_name_munging(1) if $MUNGE;
 
 if ($CREATE) {
   $MAX_BIN ? $db->initialize(-erase=>1,-MAX_BIN=>$MAX_BIN) : $db->initialize(1);
+}
+
+$MAX_BIN ||= $db->meta('max_bin') || 100_000_000;
+
+# deal with really long lists of files
+if ($LONG_LIST) {
+  -d $LONG_LIST or die "The --long_list argument must be a directory\n";
+  opendir GFFDIR,$LONG_LIST or die "Could not open $LONG_LIST for reading: $!";
+  @ARGV = map { "$LONG_LIST\/$_" } readdir GFFDIR;
+  closedir GFFDIR;
+  
+  if (defined $FASTA && -d $FASTA) {
+    opendir FASTA,$FASTA or die "Could not open $FASTA for reading: $!";
+    push @ARGV, map { "$FASTA\/$_" } readdir FASTA;
+    closedir FASTA;
+  }
 }
 
 foreach (@ARGV) {
@@ -163,7 +200,7 @@ foreach (@ARGV) {
 }
 my(@fasta,@gff);
 foreach (@ARGV) {
-  if (/\.(fa|fasta|dna|seq|fast)$/i) {
+  if (/\.(fa|fasta|dna|seq|fast)(?:\.|$)/i) {
     push @fasta,$_;
   } else {
     push @gff,$_;
@@ -184,11 +221,20 @@ my %DONE        = ();
 my $FEATURES    = 0;
 
 load_tables($db->dbh) unless $CREATE;
+my ($major,$minor,$sub) = split /\./,$db->dbh->get_info(18); # SQL_DBMS_VER
+my $can_disable_indexes = ($major >= 4 and $minor >= 0);
 
 # open up pipes to the database
 my (%FH,%COMMAND);
 my $MYSQL = MYSQL;
-my $tmpdir = $ENV{TMPDIR} || $ENV{TMP} || '/usr/tmp';
+my $tmpdir = $TMPDIR || $ENV{TMPDIR} || $ENV{TMP} || '/usr/tmp';
+-d $tmpdir or die <<END;
+I could not find a suitable temporary directory to write scratch files into ($tmpdir by default).
+Please select a directory and indicate its location by setting the TMP environment variable, or
+by using the --Temporary switch.
+END
+
+my @fasta_files_to_be_unlinked;
 my @files = (FDATA,FTYPE,FGROUP,FDNA,FATTRIBUTE,FATTRIBUTE_TO_FEATURE);
 foreach (@files) {
   my $file = "$tmpdir/$_.$$";
@@ -197,9 +243,12 @@ foreach (@files) {
   print STDERR "ok\n";
   my $delete = $CREATE ? "delete from $_" : '';
   my $local  = $LOCAL ? 'local' : '';
+  my $analyze = "analyze table $_";
   my $command =<<END;
 $MYSQL $AUTH
--e "lock tables $_ write; $delete; load data $local infile '$file' replace into table $_; unlock tables"
+-N
+-s
+-e "lock tables $_ write; $delete; load data $local infile '$file' replace into table $_; unlock tables; $analyze"
 $DSN
 END
 ;
@@ -224,19 +273,59 @@ END
   $FH{$_}->autoflush;
 }
 
-print STDERR "Fast loading enabled\n" if $DO_FAST;
+print STDERR "Fast loading enabled\n"    if $DO_FAST;
 
-my ($count,$fasta_sequence_id,$gff3);
+my ($count,$gff3,$last,$start,$beginning,$current_file);
+
+$last  = Time::HiRes::time() if $timer;
+$beginning = $start = $last;
+
+# avoid hanging on standalone --fasta load
+if (!@ARGV) {
+    $FH{NULL} = IO::File->new(">$tmpdir/null");
+    push @ARGV, "$tmpdir/null";
+}
+
 while (<>) {
+
+  # reset GFF3 flag if new filehandle
+  $current_file ||= $ARGV;
+  unless ($current_file eq $ARGV) {
+    undef $gff3;
+    $current_file = $ARGV;
+  }
+
   chomp;
   my ($ref,$source,$method,$start,$stop,$score,$strand,$phase,$group);
-  if (/^>(\S+)/) {  # uh oh, sequence coming
-      $fasta_sequence_id = $1;
-      last;
-    }
 
-  elsif (/^\#\#gff-version\s+3/) {
-    $gff3++;
+  # close sequence filehandle if required
+  if ( /^\#|\s+|^$|^>|\t/ && defined $FH{FASTA}) {
+      $FH{FASTA}->close;
+      delete $FH{FASTA};
+  }
+
+  # print to fasta file if the handle is open
+  if ( defined $FH{FASTA} ) {
+      $FH{FASTA}->print("$_\n");
+      next;
+  }
+
+  elsif (/^>(\S+)/) {  # uh oh, sequence coming
+      $FH{FASTA} = IO::File->new(">$tmpdir/$1\.fa") or die "FASTA: $!\n";
+      $FH{FASTA}->print("$_\n");
+      push @fasta, "$tmpdir/$1\.fa";
+      push @fasta_files_to_be_unlinked,"$tmpdir/$1\.fa";
+      print STDERR "Processing embedded sequence $1\n";
+      next;
+  }
+
+  elsif (/^\#\#\s*group-tags\s+(.+)/) {
+    $db->preferred_groups(split(/\s+/,$1));
+    next;
+  }
+
+  elsif (/^\#\#\s*gff-version\s+(\d+)/) {
+    $gff3 = ($1 >= 3);
     next;
   }
 
@@ -255,48 +344,58 @@ while (<>) {
   next unless defined $ref;
   $FEATURES++;
 
+  warn "Feature $group is larger than $MAX_BIN. You will have trouble retrieving this feature.\nRerun script with --maxfeature set to a higher power of 10.\n" if $stop-$start+1 > $MAX_BIN;
+
   $source = '\N' unless defined $source;
   $score  = '\N' if $score  eq '.';
   $strand = '\N' if $strand eq '.';
   $phase  = '\N' if $phase  eq '.';
 
-  my ($group_class,$group_name,$target_start,$target_stop,$attributes) = Bio::DB::GFF->split_group($group,$gff3);
-  $group_class  ||= '\N';
-  $group_name   ||= '\N';
-  $target_start ||= '\N';
-  $target_stop  ||= '\N';
-  $method       ||= '\N';
-  $source       ||= '\N';
+  my ($gclass,$gname,$target_start,$target_stop,$attributes) = $db->split_group($group,$gff3);
+  # GFF2/3 transition
+  $gclass = [$gclass] unless ref $gclass;
+  $gname  = [$gname]  unless ref $gname;
 
-  my $fid     = $FID++;
-  my $gid     = $GROUPID{$group_class,$group_name} ||= $GID++;
-  my $ftypeid = $FTYPEID{$source,$method}          ||= $FTYPEID++;
+  for (my $i=0; $i < @$gname; $i++) {
+    my $group_class = $gclass->[$i];
+    my $group_name  = $gname->[$i];
+    $group_class  ||= '\N';
+    $group_name   ||= '\N';
+    $target_start ||= '\N';
+    $target_stop  ||= '\N';
+    $method       ||= '\N';
+    $source       ||= '\N';
 
-  my $bin = bin($start,$stop,$db->min_bin);
-  $FH{ FDATA()  }->print(    join("\t",$fid,$ref,$start,$stop,$bin,$ftypeid,$score,$strand,$phase,$gid,$target_start,$target_stop),"\n"   );
-  $FH{ FGROUP() }->print(    join("\t",$gid,$group_class,$group_name),"\n"              ) unless $DONE{"fgroup$;$gid"}++;
-  $FH{ FTYPE()  }->print(    join("\t",$ftypeid,$method,$source),"\n"                   ) unless $DONE{"ftype$;$ftypeid"}++;
+    my $fid     = $FID++;
+    my $gid     = $GROUPID{lc join($;,$group_class,$group_name)} ||= $GID++;
+    my $ftypeid = $FTYPEID{lc join($;,$source,$method)}          ||= $FTYPEID++;
 
-  foreach (@$attributes) {
-    my ($key,$value) = @$_;
-    my $attributeid = $ATTRIBUTEID{$key}   ||= $ATTRIBUTEID++;
-    $FH{ FATTRIBUTE() }->print( join("\t",$attributeid,$key),"\n"                       ) unless $DONE{"fattribute$;$attributeid"}++;
-    $FH{ FATTRIBUTE_TO_FEATURE() }->print( join("\t",$fid,$attributeid,$value),"\n");
-  }
+    my $bin = bin($start,$stop,$db->min_bin);
+    $FH{ FDATA()  }->print(    join("\t",$fid,$ref,$start,$stop,$bin,$ftypeid,$score,$strand,$phase,$gid,$target_start,$target_stop),"\n"   );
+    $FH{ FGROUP() }->print(    join("\t",$gid,$group_class,$group_name),"\n"              ) unless $DONE{"fgroup$;$gid"}++;
+    $FH{ FTYPE()  }->print(    join("\t",$ftypeid,$method,$source),"\n"                   ) unless $DONE{"ftype$;$ftypeid"}++;
 
-  if ( $FEATURES % 1000 == 0) {
-    print STDERR "$FEATURES features parsed...";
-    print STDERR -t STDOUT && !$ENV{EMACS} ? "\r" : "\n";
+    foreach (@$attributes) {
+      my ($key,$value) = @$_;
+      my $attributeid = $ATTRIBUTEID{$key}   ||= $ATTRIBUTEID++;
+      $FH{ FATTRIBUTE() }->print( join("\t",$attributeid,$key),"\n"                       ) unless $DONE{"fattribute$;$attributeid"}++;
+      $FH{ FATTRIBUTE_TO_FEATURE() }->print( join("\t",$fid,$attributeid,$value),"\n");
+    }
+
+    if ( $FEATURES % 1000 == 0) {
+      my $now    = Time::HiRes::time() if $timer;
+      my $elapsed = $timer ? sprintf(" in %5.2fs",$now - $last) : '';
+      $last = $now;
+      print STDERR "$fid features parsed$elapsed...";
+      print STDERR -t STDOUT && !$ENV{EMACS} ? "\r" : "\n";
+    }
   }
 }
 
-if (defined $fasta_sequence_id) {
-  warn "Preparing embedded sequence....\n";
-  my $old = select($FH{FDNA()});
-  $db->load_sequence('ARGV',$fasta_sequence_id);
-  warn "done....\n";
-  select $old;
-}
+$FH{FASTA}->close if exists $FH{FASTA};
+
+printf STDERR "Feature load time %5.2fs\n",(Time::HiRes::time() - $start) if $timer;
+$start = time();
 
 for my $fasta (@fasta) {
   warn "Loading fasta ",(-d $fasta?"directory":"file"), " $fasta\n";
@@ -306,11 +405,18 @@ for my $fasta (@fasta) {
   select $old;
 }
 
+printf STDERR "Fasta load time %5.2fs\n",(Time::HiRes::time() - $start) if $timer;
+$start = time();
+
 my $success = 1;
+if ($DO_FAST) {
+  warn "Indexing and analyzing tables.  This may take some time (you may see database messages during the process)...\n";
+}
+
 $_->close foreach values %FH;
 
 if (!$DO_FAST) {
-  warn "Loading feature data.  You may see duplicate key warnings here...\n";
+  warn "Loading feature data and analyzing tables.  You may see database messages here...\n";
   $success &&= system($COMMAND{$_}) == 0 foreach @files;
 }
 
@@ -321,6 +427,8 @@ while (%PID) {
 $success &&= !$FAILED;
 
 cleanup();
+
+printf STDERR "Total parse & load time %5.2fs\n",(Time::HiRes::time() - $beginning) if $timer;
 
 if ($success) {
   print "SUCCESS: $FEATURES features successfully loaded\n";
@@ -333,7 +441,7 @@ if ($success) {
 exit 0;
 
 sub cleanup {
-  foreach (@files) {
+  foreach (@files,@fasta_files_to_be_unlinked) {
     unlink "$tmpdir/$_.$$";
   }
 }

@@ -1,4 +1,4 @@
-# $Id: phrap.pm,v 1.1 2002/11/04 14:38:14 heikki Exp $
+# $Id: phrap.pm,v 1.5.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl driver for phrap.out file
 #
@@ -12,7 +12,7 @@
 
 Bio::Assembly::IO::phrap - driver to load phrap.out files.
 
-=head1 SYNOPSYS
+=head1 SYNOPSIS
 
     # Building an input stream
     use Bio::Assembly::IO;
@@ -114,17 +114,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html     - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 
 =head1 AUTHOR - Robson Francisco de Souza
@@ -141,16 +140,14 @@ methods. Internal methods are usually preceded with a _
 package Bio::Assembly::IO::phrap;
 
 use strict;
-use vars qw(@ISA);
 
-use Bio::Assembly::IO;
 use Bio::Assembly::Scaffold;
 use Bio::Assembly::Contig;
 use Bio::LocatableSeq;
 use Bio::Seq;
 use Bio::SeqFeature::Generic;
 
-@ISA = qw(Bio::Assembly::IO);
+use base qw(Bio::Assembly::IO);
 
 =head2 next_assembly
 
@@ -292,7 +289,7 @@ sub next_assembly {
     return $Assembly;
 }
 
-=head2 write_assembly
+=head2 write_assembly (NOT IMPLEMENTED)
 
     Title   : write_assembly
     Usage   : $ass_io->write_assembly($assembly)
@@ -304,8 +301,7 @@ sub next_assembly {
 
 sub write_assemebly {
     my $self = shift;
-
-    $self->throw("Writing phrap.out files is not implemented yet! Sorry...");
+    $self->throw_not_implemented();   
 }
 
 1;

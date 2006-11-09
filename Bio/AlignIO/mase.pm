@@ -1,9 +1,9 @@
-# $Id: mase.pm,v 1.9 2002/10/22 07:38:25 lapp Exp $
+# $Id: mase.pm,v 1.11.4.3 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::AlignIO::mase
 
-#	based on the Bio::SeqIO::mase module
-#       by Ewan Birney <birney@sanger.ac.uk>
+#   based on the Bio::SeqIO::mase module
+#       by Ewan Birney <birney@ebi.ac.uk>
 #       and Lincoln Stein  <lstein@cshl.org>
 #
 #       and the SimpleAlign.pm module of Ewan Birney
@@ -33,11 +33,10 @@ file databases.
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS - Peter Schattner
 
@@ -54,12 +53,10 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::AlignIO::mase;
-use vars qw(@ISA);
 use strict;
 
-use Bio::AlignIO;
 
-@ISA = qw(Bio::AlignIO);
+use base qw(Bio::AlignIO);
 
 
 =head2 next_aln
@@ -148,8 +145,7 @@ sub next_aln {
 
 sub write_aln {
     my ($self,@aln) = @_;
-
-    $self->throw("Sorry: mase-format output, not yet implemented! /n");
+    $self->throw_not_implemented();
 }
 
 1;

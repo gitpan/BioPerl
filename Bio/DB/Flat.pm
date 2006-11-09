@@ -1,5 +1,5 @@
 #
-# $Id: Flat.pm,v 1.15 2003/11/21 03:03:38 lstein Exp $
+# $Id: Flat.pm,v 1.24.4.1 2006/10/02 23:10:14 sendu Exp $
 #
 # BioPerl module for Bio::DB::Flat
 #
@@ -44,17 +44,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via
-email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Lincoln Stein
 
@@ -71,12 +70,9 @@ methods are usually preceded with an "_" (underscore).
 # Let the code begin...
 package Bio::DB::Flat;
 
-use Bio::DB::RandomAccessI;
-use Bio::Root::Root;
 use Bio::Root::IO;
-use vars '@ISA';
 
-@ISA = qw(Bio::Root::Root Bio::DB::RandomAccessI);
+use base qw(Bio::Root::Root Bio::DB::RandomAccessI);
 
 use constant CONFIG_FILE_NAME => 'config.dat';
 
@@ -135,7 +131,8 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   # first we initialize ourselves
-  my ($flat_directory,$dbname) = $self->_rearrange([qw(DIRECTORY DBNAME)],@_);
+  my ($flat_directory,$dbname,$format) = 
+    $self->_rearrange([qw(DIRECTORY DBNAME FORMAT)],@_);
 
   defined $flat_directory
     or $self->throw('Please supply a -directory argument');
@@ -166,8 +163,9 @@ sub new {
   # now we figure out what subclass to instantiate
   my $index_type = $self->indexing_scheme eq 'BerkeleyDB/1' ? 'BDB'
                   :$self->indexing_scheme eq 'flat/1'       ? 'Binary'
-                  :$self->throw("unknown indexing scheme: ".$self->indexing_scheme);
-  my $format     = $self->file_format;
+                  :$self->throw("unknown indexing scheme: " .
+				$self->indexing_scheme);
+  $format = $self->file_format;
 
   # because Michele and Lincoln did it differently
   # Michele's way is via a standalone concrete class
@@ -175,6 +173,7 @@ sub new {
     my $child_class = 'Bio::DB::Flat::BinarySearch';
     eval "use $child_class";
     $self->throw($@) if $@;
+    push @_, ('-format', $format);
     return $child_class->new(@_);
   }
 
@@ -245,17 +244,15 @@ The following registry-configuration tags are recognized:
 
 sub new_from_registry {
    my ($self,%config) =  @_;
-   my $location = $config{'location'} or $self->throw('location tag must be specified.');
-   my $dbname   = $config{'dbname'}   or $self->throw('dbname tag must be specified.');
-   #my $index    = $self->new(-directory => $location,
-   #			      -dbname    => $dbname,
-   #			     );
-   # my $index = $config{'protocol'} or $self->throw('index or protocol tag must be specified.');
+   my $location = $config{'location'} or 
+     $self->throw('location tag must be specified.');
+   my $dbname   = $config{'dbname'}   or 
+     $self->throw('dbname tag must be specified.');
+
    my $db = $self->new(-directory => $location,
 			-dbname    => $dbname,
-		       # -index     => $index   LS: PROTOCOL DOES NOT SPECIFY INDEXING SCHEME
 		      );
-    $db;
+   $db;
 }
 
 # accessors
@@ -378,34 +375,34 @@ sub write_config {
   $self->write_flag or $self->throw("cannot write configuration file because write_flag is not set");
   my $path = $self->_config_path;
 
-  open (F,">$path") or $self->throw("open error on $path: $!");
+  open (my $F,">$path") or $self->throw("open error on $path: $!");
 
   my $index_type = $self->indexing_scheme;
-  print F "index\t$index_type\n";
+  print $F "index\t$index_type\n";
 
   my $format     = $self->file_format;
   my $alphabet   = $self->alphabet;
   my $alpha      = $alphabet ? "/$alphabet" : '';
-  print F "format\tURN:LSID:open-bio.org:${format}${alpha}\n";
+  print $F "format\tURN:LSID:open-bio.org:${format}${alpha}\n";
 
   my @filenos = $self->_filenos or $self->throw("cannot write config file because no flat files defined");
   for my $nf (@filenos) {
     my $path = $self->{flat_flat_file_path}{$nf};
     my $size = -s $path;
-    print F join("\t","fileid_$nf",$path,$size),"\n";
+    print $F join("\t","fileid_$nf",$path,$size),"\n";
   }
 
   # write primary namespace
   my $primary_ns = $self->primary_namespace
     or $self->throw('cannot write config file because no primary namespace defined');
 
-  print F join("\t",'primary_namespace',$primary_ns),"\n";
+  print $F join("\t",'primary_namespace',$primary_ns),"\n";
 
   # write secondary namespaces
   my @secondary = $self->secondary_namespaces;
-  print F join("\t",'secondary_namespaces',@secondary),"\n";
+  print $F join("\t",'secondary_namespaces',@secondary),"\n";
 
-  close F or $self->throw("close error on $path: $!");
+  close $F or $self->throw("close error on $path: $!");
 }
 
 sub files {
@@ -457,14 +454,14 @@ sub _read_config {
   my $path = $self->_config_path;
   return unless -e $path;
 
-  open (F,$path) or $self->throw("open error on $path: $!");
+  open (my $F,$path) or $self->throw("open error on $path: $!");
   my %config;
-  while (<F>) {
+  while (<$F>) {
     chomp;
     my ($tag,@values) = split "\t";
     $config{$tag} = \@values;
   }
-  CORE::close F or $self->throw("close error on $path: $!");
+  CORE::close $F or $self->throw("close error on $path: $!");
 
   $config{index}[0] =~ m~(flat/1|BerkeleyDB/1)~
     or $self->throw("invalid configuration file $path: no index line");
@@ -582,6 +579,7 @@ sub default_file_format {
 }
 
 sub _store_index {
+   my $self = shift;
    my ($ids,$file,$offset,$length) = @_;
    $self->throw_not_implemented;
 }

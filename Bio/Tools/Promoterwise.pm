@@ -1,3 +1,4 @@
+# $Id: Promoterwise.pm,v 1.8.4.1 2006/10/02 23:10:32 sendu Exp $
 # BioPerl module for Bio::Tools::Promoterwise
 #
 # Cared for by Shawn Hoon <shawnh@fugu-sg.org>
@@ -10,10 +11,9 @@
 
 =head1 NAME
 
-Bio::Tools::Promoterwise - DESCRIPTION of Object
+Bio::Tools::Promoterwise - parser for Promoterwise tab format output
 
 =head1 SYNOPSIS
-
 
   use Bio::Tools::Promoterwise;
 
@@ -39,8 +39,8 @@ Promoteriwise is an alignment algorithm that relaxes the constraint
 that local alignments have to be co-linear. Otherwise it provides a
 similar model to DBA, which is designed for promoter sequence
 alignments.  Promoterwise is written by Ewan Birney.  It is part of
-the wise2 package available at:
-ftp://ftp.ebi.ac.uk/pub/software/unix/wise2/
+the wise2 package available at
+L<ftp://ftp.ebi.ac.uk/pub/software/unix/wise2/>
 
 This module is the parser for the Promoterwise output in tab format.
 
@@ -52,27 +52,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Shawn Hoon
 
 Email shawnh@fugu-sg.org
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -86,15 +79,12 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Tools::Promoterwise;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
 use Bio::SeqFeature::FeaturePair;
 use Bio::SeqFeature::Generic;
-use Bio::Root::IO;
 
-@ISA = qw(Bio::Root::Root Bio::Root::IO );
+use base qw(Bio::Root::Root Bio::Root::IO);
 
 =head2 new
 
@@ -139,10 +129,10 @@ sub next_result {
 sub _parse{
    my ($self) = @_;
    my (%hash,@fp);
-   while ($_=$self->_readline()) {
-      chomp;
-      my @array = split;
-      push @{$hash{$array[$#array]}}, \@array;
+   while (defined($_ = $self->_readline()) ) {
+       chomp;
+       my @array = split;
+       push @{$hash{$array[-1]}}, \@array;
    }
    foreach my $key(keys %hash){
     my $sf1 = Bio::SeqFeature::Generic->new(-primary=>"conserved_element",
@@ -152,8 +142,19 @@ sub _parse{
                                             -source_tag=>"promoterwise");
     $sf2->attach_seq($self->query2_seq) if $self->query2_seq;
     foreach my $info(@{$hash{$key}}){
-      my ($score,$id1,$start_1,$end_1, $strand_1,$id2,$start_2,$end_2,
-          $strand_2,$group)= @{$info};
+	
+      my ($score,$id1,$start_1,$end_1, $strand_1,$s1_len,
+	  $id2,$start_2,$end_2,$strand_2,$s2_len, $group);
+      if( @{$info} == 12 ) {
+	  ($score,$id1,$start_1,$end_1, $strand_1,$s1_len,
+	   $id2,$start_2,$end_2,$strand_2,$s2_len, $group) = @{$info};
+      } elsif( @{$info} == 10 ) {
+	  ($score,$id1,$start_1,$end_1, $strand_1,
+	   $id2,$start_2,$end_2,$s2_len, $group) = @{$info};
+      } else {
+	  $self->throw("unknown promoterwise output, ", scalar @{$info},
+		       " columns, expected 10 or 12\n");
+      }
       if(!$sf1->strand && !$sf2->strand){
         $sf1->strand($strand_1);
         $sf2->strand($strand_2);
@@ -162,6 +163,7 @@ sub _parse{
         $sf1->score($score);
         $sf2->score($score);
       }
+
       my $sub1 = Bio::SeqFeature::Generic->new(-start=>$start_1,
                                               -seq_id=>$id1,
                                               -end  =>$end_1,
@@ -202,7 +204,7 @@ sub _feature_pairs {
 
 sub _next_result {
   my ($self) = @_;
-  return undef unless (exists($self->{'_feature_pairs'}) && @{$self->{'_feature_pairs'}});
+  return unless (exists($self->{'_feature_pairs'}) && @{$self->{'_feature_pairs'}});
   return shift(@{$self->{'_feature_pairs'}});
 }
 sub _parsed {

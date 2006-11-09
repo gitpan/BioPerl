@@ -1,4 +1,4 @@
-# $Id: lintree.pm,v 1.1 2003/12/11 22:51:09 jason Exp $
+# $Id: lintree.pm,v 1.8.4.1 2006/10/02 23:10:37 sendu Exp $
 #
 # BioPerl module for Bio::TreeIO::lintree
 #
@@ -64,9 +64,9 @@ Parser for the lintree output which looks like this
  24 and  22        0.013457       972
  24 and   7        0.025598      1000
 
-See http://shanghai.bio.psu.edu/lintree.html for access to the program
-and N Takezaki, A Rzhetsky, and M Nei, "Phylogenetic test of the
-molecular clock and linearized trees." Mol Biol Evol 12(5):823-33.
+See http://www.bio.psu.edu/People/Faculty/Nei/Lab/software.htm for access
+to the program and N Takezaki, A Rzhetsky, and M Nei, "Phylogenetic test
+of the molecular clock and linearized trees." Mol Biol Evol 12(5):823-33.
 
 =head1 FEEDBACK
 
@@ -76,17 +76,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -110,12 +109,11 @@ Internal methods are usually preceded with a _
 
 
 package Bio::TreeIO::lintree;
-use vars qw(@ISA %Defaults);
+use vars qw(%Defaults);
 use strict;
 
-use Bio::TreeIO;
 
-@ISA = qw(Bio::TreeIO);
+use base qw(Bio::TreeIO);
 $Defaults{'NodeType'} = "Bio::Tree::Node";
 
 =head2 new
@@ -155,20 +153,20 @@ sub next_tree {
     my $nodetype = $self->nodetype;   
 
     while( defined( $_ = $self->_readline) ) {
-	if( /^\s*(\d+)\s+sequences/ ) {
+	if( /^\s*(\d+)\s+sequences/ox ) {
 	    if( $seentop ) { 
 		$self->_pushback($_);
 		last;
 	    }
 	    $tipcount = $1;
 	    $seentop = 1;
-	} elsif( /^(\d+)\s+(\S+)/ ) {
+	} elsif( /^(\d+)\s+(\S+)\s*$/ox ) {
 	    # deal with setting an outgroup
 	    unless( defined $data{'outgroup'} ) {
 		$data{'outgroup'} = [$1,$2];
 	    }
 	    $nodes[$1 - 1] = { '-id' => $2 }; 
-	} elsif( m/^\s+(\d+)\s+and\s+(\d+)\s+(\d+\.\d+)(?:\s+(\d+))?/ox ) {
+	} elsif( m/^\s*(\d+)\s+and\s+(\d+)\s+(\-?\d+\.\d+)(?:\s+(\d+))?/ox ) {
 	    my ($node,$descend,$blength,$bootstrap) = ( $1, $2, $3, $4 );
 	    # need to -- descend and node because
 	    # array is 0 based
@@ -178,35 +176,39 @@ sub next_tree {
 	    $nodes[$node]->{'-id'} = $node+1;
 	    push @{$nodes[$node]->{'-d'}}, $descend;
 	    
-	} elsif( /\s+(\S+)\-distance was used\./ ) {
+	} elsif( /\s+(\S+)\-distance was used\./ox ) {
 	    $data{'method'} = $1;
-	} elsif( /\s*seed=(\d+)/ ) {
+	} elsif( /\s*seed=(\d+)/ox ) {
 	    $data{'seed'} = $1;
 	} elsif( m/^outgroup:\s+(\d+)\s+(\S+)/ox ) {
 	    $data{'outgroup'} = [$1,$2];
 	}
     }
-    my @treenodes;
-    foreach my $n ( @nodes ) { 	
-	push @treenodes, $nodetype->new(%{$n});
-    }
-    
-    foreach my $tn ( @treenodes ) {
-	my $n = shift @nodes;
-	for my $ptr ( @{ $n->{'-d'} || [] } ) {
-	    $tn->add_Descendent($treenodes[$ptr]);
+    if( @nodes ) {
+	my @treenodes;
+	foreach my $n ( @nodes ) { 	
+	    push @treenodes, $nodetype->new(%{$n});
 	}
-    }
-    my $T = Bio::Tree::Tree->new(-root => (pop @treenodes) );
-    if( $data{'outgroup'} ) {
-	my ($outgroup) = $treenodes[$data{'outgroup'}->[0]];
-	if( ! defined $outgroup) {
-	    $self->warn("cannot find '". $data{'outgroup'}->[1]. "'\n");
-	} else { 
-	    $T->reroot($outgroup->ancestor);
+	
+	foreach my $tn ( @treenodes ) {
+	    my $n = shift @nodes;
+	    for my $ptr ( @{ $n->{'-d'} || [] } ) {
+		$tn->add_Descendent($treenodes[$ptr]);
+	    }
 	}
+	my $T = Bio::Tree::Tree->new(-root => (pop @treenodes) );
+	if( $data{'outgroup'} ) {
+	    my ($outgroup) = $treenodes[$data{'outgroup'}->[0]];
+	    if( ! defined $outgroup) {
+		$self->warn("cannot find '". $data{'outgroup'}->[1]. "'\n");
+	    } else { 
+		$T->reroot($outgroup->ancestor);
+	    }
+	}
+	return $T;
     }
-    return $T;
+    return; # if there are no more trees, return undef
+	
 }
 
 =head2 nodetype

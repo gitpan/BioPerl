@@ -1,5 +1,4 @@
-# $Id: AnnotationCollectionI.pm,v 1.10 2003/06/07 02:49:00 allenday Exp $
-
+# $Id: AnnotationCollectionI.pm,v 1.17.4.4 2006/10/02 23:10:11 sendu Exp $
 #
 # BioPerl module for Bio::AnnotationCollectionI
 #
@@ -31,7 +30,7 @@ Bio::AnnotationCollectionI - Interface for annotation collections
           # access into this object
           $hash = $value->hash_tree();
        }
-   } 
+   }
 
 =head1 DESCRIPTION
 
@@ -40,11 +39,11 @@ facts" about something. We call an "interesting fact" in Bioperl an
 Annotation (this differs from a Sequence Feature, which is called
 a Sequence Feature and may or may not have an Annotation Collection).
 
-The trouble about this is we are not that sure what "interesting
-facts" someone might want to store: the possibility is endless. 
+A benefit of this approach is that all sorts of simple, interesting
+observations can be collected, the possibility is endless.
 
-Bioperl's approach is that the "interesting facts" are represented by
-Bio::AnnotationI objects. The interface Bio::AnnotationI guarentees
+The Bioperl approach is that the "interesting facts" are represented by
+Bio::AnnotationI objects. The interface Bio::AnnotationI guarantees
 two methods
 
    $obj->as_text(); # string formated to display to users
@@ -54,8 +53,8 @@ and
    $obj->hash_tree(); # hash with defined rules for data-orientated discovery
 
 The hash_tree method is designed to play well with XML output and
-other "nested-tag-of-data-values" think BoulderIO and/or Ace stuff. For more
-info read Bio::AnnotationI docs
+other "nested-tag-of-data-values", think BoulderIO and/or Ace stuff. For more
+information see L<Bio::AnnotationI>.
 
 Annotations are stored in AnnotationCollections, each Annotation under a
 different "tag". The tags allow simple discovery of the available annotations,
@@ -63,10 +62,10 @@ and in some cases (like the tag "gene_name") indicate how to interpret the
 data underneath the tag. The tag is only one tag deep and each tag can have an
 array of values.
 
-In addition, AnnotationCollectionI's are guarentee to maintain a consistent
-set object values under each tag - at least that each object complies to one
+In addition, AnnotationCollections are guaranteed to maintain consistent
+types of objects under each tag - at least that each object complies to one
 interface. The "standard" AnnotationCollection insists the following rules
-are set up
+are set up:
 
   Tag            Object
   ---            ------
@@ -93,47 +92,46 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bio.perl.org
+  bioperl-l@bioperl.org
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
 Email birney@ebi.ac.uk
 
-Describe contact details here
-
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. Internal methods
+are usually preceded with a _
 
 =cut
 
 
 # Let the code begin...
 
-
 package Bio::AnnotationCollectionI;
-use vars qw(@ISA);
 use strict;
 
 # Interface preamble - inherits from Bio::Root::RootI
 
-use Bio::Root::RootI;
 
-@ISA = qw(Bio::Root::RootI);
+use base qw(Bio::Root::RootI);
 
+=head1 ACCESSOR METHODS
 
-=head2 get_all_annotation_keys
+Use these for Bio::AnnotationI object access.
 
- Title   : get_all_annotation_keys
+=cut
+
+=head2 get_all_annotation_keys()
+
  Usage   : $ac->get_all_annotation_keys()
  Function: gives back a list of annotation keys, which are simple text strings
  Returns : list of strings
@@ -146,9 +144,8 @@ sub get_all_annotation_keys{
 }
 
 
-=head2 get_Annotations
+=head2 get_Annotations()
 
- Title   : get_Annotations
  Usage   : my @annotations = $collection->get_Annotations('key')
  Function: Retrieves all the Bio::AnnotationI objects for a specific key
  Returns : list of Bio::AnnotationI - empty if no objects stored for a key
@@ -157,17 +154,58 @@ sub get_all_annotation_keys{
 =cut
 
 sub get_Annotations{
-    shift->throw_not_implemented();    
+    shift->throw_not_implemented();
 }
 
-=head2 get_num_of_annotations
+=head2 add_Annotation()
 
- Title   : get_num_of_annotations
+ Usage   : $self->add_Annotation('reference',$object);
+           $self->add_Annotation($object,'Bio::MyInterface::DiseaseI');
+           $self->add_Annotation($object);
+           $self->add_Annotation('disease',$object,'Bio::MyInterface::DiseaseI');
+ Function: Adds an annotation for a specific key.
+
+           If the key is omitted, the object to be added must provide a value
+           via its tagname().
+
+           If the archetype is provided, this and future objects added under
+           that tag have to comply with the archetype and will be rejected
+           otherwise.
+
+ Returns : none
+ Args    : annotation key ('disease', 'dblink', ...)
+           object to store (must be Bio::AnnotationI compliant)
+           [optional] object archetype to map future storage of object
+           of these types to
+
+=cut
+
+sub add_Annotation {
+  shift->throw_not_implemented();
+}
+
+=head2 remove_Annotations()
+
+ Usage   :
+ Function: Remove the annotations for the specified key from this collection.
+ Returns : an list of Bio::AnnotationI compliant objects which were stored
+           under the given key(s)
+ Args    : the key(s) (tag name(s), one or more strings) for which to
+           remove annotations (optional; if none given, flushes all
+           annotations)
+
+=cut
+
+sub remove_Annotations{
+  shift->throw_not_implemented();
+}
+
+=head2 get_num_of_annotations()
+
  Usage   : my $count = $collection->get_num_of_annotations()
- Function: Returns the count of all annotations stored in this collection 
+ Function: Returns the count of all annotations stored in this collection
  Returns : integer
  Args    : none
-
 
 =cut
 

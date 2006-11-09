@@ -1,4 +1,4 @@
-# $Id: axt.pm,v 1.3 2003/07/24 20:33:55 jason Exp $
+# $Id: axt.pm,v 1.8.4.2 2006/10/02 23:10:26 sendu Exp $
 #
 # BioPerl module for Bio::SearchIO::axt
 #
@@ -28,9 +28,12 @@ Bio::SearchIO::axt - a parser for axt format reports
 
 =head1 DESCRIPTION
 
-This is a parser and event-generator for AXT format reports typically
-produced by BLASTZ (Schwartz et al,(2003) Genome Research, 13:103-107)
-but can also be produce from any lav report and directly out of BLAT.
+This is a parser and event-generator for AXT format reports.  BLASTZ
+reports (Schwartz et al,(2003) Genome Research, 13:103-107) are normally
+in LAV format but are commonly post-processed to AXT format; many precomputed
+BLASTZ reports, such as those found in the UCSC Genome
+Browser, are in AXT format.   This parser will also parse any
+AXT format produced from any lav report and directly out of BLAT.
 
 =head1 FEEDBACK
 
@@ -40,24 +43,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
 Email jason-at-bioperl.org
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -71,13 +70,12 @@ Internal methods are usually preceded with a _
 
 
 package Bio::SearchIO::axt;
-use vars qw(@ISA %MODEMAP %MAPPING @STATES $GAPCHAR);
+use vars qw(%MODEMAP %MAPPING @STATES $GAPCHAR);
 use strict;
 
-use Bio::SearchIO;
 use Bio::Search::Result::ResultFactory;
 use Bio::Search::HSP::HSPFactory;
-@ISA = qw(Bio::SearchIO );
+use base qw(Bio::SearchIO);
 
 use POSIX;
 
@@ -139,6 +137,9 @@ sub new {
 
 sub next_result{
     my ($self) = @_;
+    local $/ = "\n";
+    local $_;
+
     my ($curquery,$curhit);
     $self->start_document();
     my @hit_signifs;
@@ -233,7 +234,7 @@ sub next_result{
 	$self->end_element({'Name' => 'AXTOutput'});
 	return $self->end_document();
     }
-    return undef;
+    return;
 }
 
 sub _initialize {

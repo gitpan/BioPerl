@@ -1,4 +1,4 @@
-# $Id: Oligo.pm,v 1.3 2003/06/04 08:36:43 heikki Exp $
+# $Id: Oligo.pm,v 1.6.4.1 2006/10/02 23:10:28 sendu Exp $
 #
 # BioPerl module for Bio::SeqFeature::SiRNA::Pair
 #
@@ -35,16 +35,12 @@ Bio::SeqFeature::SiRNA::Oligo - Perl object for small inhibitory RNAs.
 =head1 DESCRIPTION
 
 Object methods for single SiRNA oligos - inherits
-Bio::SeqFeature::Generic.  DOES NOT include methods for designing
-SiRNAs -- see L<Bio::Tools::SiRNA> for that.
-
-=head2 EXPORT
-
-None by default.
+L<Bio::SeqFeature::Generic>.  Does B<not> include methods for designing
+SiRNAs - see L<Bio::Tools::SiRNA> for that.
 
 =head1 SEE ALSO
 
-L<Bio::Tools::SiRNA>, L<Bio::SeqFeature::SiRNA::Pair>, L<perl>.
+L<Bio::Tools::SiRNA>, L<Bio::SeqFeature::SiRNA::Pair>.
 
 =head1 FEEDBACK
 
@@ -54,8 +50,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -63,15 +59,11 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
 Donald Jackson (donald.jackson@bms.com)
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -86,9 +78,8 @@ require 5.005_62;
 use strict;
 use warnings;
 
-use Bio::SeqFeature::Generic;
 
-our @ISA = qw(Bio::SeqFeature::Generic);
+use base qw(Bio::SeqFeature::Generic);
 
 our @ARGNAMES = qw(SEQ START END STRAND PRIMARY SOURCE_TAG SCORE TAG 
                    SEQ_ID ANNOTATION LOCATION);
@@ -172,7 +163,7 @@ sub seq {
 	# check alphabet
 	if ($seq =~ /[^ACGTUacgtu]/ ) {
 	    warn "Sequence contains illegal characters";
-	    return undef;
+	    return;
 	}
 	else {
 	    $self->{'seq'} = $seq;

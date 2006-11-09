@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
-
+# $Id: modules.pl,v 1.22 2006/07/04 22:23:28 mauricio Exp $
+#
 =head1 NAME
 
 modules.pl - information about modules in BioPerl core
@@ -8,12 +9,76 @@ modules.pl - information about modules in BioPerl core
 
 B<modules.pl> [B<-V|--verbose>] [B<-c|--count>] | [B<-l|--list>] |
   [B<-u|--untested>] | [B<-i|--info> class] | [B<-i|--inherit> |
-  [B<-v|--version> | [B<-?|-h|--help>]
+  [B<-d|--dir> path ] | [B<-v|--version> | [B<-?|-h|--help>]
 
 =head1 DESCRIPTION
 
 This script counts, lists and provides other information about bioperl
 modules. It is mainly meant to be run by bioperl maintainers.
+
+The default action is to count modules in the bioperl core
+distribution. Based on the class name it tries to classify them into
+categories. The following is a tentative glossary of terms used.
+
+
+=over 4
+
+=item Base
+
+Synonyms: Generic class, parameterized class, generic module.
+
+A class that you don't instantiate in your scripts, but that it's a
+template for other classes.
+
+Examples: Bio::Tools::Run::WrapperBase - a base object for wrappers
+around executables. Bio::Tools::Analysis::SimpleAnalysisBase - an
+abstract superclass for SimpleAnalysis implementations
+
+This are counted with C</:Base/ | /Base$/>; They have "Base" in the
+beginning or end of the name.
+
+=item Interface
+
+Synonyms: protocol, feature set.
+
+Class that defines a set of features that are common to a group of
+classes.
+
+Example: Bio::Tree::NodeI - interface describing a Tree Node.
+
+This are counted with C</[^A-Z]I$/>; They have "I" at the end of the
+name.
+
+=item Component
+
+A class that implements a small subset of their superclass. They are in
+a directory with an identical name of the superclass. There are plenty
+of them. You need only a small number of methods to be overridden.
+
+Example: Bio::SeqIO::fasta.
+
+This is counted with C</.*:[a-z]/>; Classes are inside their base directory
+and all in lowercase.
+
+=item Instance
+
+The rest of them. It is sometimes helpful to divide them into two
+types:
+
+=over 2
+
+=item Algorithmic classes
+
+Example: Bio::AlignIO - Handler for AlignIO formats
+
+=item Storage classes
+
+Example: Bio::SimpleAlign - Multiple alignments held as a set of
+sequences
+
+=back
+
+=back
 
 =cut
 
@@ -46,7 +111,7 @@ sub tested {
     my $self = shift;
     my $value = shift;
     $self->{'tested'} = 1 if defined $value && $value;
-    return $self->{'tested'};
+    return $self->{'tested'} || 0;
 }
 
 sub type {
@@ -187,7 +252,7 @@ sub modules {
             }
             $class->path($File::Find::name);
         }
-        if (/^\w*use/ && /(Bio[\w:]+)\W*;/) {
+        if (/^\w*use/ && /(Bio[\w:]+)\W*;/ && not /base/) {
 	    next unless $class;
             #print "\t$1\n" if $verbose;
             $class->add_used_class($1);
@@ -209,7 +274,6 @@ sub modules {
             }
         }
     }
-
     close F;
 }
 
@@ -228,6 +292,11 @@ Set this option if you want to see more verbose output. Often that
 will mean seeing warnings normally going into STDERR.
 
 =cut
+
+=item B<-d | --dir> path
+
+Overides the default directories to check by one directory 'path' and
+all its subdirectories.
 
 =item B<-c | --count>
 
@@ -272,34 +341,71 @@ sub list_all {
 =item B<-u | --untested>
 
 Prints a list of instance modules which are I<not> explicitly used by
-test files in t directory. Superclasess or any classes used by others
+test files in the directory. Superclasess or any classes used by others
 are not reported, either, since their methods are assumed to be tested
 by subclass tests.
 
-This method can not be improved much without running the tests!
 
 =cut
 
+sub _used_and_super {
+    my $name = shift;
+#    print "-:$name\n" if /Locati/; 
+    foreach ($MODULES{$name}->each_superclass) {
+        next unless defined $MODULES{$_};
+#        print "-^$_\n" if /Locati/; 
+#        unless (defined $MODULES{$_} or $MODULES{$_}->tested) {
+        if (not  $MODULES{$_}->tested) {
+            $MODULES{$_}->tested(1);
+            _used_and_super($_);
+        }
+    }
+    foreach ($MODULES{$name}->each_used_class) {
+        next unless defined $MODULES{$_};
+#        print "--$_\n" if /Locati/; 
+#        unless (defined $MODULES{$_} or $MODULES{$_}->tested) {
+        if (not  $MODULES{$_}->tested) {
+            $MODULES{$_}->tested(1);
+            _used_and_super($_);
+        }
+#        $MODULES{$_}->tested(1) && _used_and_super($_)
+#            unless defined $MODULES{$_} or $MODULES{$_}->tested;
+    }
+    return 1;
+}
+
 sub untested {
-    foreach (`find ../t -name "*.t" -print | xargs grep -hs "use "`) {
-        s/^ *?use +//;
+    foreach (`find ../t -name "*.t" -print | xargs grep -hs "[ur][se][eq]"`) {
+        s/.*use +//;
+        s/.*require +//;
         next unless /^Bio/;
+
         s/[\W;]+$//;
+        s/([\w:]+).*/$1/;
+        my $name = $_;
+
         next unless $MODULES{$_};
         $MODULES{$_}->tested(1) 
             unless defined $MODULES{$_} and $MODULES{$_}->tested;
-        foreach ($MODULES{$_}->each_superclass) {
-            $MODULES{$_}->tested(1)
-                unless defined $MODULES{$_} or $MODULES{$_}->tested;
-        }
-        foreach ($MODULES{$_}->each_used_class) {
-            $MODULES{$_}->tested(1)
-                unless defined $MODULES{$_} and $MODULES{$_}->tested;
-        }
+
+        next if $MODULES{$name}->name eq "Bio::SeqIO::abi"; # exception: requires bioperl ext package
+        next if $MODULES{$name}->name eq "Bio::SeqIO::ctf"; # exception: requires bioperl ext package
+        next if $MODULES{$name}->name eq "Bio::SeqIO::exp"; # exception: requires bioperl ext package
+        next if $MODULES{$name}->name eq "Bio::SeqIO::pln"; # exception: requires bioperl ext package
+        next if $MODULES{$name}->name eq "Bio::SeqIO::ztr"; # exception: requires bioperl ext package
+#        print $MODULES{$name}->name, "\n";
+#        print Dumper $MODULES{$name};
+
+        _used_and_super($name);
 
     }
 
     foreach ( sort keys %MODULES) {
+
+        # skip some name spaces 
+        next  if /^Bio::Search/; # Bio::Search and Bio::SearchIO are extensively tested 
+                                 # but classes are used by attribute naming 
+
         print "$_\n" if
             $MODULES{$_}->type eq 'instance' and ($MODULES{$_}->tested == 0) ;
     }
@@ -361,6 +467,7 @@ sub synopsis {
 
         next unless $c->type eq "instance";
         next if $c->name eq 'Bio::Root::Version';
+        next if $c->name eq 'Bio::Tools::HMM';
 
         my $synopsis = '';
         open (F, $c->path) or warn "can't open file ".$c->name.": $!" && return;
@@ -437,21 +544,24 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
-=head1 AUTHOR - Heikki Lehvaslaiho
+=head1 AUTHOR
 
-Email heikki@ebi.ac.uk
+Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
+
+=head1 Contributors
+
+Albert Vilella, avilella-AT-gmail-DOT-com
 
 =cut
 

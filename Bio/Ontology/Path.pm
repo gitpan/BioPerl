@@ -1,4 +1,4 @@
-# $Id: Path.pm,v 1.2 2003/03/26 09:08:55 lapp Exp $
+# $Id: Path.pm,v 1.7.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for Path
 #
@@ -22,7 +22,7 @@
 
 =head1 NAME
 
-Path - a path for an ontology term graph
+Bio::Ontology::Path - a path for an ontology term graph
 
 =head1 SYNOPSIS
 
@@ -47,17 +47,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the 
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
-report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via
+the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -75,13 +74,9 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Ontology::Path;
-use vars qw( @ISA );
 use strict;
-use Bio::Ontology::PathI;
-use Bio::Ontology::Relationship;
 
-@ISA = qw( Bio::Ontology::Relationship
-           Bio::Ontology::PathI );
+use base qw(Bio::Ontology::Relationship Bio::Ontology::PathI);
 
 
 
@@ -156,7 +151,6 @@ sub init {
  Example : 
  Returns : value of distance (a scalar)
  Args    : on set, new value (a scalar or undef, optional)
-
 
 =cut
 

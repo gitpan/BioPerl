@@ -1,8 +1,8 @@
-# $Id: CytoMap.pm,v 1.3 2003/05/15 08:13:55 heikki Exp $
+# $Id: CytoMap.pm,v 1.10.4.1 2006/10/02 23:10:21 sendu Exp $
 #
 # BioPerl module for Bio::Map::CytoMap
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Sendu Bala <bix@sendu.me.uk>
 #
 # Copyright Heikki Lehvaslaiho
 #
@@ -41,26 +41,26 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email heikki@ebi.ac.uk
+Email heikki-at-bioperl-dot-org
 
 =head1 CONTRIBUTORS
 
 Jason Stajich      jason@bioperl.org
 Lincoln Stein      lstein@cshl.org
+Sendu Bala         bix@sendu.me.uk
 
 =head1 APPENDIX
 
@@ -69,27 +69,13 @@ Internal methods are usually preceded with a _
 
 =cut
 
-
-# Let the code begin...
-
-
 package Bio::Map::CytoMap;
-use vars qw(@ISA $MAPCOUNT);
+use vars qw($MAPCOUNT);
 use strict;
 
-# Object preamble - inherits from Bio::Root::Root
 
-use Bio::Root::Root;
-use Bio::Map::SimpleMap;
-
-@ISA = qw(Bio::Root::Root Bio::Map::SimpleMap);
+use base qw(Bio::Map::SimpleMap);
 BEGIN { $MAPCOUNT = 1; }
-
-=head2 Modified methods 
-
-All methods present in L<Bio::Map::SimpleMap> are implemted by this
-class. Most of the methods are inherited from SimpleMap. The following
-methods have been modified to refelect the needs of cytogenetic maps.
 
 =head2 new
 
@@ -107,31 +93,14 @@ methods have been modified to refelect the needs of cytogenetic maps.
 =cut
 
 sub new {
-    my($class,@args) = @_;
-
+    my ($class, @args) = @_;
+	
     my $self = $class->SUPER::new(@args);
-
-    $self->{'_elements'} = [];
-    $self->{'_name'}     = '';
-    $self->{'_species'}  = '';
-    $self->{'_units'}    = '';
-    $self->{'_type'}    = 'cyto';
+	
     $self->{'_uid'} = $MAPCOUNT++;
-    my ($name, $type,$species, $units,
-	$elements,$uid) = $self->_rearrange([qw(NAME TYPE
-						SPECIES UNITS
-						ELEMENTS UID)], @args);
-    defined $name     && $self->name($name);
-    defined $species  && $self->species($species);
-    defined $units    && $self->units($units);
-    defined $type     && $self->type($type);
-    defined $uid      && $self->unique_id($uid);
-
-    if( $elements && ref($elements) =~ /array/ ) {
-	foreach my $item ( @$elements ) {
-	    $self->add_element($item);
-	}
-    }
+    my ($uid) = $self->_rearrange([qw(UID)], @args);
+    defined $uid && $self->unique_id($uid);
+	
     return $self;
 }
 
@@ -139,93 +108,28 @@ sub new {
 
  Title   : type
  Usage   : my $type = $map->type
- Function: Get hard-coded  Map type
- Returns : String coding map type
- Args    : 
+ Function: Get hard-coded Map type
+ Returns : String coding Map type (always 'cyto')
+ Args    : none
 
 =cut
 
 sub type {
-   my ($self) = @_;
-   return $self->{'_type'};
+   return 'cyto';
 }
-
 
 =head2 length
 
  Title   : length
  Usage   : my $length = $map->length();
  Function: Retrieves the length of the map,
- Returns : undef since length is not calculatable for 
-           cytogenetic maps
+ Returns : 0 since length is not calculatable for cytogenetic maps
  Args    : none
 
 =cut
 
-sub length{
-   my ($self,@args) = @_;
-   return undef;
+sub length {
+   return 0;
 }
-
-=head2 Methods inherited from L<Bio::Map::SimpleMap>
-
-=cut
-
-=head2 species
-
- Title   : species
- Usage   : my $species = $map->species;
- Function: Get/Set Species for a map
- Returns : Bio::Species object or string
- Args    : (optional) Bio::Species or string
-
-=cut
-
-=head2 units
-
- Title   : units
- Usage   : $map->units('cM');
- Function: Get/Set units for a map
- Returns : units for a map
- Args    : units for a map (string)
-
-=cut
-
-=head2 name
-
- Title   : name
- Usage   : my $name = $map->name
- Function: Get/Set Map name
- Returns : Map name
- Args    : (optional) string
-
-=cut
-
-=head2 unique_id
-
- Title   : unique_id
- Usage   : my $id = $map->unique_id;
- Function: Get/Set the unique ID for this map
- Returns : a unique identifier
- Args    : [optional] new identifier to set
-
-=cut
-
-=head2 each_element
-
- Title   : each_element
- Usage   : my @elements = $map->each_element;
- Function: Retrieves all the elements in a map
-           unordered
- Returns : Array of Bio::Map::MappableI objects
- Args    : none
-
-
-=cut
-
-=head2 New methods
-
-=cut
-
 
 1;

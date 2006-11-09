@@ -1,4 +1,4 @@
-# $Id: Computation.pm,v 1.11 2002/10/22 07:38:41 lapp Exp $
+# $Id: Computation.pm,v 1.16.4.1 2006/10/02 23:10:28 sendu Exp $
 #
 # BioPerl module for Bio::SeqFeature::Generic
 #
@@ -54,16 +54,15 @@ Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
-  http://bio.perl.org/MailList.html      - About the mailing lists
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney, Mark Fiers
 
@@ -88,13 +87,11 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::SeqFeature::Computation;
-use vars qw(@ISA);
 use strict;
 
 use Bio::Root::Root;
-use Bio::SeqFeature::Generic;
 
-@ISA = qw(Bio::SeqFeature::Generic);
+use base qw(Bio::SeqFeature::Generic);
 						     
 sub new {
     my ( $class, @args) = @_;
@@ -138,7 +135,7 @@ sub new {
 
 sub has_score {
     my ($self, $score) = @_;
-    return undef unless defined $score;
+    return unless defined $score;
     return exists $self->{'_gsf_score_hash'}->{$score};
 }
 
@@ -213,7 +210,7 @@ sub each_score_value {
    my ($self, $score) = @_;
    if ( ! exists $self->{'_gsf_score_hash'}->{$score} ) {
        $self->warn("asking for score value that does not exist $score");
-       return undef;
+       return;
    }
    return @{$self->{'_gsf_score_hash'}->{$score}};
 }

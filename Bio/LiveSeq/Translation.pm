@@ -1,4 +1,4 @@
-# $Id: Translation.pm,v 1.14 2003/06/06 12:48:08 heikki Exp $
+# $Id: Translation.pm,v 1.15.4.1 2006/10/02 23:10:21 sendu Exp $
 #
 # bioperl module for Bio::LiveSeq::Translation
 #
@@ -29,12 +29,6 @@ different coordinate system and eventually its own ranges (protein domains).
 
 Email:  Insana@ebi.ac.uk, jinsana@gmx.net
 
-Address: 
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom 
-
 =head1 APPENDIX
 
 The rest of the documentation details each of the object
@@ -48,11 +42,9 @@ package Bio::LiveSeq::Translation;
 
 use strict;
 #use Carp qw(croak carp cluck);
-use vars qw(@ISA);
 use Bio::LiveSeq::SeqI; # uses SeqI, inherits from it
 use Bio::PrimarySeq;
-use Bio::LiveSeq::Transcript;
-@ISA = qw(Bio::LiveSeq::Transcript);
+use base qw(Bio::LiveSeq::Transcript);
 
 
 =head2 new

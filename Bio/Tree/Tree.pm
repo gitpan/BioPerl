@@ -1,4 +1,4 @@
-# $Id: Tree.pm,v 1.15 2003/08/11 16:20:33 jason Exp $
+# $Id: Tree.pm,v 1.21.4.1 2006/10/02 23:10:37 sendu Exp $
 #
 # BioPerl module for Bio::Tree::Tree
 #
@@ -35,8 +35,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -44,7 +44,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -53,6 +53,7 @@ Email jason@bioperl.org
 =head1 CONTRIBUTORS
 
 Aaron Mackey amackey@virginia.edu
+Sendu Bala   bix@sendu.me.uk
 
 =head1 APPENDIX
 
@@ -66,16 +67,12 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Tree::Tree;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::Root::Root;
-use Bio::Tree::TreeFunctionsI;
-use Bio::Tree::TreeI;
 
-@ISA = qw(Bio::Root::Root Bio::Tree::TreeI Bio::Tree::TreeFunctionsI   );
+use base qw(Bio::Root::Root Bio::Tree::TreeI Bio::Tree::TreeFunctionsI);
 
 =head2 new
 
@@ -84,9 +81,15 @@ use Bio::Tree::TreeI;
  Function: Builds a new Bio::Tree::Tree object 
  Returns : Bio::Tree::Tree
  Args    : -root     => L<Bio::Tree::NodeI> object which is the root
+             OR
+           -node     => L<Bio::Tree::NodeI> object from which the root will be
+                        determined
+
            -nodelete => boolean, whether or not to try and cleanup all
                                  the nodes when this this tree goes out
                                  of scope.
+           -id       => optional tree ID
+           -score    => optional tree score value
 
 =cut
 
@@ -97,9 +100,31 @@ sub new {
   $self->{'_rootnode'} = undef;
   $self->{'_maxbranchlen'} = 0;
   $self->_register_for_cleanup(\&cleanup_tree);
-  my ($root,$nodel)= $self->_rearrange([qw(ROOT NODELETE)], @args);
-  if( $root ) { $self->set_root_node($root); }
+  my ($root,$node,$nodel,$id,$score)= $self->_rearrange([qw(ROOT NODE NODELETE 
+						      ID SCORE)], @args);
+  
+  if ($node && ! $root) {
+    $self->throw("Must supply a Bio::Tree::NodeI") unless ref($node) && $node->isa('Bio::Tree::NodeI');
+    my @lineage = $self->get_lineage_nodes($node);
+    $root = shift(@lineage) || $node;
+    
+    # to stop us pulling in entire database of a Bio::Taxon when we later do
+    # get_nodes() or similar, specifically set ancestor() for each node
+    if ($node->isa('Bio::Taxon')) {
+      push(@lineage, $node) unless $node eq $root;
+      my $ancestor = $root;
+      foreach my $lineage_node (@lineage) {
+        $lineage_node->ancestor($ancestor);
+      } continue { $ancestor = $lineage_node; }
+    }
+  }
+  if ($root) {
+    $self->set_root_node($root);
+  }
+  
   $self->nodelete($nodel || 0);
+  $self->id($id)       if defined $id;
+  $self->score($score) if defined $score;
   return $self;
 }
 
@@ -139,21 +164,19 @@ sub get_nodes{
    
    my ($order, $sortby) = $self->_rearrange([qw(ORDER SORTBY)],@args);
    $order ||= 'depth';
-   $sortby ||= 'height';
-   return () unless defined $self->get_root_node;
+   $sortby ||= 'none';
+   my $node = $self->get_root_node || return;
    if ($order =~ m/^b|(breadth)$/oi) {
-       my $node = $self->get_root_node;
        my @children = ($node);
        for (@children) {
-	   push @children, $_->each_Descendent($sortby);
+        push @children, $_->each_Descendent($sortby);
        }
        return @children;
    }
 
    if ($order =~ m/^d|(depth)$/oi) {
        # this is depth-first search I believe
-       my $node = $self->get_root_node;
-       my @children = ($node,$node->get_Descendents($sortby));
+       my @children = ($node,$node->get_all_Descendents($sortby));
        return @children;
    }
 }
@@ -213,7 +236,7 @@ sub total_branch_length {
    my ($self) = @_;
    my $sum = 0;
    if( defined $self->get_root_node ) {
-       for ( $self->get_root_node->get_Descendents() ) {
+       for ( $self->get_root_node->get_all_Descendents('none') ) {
 	   $sum += $_->branch_length || 0;
        }
    }
@@ -278,10 +301,9 @@ sub score{
 
  Title   : number_nodes
  Usage   : my $size = $tree->number_nodes
- Function: Returns the number of nodes
- Example :
- Returns : 
- Args    :
+ Function: Returns the number of nodes in the tree
+ Returns : integer
+ Args    : none
 
 
 =cut
@@ -292,11 +314,14 @@ sub score{
 sub cleanup_tree {
     my $self = shift;
     unless( $self->nodelete ) {
-	foreach my $node ( $self->get_nodes ) {
-	    $node->ancestor(undef);
-	    $node = undef;	
-	}
+        for my $node ($self->get_nodes(-order  => 'b', -sortby => 'none')) {
+            #$node->ancestor(undef);
+            #$node = undef;
+            $node->node_cleanup;
+            undef $node;
+        }
     }
     $self->{'_rootnode'} = undef;
 }
+
 1;

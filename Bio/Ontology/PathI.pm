@@ -1,4 +1,4 @@
-# $Id: PathI.pm,v 1.2 2003/03/26 09:08:55 lapp Exp $
+# $Id: PathI.pm,v 1.6.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for PathI
 #
@@ -22,7 +22,7 @@
 
 =head1 NAME
 
-PathI - Interface for a path between ontology terms
+Bio::Ontology::PathI - Interface for a path between ontology terms
 
 =head1 SYNOPSIS
 
@@ -47,25 +47,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+the web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
 Email hlapp at gmx.net
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -79,11 +74,9 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Ontology::PathI;
-use vars qw(@ISA);
 use strict;
-use Bio::Ontology::RelationshipI;
 
-@ISA = qw( Bio::Ontology::RelationshipI );
+use base qw(Bio::Ontology::RelationshipI);
 
 
 =head2 distance
@@ -96,7 +89,6 @@ use Bio::Ontology::RelationshipI;
  Example : 
  Returns : value of distance (a scalar)
  Args    : on set, new value (a scalar or undef, optional)
-
 
 =cut
 
@@ -161,9 +153,10 @@ sub distance{
  Usage   : $ont = $obj->ontology()
  Function: Get the ontology that defined this relationship.
  Example : 
- Returns : an object implementing L<Bio::Ontology::OntologyI>
+ Returns : an object implementing Bio::Ontology::OntologyI
  Args    : 
 
+See L<Bio::Ontology::OntologyI>.
 
 =cut
 

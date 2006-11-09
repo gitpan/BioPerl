@@ -1,4 +1,4 @@
-# $Id: ClusterI.pm,v 1.3 2002/10/25 01:29:37 lapp Exp $
+# $Id: ClusterI.pm,v 1.6.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::ClusterI
 #
@@ -16,14 +16,12 @@ Bio::ClusterI - Cluster Interface
 
 =head1 SYNOPSIS
 
-# see the implementations of this interface for details but
-# basically
+    # see the implementations of this interface for details
 
     my $cluster= $cluster->new(-description=>"POLYUBIQUITIN",
                                -members    =>[$seq1,$seq2]);
     my @members = $cluster->get_members();
     my @sub_members = $cluster->get_members(-species=>"homo sapiens");
-
 
 
 =head1 DESCRIPTION
@@ -40,26 +38,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Shawn Hoon
 
 Email shawnh@fugu-sg.org
-
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -72,12 +64,10 @@ Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::ClusterI;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::RootI;
 
-@ISA = qw(Bio::Root::RootI);
+use base qw(Bio::Root::RootI);
 
 =head1 Implementation Specific Functions
 

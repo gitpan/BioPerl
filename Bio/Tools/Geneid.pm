@@ -1,4 +1,4 @@
-# $Id: Geneid.pm,v 1.1 2003/05/19 13:32:49 kdj Exp $
+# $Id: Geneid.pm,v 1.5.4.1 2006/10/02 23:10:32 sendu Exp $
 #
 # Cared for by Keith James
 #
@@ -50,17 +50,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bio.perl.org/MailList.html - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Keith James
 
@@ -75,18 +74,16 @@ Internal methods are usually preceded with a _
 
 package Bio::Tools::Geneid;
 
-use vars qw(@ISA $SOURCE_TAG);
+use vars qw($SOURCE_TAG);
 use strict;
 
-use Bio::Root::Root;
-use Bio::Root::IO;
 use Bio::Tools::AnalysisResult;
 use Bio::SeqFeature::Generic;
 use Bio::SeqFeature::Gene::Exon;
 use Bio::SeqFeature::Gene::Transcript;
 use Bio::SeqFeature::Gene::GeneStructure;
 
-@ISA = qw(Bio::Root::Root Bio::Root::IO);
+use base qw(Bio::Root::Root Bio::Root::IO);
 $SOURCE_TAG = 'geneid';
 
 =head2 new

@@ -1,9 +1,9 @@
-# $Id: SearchDist.pm,v 1.16 2002/10/22 07:38:24 lapp Exp $
+# $Id: SearchDist.pm,v 1.20.4.4 2006/10/02 23:10:12 sendu Exp $
 
 #
 # BioPerl module for Bio::SearchDist
 #
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
+# Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
 # Copyright Ewan Birney
 #
@@ -64,7 +64,7 @@ The original code this was based on comes from the histogram module as
 part of the HMMer2 package. Look at http://hmmer.wustl.edu/
 
 Its use in Bioperl is via the Compiled XS extension which is cared for
-by Ewan Birney (birney@sanger.ac.uk). Please contact Ewan first about
+by Ewan Birney (birney@ebi.ac.uk). Please contact Ewan first about
 the use of this module
 
 =head1 FEEDBACK
@@ -75,17 +75,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 APPENDIX
 
@@ -99,10 +98,8 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::SearchDist;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
 
 BEGIN {
     eval {
@@ -116,12 +113,12 @@ print $@;
 }
 
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 sub new {
   my($class,@args) = @_;
   my $self = $class->SUPER::new(@args);
-  my($min, $max, $lump) = 
+  my($min, $max, $lump) =
 	$self->_rearrange([qw(MIN MAX LUMP)], @args);
 
   if( !  $min ) {
@@ -147,7 +144,7 @@ sub new {
  Usage   : $dis->add_score(300);
  Function: Adds a single score to the distribution
  Returns : nothing
- Args    : 
+ Args    :
 
 
 =cut
@@ -183,7 +180,7 @@ sub fit_evd{
  Usage   :
  Function:
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
@@ -204,8 +201,8 @@ sub fit_Gaussian{
 
  Title   : evalue
  Usage   : $eval = $dis->evalue($score)
- Function: Returns the evalue of this score 
- Returns : float 
+ Function: Returns the evalue of this score
+ Returns : float
  Args    :
 
 

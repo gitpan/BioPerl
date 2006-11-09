@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: RootStorable.t,v 1.2 2003/09/05 18:00:37 heikki Exp $
+## $Id: RootStorable.t,v 1.3.6.2 2006/11/08 17:25:55 sendu Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -8,24 +8,22 @@
 use strict;
 
 BEGIN {
-    # to handle systems with no installed Test module
-    # we include the t dir (where a copy of Test.pm is located)
-    # as a fallback
-    eval { require Test; };
+    eval { require Test::More; };
     if( $@ ) {
-	use lib 't', '.';
+        use lib 't/lib';
     }
-    use Test;
-    plan tests => 34;
+    use Test::More;
+    plan tests => 35;
 
 }
 
 $| = 1;
 
-use Bio::Root::Storable;
+use_ok('Bio::Root::Storable');
 
 foreach my $mode( "BINARY", "ASCII" ){
     if( $mode eq "ASCII" ){
+		no warnings;
         $Bio::Root::Storable::BINARY = 0;
     }
 
@@ -52,7 +50,8 @@ foreach my $mode( "BINARY", "ASCII" ){
     my $file = $obj->store;
     ok $file && -f $obj->statefile;
 
-    my $retrieved = Bio::Root::Storable->retrieve( $file );
+    my $retrieved;
+    eval { $retrieved = Bio::Root::Storable->retrieve( $file ) };
     ok defined($retrieved) && $retrieved->isa('Bio::Root::Storable');
     ok $retrieved->{_test} eq "_TEST" && ! exists $retrieved->{__test};
 
@@ -61,7 +60,7 @@ foreach my $mode( "BINARY", "ASCII" ){
     ok ! exists $skel->{_test} && ! exists $skel->{__test};
     ok $skel->retrievable;
 
-    $skel->retrieve;
+    eval { $skel->retrieve };
     ok ! $skel->retrievable;
     ok $skel->{_test} eq "_TEST" && ! exists $skel->{__test};
 
@@ -75,7 +74,8 @@ foreach my $mode( "BINARY", "ASCII" ){
     # Test recursive file IO
     $obj->{_test_lazy} = $obj2;
     $obj->store;
-    my $retrieved2 = Bio::Root::Storable->retrieve( $obj->token );
+    my $retrieved2;
+    eval { $retrieved2 = Bio::Root::Storable->retrieve( $obj->token ) };
     ok $retrieved2->{_test_lazy} && $retrieved2->{_test_lazy}->retrievable;
 
     #------------------------------

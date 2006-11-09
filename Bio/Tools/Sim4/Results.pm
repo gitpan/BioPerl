@@ -1,9 +1,9 @@
-
+# $Id: Results.pm,v 1.25.4.1 2006/10/02 23:10:37 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Sim4::Results
 #
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
-#          and Hilmar Lapp <hlapp@gmx.net>
+# Cared for by Ewan Birney <birney-at-sanger.ac.uk>
+#          and Hilmar Lapp <hlapp-at-gmx.net>
 #
 # Copyright Ewan Birney and Hilmar Lapp
 #
@@ -86,24 +86,21 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney, Hilmar Lapp
 
-Email birney@sanger.ac.uk
-      hlapp@gmx.net (or hilmar.lapp@pharma.novartis.com)
-
-Describe contact details here
+Ewan Birney E<lt>birney-at-sanger.ac.ukE<gt>
+Hilmar Lapp E<lt>hlapp-at-gmx.netE<gt> or E<lt>hilmar.lapp-at-pharma.novartis.comE<gt>.
 
 =head1 APPENDIX
 
@@ -116,17 +113,14 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::Tools::Sim4::Results;
-use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::Object
 
 use File::Basename;
 use Bio::Root::Root;
-use Bio::Tools::AnalysisResult;
 use Bio::Tools::Sim4::Exon;
 
-@ISA = qw(Bio::Tools::AnalysisResult);
+use base qw(Bio::Tools::AnalysisResult);
 
 
 sub _initialize_state {
@@ -213,7 +207,6 @@ sub parse_next_alignment {
    
    while(defined($_ = $self->_readline())) {
        #chomp();
-
        #
        # bascially, each sim4 'hit' starts with seq1...
        #
@@ -386,7 +379,10 @@ sub next_exonset {
 
     # get the next array of exons
     my @exons = $self->parse_next_alignment();
-    return if($#exons < 0);
+    unless( @exons ) {
+	return if eof($self->_fh);
+	return $self->next_exonset;
+    } 
     # create the container of exons as a feature object itself, with the
     # data of the first exon for initialization
     $exonset = Bio::SeqFeature::Generic->new('-start' => $exons[0]->start(),

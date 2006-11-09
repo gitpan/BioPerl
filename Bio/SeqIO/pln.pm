@@ -1,4 +1,4 @@
-# $Id: pln.pm,v 1.7 2002/10/22 07:38:42 lapp Exp $
+# $Id: pln.pm,v 1.12.4.1 2006/10/02 23:10:30 sendu Exp $
 # BioPerl module for Bio::SeqIO::pln
 #
 # Cared for by Aaron Mackey <amackey@virginia.edu>
@@ -30,17 +30,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org            - General discussion
-  http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.
+Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS - Aaron Mackey
 
@@ -58,7 +57,6 @@ methods. Internal methods are usually preceded with a _
 package Bio::SeqIO::pln;
 use vars qw(@ISA $READ_AVAIL);
 use strict;
-# Object preamble - inherits from Bio::Root::Object
 
 use Bio::SeqIO;
 use Bio::Seq::SeqFactory;

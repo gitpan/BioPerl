@@ -1,27 +1,40 @@
 package Bio::Graphics::Glyph::transcript2;
 
-# $Id: transcript2.pm,v 1.20 2003/09/17 17:11:30 lstein Exp $
+# $Id: transcript2.pm,v 1.28.4.1 2006/10/02 23:10:20 sendu Exp $
 
 use strict;
-use Bio::Graphics::Glyph::transcript;
-use vars '@ISA';
-@ISA = 'Bio::Graphics::Glyph::transcript';
+use base qw(Bio::Graphics::Glyph::transcript);
 
 use constant MIN_WIDTH_FOR_ARROW => 8;
 
-sub pad_left  {
+sub extra_arrow_length {
   my $self = shift;
-  my $pad = $self->Bio::Graphics::Glyph::generic::pad_left;
-  return $pad unless ($self->feature->strand||0) < 0;  #uninitialized var warning
+#  return 0 unless $self->{level} == 0;
+  my $strand = $self->feature->strand || 0;
+  $strand *= -1 if $self->{flip};
+  return 0 unless $strand < 0;
   my $first = ($self->parts)[0] || $self;
   my @rect  = $first->bounds();
   my $width = abs($rect[2] - $rect[0]);
-  return $self->SUPER::pad_left if $width < MIN_WIDTH_FOR_ARROW;
-  return $pad;
+  return 0 if $width >= MIN_WIDTH_FOR_ARROW;
+  return $self->arrow_length;
+}
+
+sub pad_left  {
+   my $self = shift;
+#   return 0 unless $self->{level} == 0;
+   my $pad = $self->Bio::Graphics::Glyph::generic::pad_left;
+   my $extra_arrow_length = $self->extra_arrow_length;
+   if ($self->label_position eq 'left' && $self->label) {
+     return $extra_arrow_length+$pad;
+   } else {
+     return $extra_arrow_length > $pad ? $extra_arrow_length : $pad;
+   }
 }
 
 sub pad_right  {
   my $self = shift;
+#  return 0 unless $self->{level} == 0;
   my $pad = $self->Bio::Graphics::Glyph::generic::pad_right;
   return $pad if $self->{level} > 0;
   my $last = ($self->parts)[-1] || $self;
@@ -29,6 +42,34 @@ sub pad_right  {
   my $width = abs($rect[2] - $rect[0]);
   return $self->SUPER::pad_right if $width < MIN_WIDTH_FOR_ARROW;
   return $pad
+}
+
+sub draw_connectors {
+  my $self = shift;
+  my ($gd,$dx,$dy) = @_;
+
+  my $part;
+  my $strand = $self->feature->strand;
+  $strand   *= -1 if $self->{flip};  #sigh
+  if (my @parts  = $self->parts) {
+    $part   = $strand >= 0 ? $parts[-1] : $parts[0];
+  } elsif ($self->feature_has_subparts) {
+    # no parts -- so draw an intron spanning whole thing
+    my($x1,$y1,$x2,$y2) = $self->bounds(0,0);
+    $self->_connector($gd,$dx,$dy,$x1,$y1,$x1,$y2,$x2,$y1,$x2,$y2);
+    $part = $self;
+  } else {
+    return;
+  }
+  my @rect   = $part->bounds();
+  my $width  = abs($rect[2] - $rect[0]);
+  my $filled = $width >= MIN_WIDTH_FOR_ARROW;
+
+  if ($filled) {
+    $self->Bio::Graphics::Glyph::generic::draw_connectors(@_);
+  } else {
+    $self->SUPER::draw_connectors(@_);
+  }
 }
 
 sub draw_component {
@@ -39,12 +80,17 @@ sub draw_component {
   my ($left,$top) = @_;
   my @rect = $self->bounds(@_);
 
+  my $f      = $self->feature;
+  my $strand = $f->strand;
+  my $str    = $strand * ($self->{flip} ? -1 : 1);
+
   my $width = abs($rect[2] - $rect[0]);
   my $filled = defined($self->{partno}) && $width >= MIN_WIDTH_FOR_ARROW;
+  my ($pwidth) = $gd->getBounds;
+  $filled = 0 if $str < 0 && $rect[0] < $self->panel->pad_left;
+  $filled = 0 if $str > 0 && $rect[2] > $pwidth - $self->panel->pad_right;
 
   if ($filled) {
-    my $f      = $self->feature;
-    my $strand = $f->strand;
     my ($first,$last)  = ($self->{partno} == 0 , $self->{partno} == $self->{total_parts}-1);
     ($first,$last)     = ($last,$first) if $self->{flip};
 
@@ -61,32 +107,6 @@ sub draw_component {
     $self->SUPER::draw_component($gd,@_);
   }
 
-}
-
-sub draw_connectors {
-  my $self = shift;
-  my ($gd,$dx,$dy) = @_;
-
-  my $part;
-  my $strand = $self->feature->strand;
-  $strand   *= -1 if $self->{flip};  #sigh
-  if (my @parts  = $self->parts) {
-    $part   = $strand >= 0 ? $parts[-1] : $parts[0];
-  } else {
-    # no parts -- so draw an intron spanning whole thing
-    my($x1,$y1,$x2,$y2) = $self->bounds(0,0);
-    $self->_connector($gd,$dx,$dy,$x1,$y1,$x1,$y2,$x2,$y1,$x2,$y2);
-    $part = $self;
-  }
-  my @rect   = $part->bounds();
-  my $width  = abs($rect[2] - $rect[0]);
-  my $filled = $width >= MIN_WIDTH_FOR_ARROW;
-
-  if ($filled) {
-    $self->Bio::Graphics::Glyph::generic::draw_connectors(@_);
-  } else {
-    $self->SUPER::draw_connectors(@_);
-  }
 }
 
 sub bump {

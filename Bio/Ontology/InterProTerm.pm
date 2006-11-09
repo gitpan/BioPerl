@@ -1,4 +1,4 @@
-# $Id: InterProTerm.pm,v 1.7 2003/12/04 14:26:21 juguang Exp $
+# $Id: InterProTerm.pm,v 1.10.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for Bio::Ontology::InterProTerm
 #
@@ -21,14 +21,15 @@
 
 =head1 NAME
 
-InterProTerm - Implementation of InterProI term interface
+Bio::Ontology::InterProTerm - Implementation of InterProI term interface
 
 =head1 SYNOPSIS
 
-  my $term = Bio::Ontology::InterProTerm->new( -interpro_id => "IPR000001",
-					       -name => "Kringle",
-					       -definition => "Kringles are autonomous structural domains ...",
-					       -ontology => "Domain"
+  my $term = Bio::Ontology::InterProTerm->new( 
+        -interpro_id => "IPR000001",
+		  -name => "Kringle",
+		  -definition => "Kringles are autonomous structural domains ...",
+		  -ontology => "Domain"
 					     );
   print $term->interpro_id(), "\n";
   print $term->name(), "\n";
@@ -48,25 +49,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+the web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Peter Dimitrov
 
 Email dimitrov@gnf.org
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -80,15 +76,13 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Ontology::InterProTerm;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Ontology::Term;
 use Bio::Annotation::Reference;
 
 use constant INTERPRO_ID_DEFAULT => "IPR000000";
 
-@ISA = qw( Bio::Ontology::Term );
+use base qw(Bio::Ontology::Term);
 
 =head2 new
 

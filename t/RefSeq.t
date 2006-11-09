@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: RefSeq.t,v 1.10 2003/12/18 10:35:24 heikki Exp $
+# $Id: RefSeq.t,v 1.12 2005/09/17 02:11:21 bosborne Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -12,31 +12,34 @@ $DEBUG = $ENV{'BIOPERLDEBUG'} || 0;
 my $error;
 
 BEGIN { 
-    # to handle systems with no installed Test module
-    # we include the t dir (where a copy of Test.pm is located)
-    # as a fallback
-    eval { require Test; };
-    $error = 0;
-    if( $@ ) {
-	use lib 't';
-    }
-    use Test;
-
-    $NUMTESTS = 13;
-    plan tests => $NUMTESTS;
-    eval { require 'IO/String.pm' };
-    if( $@ ) {
-	for( $Test::ntest..$NUMTESTS ) {
-	    skip("IO::String not installed. This means the Bio::DB::* modules are not usable. Skipping tests",1);
+	# to handle systems with no installed Test module
+	# we include the t dir (where a copy of Test.pm is located)
+	# as a fallback
+	eval { require Test; };
+	$error = 0;
+	if( $@ ) {
+		use lib 't';
 	}
-       $error = 1; 
-    }
+	use Test;
+
+	$NUMTESTS = 13;
+	plan tests => $NUMTESTS;
+	eval { require IO::String; 
+			 require LWP::UserAgent; 
+			 require HTTP::Request::Common;
+		 };
+	if( $@ ) {
+		for( $Test::ntest..$NUMTESTS ) {
+			skip("IO::String,LWP::UserAgent, or HTTP::Request::Common not installed. This means the Bio::DB::* modules are not usable. Skipping tests",1);
+		}
+		$error = 1;
+	}
 }
 
 END {
-    for ( $Test::ntest..$NUMTESTS ) {
-        skip("Skipping tests which require remote servers - set env variable BIOPERLDEBUG to test",1);
-    }
+	for ( $Test::ntest..$NUMTESTS ) {
+		skip("Unable to complete RefSeq tests - set env variable BIOPERLDEBUG to test",1);
+	}
 }
 
 if( $error ==  1 ) {

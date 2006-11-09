@@ -1,4 +1,4 @@
-# $Id: Atomic.pm,v 1.10 2003/12/18 13:15:20 jason Exp $
+# $Id: Atomic.pm,v 1.16.4.1 2006/10/02 23:10:21 sendu Exp $
 #
 # BioPerl module for Bio::Location::Atomic
 # Cared for by Jason Stajich <jason@bioperl.org>
@@ -36,21 +36,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bio.perl.org/MailList.html - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
+Email jason-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -63,13 +62,13 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Location::Atomic;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
-use Bio::LocationI;
+use Bio::Location::WidestCoordPolicy;
 
-@ISA = qw(Bio::Root::Root Bio::LocationI);
+use base qw(Bio::Root::Root Bio::LocationI);
+
+our $coord_policy = Bio::Location::WidestCoordPolicy->new();
 
 sub new { 
     my ($class, @args) = @_;
@@ -85,7 +84,7 @@ sub new {
 	Bio::Root::Root->_load_module($class);
       };
     if ( $@ ) {
-	Bio::Root::RootI->throw("$class cannot be found\nException $@");
+	Bio::Root::Root->throw("$class cannot be found\nException $@");
       }
     bless $self,$class;
 
@@ -179,6 +178,42 @@ sub strand {
   # do not pretend the strand has been set if in fact it wasn't
   return $self->{'_strand'};
   #return $self->{'_strand'} || 0;
+}
+
+=head2 flip_strand
+
+  Title   : flip_strand
+  Usage   : $location->flip_strand();
+  Function: Flip-flop a strand to the opposite
+  Returns : None
+  Args    : None
+
+=cut
+
+
+sub flip_strand {
+    my $self= shift;
+    $self->strand($self->strand * -1);
+}
+
+
+=head2 seq_id
+
+  Title   : seq_id
+  Usage   : my $seqid = $location->seq_id();
+  Function: Get/Set seq_id that location refers to
+  Returns : seq_id (a string)
+  Args    : [optional] seq_id value to set
+
+=cut
+
+
+sub seq_id {
+    my ($self, $seqid) = @_;
+    if( defined $seqid ) {
+	$self->{'_seqid'} = $seqid;
+    }
+    return $self->{'_seqid'};
 }
 
 =head2 length
@@ -315,7 +350,7 @@ sub end_pos_type {
   Title   : location_type
   Usage   : my $location_type = $location->location_type();
   Function: Get location type encoded as text
-  Returns : string ('EXACT', 'WITHIN', 'BETWEEN')
+  Returns : string ('EXACT', 'WITHIN', 'IN-BETWEEN')
   Args    : none
 
 =cut
@@ -386,6 +421,58 @@ sub to_FTstring {
     }
     return $str;
 }
+
+
+=head2 coordinate_policy
+
+  Title   : coordinate_policy
+  Usage   : $policy = $location->coordinate_policy();
+            $location->coordinate_policy($mypolicy); # set may not be possible
+  Function: Get the coordinate computing policy employed by this object.
+
+            See L<Bio::Location::CoordinatePolicyI> for documentation
+            about the policy object and its use.
+
+            The interface *does not* require implementing classes to
+            accept setting of a different policy. The implementation
+            provided here does, however, allow to do so.
+
+            Implementors of this interface are expected to initialize
+            every new instance with a
+            L<Bio::Location::CoordinatePolicyI> object. The
+            implementation provided here will return a default policy
+            object if none has been set yet. To change this default
+            policy object call this method as a class method with an
+            appropriate argument. Note that in this case only
+            subsequently created Location objects will be affected.
+
+  Returns : A L<Bio::Location::CoordinatePolicyI> implementing object.
+  Args    : On set, a L<Bio::Location::CoordinatePolicyI> implementing object.
+
+See L<Bio::Location::CoordinatePolicyI> for more information
+
+
+=cut
+
+sub coordinate_policy {
+    my ($self, $policy) = @_;
+
+    if(defined($policy)) {
+	if(! $policy->isa('Bio::Location::CoordinatePolicyI')) {
+	    $self->throw("Object of class ".ref($policy)." does not implement".
+			 " Bio::Location::CoordinatePolicyI");
+	}
+	if(ref($self)) {
+	    $self->{'_coordpolicy'} = $policy;
+	} else {
+	    # called as class method
+	    $coord_policy = $policy;
+	}
+    }
+    return (ref($self) && exists($self->{'_coordpolicy'}) ?
+	    $self->{'_coordpolicy'} : $coord_policy);
+}
+
 
 # comments, not function added by jason 
 #

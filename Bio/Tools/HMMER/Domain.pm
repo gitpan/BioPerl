@@ -1,4 +1,4 @@
-# $Id: Domain.pm,v 1.12 2003/05/15 00:20:42 lapp Exp $
+# $Id: Domain.pm,v 1.12.8.1 2006/10/02 23:10:33 sendu Exp $
 #
 # BioPerl module for Bio::Tools::HMMER::Domain
 #
@@ -46,13 +46,11 @@ methods. Internal methods are usually preceded with a _
 #'
 package Bio::Tools::HMMER::Domain;
 
-use vars qw(@ISA);
-use Bio::SeqFeature::FeaturePair;
 use Bio::SeqFeature::Generic;
 use strict;
 
 
-@ISA = qw(Bio::SeqFeature::FeaturePair);
+use base qw(Bio::SeqFeature::FeaturePair);
 
 sub new { 
   my($class,@args) = @_;

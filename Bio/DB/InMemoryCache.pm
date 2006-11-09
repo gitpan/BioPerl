@@ -1,6 +1,14 @@
+# $Id: InMemoryCache.pm,v 1.7.4.2 2006/10/02 23:10:15 sendu Exp $
+#
+# BioPerl module for Bio::DB::InMemoryCache
+#
+# Cared for by Ewan Birney <birney@sanger.ac.uk>
+#
+# Copyright Ewan Birney
+#
+# You may distribute this module under the same terms as perl itself
+#
 # POD documentation - main docs before the code
-#
-#
 
 =head1 NAME
 
@@ -10,7 +18,6 @@ Bio::DB::InMemoryCache - Abstract interface for a sequence database
 
   $cachedb = Bio::DB::InMemoryCache->new( -seqdb => $real_db,
                                           -number => 1000);
-
   #
   # get a database object somehow using a concrete class
   #
@@ -23,21 +30,20 @@ Bio::DB::InMemoryCache - Abstract interface for a sequence database
 
 =head1 DESCRIPTION
 
-This is a memory cache system which saves the objects returned by Bio::DB::RandomAccessI in 
-memory to a hard limit of sequences.
+This is a memory cache system which saves the objects returned by
+Bio::DB::RandomAccessI in memory to a hard limit of sequences.
 
 =head1 CONTACT
 
-Ewan Birney
+Ewan Birney E<lt>birney@ebi.ac.ukE<gt>
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution. Bug reports can be submitted via email
-or the web:
+the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-    bioperl-bugs@bio.perl.org                   
-    http://bugzilla.bioperl.org/           
+  http://bugzilla.open-bio.org/
 
 =head1 APPENDIX
 
@@ -51,16 +57,12 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::DB::InMemoryCache;
 
-use Bio::DB::SeqI;
 
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
 use Bio::Seq;
 
-@ISA = qw(Bio::Root::Root Bio::DB::SeqI);
-
+use base qw(Bio::Root::Root Bio::DB::SeqI);
 
 sub new {
     my ($class,@args) = @_;
@@ -68,15 +70,18 @@ sub new {
     my $self = Bio::Root::Root->new();
     bless $self,$class;
 
-    my ($seqdb,$number,$agr) = $self->_rearrange([qw(SEQDB NUMBER AGRESSION)],@args);
+    my ($seqdb,$number,$agr) =
+		$self->_rearrange([qw(SEQDB NUMBER AGRESSION)],@args);
 
-    if( !defined $seqdb || !ref $seqdb || !$seqdb->isa('Bio::DB::RandomAccessI') ) {
-       $self->throw("Must be a randomaccess database not a [$seqdb]");
+    if( !defined $seqdb || !ref $seqdb ||
+		  !$seqdb->isa('Bio::DB::RandomAccessI') ) {
+       $self->throw("Must be a RandomAccess database not a [$seqdb]");
     }
+
     if( !defined $number ) {
         $number = 1000;
     }
-    
+
     $self->seqdb($seqdb);
     $self->number($number);
     $self->agr($agr);
@@ -90,8 +95,6 @@ sub new {
     return $self;
 }
 
-
-
 =head2 get_Seq_by_id
 
  Title   : get_Seq_by_id
@@ -101,19 +104,19 @@ sub new {
  Args    : the id (as a string) of a sequence
  Throws  : "id does not exist" exception
 
-
 =cut
 
 sub get_Seq_by_id{
    my ($self,$id) = @_;
 
    if( defined $self->{'_cache_id_hash'}->{$id} ) {
-     my $acc = $self->{'_cache_id_hash'}->{$id};
-     my $seq = $self->{'_cache_acc_hash'}->{$acc};
-     $self->{'_cache_number_hash'}->{$seq->accession} = $self->{'_cache_number'}++;
-     return $seq;
+		my $acc = $self->{'_cache_id_hash'}->{$id};
+		my $seq = $self->{'_cache_acc_hash'}->{$acc};
+		$self->{'_cache_number_hash'}->{$seq->accession} =
+		  $self->{'_cache_number'}++;
+		return $seq;
    } else {
-     return $self->_load_Seq('id',$id);
+		return $self->_load_Seq('id',$id);
    }
 }
 
@@ -126,7 +129,6 @@ sub get_Seq_by_id{
  Args    : accession number (as a string)
  Throws  : "acc does not exist" exception
 
-
 =cut
 
 sub get_Seq_by_acc{
@@ -136,7 +138,8 @@ sub get_Seq_by_acc{
    if( defined $self->{'_cache_acc_hash'}->{$acc} ) {
        #print STDERR "Returning cached $acc\n";
        my $seq = $self->{'_cache_acc_hash'}->{$acc};
-       $self->{'_cache_number_hash'}->{$seq->accession} = $self->{'_cache_number'}++;
+       $self->{'_cache_number_hash'}->{$seq->accession} =
+			$self->{'_cache_number'}++;
        return $seq;
    } else {
      return $self->_load_Seq('acc',$acc);
@@ -185,6 +188,11 @@ sub _load_Seq {
   } else {
     $self->throw("Bad internal error. Don't understand $type");
   }
+  if( ! $seq ) {
+      # warding off bug #1628
+      $self->debug("could not find seq $id in seqdb\n");
+      return;
+  }
 
   if( $self->agr() ) {
       #print STDERR "Pulling out into memory\n";
@@ -197,7 +205,7 @@ sub _load_Seq {
 	  foreach my $sf ( $seq->top_SeqFeatures() ) {
 	      $newseq->add_SeqFeature($sf);
 	  }
-	  
+
 	  $newseq->annotation($seq->annotation);
       }
       $seq = $newseq;
@@ -205,7 +213,9 @@ sub _load_Seq {
 
   if( $self->_number_free < 1 ) {
     # remove the latest thing from the hash
-    my @accs = sort { $self->{'_cache_number_hash'}->{$a} <=> $self->{'_cache_number_hash'}->{$b} } keys %{$self->{'_cache_number_hash'}};
+    my @accs = sort { $self->{'_cache_number_hash'}->{$a} <=>
+								$self->{'_cache_number_hash'}->{$b} }
+                          keys %{$self->{'_cache_number_hash'}};
 
     my $acc = shift @accs;
     # remove this guy
@@ -231,9 +241,6 @@ sub _number_free {
   return $self->number - scalar(keys %{$self->{'_cache_number_hash'}});
 }
 
-
-
-
 =head2 get_Seq_by_version
 
  Title   : get_Seq_by_version
@@ -245,13 +252,10 @@ sub _number_free {
 
 =cut
 
-
 sub get_Seq_by_version{
    my ($self,@args) = @_;
    $self->throw("Not implemented it");
 }
-
-
 
 ## End of Package
 

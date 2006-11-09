@@ -1,4 +1,4 @@
-# $Id: prettybase.pm,v 1.3 2003/08/15 16:44:37 jason Exp $
+# $Id: prettybase.pm,v 1.8.4.1 2006/10/02 23:10:23 sendu Exp $
 #
 # BioPerl module for Bio::PopGen::IO::prettybase
 #
@@ -39,8 +39,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -48,7 +48,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -70,18 +70,17 @@ Internal methods are usually preceded with a _
 
 
 package Bio::PopGen::IO::prettybase;
-use vars qw(@ISA $FieldDelim $Header);
+use vars qw($FieldDelim $Header);
 use strict;
 
 ($FieldDelim,$Header) =( '\t',0);
 
-use Bio::PopGen::IO;
 
 use Bio::PopGen::Individual;
 use Bio::PopGen::Population;
 use Bio::PopGen::Genotype;
 
-@ISA = qw(Bio::PopGen::IO );
+use base qw(Bio::PopGen::IO);
 
 =head2 new
 
@@ -181,6 +180,7 @@ sub next_population{
     while( my $ind = $self->next_individual ) {
 	push @inds, $ind;
     }
+    return unless @inds;
     Bio::PopGen::Population->new(-individuals => \@inds);
 }
 
@@ -191,8 +191,12 @@ sub _parse_prettybase {
     my $convert_indels = $self->flag('convert_indel');
     while( defined( $_ = $self->_readline) ) {
 	next if( /^\s*\#/ || /^\s+$/ || ! length($_) );
-
+	
 	my ($site,$sample,@alleles) = split($self->flag('field_delimiter'),$_);
+	if( ! defined $sample ) { 
+	    warn("sample id is undefined for $_");
+	    next;
+	}
 	for my $allele ( @alleles ) {
 	    $allele =~ s/^\s+//;
 	    $allele =~ s/\s+$//;
@@ -210,6 +214,8 @@ sub _parse_prettybase {
 	my $g = new Bio::PopGen::Genotype(-alleles      => \@alleles,
 					  -marker_name  => $site,
 					  -individual_id=> $sample); 
+	
+
 	if( ! defined $inds{$sample} ) {
 	    $inds{$sample} = Bio::PopGen::Individual->new(-unique_id => $sample);
 	}
@@ -217,7 +223,7 @@ sub _parse_prettybase {
     }
     $self->{'_parsed_individiuals'} = [ values %inds ];
     $self->{'_parsed'} = 1;
-    return undef;
+    return;
 }
 
 

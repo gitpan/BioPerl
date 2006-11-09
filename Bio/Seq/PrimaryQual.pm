@@ -1,4 +1,4 @@
-# $Id: PrimaryQual.pm,v 1.17 2002/10/22 07:38:40 lapp Exp $
+# $Id: PrimaryQual.pm,v 1.24.4.1 2006/10/02 23:10:27 sendu Exp $
 #
 # bioperl module for Bio::PrimaryQual
 #
@@ -62,17 +62,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bio.perl.org/MailList.html - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Chad Matsalla
 
@@ -88,13 +87,11 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 package Bio::Seq::PrimaryQual;
-use vars qw(@ISA %valid_type);
+use vars qw(%valid_type);
 use strict;
 
-use Bio::Root::Root;
-use Bio::Seq::QualI;
 
-@ISA = qw(Bio::Root::Root Bio::Seq::QualI);
+use base qw(Bio::Root::Root Bio::Seq::QualI);
 
 
 =head2 new()
@@ -122,13 +119,14 @@ sub new {
     my $self = $class->SUPER::new(@args);
 
     # default: turn ON the warnings (duh)
-    my($qual,$id,$acc,$pid,$desc,$given_id) =
+    my($qual,$id,$acc,$pid,$desc,$given_id,$header) =
         $self->_rearrange([qw(QUAL
                               DISPLAY_ID
                               ACCESSION_NUMBER
                               PRIMARY_ID
                               DESC
                               ID
+                              HEADER
                               )],
                           @args);
     if( defined $id && defined $given_id ) {
@@ -139,7 +137,8 @@ sub new {
     if( defined $given_id ) { $id = $given_id; }
     
     # note: the sequence string may be empty
-    $self->qual($qual ? $qual : []);
+    $self->qual(defined($qual) ? $qual : []);
+     $header && $self->header($header);
     $id      && $self->display_id($id);
     $acc     && $self->accession_number($acc);
     $pid     && $self->primary_id($pid);
@@ -161,7 +160,7 @@ sub new {
 
 sub qual {
     my ($self,$value) = @_;
-    
+
     if( ! defined $value || length($value) == 0 ) { 
 	$self->{'qual'} ||= [];
     } elsif( ref($value) =~ /ARRAY/i ) {
@@ -170,6 +169,7 @@ sub qual {
     } elsif(! $self->validate_qual($value)){
 	$self->throw("Attempting to set the quality to [$value] which does not look healthy");	    
     } else {
+	$value =~ s/^\s+//;
 	$self->{'qual'} = [split(/\s+/,$value)];
     }
     
@@ -267,6 +267,26 @@ sub display_id {
       $obj->{'display_id'} = $value;
     }
     return $obj->{'display_id'};
+
+}
+
+=head2 header()
+
+ Title   : header()
+ Usage   : $header = $obj->header();
+ Function: Get/set the header that the user wants printed for this
+     quality object.
+ Returns : A string
+ Args    : None
+
+=cut
+
+sub header {
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'header'} = $value;
+    }
+    return $obj->{'header'};
 
 }
 

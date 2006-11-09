@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: HSPI.pm,v 1.31 2003/08/09 21:47:18 jason Exp $
+# $Id: HSPI.pm,v 1.36.4.2 2006/10/02 23:10:24 sendu Exp $
 #
 # BioPerl module for Bio::Search::HSP::HSPI
 #
@@ -72,22 +72,21 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Steve Chervitz, Jason Stajich
 
-Email sac@bioperl.org
-Email jason@bioperl.org
+Email sac-at-bioperl.org
+Email jason-at-bioperl.org
 
 =head1 COPYRIGHT
 
@@ -109,15 +108,12 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Search::HSP::HSPI;
-use vars qw(@ISA);
 
-use Bio::Root::RootI;
-use Bio::SeqFeature::SimilarityPair;
 
 use strict;
 use Carp;
 
-@ISA = qw(Bio::SeqFeature::SimilarityPair Bio::Root::RootI);
+use base qw(Bio::SeqFeature::SimilarityPair Bio::Root::RootI);
 
 
 =head2 algorithm
@@ -342,7 +338,7 @@ sub percent_identity{
 =head2 get_aln
 
  Title   : get_aln
- Usage   : my $aln = $hsp->gel_aln
+ Usage   : my $aln = $hsp->get_aln
  Function: Returns a Bio::SimpleAlign representing the HSP alignment
  Returns : Bio::SimpleAlign
  Args    : none
@@ -553,7 +549,7 @@ sub end {
            : to the strings in the original format of the Blast alignment.
            : (i.e., same spacing).
 
-See Also   : L<seq_str()|seq_str>, L<seq_inds()|seq_inds>, B<Bio::Seq>
+See Also   : L<seq_str()|seq_str>, L<seq_inds()|seq_inds>, L<Bio::Seq>
 
 =cut
 
@@ -592,7 +588,7 @@ sub seq {
  Throws    : Exception if the argument does not match an accepted seq_type.
  Comments  : 
 
-See Also   : L<seq()|seq>, L<seq_inds()|seq_inds>, B<_set_match_seq()>
+See Also   : L<seq()|seq>, L<seq_inds()|seq_inds>, L<_set_match_seq()>
 
 =cut
 
@@ -624,14 +620,18 @@ sub rank { shift->throw_not_implemented }
 
 =head2 matches
 
- Usage     : $hsp->matches([seq_type], [start], [stop]);
+ Usage     : $hsp->matches(-seq   => 'hit'|'query', 
+                           -start => $start, 
+                           -stop  => $stop);
  Purpose   : Get the total number of identical and conservative matches 
            : in the query or sbjct sequence for the given HSP. Optionally can
            : report data within a defined interval along the seq.
            : (Note: 'conservative' matches are called 'positives' in the
            : Blast report.)
- Example   : ($id,$cons) = $hsp_object->matches('hit');
-           : ($id,$cons) = $hsp_object->matches('query',300,400);
+ Example   : ($id,$cons) = $hsp_object->matches(-seq   => 'hit');
+           : ($id,$cons) = $hsp_object->matches(-seq   => 'query',
+                                                -start => 300,
+                                                -stop  => 400);
  Returns   : 2-element array of integers 
  Argument  : (1) seq_type = 'query' or 'hit' or 'sbjct' (default = query)
            :  ('sbjct' is synonymous with 'hit') 
@@ -657,7 +657,7 @@ sub matches {
     $seqType ||= 'query';
     $seqType = 'sbjct' if $seqType eq 'hit';
 
-    if( !defined $beg && !defined $end) {
+    if( (!defined $beg && !defined $end) || ! $self->seq_str('match') ) {
         ## Get data for the whole alignment.
         push @data, ($self->num_identical, $self->num_conserved);
     } else {
@@ -665,18 +665,12 @@ sub matches {
         $beg ||= 0;
         $end ||= 0;
         my($start,$stop) = $self->range($seqType);
-        if($beg == 0) { $beg = $start; $end = $beg+$end; }
-        elsif($end == 0) { $end = $stop; $beg = $end-$beg; }
-
-        if($end >= $stop) { $end = $stop; } ##ML changed from if (end >stop)
-        else { $end += 1;}   ##ML moved from commented position below, makes
-                             ##more sense here
-#        if($end > $stop) { $end = $stop; }
+        if($beg == 0) { $beg = $start; $end = $beg+$end; } # sane?
+        elsif($end == 0) { $end = $stop; $beg = $end-$beg; } # sane?
+        
+        if($end > $stop) { $end = $stop; }
         if($beg < $start) { $beg = $start; }
-#        else { $end += 1;}
-
-#        my $seq = substr($self->seq_str('match'), $beg-$start, ($end-$beg));
-
+        
         ## ML: START fix for substr out of range error ------------------
         my $seq = "";
         if (($self->algorithm =~ /TBLAST[NX]/) && ($seqType eq 'sbjct'))
@@ -690,36 +684,19 @@ sub matches {
                           int(($beg-$start)/3), int(($end-$beg+1)/3));
         } else {
             $seq = substr($self->seq_str('match'), 
-                          $beg-$start, ($end-$beg));
+                          $beg-$start, ($end-$beg+1));
         }
         ## ML: End of fix for  substr out of range error -----------------
-
         
-        ## ML: debugging code
-        ## This is where we get our exception.  Try printing out the values going
-        ## into this:
-        ##
-#         print STDERR 
-#             qq(*------------MY EXCEPTION --------------------\nSeq: ") , 
-#             $self->seq_str("$seqType"), qq("\n),$self->rank,",(  index:";
-#         print STDERR  $beg-$start, ", len: ", $end-$beg," ), (HSPRealLen:", 
-#             CORE::length $self->seq_str("$seqType");
-#         print STDERR ", HSPCalcLen: ", $stop - $start +1 ," ), 
-#             ( beg: $beg, end: $end ), ( start: $start, stop: stop )\n";
-         ## ML: END DEBUGGING CODE----------
-
         if(!CORE::length $seq) {
             $self->throw("Undefined sub-sequence ($beg,$end). Valid range = $start - $stop");
         }
-        ## Get data for a substring.
-#        printf "Collecting HSP subsection data: beg,end = %d,%d; start,stop = %d,%d\n%s<---\n", $beg, $end, $start, $stop, $seq;
-#        printf "Original match seq:\n%s\n",$self->seq_str('match');
+        
         $seq =~ s/ //g;  # remove space (no info).
         my $len_cons = CORE::length $seq;
         $seq =~ s/\+//g;  # remove '+' characters (conservative substitutions)
         my $len_id = CORE::length $seq;
         push @data, ($len_id, $len_cons);
-#        printf "  HSP = %s\n  id = %d; cons = %d\n", $self->rank, $len_id, $len_cons; <STDIN>;
     }
     @data;
 }

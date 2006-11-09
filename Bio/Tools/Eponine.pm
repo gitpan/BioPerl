@@ -1,4 +1,4 @@
-# $Id: Eponine.pm,v 1.8 2003/05/17 19:03:57 heikki Exp $
+# $Id: Eponine.pm,v 1.13.4.1 2006/10/02 23:10:32 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Eponine
 #
@@ -51,22 +51,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Tania Oh 
 
-
-Describe contact details here
+E<lt>gisoht-at-nus.edu.sgE<gt>
 
 =head1 APPENDIX
 
@@ -79,14 +77,12 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::Tools::Eponine;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Tools::AnalysisResult;
 use Bio::Tools::Prediction::Gene;
 use Bio::Tools::Prediction::Exon;
 
-@ISA = qw(Bio::Tools::AnalysisResult);
+use base qw(Bio::Tools::AnalysisResult);
 
 sub _initialize_state {
     my($self,@args) = @_;
@@ -270,7 +266,7 @@ sub create_feature {
 sub _prediction {
     my ($self) = @_;
 
-    return undef unless(exists($self->{'_flist'}) && @{$self->{'_flist'}});
+    return unless(exists($self->{'_flist'}) && @{$self->{'_flist'}});
     return shift(@{$self->{'_flist'}});
 }
 

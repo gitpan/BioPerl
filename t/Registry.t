@@ -1,88 +1,108 @@
 ##-*-Perl-*-
-# $Id: Registry.t,v 1.5 2003/11/17 15:37:19 bosborne Exp $
+# $Id: Registry.t,v 1.10.6.1 2006/10/16 17:08:15 sendu Exp $
 # test for Bio::DB::Registry, Flat::BinarySearch, and Flat::BDB
 # written by Brian Osborne
 
 use strict;
-my $old_search_path;
-use vars qw($old_search_path $have_DB_File);
+use vars qw($NUMTESTS $old_search_path $no_DB_File $no_LWP $DEBUG);
+
+use File::Spec;
 
 BEGIN {
-   eval { require Test; };
-   if( $@ ) {
-      use lib 't','..';
-   }
-   use Test;
-   $have_DB_File = 0;
-   $old_search_path = $ENV{OBDA_SEARCH_PATH} if defined $ENV{OBDA_SEARCH_PATH};
-   eval {require DB_File;
-         require BerkeleyDB;};
-   if ($@) {
-      $ENV{OBDA_SEARCH_PATH} = 't/data/registry/flat';
-      print STDERR "DB_File and BerkeleyDB not found. Skipping DB_File tests\n";
-      plan tests => 6;
-   } else {
-      $have_DB_File = 1;
-      $ENV{OBDA_SEARCH_PATH} = 't/data/registry/flat;t/data/registry/bdb';
-      plan tests => 11;
-   }
+	$DEBUG = $ENV{BIOPERLDEBUG} || 0;
+	eval { require Test; };
+	if( $@ ) {
+		use lib 't','..';
+	}
+	use Test;
+	$no_DB_File = 0;
+	$old_search_path = $ENV{OBDA_SEARCH_PATH} if defined $ENV{OBDA_SEARCH_PATH};
+	$ENV{OBDA_SEARCH_PATH} = 't/data/registry/flat;t/data/registry/bdb';
+	eval { require DB_File;
+			 require BerkeleyDB;
+		 };
+	if ($@) {
+		$ENV{OBDA_SEARCH_PATH} = 't/data/registry/flat';
+		$no_DB_File = 1;
+	}
+	eval { require LWP::UserAgent;
+			 require HTTP::Request::Common; };
+	if( $@ ) {
+		$no_LWP =1;
+	}
+	plan tests => ($NUMTESTS=13);
 }
 
-use Bio::DB::Registry;
+require Bio::DB::Registry;
 use Bio::DB::Flat;
 use Bio::Root::IO;
 
-my $tmpdir = "t/tmp";
+my $tmpdir = File::Spec->catfile(qw(t tmp));
 mkdir($tmpdir,0777);
+ok (-d $tmpdir);
 
 my $flat = Bio::DB::Flat->new(-directory  => $tmpdir,
 			      -dbname     => 'testflat',
 			      -format     => 'fasta',
 			      -index      => 'binarysearch',
                               -write_flag => 1 );
-my $entries = $flat->build_index("t/data/cysprot.fa");
+my $entries = $flat->build_index(File::Spec->catfile(qw(t data cysprot.fa)));
 ok $entries == 7;
 
-if ($have_DB_File) {
-   my $bdb = Bio::DB::Flat->new(-directory  => $tmpdir,
-				-dbname     => 'testbdb',
-				-format     => 'fasta',
-				-index      => 'bdb',
-				-write_flag => 1 );
-   $entries = $bdb->build_index("t/data/cysprot.fa");
-   ok $entries == 7;
+if ($no_DB_File){
+    for (1..2) {
+	skip("DB_File or BerkeleyDB not found, skipping DB_File tests",1);
+    }
+} else {
+    my $bdb = Bio::DB::Flat->new(-directory  => $tmpdir,
+				 -dbname     => 'testbdb',
+				 -format     => 'fasta',
+				 -index      => 'bdb',
+				 -write_flag => 1 );
+    ok defined($bdb);
+    $entries = $bdb->build_index(File::Spec->catfile(qw(t data cysprot.fa)));
+    ok $entries == 7;
 }
 
-my $registry = Bio::DB::Registry->new;
-ok defined($registry);
-my @available_services = $registry->services;
+if( $no_LWP ) {
+    for (1..9 ) {
+	skip("No LWP::UserAgent or HTTP::Request::Common modules installed skipping tests",1);
+    }
+} else {
+    my $registry = Bio::DB::Registry->new;
+    ok defined($registry);
+    my @available_services = $registry->services;
+    
+    ok grep /testflat/,@available_services;
+    my $db = $registry->get_database('testflat');
+    ok defined($db);
+    my $seq = $db->get_Seq_by_id("ALEU_HORVU");
+    ok defined($seq);
+    my $sequence = $seq->seq;
+    ok $sequence eq "MAHARVLLLALAVLATAAVAVASSSSFADSNPIRPVTDRAASTLESAVLGALGRTRHALRFARFAVRYGKSYESAAEVRRRFRIFSESLEEVRSTNRKGLPYRLGINRFSDMSWEEFQATRLGAAQTCSATLAGNHLMRDAAALPETKDWREDGIVSPVKNQAHCGSCWTFSTTGALEAAYTQATGKNISLSEQQLVDCAGGFNNFGCNGGLPSQAFEYIKYNGGIDTEESYPYKGVNGVCHYKAENAAVQVLDSVNITLNAEDELKNAVGLVRPVSVAFQVIDGFRQYKSGVYTSDHCGTTPDDVNHAVLAVGYGVENGVPYWLIKNSWGADWGDNGYFKMEMGKNMCAIATCASYPVVAA";
 
-if ($have_DB_File) {
-   ok grep /testbdb/,@available_services;
+    if ($no_DB_File) {
+	for (1..4) {
+	    skip("DB_File or BerkeleyDB not found, skipping DB_File tests",1);
+	}
+    } else {
+	ok grep /testbdb/,@available_services;
+	$db = $registry->get_database('testbdb');
+	ok defined($db);
+	$seq = $db->get_Seq_by_id("ALEU_HORVU");
+	ok defined($seq);
+	$sequence = $seq->seq;
+	ok $sequence eq "MAHARVLLLALAVLATAAVAVASSSSFADSNPIRPVTDRAASTLESAVLGALGRTRHALRFARFAVRYGKSYESAAEVRRRFRIFSESLEEVRSTNRKGLPYRLGINRFSDMSWEEFQATRLGAAQTCSATLAGNHLMRDAAALPETKDWREDGIVSPVKNQAHCGSCWTFSTTGALEAAYTQATGKNISLSEQQLVDCAGGFNNFGCNGGLPSQAFEYIKYNGGIDTEESYPYKGVNGVCHYKAENAAVQVLDSVNITLNAEDELKNAVGLVRPVSVAFQVIDGFRQYKSGVYTSDHCGTTPDDVNHAVLAVGYGVENGVPYWLIKNSWGADWGDNGYFKMEMGKNMCAIATCASYPVVAA";
+    }
 }
-ok grep /testflat/,@available_services;
-my $db = $registry->get_database('testflat');
-ok defined($db);
-my $seq = $db->get_Seq_by_id("ALEU_HORVU");
-ok defined($seq);
-my $sequence = $seq->seq;
-ok $sequence eq "MAHARVLLLALAVLATAAVAVASSSSFADSNPIRPVTDRAASTLESAVLGALGRTRHALRFARFAVRYGKSYESAAEVRRRFRIFSESLEEVRSTNRKGLPYRLGINRFSDMSWEEFQATRLGAAQTCSATLAGNHLMRDAAALPETKDWREDGIVSPVKNQAHCGSCWTFSTTGALEAAYTQATGKNISLSEQQLVDCAGGFNNFGCNGGLPSQAFEYIKYNGGIDTEESYPYKGVNGVCHYKAENAAVQVLDSVNITLNAEDELKNAVGLVRPVSVAFQVIDGFRQYKSGVYTSDHCGTTPDDVNHAVLAVGYGVENGVPYWLIKNSWGADWGDNGYFKMEMGKNMCAIATCASYPVVAA";
-
-if ($have_DB_File) {
-   $db = $registry->get_database('testbdb');
-   ok defined($db);
-   $seq = $db->get_Seq_by_id("ALEU_HORVU");
-   ok defined($seq);
-   $sequence = $seq->seq;
-   ok $sequence eq "MAHARVLLLALAVLATAAVAVASSSSFADSNPIRPVTDRAASTLESAVLGALGRTRHALRFARFAVRYGKSYESAAEVRRRFRIFSESLEEVRSTNRKGLPYRLGINRFSDMSWEEFQATRLGAAQTCSATLAGNHLMRDAAALPETKDWREDGIVSPVKNQAHCGSCWTFSTTGALEAAYTQATGKNISLSEQQLVDCAGGFNNFGCNGGLPSQAFEYIKYNGGIDTEESYPYKGVNGVCHYKAENAAVQVLDSVNITLNAEDELKNAVGLVRPVSVAFQVIDGFRQYKSGVYTSDHCGTTPDDVNHAVLAVGYGVENGVPYWLIKNSWGADWGDNGYFKMEMGKNMCAIATCASYPVVAA";
+END {
+	cleanup();
 }
-
-END { cleanup(); }
 
 sub cleanup {
-   eval {
-      Bio::Root::IO->rmtree($tmpdir) if (-d $tmpdir);
-   };
+	eval {
+		Bio::Root::IO->rmtree($tmpdir) if (-d $tmpdir);
+	};
 }
 
 __END__

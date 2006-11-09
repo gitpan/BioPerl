@@ -1,4 +1,4 @@
-# $Id: TranscriptI.pm,v 1.8 2003/04/21 14:57:00 jason Exp $
+# $Id: TranscriptI.pm,v 1.13.4.1 2006/10/02 23:10:28 sendu Exp $
 #
 # BioPerl module for Bio::SeqFeature::Gene::TranscriptI
 #
@@ -32,23 +32,20 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
 Email hlapp@gmx.net
-
-Describe contact details here
 
 =head1 APPENDIX
 
@@ -62,13 +59,11 @@ Internal methods are usually preceded with a _
 
 
 package Bio::SeqFeature::Gene::TranscriptI;
-use vars qw(@ISA);
 use strict;
 
 use Carp;
-use Bio::SeqFeatureI;
 
-@ISA = qw(Bio::SeqFeatureI);
+use base qw(Bio::SeqFeatureI);
 
 =head2 promoters
 
@@ -239,12 +234,12 @@ sub parent{
        # we will allow re-setting the parent to undef 
        if (! defined $value || 
 	   $value->isa("Bio::SeqFeature::Gene::GeneStructureI")) {
-	   $self->{'parent'} = $value;
+	   $self->{'_parent'} = $value;
        } else {
 	   $self->throw("$value must be a Bio::SeqFeature::Gene::GeneStructureI")
        }
     }
-    return $self->{'parent'};
+    return $self->{'_parent'};
 }
 
 

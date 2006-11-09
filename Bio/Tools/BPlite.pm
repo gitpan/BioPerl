@@ -1,4 +1,4 @@
-# $Id: BPlite.pm,v 1.40 2003/10/28 13:48:22 jason Exp $
+# $Id: BPlite.pm,v 1.42.4.1 2006/10/02 23:10:31 sendu Exp $
 ##############################################################################
 # Bioperl module Bio::Tools::BPlite
 ##############################################################################
@@ -173,15 +173,11 @@ This software is provided "as is" without warranty of any kind.
 package Bio::Tools::BPlite;
 
 use strict;
-use vars qw(@ISA);
 
-use Bio::Root::Root;
-use Bio::Root::IO;
 use Bio::Tools::BPlite::Sbjct; # we want to use Sbjct
-use Bio::SeqAnalysisParserI;
 use Symbol;
 
-@ISA = qw(Bio::Root::Root Bio::SeqAnalysisParserI Bio::Root::IO);
+use base qw(Bio::Root::Root Bio::SeqAnalysisParserI Bio::Root::IO);
 
 # new comes from a RootI now
 
@@ -198,7 +194,8 @@ use Symbol;
 sub new {
   my ($class, @args) = @_; 
   my $self = $class->SUPER::new(@args);
-
+    $self->warn("Use of Bio::Tools::BPlite is deprecated".
+                   "Use Bio::SearchIO classes instead");
   # initialize IO
   $self->_initialize_io(@args);
 
@@ -233,7 +230,7 @@ sub next_feature{
    $sbjct = $self->{'_current_sbjct'};
    unless( defined $sbjct ) {
        $sbjct = $self->{'_current_sbjct'} = $self->nextSbjct;
-       return undef unless defined $sbjct;
+       return  unless defined $sbjct;
    }   
    $hsp = $sbjct->nextHSP;
    unless( defined $hsp ) {
@@ -318,27 +315,36 @@ sub database {shift->{'DATABASE'}}
 sub nextSbjct {
   my ($self) = @_;
   
-  $self->_fastForward or return undef;
-  
+  $self->_fastForward or return;
+  local $_;
   #######################
   # get all sbjct lines #
   #######################
   my $def = $self->_readline();  
   while(defined ($_ = $self->_readline() ) ) {
-    if    ($_ !~ /\w/)            {next}
-    elsif ($_ =~ /Strand HSP/)    {next} # WU-BLAST non-data
-    elsif ($_ =~ /^\s{0,2}Score/) {$self->_pushback($_); last}
-    elsif ($_ =~ /^Histogram|^Searching|^Parameters|^\s+Database:|^\s+Posted date:/) {
+    if    (! /\w/)           {next}
+    elsif (/Strand HSP/o)    {next} # WU-BLAST non-data
+    elsif (/^\s{0,2}Score/o) {$self->_pushback($_); last}
+    elsif (/^Histogram|^Searching|^Parameters|
+            ^\s+Database:|
+            ^\s+Posted date:/ox) {
 	$self->_pushback($_); 
 	last;
+    } else {
+	$def .= $_;
     }
-    else                          {$def .= $_}
+  }
+  if( ! $def ) { 
+      return;
   }
   $def =~ s/\s+/ /g;
   $def =~ s/\s+$//g;
-  $def =~ s/Length = ([\d,]+)$//g;
-  my $length = $1;
-  return undef unless $def =~ /^>/;
+  
+  my $length;
+  if( $def =~ s/Length = ([\d,]+)$//g ) {
+      $length = $1;
+  }
+  return unless $def =~ /^>/;
   $def =~ s/^>//;
 
   ####################
@@ -365,11 +371,11 @@ sub _parseHeader {
   my $header_flag = 0; # here is the flag/ It is "false" at first, and
                        # is set to "true" when any valid header element
                        # is encountered
-
+  local $_;
   $self->{'REPORT_DONE'} = 0;  # reset this bit for a new report
   while(defined($_ = $self->_readline() ) ) {
       s/\(\s*\)//;      
-      if ($_ =~ /^Query=(?:\s+(.+))?/s) {
+      if (/^Query=(?:\s+(.+))?/s) {
 	  $header_flag = 1;	# valid header element found
 	  my $query = $1;
 	  while( defined($_ = $self->_readline() ) ) {
@@ -397,7 +403,7 @@ sub _parseHeader {
 	  $self->{'QUERY'} = $query;
 	  $self->{'LENGTH'} = $length;
       }
-      elsif ($_ =~ /^(<b>)?(T?BLAST[NPX])\s+([\w\.-]+)\s+(\[[\w-]*\])/) { 
+      elsif (/^(<b>)?(T?BLAST[NPX])\s+([\w\.-]+)\s+(\[[\w-]*\])/o) { 
 	  $self->{'BLAST_TYPE'} = $2; 
 	  $self->{'BLAST_VERSION'} = $3;
       }				# BLAST report type - not a valid header element # JB949
@@ -406,7 +412,7 @@ sub _parseHeader {
       elsif ( $_ =~ /(^[A-Z0-9_]+)\s+BTK\s+/ ) { 
 	  $self->{'BLAST_TYPE'} = $1;
 	  $self->{'BTK'} = 1;
-     } 
+      } 
       elsif ($_ =~ /^Database:\s+(.+)/) {$header_flag = 1;$self->{'DATABASE'} = $1} # valid header element found
       elsif ($_ =~ /^\s*pattern\s+(\S+).*position\s+(\d+)\D/) {   
 	  # For PHIBLAST reports
@@ -415,13 +421,18 @@ sub _parseHeader {
 	  push (@{$self->{'QPATLOCATION'}}, $2);
       } 
       elsif (($_ =~ /^>/) && ($header_flag==1)) {$self->_pushback($_); return 1} # only leave if we have actually parsed a valid header!
-      elsif (($_ =~ /^Parameters|^\s+Database:/) && ($header_flag==1)) { # if we entered a header, and saw nothing before the stats at the end, then it was empty
+      elsif (($_ =~ /^Parameters|^\s+Database:/) && ($header_flag==1)) { 
+      # if we entered a header, and saw nothing before the stats at the end, 
+      # then it was empty
 	  $self->_pushback($_);
 	  return 0;		# there's nothing in the report
-      }
+      } elsif( /Reference:\s+Aaron E\. Darling/ ) {
+	  $self->{'BTK'} = 1;
+      }  
       # bug fix suggested by MI Sadowski via Martin Lomas
       # see bug report #1118
-      if( ref($self->_fh()) !~ /GLOB/ && $self->_fh()->can('EOF') && eof($self->_fh()) ) {
+      if( ref($self->_fh()) !~ /GLOB/ && 
+	  $self->_fh()->can('EOF') && eof($self->_fh()) ) {
 	  $self->warn("unexpected EOF in file\n");
 	  return -1;
       }
@@ -432,10 +443,14 @@ sub _parseHeader {
 sub _fastForward {
     my ($self) = @_;
     return 0 if $self->{'REPORT_DONE'}; # empty report
+    local $_;
     while(defined( $_ = $self->_readline() ) ) {
-	if ($_ =~ /^Histogram|^Searching|^Parameters|^\s+Database:|^\s+Posted date:/) {
+	if (/^Histogram|^Searching|^Parameters|^\s+Database:|
+             ^\s+Posted date:/xo) {
 	    return 0;
-	} elsif( $_ =~ /^>/ ) {
+	} elsif( $self->{'BTK'} && /^BLAST/o ) {
+	    return 0;
+	} elsif( /^>/ ) {
 	    $self->_pushback($_);	
 	    return 1;
 	}

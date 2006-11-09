@@ -1,11 +1,11 @@
+# $Id: Failover.pm,v 1.10.4.2 2006/10/02 23:10:14 sendu Exp $
+
 # POD documentation - main docs before the code
-
-# $Id: Failover.pm,v 1.6 2003/02/17 06:48:29 shawnh Exp $
-
 
 =head1 NAME
 
-Bio::DB::Failover - A Bio::DB::RandomAccessI compliant class which wraps a priority list of DBs
+Bio::DB::Failover - A Bio::DB::RandomAccessI compliant class which
+wraps a prioritized list of DBs
 
 =head1 SYNOPSIS
 
@@ -22,21 +22,20 @@ Bio::DB::Failover - A Bio::DB::RandomAccessI compliant class which wraps a prior
 
 =head1 DESCRIPTION
 
-This module provides fail over access to a set of Bio::DB::RandomAccessI objects
-
+This module provides fail over access to a set of Bio::DB::RandomAccessI
+objects.
 
 =head1 CONTACT
 
-Ewan Birney originally wrote this class.
+Ewan Birney E<lt>birney@ebi.ac.ukE<gt> originally wrote this class.
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution. Bug reports can be submitted via email
-or the web:
+the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-    bioperl-bugs@bio.perl.org                   
-    http://bugzilla.bioperl.org/           
+  http://bugzilla.open-bio.org/
 
 =head1 APPENDIX
 
@@ -45,17 +44,13 @@ methods. Internal methods are usually preceded with a _
 
 =cut
 
-
 # Let the code begin...
 
 package Bio::DB::Failover;
 
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
-use Bio::DB::RandomAccessI;
-@ISA = qw(Bio::Root::Root Bio::DB::RandomAccessI );
+use base qw(Bio::Root::Root Bio::DB::RandomAccessI);
 
 sub new {
     my ($class,@args) = @_;
@@ -70,22 +65,24 @@ sub new {
 
  Title   : add_database
  Usage   : add_database(%db)
- Function: Adds a database to the 
- Returns : count of number of databases
- Args    : hash of db resource name to Bio::DB::SeqI object
+ Function: Adds a database to the Failover object
+ Returns : Count of number of databases
+ Args    : Array of db resources
+ Throws  : Not a RandomAccessI exception
 
 =cut
 
 sub add_database {
-    my ($self,@db) = @_;
-    foreach my $db ( @db ) {
-	if( !ref $db || !$db->isa('Bio::DB::RandomAccessI') ) {
-	    $self->throw("Database objects $db is a not a Bio::DB::RandomAccessI");
-	    next;
-	}
+	my ($self,@db) = @_;
+	for my $db ( @db ) {
+		if ( !ref $db || !$db->isa('Bio::DB::RandomAccessI') ) {
+			$self->throw("Database object $db is a not a Bio::DB::RandomAccessI");
+			next;
+		}
 
-	push(@{$self->{'_database'}},$db);
-    }    
+		push(@{$self->{'_database'}},$db);
+	}
+	scalar @{$self->{'_database'}};
 }
 
 
@@ -96,30 +93,32 @@ sub add_database {
  Function: Gets a Bio::Seq object by its name
  Returns : a Bio::Seq object
  Args    : the id (as a string) of a sequence
- Throws  : "id does not exist" exception
-
+ Throws  : "no id" exception
 
 =cut
 
 sub get_Seq_by_id {
-    my ($self,$id) = @_;
+	my ($self,$id) = @_;
 
-    if( !defined $id ) {
-	$self->throw("no id is given!");
-    }
-
-    foreach my $db ( @{$self->{'_database'}} ) {
-	my $seq;
-
-	eval {
-	    $seq = $db->get_Seq_by_id($id);
-	};
-	if( defined $seq ) {
-	    return $seq;
+	if( !defined $id ) {
+		$self->throw("no id is given!");
 	}
-    }
 
-    return undef;
+	foreach my $db ( @{$self->{'_database'}} ) {
+		my $seq;
+
+		eval {
+			$seq = $db->get_Seq_by_id($id);
+		};
+		$self->warn($@) if $@;
+		if ( defined $seq ) {
+			return $seq;
+		} else {
+			$self->warn("No sequence retrieved by database " . ref($db));
+		}
+	}
+
+	return;
 }
 
 =head2 get_Seq_by_acc
@@ -129,34 +128,67 @@ sub get_Seq_by_id {
  Function: Gets a Bio::Seq object by accession number
  Returns : A Bio::Seq object
  Args    : accession number (as a string)
- Throws  : "acc does not exist" exception
-
+ Throws  : "no id" exception
 
 =cut
 
 sub get_Seq_by_acc {
-    my ($self,$id) = @_;
+	my ($self,$id) = @_;
 
-    if( !defined $id ) {
-	$self->throw("no id is given!");
-    }
-
-    foreach my $db ( @{$self->{'_database'}} ) {
-	my $seq;
-	eval {
-	    $seq = $db->get_Seq_by_acc($id);
-	};
-	if( defined $seq ) {
-	    return $seq;
+	if( !defined $id ) {
+		$self->throw("no id is given!");
 	}
-    }
-    return undef;
+
+	foreach my $db ( @{$self->{'_database'}} ) {
+		my $seq;
+		eval {
+			$seq = $db->get_Seq_by_acc($id);
+		};
+		$self->warn($@) if $@;
+		if ( defined $seq ) {
+			return $seq;
+		} else {
+			$self->warn("No sequence retrieved by database " . ref($db));
+		}
+	}
+	return;
 }
 
+=head2 get_Seq_by_version
+
+ Title   : get_Seq_by_version
+ Usage   : $seq = $db->get_Seq_by_acc('X77802.2');
+ Function: Gets a Bio::Seq object by versioned accession number
+ Returns : A Bio::Seq object
+ Args    : accession number (as a string)
+ Throws  : "acc does not exist" exception
+
+=cut
+
+sub get_Seq_by_version {
+	my ($self,$id) = @_;
+
+	if( !defined $id ) {
+		$self->throw("no acc is given!");
+	}
+
+	foreach my $db ( @{$self->{'_database'}} ) {
+		my $seq;
+		eval {
+			$seq = $db->get_Seq_by_version($id);
+		};
+		$self->warn($@) if $@;
+		if ( defined $seq ) {
+			return $seq;
+		} else {
+			$self->warn("No sequence retrieved by database " . ref($db));
+		}
+	}
+	return;
+}
 
 ## End of Package
 
 1;
 
 __END__
-

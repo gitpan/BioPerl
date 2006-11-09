@@ -1,8 +1,8 @@
-# $Id: VariantI.pm,v 1.14 2003/06/04 08:36:44 heikki Exp $
+# $Id: VariantI.pm,v 1.20.4.1 2006/10/02 23:10:38 sendu Exp $
 #
 # BioPerl module for Bio::Variation::VariantI
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Heikki Lehvaslaiho
 #
@@ -64,27 +64,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the 
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
-report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email:  heikki@ebi.ac.uk
-Address: 
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom 
-
+Email:  heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -98,14 +91,10 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Variation::VariantI;
-use vars qw(@ISA);
 use strict;
-use  Bio::Root::Root;
-use  Bio::DBLinkContainerI;
 # Object preamble - inheritance
 
-use Bio::SeqFeature::Generic;
-@ISA = qw(Bio::Root::Root Bio::SeqFeature::Generic Bio::DBLinkContainerI );
+use base qw(Bio::Root::Root Bio::SeqFeature::Generic Bio::DBLinkContainerI);
 
 =head2 id
 
@@ -406,7 +395,7 @@ sub dnStreamSeq {
 
 sub label {
     my ($self,$value) = @_;
-    $self->throw("[$self] has not implemeted method 'label'");
+    $self->throw_not_implemented();
 }
 
 
@@ -662,14 +651,14 @@ sub SeqDiff {
     if (defined $value) {
 	if( ! $value->isa('Bio::Variation::SeqDiff') ) {
 	    $self->throw("Is not a Bio::Variation::SeqDiff object but a [$value]");
-	    return (undef);
+	    return;
 	}
 	else {
 	    $self->{'seqDiff'} = $value;
 	}
     }
     unless (exists $self->{'seqDiff'}) {
-	return (undef);
+	return;
     } else {
 	return $self->{'seqDiff'};
     }

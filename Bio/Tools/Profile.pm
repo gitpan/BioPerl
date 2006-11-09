@@ -1,3 +1,4 @@
+# $Id: Profile.pm,v 1.8.4.1 2006/10/02 23:10:32 sendu Exp $
 # BioPerl module for Bio::Tools::Profile
 #
 # Cared for by Balamurugan Kumarasamy
@@ -29,17 +30,17 @@ Bio::Tools::Profile - parse Profile output
  Bioperl modules. Send your comments and suggestions preferably to
  the Bioperl mailing list.  Your participation is much appreciated.
 
- bioperl-l@bioperl.org              - General discussion
- http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
- Report bugs to the Bioperl bug tracking system to help us keep track
- of the bugs and their resolution. Bug reports can be submitted via
- email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
- bioperl-bugs@bioperl.org
- http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
+
 =head1 AUTHOR - Balamurugan Kumarasamy
 
  Email: fugui@worf.fugu-sg.org
@@ -54,15 +55,12 @@ Bio::Tools::Profile - parse Profile output
 
 
 package Bio::Tools::Profile;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
 use Bio::SeqFeature::FeaturePair;
-use Bio::Root::IO;
 use Bio::SeqFeature::Generic;
 
-@ISA = qw(Bio::Root::Root Bio::Root::IO );
+use base qw(Bio::Root::Root Bio::Root::IO);
 
 
 

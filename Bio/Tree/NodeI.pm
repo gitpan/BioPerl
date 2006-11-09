@@ -1,4 +1,4 @@
-# $Id: NodeI.pm,v 1.26 2003/09/25 16:07:44 jason Exp $
+# $Id: NodeI.pm,v 1.35.4.1 2006/10/02 23:10:37 sendu Exp $
 #
 # BioPerl module for Bio::Tree::NodeI
 #
@@ -79,8 +79,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -88,7 +88,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -108,11 +108,10 @@ Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Tree::NodeI;
-use vars qw(@ISA);
 use strict;
-use Bio::Root::RootI;
-@ISA = qw(Bio::Root::RootI);
+no warnings 'recursion';
 
+use base qw(Bio::Root::RootI);
 
 =head2 add_Descendent
 
@@ -159,17 +158,17 @@ sub each_Descendent{
  Function: Recursively fetch all the nodes and their descendents
            *NOTE* This is different from each_Descendent
  Returns : Array or Bio::Tree::NodeI objects
- Args    : $sortby [optional] "height", "creation" or coderef to be used
-           to sort the order of children nodes.
+ Args    : $sortby [optional] "height", "creation", "alpha", "revalpha", 
+           or a coderef to be used to sort the order of children nodes.
 
 =cut
 
 sub get_all_Descendents{
    my ($self, $sortby) = @_;
-   $sortby ||= 'height';
+   $sortby ||= 'none';   
    my @nodes;
    foreach my $node ( $self->each_Descendent($sortby) ) {
-       push @nodes, ($node->get_all_Descendents($sortby), $node);
+       push @nodes, ($node,$node->get_all_Descendents($sortby));
    }
    return @nodes;
 }
@@ -226,7 +225,7 @@ sub descendent_count{
 
 sub to_string{
    my ($self) = @_;
-   return join('',defined $self->id ? $self->id : '',
+   return join('',defined $self->id_output ? $self->id_output : '',
 		  defined $self->branch_length ? ':' . $self->branch_length 
 		  : ' ')
 }
@@ -236,28 +235,46 @@ sub to_string{
  Title   : height
  Usage   : my $len = $node->height
  Function: Returns the height of the tree starting at this
-           node.  Height is the maximum branchlength.
+           node.  Height is the maximum branchlength to get to the tip.
  Returns : The longest length (weighting branches with branch_length) to a leaf
  Args    : none
 
 =cut
 
 sub height{
+    my ($self) = @_;
+
+    return 0 if( $self->is_Leaf );
+    
+    my $max = 0;
+    foreach my $subnode ( $self->each_Descendent ) { 
+	my $s = $subnode->height + $subnode->branch_length;;
+	if( $s > $max ) { $max = $s; }
+    }
+    return $max;
+}
+
+=head2 depth
+
+ Title   : depth
+ Usage   : my $len = $node->depth
+ Function: Returns the depth of the tree starting at this
+           node.  Depth is the distance from this node to the root.
+ Returns : The branch length to the root.
+ Args    : none
+
+=cut
+
+sub depth{
    my ($self) = @_;
    
-   if( $self->is_Leaf ) { 
-       if( !defined $self->branch_length ) { 
-	   $self->debug(sprintf("Trying to calculate height of a node when a Node (%s) has an undefined branch_length\n",$self->id || '?' ));
-	   return 0;
-       }
-       return $self->branch_length;
+   my $depth = 0;
+   my $node = $self;
+   while( defined $node->ancestor ) { 
+       $depth += $node->branch_length;
+       $node = $node->ancestor;
    }
-   my $max = 0;
-   foreach my $subnode ( $self->each_Descendent ) { 
-       my $s = $subnode->height;
-       if( $s > $max ) { $max = $s; }
-   }
-   return $max + ($self->branch_length || 1);
+   return $depth;
 }
 
 =head2 Get/Set methods
@@ -466,6 +483,36 @@ sub get_tag_values{
 
 sub has_tag{
     shift->throw_not_implemented();
+}
+
+
+=head2 Helper Functions
+
+=cut
+
+=head2 id_output
+
+ Title   : id_output
+ Usage   : my $id = $node->id_output;
+ Function: Return an id suitable for output in format like newick
+           so that if it contains spaces or ():; characters it is properly 
+           quoted
+ Returns : $id string if $node->id has a value
+ Args    : none
+
+
+=cut
+
+sub id_output{
+    my $node = shift;
+    my $id = $node->id;
+    return unless( defined $id && length($id ) );
+    # single quotes must become double quotes
+    # $id =~ s/'/''/g;
+    if( $id =~ /[\(\);:,\s]/ ) {
+	$id = '"'.$id.'"';
+    }
+    return $id;
 }
 
 1;

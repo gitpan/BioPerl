@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: IterationI.pm,v 1.3 2003/06/04 02:15:59 sac Exp $
+# $Id: IterationI.pm,v 1.8.4.1 2006/10/02 23:10:24 sendu Exp $
 #
 # BioPerl module Bio::Search::Iteration::IterationI
 #
@@ -196,17 +196,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bio.perl.org/MailList.html  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR 
 
@@ -224,7 +223,8 @@ This software is provided "as is" without warranty of any kind.
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -235,11 +235,9 @@ The rest of the documentation details each of the object methods. Internal metho
 package Bio::Search::Iteration::IterationI;
 
 use strict;
-use vars qw(@ISA);
 
-use Bio::Root::RootI;
 
-@ISA = qw( Bio::Root::RootI );
+use base qw(Bio::Root::RootI);
 
 =head2 number
 
@@ -598,14 +596,14 @@ sub hits_below_threshold  { shift->throw_not_implemented(); }
  Args    : Tagged values, the only required one is -hit. All others are used
            only for PSI-BLAST reports.
            -hit => Bio::Search::Hit::HitI object
-           -old => boolean, true indicates that the hit was found in a previous 
-                   iteration. Default=false.
+           -old => boolean, true indicates that the hit was found 
+                   in a previous iteration. Default=false.
            -below_threshold => boolean, true indicates that the hit is below
                    the inclusion threshold.
            -newly_below => boolean, true indicates that the hit is below
                    the inclusion threshold in this iteration but was above
-                   the inclusion threshold in a previous iteration. Only appropriate
-                   for old hits. Default=false.
+                   the inclusion threshold in a previous iteration. 
+                   Only appropriate for old hits. Default=false.
  Throws  : Bio::Root::BadParameter if the hit is not a
            Bio::Search::Hit::HitI.
            Bio::Root::BadParameter if -old=>false and -newly_below=>true.

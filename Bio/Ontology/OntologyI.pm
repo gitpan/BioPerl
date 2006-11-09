@@ -1,4 +1,4 @@
-# $Id: OntologyI.pm,v 1.6 2003/03/27 08:59:29 lapp Exp $
+# $Id: OntologyI.pm,v 1.9.4.1 2006/10/02 23:10:22 sendu Exp $
 #
 # BioPerl module for Bio::Ontology::OntologyI
 #
@@ -48,8 +48,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -57,15 +57,11 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
 Email hlapp at gmx.net
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -79,12 +75,10 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Ontology::OntologyI;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Ontology::OntologyEngineI;
 
-@ISA = qw( Bio::Ontology::OntologyEngineI );
+use base qw(Bio::Ontology::OntologyEngineI);
 
 =head1  Methods defined in this interface.
 
@@ -98,7 +92,6 @@ use Bio::Ontology::OntologyEngineI;
  Example : 
  Returns : value of name (a scalar)
  Args    : 
-
 
 =cut
 
@@ -123,7 +116,6 @@ sub name{
  Returns : value of authority (a scalar)
  Args    : 
 
-
 =cut
 
 sub authority{
@@ -147,7 +139,6 @@ sub authority{
  Returns : value of identifier (a scalar)
  Args    : 
 
-
 =cut
 
 sub identifier{
@@ -162,7 +153,6 @@ sub identifier{
  Example : 
  Returns : value of definition (a scalar)
  Args    : 
-
 
 =cut
 
@@ -182,7 +172,6 @@ sub definition{
  Example :
  Returns : TRUE on success and FALSE otherwise
  Args    : none
-
 
 =cut
 
@@ -212,7 +201,6 @@ just the name and description ...
  Returns : its argument.
  Args    : object of class TermI.
 
-
 =cut
 
 =head2 add_relationship
@@ -224,20 +212,18 @@ just the name and description ...
  Returns : Its argument.
  Args    : A RelationshipI object.
 
-
 =cut
 
 =head2 get_relationships
 
  Title   : get_relationships
- Usage   : get_relationships(TermI term): RelationshipI[]
+ Usage   : get_relationships(TermI term): RelationshipI
  Function: Retrieves all relationship objects from this ontology engine,
            or all relationships of a term if a term is supplied.
  Example :
  Returns : Array of Bio::Ontology::RelationshipI objects
  Args    : None, or a Bio::Ontology::TermI compliant object for which
            to retrieve the relationships.
-
 
 =cut
 
@@ -250,13 +236,12 @@ just the name and description ...
  Returns :
  Args    :
 
-
 =cut
 
 =head2 get_child_terms
 
  Title   : get_child_terms
- Usage   : get_child_terms(TermI term, TermI[] predicate_terms): TermI[]
+ Usage   : get_child_terms(TermI term, TermI predicate_terms): TermI
  Function: Retrieves all child terms of a given term, that satisfy a
            relationship among those that are specified in the second
            argument or undef otherwise. get_child_terms is a special
@@ -268,13 +253,12 @@ just the name and description ...
  Args    : First argument is the term of interest, second is the list
            of relationship type terms.
 
-
 =cut
 
 =head2 get_descendant_terms
 
  Title   : get_descendant_terms
- Usage   : get_descendant_terms(TermI term, TermI[] rel_types): TermI[]
+ Usage   : get_descendant_terms(TermI term, TermI rel_types): TermI
  Function: Retrieves all descendant terms of a given term, that
            satisfy a relationship among those that are specified in
            the second argument or undef otherwise.
@@ -283,13 +267,12 @@ just the name and description ...
  Args    : First argument is the term of interest, second is the list
            of relationship type terms.
 
-
 =cut
 
 =head2 get_parent_terms
 
  Title   : get_parent_terms
- Usage   : get_parent_terms(TermI term, TermI[] predicate_terms): TermI[]
+ Usage   : get_parent_terms(TermI term, TermI predicate_terms): TermI
  Function: Retrieves all parent terms of a given term, that satisfy a
            relationship among those that are specified in the second
            argument or undef otherwise. get_parent_terms is a special
@@ -301,13 +284,12 @@ just the name and description ...
  Args    : First argument is the term of interest, second is the list
            of relationship type terms.
 
-
 =cut
 
 =head2 get_ancestor_terms
 
  Title   : get_ancestor_terms
- Usage   : get_ancestor_terms(TermI term, TermI[] predicate_terms): TermI[]
+ Usage   : get_ancestor_terms(TermI term, TermI predicate_terms): TermI
  Function: Retrieves all ancestor terms of a given term, that satisfy
            a relationship among those that are specified in the second
            argument or undef otherwise.
@@ -317,13 +299,12 @@ just the name and description ...
  Args    : First argument is the term of interest, second is the list
            of relationship type terms.
 
-
 =cut
 
 =head2 get_leaf_terms
 
  Title   : get_leaf_terms
- Usage   : get_leaf_terms(): TermI[]
+ Usage   : get_leaf_terms(): TermI
  Function: Retrieves all leaf terms from the ontology. Leaf term is a
            term w/o descendants.
 
@@ -331,13 +312,12 @@ just the name and description ...
  Returns : Array of TermI objects.
  Args    :
 
-
 =cut
 
 =head2 get_root_terms()
 
  Title   : get_root_terms
- Usage   : get_root_terms(): TermI[]
+ Usage   : get_root_terms(): TermI
  Function: Retrieves all root terms from the ontology. Root term is a
            term w/o descendants.
 
@@ -345,13 +325,12 @@ just the name and description ...
  Returns : Array of TermI objects.
  Args    :
 
-
 =cut
 
 =head2 get_all_terms
 
  Title   : get_all_terms
- Usage   : get_all_terms: TermI[]
+ Usage   : get_all_terms: TermI
  Function: Retrieves all terms from the ontology.
 
            We do not mandate an order here in which the terms are
@@ -361,7 +340,6 @@ just the name and description ...
  Example : @terms = $obj->get_all_terms()
  Returns : Array of TermI objects.
  Args    :
-
 
 =cut
 
@@ -385,7 +363,6 @@ just the name and description ...
               -identifier    query by the given identifier
               -name          query by the given name
 
-
 =cut
 
 =head1 Factory for relationships and terms
@@ -405,7 +382,6 @@ just the name and description ...
            compliant object)
  Args    : 
 
-
 =cut
 
 sub relationship_factory{
@@ -424,7 +400,6 @@ sub relationship_factory{
  Returns : value of term_factory (a Bio::Factory::ObjectFactoryI
            compliant object)
  Args    : 
-
 
 =cut
 

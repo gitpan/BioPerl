@@ -1,4 +1,4 @@
-# $Id: QRNA.pm,v 1.2 2003/09/08 12:17:14 heikki Exp $
+# $Id: QRNA.pm,v 1.5.4.1 2006/10/02 23:10:32 sendu Exp $
 #
 # BioPerl module for Bio::Tools::QRNA
 #
@@ -19,7 +19,7 @@ Bio::Tools::QRNA - A Parser for qrna output
   use Bio::Tools::QRNA;
   my $parser = new Bio::Tools::QRNA(-file => $qrnaoutput);
   while( my $feature = $parser->next_feature ) {
-
+    # do something here
   }
 
 =head1 DESCRIPTION
@@ -84,8 +84,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -93,15 +93,11 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
 Email jason-at-bioperl-dot-org
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -115,15 +111,13 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Tools::QRNA;
-use vars qw(@ISA @Models);
+use vars qw(@Models);
 use strict;
 
-use Bio::Root::IO;
 use Bio::SeqFeature::Generic;
 use Bio::SeqFeature::FeaturePair;
-use Bio::SeqAnalysisParserI;
 
-@ISA = qw(Bio::Root::IO Bio::SeqAnalysisParserI);
+use base qw(Bio::Root::IO Bio::SeqAnalysisParserI);
 @Models = qw(OTH COD RNA);
 
 =head2 new
@@ -397,8 +391,8 @@ sub _make_feature {
 	    if( $self->verbose > 0 ) {
 		$self->debug( $data->{'entry'} );
 	    }
-	    die "no location parsed for $model in ",
-	    (map { @$_ } @{$data->{'seqs'}}), " ", $f->start, " ", $f->end, "\n";
+	    $self->throw("no location parsed for $model in ",
+	    (map { @$_ } @{$data->{'seqs'}}), " ", $f->start, " ", $f->end);
 	} else { 
 	    $f->add_tag_value("$model\_positions", 
 			      join("..",@{$data->{'model_location'}->{$model} }));

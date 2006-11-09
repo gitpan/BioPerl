@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: ELM.t,v 1.1 2003/11/18 
+# $Id: ELM.t,v 1.5 2005/09/18 00:57:50 bosborne Exp $
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 use strict;
@@ -18,7 +18,7 @@ BEGIN {
     }
     use Test;
 
-    $NUMTESTS = 14;
+    $NUMTESTS = 13;
     plan tests => $NUMTESTS;
 
     eval {
@@ -33,9 +33,9 @@ BEGIN {
 }
 
 END {
-    foreach ( $Test::ntest..$NUMTESTS) {
-	skip('unable to run all of the tests depending on web access',1);
-    }
+	foreach ( $Test::ntest..$NUMTESTS) {
+		skip('unable to complete all of the ELM tests',1);
+	}
 }
 
 exit 0 if $ERROR ==  1;
@@ -65,9 +65,8 @@ ok $tool = Bio::Tools::Analysis::Protein::ELM->new(
 ok $tool->compartment(['golgi', 'er']);
 ok my $cmp = $tool->compartment();
 ok $cmp->[1], 'GO:0005783';
+ok $tool->species(9606);
 ok $tool->species, 9606;
-ok $tool->species(8355);
-ok $tool->species, 8355;
 
 ok $tool->run ();
 exit if $tool->status eq 'TERMINATED_BY_ERROR';

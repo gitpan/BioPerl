@@ -1,4 +1,4 @@
-# $Id: Chain.pm,v 1.6 2002/10/22 07:38:44 lapp Exp $
+# $Id: Chain.pm,v 1.11.4.1 2006/10/02 23:10:31 sendu Exp $
 #
 # bioperl module for Bio::Structure::Chain
 #
@@ -30,17 +30,15 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bio.perl.org/MailList.html - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Kris Boulez
 
@@ -48,7 +46,8 @@ Email kris.boulez@algonomics.com
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. 
+Internal methods are usually preceded with a _
 
 =cut
 
@@ -56,30 +55,26 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 package Bio::Structure::Chain;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
 use Bio::Structure::Entry;
 use Bio::Structure::Model;
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 
 =head2 new()
 
  Title   : new()
  Usage   : $struc = Bio::Structure::Chain->new( 
-                                           -id  => 'human_id',
-                                           -accession_number => 'AL000012',
+                           -id  => 'human_id',
+                           -accession_number => 'AL000012',
                                            );
 
  Function: Returns a new Bio::Structure::Chain object from basic 
-	constructors. Probably most called from Bio::Structure::IO.
+	        constructors. Usually called from Bio::Structure::IO.
  Returns : a new Bio::Structure::Chain object
 
 =cut
-
-
 
 sub new {
     my ($class, @args) = @_;
@@ -93,13 +88,9 @@ sub new {
                           @args);
 
     $id      && $self->id($id);
-
     $self->{'residue'} = [];
-
     # the 'smallest' item that can be added to a chain is a residue. 
-
     $residue && $self->throw("use a method based on an Entry object for now");
-
     return $self;
 }
 
@@ -109,7 +100,7 @@ sub new {
 
  Title   : residue 
  Usage   : 
- Function:  nothing usefull untill I get symbolic references to do what I want
+ Function:  nothing useful until I get symbolic references to do what I want
  Returns : 
  Args    : 
 
@@ -126,7 +117,7 @@ sub residue {
 
  Title   : add_residue
  Usage   : 
- Function: nothing usefull untill I get symbolic references to do what I want
+ Function: nothing useful until I get symbolic references to do what I want
  Returns : 
  Args    : 
 
@@ -142,7 +133,7 @@ sub add_residue {
 
  Title   : model
  Usage   : 
- Function: nothing usefull untill I get symbolic references to do what I want
+ Function: nothing useful until I get symbolic references to do what I want
  Returns : 
  Args    : 
 
@@ -240,6 +231,5 @@ sub _grandparent {
 	}
 	return $self->{'grandparent'};
 }
-
 
 1;

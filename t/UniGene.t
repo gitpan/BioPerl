@@ -1,7 +1,7 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: UniGene.t,v 1.13 2003/09/11 23:52:59 andrew Exp $
+# $Id: UniGene.t,v 1.17 2005/10/21 17:28:19 bosborne Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -12,20 +12,19 @@ use vars qw($NUMTESTS);
 
 my $error;
 
-BEGIN { 
-    # to handle systems with no installed Test module
-    # we include the t dir (where a copy of Test.pm is located)
-    # as a fallback
-    eval { require Test; };
-    $error = 0;
-    if( $@ ) {
-	use lib 't';
-    }
-    use Test;
+BEGIN {
+	# to handle systems with no installed Test module
+	# we include the t dir (where a copy of Test.pm is located)
+	# as a fallback
+	eval { require Test; };
+	$error = 0;
+	if( $@ ) {
+		use lib 't';
+	}
+	use Test;
 
-    $NUMTESTS = 61;
-    plan tests => $NUMTESTS;
-    
+	$NUMTESTS = 73;
+	plan tests => $NUMTESTS;
 }
 
 use Bio::Cluster::UniGene;
@@ -34,8 +33,8 @@ use Bio::ClusterIO;
 my ($str, $unigene); # predeclare variables for strict
 
 
-$str = Bio::ClusterIO->new('-file' => Bio::Root::IO->catfile("t","data","unigene.data"), '-format' => "unigene");
-
+$str = Bio::ClusterIO->new('-file' => Bio::Root::IO->catfile(
+				"t","data","unigene.data"), '-format' => "unigene");
 ok $str;
 
 ok ( defined ($unigene = $str->next_cluster()));
@@ -53,23 +52,25 @@ ok($unigene->title, 'N-acetyltransferase 2 (arylamine N-acetyltransferase)');
 ok($unigene->gene, 'NAT2');
 ok($unigene->cytoband,'8p22');
 ok($unigene->gnm_terminus,'S');
-ok($unigene->scount,25);
+ok($unigene->homol,'YES');
+ok($unigene->restr_expr,'liver');
+ok($unigene->scount,26);
 ok(scalar @{ $unigene->locuslink }, 1);
 ok(scalar @{ $unigene->chromosome }, 1);
 ok(scalar @{ $unigene->express }, 7);
-ok(scalar @{ $unigene->sts }, 10);
+ok(scalar @{ $unigene->sts }, 8);
 ok(scalar @{ $unigene->txmap }, 0);
 ok(scalar @{ $unigene->protsim } , 4);
-ok(scalar @{ $unigene->sequences },25);
+ok(scalar @{ $unigene->sequences },26);
 
 ok($unigene->locuslink->[0], '10');
 ok($unigene->chromosome->[0], '8');
 ok($unigene->express->[0], 'liver');
-ok($unigene->sts->[0], 'ACC=GDB:386004 UNISTS=157141');
-ok($unigene->protsim->[0], 'ORG=Escherischia coli; PROTGI=16129422; PROTID=ref:NP_415980.1; PCT=24; ALN=255');
+ok($unigene->sts->[0], 'ACC=G59899 UNISTS=137181');
+ok($unigene->protsim->[0], 'ORG=Escherischia coli; PROTGI=16129422; PROTID=ref:NP_415980.1; PCT=24.81; ALN=255');
 
 my ($seq1) = $unigene->next_seq;
-ok($seq1->display_id, 'D90040');
+ok($seq1->display_id, 'BX095770');
 #ok($seq1->desc, 'ACC=D90042 NID=g219415 PID=g219416');
 
 # test recognition of species
@@ -84,9 +85,9 @@ my $n = 1; # we've seen already one seq
 while($seq1 = $unigene->next_seq()) {
     $n++;
 }
-ok ($n, 25);
-ok ($unigene->size(), 25);
-ok (scalar($unigene->get_members()), 25);
+ok ($n, 26);
+ok ($unigene->size(), 26);
+ok (scalar($unigene->get_members()), 26);
 ok ($unigene->description, 'N-acetyltransferase 2 (arylamine N-acetyltransferase)');
 ok ($unigene->display_id, "Hs.2");
 ok ($unigene->namespace, "UniGene");
@@ -107,6 +108,12 @@ ok($unigene->cytoband, 'cytoband_test', 'cytoband was ' . $unigene->cytoband);
 $unigene->gnm_terminus('gnm_terminus_test');
 ok($unigene->gnm_terminus, 'gnm_terminus_test', 'gnm_terminus was ' . $unigene->gnm_terminus);
 
+$unigene->homol('homol_test');
+ok($unigene->homol, 'homol_test', 'homol was ' . $unigene->homol);
+
+$unigene->restr_expr('restr_expr_test');
+ok($unigene->restr_expr, 'restr_expr_test', 'restr_expr was ' . $unigene->restr_expr);
+
 $unigene->scount('scount_test');
 ok($unigene->scount, 'scount_test', 'scount was ' . $unigene->scount);
 
@@ -114,19 +121,24 @@ my $seq = $unigene->next_seq;
 $seq = $unigene->next_seq;
 ok($seq->isa('Bio::PrimarySeqI'), 1,'expected a Bio::PrimarySeq object but got a ' . ref($seq));
 my $accession = $seq->accession_number;
-ok($accession, 'BC015878');
+ok($accession, 'AI262683');
 my $version = $seq->seq_version();
-ok($version, "");
-
+ok($version, "1");
 
 # test the sequence parsing is working
 my $ac = $seq->annotation();
 my $simple_ann_object;
 ($simple_ann_object) = $ac->get_Annotations('seqtype');
 ok $simple_ann_object;
-ok($simple_ann_object->value(), 'mRNA', 'seqtype was ' . $simple_ann_object->value);	
+ok($simple_ann_object->value(), 'EST', 'seqtype was ' . $simple_ann_object->value);	
 
-
+# test PERIPHERAL, bug 1708
+$seq = $unigene->next_seq;
+$accession = $seq->accession_number;
+ok($accession, 'CB161982');
+#$ac = $seq->annotation();
+my @acs = $seq->annotation->get_Annotations('peripheral');
+ok $acs[0], 1;
 
 # tests not specific to unigene record provided in the unigene.data file
 my @locuslink_test = ( "58473", "5354" );
@@ -190,7 +202,10 @@ ok $protsim, 'ORG=Homo sapiens; PROTGI=107211; PROTID=pir:A40428; PCT=100; ALN=2
 
 
 
-# do a quick test on Rn record included as the next cluster in the test data file because it has version numbers tacked on the end of the accession numbers in each seq line - NCBI has started doing this now (Sept 2003).
+# do a quick test on Rn record included as the next cluster in the
+# test data file because it has version numbers tacked on the end of
+# the accession numbers in each seq line - NCBI has started doing this
+# now (Sept 2003).
 
 $unigene = $str->next_cluster();
 $seq = $unigene->next_seq;
@@ -198,3 +213,13 @@ ok($seq->isa('Bio::PrimarySeqI'), 1,'expected a Bio::PrimarySeq object but got a
 $version = $seq->seq_version();
 ok($version, '1');
 
+# next cluster contains a // in the title - yes NCBI did that. Nonetheless,
+# this should not trip up the parser:
+
+$unigene = $str->next_cluster();
+ok ($unigene); # previously this would have been undef
+ok ($unigene->unigene_id, "Mm.340763");
+ok ($unigene->title, 'Transcribed locus, strongly similar to NP_003008.1 splicing factor, arginine/serine-rich 3; splicing factor, arginine//serine-rich, 20-kD [Homo sapiens]');
+ok ($unigene->homol, 'YES');
+ok ($unigene->scount, 31);
+ok (scalar($unigene->get_members()), 31);

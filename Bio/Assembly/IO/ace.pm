@@ -1,4 +1,4 @@
-# $Id: ace.pm,v 1.1 2002/11/04 14:38:14 heikki Exp $
+# $Id: ace.pm,v 1.13.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 ## BioPerl module for Bio::Assembly::IO::ace
 #
@@ -12,7 +12,7 @@
 
 Bio::Assembly::IO::ace -  module to load phrap ACE files.
 
-=head1 SYNOPSYS
+=head1 SYNOPSIS
 
     # Building an input stream
     use Bio::Assembly::IO;
@@ -65,17 +65,15 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html     - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Robson Francisco de Souza
 
@@ -91,17 +89,20 @@ methods. Internal methods are usually preceded with a _
 package Bio::Assembly::IO::ace;
 
 use strict;
-use vars qw(@ISA);
 
-use Bio::Assembly::IO;
 use Bio::Assembly::Scaffold;
 use Bio::Assembly::Contig;
+use Bio::Assembly::Singlet;
 use Bio::LocatableSeq;
 use Bio::Annotation::SimpleValue;
-use Bio::Seq::PrimaryQual;
+use Bio::Seq::Quality;
+use Bio::SeqIO;
 use Bio::SeqFeature::Generic;
+use Dumpvalue();
+my $dumper = new Dumpvalue();
+$dumper->veryCompact(1);
 
-@ISA = qw(Bio::Assembly::IO);
+use base qw(Bio::Assembly::IO);
 
 =head1 Parser methods
 
@@ -117,6 +118,7 @@ use Bio::SeqFeature::Generic;
 
 sub next_assembly {
     my $self = shift; # Object reference
+    my $lingering_read;
     local $/="\n";
 
     # Resetting assembly data structure
@@ -155,7 +157,7 @@ sub next_assembly {
 	    $consensus_sequence = Bio::LocatableSeq->new(-seq=>$consensus_sequence,
 							      -start=>1,
 							      -end=>$consensus_length,
-							      -id=>$contigID);
+							      -id=>"Consensus sequence for $contigID");
 	    $contigOBJ->set_consensus_sequence($consensus_sequence);
 	    $assembly->add_contig($contigOBJ);
 	};
@@ -191,8 +193,8 @@ sub next_assembly {
 		}
 	    }
 
-	    my $qual = Bio::Seq::PrimaryQual->new(-qual=>join(" ",@quality),
-						  -id=>$contigOBJ->id());
+	    my $qual = Bio::Seq::Quality->new(-qual=>join(" ",@quality),
+                                              -id=>$contigOBJ->id());
 	    $contigOBJ->set_consensus_quality($qual);
 	};
 
@@ -232,7 +234,7 @@ sub next_assembly {
 					      -id=>$read_name,
 					      -primary_id=>$read_name,
 					      -alphabet=>'dna');
-
+          $lingering_read = $read;
 	    # Adding read location and sequence to contig ("gapped consensus" coordinates)
 	    my $padded_start = $read_data->{$read_name}{'padded_start'};
 	    my $padded_end   = $padded_start + $read_data->{$read_name}{'length'} - 1;
@@ -271,51 +273,66 @@ sub next_assembly {
 		$contigOBJ->add_features([ $qual_feat ], 0);
 	    }
 	};
-
-	# Loading read description (DeScription fields)
-#	/^DS / && do {
-#	    /CHEM: (\S+)/ && do {
-#		$self->{'contigs'}[$contig]{'reads'}{$read_name}{'chemistry'} = $1;
-#	    };
-#	    /CHROMAT_FILE: (\S+)/ && do {
-#		$self->{'contigs'}[$contig]{'reads'}{$read_name}{'chromat_file'} = $1;
-#	    };
-#	    /DIRECTION: (\w+)/ && do {
-#		my $ori = $1;
-#		if    ($ori eq 'rev') { $ori = 'C' }
-#		elsif ($ori eq 'fwd') { $ori = 'U' }
-#		$self->{'contigs'}[$contig]{'reads'}{$read_name}{'strand'} = $ori;
-#	    };
-#	    /DYE: (\S+)/ && do {
-#		$self->{'contigs'}[$contig]{'reads'}{$read_name}{'dye'} = $1;
-#	    };
-#	    /PHD_FILE: (\S+)/ && do {
-#		$self->{'contigs'}[$contig]{'reads'}{$read_name}{'phd_file'} = $1;
-#	    };
-#	    /TEMPLATE: (\S+)/ && do {
-#		$self->{'contigs'}[$contig]{'reads'}{$read_name}{'template'} = $1;
-#	    };
-#	    /TIME: (\S+ \S+ \d+ \d+\:\d+\:\d+ \d+)/ && do {
-#		$self->{'contigs'}[$contig]{'reads'}{$read_name}{'phd_time'} = $1;
-#	    };
-#	};
+	     # Loading read description (DeScription fields)
+          # chad was here! easter 2004.
+          # lingering read is a locatableseq. is there a better way to do this?
+          # i am simply adding more keys to the locatableseq
+ 	/^DS / && do {
+ 	    /CHEM: (\S+)/ && do {
+ 		$lingering_read->{'chemistry'} = $1;
+ 	    };
+ 	    /CHROMAT_FILE: (\S+)/ && do {
+ 		$lingering_read->{'chromatfilename'} = $1;
+ 	    };
+ 	    /DIRECTION: (\w+)/ && do {
+ 		my $ori = $1;
+ 		if    ($ori eq 'rev') { $ori = 'C' }
+ 		elsif ($ori eq 'fwd') { $ori = 'U' }
+ 		$lingering_read->{'strand'} = $ori;
+ 	    };
+ 	    /DYE: (\S+)/ && do {
+ 		$lingering_read->{'dye'} = $1;
+ 	    };
+ 	    /PHD_FILE: (\S+)/ && do {
+ 		$lingering_read->{'phdfilename'} = $1;
+ 	    };
+ 	    /TEMPLATE: (\S+)/ && do {
+ 		$lingering_read->{'template'} = $1;
+ 	    };
+ 	    /TIME: (\S+ \S+ \d+ \d+\:\d+\:\d+ \d+)/ && do {
+ 		$lingering_read->{'phd_time'} = $1;
+ 	    };
+ 	};
 
 	# Loading contig tags ('tags' in phrap terminology, but Bioperl calls them features)
 	/^CT\s*\{/ && do {
 	    my ($contigID,$type,$source,$start,$end,$date) = split(' ',$self->_readline);
+        my %tags = (source => $source, creation_date => $date);
 	    $contigID =~ s/^Contig//i;
-	    my $extra_info = undef;
+	    my $tag_type = 'extra_info';
 	    while ($_ = $self->_readline) {
-		last if (/\}/);
-		$extra_info .= $_;
+            if (/COMMENT\s*\{/)
+            {
+                $tag_type = 'comment';
+            }
+            elsif (/C\}/)
+            {
+                $tag_type = 'extra_info';
+            }
+            elsif (/\}/)
+            {
+                last;
+            }
+            else
+            {
+                $tags{$tag_type} .= "$_";
+            }
 	    }
 	    my $contig_tag = Bio::SeqFeature::Generic->new(-start=>$start,
 							   -end=>$end,
 							   -primary=>$type,
-							   -tag=>{ 'source' => $source,
-								   'creation_date' => $date,
-								   'extra_info' => $extra_info
-							       });
+							   -tag=>\%tags,
+							       );
 	    $assembly->get_contig_by_id($contigID)->add_features([ $contig_tag ],1);
 	};
 
@@ -358,6 +375,45 @@ sub next_assembly {
 
     } # while ($_ = $self->_readline)
 
+          # hmm. what about singlets?
+     my $singletsfilename = $self->file();
+     $singletsfilename =~ s/\.ace.*$/.singlets/;
+     $singletsfilename =~ s/\<//;
+     if (!-f $singletsfilename) {
+               # oh deario, no singlets here
+          return $assembly;
+     }
+     # print("Opening the singletsfile (".$singletsfilename.")\n");
+     my $singlets_fh = Bio::SeqIO->new(-file   => "<$singletsfilename",
+                                          -format => 'fasta');
+     my $adder;
+     while (my $seq = $singlets_fh->next_seq()) {
+          # $dumper->dumpValue($seq);
+               # find the name of this singlet and attempt to get the phd from phd_dir instead
+          my ($phdfilename,$chromatfilename) = qw(unset unset);
+	  if ($seq->desc() =~ /PHD_FILE: (\S+)/) {
+              $phdfilename = $1;
+          }
+          if ($seq->desc() =~ /CHROMAT_FILE: (\S+)/)  {
+               $chromatfilename = $1;
+          }
+          (my $phdfile = $singletsfilename) =~ s/edit_dir.*//;
+          $phdfile .= "phd_dir/$phdfilename";
+          my $singlet = new Bio::Assembly::Singlet();
+          if (-f $phdfile) {
+               # print STDERR ("Reading singlet data from this phdfile ($phdfile)\n");
+               my $phd_fh = new Bio::SeqIO( -file =>   "<$phdfile", -format     =>   'phd');
+               my $swq = $phd_fh->next_seq();
+               $adder = $swq;
+          }
+          else {
+               $adder = $seq;
+          }
+          $adder->{phdfilename} = $phdfilename;
+          $adder->{chromatfilename} = $chromatfilename;
+          $singlet->seq_to_singlet($adder);
+          $assembly->add_singlet($singlet);
+     }
     $assembly->update_seq_list();
     return $assembly;
 }
@@ -372,11 +428,11 @@ sub next_assembly {
 
 =cut
 
-sub write_assemebly {
+sub write_assembly {
     my $self = shift;
-
-    $self->throw("Writing phrap ACE files is not implemented yet! Sorry...");
+    $self->throw_not_implemented();
 }
+
 
 1;
 

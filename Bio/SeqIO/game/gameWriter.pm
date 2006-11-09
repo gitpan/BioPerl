@@ -1,10 +1,8 @@
-# $Id: gameWriter.pm,v 1.3 2003/12/16 17:08:51 jason Exp $
+# $Id: gameWriter.pm,v 1.13.4.1 2006/10/02 23:10:30 sendu Exp $
 #
 # BioPerl module for Bio::SeqIO::game::gameWriter
 #
-# Cared for by Sheldon McKay <smckay@bcgsc.bc.ca>
-#
-# Copyright Sheldon McKay
+# Cared for by Sheldon McKay <mckays@cshl.edu>
 #
 # You may distribute this module under the same terms as perl itself
 #
@@ -17,38 +15,49 @@ Bio::SeqIO::game::gameWriter -- a class for writing game-XML
 
 =head1 SYNOPSIS
 
-# insert sample code here
+  use Bio::SeqIO;
+
+  my $in  = Bio::SeqIO->new( -format => 'genbank',
+                             -file => 'myfile.gbk' );
+  my $out = Bio::SeqIO->new( -format => 'game',
+                             -file => 'myfile.xml' );
+
+  # get a sequence object
+  my $seq = $in->next_seq;
+
+  #write it in GAME format
+  $out->write_seq($seq);
 
 =head1 DESCRIPTION
 
-# Description goes here
+Bio::SeqIO::game::gameWriter writes GAME-XML (v. 1.2) that is readable
+by Apollo.  It is best not used directly.  It is accessed via
+Bio::SeqIO.
 
 =head1 FEEDBACK
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
-to one of the Bioperl mailing lists.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.
 
 Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
-  http://bioperl.org/MailList.shtml      - About the mailing lists
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution.
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-Bug reports can be submitted via email or the web:
-
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Sheldon McKay
 
-Email smckay@bcgsc.bc.ca
+Email mckays@cshl.edu
 
 =head1 APPENDIX
 
@@ -63,11 +72,9 @@ use strict;
 use IO::String;
 use XML::Writer;
 use Bio::SeqFeature::Generic;
-use Bio::SeqIO::game::gameSubs;
 use Bio::SeqFeature::Tools::Unflattener;
 
-use vars '@ISA';
-@ISA = qw/Bio::SeqIO::game::gameSubs/;
+use base qw(Bio::SeqIO::game::gameSubs);
 
 =head2 new
 
@@ -76,13 +83,24 @@ use vars '@ISA';
  Function: constructor method for gameWriter 
  Returns : a game writer object 
  Args    : a Bio::SeqI implementing object
+           optionally, an argument to set map_position to on.
+           ( map => 1 ).  This will create a map_position elemant
+           that will cause the feature coordinates to be remapped to
+           a parent seqeunce.  A sequence name in the format seq:xxx-xxx
+           is expected to determine the offset for the map_position.
+           The default behavior is to have features mapped relative to 
+           the sequence contained in the GAME-XML file
 
 =cut
 
 sub new {
-    my ($caller, $seq) = @_;
+    my ($caller, $seq, %arg) = @_;
     my $class = ref($caller) || $caller;
     my $self = bless ( { seq => $seq }, $class );
+
+    # make a <map_position> element only if requested 
+    $self->{map} = 1 if $arg{map};
+    $self->{anon_set_counters} = {}; #counters for numbering anonymous result and feature sets
     return $self;
 }
 
@@ -99,68 +117,76 @@ sub new {
 sub write_to_game {
     my $self   = shift;
     my $seq    = $self->{seq};
+    my @feats  = $seq->remove_SeqFeatures;
 
-    # save the flat features, just in case
-    $self->{feats} = [ $seq->remove_SeqFeatures ];
+    # intercept nested features 
+    my @nested_feats = grep { $_->get_SeqFeatures } @feats;
+    @feats = grep { !$_->get_SeqFeatures } @feats;
+    map { $seq->add_SeqFeature($_) } @feats;
 
-    # intercept snRNAs and transposons with contained genes
-    my @gene_containers = ();
-    for ( @{$self->{feats}} ) {
-	if ( $_->primary_tag =~ /snRNA|repeat_region|transpos/ && 
-             $_->has_tag('gene') ) {
-	    my @genes = $_->get_tag_values('gene');
-	    my ($min, $max) = (10000000000000,-10000000000000);
-	    for my $g ( @genes ) {
-		my $gene;
-		for my $item ( @{$self->{feats}} ) {
-		    next unless $item->primary_tag eq 'gene';
-		    my ($n) = $item->get_tag_values('gene');
-		    next unless $n eq $g;
-		    $g = $item;
-		    last;
-		}
-		$max = $g->end if $g->end > $max;
-		$min = $g->start if $g->start < $min;
-	    }
-	    
-	    push @gene_containers, $_ if $_->length >= ($max - $min);
-	}
-	else {
-	    $seq->add_SeqFeature($_);
-	}
-    }
+# NB -- Maybe this belongs in Bio::SeqFeatute::Tools::Unflattener
 
-    # unflatten the gene containment hierarchies
+#    # intercept non-coding RNAs and transposons with contained genes
+#    # GAME-XML has these features as top level annotations which contain
+#    # gene elements
+#    my @gene_containers = ();
+     
+#    for ( @feats ) {
+#	if ( $_->primary_tag =~ /[^m]RNA|repeat_region|transpos/ && 
+#	     $_->has_tag('gene') ) {
+#	    my @genes = $_->get_tag_values('gene');
+#	    my ($min, $max) = (10000000000000,-10000000000000);
+#	    for my $g ( @genes ) {
+#		my $gene;
+#		for my $item ( @feats ) {
+#		    next unless $item->primary_tag eq 'gene';
+#		    my ($n) = $item->get_tag_values('gene');
+#		    next unless $n =~ /$g/;
+#		    $gene = $item;
+#		    last;
+#		}
+#		next unless $gene && ref $gene;
+#		$max = $gene->end if $gene->end > $max;
+#		$min = $gene->start if $gene->start < $min;
+#	    }
+#	    
+#	    push @gene_containers, $_ if $_->length >= ($max - $min);
+#	}
+#	else {
+#	    $seq->add_SeqFeature($_);
+#	}
+#    }
+	
+    # unflatten 
     my $uf = Bio::SeqFeature::Tools::Unflattener->new;
     $uf->unflatten_seq( -seq => $seq, use_magic => 1 );
-
+    
     # rearrange snRNA and transposon hierarchies
-    $self->_rearrange($seq, @gene_containers);
+    # $self->_rearrange_hierarchies($seq, @gene_containers);
 
-    # explore nested features
-    #for ( $seq->get_SeqFeatures ) {
-    #	traverse($_);
-    #}
-
+    # add back nested feats
+    $seq->add_SeqFeature( @nested_feats  );
+    
     my $atts  = {};
     my $xml = '';
+    
     # write the XML to a string
     my $xml_handle = IO::String->new($xml);
     my $writer = XML::Writer->new(OUTPUT      => $xml_handle,
-			          DATA_MODE   => 1,
-			          DATA_INDENT => 2,
+				  DATA_MODE   => 1,
+				  DATA_INDENT => 2,
 				  NEWLINE     => 1
-				 );
+				  );
     $self->{writer} = $writer;
-    $writer->xmlDecl("ISO-8859-1");
-    $writer->doctype("game", 'game', "http://www.fruitfly.org/annot/gamexml.dtd.txt");
+#    $writer->xmlDecl("UTF-8");
+#    $writer->doctype("game", 'game', "http://www.fruitfly.org/annot/gamexml.dtd.txt");
     $writer->comment("GAME-XML generated by Bio::SeqIO::game::gameWriter");
     $writer->comment("Created " . localtime);
-    $writer->comment('Questions: smckay@bcgsc.bc.ca');
+    $writer->comment('Questions: mckays@cshl.edu');
     $writer->startTag('game', version => 1.2);
     
     my @sources = grep { $_->primary_tag =~ /source|origin|region/i } $seq->get_SeqFeatures;
-
+    
     for my $source ( @sources ) {
 	next unless $source->length == $seq->length;
 	for ( qw{ name description db_xref organism md5checksum } ) {
@@ -171,47 +197,51 @@ sub write_to_game {
 	}
     }
     
-    my $seqname = $seq->accession unless $seq->accession eq 'unknown';
-    $seqname ||= $seq->display_name;
-    $atts->{name} ||= $seqname;
-    $seq->display_name;
+
+    #set a name in the attributes if none was given
+    $atts->{name} ||= $seq->accession_number ne 'unknown'
+      ? $seq->accession_number : $seq->display_name;
+
     $self->_seq($seq, $atts);
-
-    # make a map_position element
-    my $seqtype;
-    if ( $atts->{mol_type} || $seq->alphabet ) {
-	$seqtype = $atts->{mol_type} || $seq->alphabet;
+    
+    # make a map_position element if req'd
+    if ( $self->{map} ) {
+	my $seqtype;
+	if ( $atts->{mol_type} || $seq->alphabet ) {
+	    $seqtype = $atts->{mol_type} || $seq->alphabet;
+	}
+	else {
+	    $seqtype = 'unknown';
+	}    
+	
+	$writer->startTag(
+			  'map_position', 
+			  seq => $atts->{name},
+			  type => $seqtype
+			  );
+	
+	my ($arm, $start, undef, $end) = $atts->{name} =~ /(\S+):(-?\d+)(\.\.|-)(-?\d+)/;
+	$self->_element('arm', $arm) if $arm;
+	$self->_span($start, $end);
+	$writer->endTag('map_position');
     }
-    else {
-	$seqtype = 'unknown';
-    }    
 
-    $writer->startTag(
-		      'map_position', 
-		      seq => $atts->{name},
-		      type => $seqtype
-		     );
-    
-    my ($arm, $start, undef, $end) = $atts->{name} =~ /(\S+):(-?\d+)(\.\.|-)(-?\d+)/;
-    $self->_element('arm', $arm) if $arm;
-    $self->_span($start, $end);
-    $writer->endTag('map_position');
-    
+    for ( $seq->top_SeqFeatures ) {
 
-    my @feats = $seq->top_SeqFeatures;
-    my @addback;
-    
-    for ( @feats ) {
+      if($_->isa('Bio::SeqFeature::Computation')) {
+	$self->_comp_analysis($_);
+      }
+      else {
         # if the feature has subfeatures, we will assume it is a gene
 	# (hope this is safe!)
 	if ( $_->get_SeqFeatures ) {
-	    $self->_write_gene($_);
+	  $self->_write_gene($_);
+	} else {
+	  # non-gene stuff only
+	  next if $_->primary_tag =~ /CDS|mRNA|exon|UTR/;
+	  $self->_write_feature($_);
 	}
-	else {
-	    # non-gene stuff only
-	    next if $_->primary_tag =~ /CDS|mRNA|exon|UTR/;
-	    $self->_write_feature($_);
-	}
+      }
     }    
     
     $writer->endTag('game');
@@ -219,19 +249,20 @@ sub write_to_game {
     $xml;
 }
 
-=head2 _rearrange
+=head2 _rearrange_hierarchies
 
- Title   : _rearrange
- Usage   : $self->_rearrange($seq)
+ Title   : _rearrange_hierarchies
+ Usage   : $self->_rearrange_hierarchies($seq)
  Function: internal method to rearrange gene containment hierarchies
            so that snRNA or transposon features contain their genes
            rather than the other way around
  Returns : nothing
  Args    : a Bio::RichSeq object
+ Note    : Not currently used, may be removed
 
 =cut
 
-sub _rearrange {
+sub _rearrange_hierarchies { #renamed to not conflict with Bio::Root::_rearrange
     my ($self, $seq, @containers) = @_;
     my @feats   = $seq->remove_SeqFeatures;
     my @genes   = grep { $_->primary_tag eq 'gene' } @feats;
@@ -270,19 +301,29 @@ sub _rearrange {
 sub _write_feature {
     my ($self, $feat, $bare) = @_;
     my $writer = $self->{writer};
-    my $id = $self->_find_name($feat, 'standard_name') || $feat->primary_tag;
+    my $id;
+
+    for ( 'standard_name', $feat->primary_tag, 'ID' ) {
+	$id = $self->_find_name($feat, $_ );
+	last if $id;
+    } 
+
+    $id ||= $feat->primary_tag . '_' . ++$self->{$feat->primary_tag}->{id};
 
     unless ( $bare ) {
 	$writer->startTag('annotation', id => $id); 
 	$self->_element('name', $id);
 	$self->_element('type', $feat->primary_tag);
-	$self->_tags($feat);
     }
 
     $writer->startTag('feature_set', id => $id);
     $self->_element('name', $id);
     $self->_element('type', $feat->primary_tag);
-    $self->_feature_set_tags($feat);
+    $self->_render_tags( $feat,
+			 \&_render_date_tags,
+			 \&_render_comment_tags,
+			 \&_render_tags_as_properties
+		       );
     $self->_feature_span($id, $feat);
     $writer->endTag('feature_set');
     $writer->endTag('annotation') unless $bare;
@@ -293,7 +334,7 @@ sub _write_feature {
  Title   : _write_gene
  Usage   : $self->_write_gene($feature)
  Function: internal method for rendering gene containment hierarchies into 
-           an nested <annotation> element 
+           a nested <annotation> element 
  Returns : nothing
  Args    : a nested Bio::SeqFeature::Generic gene feature
  Note    : A nested gene hierarchy (gene->mRNA->CDS->exon) is expected.  If other gene 
@@ -307,14 +348,26 @@ sub _write_gene {
     my ($self, $feat) = @_;
     my $writer = $self->{writer};
     my $str = $feat->strand;
-    my $id = $self->_find_name($feat, 'standard_name');
-    $id ||= $self->_find_name($feat);
+    my $id = $self->_find_name($feat, 'standard_name')
+          || $self->_find_name($feat, 'gene')
+	  || $self->_find_name($feat, $feat->primary_tag)
+	  || $self->_find_name($feat, 'locus_tag') 
+	  || $self->_find_name($feat, 'symbol')
+          || $self->throw(<<EOM."Feature name was: '".($feat->display_name || 'not set')."'");
+Could not find a gene/feature ID, feature must have a primary tag or a tag
+with one of the names: 'standard_name', 'gene', 'locus_tag', or 'symbol'.
+EOM
     my $gid = $self->_find_name($feat, 'gene') || $id;
 
     $writer->startTag('annotation', id => $id);
     $self->_element('name', $gid);
     $self->_element('type', $feat->primary_tag);
-    $self->_tags($feat);
+    $self->_render_tags( $feat,
+			 \&_render_date_tags,
+			 \&_render_dbxref_tags,
+			 \&_render_comment_tags,
+			 \&_render_tags_as_properties,
+		       );
     
     my @genes;
     
@@ -327,8 +380,13 @@ sub _write_gene {
     }
 
     for my $g ( @genes ) {
-	my $id ||= $self->_find_name($g, 'standard_name');
+	my $id ||= $self->_find_name($g, 'standard_name')
+               || $self->_find_name($g, 'gene') 
+	       || $self->_find_name($feat, 'locus_tag')
+               || $self->_find_name($feat, 'symbol')
+               || $self->throw("Could not find a gene ID");
 	my $gid ||= $self->_find_name($g, 'gene') || $self->_find_name($g);
+
 	$writer->startTag('gene', association => 'IS');
         $self->_element('name', $gid);
         $writer->endTag('gene');
@@ -356,47 +414,48 @@ sub _write_gene {
 		next;
 	    }
 
-	    my $name = $self->_find_name($mRNA, 'standard_name');
+	    my $name = $self->_find_name($mRNA, $mRNA->primary_tag) 
+                     || $self->_find_name($mRNA, 'standard_name');
 
 	    my %attributes;
             my ($cds) = grep { $_->primary_tag eq 'CDS' } $mRNA->get_SeqFeatures;
 
 	    # make sure we have the right CDS for alternatively spliced genes
-	    # (AAAAAARRRGGGHHHHH).  This is meant to deal with sequences 
-            # from flattened game annotations, where both the mRNA and CDS
-            # have split locations
+	    # This is meant to deal with sequences from flattened game annotations, 
+	    # where both the mRNA and CDS have split locations
 	    if ( $cds && @mRNAs > 1 && $name ) {
 		$cds = $self->_check_cds($cds, $name);
 	    }
-	    elsif ( $cds && @mRNAs > 1 ) {
+	    elsif ( $cds && @mRNAs == 1 ) {
 		# The mRNA/CDS pairing must be right. Get the transcript name from the CDS
 		if ( $cds->has_tag('standard_name') ) {
-                    ($name) = $cds->get_tag_values('standard_name');
+		    ($name) = $cds->get_tag_values('standard_name');
                 }
 	    }
-	    else {
+	    
+	    if ( !$name ) {
 		# assign a name to the transcript if it has no 'standard_name' binder
-		$name ||= @mRNAs > 1 ? $id . '-R' . (shift @variants) : $id;
+		$name = $id . '-R' . (shift @variants);
 	    }
 
-	    my $pname;
+            my $pname;
 
 	    if ( $cds ) {
-		if ( $cds->has_tag('standard_name') ) {
-		    ($sn) = $cds->get_tag_values('standard_name');
+		($sn) = $cds->get_tag_values('standard_name')
+		    if $cds->has_tag('standard_name');
+		($sn) ||= $cds->get_tag_values('mRNA')
+		   if $cds->has_tag('mRNA');
+
+		# the protein needs a name
+		my $psn = $self->protein_id($cds, $sn);
+                $self->{curr_pname} = $psn;
+
+		# the mRNA need to know the name of its protein
+		unless ( $feat->has_tag('protein_id') ) {
+		    $feat->add_tag_value('protein_id', $psn);
 		}
 
-		# catch missing protein ids
-		if ( $cds->has_tag('protein_id' ) ) {
-		    if ( !$cds->get_tag_values('protein_id') ) {
-			$cds->remove_tag('protein_id');
-			if ( $cds->has_tag('product') ) {
-			    $cds->add_tag_value($cds->get_tag_values('product'));
-			}
-		    }
-		}
-
-		# define the translation offset
+                # define the translation offset
 		my ($c_start, $c_end);
 		if ( $cds->has_tag('codon_start') ){
 		    ($c_start) = $cds->get_tag_values('codon_start');
@@ -433,10 +492,7 @@ sub _write_gene {
 		my ($aa) = $cds->get_tag_values('translation')
 		    if $cds->has_tag('translation');
 		
-		if ( $aa ) {
-		    $proteins++;
-		    my $psn = $sn;
-		    $psn =~ s/-R/-P/;
+		if ( $aa && $psn ) {
 		    $cds->remove_tag('translation');
 		    my %add_seq = ();
 		    $add_seq{residues} = $aa;
@@ -454,21 +510,26 @@ sub _write_gene {
 			my $start = $cds->start;
 			my $end   = $cds->end;
 			my $str   = $cds->strand;
+			my $acc   = $self->{seq}->accession || $self->{seq}->display_id;
 			$str = $str < 0 ? '[-]' : '';
-			$add_seq{desc}  = "translation from_gene[$id] " .
-			    "cds_boundaries:(" . $self->{seq}->display_id . 
+			$add_seq{desc}  = "translation from_gene[$gid] " .
+			    "cds_boundaries:(" . $acc . 
 			    ":$start..$end$str) transcript_info:[$name]";
 		    }
 		    $self->{add_seqs} ||= [];
 		    push @{$self->{add_seqs}}, \%add_seq;
 		}
 	    }
+
 	    
 	    $writer->startTag('feature_set', id => $name);
 	    $self->_element('name', $name);
 	    $self->_element('type', 'transcript');
-	    $self->_feature_set_tags($mRNA);
-	    $self->_feature_set_tags($cds) if $cds;
+	    $self->_render_tags($_,
+				\&_render_date_tags,
+				\&_render_comment_tags,
+				\&_render_tags_as_properties,
+			       ) for ( $mRNA, ($cds) || () );
 	     
 	    # any UTR's, etc associated with this transcript?
 	    for my $thing ( @other_stuff ) {
@@ -497,13 +558,14 @@ sub _write_gene {
 		    $self->_feature_span($ename, $unit);
 		}
 		elsif ( $unit->primary_tag eq 'start_codon' ) {
-		    $self->_feature_span(($sn || $gid), $unit, 1);
+		    $self->_feature_span(($sn || $gid), $unit, $self->{curr_pname});
 		}
 		else {
 		    my $uname = $unit->primary_tag . ":$id";
 		    $self->_feature_span($uname, $unit);
 		}
 	    }
+	    $self->{curr_pname} = '';
 	    $writer->endTag('feature_set');
 	}
 	
@@ -526,7 +588,7 @@ sub _write_gene {
         $self->_element('description', "\n     $desc\n    ");
 
 	my $aa = $h{residues};
-	$aa =~ s/\w{60}/$&\n      /g;
+	$aa =~ s/(\w{60})/$1\n      /g;
 	$aa =~ s/\n\s+$//m;
 	$aa = "\n      " . $aa . "\n    ";
 	$self->_element('residues', $aa);
@@ -544,6 +606,7 @@ sub _write_gene {
     $self->{other_stuff} = [];
 }
 
+
 =head2 _check_cds
 
  Title   : _check_cds
@@ -553,107 +616,367 @@ sub _write_gene {
  Returns : a Bio::SeqFeature::Generic CDS object
  Args    : the CDS object plus the transcript\'s 'standard_name'
  Note    : this method only works if alternatively spliced transcripts are bound
-           together by a 'standard_name' qualifier.  If none is present, we will
-           hope that the exons were derived from a segmented RNA or a CDS with no
-           associated mRNA feature.  Neither of these two cases would be confused
-           by alternative splice variants.
+           together by a 'standard_name' or 'mRNA' qualifier.  If none is present, 
+           we will hope that the exons were derived from a segmented RNA or a CDS 
+           with no associated mRNA feature.  Neither of these two cases would be 
+           confounded by alternative splice variants.
 
 =cut
 
 
 sub _check_cds {
     my ($self, $cds, $name) = @_;
+    my $cname = $self->_find_name( $cds, 'standard_name' )
+             || $self->_find_name( $cds, 'mRNA');
     
-    # this will only work if the 'standard_name' binder is used
-    if ( $cds->has_tag('standard_name') ) {
-	my ($cname) = $cds->get_tag_values('standard_name');
+    if ( $cname ) {
 	if ( $cname eq $name ) {
 	    return $cds;
 	}
 	else {
 	    my @CDS = grep { $_->primary_tag eq 'CDS' } @{$self->{feats}};
 	    for ( @CDS ) {
-		next unless $_->has_tag('standard_name');
-		my ($sname) = $_->get_tag_values('standard_name');
+		my ($sname) = $_->_find_name( $_, 'standard_name' )
+		           || $_->_find_name( $_, $_->primary_tag );
 		return $_ if $sname eq $name;
 	    }
 	    return '';
 	}
     }
-    # otherwise, just pass back the CDS as is
     else {
 	return $cds;
     }
 
 }
 
-################### DEBUGGING ###########################################
-# explore the nested gene containment hierarchy
-sub traverse {
-    my $feat = shift;
-    warn $feat->primary_tag, "\n";
-    for ($feat->get_SeqFeatures) {
-        warn "\t", $_->primary_tag, ' ', sname($_), "\n";
-	for my $s ($_->get_SeqFeatures) {
-	    warn "\t\t", $s->primary_tag, ' ', sname($s), "\n";
-	    for my $ss($s->get_SeqFeatures) {
-		warn "\t\t\t", $ss->primary_tag, ' ', sname($ss), "\n";
-	    }
-	}
-    }
-}
+=head2 _comp_analysis
 
-sub sname {
-    my $f = shift;
-    return '' unless $f->has_tag('standard_name');
-    $f->get_tag_values('standard_name');
-}
-##########################################################################
-
-=head2 _feature_set_tags
-
- Title   : _feature_set_tags
- Usage   : $self->_feature_set_tags($feature)
- Function: an internal method to handle tag/value attributes
-           for a feature set element
- Returns : nothing
- Args    : a Bio::SeqFeatureI-compliant object
+  Usage:
+  Desc :
+  Ret  :
+  Args :
+  Side Effects:
+  Example:
 
 =cut
 
-sub _feature_set_tags {
-    my ($self, $feat) = @_;
-    my $writer = $self->{'writer'};
-    
-    my @tags = $feat->get_all_tags;
-    for my $tag ( @tags ) {
-	next if $tag eq 'timestamp';
-        	
-	for my $val ( $feat->get_tag_values($tag) ) { 
-	    if ( $tag eq 'date' ) {
-		my ($date) = $feat->get_tag_values($tag);
-		my %timestamp;
-		if ( $feat->has_tag('timestamp') ) {
-		    ($timestamp{'timestamp'}) = $feat->get_tag_values('timestamp'); 
-		    $feat->remove_tag('timestamp');
-		}
-		$self->_element('date', $val, \%timestamp);
-	    }
-            elsif ( $tag eq 'comment' ) {
-                unless ( $val =~ /=.+?;.+=/ ) {
-                    $writer->startTag('comment');
-                    $self->_element('text', $val);
-                    $writer->endTag('comment');
-                }
-                else{
-                    $self->_unflatten_attribute('comment', $val);
-                }
-            }
-	    else {
-		$self->_property($tag, $val);
-	    }
-	}
+sub _comp_analysis {
+  my ($self, $feat) = @_;
+  my $writer = $self->{writer};
+
+  $writer->startTag('computational_analysis');
+  $self->_element('program', $feat->program_name || 'unknown program');
+  $self->_element('database', $feat->database_name) if $feat->database_name;
+  $self->_element('version', $feat->program_version) if $feat->program_version;
+  $self->_element('type', $feat->primary_tag) if $feat->primary_tag;
+  $self->_render_tags($feat,
+		      \&_render_date_tags,
+		      \&_render_tags_as_properties,
+		     );
+  $self->_comp_result($feat);
+  $writer->endTag('computational_analysis');
+}
+
+=head2 _comp_result
+
+  Usage:
+  Desc : recursively render a feature and its subfeatures as
+         <result_set> and <result_span> elements
+  Ret  : nothing meaningful
+  Args : a feature
+
+=cut
+
+
+sub _comp_result {
+  my ($self,$feat) = @_;
+
+  #check that all our subfeatures have the same strand
+  
+
+  #write result sets for things that have subfeatures, or things
+  #that have some tags
+  if( my @subfeats = $feat->get_SeqFeatures or $feat->get_all_tags ) {
+    my $writer = $self->{writer};
+    $writer->startTag('result_set',
+		      ($feat->can('computation_id') && defined($feat->computation_id))
+		        ? (id => $feat->computation_id) : ()
+		     );
+    my $fakename = $feat->primary_tag || 'no_name';
+    $self->_element('name', $feat->display_name || ($fakename).'_'.++$self->{anon_result_set_counters}{$fakename} );
+    $self->_seq_relationship('query', $feat);
+    $self->_render_tags($feat,
+			\&_render_output_tags
+		       );
+    for (@subfeats) { #render the subfeats, if any
+      $self->_comp_result($_);
     }
+    $self->_comp_result_span($feat); #also have a span to hold this info
+    $writer->endTag('result_set');
+  } else {
+    #just write result spans for simple things
+    $self->_comp_result_span($feat);
+  }
+}
+
+=head2 _comp_result_span
+
+  Usage: _comp_result_span('foo12',$feature);
+  Desc : write GAME XML for a Bio::SeqFeature::Computation feature
+         that has no subfeatures
+  Ret  : nothing meaningful
+  Args : name for this span (some kind of identifier),
+         SeqFeature object to put into this span
+  Side Effects:
+  Example:
+
+=cut
+
+sub _comp_result_span {
+
+  my ($self, $feat) = @_;
+  my $writer = $self->{writer};
+
+  $writer->startTag('result_span',
+		    ($feat->can('computation_id') && defined($feat->computation_id) ? (id => $feat->computation_id) : ())
+		   );
+  $self->_element('name', $feat->display_name) if $feat->display_name;
+  $self->_element('type', $feat->primary_tag) if $feat->primary_tag;
+  my $has_score = $feat->can('has_score') ? $feat->has_score : defined($feat->score);
+  $self->_element('score', $feat->score) if $has_score;
+  $self->_render_tags($feat,
+		      \&_render_output_tags
+		     );
+  $self->_seq_relationship('query', $feat);
+  $self->_render_tags($feat,
+		      \&_render_target_tags,
+		     );
+  $writer->endTag('result_span');
+}
+
+=head2 _render_tags
+
+  Usage:
+  Desc :
+  Ret  :
+  Args :
+  Side Effects:
+  Example:
+
+=cut
+
+sub _render_tags {
+  my ($self,$feat,@render_funcs) = @_;
+
+  my @tagnames = $feat->get_all_tags;
+
+  #do a chain-of-responsibility down the allowed
+  #tag handlers types for the context in which this is
+  #called
+  foreach my $func (@render_funcs) {
+    @tagnames = $self->$func($feat,@tagnames);
+  }
+}
+
+=head2 _render_output_tags
+
+  Usage:
+  Desc : print out <output> elements, with contents
+         taken from the SeqFeature::Computation's 'output' tag
+  Ret  : array of tag names this did not render
+  Args : feature object, list of tag names to maybe render
+
+  In game xml, only <result_span> and <result_set> elements can
+  have <output> elements.
+
+=cut
+
+sub _render_output_tags {
+  my ($self, $feat, @tagnames) = @_;
+  my $writer = $self->{writer};
+  my @passed_up;
+
+  for my $tag (@tagnames) {
+    if(lc($tag) eq 'output') {
+      my @outputs = $feat->get_tag_values($tag);
+      while(my($type,$val) = splice @outputs,0,2) {
+	$writer->startTag('output');
+	$self->_element('type',$type);
+	$self->_element('value',$val);
+	$writer->endTag('output');
+      }
+    }
+    else {
+      push @passed_up,$tag;
+    }
+  }
+  return @passed_up;
+}
+
+=head2 _render_tags_as_properties
+
+  Usage:
+  Desc :
+  Ret  : empty array
+  Args : feature object, array of tag names
+  Side Effects:
+  Example:
+
+  In game xml, <annotation>, <computational_analysis>,
+  and <feature_set> elements can have properties.
+
+=cut
+
+sub _render_tags_as_properties {
+  my ($self,$feat,@tagnames) = @_;
+
+  foreach my $tag (@tagnames) {
+    if( $tag ne $feat->primary_tag ) {
+      $self->_property($tag,$_) for $feat->get_tag_values($tag);
+    }
+  }
+  return ();
+}
+
+=head2 _render_comment_tags
+
+  Usage:
+  Desc :
+  Ret  : names of tags that were not comment tags
+  Args : feature object, tag names available for us to render
+  Side Effects: writes XML
+  Example:
+
+  In game xml, <annotation> and <feature_set> elements can
+  have comments.
+
+=cut
+
+sub _render_comment_tags {
+  my ($self,$feat,@tagnames) = @_;
+  my $writer = $self->{writer};
+  my @passed_up;
+  for my $tag ( @tagnames ) {
+    if( lc($tag) eq 'comment' ) {
+      for my $val ($feat->get_tag_values($tag)) {
+	if ( $val =~ /=.+?;.+=/ ) {
+	  $self->_unflatten_attribute('comment', $val);
+	} else {
+	  $writer->startTag('comment');
+	  $self->_element('text', $val);
+	  $writer->endTag('comment');
+	}
+      }
+    } else {
+      push @passed_up,$tag;
+    }
+  }
+  return @passed_up;
+}
+
+=head2 _render_date_tags
+
+  Usage:
+  Desc :
+  Ret  : names of tags that were not date tags
+  Args : feature, list of tag names available for us to render
+  Side Effects: writes XML for <date> elements
+  Example:
+
+  In game xml, <annotation>, <computational_analysis>,
+  <transaction>, <comment>, and <feature_set> elements
+  can have <date>s.
+
+=cut
+
+sub _render_date_tags {
+  my ($self,$feat,@tagnames) = @_;
+  my @passed_up;
+  my $date;
+  my %timestamp;
+  foreach my $tag (@tagnames) {
+    if ( lc($tag) eq 'date' ) {
+      ($date) = $feat->get_tag_values($tag);
+    } elsif ( lc($tag) eq 'timestamp' ) {
+      ($timestamp{'timestamp'}) = $feat->get_tag_values($tag);
+      #ignore timestamps, they are folded in with date elem above
+    } else {
+      push @passed_up,$tag;
+    }
+  }
+  $self->_element('date', $date, \%timestamp) if defined($date);
+  return @passed_up;
+}
+
+=head2 _render_dbxref_tags
+
+  Desc : look for xref tags and render them if they are there
+  Ret  : tag names that we didn't render
+  Args : feature object, list of tag names to render
+  Side Effects: writes a <dbxref> element if a tag with name
+                matching /xref$/i is present
+
+
+  In game xml, <annotation> and <seq> elements can have dbxrefs.
+
+=cut
+
+#TODO: can't sequences also have database xrefs?  how to find those?
+sub _render_dbxref_tags {
+  my ($self, $feat, @tagnames) = @_;
+  my @passed_up;
+  for my $tag ( @tagnames ) {                           #look through all the tags
+    if( $tag =~ /xref$/i ) {                            #if they are xref tags
+      my $writer = $self->{writer};
+      for my $val ( $feat->get_all_tag_values($tag) ) { #get all their values
+	if( my ($db,$dbid) = $val =~ /(\S+):(\S+)/ ) {  #and render them as xrefs
+	  $writer->startTag('dbxref');
+	  $self->_element('xref_db', $db);
+	  $dbid = $val if $db =~ /^[A-Z]O$/; # -> ontology, like GO
+	  $self->_element('db_xref_id', $dbid);
+	  $writer->endTag('dbxref');
+	}
+      }
+    } else {
+      push @passed_up,$tag;
+    }
+  }
+  return @passed_up;
+}
+
+
+=head2 _render_target_tags
+
+  Usage:
+  Desc : process any 'Target' tags that would indicate a sequence alignment subject
+  Ret  : array of tag names that we didn't render
+  Args : feature object
+  Side Effects: writes a <seq_relationship> of type 'subject' if it finds
+                any properly formed tags named 'Target'
+  Example:
+
+  In game xml, <result_span>, <feature_span>, and <result_set> can have
+  <seq_relationship>s.  <result_set> can only have one, a 'query' relation.
+
+=cut
+
+sub _render_target_tags {
+  my ($self,$feat,@tagnames) = @_;
+  my @passed_up;
+  foreach my $tag (@tagnames) {
+    if($tag eq 'Target' && (my @alignment = $feat->get_tag_values('Target')) >= 3) {
+      $self->_seq_relationship('subject',
+			       Bio::Location::Simple->new( -start => $alignment[1],
+							   -end   => $alignment[2],
+							 ),
+			       $alignment[0],
+			       $alignment[3],
+			      );
+    } else {
+      push @passed_up, $tag;
+    }
+  }
+  return @passed_up;
 }
 
 
@@ -670,7 +993,7 @@ sub _feature_set_tags {
 sub _property {
     my ($self, $tag, $val) = @_;
     my $writer = $self->{writer};
-    
+
     if ( length $val > 45 ) {
 	my @val = split /\s+/, $val;
 	$val = '';
@@ -687,46 +1010,6 @@ sub _property {
     $self->_element('type', $tag);
     $self->_element('value', $val);
     $writer->endTag('property');
-}
-
-=head2 _tags
-
- Title   : _tags
- Usage   : $self->_tags($feat)
- Function: an internal method to intercept GO terms and
-           db_xrefs and handle generic tag/value pairs for a gene
- Returns : nothing 
- Args    : a Bio::SeqFeatureI-compliant object
-
-=cut
-
-sub _tags {
-    my ($self, $feat) = @_;
-    my $writer = $self->{writer};
-    my @tags = $feat->get_all_tags;
-    
-    for my $tag ( @tags ) {
-	for my $val ( $feat->get_tag_values($tag) ) {
-	    if ( $tag =~ /xref/ && $val =~ /GO/ ) {
-		    $writer->startTag('aspect');
-		    $self->_xref($val);
-		    $writer->endTag('aspect');
-	    }
-	    elsif ( $tag eq 'comment' ) {
-                unless ( $val =~ /=.+?;.+=/ ) {
-                    $writer->startTag('comment');
-                    $self->_element('text', $val);
-                    $writer->endTag('comment');
-                }
-                else{
-		    $self->_unflatten_attribute('comment', $val);
-                }
-            }
-	    else {
-		$self->_property($tag, $val);
-	    }
-	}
-    }
 }
 
 =head2 _unflatten_attribute
@@ -794,13 +1077,12 @@ sub _xref {
 =cut
 
 sub _feature_span {
-    my ($self, $name, $feat, $p) = @_;
+    my ($self, $name, $feat, $pname) = @_;
     my $type = $feat->primary_tag;
     my $writer = $self->{writer};
     my %atts = ( id => $name );
     
-    if ( $p ) {
-	my $pname = $name;
+    if ( $pname ) {
 	$pname =~ s/-R/-P/;
 	$atts{produces_seq} = $pname;
     }
@@ -817,21 +1099,27 @@ sub _feature_span {
  Title   : _seq_relationship
  Usage   : $self->_seq_relationship($type, $loc)
  Function: an internal method to handle feature_span sequence relationships
- Returns : nothing 
- Args    : feature type and a Bio::LocationI-compliant object
+ Returns : nothing
+ Args    : feature type, a Bio::LocationI-compliant object,
+           (optional) sequence name (defaults to the query seq)
+           and (optional) alignment string
 
 =cut
 
 sub _seq_relationship {
-    my ($self, $type, $loc) = @_;
+    my ($self, $type, $loc, $seqname, $alignment) = @_;
     my $writer = $self->{'writer'};
-    
+
+    $seqname ||= #if no seqname passed in, use the name of our annotating seq
+      $self->{seq}->accession_number ne 'unknown' && $self->{seq}->accession_number
+	|| $self->{seq}->display_id || 'unknown';
     $writer->startTag(
 		      'seq_relationship',
 		      type => $type,
-		      seq  => ($self->{seq}->accession || $self->{seq}->display_id)
+		      seq  => $seqname,
 		     );
     $self->_span($loc);
+    $writer->_element('alignment',$alignment) if $alignment;
     $writer->endTag('seq_relationship');
 }
 
@@ -911,7 +1199,8 @@ sub _seq {
     my ($self, $seq, $atts) = @_;
 
     my $writer = $self->{'writer'};
-    
+
+   
     # game moltypes
     my $alphabet = $seq->alphabet;
     $alphabet ||= $seq->mol_type if $seq->can('mol_type');
@@ -932,14 +1221,19 @@ sub _seq {
     $writer->startTag(@seq);
 
     for my $k ( keys %{$atts} ) {
-	$self->_element($k, $atts->{$k});
+	if ( $k =~ /xref/ ) {
+	    $self->_xref($atts->{$k});
+	}
+	else {
+	    $self->_element($k, $atts->{$k});
+	}    
     }
     
     # add leading spaces and line breaks for 
     # nicer xml formatting/indentation
     my $sp  = (' ' x 6);
     my $dna = $seq->seq;
-    $dna =~ s/\w{60}/$&\n$sp/g;
+    $dna =~ s/(\w{60})/$1\n$sp/g;
     $dna = "\n$sp" . $dna . "\n    ";
     
     if ( $seq->species && !$self->{has_organism}) {
@@ -969,16 +1263,10 @@ sub _find_name {
 	($name) = $feat->get_tag_values($key);
 	return $name;
     }
-
-    for ( qw/ gene standard_name locus_tag symbol / ) {
-	($name) = $feat->get_tag_values($_) if $feat->has_tag($_);
-        if ( $name ) {
-	    return $name;
-	}
+    else {
+#      warn "Could not find name '$key'\n";
+	return '';
     }
-
-    # I give up!!!
-    return $feat->display_name || '';
 }
 
 1;

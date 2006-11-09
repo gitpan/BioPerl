@@ -1,10 +1,10 @@
-## $Id: Primer.t,v 1.1 2003/07/11 15:19:41 shawnh Exp $
+## $Id: Primer.t,v 1.2 2004/02/18 01:25:17 redwards Exp $
 
 # test for Bio::SeqFeature::Primer
 # written by Rob Edwards
 
 use strict;
-use constant NUMTESTS => 16;
+use constant NUMTESTS => 18;
 
 BEGIN {
     eval { require Test; };
@@ -19,7 +19,7 @@ BEGIN {
 use Bio::SeqFeature::Primer;
 ok(1);
 
-my ($primer, $location, $start, $end, $strand, $id, $tm);
+my ($primer, $location, $start, $end, $strand, $id, $tm, $tme);
 
 ok $primer=Bio::SeqFeature::Primer->new(-seq=>'CTTTTCATTCTGACTGCAACG');
 ok $primer->seq->seq eq "CTTTTCATTCTGACTGCAACG";
@@ -35,4 +35,6 @@ ok $strand == -1;
 ok $id=$primer->display_id('test');
 ok $id eq "test";
 ok $tm = $primer->Tm;
-ok int($tm) == 58;
+ok $tme = $primer->Tm_estimate;
+ok int($tm) == 52;
+ok int($tme) == 58;

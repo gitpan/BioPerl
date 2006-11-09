@@ -2,7 +2,7 @@
 ## Bioperl Test Harness Script for Modules
 ##
 # CVS Version
-# $Id: SeqFeature.t,v 1.33 2003/10/25 14:52:22 heikki Exp $
+# $Id: SeqFeature.t,v 1.41.4.3 2006/10/02 23:10:40 sendu Exp $
 
 
 # Before `make install' is performed this script should be runnable with
@@ -12,46 +12,44 @@ use strict;
 use vars qw($NUMTESTS);
 my $skipdbtests ;
 BEGIN { 
-    # to handle systems with no installed Test module
-    # we include the t dir (where a copy of Test.pm is located)
-    # as a fallback
-    eval { require Test; };
-    if( $@ ) {
-	use lib 't';
-    }
-    use Test;
-    $NUMTESTS = 74;
-    plan tests => $NUMTESTS;
+	# to handle systems with no installed Test module
+	# we include the t dir (where a copy of Test.pm is located)
+	# as a fallback
+	eval { require Test; };
+	if( $@ ) {
+		use lib 't';
+	}
+	use Test;
+	$NUMTESTS = 211;
+	plan tests => $NUMTESTS;
 
-    eval { 
-	require IO::String; 
-	require LWP::UserAgent;
-	require HTTP::Request::Common;
-	require Bio::DB::GenBank;
-       };
-    if( $@ ) {
-	print STDERR "skipping DB tests...\n";
-	$skipdbtests = 1;
-    } else {
-	$skipdbtests = 0;
-    }
-
+	eval { 
+		require IO::String; 
+		require LWP::UserAgent;
+		require HTTP::Request::Common;
+		require Bio::DB::GenBank;
+	};
+	if( $@ ) {
+		print STDERR "IO::String or LWP::UserAgent or HTTP::Request not installed - skipping DB tests...\n";
+		$skipdbtests = 1;
+	} else {
+		$skipdbtests = 0;
+	}
 }
 
 END {
-    foreach ( $Test::ntest..$NUMTESTS) {
-	skip('Skipping tests which need the Bio::DB::GenBank module',1);
-    }
+	foreach ( $Test::ntest..$NUMTESTS) {
+		skip('Skipping tests which need the Bio::DB::GenBank module',1);
+	}
 }
 
 use Bio::Seq;
+use Bio::SeqIO;
 use Bio::SeqFeature::Generic;
 use Bio::SeqFeature::FeaturePair;
 use Bio::SeqFeature::SimilarityPair;
-use Bio::Tools::Blast;
 use Bio::SeqFeature::Computation;
-
-use Bio::SeqIO;
+use Bio::SeqFeature::Annotated;
 use Bio::SeqFeature::Gene::Transcript;
 use Bio::SeqFeature::Gene::UTR;
 use Bio::SeqFeature::Gene::Exon;
@@ -59,7 +57,7 @@ use Bio::SeqFeature::Gene::Poly_A_site;
 use Bio::SeqFeature::Gene::GeneStructure;
 
 use Bio::Location::Fuzzy;
-
+use Env qw(BIOPERLDEUG); # for importing bioperldebug var
 ok(1);
 
 # predeclare variables for strict
@@ -330,28 +328,124 @@ ok($intersect->end,   15);
 
 # now let's test spliced_seq
 
-ok  $seqio = new Bio::SeqIO(-file => Bio::Root::IO->catfile(qw(t data AY095303S1.gbk)),
+ok  $seqio = new Bio::SeqIO(-file => Bio::Root::IO->catfile
+			    (qw(t data AY095303S1.gbk)),
                             -format  => 'genbank');
 
 ok $geneseq = $seqio->next_seq();
 my ($CDS) = grep { $_->primary_tag eq 'CDS' } $geneseq->get_SeqFeatures;
-my $db = new Bio::DB::GenBank();
-$CDS->verbose(-1);
-my $cdsseq = $CDS->spliced_seq($db);
-exit;
-ok($cdsseq->subseq(1,60, 'ATGCAGCCATACGCTTCCGTGAGCGGGCGATGTCTATC'.
-                   'TAGACCAGATGCATTGCATGTGATACCGTTTGGGCGAC'));
-ok($cdsseq->translate->subseq(1,100), 'MQPYASVSGRCLSRPDALHVIPFGRP'.
-   'LQAIAGRRFVRCFAKGGQPGDKKKLNVTDKLRLGNTPPTLDVLKAPRPTDAPSAIDDAPSTSGLGLGGGVASPR');
+my $db;
 
-ok  $seqio = new Bio::SeqIO(-file => Bio::Root::IO->catfile(qw(t data AF032047.gbk)),
+unless( $skipdbtests ) {
+ $db = new Bio::DB::GenBank(-verbose=> $ENV{BIOPERLDEBUG});
+ $CDS->verbose(-1);
+ my $cdsseq = $CDS->spliced_seq(-db => $db,-nosort => 1);
+ 
+ ok($cdsseq->subseq(1,60, 'ATGCAGCCATACGCTTCCGTGAGCGGGCGATGTCTATC'.
+		    'TAGACCAGATGCATTGCATGTGATACCGTTTGGGCGAC'));
+ ok($cdsseq->translate->subseq(1,100), 'MQPYASVSGRCLSRPDALHVIPFGRP'.
+    'LQAIAGRRFVRCFAKGGQPGDKKKLNVTDKLRLGNTPPTLDVLKAPRPTDAPSAIDDAPSTSGLGLGGGVASPR');
+} else {
+    skip('Cannot test for remote loc with spliced_seq w/o LWP installed',1);
+    skip('Cannot test for remote loc with spliced_seq w/o LWP installed',1);
+
+}
+ok  $seqio = new Bio::SeqIO(-file => Bio::Root::IO->catfile
+			    (qw(t data AF032047.gbk)),
                             -format  => 'genbank');
 ok $geneseq = $seqio->next_seq();
 ($CDS) = grep { $_->primary_tag eq 'CDS' } $geneseq->get_SeqFeatures;
+unless ($skipdbtests ) {
+    my $cdsseq = $CDS->spliced_seq( -db => $db, -nosort => 1);
+    ok($cdsseq->subseq(1,60, 'ATGGCTCGCTTCGTGGTGGTAGCCCTGCTCGCGCTACTCTCTCTG'.
+		       'TCTGGCCTGGAGGCTATCCAGCATG'));
+    ok($cdsseq->translate->seq, 'MARFVVVALLALLSLSGLEAIQHAPKIQVYSRHPAENGKPNFL'.
+       'NCYVSGFHPSDIEVDLLKNGKKIEKVEHSDLSFSKDWSFYLLYYTEFTPNEKDEYACRVSHVTFPTPKTVKWDRTM*');
+} else {
+    skip('Cannot test for remote loc with spliced_seq w/o LWP installed',1);
+    skip('Cannot test for remote loc with spliced_seq w/o LWP installed',1);
+}
 
-$cdsseq = $CDS->spliced_seq($db);
-ok($cdsseq->subseq(1,60, 'ATGGCTCGCTTCGTGGTGGTAGCCCTGCTCGCGCTACTCTCTCTG'.
-                   'TCTGGCCTGGAGGCTATCCAGCATG'));
-ok($cdsseq->translate->seq, 'MARFVVVALLALLSLSGLEAIQHAPKIQVYSRHPAENGKPNFL'.
-   'NCYVSGFHPSDIEVDLLKNGKKIEKVEHSDLSFSKDWSFYLLYYTEFTPNEKDEYACRVSHVTFPTPKTVKWDRTM*');
 
+# trans-spliced 
+
+ok( $seqio = Bio::SeqIO->new(-format => 'genbank',
+									  -file   => 
+			    Bio::Root::IO->catfile(qw(t data NC_001284.gbk))));
+my $genome = $seqio->next_seq;
+
+foreach my $cds (grep { $_->primary_tag eq 'CDS' } $genome->get_SeqFeatures) {
+   my $spliced = $cds->spliced_seq(-nosort => 1)->translate->seq;
+   chop($spliced); # remove stop codon
+   ok($spliced,($cds->get_tag_values('translation'))[0],'spliced seq translation matches expected');
+}
+
+my $sfa = Bio::SeqFeature::Annotated->new(-start => 1,
+					  -end => 5,
+					  -strand => "+",
+					  -frame => 2,
+					  -phase => 2,
+					  -score => 12,
+					  -display_name => 'test.annot',
+					  -seq_id => 'test.displayname' );
+
+ok (defined $sfa);
+my $loc = $sfa->location;
+ok $loc->isa("Bio::Location::Simple");
+
+ok $sfa->display_name eq 'test.annot';
+
+
+#test bsfa::from_feature
+{
+  my $sfg = Bio::SeqFeature::Generic->new ( -start => 400,
+					    -end => 440,
+					    -strand => 1,
+					    -primary => 'nucleotide_motif',
+					    -source  => 'program_a',
+					    -tag => {
+						     silly => 20,
+						     new => 1
+						    }
+					  );
+	my $sfa2;
+	eval {
+		$sfa2 = Bio::SeqFeature::Annotated->new(-feature => $sfg);
+	};
+	if ($@) {
+		foreach ( $Test::ntest..$NUMTESTS ) { skip('Could not get sofa definitions from external server',1); }
+		exit(0);
+	}
+  ok $sfa2->type->name,'nucleotide_motif';
+  ok $sfa2->primary_tag, 'nucleotide_motif';
+  ok $sfa2->source,'program_a';
+  ok $sfa2->strand,1;
+  ok $sfa2->start,400;
+  ok $sfa2->end,440;
+  ok $sfa2->get_Annotations('silly')->value,20;
+  ok $sfa2->get_Annotations('new')->value,1;
+
+  my $sfa3 = Bio::SeqFeature::Annotated->new( -start => 1,
+					      -end => 5,
+					      -strand => "+",
+					      -frame => 2,
+					      -phase => 2,
+					      -score => 12,
+					      -display_name => 'test.annot',
+					      -seq_id => 'test.displayname' );
+  eval {
+	$sfa3->from_feature($sfg);
+  };
+  if ($@) {
+	foreach ( $Test::ntest..$NUMTESTS ) { skip('Could not get sofa definitions from external server',1); }
+	exit(0);
+  }
+  ok $sfa3->type->name,'nucleotide_motif';
+  ok $sfa3->primary_tag, 'nucleotide_motif';
+  ok $sfa3->source,'program_a';
+  ok $sfa3->strand,1;
+  ok $sfa3->start,400;
+  ok $sfa3->end,440;
+  ok $sfa3->get_Annotations('silly')->value,20;
+  ok $sfa3->get_Annotations('new')->value,1;
+}

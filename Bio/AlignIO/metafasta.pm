@@ -1,4 +1,4 @@
-# $Id: metafasta.pm,v 1.1 2003/04/07 04:35:12 heikki Exp $
+# $Id: metafasta.pm,v 1.6.4.2 2006/11/08 17:25:54 sendu Exp $
 #
 # BioPerl module for Bio::AlignIO::metafasta
 #
@@ -45,15 +45,14 @@ L<Bio::SeqIO::metafasta>
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email heikki@ebi.ac.uk
+Email heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -65,15 +64,15 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::AlignIO::metafasta;
-use vars qw(@ISA $WIDTH);
+use vars qw($WIDTH);
 use strict;
 
-use Bio::AlignIO;
 use Bio::SimpleAlign;
+use Bio::Seq::Meta;
 use Bio::Seq::SeqFactory;
 use Bio::Seq::SeqFastaSpeedFactory;
 
-@ISA = qw(Bio::AlignIO);
+use base qw(Bio::AlignIO);
 
 BEGIN { $WIDTH = 60}
 
@@ -131,11 +130,11 @@ sub next_aln {
 
         defined $sequence && $sequence =~ s/\s//g; # Remove whitespace
 
-        $seq = new Bio::Seq::Meta('-seq'=>$sequence,
-                                  '-id'=>$id,
-                                  '-start'=>$start,
-                                  '-end'=>$end
-                                 );
+        $seq = Bio::Seq::Meta->new('-seq'=>$sequence,
+				   '-id'=>$id,
+				   '-start'=>$start,
+				   '-end'=>$end
+				  );
 
         foreach my $meta (@metas) {
             my ($name,$string) = split /\n/, $meta;
@@ -144,6 +143,15 @@ sub next_aln {
         }
 
 	$aln->add_seq($seq);
+	
+	# alignment needs seqs all the same length, pad with gaps
+	my $alnlen = $aln->length;
+	foreach my $seq ( $aln->each_seq ) {
+		if ( $seq->length < $alnlen ) {
+			my ($diff) = ($alnlen - $seq->length);
+			$seq->seq( $seq->seq() . "-" x $diff);
+		}
+	}
     }
     return $aln;
 }

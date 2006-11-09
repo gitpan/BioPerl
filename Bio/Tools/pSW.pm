@@ -1,4 +1,4 @@
-## $Id: pSW.pm,v 1.22 2003/05/15 08:13:56 heikki Exp $
+## $Id: pSW.pm,v 1.27.4.1 2006/10/02 23:10:32 sendu Exp $
 
 #
 # BioPerl module for Bio::Tools::pSW
@@ -85,25 +85,24 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules.  Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-    bioperl-l@bioperl.org              - General discussion
-    http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution. Bug reports can be submitted via email
-or the web:
+the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-    bioperl-bugs@bio.perl.org                   
-    http://bugzilla.bioperl.org/           
+  http://bugzilla.open-bio.org/           
 
 =head1 AUTHOR
 
-Ewan Birney, birney@sanger.ac.uk or birney@ebi.ac.uk
+Ewan Birney, birney-at-sanger.ac.uk or birney-at-ebi.ac.uk
 
 =head1 CONTRIBUTORS
 
-Jason Stajich, jason@bioperl.org
+Jason Stajich, jason-at-bioperl.org
 
 =head1 APPENDIX
 
@@ -115,7 +114,6 @@ methods. Internal methods are usually preceded with an underscore "_".
 # Let the code begin...
 
 package Bio::Tools::pSW;
-use vars qw(@ISA);
 use strict;
 no strict ( 'refs');
 
@@ -129,11 +127,10 @@ BEGIN {
     }
 }
 
-use Bio::Tools::AlignFactory;
 use Bio::SimpleAlign;
 
 
-@ISA = qw(Bio::Tools::AlignFactory);
+use base qw(Bio::Tools::AlignFactory);
 
 
 
@@ -196,13 +193,13 @@ sub pairwise_alignment{
     if( ! defined $seq1 || ! $seq1->isa('Bio::PrimarySeqI') ||
 	! defined $seq2 || ! $seq2->isa('Bio::PrimarySeqI') ) {
 	$self->warn("Cannot call pairwise_alignment without specifing 2 sequences (Bio::PrimarySeqI objects)");
-	return undef;
+	return;
     }
     # fix Jitterbug #1044
     if( $seq1->length() < 2 || 
 	$seq2->length() < 2 ) {
 	$self->warn("cannot align sequences with length less than 2");
-	return undef;
+	return;
     }
     $self->set_memory_and_report();
     # create engine objects 
@@ -308,13 +305,13 @@ sub align_and_show {
 if( ! defined $seq1 || ! $seq1->isa('Bio::PrimarySeqI') ||
 	! defined $seq2 || ! $seq2->isa('Bio::PrimarySeqI') ) {
 	$self->warn("Cannot call align_and_show without specifing 2 sequences (Bio::PrimarySeqI objects)");
-	return undef;
+	return;
     }
     # fix Jitterbug #1044
     if( $seq1->length() < 2 || 
 	$seq2->length() < 2 ) {
 	$self->warn("cannot align sequences with length less than 2");
-	return undef;
+	return;
     }
     if( ! defined $fh ) { 
 	$fh = \*STDOUT;
@@ -417,5 +414,4 @@ sub ext {
     return $self->{'ext'};
 }
 
-    
-
+1;

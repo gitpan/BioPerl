@@ -1,6 +1,6 @@
 # BioPerl module for Bio::Map::OrderedPosition
 #
-# Cared for by Chad Matsalla <bioinformatics1@dieselwurks.com>
+# Cared for by Sendu Bala <bix@sendu.me.uk>
 #
 # Copyright Chad Matsalla
 #
@@ -51,17 +51,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Chad Matsalla
 
@@ -70,8 +69,9 @@ Email bioinformatics1@dieselwurks.com
 =head1 CONTRIBUTORS
 
 Lincoln Stein, lstein@cshl.org
-Heikki Lehvaslaiho, heikki@ebi.ac.uk
+Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 Jason Stajich, jason@bioperl.org
+Sendu Bala, bix@sendu.me.uk
 
 =head1 APPENDIX
 
@@ -80,17 +80,13 @@ Internal methods are usually preceded with a _
 
 =cut
 
-
 # Let the code begin...
 
-
 package Bio::Map::OrderedPosition;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Map::Position;
 
-@ISA = qw(Bio::Map::Position);
+use base qw(Bio::Map::Position);
 
 =head2 new
 
@@ -98,114 +94,74 @@ use Bio::Map::Position;
  Usage   : my $obj = new Bio::Map::OrderedPosition();
  Function: Builds a new Bio::Map::OrderedPosition object 
  Returns : Bio::Map::OrderedPosition
- Args    : -order - The order of this position
+ Args    : -order : The order of this position
 
 =cut
 
 sub new {
     my($class,@args) = @_;
     my $self = $class->SUPER::new(@args);
-#    $self->{'_order'} = [];
-  
-    my ($map, $marker, $value, $order) = 
-	$self->_rearrange([qw( MAP 
-			       MARKER 
-			       VALUE
-			       ORDER
-			       )], @args);
-#    print join ("|-|", ($map, $marker, $value, $order)), "\n";
-    $map     && $self->map($map);
-    $marker  && $self->marker($marker);
-    $value   && $self->value($value);
-    $order   && $self->order($order);
-
+    
+    my ($order) = $self->_rearrange([qw(ORDER)], @args);
+    $order && $self->order($order);
+    
     return $self;
 }
 
 =head2 order
 
  Title   : order
- Usage   : $o_position->order($new_position) _or_
-           $o_position->order()
- Function: get/set the order position of this position in a map
- Returns : 
- Args    : If $new_position is provided, the current position of this Position
-           will be set to $new_position.
+ Usage   : $o_position->order($new_order);
+           my $order = $o_position->order();
+ Function: Get/set the order position of this position in a map.
+ Returns : int, the order of this position
+ Args    : none to get, OR int to set
 
 =cut
 
 sub order {
-    my ($self,$order) = @_;
+    my ($self, $order) = @_;
     if ($order) {
-	# no point in keeping the old ones
-	$self->{'_order'} = $order;
+        $self->{'_order'} = $order;
     }
-    return $self->{'_order'};
+    return $self->{'_order'} || return;
 }
 
-=head2 Bio::Map::Position functions
+=head2 sortable
+
+ Title   : sortable
+ Usage   : my $num = $position->sortable();
+ Function: Read-only method that is guaranteed to return a value suitable
+           for correctly sorting this kind of position amongst other positions
+           of the same kind on the same map. Note that sorting different kinds
+           of position together is unlikely to give sane results.
+ Returns : numeric
+ Args    : none
 
 =cut
 
-=head2 known_maps
-
- Title   : known_maps
- Usage   : my @maps = $position->known_maps
- Function: Returns the list of maps that this position has values for
- Returns : list of Bio::Map::MapI unique ids
- Args    : none
-
-=head2 in_map
-
- Title   : in_map
- Usage   : if ( $position->in_map($map) ) {}
- Function: Tests if a position has values in a specific map
- Returns : boolean
- Args    : a map unique id OR Bio::Map::MapI
-
-=head2 each_position_value
-
- Title   : positions
- Usage   : my @positions = $position->each_position_value($map);
- Function: Retrieve a list of positions coded as strings or ints 
- Returns : Array of position values for a Map
- Args    : Bio::Map::MapI object to get positions for
-
-=head2 add_position_value
-
- Title   : add_position_value
- Usage   : $position->add_position_value($map,'100');
- Function: Add a numeric or string position to the PositionI container 
-           and assoiciate it with a Bio::Map::MapI
- Returns : none
- Args    : $map - Bio::Map::MapI
-           String or Numeric coding for a position on a map
-
-=head2 purge_position_values
-
- Title   : purge_position_values
- Usage   : $position->purge_position_values
- Function: Remove all the position values stored for a position
- Returns : none
- Args    : [optional] only purge values for a given map
+sub sortable {
+    my $self = shift;
+    return $self->order;
+}
 
 =head2 equals
 
  Title   : equals
- Usage   : if( $mappable->equals($mapable2)) ...
+ Usage   : if ($mappable->equals($mapable2)) {...}
  Function: Test if a position is equal to another position.
  Returns : boolean
  Args    : Bio::Map::PositionI
 
 =cut
 
-sub equals{
+sub equals {
    my ($self,$compare) = @_;
-   return 0 if ( ! defined $compare || ! $compare->isa('Bio::Map::OrderedPosition'));
-   return ( $compare->order == $self->order);
+   return 0 if (! defined $compare || ! $compare->isa('Bio::Map::OrderedPosition'));
+   return ($compare->order == $self->order);
 }
 
-# admittedly these are really the best comparisons in the world
+# admittedly these aren't really the best comparisons in the world
 # but it is a first pass we'll need to refine the algorithm or not 
 # provide general comparisions and require these to be implemented
 # by objects closer to the specific type of data
@@ -213,7 +169,7 @@ sub equals{
 =head2 less_than
 
  Title   : less_than
- Usage   : if( $mappable->less_than($m2) ) ...
+ Usage   : if ($mappable->less_than($m2)) {...}
  Function: Tests if a position is less than another position
            It is assumed that 2 positions are in the same map.
  Returns : boolean
@@ -221,17 +177,16 @@ sub equals{
 
 =cut
 
-
-sub less_than{
+sub less_than {
    my ($self,$compare) = @_;
-   return 0 if ( ! defined $compare || ! $compare->isa('Bio::Map::OrderedPosition'));
-   return ( $compare->order < $self->order);
+   return 0 if (! defined $compare || ! $compare->isa('Bio::Map::OrderedPosition'));
+   return ($compare->order < $self->order);
 }
 
 =head2 greater_than
 
  Title   : greater_than
- Usage   : if( $mappable->greater_than($m2) ) ...
+ Usage   : if ($mappable->greater_than($m2)) {...}
  Function: Tests if position is greater than another position.
            It is assumed that 2 positions are in the same map.
  Returns : boolean
@@ -239,10 +194,10 @@ sub less_than{
 
 =cut
 
-sub greater_than{
+sub greater_than {
    my ($self,$compare) = @_;
-   return 0 if ( ! defined $compare || ! $compare->isa('Bio::Map::OrderedPosition'));
-   return ( $compare->order > $self->order);
+   return 0 if (! defined $compare || ! $compare->isa('Bio::Map::OrderedPosition'));
+   return ($compare->order > $self->order);
 }
 
 1;

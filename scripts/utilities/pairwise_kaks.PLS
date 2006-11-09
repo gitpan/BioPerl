@@ -1,7 +1,7 @@
 #!perl -w
-# $Id: pairwise_kaks.PLS,v 1.6 2003/05/20 13:33:26 jason Exp $
 use strict;
-# Author Jason Stajich <jason@bioperl.org>
+# $Id: pairwise_kaks.PLS,v 1.12 2006/07/04 22:23:29 mauricio Exp $
+# Author Jason Stajich <jason-at-bioperl-dot-org>
 
 =head1 NAME
 
@@ -36,20 +36,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
- http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
- Jason Stajich <jason@bioperl.org>
+ Jason Stajich jason-at-bioperl-dot-org
 
 =cut
 
@@ -103,7 +103,7 @@ if( $aln_prog =~ /clus/i ) {
     exit(0);
 }
 unless( $aln_factory->executable ) {
-    warn("Could not find the executable for $aln_prog, make sure you have installed it and have either set ".\U$aln_prog."DIR or it is in your PATH");
+    warn("Could not find the executable for $aln_prog, make sure you have installed it and have either set ".uc($aln_prog)."DIR or it is in your PATH");
     exit(0);
 }
 
@@ -138,8 +138,9 @@ while( my $seq = $seqin->next_seq ) {
     $seqs{$seq->display_id} = $seq;
     my $protein = $seq->translate();
     my $pseq = $protein->seq();
-    if( $pseq =~ /\*/ && 
-	$pseq !~ /\*$/ ) {
+    
+    $pseq =~ s/\*$//;
+    if( $pseq =~ /\*/ ) {
 	warn("provided a cDNA (".$seq->display_id.") sequence with a stop codon, PAML will choke!");
 	exit(0);
     }
@@ -169,7 +170,17 @@ my @each = $dna_aln->each_seq();
 $kaks_factory->alignment($dna_aln);
 
 my ($rc,$parser) = $kaks_factory->run();
+if( $rc <= 0 ) { 
+    warn($kaks_factory->error_string,"\n");
+    exit;
+}
 my $result = $parser->next_result;
+
+if ($result->version =~ m/3\.15/) {
+	warn("This script does not work with v3.15 of PAML!  Please use 3.14 instead.");
+	exit(0);
+}
+
 my $MLmatrix = $result->get_MLmatrix();
 
 my @otus = $result->get_seqs();

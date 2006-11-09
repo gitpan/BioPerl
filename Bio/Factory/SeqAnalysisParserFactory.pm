@@ -1,4 +1,4 @@
-# $Id: SeqAnalysisParserFactory.pm,v 1.11 2003/05/17 19:03:53 heikki Exp $
+# $Id: SeqAnalysisParserFactory.pm,v 1.15.4.1 2006/10/02 23:10:18 sendu Exp $
 #
 # BioPerl module for Bio::Factory::SeqAnalysisParserFactory
 #
@@ -59,17 +59,16 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                - General discussion
-  http://bio.perl.org/MailList.html    - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp, Jason Stajich
 
@@ -85,11 +84,8 @@ methods. Internal methods are usually preceded with a _
 package Bio::Factory::SeqAnalysisParserFactory;
 use strict;
 
-use Bio::Factory::SeqAnalysisParserFactoryI;
-use Bio::Factory::DriverFactory;
 
-use vars qw(@ISA);
-@ISA = qw(Bio::Factory::DriverFactory Bio::Factory::SeqAnalysisParserFactoryI);
+use base qw(Bio::Factory::DriverFactory Bio::Factory::SeqAnalysisParserFactoryI);
 
 BEGIN {
     Bio::Factory::DriverFactory->register_driver

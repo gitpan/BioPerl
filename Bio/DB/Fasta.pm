@@ -1,3 +1,12 @@
+# $Id: Fasta.pm,v 1.44.4.3 2006/10/02 23:10:14 sendu Exp $
+#
+# BioPerl module for Bio::DB::Fasta
+#
+# You may distribute this module under the same terms as perl itself
+#
+
+# POD documentation - main docs before the code
+
 =head1 NAME
 
 Bio::DB::Fasta -- Fast indexed access to a directory of fasta files
@@ -10,12 +19,12 @@ Bio::DB::Fasta -- Fast indexed access to a directory of fasta files
   my $db      = Bio::DB::Fasta->new('/path/to/fasta/files');
 
   # simple access (for those without Bioperl)
-  my $seq     = $db->seq('CHROMOSOME_I',4_000_000 => 4_100_000);
-  my $revseq  = $db->seq('CHROMOSOME_I',4_100_000 => 4_000_000);
+  my $seq      = $db->seq('CHROMOSOME_I',4_000_000 => 4_100_000);
+  my $revseq   = $db->seq('CHROMOSOME_I',4_100_000 => 4_000_000);
   my @ids     = $db->ids;
-  my $length  = $db->length('CHROMOSOME_I');
+  my $length   = $db->length('CHROMOSOME_I');
   my $alphabet = $db->alphabet('CHROMOSOME_I');
-  my $header  = $db->header('CHROMOSOME_I');
+  my $header   = $db->header('CHROMOSOME_I');
 
   # Bioperl-style access
   my $db      = Bio::DB::Fasta->new('/path/to/fasta/files');
@@ -27,7 +36,7 @@ Bio::DB::Fasta -- Fast indexed access to a directory of fasta files
   # (etc)
 
   # Bio::SeqIO-style access
-  my $stream  = Bio::DB::Fasta->new('/path/to/fasta/files')->get_PrimarySeq_stream;
+  my $stream  = Bio::DB::Fasta->new('/path/to/files')->get_PrimarySeq_stream;
   while (my $seq = $stream->next_seq) {
     # Bio::PrimarySeqI stuff
   }
@@ -51,7 +60,7 @@ sequences without bringing the entire sequence into memory.
 When you initialize the module, you point it at a single fasta file or
 a directory of multiple such files.  The first time it is run, the
 module generates an index of the contents of the file or directory
-using the AnyDBM module (Berkeley DB preferred, followed by GDBM_File,
+using the AnyDBM module (Berkeley DB* preferred, followed by GDBM_File,
 NDBM_File, and SDBM_File).  Thereafter it uses the index file to find
 the file and offset for any requested sequence.  If one of the source
 fasta files is updated, the module reindexes just that one file.  (You
@@ -61,12 +70,13 @@ ones when the cache is full.
 
 The fasta files may contain any combination of nucleotide and protein
 sequences; during indexing the module guesses the molecular type.
-Entries may have any line length, and different line lengths are
-allowed in the same file.  However, within a sequence entry, all lines
-must be the same length except for the last.
+Entries may have any line length up to 65,536 characters, and
+different line lengths are allowed in the same file.  However, within
+a sequence entry, all lines must be the same length except for the
+last.
 
-The module uses /^E<gt>(\S+)/ to extract each sequence's primary ID from
-the Fasta header.  During indexing, you may pass a callback routine to
+The module uses /^E<gt>(\S+)/ to extract the primary ID of each sequence 
+from the Fasta header.  During indexing, you may pass a callback routine to
 modify this primary ID.  For example, you may wish to extract a
 portion of the gi|gb|abc|xyz nonsense that GenBank Fasta files use.
 The original header line can be recovered later.
@@ -78,6 +88,9 @@ sequence plus 100,000 ESTs) takes ~5 minutes on my 300 MHz pentium
 laptop. On the same system, average access time for any 200-mer within
 the C. elegans genome was E<lt>0.02s.
 
+*Berkeley DB can be obtained free from www.sleepycat.com. After it is 
+installed you will need to install the BerkeleyDB Perl module.
+
 =head1 DATABASE CREATION AND INDEXING
 
 The two constructors for this class are new() and newFh().  The former
@@ -86,7 +99,7 @@ The latter creates a tied filehandle which can be used Bio::SeqIO
 style to fetch sequence objects in a stream fashion.  There is also a
 tied hash interface.
 
-=over 4
+=over 2
 
 =item $db = Bio::DB::Fasta-E<gt>new($fasta_path [,%options])
 
@@ -105,16 +118,16 @@ same name=E<gt>value pairs.  Valid options are:
 
  -glob         Glob expression to use    *.{fa,fasta,fast,FA,FASTA,FAST,dna}
                for searching for Fasta
-	       files in directories. 
+	            files in directories. 
 
  -makeid       A code subroutine for     None
-	       transforming Fasta IDs.
+	            transforming Fasta IDs.
 
- -maxopen      Maximum size of		 32
-	       filehandle cache.
+ -maxopen      Maximum size of		     32
+	            filehandle cache.
 
- -debug        Turn on status		 0
-	       messages.
+ -debug        Turn on status		        0
+	            messages.
 
  -reindex      Force the index to be     0
                rebuilt.
@@ -140,15 +153,16 @@ Bio::SeqIO style.
 =back
 
 The -makeid option gives you a chance to modify sequence IDs during
-indexing.  The option's value should be a code reference that will
+indexing.  The option value should be a code reference that will
 take a scalar argument and return a scalar result, like this:
 
   $db = Bio::DB::Fasta->new("file.fa",-makeid=>\&make_my_id);
 
   sub make_my_id {
     my $description_line = shift;
-    # get a new id from the fasta header
-    return $new_id;
+    # get a different id from the fasta header, e.g.
+	 $description_line =~ /(\S+)$/;
+    return $1;
   }
 
 make_my_id() will be called with the full fasta id line (including the
@@ -167,7 +181,7 @@ The -makeid option is ignored after the index is constructed.
 
 The following object methods are provided.
 
-=over 4
+=over 10
 
 =item $raw_seq = $db-E<gt>seq($id [,$start, $stop])
 
@@ -176,10 +190,14 @@ and stop position in the sequence.  In the case of DNA sequence, if
 $stop is less than $start, then the reverse complement of the sequence
 is returned (this violates Bio::Seq conventions).
 
-For your convenience, subsequences can be indicated with this compound 
-ID:
+For your convenience, subsequences can be indicated with any of the
+following compound IDs:
 
    $db->seq("$id:$start,$stop")
+
+   $db->seq("$id:$start..$stop")
+
+   $db->seq("$id:$start-$stop")
 
 =item $length = $db-E<gt>length($id)
 
@@ -265,7 +283,7 @@ to treat the database as an I/O stream.
 
 The tied hash interface is very straightforward
 
-=over 4
+=over 1
 
 =item $obj = tie %db,'Bio::DB::Fasta','/path/to/fasta/files' [,@args]
 
@@ -313,10 +331,10 @@ object and call its methods.
     print "$id => ",tied(%db)->length($id),"\n";
  }
 
-You may, in addition invoke Bio::DB::Fasta's FIRSTKEY and NEXTKEY tied
+You may, in addition invoke Bio::DB::Fasta the FIRSTKEY and NEXTKEY tied
 hash methods directly.
 
-=over 4
+=over 2
 
 =item $id = $db-E<gt>FIRSTKEY
 
@@ -390,17 +408,15 @@ use IO::File;
 use AnyDBM_File;
 use Fcntl;
 use File::Basename qw(basename dirname);
-use Bio::DB::SeqI;
-use Bio::Root::Root;
-use vars qw(@ISA);
 
-@ISA = qw(Bio::DB::SeqI Bio::Root::Root);
+use base qw(Bio::DB::SeqI Bio::Root::Root);
 
 *seq = *sequence = \&subseq;
 *ids = \&get_all_ids;
 *get_seq_by_primary_id = *get_Seq_by_acc  = \&get_Seq_by_id;
 
 use constant STRUCT =>'NNnnCa*';
+use constant STRUCTBIG =>'QQnnCa*'; # 64-bit file offset and seq length
 use constant DNA     => 1;
 use constant RNA     => 2;
 use constant PROTEIN => 3;
@@ -420,16 +436,16 @@ These are optional arguments to pass in as well.
 
  -glob         Glob expression to use    *.{fa,fasta,fast,FA,FASTA,FAST}
                for searching for Fasta
-	       files in directories. 
+	            files in directories. 
 
  -makeid       A code subroutine for     None
-	       transforming Fasta IDs.
+	            transforming Fasta IDs.
 
- -maxopen      Maximum size of		 32
-	       filehandle cache.
+ -maxopen      Maximum size of		     32
+	            filehandle cache.
 
- -debug        Turn on status		 0
-	       messages.
+ -debug        Turn on status		        0
+	            messages.
 
  -reindex      Force the index to be     0
                rebuilt.
@@ -447,20 +463,24 @@ sub new {
   my %opts  = @_;
 
   my $self = bless { debug      => $opts{-debug},
-		     makeid     => $opts{-makeid},
-		     glob       => $opts{-glob}    || '*.{fa,fasta,FA,FASTA,fast,FAST,dna,fsa}',
-		     maxopen    => $opts{-maxfh}   || 32,
-		     dbmargs    => $opts{-dbmargs} || undef,
-		     fhcache    => {},
-		     cacheseq   => {},
-		     curopen    => 0,
-		     openseq    => 1,
-		     dirname    => undef,
-		     offsets    => undef,
+	  makeid     => $opts{-makeid},
+	  glob       => $opts{-glob} || '*.{fa,fasta,FA,FASTA,fast,FAST,dna,FNA,fna,FAA,faa,FSA,fsa}',
+	  maxopen    => $opts{-maxfh}   || 32,
+	  dbmargs    => $opts{-dbmargs} || undef,
+	  fhcache    => {},
+	  cacheseq   => {},
+	  curopen    => 0,
+	  openseq    => 1,
+	  dirname    => undef,
+	  offsets    => undef,
 		   }, $class;
   my ($offsets,$dirname);
 
   if (-d $path) {
+    # because Win32 glob() is broken with respect to long file names
+    # that contain whitespace.
+    $path = Win32::GetShortPathName($path)
+      if $^O =~ /^MSWin/i && eval 'use Win32; 1';
     $offsets = $self->index_dir($path,$opts{-reindex});
     $dirname = $path;
   } elsif (-f _) {
@@ -499,8 +519,15 @@ sub _open_index {
   my %offsets;
   my $flags = $write ? O_CREAT|O_RDWR : O_RDONLY;
   my @dbmargs = $self->dbmargs;
-  tie %offsets,'AnyDBM_File',$index,$flags,0644,@dbmargs or $self->throw( "Can't open cache file $index: $!");
+  tie %offsets,'AnyDBM_File',$index,$flags,0644,@dbmargs 
+	 or $self->throw( "Can't open cache file $index: $!");
   return \%offsets;
+}
+
+sub _close_index {
+  my $self = shift;
+  my $index = shift;
+  untie %$index;
 }
 
 =head2 index_dir
@@ -534,31 +561,37 @@ sub index_dir {
   for my $suffix('','.pag','.dir') {
     $indextime ||= (stat("${index}${suffix}"))[9];
   }
+  $indextime ||= 0;  # prevent some uninit variable warnings
 
   # get the most recent modification time of any of the contents
   my $modtime = 0;
   my %modtime;
+  $self->set_pack_method( @files );
   foreach (@files) {
     my $m = (stat($_))[9];
     $modtime{$_} = $m;
-    $modtime = $m if $modtime < $m;
+    $modtime = $m if defined $m && $modtime < $m;
   }
 
-  my $reindex = $force_reindex || $indextime < $modtime;
-  my $offsets = $self->_open_index($index,$reindex) or return;
-  $self->{offsets} = $offsets;
+  my $reindex      = $force_reindex || $indextime < $modtime;
+  $self->{offsets} = $self->_open_index($index,$reindex) or return;
 
   # no indexing needed
-  return $offsets unless $reindex;
+  return $self->{offsets} unless $reindex;
 
   # otherwise reindex contents of changed files
   $self->{indexing} = $index;
   foreach (@files) {
     next if( defined $indextime && $modtime{$_} <= $indextime);
-    $self->calculate_offsets($_,$offsets);
+    $self->calculate_offsets($_,$self->{offsets});
   }
   delete $self->{indexing};
-  return $self->{offsets};
+
+  # we've been having troubles with corrupted index files on Windows systems,
+  # so possibly closing and reopening will help
+  $self->_close_index($self->{offsets});
+
+  return $self->{offsets}  = $self->_open_index($index);
 }
 
 =head2 get_Seq_by_id
@@ -578,6 +611,32 @@ sub get_Seq_by_id {
   return Bio::PrimarySeq::Fasta->new($self,$id);
 }
 
+=head2 set_pack_method
+
+ Title   : set_pack_method
+ Usage   : $db->set_pack_method( @files )
+ Function: Determines whether data packing uses 32 or 64 bit integers
+ Returns :
+ Args    : one or more file paths
+
+=cut
+
+sub set_pack_method {
+  my $self = shift;
+  # Find the maximum file size:
+  my ($maxsize) = sort { $b <=> $a } map { -s $_ } @_;
+  my $fourGB    = (2 ** 32) - 1;
+
+  if ($maxsize > $fourGB) {
+      # At least one file exceeds 4Gb - we will need to use 64 bit ints
+      $self->{packmeth}   = \&_packBig;
+      $self->{unpackmeth} = \&_unpackBig;
+  } else {
+      $self->{packmeth}   = \&_pack;
+      $self->{unpackmeth} = \&_unpack;
+  }
+}
+
 =head2 index_file
 
  Title   : index_file
@@ -595,6 +654,7 @@ sub index_file {
   my $file = shift;
   my $force_reindex = shift;
 
+  $self->set_pack_method( $file );
   my $index = $self->index_name($file);
   # if caller has requested reindexing, then unlink the index
   unlink $index if $force_reindex;
@@ -622,7 +682,6 @@ sub index_file {
  Function: gets stored dbm arguments
  Returns : array
  Args    : none
-
 
 =cut
 
@@ -671,8 +730,9 @@ sub calculate_offsets {
   my $base = $self->path2fileno(basename($file));
 
   my $fh = IO::File->new($file) or $self->throw( "Can't open $file: $!");
+  binmode $fh;
   warn "indexing $file\n" if $self->{debug};
-  my ($offset,$id,$linelength,$type,$firstline,$count,$termination_length,%offsets);
+  my ($offset,$id,$linelength,$type,$firstline,$count,$termination_length,$seq_lines,$last_line,%offsets);
   while (<$fh>) {		# don't try this at home
     $termination_length ||= /\r\n$/ ? 2 : 1;  # account for crlf-terminated Windows files
     if (/^>(\S+)/) {
@@ -680,33 +740,42 @@ sub calculate_offsets {
 	if $self->{debug} && (++$count%1000) == 0;
       my $pos = tell($fh);
       if ($id) {
-	my $seqlength    = $pos - $offset - length($_) - 1;
-	$seqlength      -= $termination_length * int($seqlength/$linelength);
-	$offsets->{$id}  = $self->_pack($offset,$seqlength,
+	my $seqlength    = $pos - $offset - length($_);
+	$seqlength      -= $termination_length * $seq_lines;
+	$offsets->{$id}  = &{$self->{packmeth}}($offset,$seqlength,
 					$linelength,$firstline,
 					$type,$base);
       }
       $id = ref($self->{makeid}) eq 'CODE' ? $self->{makeid}->($_) : $1;
       ($offset,$firstline,$linelength) = ($pos,length($_),0);
+      $self->_check_linelength($linelength);
+      $seq_lines = 0;
     } else {
       $linelength ||= length($_);
       $type       ||= $self->_type($_);
+      $seq_lines++;
     }
-    }
+    $last_line = $_;
+  }
+
+  $self->_check_linelength($linelength);
   # deal with last entry
   if ($id) {
     my $pos = tell($fh);
-    my $seqlength   = $pos - $offset  - 1;
+    my $seqlength   = $pos - $offset;
 
     if ($linelength == 0) { # yet another pesky empty chr_random.fa file
       $seqlength = 0;
     } else {
-      $seqlength -= $termination_length * int($seqlength/$linelength);
+      if ($last_line !~ /\s$/) {
+        $seq_lines--;
+      }
+      $seqlength -= $termination_length * $seq_lines;
     };
-    $offsets->{$id} = $self->_pack($offset,$seqlength,
+    $offsets->{$id} = &{$self->{packmeth}}($offset,$seqlength,
 				   $linelength,$firstline,
 				   $type,$base);
-  }
+}
   $offsets->{__termination_length} = $termination_length;
   return \%offsets;
 }
@@ -727,35 +796,35 @@ sub offset {
   my $self = shift;
   my $id   = shift;
   my $offset = $self->{offsets}{$id} or return;
-  ($self->_unpack($offset))[0];
+  (&{$self->{unpackmeth}}($offset))[0];
 }
 
 sub length {
   my $self = shift;
   my $id   = shift;
   my $offset = $self->{offsets}{$id} or return;
-  ($self->_unpack($offset))[1];
+  (&{$self->{unpackmeth}}($offset))[1];
 }
 
 sub linelen {
   my $self = shift;
   my $id   = shift;
   my $offset = $self->{offsets}{$id} or return;
-  ($self->_unpack($offset))[2];
+  (&{$self->{unpackmeth}}($offset))[2];
 }
 
 sub headerlen {
   my $self = shift;
   my $id   = shift;
   my $offset = $self->{offsets}{$id} or return;
-  ($self->_unpack($offset))[3];
+  (&{$self->{unpackmeth}}($offset))[3];
 }
 
 sub alphabet {
   my $self = shift;
   my $id   = shift;
   my $offset = $self->{offsets}{$id} or return;
-  my $type = ($self->_unpack($offset))[4];
+  my $type = (&{$self->{unpackmeth}}($offset))[4];
   return $type == DNA ? 'dna'
          : $type == RNA ? 'rna'
          : 'protein';
@@ -775,7 +844,7 @@ sub file {
   my $self = shift;
   my $id   = shift;
   my $offset = $self->{offsets}{$id} or return;
-  $self->fileno2path(($self->_unpack($offset))[5]);
+  $self->fileno2path((&{$self->{unpackmeth}}($offset))[5]);
 }
 
 sub fileno2path {
@@ -794,6 +863,14 @@ sub path2fileno {
   return $self->{offsets}{"__path_$path"}
 }
 
+sub _check_linelength {
+  my $self       = shift;
+  my $linelength = shift;
+  return unless defined $linelength;
+  $self->throw("Each line of the fasta file must be less than 65,536 characters.  Line $. is $linelength chars.")	if $linelength > 65535.
+
+}
+
 =head2 subseq
 
  Title   : subseq
@@ -806,7 +883,7 @@ sub path2fileno {
 
 sub subseq {
   my ($self,$id,$start,$stop) = @_;
-  if ($id =~ /^(.+):([\d_]+)[,-]([\d_]+)$/) {
+  if ($id =~ /^(.+):([\d_]+)(?:,|-|\.\.)([\d_]+)$/) {
     ($id,$start,$stop) = ($1,$2,$3);
     $start =~ s/_//g;
     $stop =~ s/_//g;
@@ -815,7 +892,7 @@ sub subseq {
   $stop  ||= $self->length($id);
 
   my $reversed;
-  if ($start > $stop) {
+  if (defined $stop && $start > $stop) {
     ($start,$stop) = ($stop,$start);
     $reversed++;
   }
@@ -848,7 +925,7 @@ sub header {
   my $self = shift;
   my $id   = shift;
   my ($offset,$seqlength,$linelength,$firstline,$type,$file) 
-    = $self->_unpack($self->{offsets}{$id}) or return;
+    = &{$self->{unpackmeth}}($self->{offsets}{$id}) or return;
   $offset -= $firstline;
   my $data;
   my $fh = $self->fh($id) or return;
@@ -863,7 +940,7 @@ sub caloffset {
   my $self = shift;
   my $id   = shift;
   my $a    = shift()-1;
-  my ($offset,$seqlength,$linelength,$firstline,$type,$file) = $self->_unpack($self->{offsets}{$id});
+  my ($offset,$seqlength,$linelength,$firstline,$type,$file) = &{$self->{unpackmeth}}($self->{offsets}{$id});
   $a = 0            if $a < 0;
   $a = $seqlength-1 if $a >= $seqlength;
   my $tl = $self->{offsets}{__termination_length};
@@ -881,6 +958,7 @@ sub fhcache {
       for (@lru) { delete $self->{fhcache}{$_} }
     }
     $self->{fhcache}{$path} = IO::File->new($path) or return;
+    binmode $self->{fhcache}{$path};
     $self->{curopen}++;
   }
   $self->{cacheseq}{$path}++;
@@ -888,13 +966,19 @@ sub fhcache {
 }
 
 sub _pack {
-  shift;
   pack STRUCT,@_;
 }
 
+sub _packBig {
+  pack STRUCTBIG,@_;
+}
+
 sub _unpack {
-  shift;
   unpack STRUCT,shift;
+}
+
+sub _unpackBig {
+  unpack STRUCTBIG,shift;
 }
 
 sub _type {
@@ -913,7 +997,6 @@ sub _type {
  Example :
  Returns : 
  Args    :
-
 
 =cut
 
@@ -959,11 +1042,7 @@ sub DESTROY {
 package Bio::PrimarySeq::Fasta;
 use overload '""' => 'display_id';
 
-use vars '@ISA';
-eval {
-  require Bio::PrimarySeqI;
-  require Bio::Root::Root;
-} && (@ISA = ('Bio::Root::Root','Bio::PrimarySeqI'));
+use base qw(Bio::Root::Root Bio::PrimarySeqI);
 
 sub new {
   my $class = shift;
@@ -1002,6 +1081,11 @@ sub trunc {
 	
 }
 
+sub is_circular {
+  my $self = shift;
+  return $self->{is_circular};
+}
+
 sub display_id {
   my $self = shift;
   return $self->{id};
@@ -1036,7 +1120,9 @@ sub length {
 
 sub description  { 
     my $self = shift;
-    return '';
+    my $header = $self->{'db'}->header($self->{id});
+    # remove the id from the header
+    return (split(/\s+/,$header,2))[2];
 }
 
 *desc = \&description;
@@ -1045,12 +1131,7 @@ sub description  {
 # stream-based access to the database
 #
 package Bio::DB::Fasta::Stream;
-use Tie::Handle;
-use vars qw(@ISA);
-@ISA = qw(Tie::Handle);
-eval {
-  require Bio::DB::SeqI;
-} && (push @ISA,'Bio::DB::SeqI');
+use base qw(Tie::Handle Bio::DB::SeqI);
 
 
 sub new {

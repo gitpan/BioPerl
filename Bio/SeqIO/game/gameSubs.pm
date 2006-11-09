@@ -1,4 +1,4 @@
-# $Id: gameSubs.pm,v 1.2 2003/12/16 16:58:51 smckay Exp $
+# $Id: gameSubs.pm,v 1.9.4.1 2006/10/02 23:10:30 sendu Exp $
 # some of the following code was pillaged from the CPAN module
 # XML::Handler::Subs
 #
@@ -9,9 +9,7 @@
 #
 # BioPerl module for Bio::SeqIO::game::gameSubs
 #
-# Cared for by Sheldon McKay <smckay@bcgsc.bc.ca>
-#
-# Copyright 2003 Sheldon McKay
+# Cared for by Sheldon McKay <mckays@cshl.edu>
 #
 # You may distribute this module under the same terms as perl itself
 #
@@ -43,21 +41,19 @@ to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
-  http://bioperl.org/MailList.shtml      - About the mailing lists
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution.
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-Bug reports can be submitted via email or the web:
-
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Sheldon McKay
 
-Email smckay@bcgsc.bc.ca
+Email mckays@cshl.edu
 
 =head1 APPENDIX
 
@@ -68,12 +64,11 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::SeqIO::game::gameSubs;
 use XML::Parser::PerlSAX;
-use Bio::Root::Root;
 use UNIVERSAL;
 use strict;
 
-use vars qw { @ISA };
-@ISA = qw { Bio::Root::Root };
+use vars qw {};
+use base qw(Bio::Root::Root);
 
 
 =head2 new
@@ -444,6 +439,42 @@ sub date {
     $tags->{timestamp} ||= [];
     push @{$tags->{timestamp}}, $stamp;
     1;
+}
+
+
+=head2 protein_id
+
+ Title   : protein_id
+ Usage   : $pid = $self->protein_id($cds, $standard_name)
+ Function: a method to search for a protein name
+ Returns : a string
+ Args    : the CDS object plus the transcript\'s 'standard_name'
+
+=cut
+
+sub protein_id {
+    my ($self, $cds, $sn) = @_;
+    my $psn;
+    if ( $cds->has_tag('protein_id') ) {
+        ($psn) = $cds->get_tag_values('protein_id');
+    }
+    elsif ( $cds->has_tag('product') ) {
+        ($psn) = $cds->get_tag_values('product');
+        $psn =~ s/.+?(\S+)$/$1/;
+    }
+    elsif ( $cds->has_tag('gene') ) {
+        ($psn) = $cds->get_tag_values('gene');
+    }
+    elsif ( $sn ) {
+	$psn = $sn;
+    }
+    else {
+        $self->complain("Could not find an ID for the protein");
+        return '';
+    }
+
+    $psn =~ s/-R/-P/;
+    return $psn;
 }
 
 1;

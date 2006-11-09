@@ -1,4 +1,4 @@
-# $Id: AnnotationI.pm,v 1.7 2002/10/22 07:38:24 lapp Exp $
+# $Id: AnnotationI.pm,v 1.10.4.4 2006/10/02 23:10:12 sendu Exp $
 
 #
 # BioPerl module for Bio::AnnotationI
@@ -24,11 +24,11 @@ Bio::AnnotationI - Annotation interface
        foreach $value ( @values ) {
           # value is an Bio::AnnotationI, and defines a "as_text" method
           print "Annotation ",$key," stringified value ",$value->as_text,"\n";
-          # you can also use a generic hash_tree method for getting 
+          # you can also use a generic hash_tree method for getting
           # stuff out say into XML format
           $hash_tree = $value->hash_tree();
        }
-   } 
+   }
 
 
 =head1 DESCRIPTION
@@ -54,11 +54,11 @@ formatting is as follows.
 
   (1) For each key in the hash, if the value is a reference'd array -
 
-      (2) For each element of the array if the value is a object - 
-          Assumme the object has the method "hash_tree";
+      (2) For each element of the array if the value is a object -
+          Assume the object has the method "hash_tree";
       (3) else if the value is a referene to a hash
           Recurse again from point (1)
-      (4) else 
+      (4) else
           Assumme the value is a scalar, and handle it directly as text
 
    (5) else (if not an array) apply rules 2,3 and 4 to value
@@ -80,22 +80,19 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  bioperl-l@bio.perl.org
+  bioperl-l@bioperl.org
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
 Email birney@ebi.ac.uk
-
-Describe contact details here
 
 =head1 APPENDIX
 
@@ -108,15 +105,13 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::AnnotationI;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::Root::RootI;
 
 
-@ISA = qw(Bio::Root::RootI);
+use base qw(Bio::Root::RootI);
 
 
 =head2 as_text
@@ -166,7 +161,7 @@ sub hash_tree{
            under which it was stored unless the object has a tag
            stored already.
 
- Example : 
+ Example :
  Returns : value of tagname (a scalar)
  Args    : new value (a scalar, optional)
 

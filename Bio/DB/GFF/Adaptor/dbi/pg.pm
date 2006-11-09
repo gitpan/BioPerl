@@ -4,7 +4,7 @@ package Bio::DB::GFF::Adaptor::dbi::pg;
 
 Bio::DB::GFF::Adaptor::dbi::pg -- Database adaptor for a specific postgres schema
 
-=head1 SYNOPSIS
+=head1 NOTES 
 
 SQL commands that need to be executed before this adaptor will work:
 
@@ -24,17 +24,46 @@ with the Generic Genome Browser (gbrowse):
   GRANT SELECT ON TABLE fattribute            TO nobody;
   GRANT SELECT ON TABLE ftype                 TO nobody;
 
-See also L<Bio::DB::GFF>
+=head2 Optimizing the database
+
+PostgreSQL generally requires some tuning before you get very good
+performance for large databases.  For general information on tuning
+a PostgreSQL server, see http://www.varlena.com/GeneralBits/Tidbits/perf.html
+Of particular importance is executing VACUUM FULL ANALYZE whenever
+you change the database.
+
+Additionally, for a GFF database, there are a few items you can tune.
+For each automatic class in your GBrowse conf file, there will be one
+or two searches done when searching for a feature.  If there are lots 
+of features, these search can take several seconds.  To speed these searches,
+do two things:
+
+=over
+
+=item 1
+
+Set 'enable_seqscan = false' in your postgresql.conf file (and restart
+your server).
+
+=item 2
+
+Create 'partial' indexes for each automatic class, doing this for the
+example class 'Allele':
+
+  CREATE INDEX partial_allele_gclass ON 
+    fgroup (lower('gname')) WHERE gclass='Allele';
+
+And be sure to run VACUUM FULL ANALYZE after creating the indexes.
+
+=back
 
 =cut
 
 # a simple postgres adaptor
 use strict;
-use Bio::DB::GFF::Adaptor::dbi;
 use Bio::DB::GFF::Util::Binning; 
 use Bio::DB::GFF::Util::Rearrange; # for rearrange()
-use vars qw(@ISA);
-@ISA = qw(Bio::DB::GFF::Adaptor::dbi);
+use base qw(Bio::DB::GFF::Adaptor::dbi);
 
 use constant MAX_SEGMENT => 100_000_000;  # the largest a segment can get
 use constant DEFAULT_CHUNK => 2000;
@@ -47,7 +76,7 @@ SELECT fref,
        fstrand,
        gname
   FROM fdata,fgroup
-  WHERE fgroup.gname=?
+  WHERE lower(fgroup.gname) = lower(?)
     AND fgroup.gclass=?
     AND fgroup.gid=fdata.gid
     GROUP BY fref,fstrand,gclass,gname
@@ -62,7 +91,7 @@ SELECT fref,
        fstrand,
        gname
   FROM fdata,fgroup,fattribute,fattribute_to_feature
-  WHERE fattribute_to_feature.fattribute_value=?
+  WHERE lower(fattribute_to_feature.fattribute_value)=lower(?)
     AND fgroup.gclass=?
     AND fgroup.gid=fdata.gid
     AND fattribute.fattribute_name='Alias'
@@ -80,7 +109,7 @@ SELECT fref,
        fstrand,
        gname
   FROM fdata,fgroup,fattribute,fattribute_to_feature
-  WHERE fattribute_to_feature.fattribute_value LIKE ?
+  WHERE lower(fattribute_to_feature.fattribute_value) LIKE lower(?)
     AND fgroup.gclass=?
     AND fgroup.gid=fdata.gid
     AND fattribute.fattribute_name='Alias'
@@ -98,11 +127,20 @@ SELECT fref,
        max(fstop),
        fstrand
   FROM fdata,fgroup
-  WHERE fgroup.gname=?
+  WHERE lower(fgroup.gname) = lower(?)
     AND fgroup.gclass=?
-    AND fdata.fref=?
+    AND lower(fdata.fref) = lower(?)
     AND fgroup.gid=fdata.gid
     GROUP BY fref,fstrand,gclass
+END
+;
+
+use constant FULLTEXTWILDCARD => <<END;
+SELECT distinct gclass,gname,fattribute_value
+    FROM fgroup,fattribute_to_feature,fdata
+     WHERE fgroup.gid=fdata.gid
+       AND fdata.fid=fattribute_to_feature.fid
+       AND lower(fattribute_to_feature.fattribute_value) LIKE lower(?)
 END
 ;
 
@@ -361,15 +399,20 @@ CREATE TABLE "fgroup" (
   "gid" serial NOT NULL,
   "gclass" character varying(100) DEFAULT NULL,
   "gname" character varying(100) DEFAULT NULL,
-  CONSTRAINT pk_fgroup PRIMARY KEY (gid),
-  CONSTRAINT gclass_fgroup UNIQUE (gclass, gname)
+  CONSTRAINT pk_fgroup PRIMARY KEY (gid)
 )
 }, # fgroup table
 
 index => {
 		fgroup_gclass_idx => q{
 CREATE UNIQUE INDEX fgroup_gclass_idx ON fgroup (gclass,gname)
-}
+},
+                fgroup_gname_idx => q{
+CREATE INDEX fgroup_gname_idx ON fgroup(gname)
+},
+                fgroup_lower_gname_idx => q{
+CREATE INDEX fgroup_lower_gname_idx ON fgroup (lower(gname))
+},
 	   }, # fgroup indexes
 
 }, # fgroup
@@ -447,7 +490,13 @@ CREATE TABLE "fattribute_to_feature" (
 index => {
        fattribute_to_feature_fid => q{
 CREATE  INDEX fattribute_to_feature_fid ON fattribute_to_feature (fid,fattribute_id)
-}
+},
+       fattribute_txt_idx => q{
+CREATE INDEX fattribute_txt_idx ON fattribute_to_feature (fattribute_value)
+},
+       fattribute_lower_idx => q{
+CREATE INDEX fattribute_lower_idx ON fattribute_to_feature (lower(fattribute_value))
+},
 	   } # fattribute_to_feature indexes
 } # fattribute_to_feature  
 
@@ -488,7 +537,7 @@ sub setup_load {
   my $insert_type = $dbh->prepare_delayed('INSERT INTO ftype (fmethod,fsource) VALUES (?,?)');
   my $insertid_type = $dbh->prepare_delayed("SELECT currval('ftype_ftypeid_seq')");
 
-  my $lookup_group = $dbh->prepare_delayed('SELECT gid FROM fgroup WHERE gname=? AND gclass=?');
+  my $lookup_group = $dbh->prepare_delayed('SELECT gid FROM fgroup WHERE lower(gname)=lower(?) AND gclass=?');
   my $insert_group = $dbh->prepare_delayed('INSERT INTO fgroup (gname,gclass) VALUES (?,?)');
   my $insertid_group = $dbh->prepare_delayed("SELECT currval('fgroup_gid_seq')");
 
@@ -698,7 +747,7 @@ sub insert_sequence {
   my($id,$offset,$seq) = @_;
   my $sth = $self->{_insert_sequence}
     ||= $self->dbh->prepare_delayed('insert into fdna values (?,?,?)');
-  $sth->execute($id,$offset,$seq) or die $sth->errstr;
+  $sth->execute($id,$offset,$seq) or $self->throw($sth->errstr);
 }
 
 =head2 range_query
@@ -810,6 +859,7 @@ sub range_query {
 
   $query           .= " ORDER BY $order_by" if $order_by;
 
+  $self->dbh->do('set enable_seqscan=off');
   my $sth = $self->dbh->do_query($query,@args);
   $sth;
 }
@@ -875,9 +925,18 @@ sub pg_make_features_order_by_part {
   return "gname";
 }
 
-
-
 =head2 search_notes
+
+This PostgreSQL adaptor does not implement the search notes method
+because it can be very slow (although the code for the method is
+contained in this method but commented out).
+There is, however, a PostgreSQL adaptor that does implement it in
+a more efficient way: L<Bio::DB::GFF::Adaptor::dbi::pg_fts>,
+which inherits from this adaptor and uses the optional PostgreSQL
+module TSearch2 for full text indexing.  See that adaptor's
+documentation for more information.
+
+See also L<Bio::DB::GFF>
 
  Title   : search_notes
  Usage   : @search_results = $db->search_notes("full text search string",$limit)
@@ -886,46 +945,47 @@ sub pg_make_features_order_by_part {
  Args    : full text search string, and an optional row limit
  Status  : public
 
-This is a mysql-specific method.  Given a search string, it performs a
-full-text search of the notes table and returns an array of results.
+This is a replacement for the mysql-specific method.  Given a search string, it
+performs a ILIKE search of the notes table and returns an array of results.
 Each row of the returned array is a arrayref containing the following fields:
 
   column 1     A Bio::DB::GFF::Featname object, suitable for passing to segment()
   column 2     The text of the note
   column 3     A relevance score.
 
+Note that for large databases this can be very slow and may result in
+time out or 500-cgi errors.  If this is happening on a regular basis,
+you should look into using L<Bio::DB::GFF::Adaptor::dbi::pg_fts> which
+implements the TSearch2 full text indexing scheme.
+
 =cut
 
-sub search_notes {
-  my $self = shift;
-  my ($search_string,$limit) = @_;
-
-  my @words  = $search_string =~ /(\w+)/g;
-  my $regex  = join '|',@words;
-  my @searches = map {"fattribute_value LIKE '%${_}%'"} @words;
-  my $search   = join(' OR ',@searches);
-
-  my $query = <<END;
-SELECT distinct gclass,gname,fattribute_value 
-  FROM fgroup,fattribute_to_feature,fdata
-  WHERE fgroup.gid=fdata.gid
-     AND fdata.fid=fattribute_to_feature.fid
-     AND ($search)
-END
-;
-
-  my $sth = $self->dbh->do_query($query);
-  my @results;
-  while (my ($class,$name,$note) = $sth->fetchrow_array) {
-     next unless $class && $name;    # sorry, ignore NULL objects
-     my @matches = $note =~ /($regex)/g;
-     my $relevance = 10*@matches;
-     my $featname = Bio::DB::GFF::Featname->new($class=>$name);
-     push @results,[$featname,$note,$relevance];
-     last if $limit && @results >= $limit;
-  }
-  @results;
+sub search_notes{
+#  my $self = shift;
+#  my ($search_string,$limit) = @_;
+#
+#  $search_string =~ tr/*/%/s;
+#  $search_string =  '%'.$search_string unless $search_string =~ /^\%/;
+#  $search_string =  $search_string.'%' unless $search_string =~ /\%$/;
+#  warn "search_string:$search_string";
+#  my $query = FULLTEXTWILDCARD;
+#  $query   .= " limit $limit" if defined $limit;
+#  my $sth   = $self->dbh->do_query($query,$search_string);
+#
+#  my @results;
+#  while (my ($class,$name,$note) = $sth->fetchrow_array) {
+#
+#     next unless $class && $name;    # sorry, ignore NULL objects
+#     my $featname = Bio::DB::GFF::Featname->new($class=>$name);
+#
+#     push @results,[$featname,$note,0]; #gbrowse expects a score, but
+#                                        #pg doesn't give one, thus the 0
+#  }
+#  warn @results;
+#
+#  return @results;
 }
+
 
 =head2 make_meta_set_query
 
@@ -1104,5 +1164,213 @@ sub update_sequences {
 
   1;
 }
+
+=head2 make_features_by_name_where_part
+
+ Title   : make_features_by_name_where_part
+ Usage   : $db->make_features_by_name_where_part
+ Function: Overrides a function in Bio::DB::GFF::Adaptor::dbi to insure
+           that searches will be case insensitive. It creates the SQL
+           fragment needed to select a feature by its group name & class
+ Returns : a SQL fragment and bind arguments
+ Args    : see below
+ Status  : Protected
+
+=cut
+
+sub make_features_by_name_where_part {
+  my $self = shift;
+  my ($class,$name) = @_;
+
+  if ($name !~ /\*/) {
+    #allows utilization of an index on lower(gname)
+    return ("fgroup.gclass=? AND lower(fgroup.gname) = lower(?)",$class,$name);
+  }
+  else {
+    $name =~ tr/*/%/;
+    return ("fgroup.gclass=? AND lower(fgroup.gname) LIKE lower(?)",$class,$name);
+  }
+}
+
+#
+# Methods from dbi.pm that need to be overridden to make
+# searching for fref case insensitive
+#
+#
+sub get_dna {
+  my $self = shift;
+  my ($ref,$start,$stop,$class) = @_;
+
+  my ($offset_start,$offset_stop);
+
+  my $has_start = defined $start;
+  my $has_stop  = defined $stop;
+
+  my $reversed;
+  if ($has_start && $has_stop && $start > $stop) {
+    $reversed++;
+    ($start,$stop) = ($stop,$start);
+  }
+
+  # turn start and stop into 0-based offsets
+  my $cs = $self->dna_chunk_size;
+  $start -= 1;  $stop -= 1;
+  $offset_start = int($start/$cs)*$cs;
+  $offset_stop  = int($stop/$cs)*$cs;
+
+  my $sth;
+  # special case, get it all
+  if (!($has_start || $has_stop)) {
+    $sth = $self->dbh->do_query('select fdna,foffset from fdna where lower(fref)=lower(?) order by foffset',$ref);
+  }
+
+  elsif (!$has_stop) {
+    $sth = $self->dbh->do_query('select fdna,foffset from fdna where lower(fref)=lower(?) and foffset>=? order by foffset',
+                                $ref,$offset_start);
+  }
+
+  else {  # both start and stop defined
+    $sth = $self->dbh->do_query('select fdna,foffset from fdna where lower(fref)=lower(?) and foffset>=? and foffset<=? order by foffset',
+                                $ref,$offset_start,$offset_stop);
+  }
+
+  my $dna = '';
+  while (my($frag,$offset) = $sth->fetchrow_array) {
+      substr($frag,0,$start-$offset) = '' if $has_start && $start > $offset;
+      $dna .= $frag;
+  }
+  substr($dna,$stop-$start+1) = '' if $has_stop && $stop-$start+1 < length($dna);
+  if ($reversed) {
+    $dna = reverse $dna;
+    $dna =~ tr/gatcGATC/ctagCTAG/;
+  }
+
+  $sth->finish;
+  $dna;
+}
+
+
+sub refseq_query {
+  my $self = shift;
+  my ($refseq,$refclass) = @_;
+  my $query = "lower(fdata.fref)=lower(?)";
+  return wantarray ? ($query,$refseq) : $self->dbh->dbi_quote($query,$refseq);
+}
+
+sub make_types_where_part {
+  my $self = shift;
+  my ($srcseq,$start,$stop,$want_count,$typelist) = @_;
+  my (@query,@args);
+  if (defined($srcseq)) {
+    push @query,'lower(fdata.fref)=lower(?)';
+    push @args,$srcseq;
+    if (defined $start or defined $stop) {
+      $start = 1           unless defined $start;
+      $stop  = MAX_SEGMENT unless defined $stop;
+      my ($q,@a) = $self->overlap_query($start,$stop);
+      push @query,"($q)";
+      push @args,@a;
+    }
+  }
+  if (defined $typelist && @$typelist) {
+    my ($q,@a) = $self->types_query($typelist);
+    push @query,($q);
+    push @args,@a;
+  }
+  my $query = @query ? join(' AND ',@query) : '1=1';
+  return wantarray ? ($query,@args) : $self->dbh->dbi_quote($query,@args);
+}
+
+sub get_feature_id {
+  my $self = shift;
+  my ($ref,$start,$stop,$typeid,$groupid) = @_;
+  my $s = $self->{load_stuff};
+  unless ($s->{get_feature_id}) {
+    my $dbh = $self->features_db;
+    $s->{get_feature_id} =
+      $dbh->prepare_delayed('SELECT fid FROM fdata WHERE lower(fref)=lower(?) AND fstart=? AND fstop=? AND ftypeid=? AND gid=?');
+  }
+  my $sth = $s->{get_feature_id} or return;
+  $sth->execute($ref,$start,$stop,$typeid,$groupid) or return;
+  my ($fid) = $sth->fetchrow_array;
+  return $fid;
+}
+
+sub _delete {
+  my $self = shift;
+  my $delete_spec = shift;
+  my $ranges      = $delete_spec->{segments} || [];
+  my $types       = $delete_spec->{types}    || [];
+  my $force       = $delete_spec->{force};
+  my $range_type  = $delete_spec->{range_type};
+  my $dbh         = $self->features_db;
+
+  my $query = 'delete from fdata';
+  my @where;
+
+  my @range_part;
+  for my $segment (@$ranges) {
+    my $ref   = $dbh->quote($segment->abs_ref);
+    my $start = $segment->abs_start;
+    my $stop  = $segment->abs_stop;
+    my $range =  $range_type eq 'overlaps'     ? $self->overlap_query($start,$stop)
+               : $range_type eq 'contains'     ? $self->contains_query($start,$stop)
+               : $range_type eq 'contained_in' ? $self->contained_in_query($start,$stop)
+               : $self->throw("Invalid range type '$range_type'");
+    push @range_part,"(lower(fref)=lower($ref) AND $range)";
+  }
+  push @where,'('. join(' OR ',@range_part).')' if @range_part;
+
+  # get all the types
+  if (@$types) {
+    my $types_where = $self->types_query($types);
+    my $types_query = "select ftypeid from ftype where $types_where";
+    my $result      = $dbh->selectall_arrayref($types_query);
+    my @typeids     = map {$_->[0]} @$result;
+    my $typelist    = join ',',map{$dbh->quote($_)} @typeids;
+    $typelist ||= "0"; # don't cause DBI to die with invalid SQL when
+                       # unknown feature types were requested.
+    push @where,"(ftypeid in ($typelist))";
+  }
+  $self->throw("This operation would delete all feature data and -force not specified")
+    unless @where || $force;
+  $query .= " where ".join(' and ',@where) if @where;
+  warn "$query\n" if $self->debug;
+  my $result = $dbh->do($query);
+  defined $result or $self->throw($dbh->errstr);
+  $result;
+}
+
+sub make_abscoord_query {
+  my $self = shift;
+  my ($name,$class,$refseq) = @_;
+  #my $query = GETSEQCOORDS;
+  my $query = $self->getseqcoords_query();
+  my $getforcedseqcoords = $self->getforcedseqcoords_query() ;
+  if ($name =~ /\*/) {
+    $name =~ s/%/\\%/g;
+    $name =~ s/_/\\_/g;
+    $name =~ tr/*/%/;
+    $query =~ s/gname\) = lower/gname) LIKE lower/;
+  }
+  defined $refseq 
+    ? $self->dbh->do_query($getforcedseqcoords,$name,$class,$refseq)
+    : $self->dbh->do_query($query,$name,$class);
+}
+
+sub make_aliasabscoord_query {
+  my $self = shift;
+  my ($name,$class) = @_;
+  #my $query = GETALIASCOORDS;
+  my $query = $self->getaliascoords_query();
+  if ($name =~ /\*/) {
+    $name =~ s/%/\\%/g;
+    $name =~ s/_/\\_/g;
+    $name =~ tr/*/%/;
+    $query =~ s/gname\) = lower/gname) LIKE lower/;
+  }
+  $self->dbh->do_query($query,$name,$class);
+}
+
 
 1;

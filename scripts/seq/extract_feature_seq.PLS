@@ -1,6 +1,6 @@
 #!perl -w
 use strict;
-# $Id: extract_feature_seq.PLS,v 1.1 2003/01/23 03:24:05 jason Exp $
+# $Id: extract_feature_seq.PLS,v 1.5 2006/07/04 22:23:29 mauricio Exp $
 # Author Jason Stajich <jason@bioperl.org>
 
 =head1 NAME
@@ -9,7 +9,7 @@ extract_feature_seq - extract the corresponding sequence for a specified feature
 
 =head1 SYNOPSIS
 
-pairwise_kaks.PLS -i file --format genbank --feature=CDS -o output.fa
+extract_feature_seq.PLS -i file --format genbank --feature=CDS -o output.fa
 
 =head1 DESCRIPTION 
 
@@ -23,8 +23,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -32,11 +32,11 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
- http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
- Jason Stajich <jason@bioperl.org>
+ Jason Stajich E<lt>jason-at-bioperl-dot-orgE<gt>
 
 =cut
 
@@ -80,3 +80,5 @@ while( my $seq = $in->next_seq ) {
 	$out->write_seq($s);
     }
 }
+
+__END__

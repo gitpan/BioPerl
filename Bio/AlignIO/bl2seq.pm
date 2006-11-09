@@ -1,14 +1,14 @@
-# $Id: bl2seq.pm,v 1.16 2003/11/25 18:59:27 jason Exp $
+# $Id: bl2seq.pm,v 1.23.4.3 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::AlignIO::bl2seq
 
-#	based on the Bio::SeqIO modules
-#       by Ewan Birney <birney@sanger.ac.uk>
+#   based on the Bio::SeqIO modules
+#       by Ewan Birney <birney@ebi.ac.uk>
 #       and Lincoln Stein  <lstein@cshl.org>
 #
-#	the Bio::Tools::BPlite modules by
-#	Ian Korf (ikorf@sapiens.wustl.edu, http://sapiens.wustl.edu/~ikorf),
-#	Lorenz Pollak (lorenz@ist.org, bioperl port)
+#   the Bio::Tools::BPlite modules by
+#   Ian Korf (ikorf@sapiens.wustl.edu, http://sapiens.wustl.edu/~ikorf),
+#   Lorenz Pollak (lorenz@ist.org, bioperl port)
 #
 #       and the SimpleAlign.pm module of Ewan Birney
 #
@@ -29,29 +29,32 @@ Do not use this module directly.  Use it via the L<Bio::AlignIO> class, as in:
 
     use Bio::AlignIO;
 
-    $in  = Bio::AlignIO->new(-file => "inputfilename" , '-format' => 'bl2seq');
+    $in  = Bio::AlignIO->new(-file   => "inputfilename" ,
+                             -format => "bl2seq",
+                             -report_type => "blastn");
     $aln = $in->next_aln();
 
 
 =head1 DESCRIPTION
 
 This object can create L<Bio::SimpleAlign> sequence alignment objects (of
-2 sequences) from bl2seq BLAST reports.
+two sequences) from C<bl2seq> BLAST reports.
 
-A nice feature of this module is that- in combination with
-StandAloneBlast.pm or remote blasting - it can be used to align 2
-sequences and make a SimpleAlign object from them which can then be
-manipulated using any SimpleAlign.pm methods, eg:
+A nice feature of this module is that - in combination with
+L<Bio::Tools::Run::StandAloneBlast.pm> or a remote BLAST - it can be used to
+align two sequences and make a L<Bio::SimpleAlign> object from them which
+can then be manipulated using any L<Bio::SimpleAlign> methods, eg:
 
-   #Get 2 sequences
+   # Get two sequences
    $str = Bio::SeqIO->new(-file=>'t/amino.fa' , '-format' => 'Fasta', );
    my $seq3 = $str->next_seq();
    my $seq4 = $str->next_seq();
 
    # Run bl2seq on them
-   $factory = Bio::Tools::StandAloneBlast->new('program' => 'blastp', 
-					       'outfile' => 'bl2seq.out');
+   $factory = Bio::Tools::StandAloneBlast->new('program' => 'blastp',
+                                               'outfile' => 'bl2seq.out');
    my $bl2seq_report = $factory->bl2seq($seq3, $seq4);
+   # Note that report is a Bio::SearchIO object
 
    # Use AlignIO.pm to create a SimpleAlign object from the bl2seq report
    $str = Bio::AlignIO->new(-file=> 'bl2seq.out','-format' => 'bl2seq');
@@ -65,22 +68,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org               - General discussion
-  http://bio.perl.org/MailList.html   - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Peter Schattner
 
 Email: schattner@alum.mit.edu
-
 
 =head1 APPENDIX
 
@@ -92,23 +93,32 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::AlignIO::bl2seq;
-use vars qw(@ISA);
 use strict;
-# Object preamble - inherits from Bio::Root::Object
 
-use Bio::AlignIO;
 use Bio::SearchIO;
 
-@ISA = qw(Bio::AlignIO);
+use base qw(Bio::AlignIO);
+
+=head2 new
+
+ Title   : new
+ Usage   : my $alignio = Bio::SimpleAlign->new(-format => 'bl2seq',
+                                               -file   => 'filename',
+                                               -report_type => 'blastx');
+ Function: Get a L<Bio::SimpleAlign>
+ Returns : L<Bio::SimpleAlign> object
+ Args    : -report_type => report type (blastn,blastx,tblastx,tblastn,blastp)
 
 
-sub new { 
+=cut
+
+
+sub new {
     my ($class) = shift;
     my $self = $class->SUPER::new(@_);
     my ($rt) = $self->_rearrange([qw(REPORT_TYPE)],@_);
-    $self->report_type($rt);
-    $self;
-    
+    defined $rt && $self->report_type($rt);
+    return $self;
 }
 
 =head2 next_aln
@@ -116,38 +126,40 @@ sub new {
  Title   : next_aln
  Usage   : $aln = $stream->next_aln()
  Function: returns the next alignment in the stream.
- Returns : L<Bio::Align::AlignI> object - returns 0 on end of file
-	    or on error
- Args    : NONE
+ Returns : L<Bio::Align::AlignI> object on success,
+           undef on error or end of file
+ Args    : none
 
 =cut
 
 sub next_aln {
     my $self = shift;
-    my ($start,$end,$name,$seqname,$seq,$seqchar,$strand);
     my $aln =  Bio::SimpleAlign->new(-source => 'bl2seq');
-    $self->{'bl2seqobj'} = $self->{'bl2seqobj'} || 
+    $self->{'bl2seqobj'} = $self->{'bl2seqobj'} ||
 	Bio::SearchIO->new(-fh => $self->_fh,
 			   -format => 'blast');
     my $bl2seqobj = $self->{'bl2seqobj'};
     my $result = $self->{'_result'} || $bl2seqobj->next_result;
     $self->{'result'} = undef, return unless defined $result;
-    
+
     my $hit = $self->{'_hit'} || $result->next_hit;
     $self->{'_hit'} = undef, return unless defined $hit;
-    
+
     my $hsp  = $hit->next_hsp;
+    return unless defined $hsp;
     return $hsp->get_aln;
+
 # much easier above, eh?
+#     my ($start,$end,$name,$seqname,$seq,$seqchar,$strand);
 #     $seqchar = $hsp->query_string;
 #     $start   = $hsp->query->start;
 #     $end     = $hsp->query->end;
 #      # Query name typically not present in bl2seq report
-#     $seqname = $hsp->query->seq_id || 'Query-sequence'; 
+#     $seqname = $hsp->query->seq_id || 'Query-sequence';
 #     $strand  = $hsp->query->strand;
-    
-#     #    unless ($seqchar && $start && $end  && $seqname) {return 0} ;	
-#     unless ($seqchar && $start && $end ) {return 0} ;	
+
+#     #    unless ($seqchar && $start && $end  && $seqname) {return 0} ;
+#     unless ($seqchar && $start && $end ) {return 0} ;
 
 #     $seq = new Bio::LocatableSeq('-seq'   =>$seqchar,
 # 				 '-id'    =>$seqname,
@@ -164,7 +176,7 @@ sub next_aln {
 #     $seqname  = $hsp->hit->seq_id;
 #     $strand   = $hsp->hit->strand;
 
-#     unless ($seqchar && $start && $end  && $seqname) {return 0} ;	
+#     unless ($seqchar && $start && $end  && $seqname) {return 0} ;
 
 #     $seq = new Bio::LocatableSeq('-seq'   =>$seqchar,
 # 				 '-id'    =>$seqname,
@@ -175,9 +187,9 @@ sub next_aln {
 #     $aln->add_seq($seq);
 #     return $aln;
 }
-	
 
-=head2 write_aln
+
+=head2 write_aln (NOT IMPLEMENTED)
 
  Title   : write_aln
  Usage   : $stream->write_aln(@aln)
@@ -190,8 +202,7 @@ sub next_aln {
 
 sub write_aln {
     my ($self,@aln) = @_;
-
-    $self->throw("Sorry: writing bl2seq output is not available! /n");
+    $self->throw_not_implemented();
 }
 
 =head2 report_type

@@ -1,4 +1,4 @@
-# $Id: PrimarySeqI.pm,v 1.1 2003/03/07 19:30:25 sac Exp $
+# $Id: PrimarySeqI.pm,v 1.6.4.1 2006/10/02 23:10:38 sendu Exp $
 #
 # BioPerl module for Bio::PrimarySeqI
 #
@@ -96,17 +96,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                       - General discussion
-  http://bio.perl.org/MailList.html           - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
@@ -124,12 +123,10 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::PrimarySeqI;
-use vars qw(@ISA );
 use strict;
-use Bio::Root::RootI;
 use Bio::Tools::CodonTable;
 
-@ISA = qw(Bio::Root::RootI);
+use base qw(Bio::Root::RootI);
 
 =head1 Implementation Specific Functions
 
@@ -481,8 +478,7 @@ sub trunc{
 
  Title   : translate
  Usage   : $protein_seq_obj = $dna_seq_obj->translate
-           #if full CDS expected:
-           $protein_seq_obj = $cds_seq_obj->translate(undef,undef,undef,undef,1);
+
  Function:
 
            Provides the translation of the DNA sequence using full

@@ -1,4 +1,4 @@
-# $Id: phd.pm,v 1.17 2002/12/09 23:50:23 matsallac Exp $
+# $Id: phd.pm,v 1.21.4.2 2006/10/10 18:42:50 sendu Exp $
 #
 # Copyright (c) 1997-2001 bioperl, Chad Matsalla. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or
@@ -21,7 +21,7 @@ Do not use this module directly.  Use it via the L<Bio::SeqIO> class.
 =head1 DESCRIPTION
 
 This object can transform .phd files (from Phil Green's phred basecaller)
-to and from Bio::Seq::SeqWithQuality objects
+to and from Bio::Seq::Quality objects
 
 =head1 FEEDBACK
 
@@ -32,16 +32,15 @@ Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
-  http://www.bioperl.org/MailList.shtml  - About the mailing lists
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.
+Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR Chad Matsalla
 
@@ -62,20 +61,20 @@ methods. Internal methods are usually preceded with a _
 # 'Let the code begin...
 
 package Bio::SeqIO::phd;
-use vars qw(@ISA);
 use strict;
-use Bio::SeqIO;
 use Bio::Seq::SeqFactory;
+use Dumpvalue();
+my $dumper = new Dumpvalue();
 
-@ISA = qw(Bio::SeqIO);
+use base qw(Bio::SeqIO);
 
 sub _initialize {
   my($self,@args) = @_;
-  $self->SUPER::_initialize(@args);    
+  $self->SUPER::_initialize(@args);
   if( ! defined $self->sequence_factory ) {
       $self->sequence_factory(new Bio::Seq::SeqFactory
-			      (-verbose => $self->verbose(), 
-			       -type => 'Bio::Seq::SeqWithQuality'));      
+			      (-verbose => $self->verbose(),
+			       -type => 'Bio::Seq::Quality'));
   }
 }
 
@@ -84,7 +83,7 @@ sub _initialize {
  Title   : next_seq()
  Usage   : $swq = $stream->next_seq()
  Function: returns the next phred sequence in the stream
- Returns : Bio::Seq::SeqWithQuality object
+ Returns : Bio::Seq::Quality object
  Args    : NONE
  Notes   : This is really redundant because AFAIK there is no such thing as
   	   a .phd file that contains more then one sequence. It is included as
@@ -95,20 +94,39 @@ sub _initialize {
 sub next_seq {
     my ($self,@args) = @_;
     my ($entry,$done,$qual,$seq);
-    my ($id,@lines, @bases, @qualities) = ('');
+    my ($id,@lines, @bases, @qualities, @trace_indices) = ('');
     if (!($entry = $self->_readline)) { return; }
 	if ($entry =~ /^BEGIN_SEQUENCE\s+(\S+)/) {
           $id = $1;
      }
+     my $in_comments = 0;
     my $in_dna = 0;
     my $base_number = 0;
+     my $comments = {};
     while ($entry = $self->_readline) {
 	return if (!$entry);
 	chomp($entry);
+     if ($entry =~ /^BEGIN_COMMENT/) {
+          $in_comments = 1;
+          while ($in_comments == 1) {
+              $entry = $self->_readline();
+               chomp($entry);
+              if ($entry) {
+                    if ($entry =~ /^END_COMMENT/) {
+                         $in_comments = 0;
+                    }
+                    else {
+                         my ($name,$content) = split(/:/,$entry);
+                         if ($content) { $content =~ s/^\s//g; }
+                         $comments->{$name} = $content;
+                    }
+               }
+          }
+     }
 	if ($entry =~ /^BEGIN_CHROMAT:\s+(\S+)/) {
 	     # this is where I used to grab the ID
           if (!$id) {
-               $id = $1; 
+               $id = $1;
           }
           $entry = $self->_readline();
 	}
@@ -123,29 +141,35 @@ sub next_seq {
 	if ($entry =~ /^END_SEQUENCE/) {
 	}
 	if (!$in_dna) { next;  }
-	$entry =~ /(\S+)\s+(\S+)/;
+	$entry =~ /(\S+)\s+(\S+)(?:\s+(\S+))?/;
 	push @bases,$1;
 	push @qualities,$2;
+    #Not sure that a trace index values are required for phd file
+    push(@trace_indices,$3) if defined $3;
 	push(@lines,$entry);
     }
      # $self->debug("csmCreating objects with id = $id\n");
     my $swq = $self->sequence_factory->create
 	(-seq        => join('',@bases),
 	 -qual       => \@qualities,
+     -trace      => \@trace_indices,
 	 -id         => $id,
 	 -primary_id => $id,
 	 -display_id => $id,
 	 );
+     # this should be an actual object to assist in serialization
+     # but I don't have time for this now.
+     if ($comments) { $swq->{comments} = $comments; }
     return $swq;
 }
 
 =head2 write_seq
 
- Title   : write_seq(-SeqWithQuality => $swq, <comments>)
- Usage   : $obj->write_seq(     -SeqWithQuality => $swq,);
+ Title   : write_seq(-Quality => $swq, <comments>)
+ Usage   : $obj->write_seq(     -Quality => $swq,);
  Function: Write out an scf.
  Returns : Nothing.
- Args    : Requires: a reference to a SeqWithQuality object to form the
+ Args    : Requires: a reference to a Quality object to form the
            basis for the scf. Any other arguments are assumed to be comments
            and are put into the comments section of the scf. Read the
            specifications for scf to decide what might be good to put in here.
@@ -162,7 +186,7 @@ sub next_seq {
 	TRACE_ARRAY_MAX_INDEX: unknown
 	CHEM: unknown
 	DYE: unknown
-     IMPORTANT: This method does not write the trace index where this 
+     IMPORTANT: This method does not write the trace index where this
           call was made. All base calls are placed at index 1.
 
 
@@ -173,13 +197,14 @@ sub write_seq {
     my @phredstack;
     my ($label,$arg);
 
-    my ($swq, $chromatfile, $abithumb, 
+    my ($swq, $swq2, $chromatfile, $abithumb,
 	$phredversion, $callmethod,
 	$qualitylevels,$time,
 	$trace_min_index,
 	$trace_max_index,
 	$chem, $dye
-	) = $self->_rearrange([qw(SEQWITHQUALITY
+	) = $self->_rearrange([qw(QUALITY
+                                  SEQWITHQUALITY
 				  CHROMAT_FILE
 				  ABI_THUMBPRINT
 				  PHRED_VERSION
@@ -192,30 +217,31 @@ sub write_seq {
 				  DYE
 				  )], @args);
 
-    unless (ref($swq) eq "Bio::Seq::SeqWithQuality") {
-	$self->throw("You must pass a Bio::Seq::SeqWithQuality object to write_scf as a parameter named \"SeqWithQuality\"");
+    $swq = $swq2 if not $swq and $swq2;
+    unless (ref($swq) eq "Bio::Seq::Quality") {
+	$self->throw("You must pass a Bio::Seq::Quality object to write_scf as a parameter named \"Quality\"");
     }
     my $id = $swq->id();
-    if (!$id) { $id = "UNDEFINED in SeqWithQuality Object"; }
+    if (!$id) { $id = "UNDEFINED in Quality Object"; }
     push @phredstack,("BEGIN_SEQUENCE $id","","BEGIN_COMMENT","");
 
     $chromatfile = 'undefined in write_phd' unless defined $chromatfile;
-    push @phredstack,"CHROMAT_FILE: $chromatfile"; 
+    push @phredstack,"CHROMAT_FILE: $chromatfile";
 
     $abithumb = 0 unless defined $abithumb;
-    push @phredstack,"ABI_THUMBPRINT: $abithumb"; 
+    push @phredstack,"ABI_THUMBPRINT: $abithumb";
 
     $phredversion = "0.980904.e" unless defined $phredversion;
-    push @phredstack,"PHRED_VERSION: $phredversion"; 
+    push @phredstack,"PHRED_VERSION: $phredversion";
 
     $callmethod = 'phred' unless defined $callmethod;
-    push @phredstack,"CALL_METHOD: $callmethod"; 
+    push @phredstack,"CALL_METHOD: $callmethod";
 
     $qualitylevels = 99 unless defined $qualitylevels;
-    push @phredstack,"QUALITY_LEVELS: $qualitylevels"; 
+    push @phredstack,"QUALITY_LEVELS: $qualitylevels";
 
     $time = localtime() unless defined $time;
-    push @phredstack,"TIME: $time"; 
+    push @phredstack,"TIME: $time";
 
     $trace_min_index = 0 unless defined $trace_min_index;
     push @phredstack,"TRACE_ARRAY_MIN_INDEX: $trace_min_index";
@@ -235,7 +261,7 @@ sub write_seq {
 
     my $length = $swq->length();
     if ($length eq "DIFFERENT") {
-	$self->throw("Can't create the phd because the sequence and the quality in the SeqWithQuality object are of different lengths.");
+	$self->throw("Can't create the phd because the sequence and the quality in the Quality object are of different lengths.");
     }
     for (my $curr = 1; $curr<=$length; $curr++) {
 	$self->_print (uc($swq->baseat($curr))." ".

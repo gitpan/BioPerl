@@ -1,4 +1,4 @@
-# $Id: Blast.pm,v 1.11 2003/06/04 08:36:40 heikki Exp $
+# $Id: Blast.pm,v 1.21.4.3 2006/11/08 17:25:54 sendu Exp $
 #
 # BioPerl module for Bio::Index::Blast
 #
@@ -12,28 +12,28 @@
 
 =head1 NAME
 
-Bio::Index::Blast - Indexes Blast reports and supports retrieval based on query accession(s)
+Bio::Index::Blast - Indexes Blast reports and supports retrieval 
+based on query accession(s)
 
 =head1 SYNOPSIS
 
     use strict;
     use Bio::Index::Blast;
-    my ($indexfile,$file1, $file2);
+    my ($indexfile,$file1,$file2,$query);
     my $index = new Bio::Index::Blast(-filename => $indexfile,
-				      -write_flag => 1);
-    $index->make_index($file1, $file2);
+				                          -write_flag => 1);
+    $index->make_index($file1,$file2);
 
-    my $id;
-    my $data = $index->get_stream($id);
+    my $data = $index->get_stream($query);
 
-    my $bplite_report = $index->fetch_report($id);
-    print "query is ", $bplite_report->query, "\n";
-    while( my $sbjct = $bplite_report->nextSbjct ) {
-	print $sbjct->name, "\n";
-	while( my $hsp = $sbjct->nextHSP ) {
-	    print "\t e-value ", $hsp->P,
-	}
-	print "\n";
+    my $blast_report = $index->fetch_report($query);
+    print "query is ", $blast_report->query, "\n";
+    while ( my $result = $blast_report->next_result ) {
+            print $result->algorithm, "\n";
+            while ( my $hsp = $result->next_hit ) {
+              print "\t name ", $hsp->name,
+            }
+            print "\n";
     }
 
 =head1 DESCRIPTION
@@ -50,23 +50,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org            - General discussion
-http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@cgt.mc.duke.edu
-
-Describe contact details here
+Email jason-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -75,32 +72,32 @@ Internal methods are usually preceded with a _
 
 =cut
 
-
 # Let the code begin...
 
-
 package Bio::Index::Blast;
-use vars qw(@ISA );
+use vars qw($VERSION);
 use strict;
 
-use Bio::Root::Root;
-use Bio::Index::Abstract;
-use Bio::SearchIO;
 use IO::String;
 
-@ISA = qw(Bio::Index::Abstract Bio::Root::Root );
+use base qw(Bio::Index::Abstract Bio::Root::Root);
+
+BEGIN {
+	$VERSION = 0.1;
+}
 
 sub _version {
-    return 0.1;
+	return $VERSION;
 }
 
 =head2 new
 
   Usage   : $index = Bio::Index::Abstract->new(
                 -filename    => $dbm_file,
-                -write_flag  => 0,  
+                -write_flag  => 0,
                 -dbm_package => 'DB_File',
                 -verbose     => 0);
+
   Function: Returns a new index object.  If filename is
             specified, then open_dbm() is immediately called. 
             Bio::Index::Abstract->new() will usually be called
@@ -132,73 +129,22 @@ sub new {
 
  Title   : fetch_report
  Usage   : my $blastreport = $idx->fetch_report($id);
- Function: Returns a Bio::Search::Result::ResultI report object 
-          for a specific blast report
- Returns : Bio::Search::Result::ResultI
+ Function: Returns a Bio::SearchIO report object 
+           for a specific blast report
+ Returns : Bio::SearchIO
  Args    : valid id
 
 =cut
 
 sub fetch_report{
-    my ($self,$id) = @_;
-    my $fh = $self->get_stream($id);
-    my $report = new Bio::SearchIO(-noclose => 1,
-				   -format => 'blast',
-				   -fh     => $fh);
-    return $report->next_result;
+	my ($self,$id) = @_;
+	my $fh = $self->get_stream($id);
+	my $report = new Bio::SearchIO(-noclose => 1,
+											 -format => 'blast',
+											 -fh => $fh);
+	return $report->next_result;
 }
 
-# shamelessly stolen from Bio::Index::Fasta
-
-=head2 id_parser
-
-  Title   : id_parser
-  Usage   : $index->id_parser( CODE )
-  Function: Stores or returns the code used by record_id to
-            parse the ID for record from a string.  Useful
-            for (for instance) specifying a different
-            parser for different flavours of blast dbs. 
-            Returns \&default_id_parser (see below) if not
-            set. If you supply your own id_parser
-            subroutine, then it should expect a fasta
-            description line.  An entry will be added to
-            the index for each string in the list returned.
-  Example : $index->id_parser( \&my_id_parser )
-  Returns : ref to CODE if called without arguments
-  Args    : CODE
-
-=cut
-
-sub id_parser {
-    my( $self, $code ) = @_;
-    
-    if ($code) {
-        $self->{'_id_parser'} = $code;
-    }
-    return $self->{'_id_parser'} || \&default_id_parser;
-}
-
-
-
-=head2 default_id_parser
-
-  Title   : default_id_parser
-  Usage   : $id = default_id_parser( $header )
-  Function: The default Blast Query ID parser for Bio::Index::Blast.pm
-            Returns $1 from applying the regexp /^>\s*(\S+)/
-            to $header.
-  Returns : ID string
-  Args    : a header line string
-
-=cut
-
-sub default_id_parser {    
-    if ($_[0] =~ /^\s*(\S+)/) {
-        return $1;
-    } else {
-        return;
-    }
-}
 
 =head2 Require methods from Bio::Index::Abstract
 
@@ -218,67 +164,68 @@ sub default_id_parser {
 =cut
 
 sub _index_file {
-    my( $self,
-        $file, # File name
-        $i,    # Index-number of file being indexed
-        ) = @_;
-    
-    my( $begin,     # Offset from start of file of the start
-                    # of the last found record.
-        );
+	my( $self,
+		 $file, # File name
+		 $i,    # Index-number of file being indexed
+	  ) = @_;
 
-    open(BLAST, "<$file") or die("cannot open file $file\n");
-    
-    my (@data, @records);
-    my $indexpoint = 0;
-    my $lastline = 0;
+	my( $begin,  # Offset from start of file of the start
+		          # of the last found record.
+	  );
 
-    while(<BLAST> ) {	
-	if( /(T)?BLAST[PNX]/ ) {
-	    if( @data ) { 
-		# if we have already read a report
-		# then store the data for this report 
-		# in the CURRENT index
-		$self->_process_report($indexpoint, $i,join("",@data));
-		
-	    } # handle fencepost problem (beginning) 
-	      # by skipping here when empty
+	open(my $BLAST, '<', $file) or $self->throw("cannot open file $file\n");
 
-	    # since we are at the beginning of a new report
-	    # store this begin location for the next index	   
-	    $indexpoint = $lastline;
-	    @data = ();
+	my (@data, @records);
+	my $indexpoint = 0;
+	my $lastline = 0;
+
+	while( <$BLAST> ) {
+		if( /(T)?BLAST[PNX]/ ) {
+			if( @data ) { 
+				# if we have already read a report
+				# then store the data for this report 
+				# in the CURRENT index
+				$self->_process_report($indexpoint, $i, join('', @data));
+
+			} # handle fencepost problem (beginning) 
+	        # by skipping here when empty
+
+			# since we are at the beginning of a new report
+			# store this begin location for the next index	   
+			$indexpoint = $lastline;
+			@data = ();
+		}
+		push(@data, $_) if $_;
+		$lastline = tell $BLAST;
 	}
-	push @data, $_ if defined;
-	$lastline = tell(BLAST);
-    }
-    # handle fencepost problem (end)
-    if( @data ) {
-	$self->_process_report($indexpoint,$i,join("",@data));
-    }
+	# handle fencepost problem (end)
+	if( @data ) {
+		$self->_process_report($indexpoint, $i, join('', @data));
+	}
 }
 
 sub _process_report {
-    my ($self,$begin,$i,$data) = @_;
-    
-    if( ! $data ) { 
-	$self->warn("calling _process_report without a valid data string"); 
-	return ; 
-    }
-    my $id_parser = $self->id_parser;
+	my ($self,$begin,$i,$data) = @_;
 
-    my $datal = new IO::String($data);
-    my $report = new Bio::SearchIO(-noclose => 1,
-				   -format => 'blast',
-				   -fh     => $datal);
-    my $result = $report->next_result;
-    my $query = $result->query_name;		
-    foreach my $id (&$id_parser($query)) {
-	print "id is $id, begin is $begin\n" if( $self->verbose > 0);
-	$self->add_record($id, $i, $begin);
-    }
+	if( ! $data ) { 
+		$self->warn("calling _process_report without a valid data string"); 
+		return ; 
+	}
+	# my $id_parser = $self->id_parser;
+
+	my $datal = new IO::String($data);
+	my $report = new Bio::SearchIO->new(-fh => $datal,
+												   -noclose => 1);
+	for (my $result = $report->next_result) {
+		my $id = $result->query_name;
+		print "id is $id, begin is $begin\n" if ( $self->verbose > 0);
+		$self->add_record($id, $i, $begin);
+	}
 }
+
 =head2 Bio::Index::Abstract methods
+
+=cut
 
 =head2 filename
 
@@ -338,7 +285,7 @@ sub _process_report {
            while( <$fh> ) {
               # do something
            }
-           will parse the entire file if you don't put in
+           will parse the entire file if you do not put in
            a last statement in, like
 
            while( <$fh> ) {
@@ -458,10 +405,5 @@ sub _process_report {
 
 
 =cut
-
-
-1;
-
-
 
 1;

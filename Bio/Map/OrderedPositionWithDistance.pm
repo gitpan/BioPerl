@@ -1,3 +1,5 @@
+### TO BE DELETED ###
+
 # BioPerl module for Bio::Map::OrderedPositionWithDistance
 #
 # Cared for by Chad Matsalla <bioinformatics1@dieselwurks.com>
@@ -52,17 +54,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Chad Matsalla
 
@@ -71,7 +72,7 @@ Email bioinformatics1@dieselwurks.com
 =head1 CONTRIBUTORS
 
 Lincoln Stein, lstein@cshl.org
-Heikki Lehvaslaiho, heikki@ebi.ac.uk
+Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -85,13 +86,10 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Map::OrderedPositionWithDistance;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
-use Bio::Map::Position;
 
-@ISA = qw(Bio::Map::Position);
+use base qw(Bio::Map::Position);
 
 =head2 new
 

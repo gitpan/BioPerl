@@ -1,5 +1,5 @@
 #---------------------------------------------------------
-# $Id: IO.pm,v 1.4 2003/10/25 15:00:57 heikki Exp $
+# $Id: IO.pm,v 1.15.4.1 2006/10/02 23:10:21 sendu Exp $
 
 =head1 NAME
 
@@ -60,9 +60,13 @@ to Bio::Matrix::PSM::PsmHeaderI.
 See also Bio::Matrix::PSM::PsmI for details on using and manipulating
 the parsed data.
 
+The only way to write PFM/PWM is through masta module (something like fasta for
+DNA matrices). You can see an example by reading Bio::Matrix::PSM::IO::masta
+documentation.
+
 =head1 See also
 
-Bio::Matrix::PSM::PsmI, Bio::Matrix::PSM::PsmHeaderI
+Bio::Matrix::PSM::PsmI, Bio::Matrix::PSM::PsmHeaderI, Bio::Matrix::PSM::IO::masta
 
 =head1 FEEDBACK
 
@@ -72,17 +76,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html     - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Stefan Kirov
 
@@ -95,14 +98,12 @@ Email skirov@utk.edu
 
 # Let the code begin...
 package Bio::Matrix::PSM::IO;
-use Bio::Root::Root;
-use Bio::Root::IO;
-use vars qw(@ISA);
+use vars qw(@PSMFORMATS);
 use strict;
 
-@ISA=qw(Bio::Root::Root Bio::Root::IO);
+use base qw(Bio::Root::IO);
 
-@Bio::Matrix::PSM::IO::PSMFORMATS=qw(meme transfac mast);
+@PSMFORMATS = qw(meme transfac mast psiblast masta);
 
 =head2 new
 
@@ -136,11 +137,11 @@ sub new {
 	my $format = $param{'-format'} ||
 	    $class->_guess_format( $param{'-file'} || $ARGV[0] ) ||
 	    'scoring';
-	$self->throw("$format format unrecognized or an argument error occured\n.") if (!grep(/$format/,@Bio::Matrix::PSM::IO::PSMFORMATS));
+	$class->throw("$format format unrecognized or an argument error occured\n.") if (!grep(/$format/,@Bio::Matrix::PSM::IO::PSMFORMATS));
 	$format = "\L$format"; # normalize capitalization to lower case
 
 	# normalize capitalization
-	return undef unless( $class->_load_format_module($format) );
+	return unless( $class->_load_format_module($format) );
 	return "Bio::Matrix::PSM::IO::$format"->new(@args);
     }
 }

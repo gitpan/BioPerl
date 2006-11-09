@@ -1,4 +1,4 @@
-# $Id: FeatureHolderI.pm,v 1.2 2002/11/19 07:04:22 lapp Exp $
+# $Id: FeatureHolderI.pm,v 1.10.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::FeatureHolderI
 #
@@ -19,7 +19,7 @@ Bio::FeatureHolderI - the base interface an object with features must implement
     use Bio::SeqIO;
     # get a feature-holding object somehow: for example, Bio::SeqI objects
     # have features
-    my $seqio = Bio::SeqIO->new(-fh => \*STDIN, -format => 'genbank);
+    my $seqio = Bio::SeqIO->new(-fh => \*STDIN, -format => 'genbank');
     while (my $seq = $seqio->next_seq()) {
         # $seq is-a Bio::FeatureHolderI, hence:
         my @feas = $seq->get_SeqFeatures();
@@ -47,27 +47,24 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
 Email hlapp at gmx.net
 
-Describe contact details here
-
 =head1 CONTRIBUTORS
 
-Additional contributors names and emails here
+Steffen Grossmann [SG], grossman-at-molgen.mpg.de
 
 =head1 APPENDIX
 
@@ -80,17 +77,15 @@ Internal methods are usually preceded with a _
 # Let the code begin...
 
 
+
 package Bio::FeatureHolderI;
-use vars qw(@ISA);
 use strict;
 use Carp;
-use Bio::Root::RootI;
 
-@ISA = qw( Bio::Root::RootI );
+use base qw(Bio::Root::RootI);
 
-=head2 get_SeqFeatures
+=head2 get_SeqFeatures()
 
- Title   : get_SeqFeatures
  Usage   :
  Function: Get the feature objects held by this feature holder.
  Example :
@@ -102,8 +97,46 @@ filter to be passed in.
 
 =cut
 
-sub get_SeqFeatures{
-    shift->throw_not_implemented();
+sub get_SeqFeatures {
+  shift->throw_not_implemented();
+}
+
+=head2 add_SeqFeature()
+
+ Usage   : $feat->add_SeqFeature($subfeat);
+           $feat->add_SeqFeature($subfeat,'EXPAND')
+ Function: adds a SeqFeature into the subSeqFeature array.
+           with no 'EXPAND' qualifer, subfeat will be tested
+           as to whether it lies inside the parent, and throw
+           an exception if not.
+
+           If EXPAND is used, the parent''s start/end/strand will
+           be adjusted so that it grows to accommodate the new
+           subFeature
+ Example :
+ Returns : nothing
+ Args    : a Bio::SeqFeatureI object
+
+=cut
+
+sub add_SeqFeature {
+  shift->throw_not_implemented();
+}
+
+
+=head2 remove_SeqFeatures()
+
+ Usage   : $obj->remove_SeqFeatures
+ Function: Removes all sub SeqFeatures.  If you want to remove only a subset,
+           remove that subset from the returned array, and add back the rest.
+ Returns : The array of Bio::SeqFeatureI implementing sub-features that was
+           deleted from this feature.
+ Args    : none
+
+=cut
+
+sub remove_SeqFeatures {
+  shift->throw_not_implemented();
 }
 
 =head2 feature_count
@@ -169,7 +202,14 @@ sub get_all_SeqFeatures{
 	push(@flatarr,$feat);
 	&_add_flattened_SeqFeatures(\@flatarr,$feat,@_);
     }
-    return @flatarr;
+
+    # needed to deal with subfeatures which appear more than once in the hierarchy [SG]
+    my %seen = ();
+    my @uniq_flatarr = ();
+    foreach my $feat (@flatarr) {
+	push(@uniq_flatarr, $feat) unless $seen{$feat}++;
+    }
+    return @uniq_flatarr;
 }
 
 sub _add_flattened_SeqFeatures {
@@ -190,5 +230,21 @@ sub _add_flattened_SeqFeatures {
     }
 
 }
+
+sub set_ParentIDs_from_hierarchy(){
+    # DEPRECATED - use IDHandler
+    my $self = shift;
+    require "Bio/SeqFeature/Tools/IDHandler.pm";
+    Bio::SeqFeature::Tools::IDHandler->new->set_ParentIDs_from_hierarchy($self);
+}
+
+sub create_hierarchy_from_ParentIDs(){
+    # DEPRECATED - use IDHandler
+    my $self = shift;
+    require "Bio/SeqFeature/Tools/IDHandler.pm";
+    Bio::SeqFeature::Tools::IDHandler->new->create_hierarchy_from_ParentIDs($self);
+}
+
+
 
 1;

@@ -1,4 +1,4 @@
-# $Id: Result.pm,v 1.5 2003/05/17 19:03:58 heikki Exp $
+# $Id: Result.pm,v 1.9.4.1 2006/10/02 23:10:34 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Phylo::Molphy::Result
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::Tools::Phylo::Molphy::Result - DESCRIPTION of Object
+Bio::Tools::Phylo::Molphy::Result - container for data parsed from a ProtML run
 
 =head1 SYNOPSIS
 
@@ -75,21 +75,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
+Email jason-at-bioperl.org
 
 =head1 APPENDIX
 
@@ -103,15 +102,13 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Tools::Phylo::Molphy::Result;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::Root::Root;
 
 
-@ISA = qw(Bio::Root::Root );
+use base qw(Bio::Root::Root);
 
 =head2 new
 
@@ -199,13 +196,13 @@ sub substitution_matrix{
 	   foreach my $v (values %{$val} ) {
 	       if( ref($v) !~ /HASH/i ) { 
 		   $self->warn("Must be a valid hashref of hashrefs for substition_matrix");
-		   return undef;
+		   return;
 	       }
 	   }
 	   $self->{'_substitution_matrix'} = $val;
        } else { 
 	   $self->warn("Must be a valid hashref of hashrefs for substition_matrix");
-	   return undef;
+	   return;
        }
    }
    return $self->{'_substitution_matrix'};
@@ -231,13 +228,13 @@ sub transition_probability_matrix {
 	   foreach my $v (values %{$val} ) {
 	       if( ref($v) !~ /HASH/i ) { 
 		   $self->warn("Must be a valid hashref of hashrefs for transition_probability_matrix");
-		   return undef;
+		   return;
 	       }
 	   } 
 	   $self->{'_TPM'}->{$type} = $val;
        } else { 
 	   $self->warn("Must be a valid hashref of hashrefs for transition_probablity_matrix");
-	   return undef;
+	   return;
        }
    }
 

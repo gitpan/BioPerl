@@ -1,4 +1,4 @@
-# $Id: SNP.pm,v 1.12 2003/06/04 08:36:44 heikki Exp $
+# $Id: SNP.pm,v 1.16.4.1 2006/10/02 23:10:38 sendu Exp $
 # bioperl module for Bio::Variation::SNP
 #
 # Copyright Allen Day <allenday@ucla.edu>, Stan Nelson <snelson@ucla.edu>
@@ -23,20 +23,19 @@ IDs, validation methods).
 =head2 Mailing Lists
 
 User feedback is an integral part of the evolution of this and other
-Bioperl modules. Send your comments and suggestions preferably to the 
-Bioperl mailing lists  Your participation is much appreciated.
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists. Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
-report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -54,12 +53,10 @@ methods. Internal methods are usually preceded with a _
 package Bio::Variation::SNP;
 
 use strict;
-use vars qw( @ISA $AUTOLOAD);
+use vars qw($AUTOLOAD);
 use Bio::Root::Root;
-use Bio::Variation::SeqDiff;
-use Bio::Variation::Allele;
 
-@ISA = qw( Bio::Variation::SeqDiff Bio::Variation::Allele);
+use base qw(Bio::Variation::SeqDiff Bio::Variation::Allele);
 
 =head2 get/set-able methods
 

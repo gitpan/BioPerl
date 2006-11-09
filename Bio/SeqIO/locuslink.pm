@@ -1,4 +1,4 @@
-# $Id: locuslink.pm,v 1.9 2003/07/31 02:40:38 lapp Exp $
+# $Id: locuslink.pm,v 1.12.4.1 2006/10/02 23:10:29 sendu Exp $
 #
 # BioPerl module for Bio::SeqIO::locuslink
 #
@@ -26,7 +26,7 @@
 
 =head1 NAME
 
-Bio::SeqIO::locuslink - DESCRIPTION of Object
+Bio::SeqIO::locuslink - LocusLink input/output stream
 
 =head1 SYNOPSIS
 
@@ -43,7 +43,7 @@ will not work.
 
 The way the current implementation populates the object is rather a
 draft work than a finished work of art. Note that at this stage the
-locuslink entries cannot be round-tripped, because the parser loses
+LocusLink entries cannot be round-tripped, because the parser loses
 certain information. For instance, most of the alternative transcript
 descriptions are not retained. The parser also misses any element
 that deals with visual representation (e.g., 'button') except for the
@@ -59,23 +59,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via 
+the web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Keith Ching
 
 Email kching at gnf.org
-
-Describe contact details here
 
 =head1 CONTRIBUTORS
 
@@ -91,9 +88,7 @@ Internal methods are usually preceded with a _
 package Bio::SeqIO::locuslink;
 
 use strict;
-use vars qw(@ISA);
 
-use Bio::SeqIO;
 use Bio::Seq::SeqFactory;
 use Bio::Species;
 use Bio::Annotation::DBLink;
@@ -103,7 +98,7 @@ use Bio::Annotation::SimpleValue;
 use Bio::Annotation::OntologyTerm;
 use Bio::Annotation::Collection;
 
-@ISA = qw(Bio::SeqIO);
+use base qw(Bio::SeqIO);
 
 # list of all the field names in locuslink
 my @locuslink_keys = qw(

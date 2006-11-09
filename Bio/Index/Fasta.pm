@@ -1,5 +1,5 @@
 #
-# $Id: Fasta.pm,v 1.25 2003/06/04 08:36:40 heikki Exp $
+# $Id: Fasta.pm,v 1.35.4.1 2006/10/02 23:10:20 sendu Exp $
 #
 # BioPerl module for Bio::Index::Fasta
 #
@@ -15,34 +15,36 @@ Bio::Index::Fasta - Interface for indexing (multiple) fasta files
 
 =head1 SYNOPSIS
 
-    # Complete code for making an index for several
-    # fasta files
+    # Make an index for one or more fasta files
     use Bio::Index::Fasta;
     use strict;
 
     my $Index_File_Name = shift;
-    my $inx = Bio::Index::Fasta->new(
-        '-filename' => $Index_File_Name,
-        '-write_flag' => 1);
+    my $inx = Bio::Index::Fasta->new(-filename => $Index_File_Name,
+                                     -write_flag => 1);
     $inx->make_index(@ARGV);
 
-    # Print out several sequences present in the index
-    # in Fasta format
+
+    # Once the index is made it can accessed, either in the
+    # same script or a different one
     use Bio::Index::Fasta;
     use strict;
 
+    $ENV{BIOPERL_INDEX} = "."; # find index in current directory
+
     my $Index_File_Name = shift;
-    my $inx = Bio::Index::Fasta->new('-filename' => $Index_File_Name);
-    my $out = Bio::SeqIO->new('-format' => 'Fasta','-fh' => \*STDOUT);
+    my $inx = Bio::Index::Fasta->new(-filename => $Index_File_Name);
+    my $out = Bio::SeqIO->new(-format => 'Fasta',
+                              -fh => \*STDOUT);
 
     foreach my $id (@ARGV) {
         my $seq = $inx->fetch($id); # Returns Bio::Seq object
-	$out->write_seq($seq);
+	     $out->write_seq($seq);
     }
 
     # or, alternatively
     my $id;
-    my $seq = $inx->get_Seq_by_id($id); #identical to fetch
+    my $seq = $inx->get_Seq_by_id($id); # identical to fetch()
 
 =head1 DESCRIPTION
 
@@ -53,12 +55,28 @@ retrieving the sequence from them. For best results 'use strict'.
 Bio::Index::Fasta supports the Bio::DB::BioSeqI interface, meaning
 it can be used as a Sequence database for other parts of bioperl
 
-Details on configuration and additional example code are available in the
-biodatabases.pod file, scripts/index/*PLS and in bptutorial.pl.
+Additional example code is available in scripts/index/*PLS and in 
+the Bioperl Tutorial (L<http://www.bioperl.org/wiki/Bptutorial.pl>)
 
 Note that by default the key for the sequence will be the first continuous
 string after the 'E<gt>' in the fasta header. If you want to use a specific
 substring of the fasta header you must use the id_parser() method.
+
+You can also set or customize the unique key used to retrieve by 
+writing your own function and calling the id_parser() method.
+For example:
+
+   $inx->id_parser(\&get_id);
+   # make the index
+   $inx->make_index($file_name);
+
+   # here is where the retrieval key is specified
+   sub get_id {
+      my $line = shift;
+      $line =~ /^>.+gi\|(\d+)/;
+      $1;
+   }
+
 
 =head1 FEED_BACK
 
@@ -68,17 +86,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via
-email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - James Gilbert
 
@@ -86,7 +103,8 @@ Email - jgrg@sanger.ac.uk
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -96,19 +114,16 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::Index::Fasta;
 
-use vars qw(@ISA);
 use strict;
 
-use Bio::Index::AbstractSeq;
 use Bio::Seq;
 
-@ISA = qw(Bio::Index::AbstractSeq);
+use base qw(Bio::Index::AbstractSeq);
 
 #
 # Suggested fix by Michael G Schwern <schwern@pobox.com> to
 # get around a clash with CPAN shell...
 #
-
 
 sub _version {
     return 0.2;
@@ -127,8 +142,6 @@ sub _file_format {
     return 'Fasta';
 }
 
-
-
 =head2 _index_file
 
   Title   : _index_file
@@ -143,35 +156,34 @@ sub _file_format {
 =cut
 
 sub _index_file {
-    my( $self,
-        $file, # File name
-        $i,    # Index-number of file being indexed
-        ) = @_;
-    
-    my( $begin,     # Offset from start of file of the start
-                    # of the last found record.
-        );
+	my( $self,
+		 $file, # File name
+		 $i,    # Index-number of file being indexed
+	  ) = @_;
 
-    $begin = 0;
+	my( $begin,     # Offset from start of file of the start
+		             # of the last found record.
+	  );
 
-    my $id_parser = $self->id_parser;
+	$begin = 0;
 
-    open FASTA, $file or $self->throw("Can't open file for read : $file");
+	my $id_parser = $self->id_parser;
 
-    # Main indexing loop
-    while (<FASTA>) {
-        if (/^>/) {
-            # $begin is the position of the first character after the '>'
-            my $begin = tell(FASTA) - length( $_ ) + 1;
-	    
-            foreach my $id (&$id_parser($_)) {
-		$self->add_record($id, $i, $begin);
-            }
-        }
-    }
+	open my $FASTA, '<', $file or $self->throw("Can't open file for read : $file");
 
-    close FASTA;
-    return 1;
+	# Main indexing loop
+	while (<$FASTA>) {
+		if (/^>/) {
+			# $begin is the position of the first character after the '>'
+			my $begin = tell($FASTA) - length( $_ ) + 1;
+
+			foreach my $id (&$id_parser($_)) {
+				$self->add_record($id, $i, $begin);
+			}
+		}
+	}
+	close $FASTA;
+	return 1;
 }
 
 =head2 id_parser
@@ -194,15 +206,13 @@ sub _index_file {
 =cut
 
 sub id_parser {
-    my( $self, $code ) = @_;
-    
-    if ($code) {
-        $self->{'_id_parser'} = $code;
-    }
-    return $self->{'_id_parser'} || \&default_id_parser;
+	my( $self, $code ) = @_;
+
+	if ($code) {
+		$self->{'_id_parser'} = $code;
+	}
+	return $self->{'_id_parser'} || \&default_id_parser;
 }
-
-
 
 =head2 default_id_parser
 
@@ -216,12 +226,12 @@ sub id_parser {
 
 =cut
 
-sub default_id_parser {    
-    if ($_[0] =~ /^>\s*(\S+)/) {
-        return $1;
-    } else {
-        return;
-    }
+sub default_id_parser {
+	if ($_[0] =~ /^>\s*(\S+)/) {
+		return $1;
+	} else {
+		return;
+	}
 }
 
 1;

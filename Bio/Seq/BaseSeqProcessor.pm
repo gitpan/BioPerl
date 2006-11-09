@@ -1,4 +1,4 @@
-# $Id: BaseSeqProcessor.pm,v 1.2 2002/11/02 21:04:19 lapp Exp $
+# $Id: BaseSeqProcessor.pm,v 1.7.4.1 2006/10/02 23:10:27 sendu Exp $
 #
 # BioPerl module for Bio::Seq::BaseSeqProcessor
 #
@@ -50,27 +50,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bioperl.org/bioperl-bugs/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
 Email hlapp at gmx.net
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -84,15 +77,12 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Seq::BaseSeqProcessor;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::Root::Root;
-use Bio::Factory::SequenceProcessorI;
 
-@ISA = qw(Bio::Root::Root Bio::Factory::SequenceProcessorI);
+use base qw(Bio::Root::Root Bio::Factory::SequenceProcessorI);
 
 =head2 new
 
@@ -200,19 +190,33 @@ sub next_seq{
 
  Title   : write_seq
  Usage   : $stream->write_seq($seq)
- Function: writes the $seq object into the stream
+ Function: Writes the result(s) of processing the sequence object into
+           the stream.
 
-           This implementation passes the sequences to the source
-           stream unaltered. You need to override this in order to
-           have sequence objects altered before output.
+           You need to override this method in order not to alter
+           (process) sequence objects before output.
 
- Returns : 1 for success and 0 for error
- Args    : Bio::Seq object
+ Returns : 1 for success and 0 for error. The method stops attempting
+           to write objects after the first error returned from the
+           source stream. Otherwise the return value is the value
+           returned from the source stream from writing the last
+           object resulting from processing the last sequence object
+           given as argument.
+
+ Args    : Bio::SeqI object, or an array of such objects
 
 =cut
 
 sub write_seq{
-    return shift->source_stream->write_seq(@_);
+    my ($self, @seqs) = @_;
+    my $ret;
+    foreach my $seq (@seqs) {
+        foreach my $processed ($self->process_seq($seq)) {
+            $ret = $self->source_stream->write_seq($seq);
+            return unless $ret;
+        }
+    }
+    return $ret;
 }
 
 =head2 sequence_factory

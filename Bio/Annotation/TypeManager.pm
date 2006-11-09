@@ -1,4 +1,4 @@
-# $Id: TypeManager.pm,v 1.4 2002/10/22 07:38:26 lapp Exp $
+# $Id: TypeManager.pm,v 1.6.4.3 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::Annotation::TypeManager
 #
@@ -24,7 +24,7 @@ Bio::Annotation::TypeManager - Manages types for annotation collections
     print "The type for $key is ",$tm->type_for_key($key),"\n";
 
     if( !$tm->is_valid($key,$object) ) {
-	$self->throw("Invalid object for key $key");
+        $self->throw("Invalid object for key $key");
     }
 
 =head1 DESCRIPTION
@@ -40,22 +40,19 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  bioperl-l@bio.perl.org
+  bioperl-l@bioperl.org
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.
+Bug reports can be submitted via the web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
 Email birney@ebi.ac.uk
-
-Describe contact details here
 
 =head1 APPENDIX
 
@@ -68,15 +65,13 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::Annotation::TypeManager;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::Root::Root;
 
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 # new() can be inherited from Bio::Root::Root
 
 =head2 new
@@ -85,7 +80,7 @@ use Bio::Root::Root;
  Usage   :
  Function:
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
@@ -112,7 +107,7 @@ sub new{
  Usage   :
  Function:
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
@@ -132,7 +127,7 @@ sub type_for_key{
  Usage   :
  Function:
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
@@ -159,7 +154,7 @@ sub is_valid{
  Usage   :
  Function:
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
@@ -167,9 +162,9 @@ sub is_valid{
 
 sub _add_type_map{
    my ($self,$key,$type) = @_;
-   
+
    $key = $key->name() if ref($key) && $key->isa("Bio::Ontology::TermI");
    $self->{'_type'}->{$key} = $type;
 }
 
-
+1;

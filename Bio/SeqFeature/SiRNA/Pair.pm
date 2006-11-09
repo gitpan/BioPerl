@@ -1,4 +1,4 @@
-# $Id: Pair.pm,v 1.3 2003/06/04 08:36:43 heikki Exp $
+# $Id: Pair.pm,v 1.6.4.1 2006/10/02 23:10:28 sendu Exp $
 #
 # BioPerl module for Bio::SeqFeature::SiRNA::Pair
 #
@@ -33,20 +33,15 @@ Bio::SeqFeature::SiRNA::Pair - Perl object for small inhibitory RNA
 
 =head1 DESCRIPTION
 
-Object methods for (complementary) pairs of SiRNA::Oligo objects -
-inherits Bio::SeqFeature::Generic.  See that package for information
+Object methods for (complementary) pairs of L<Bio::SeqFeature::SiRNA::Oligo> 
+objects - inherits L<Bio::SeqFeature::Generic>. See that package for information
 on inherited methods.
 
-DOES NOT include methods for designing SiRNAs -- see
-L<Bio::Tools::SiRNA>
-
-=head2 EXPORT
-
-None by default.
+Does B<not> include methods for designing SiRNAs -- see L<Bio::Tools::SiRNA>
 
 =head1 SEE ALSO
 
-L<Bio::SeqFeature::Oligo>, L<Bio::Tools::SiRNA>, L<perl>.
+L<Bio::SeqFeature::Oligo>, L<Bio::Tools::SiRNA>.
 
 =head1 FEEDBACK
 
@@ -56,8 +51,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -65,15 +60,11 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
 Donald Jackson (donald.jackson@bms.com)
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -88,9 +79,8 @@ require 5.005_62;
 use strict;
 use warnings;
 
-use Bio::SeqFeature::Generic;
 
-our @ISA = qw(Bio::SeqFeature::Generic);
+use base qw(Bio::SeqFeature::Generic);
 
 # arguments to new().  Taken from Bio::SeqFeature Generic.
 # Omit frame (not relevant), GFF_STRING and GFF1_STRING 
@@ -185,7 +175,7 @@ sub rank {
 	}
 	else {
 	    $self->throw("Rank not defined for this Pair\n");
-	    return undef;
+	    return;
 	}
     }
 }
@@ -250,7 +240,7 @@ sub sense {
     my ($self, $soligo) = @_;
 
     if ($soligo) {
-	$self->_add_oligo($soligo, 1) or return undef;
+	$self->_add_oligo($soligo, 1) or return;
     }
     else {
 	return $self->_get_oligo(1);
@@ -271,7 +261,7 @@ sub antisense {
     my ($self, $asoligo) = @_;
 
     if ($asoligo) {
-	$self->_add_oligo($asoligo, -1) or return undef;
+	$self->_add_oligo($asoligo, -1) or return;
     }
     else {
 	return $self->_get_oligo(-1);
@@ -301,7 +291,7 @@ sub _get_oligo {
 	next unless ($feat->strand == $strand);
 	return $feat;
     }
-    return undef;
+    return;
 }
 
 1;

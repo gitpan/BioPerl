@@ -1,4 +1,4 @@
-# $Id: pubmedxml.pm,v 1.5 2003/06/04 08:36:36 heikki Exp $
+# $Id: pubmedxml.pm,v 1.8.4.1 2006/10/02 23:10:13 sendu Exp $
 #
 # BioPerl module Bio::Biblio::IO::pubmedxml.pm
 #
@@ -33,17 +33,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -75,18 +74,12 @@ with an underscore _.
 
 
 package Bio::Biblio::IO::pubmedxml;
-use vars qw(@ISA $Revision);
 use vars qw(%PCDATA_NAMES %SIMPLE_TREATMENT %POP_DATA_AND_PEEK_OBJ %POP_AND_ADD_DATA_ELEMENT);
 
 use strict;
 
-use Bio::Biblio::IO::medlinexml;
+use base qw(Bio::Biblio::IO::medlinexml);
 
-@ISA = qw(Bio::Biblio::IO::medlinexml);
-
-BEGIN {
-    $Revision = q$Id: pubmedxml.pm,v 1.5 2003/06/04 08:36:36 heikki Exp $;
-}
 
 sub _initialize {
     my ($self, @args) = @_;

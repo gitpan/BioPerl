@@ -1,4 +1,4 @@
-# $Id: Scansite.pm,v 1.4 2003/12/16 00:25:26 allenday Exp $
+# $Id: Scansite.pm,v 1.16.4.1 2006/10/02 23:10:32 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Analysis::Protein::Scansite
 #
@@ -21,11 +21,10 @@ Bio::Tools::Analysis::Protein::Scansite - a wrapper around the Scansite server
   my $seq; # a Bio::PrimarySeqI object
 
   my $tool = Bio::Tools::Analysis::Protein::Scansite->new
-     ( -seq => $seq->primary_seq(),
-      ); 
+     ( -seq => $seq->primary_seq ); 
 
   # run Scansite prediction on a sequence
-   $tool->run();
+  $tool->run();
 
   # alternatively you can say
   $tool->seq($seq->primary_seq)->run;
@@ -46,19 +45,64 @@ Bio::Tools::Analysis::Protein::Scansite - a wrapper around the Scansite server
 
 =head1 DESCRIPTION
 
-This class is wrapper around the Scansite 2.0 server which produces
+This class is a wrapper around the Scansite 2.0 server which produces
 predictions for serine, threonine and tyrosine phosphorylation sites
 in eukaryotic proteins. At present this is a basic wrapper for the
 "Scan protein by input sequence" functionality, which takes a sequence
-and searches for motifs. Optionally you can select the search
-strincency as well. At present searches for specific phosphorylation
-sites isn't supported, all predicted sites are returned.
+and searches for motifs, with the option to select the search
+stringency. At present, searches for specific phosphorylation
+sites are not supported; all predicted sites are returned.
 
-See L<http://www.scansite.mit.edu/>.
+=head2 Return formats
 
-This inherits Bio::SimpleAnalysisI which hopefully
- makes it easier to write wrappers on various services. This class
-uses a web resource and therefore inherits from Bio::WebAgent.
+The Scansite results can be obtained in several formats:
+
+=over 3
+
+=item 1.
+
+By calling
+
+  my $res = $tool->result('');
+
+$res holds a string of the predicted sites in tabular format.
+
+=item 2.
+
+By calling 
+
+  my $data_ref = $tool->result('value')
+
+$data_ref is a reference to an array of hashes. Each element in the
+array represents a predicted phosphorylation site. The hash keys are
+the names of the data fields,i.e.,
+
+    'motif'      => 'Casn_Kin1'       # name of kinase
+    'percentile' => 0.155             # see Scansite docs
+    'position'   => 9                 # position in protein
+    'protein'    => 'A1'              # protein id
+    'score'      => 0.3696            # see Scansite docs
+    'sequence'   => 'ASYFDTASYFSADAT' # sequence surrounding site
+    'site'       => 'S9'              # phosphorylated residue
+    'zscore'     => '-3.110'          # see Scansite docs
+
+=item 3.
+
+By calling
+
+  my @fts = $tool->Result('Bio::SeqFeatureI');
+
+which returns an array of L<Bio::SeqFeatureI> compliant objects with
+primary tag value 'Site' and tag names of 'motif', 'score',
+'sequence', 'zscore' as above.
+
+=back
+
+See L<http://scansite.mit.edu/>.
+
+This inherits Bio::SimpleAnalysisI which hopefully makes it easier to
+write wrappers on various services. This class uses a web resource and
+therefore inherits from L<Bio::WebAgent>.
 
 =head1 SEE ALSO
 
@@ -73,17 +117,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                       - General discussion
-  http://bio.perl.org/MailList.html           - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHORS
 
@@ -101,15 +144,14 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::Tools::Analysis::Protein::Scansite;
-use vars qw(@ISA  $FLOAT @STRINGENCY );
+use vars qw($FLOAT @STRINGENCY);
 use strict;
 use IO::String;
 use Bio::SeqIO;
-use HTTP::Request::Common qw (POST);
+use HTTP::Request::Common qw(POST);
 use Bio::SeqFeature::Generic;
-use Bio::Tools::Analysis::SimpleAnalysisBase;
 
-@ISA = qw(Bio::Tools::Analysis::SimpleAnalysisBase);
+use base qw(Bio::Tools::Analysis::SimpleAnalysisBase);
 
 $FLOAT = '[+-]?\d*\.\d*';
 @STRINGENCY = qw(High Medium Low);
@@ -159,7 +201,7 @@ my $URL = 'http://scansite.mit.edu/cgi-bin/motifscan_seq';
 
 
 =head2 result
- 
+
  Name    : result
  Usage   : $job->result (...)
  Returns : a result created by running an analysis
@@ -168,7 +210,8 @@ my $URL = 'http://scansite.mit.edu/cgi-bin/motifscan_seq';
            the raw result)
 
 The method returns a scalar representing a result of an executed
-job. If the job was terminated by an error the result
+job. If the job was terminated by an error, the result may contain 
+an error message instead of the real data.
 
 This implementation returns differently processed data depending on
 argument:
@@ -187,7 +230,7 @@ array.  The objects are L<Bio::SeqFeature::Generic>.
 =item 'parsed'
 
 Returns a reference to an array of hashes containing the data of one
-phosphorylation site prediction. Key values are :
+phosphorylation site prediction. Key values are:
 
 motif, percentile, position, protein, score, site, zscore,  sequence.
 
@@ -216,6 +259,7 @@ sub result {
 						score     => $hit->{'score'},
 						zscore    => $hit->{'zscore'},
 						motif     => $hit->{'motif'},
+						site      => $hit->{'site'},
 						sequence  => $hit->{'sequence'},
 							},
 				);
@@ -234,7 +278,7 @@ sub result {
 
 =head2  stringency
 
- Usage   : $job->stringency(...)
+ Usage    : $job->stringency(...)
  Returns  : The significance stringency of a prediction
  Args     : None (retrieves value) or 'High', 'Medium' or 'Low'.
  Purpose  : Get/setter of the stringency to be sumitted for analysis.
@@ -252,16 +296,16 @@ sub stringency {
        $self->{'_stringency'} = $value;
        return $self;
    }
-   return $self->{'_stringency'} || $self->input_spec->[4]{'default'} ;
+   return $self->{'_stringency'} || $self->input_spec->[2]{'default'} ;
 }
 
 =head2  protein_id
 
- Usage   : $job->protein_id(...)
+ Usage    : $job->protein_id(...)
  Returns  : The sequence id of the protein or 'unnamed' if not set. 
  Args     : None  
  Purpose  : Getter of the seq_id. Returns the display_id of the sequence
-				object. 
+            object. 
 
 =cut
 
@@ -278,7 +322,7 @@ sub _init
 	$self->{'_ANALYSIS_SPEC'} = $ANALYSIS_SPEC;
 	$self->{'_INPUT_SPEC'}    = $INPUT_SPEC;
 	$self->{'_RESULT_SPEC'}   = $RESULT_SPEC;
-	$self->{'_ANALYSIS_NAME'} = $ANALYSIS_SPEC->{name};
+	$self->{'_ANALYSIS_NAME'} = $ANALYSIS_SPEC->{'name'};
 	return $self;
 }
 
@@ -336,11 +380,31 @@ sub _run {
     $self->{'_result'} = $out_Str;
 	$self->{'_parsed'} = \@parsed_Results;
 	
-	## is successssful if there are results or if there are no results and
+	## is successsful if there are results or if there are no results and
 	## this beacuse there are no matches, not because of parsing errors etc.
     $self->status('COMPLETED') if $text ne ''       &&
 	(scalar @results > 0 ||	
 	(scalar @results == 0 && $text =~/No sites found/));
+    if ($text =~ /server\s+error/i) {
+    	$self->warn("There was an internal server error !- text below") ;
+		$self->warn($text);
+        return; 
+    }
+}
+
+sub _process_arguments {
+
+    # extra checking for sequence length
+    # mitoprot specific argument testing
+    my ($self, $args) = @_;
+    #use base checking for existence of mandatory fields
+    $self->SUPER::_process_arguments($args); 
+   
+   # specific requirements
+   $self->throw("Sequence must be > 15 amino acids long!") 
+           if $self->seq->length < 15;
+   $self->throw("Sequence must be protein")
+          unless $self->seq->alphabet() eq 'protein';
 }
 
 sub _make_header {

@@ -1,4 +1,4 @@
-# $Id: FeatureTypeI.pm,v 1.3 2002/11/11 18:16:30 lapp Exp $
+# $Id: FeatureTypeI.pm,v 1.6.4.1 2006/10/02 23:10:17 sendu Exp $
 #
 # BioPerl module for Bio::Das::FeatureTypeI
 #
@@ -92,11 +92,10 @@ Your participation is much appreciated.
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Lincoln Stein
 
@@ -115,14 +114,19 @@ methods. Internal methods are usually preceded with a _
 package Bio::Das::FeatureTypeI;
 use strict;
 
-use vars qw(@ISA);
-use Bio::Root::RootI;
 use overload '""'     => 'name',
              eq       => 'match',
              fallback => 1;
 
 # Object preamble - inherits from Bio::Root::RootI;
-@ISA = qw(Bio::Root::RootI);
+
+=pod
+
+this is somehow FUBAR, implementation classes cannot successfully inherit from Bio::Das::FeatureTypeI
+
+=cut
+
+use base qw(Bio::Root::RootI);
 
 =head2 name
 

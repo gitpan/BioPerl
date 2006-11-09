@@ -18,16 +18,15 @@ BEGIN {
     }
     use Test;
 
-    $NUMTESTS = 11;
+    $NUMTESTS = 13;
     plan tests => $NUMTESTS;
 
     eval {
-	require IO::String; 
-	require LWP::UserAgent;
-	
-    }; 
+		 require IO::String;
+		 require LWP::UserAgent;
+    };
     if( $@ ) {
-        warn("IO::String or LWP::UserAgent not installed. This means that the module is not usable. Skipping tests");
+        warn("IO::String or LWP::UserAgent not installed. This means that the module is not usable. Skipping tests\n");
 	$ERROR = 1;
     }
 	#check this is available, set error flag if not.
@@ -41,9 +40,9 @@ BEGIN {
 }
 
 END {
-    foreach ( $Test::ntest..$NUMTESTS) {
-	skip('unable to run all of the tests depending on web access',1);
-    }
+	foreach ( $Test::ntest..$NUMTESTS) {
+		skip('Unable to complete GOR4 tests',1);
+	}
 }
 
 exit 0 if $ERROR ==  1;
@@ -70,18 +69,20 @@ if( $DEBUG ) {
     exit if $tool->status eq 'TERMINATED_BY_ERROR';
     ok my $raw = $tool->result('');
     ok my $parsed = $tool->result('parsed');
-    ok ($parsed->[0]{'coil'}, '0.999');
-    my @res = $tool->result('Bio::SeqFeatureI');
+    ok ($parsed->[0]{'coil'}, '999');
+    my @res = sort {$a->start <=> $b->start} $tool->result('Bio::SeqFeatureI');
     if (scalar @res > 0) {
 	ok 1;
     } else {
 	skip('No network access - could not connect to GOR4 server', 1);
     }
+	ok $res[0]->start, 1;
+	ok $res[0]->end, 43;
     ok my $meta = $tool->result('meta');
     
     if (!$METAERROR) { #if Bio::Seq::Meta::Array available
 	
-	ok ( $meta->named_submeta_text('GOR4_coil',1,2), '0.999 0.999');
+	ok ( $meta->named_submeta_text('GOR4_coil',1,2), '999 999');
 	ok ( $meta->seq, 'MSADQRWRQDSQDSFGDSFDGDPPPPPPPPFGDSFGDGFSDRSRQDQRS');
     }
 } else {

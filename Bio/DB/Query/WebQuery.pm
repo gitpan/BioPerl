@@ -1,4 +1,4 @@
-# $Id: WebQuery.pm,v 1.10 2003/11/25 19:38:19 heikki Exp $
+# $Id: WebQuery.pm,v 1.15.4.1 2006/10/02 23:10:17 sendu Exp $
 #
 # BioPerl module for Bio::DB::WebQuery.pm
 #
@@ -27,7 +27,7 @@ See L<Bio::DB::QueryI>, L<Bio::DB::GenBankQuery>
 =head1 DESCRIPTION
 
 Do not use this class directly.  See Bio::DB::QueryI and one of the
-implementor classes (such as Bio::DB::GenBankQuery) for information.
+implementor classes (such as Bio::DB::Query::GenBank) for information.
 
 Those writing subclasses must define _get_params() and
 _parse_response(), and possibly override _request_method().
@@ -42,18 +42,16 @@ your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation
 is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
-Report bugs to the Bioperl bug tracking system to
-help us keep track the bugs and their resolution.
-Bug reports can be submitted via email or the
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Lincoln Stein
 
@@ -74,12 +72,9 @@ use strict;
 use URI;
 use LWP::UserAgent;
 use HTTP::Request::Common;
-use Bio::Root::Root;
-use Bio::DB::QueryI;
 
-use vars qw(@ISA);
 
-@ISA = qw(Bio::Root::Root Bio::DB::QueryI);
+use base qw(Bio::Root::Root Bio::DB::QueryI);
 
 =head2 new
 
@@ -261,10 +256,10 @@ sub _run_query {
   return $self->{'_ran_query'} if $self->{'_ran_query'}++ && !$force;
 
   my $request = $self->_get_request;
-  $self->debug("request is ".$request->url)     if $self->verbose;
+  $self->debug("request is ".$request->url."\n");
   my $response = $self->ua->request($request);
   return unless $response->is_success;
-  $self->debug("response is ".$response->content) if $self->verbose;
+  $self->debug("response is ".$response->content."\n");
   $self->_parse_response($response->content);
   1;
 }

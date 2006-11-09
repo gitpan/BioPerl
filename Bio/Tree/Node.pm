@@ -1,8 +1,8 @@
-# $Id: Node.pm,v 1.32 2003/12/15 17:10:29 jason Exp $
+# $Id: Node.pm,v 1.49.4.2 2006/10/02 23:10:37 sendu Exp $
 #
 # BioPerl module for Bio::Tree::Node
 #
-# Cared for by Jason Stajich <jason@bioperl.org>
+# Cared for by Jason Stajich <jason-at-bioperl.org>
 #
 # Copyright Jason Stajich
 #
@@ -39,8 +39,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -48,15 +48,16 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
+Email jason-at-bioperl-dot-org
 
 =head1 CONTRIBUTORS
 
-Aaron Mackey amackey@virginia.edu
+Aaron Mackey, amackey-at-virginia-dot-edu
+Sendu Bala,   bix@sendu.me.uk
 
 =head1 APPENDIX
 
@@ -69,18 +70,15 @@ Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Tree::Node;
-use vars qw(@ISA $CREATIONORDER);
+use vars qw($CREATIONORDER);
 use strict;
 
-use Bio::Root::Root;
-use Bio::Tree::NodeI;
 
-@ISA = qw(Bio::Root::Root Bio::Tree::NodeI);
+use base qw(Bio::Root::Root Bio::Tree::NodeI);
 
 BEGIN { 
     $CREATIONORDER = 0;
 }
-
 
 =head2 new
 
@@ -160,19 +158,20 @@ sub add_Descendent{
        $self->throw("Trying to add a Descendent who is not a Bio::Tree::NodeI");
        return -1;
    }
-   # do we care about order?
-   $node->ancestor($self);
+   
+   $self->{_adding_descendent} = 1;
+   $node->ancestor($self) unless $node->{_setting_ancestor}; # avoid infinite recurse
+   $self->{_adding_descendent} = 0;
+   
    if( $self->{'_desc'}->{$node->internal_id} && ! $ignoreoverwrite ) {
        $self->throw("Going to overwrite a node which is $node that is already stored here, set the ignore overwrite flag (parameter 2) to true to ignore this in the future");
    }
-   
    $self->{'_desc'}->{$node->internal_id} = $node; # is this safely unique - we've tested before at any rate??
    
    $self->invalidate_height();
    
    return scalar keys %{$self->{'_desc'}};
 }
-
 
 =head2 each_Descendent
 
@@ -181,33 +180,59 @@ sub add_Descendent{
  Function: all the descendents for this Node (but not their descendents
 					      i.e. not a recursive fetchall)
  Returns : Array of Bio::Tree::NodeI objects
- Args    : $sortby [optional] "height", "creation" or coderef to be used
-           to sort the order of children nodes.
+ Args    : $sortby [optional] "height", "creation", "alpha", "revalpha",
+           or coderef to be used to sort the order of children nodes.
 
 =cut
 
 sub each_Descendent{
    my ($self, $sortby) = @_;
 
-   # order can be based on branch length (and sub branchlength)
-
-   $sortby ||= 'height';
-
+   # order can be based on branch length (and sub branchlength)   
+   $sortby ||= 'none';
    if (ref $sortby eq 'CODE') {
-       return sort $sortby values %{$self->{'_desc'}};
-   } else  {
-       if ($sortby eq 'height') {
-	   return map { $_->[0] }
-		  sort { $a->[1] <=> $b->[1] || 
-			 $a->[2] <=> $b->[2] } 
-	       map { [$_, $_->height, $_->internal_id ] } 
-	   values %{$self->{'_desc'}};
-       } else { # creation
-	   return map { $_->[0] }
-	          sort { $a->[1] <=> $b->[1] } 
-	          map { [$_, $_->internal_id ] }
-	          values %{$self->{'_desc'}};	   
-       }
+       my @values = sort { $sortby->($a,$b) } values %{$self->{'_desc'}};
+       return @values;
+   } elsif ($sortby eq 'height') {
+       return map { $_->[0] }
+       sort { $a->[1] <=> $b->[1] || 
+		  $a->[2] <=> $b->[2] } 
+       map { [$_, $_->height, $_->internal_id ] } 
+       values %{$self->{'_desc'}};
+   } elsif( $sortby eq 'alpha' ) {
+       my @set;
+       for my $v ( values %{$self->{'_desc'}} ) {
+	   unless( $v->is_Leaf ) {
+	       my @lst = ( sort { $a cmp $b } map { $_->id } 
+                          grep { $_->is_Leaf } 
+			   $v->get_all_Descendents($sortby));
+	       push @set, [$v, $lst[0], $v->internal_id];
+	   } else {
+	       push @set, [$v, $v->id, $v->internal_id];
+	   }
+       } 
+       return map { $_->[0] }
+       sort {$a->[1] cmp $b->[1] || $a->[2] <=> $b->[2] } @set;       
+   } elsif( $sortby eq 'revalpha' ) {
+       my @set;
+       for my $v ( values %{$self->{'_desc'}} ) {
+	   if( ! defined $v->id && 
+	       ! $v->is_Leaf ) {
+	       my ($l) = ( sort { $b cmp $a } map { $_->id } 
+			   grep { $_->is_Leaf } 
+			   $v->get_all_Descendents($sortby));
+	       push @set, [$v, $l, $v->internal_id];
+	   } else { 
+	       push @set, [$v, $v->id, $v->internal_id];
+	   }
+       } 
+       return map { $_->[0] }
+       sort {$b->[1] cmp $a->[1] || $b->[2] <=> $a->[2] } @set;
+   } else { # creation
+       return map { $_->[0] }
+       sort { $a->[1] <=> $b->[1] } 
+       map { [$_, $_->internal_id ] }
+       values %{$self->{'_desc'}};	   
    }
 }
 
@@ -217,7 +242,7 @@ sub each_Descendent{
  Usage   : $node->remove_Descedent($node_foo);
  Function: Removes a specific node from being a Descendent of this node
  Returns : nothing
- Args    : An array of Bio::Node::NodeI objects which have be previously
+ Args    : An array of Bio::Node::NodeI objects which have been previously
            passed to the add_Descendent call of this object.
 
 =cut
@@ -227,22 +252,12 @@ sub remove_Descendent{
    my $c= 0;
    foreach my $n ( @nodes ) { 
        if( $self->{'_desc'}->{$n->internal_id} ) {
-	   $n->ancestor(undef);
+        $self->{_removing_descendent} = 1;
+        $n->ancestor(undef);
+        $self->{_removing_descendent} = 0;
 	   # should be redundant
 	   $self->{'_desc'}->{$n->internal_id}->ancestor(undef);
 	   delete $self->{'_desc'}->{$n->internal_id};
-	   my $a1 = $self->ancestor;
-	   # remove unecessary nodes if we have removed the part 
-	   # which branches.
-	   # if( $a1 ) {
-	   #    my $bl = $self->branch_length || 0;
-	   #    my @d = $self->each_Descendent;
-	   #    if (scalar @d == 1) {
-	   #	   $d[0]->branch_length($bl + ($d[0]->branch_length || 0));
-	   #	   $a1->add_Descendent($d[0]);
-	   #    }
-	   #    $a1->remove_Descendent($self);
-	   #}
 	   $c++;
        } else { 
 	   if( $self->verbose ) {
@@ -251,9 +266,21 @@ sub remove_Descendent{
 	   }
        }
    }
+   
+   # remove unecessary nodes if we have removed the part 
+   # which branches.
+   my $a1 = $self->ancestor;   
+   if( $a1 ) {
+       my $bl = $self->branch_length || 0;
+       my @d = $self->each_Descendent;
+       if (scalar @d == 1) {
+	   $d[0]->branch_length($bl + ($d[0]->branch_length || 0));
+	   $a1->add_Descendent($d[0]);
+	   $a1->remove_Descendent($self);
+       }
+   }
    $c;
 }
-
 
 =head2 remove_all_Descendents
 
@@ -265,7 +292,6 @@ sub remove_Descendent{
            a get_nodes from the Tree object would be a safe thing to do first
  Returns : nothing
  Args    : none
-
 
 =cut
 
@@ -298,15 +324,37 @@ sub remove_all_Descendents{
  Title   : ancestor
  Usage   : $obj->ancestor($newval)
  Function: Set the Ancestor
- Returns : value of ancestor
+ Returns : ancestral node
  Args    : newvalue (optional)
 
 =cut
 
-sub ancestor{
-   my $self = shift;
-   $self->{'_ancestor'} = shift @_ if @_;
-   return $self->{'_ancestor'};
+sub ancestor {
+    my $self = shift;
+    
+    if (@_) {
+        my $new_ancestor = shift;
+        
+        # we can set ancestor to undef
+        if ($new_ancestor) {
+            $self->throw("This is [$new_ancestor], not a Bio::Tree::NodeI") unless $new_ancestor->isa('Bio::Tree::NodeI');
+        }
+        
+        my $old_ancestor = $self->{'_ancestor'} || '';
+        if (!$old_ancestor || ($old_ancestor && (!$new_ancestor || $new_ancestor ne $old_ancestor))) {
+            $old_ancestor->remove_Descendent($self) if $old_ancestor && ! $old_ancestor->{_removing_descendent};
+            
+            if ($new_ancestor && ! $new_ancestor->{_adding_descendent}) { # avoid infinite recurse
+                $self->{_setting_ancestor} = 1;
+                $new_ancestor->add_Descendent($self, 1);
+                $self->{_setting_ancestor} = 0;
+            }
+        }
+        
+        $self->{'_ancestor'} = $new_ancestor;
+    }
+    
+    return $self->{'_ancestor'};
 }
 
 =head2 branch_length
@@ -316,7 +364,6 @@ sub ancestor{
  Function: Get/Set the branch length
  Returns : value of branch_length
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -329,10 +376,10 @@ sub branch_length{
 	    $self->bootstrap($1);
 	}
 	$self->{'_branch_length'} = $bl;
+    $self->invalidate_height();
     }
     return $self->{'_branch_length'};
 }
-
 
 =head2 bootstrap
 
@@ -341,7 +388,6 @@ sub branch_length{
  Function: Get/Set the bootstrap value
  Returns : value of bootstrap
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -364,7 +410,6 @@ sub bootstrap {
  Returns : value of description
  Args    : newvalue (optional)
 
-
 =cut
 
 sub description{
@@ -380,28 +425,50 @@ sub description{
  Function: The human readable identifier for the node 
  Returns : value of human readable id
  Args    : newvalue (optional)
- Note    : id cannot contain the chracters '();:'
 
 "A name can be any string of printable characters except blanks,
 colons, semicolons, parentheses, and square brackets. Because you may
 want to include a blank in a name, it is assumed that an underscore
 character ("_") stands for a blank; any of these in a name will be
-converted to a blank when it is read in."
+converted to a blank when it is read in."  
 
 from L<http://evolution.genetics.washington.edu/phylip/newicktree.html>
+
+Also note that these objects now support spaces, ();: because we can
+automatically quote the strings if they contain these characters.  The
+L<id_output> method does this for you so use the id() method to get
+the raw string while L<id_output> to get the pre-escaped string.
 
 =cut
 
 sub id{
     my ($self, $value) = @_;
-    if ($value) {
-        $self->warn("Illegal characters ();:  and space in the id [$value], converting to _ ")
-            if $value =~ /\(\);:/ and $self->verbose >= 0;
-        $value =~ s/[\(\);:\s]/_/g;
+    if (defined $value) {
+        #$self->warn("Illegal characters ();:  and space in the id [$value], converting to _ ")
+	# if $value =~ /\(\);:/ and $self->verbose >= 0;
+        #$value =~ s/[\(\);:\s]/_/g;
         $self->{'_id'} = $value;
     }
     return $self->{'_id'};
 }
+
+=head2 Helper Functions
+
+=cut
+
+=head2 id_output
+
+ Title   : id_output
+ Usage   : my $id = $node->id_output;
+ Function: Return an id suitable for output in format like newick
+           so that if it contains spaces or ():; characters it is properly 
+           quoted
+ Returns : $id string if $node->id has a value
+ Args    : none
+
+=cut
+
+# implemented in NodeI interface 
 
 =head2 internal_id
 
@@ -420,7 +487,6 @@ sub internal_id{
    return $_[0]->_creation_id;
 }
 
-
 =head2 _creation_id
 
  Title   : _creation_id
@@ -428,7 +494,6 @@ sub internal_id{
  Function: a private method signifying the internal creation order
  Returns : value of _creation_id
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -473,7 +538,7 @@ sub is_Leaf {
  Title   : height
  Usage   : my $len = $node->height
  Function: Returns the height of the tree starting at this
-           node.  Height is the maximum branchlength.
+           node.  Height is the maximum branchlength to get to the tip.
  Returns : The longest length (weighting branches with branch_length) to a leaf
  Args    : none
 
@@ -481,36 +546,28 @@ sub is_Leaf {
 
 sub height { 
     my ($self) = @_;
-
     return $self->{'_height'} if( defined $self->{'_height'} );
     
-    if( $self->is_Leaf ) { 
-       if( !defined $self->branch_length ) { 
-	   $self->debug(sprintf("Trying to calculate height of a node when a Node (%s) has an undefined branch_length\n",$self->id || '?' ));
-	   return 0;
-       }
-       return $self->branch_length;
-   }
-   my $max = 0;
-   foreach my $subnode ( $self->each_Descendent ) { 
-       my $s = $subnode->height;
-       if( $s > $max ) { $max = $s; }
-   }
-   return ($self->{'_height'} = $max + ($self->branch_length || 1));
+    return 0 if( $self->is_Leaf );
+    my $max = 0;
+    foreach my $subnode ( $self->each_Descendent ) { 
+	my $bl = $subnode->branch_length;
+	$bl = 1 unless (defined $bl && $bl =~ /^\-?\d+(\.\d+)?$/);
+	my $s = $subnode->height + $bl;
+	if( $s > $max ) { $max = $s; }
+    }
+    return ($self->{'_height'} = $max);
 }
-
 
 =head2 invalidate_height
 
  Title   : invalidate_height
  Usage   : private helper method
- Function: Invalidate our cached value of the node's height in the tree
+ Function: Invalidate our cached value of the node height in the tree
  Returns : nothing
  Args    : none
 
 =cut
-
-#'
 
 sub invalidate_height { 
     my ($self) = @_;
@@ -529,7 +586,6 @@ sub invalidate_height {
  Returns : number of values stored for this tag
  Args    : $tag   - tag name
            $value - value to store for the tag
-
 
 =cut
 
@@ -571,7 +627,6 @@ sub remove_tag {
  Returns : None
  Args    : None
 
-
 =cut
 
 sub remove_all_tags{
@@ -588,12 +643,12 @@ sub remove_all_tags{
  Returns : Array of tagnames
  Args    : None
 
-
 =cut
 
 sub get_all_tags{
    my ($self) = @_;
-   return sort keys %{$self->{'_tags'} || {}};
+   my @tags = sort keys %{$self->{'_tags'} || {}};
+   return @tags;
 }
 
 =head2 get_tag_values
@@ -604,12 +659,12 @@ sub get_all_tags{
  Returns : Array of values or empty list if tag does not exist
  Args    : $tag - tag name
 
-
 =cut
 
 sub get_tag_values{
    my ($self,$tag) = @_;
-   return @{$self->{'_tags'}->{$tag} || []};
+   return wantarray ? @{$self->{'_tags'}->{$tag} || []} :
+                     (@{$self->{'_tags'}->{$tag} || []})[0];
 }
 
 =head2 has_tag
@@ -620,7 +675,6 @@ sub get_tag_values{
  Returns : Boolean
  Args    : $tag - tagname
 
-
 =cut
 
 sub has_tag {
@@ -630,14 +684,38 @@ sub has_tag {
 
 sub node_cleanup {
     my $self = shift;
+    return unless defined $self;
+    
+    #*** below is wrong, cleanup doesn't actually occur. Will replace with:
+    # $self->remove_all_Descendents; once further fixes in place..
     if( defined $self->{'_desc'} &&
-	ref($self->{'_desc'}) =~ /ARRAY/i ) {
-	while( my ($nodeid,$node) = each %{ $self->{'_desc'} } ) {
-	    $node->ancestor(undef); # insure no circular references
-	    $node = undef;
-	}
+        ref($self->{'_desc'}) =~ /ARRAY/i ) {
+        while( my ($nodeid,$node) = each %{ $self->{'_desc'} } ) {
+            $node->ancestor(undef); # insure no circular references
+            $node = undef;
+        }
     }
     $self->{'_desc'} = {};
+}
+
+=head2 reverse_edge
+
+ Title   : reverse_edge
+ Usage   : $node->reverse_edge(child);
+ Function: makes child be a parent of node
+ Requires: child must be a direct descendent of node
+ Returns : 1 on success, 0 on failure
+ Args    : Bio::Tree::NodeI that is in the tree
+
+=cut
+
+sub reverse_edge {
+    my ($self,$node) = @_;
+    if( $self->delete_edge($node) ) {
+      $node->add_Descendent($self);
+      return 1;
+    } 
+    return 0;
 }
 
 1;

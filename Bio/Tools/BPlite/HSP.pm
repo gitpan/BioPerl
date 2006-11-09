@@ -77,17 +77,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org            - General discussion
-http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+email the web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Peter Schattner
 
@@ -108,7 +107,6 @@ Internal methods are usually preceded with a _
 
 package Bio::Tools::BPlite::HSP;
 
-use vars qw(@ISA);
 use strict;
 
 # to disable overloading comment this out:
@@ -116,10 +114,9 @@ use strict;
 
 # Object preamble - inheriets from Bio::SeqFeature::SimilarityPair
 
-use Bio::SeqFeature::SimilarityPair;
 use Bio::SeqFeature::Similarity;
 
-@ISA = qw(Bio::SeqFeature::SimilarityPair);
+use base qw(Bio::SeqFeature::SimilarityPair);
 
 sub new {
     my ($class, @args) = @_;

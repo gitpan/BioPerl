@@ -1,4 +1,4 @@
-# $Id: AnnotationFactory.pm,v 1.1 2002/10/31 09:45:39 lapp Exp $
+# $Id: AnnotationFactory.pm,v 1.6.4.1 2006/10/02 23:10:12 sendu Exp $
 #
 # BioPerl module for Bio::Annotation::AnnotationFactory
 #
@@ -26,13 +26,15 @@
 
 =head1 NAME
 
-Bio::Annotation::AnnotationFactory - Instantiates a new Bio::AnnotationI (or derived class) through a factory
+Bio::Annotation::AnnotationFactory - Instantiates a new 
+Bio::AnnotationI (or derived class) through a factory
 
 =head1 SYNOPSIS
 
     use Bio::Annotation::AnnotationFactory;
     # 
-    my $factory = new Bio::Annotation::AnnotationFactory(-type => 'Bio::Annotation::SimpleValue');
+    my $factory = new Bio::Annotation::AnnotationFactory(
+                    -type => 'Bio::Annotation::SimpleValue');
     my $ann = $factory->create_object(-value => 'peroxisome',
                                       -tagname => 'cellular component');
 
@@ -49,17 +51,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+the web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Hilmar Lapp
 
@@ -84,13 +85,10 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Annotation::AnnotationFactory;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
-use Bio::Factory::ObjectFactoryI;
 
-@ISA = qw(Bio::Root::Root Bio::Factory::ObjectFactoryI);
+use base qw(Bio::Root::Root Bio::Factory::ObjectFactoryI);
 
 =head2 new
 
@@ -99,7 +97,9 @@ use Bio::Factory::ObjectFactoryI;
  Function: Builds a new Bio::Annotation::AnnotationFactory object 
  Returns : Bio::Annotation::AnnotationFactory
  Args    : -type => string, name of a L<Bio::AnnotationI> derived class.
-                    The default is L<Bio::Ontology::Term>.
+
+If type is not set the module guesses it based on arguments passed to
+method L<create_object>.
 
 =cut
 
@@ -136,7 +136,7 @@ sub new {
 sub create_object {
    my ($self,@args) = @_;
 
-   my $type = $self->type(); 
+   my $type = $self->type; 
    if(! $type) {
        # we need to guess this
        $type = $self->_guess_type(@args);
@@ -218,12 +218,13 @@ sub _guess_type{
     my $type;
 
     # we can only guess from a certain number of arguments
-    my ($val,$db,$text,$name,$authors) =
+    my ($val,$db,$text,$name,$authors, $start) =
 	$self->_rearrange([qw(VALUE
 			      DATABASE
 			      TEXT
 			      NAME
 			      AUTHORS
+                              START
 			      )], @args);
   SWITCH: {
       $val        && do { $type = "SimpleValue"; last SWITCH; };
@@ -231,6 +232,7 @@ sub _guess_type{
       $db         && do { $type = "DBLink"; last SWITCH; };
       $text       && do { $type = "Comment"; last SWITCH; };
       $name       && do { $type = "OntologyTerm"; last SWITCH; };
+      $start      && do { $type = "Target"; last SWITCH; };
       # what else could we look for?
   }
     $type = "Bio::Annotation::".$type;

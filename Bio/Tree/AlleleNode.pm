@@ -1,4 +1,4 @@
-# $Id: AlleleNode.pm,v 1.10 2003/09/08 12:17:15 heikki Exp $
+# $Id: AlleleNode.pm,v 1.13.4.1 2006/10/02 23:10:37 sendu Exp $
 #
 # BioPerl module for Bio::Tree::AlleleNode
 #
@@ -39,25 +39,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
 Email jason-at-bioperl-dot-org
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
 
 =head1 APPENDIX
 
@@ -76,16 +71,14 @@ L<Bio::PopGen::Simulation::Coalescent> simulations.
 
 
 package Bio::Tree::AlleleNode;
-use vars qw(@ISA $UIDCOUNTER);
+use vars qw($UIDCOUNTER);
 use strict;
 BEGIN { $UIDCOUNTER = 1 }
 
-use Bio::Tree::Node;
-use Bio::PopGen::IndividualI;
 use Bio::PopGen::Individual;
 use Bio::PopGen::Genotype;
 
-@ISA = qw(Bio::Tree::Node Bio::PopGen::IndividualI );
+use base qw(Bio::Tree::Node Bio::PopGen::IndividualI);
 
 =head2 new
 

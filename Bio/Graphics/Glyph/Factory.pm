@@ -20,17 +20,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bioperl.org/MailList.shtml - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via
-email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Lincoln Stein
 
@@ -52,8 +51,8 @@ package Bio::Graphics::Glyph::Factory;
 
 use strict;
 use Carp qw(:DEFAULT cluck);
-#use GD;
 use Bio::Root::Version;
+use base qw(Bio::Root::Root);
 
 my %LOADED_GLYPHS = ();
 my %GENERIC_OPTIONS = (
@@ -301,29 +300,25 @@ sub make_glyph {
   my $level = shift;
   my @result;
   my $panel = $self->panel;
-  my ($leftmost,$rightmost) = ($panel->left,$panel->right);
   my $flip   = $panel->flip;
 
   for my $f (@_) {
-
     my $type = $self->feature_to_glyph($f);
     my $glyphclass = 'Bio::Graphics::Glyph';
     $type ||= 'generic';
     $glyphclass .= "\:\:\L$type";
 
     unless ($LOADED_GLYPHS{$glyphclass}++) {
-      carp("the requested glyph class, ``$type'' is not available: $@")
-	unless (eval "require $glyphclass");
+      $self->throw("The requested glyph class, ``$type'' is not available: $@")
+        unless (eval "require $glyphclass");
     }
+
     my $glyph = $glyphclass->new(-feature  => $f,
 				 -factory  => $self,
 				 -flip     => $flip,
 				 -level    => $level);
 
-    # this is removing glyphs that are not onscreen at all.
-    # But never remove tracks!
-    push @result,$glyph if $type eq 'track'
-	|| ($glyph->{left} + $glyph->{width} > $leftmost && $glyph->{left} < $rightmost);
+    push @result,$glyph;
 
   }
   return wantarray ? @result : $result[0];
@@ -386,18 +381,18 @@ sub option {
   return $self->{overriding_options}{$option_name} 
     if exists $self->{overriding_options} && exists $self->{overriding_options}{$option_name};
 
-  if (my $map    = $self->option_map) {
-    if (defined(my $value  = $map->{$option_name})) {
+  if (exists $self->{options} && (my $map    = $self->{options})) {
+    if (exists $map->{$option_name} && defined(my $value  = $map->{$option_name})) {
       my $feature = $glyph->feature;
       return $value unless ref $value eq 'CODE';
-      return unless $feature->isa('Bio::SeqFeatureI');
       my $val = eval { $value->($feature,$option_name,$partno,$total_parts,$glyph)};
-      warn $@ if $@;
+      warn "Error returned while evaluating value of '$option_name' option for glyph $glyph, feature $feature: ",$@,"\n"
+	if $@;
       return defined $val && $val eq '*default*' ? $GENERIC_OPTIONS{$option_name} : $val;
     }
   }
 
-  if (my $ss = $self->stylesheet) {
+  if (exists $self->{stylesheet} && (my $ss = $self->{stylesheet})) {
     my($glyph,%options) = $ss->glyph($glyph->feature);
     my $value = $options{$option_name};
     return $value if defined $value;
@@ -409,7 +404,7 @@ sub option {
 sub get_option {
   my $self = shift;
   my $option_name = shift;
-  my $map = $self->option_map or return;
+  my $map = $self->{options} or return;
   $map->{$option_name};
 }
 

@@ -41,9 +41,13 @@ for if you see fit)
 
 =item * Shuly Avraham <avraham at cshl.org> - Bio::Graphics::Glyph
 
+=item * Sendu Bala <bix at sendu.me.uk>
+
 =item * Peter Blaiklock <pblaiklo at restrictionmapper.org>
 
 =item * Benjamin Berman <benb at fruitfly.berkeley.edu>
+
+=item * Matthew Betts <Matthew.Betts at ii.uib.no>
 
 =item * David Block <dblock at gnf.org>
 
@@ -57,8 +61,6 @@ for if you see fit)
 
 =item * Brad Chapman <chapmanb at arches.uga.edu>
 
-=item * Steve Chervitz <sac at bioperl.org>
-
 =item * Michele Clamp <michele at sanger.ac.uk>
 
 =item * Tony Cox <avc at sanger.ac.uk>
@@ -67,11 +69,17 @@ for if you see fit)
 
 =item * Andrew Dalke <dalke at acm.org>
 
-=item * Allen Day <allenday at ucla.edu>  - Bio::Graphics::Glyph
+=item * Allen Day <allenday at ucla.edu>
+
+=item * Jared Fox <jaredfox at ucla.edu> - Bio::SeqIO::interpro
+
+=item * Brian O'Connor <boconnor at ucla.edu> - Bio::TreeIO::svggraph
 
 =item * James Diggans <JDiggans at genelogic.com>
 
 =item * Peter Dimitrov <dimitrov at gnf.org> - Bio::Ontology
+
+=item * Rich Dobson <r.j.dobson at qmul.ac.uk> - Bio::PopGen::IO::hapmap,phase
 
 =item * Paul Edlefsen <pedlefsen at systemsbiology.org>
 
@@ -81,15 +89,17 @@ for if you see fit)
 
 =item * David Evans <David.Evans at vir.gla.ac.uk>
 
-=item * Mark Fiers <M.W.E.J.Fiers at plant.wag-ur.nl>
+=item * Christopher Fields <cjfields at uiuc.edu>
 
-=item * Georg Fuellen <fullen at bioperl.org>
+=item * Mark Fiers <M.W.E.J.Fiers at plant.wag-ur.nl>
 
 =item * The Fugu Team <fuguteam at fugu-sg.org>
 
 =item * Luc Gauthier <lgauthie at hotmail.com>
 
 =item * James Gilbert <jgrg at sanger.ac.uk>
+
+=item * Nat Goodman
 
 =item * Ed Green <ed at compbio.berkeley.edu>
 
@@ -98,6 +108,8 @@ for if you see fit)
 =item * Roger Hall <roger at iosea.com>
 
 =item * Todd Harris <harris at cshl.org> - SVG support in Bio::Graphics
+
+=item * Mauricio Herrera Cuadra <arareko at campus.iztacala.unam.mx>
 
 =item * Ian Holmes <ihn at fruitfly.org>
 
@@ -135,7 +147,7 @@ for if you see fit)
 
 =item * Philip Lijnzaad <p.lijnzaad at med.uu.nl>
 
-=item * Aaron Mackey <amackey at virginia.edu>
+=item * Aaron Mackey <amackey at pcbi.upenn.edu>
 
 =item * Brad Marshall <bradmars at yahoo.com>
 
@@ -143,15 +155,15 @@ for if you see fit)
 
 =item * Andrew Macgregor <andrew at anatomy.otago.ac.nz>
 
+=item * Sheldon McKay <mckays at cshl.edu>
+
 =item * Juha Muilu <muilu at ebi.ac.uk>
 
 =item * Chris Mungall <cjm at fruitfly.org>
 
 =item * Giri Narasimhan <giri at cs.fiu.edu>
 
-=item * Brian OConnor <brian.oconnor at excite.com>
-
-=item * Brian Osborne <brian_osborne at cognia.com>
+=item * Brian Osborne <bosborne at alum.mit.edu>
 
 =item * Xiaokang Pan <pan at cshl.org> - Bio::Graphics::Glyph
 
@@ -167,7 +179,11 @@ for if you see fit)
 
 =item * Peter Schattner <schattner at alum.mit.edu>
 
+=item * Torsten Seemann <torsten.seemann at infotech.monash.edu.au> -- Bio::Tools::Run::StandaloneBlast
+
 =item * Martin Senger <senger at ebi.ac.uk> -- Bio::Biblio
+
+=item * Nigam Shah <nigam at psu.edu>
 
 =item * Shengqiang Shu <sshu at bdgp.lbl.gov> - Bio::Graphics::Glyph
 
@@ -187,9 +203,11 @@ for if you see fit)
 
 =item * Gert Thijs <gert.thijs at esat.kuleuven.ac.be> 
 
+=item * James Thompson <tex at biosysadmin.com> - Bio::Matrix::PSM protein-related modules.
+
 =item * Charles Tilford <tilfordc at bms.com>
-                    
-=item * Anthony Underwood, aunderwood at phls.org.uk,
+
+=item * Anthony Underwood <aunderwood at phls.org.uk>
 
 =item * Paul-Christophe Varoutas 
 

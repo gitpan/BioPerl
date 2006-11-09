@@ -1,12 +1,10 @@
 package Bio::Graphics::Glyph::segmented_keyglyph;
 
-# $Id: segmented_keyglyph.pm,v 1.5 2002/07/10 01:25:00 lstein Exp $
+# $Id: segmented_keyglyph.pm,v 1.6.6.1 2006/10/02 23:10:20 sendu Exp $
 # Don't use this package.  It's just for inheriting the segmented glyph in the panel key.
 
 use strict;
-use Bio::Graphics::Glyph::generic;
-use vars '@ISA';
-@ISA = 'Bio::Graphics::Glyph::generic';
+use base qw(Bio::Graphics::Glyph::generic);
 
 sub make_key_feature {
   my $self = shift;
@@ -18,7 +16,7 @@ sub make_key_feature {
 				-segments=>[ [ 0*$scale +$offset,50*$scale+$offset],
 					     [60*$scale+$offset, 80*$scale+$offset]
 					   ],
-				-name => $self->option('key'),
+				-name => $self->make_key_name(),
 				-strand => '+1',
 			       );
 }

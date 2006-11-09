@@ -1,8 +1,8 @@
-# $Id: Grail.pm,v 1.6 2002/12/01 00:05:21 jason Exp $
+# $Id: Grail.pm,v 1.11.4.1 2006/10/02 23:10:32 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Grail
 #
-# Cared for by Jason Stajich <jason@bioperl.org>
+# Cared for by Jason Stajich <jason-at-bioperl.org>
 #
 # Copyright Jason Stajich
 #
@@ -58,43 +58,38 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
-
-Describe contact details here
+Email jason-at-bioperl.org
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
 # Let the code begin...
 
 package Bio::Tools::Grail;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
-use Bio::Root::IO;
 use Bio::Tools::Prediction::Gene;
 use Bio::Tools::Prediction::Exon;
 use Symbol;
 
-@ISA = qw(Bio::Root::IO Bio::Root::Root);
+use base qw(Bio::Root::IO Bio::Root::Root);
 
 sub new {
   my($class,@args) = @_;
@@ -195,7 +190,7 @@ sub _parse_predictions {
 sub _prediction {
     my ($self) = @_;
 
-    return undef unless(exists($self->{'_preds'}) && @{$self->{'_preds'}});
+    return unless(exists($self->{'_preds'}) && @{$self->{'_preds'}});
     return shift(@{$self->{'_preds'}});
 }
 

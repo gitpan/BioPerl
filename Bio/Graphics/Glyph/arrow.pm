@@ -1,12 +1,21 @@
 package Bio::Graphics::Glyph::arrow;
 # package to use for drawing an arrow
 
-use strict;
-use vars '@ISA';
-use Bio::Graphics::Glyph::generic;
-@ISA = 'Bio::Graphics::Glyph::generic';
+# $Id: arrow.pm,v 1.29.4.1 2006/10/02 23:10:19 sendu Exp $
+# Non object-oriented utilities used here-and-there in Bio::Graphics modules
 
-my %UNITS = (n => 1e-12,
+=head1 NAME
+
+Bio::Graphics::Glyph::arrow - the "arrow" glyph
+
+=cut
+
+use strict;
+use Bio::Coordinate::Pair;
+use Bio::Location::Simple;
+use base qw(Bio::Graphics::Glyph::generic);
+
+my %UNITS = (p => 1e-12,
 	     n => 1e-9,
 	     u => 1e-6,
 	     m => 0.001,
@@ -23,7 +32,7 @@ sub pad_bottom {
 }
 
 # override draw method
-sub draw {
+sub draw_component {
   my $self = shift;
   my $parallel = $self->option('parallel');
   $parallel = 1 unless defined $parallel;
@@ -99,23 +108,35 @@ sub draw_parallel {
     my $font_color = $self->fontcolor;
     my $height     = $self->height;
 
-    my $relative               = $self->option('relative_coords');
-    my $reversed = exists $self->{flip} || ($relative && $self->feature->strand < 0);
+    my $relative   = $self->option('relative_coords');
+    my $flipped    = $self->{flip};
+    my $end        = $self->panel->end + 1;
+
+    my $tickwidth  = $self->option('tickwidth'); $tickwidth = $self->linewidth unless defined $tickwidth;
+    my $tickcolor  = $self->color($self->option('tickcolor') || $self->option('fgcolor'));
+    my $tickpen    = $self->set_pen($tickwidth, $tickcolor);
+
     my $relative_coords_offset = $self->option('relative_coords_offset');
     $relative_coords_offset    = 1 unless defined $relative_coords_offset;
 
     my $start    = $relative ? $relative_coords_offset : $self->feature->start-1;
     my $stop     = $start + $self->feature->length - 1;
 
-    # WARNING: THIS IS NOT WELL THOUGHT OUT, REVERSED SEGMENTS MAY NOT INTERACT
-    # WITH RELATIVE COORDINATES OFFSET CORRECTLY
-    my $offset   = $relative ? 
-                   $reversed ? ($self->feature->end   - $relative_coords_offset) 
-                             : ($self->feature->start - $relative_coords_offset) 
-	          : 0;
+    my $map = Bio::Coordinate::Pair->new(-in  => Bio::Location::Simple->new( -seq_id => "rel",
+									     -start => $start,
+									     -end => $stop,
+									     -strand => 1,
+									     ),
+					 -out => Bio::Location::Simple->new( -seq_id => "abs",
+									     -start => $self->feature->start,
+									     -end => $self->feature->end,
+									     -strand => $self->feature->strand,
+									     ),
+					 ) if $relative;
 
-    my $unit_label   = $self->option('units') || '';
-    my $unit_divider = $self->option('unit_divider') || 1;
+    my $unit_label     = $self->option('units')        || '';
+    my $unit_divider   = $self->option('unit_divider') || 1;
+    my $units_in_label = $self->option('units_in_label');
 
     my $units      = $self->calculate_units($start/$unit_divider,$self->feature->length/$unit_divider);
     my $divisor    = $UNITS{$units} || 1;
@@ -123,12 +144,16 @@ sub draw_parallel {
     $divisor *= $unit_divider;
 
     my $format     = min($self->feature->length,$self->panel->length)/$divisor > 10
-      ? "%d$units%s" : "%.6g$units%s";
+      ? "%d" : "%.6g";
+
+    $format .= "$units%s" unless $units_in_label;
 
     my $scale  = $self->option('scale') || 1;  ## Does the user want to override the internal scale?
 
     my $model  = sprintf("$format ",$stop/($divisor*$scale),$unit_label);
-    my $minlen = $width * length($model);
+    $model     = "-$model" if $start < 0;
+
+    my $minlen = $width * length($model);# * 1.5;
 
     my ($major_interval,$minor_interval) = $self->panel->ticks(($stop-$start+1)/$unit_divider,$minlen);
 
@@ -136,44 +161,83 @@ sub draw_parallel {
     my $right = $ne ? $x2-$height : $x2;
 
     # adjust for portions of arrow that are outside panel
-    $start += $self->panel->start - $self->feature->start
-      if $self->feature->start < $self->panel->start;
-    $stop  -= $self->feature->end - $self->panel->end
-      if $self->feature->end   > $self->panel->end;
+    if ($relative && $self->feature->strand == -1) {
+	$start += $self->feature->end - $self->panel->end if $self->feature->end > $self->panel->end;
+	$stop -= $self->panel->start - $self->feature->start if $self->feature->start < $self->panel->start;
+    } else {
+	$start += $self->panel->start - $self->feature->start
+	    if $self->feature->start < $self->panel->start;
+	$stop  -= $self->feature->end - $self->panel->end
+	    if $self->feature->end   > $self->panel->end;
+    }
+	
+    my $first_tick = $major_interval * int($start/$major_interval);
+    my $last_tick  = $major_interval * int(($stop+2)/$major_interval);
 
-    my $first_tick = $major_interval * int(0.5 + $start/$major_interval);
-    my $last_tick  = $major_interval * int(0.5 + $stop/$major_interval);
+    my $label_intervals = $self->label_intervals;
+    my $interval_width  = $major_interval * $self->scale/2;
+    my %drewit;
 
     for (my $i = $first_tick; $i <= $last_tick; $i += $major_interval) {
+      my $abs = $i;
+      if ($relative) {
+	  $abs = $map->map( Bio::Location::Simple->new(-seq_id => "rel",
+						       -start  => $i,
+						       -end   => $i,
+						       -strand => 1,
+						       )
+			    )->match;
+	  next unless $abs;
+	  $abs = $abs->start;
+      }
 
-      my $tickpos = $dx + ($reversed ? $self->map_pt($stop - $i + $offset)
-	                             : $self->map_pt($i + $offset));
-      next if $tickpos < $left or $tickpos > $right;
+      $abs = $end - $abs + 1 if $flipped;
 
-      $gd->line($tickpos,$center-$a2,$tickpos,$center+$a2,$fg);
+      my $tickpos = int $dx + $self->map_pt($abs);
+      next if $tickpos < $x1 || $tickpos > $x2;
+      $drewit{$tickpos}++;
+
+      $gd->line($tickpos,$center-$a2,$tickpos,$center+$a2,$tickpen)
+	unless $tickpos < $left or $tickpos > $right;
+
       my $label = $scale ? $i / $scale : $i;
       my $scaled = $label/$divisor;
       $label = sprintf($format,$scaled,$unit_label);
 
-      my $middle = $tickpos - (length($label) * $width)/2;
-      next if $middle < $left or $middle > $right;
+      my $label_len = length($label) * $width;
+
+      my $middle = $tickpos - $label_len/2;
+      $middle   += $interval_width if $label_intervals;
 
       $gd->string($font,$middle,$center+$a2-1,$label,$font_color)
-        unless ($self->option('no_tick_label'));
+        unless ($self->option('no_tick_label') || $middle > $x2);
     }
 
     if ($self->option('tick') >= 2) {
 
-      $first_tick = $minor_interval * int(0.5 + $start/$minor_interval);
-      $last_tick  = $minor_interval * int(0.5 + $stop/$minor_interval);
+      $first_tick = $minor_interval * int($start/$minor_interval);
+      $last_tick  = $minor_interval * int(($stop+2)/$minor_interval);
 
       my $a4 = $self->height/4;
       for (my $i = $first_tick; $i <= $last_tick; $i += $minor_interval) {
-	my $tickpos = $dx + ($reversed ? $self->map_pt($stop - $i + $offset)
-	                               : $self->map_pt($i + $offset));
-	next if $tickpos < $left or $tickpos > $right;
+	  my $abs = $i;
+	  if ($relative) {
+	      $abs = $map->map( Bio::Location::Simple->new(-seq_id => "rel",
+							   -start  => $i,
+							   -end    => $i,
+							   -strand => 1,
+							   )
+				)->match;
+	      next unless $abs;
+	      $abs = $abs->start;
+	  }
+	  $abs = $end - $abs if $flipped;
 
-	$gd->line($tickpos,$center-$a4,$tickpos,$center+$a4,$fg);
+	  my $tickpos = int $dx + $self->map_pt($abs);
+	  next if $tickpos < $left-1 or $tickpos > $right+1;
+	  next if $drewit{$tickpos} || $drewit{$tickpos-1} || $drewit{$tickpos+1}; # prevent roundoff errors from appearing
+
+	  $gd->line($tickpos,$center-$a4,$tickpos,$center+$a4,$tickpen);
       }
     }
   }
@@ -181,6 +245,21 @@ sub draw_parallel {
   # add a label if requested
   $self->draw_label($gd,$dx,$dy)       if $self->option('label');
   $self->draw_description($gd,$dx,$dy) if $self->option('description');
+}
+
+sub label {
+  my $self  = shift;
+  my $label = $self->SUPER::label(@_);
+  return $label unless $self->option('units_in_label');
+  my $unit_divider = $self->option('unit_divider') || 1;
+  my $unit_label   = $self->option('units')        || '';
+  my $start        = $self->feature->start-1;
+  my $units        = $self->calculate_units($start/$unit_divider,$self->feature->length/$unit_divider);
+  return $label . " ($units$unit_label)";
+}
+
+sub label_intervals {
+  return shift->option('label_intervals');
 }
 
 sub arrowheads {
@@ -286,6 +365,10 @@ options are recognized:
 	      1 = major ticks
 	      2 = minor ticks
 
+  -tickcolor  Color to use for tick marks       fgcolor
+
+  -tickwidth  Line width to use for ticks       linewidth
+
   -parallel   Whether to draw the arrow         1 (true)
 	      parallel to the sequence
 	      or perpendicular to it.
@@ -314,6 +397,20 @@ options are recognized:
   -arrowstyle "regular" to create a simple      regular
               arrowhead.  "filled" to create
               a thick filled arrowhead
+
+  -relative_coords 
+                 use relative coordinates       0 (false)
+                 for scale
+
+  -relative_coords_offset 
+                 set the relative offset        1 
+                 for scale
+
+  -label_intervals                              0 (false)
+              Put the numeric labels on the
+              intervals between the ticks 
+              rather than on the ticks
+              themselves.
 
   -units      add units to the tick labels      none
               e.g. bp

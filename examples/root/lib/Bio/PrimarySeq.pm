@@ -1,4 +1,4 @@
-# $Id: PrimarySeq.pm,v 1.1 2003/03/07 19:30:25 sac Exp $
+# $Id: PrimarySeq.pm,v 1.6.4.1 2006/10/02 23:10:38 sendu Exp $
 #
 # bioperl module for Bio::PrimarySeq
 #
@@ -83,17 +83,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org             - General discussion
-  http://bio.perl.org/MailList.html - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
@@ -113,15 +112,9 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::PrimarySeq;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
-use Bio::PrimarySeqI;
-use Bio::IdentifiableI;
-use Bio::DescribableI;
-
-@ISA = qw(Bio::Root::Root Bio::PrimarySeqI
+use base qw(Bio::Root::Root Bio::PrimarySeqI
 	  Bio::IdentifiableI Bio::DescribableI);
 
 #
@@ -235,7 +228,7 @@ sub new {
 sub direct_seq_set {
     my $obj = shift;
     return $obj->{'seq'} = shift if @_;
-    return undef;
+    return;
 }
 
 

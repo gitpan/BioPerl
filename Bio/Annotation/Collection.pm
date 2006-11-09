@@ -1,4 +1,4 @@
-# $Id: Collection.pm,v 1.16 2002/11/22 22:48:25 birney Exp $
+# $Id: Collection.pm,v 1.23.4.1 2006/10/02 23:10:12 sendu Exp $
 
 #
 # BioPerl module for Bio::Annotation::Collection.pm
@@ -13,7 +13,8 @@
 
 =head1 NAME
 
-Bio::Annotation::Collection - Default Perl implementation of AnnotationCollectionI
+Bio::Annotation::Collection - Default Perl implementation of 
+AnnotationCollectionI
 
 =head1 SYNOPSIS
 
@@ -35,7 +36,7 @@ Bio::Annotation::Collection - Default Perl implementation of AnnotationCollectio
 
 =head1 DESCRIPTION
 
-Bioperl implementation for Bio::AnnotationCollecitonI 
+Bioperl implementation for Bio::AnnotationCollectionI 
 
 =head1 FEEDBACK
 
@@ -45,17 +46,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists. Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bio.perl.org/MailList.html  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via
+the web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
@@ -74,19 +74,15 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Annotation::Collection;
 
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::AnnotationCollectionI;
-use Bio::AnnotationI;
-use Bio::Root::Root;
 use Bio::Annotation::TypeManager;
 use Bio::Annotation::SimpleValue;
 
 
-@ISA = qw(Bio::Root::Root Bio::AnnotationCollectionI Bio::AnnotationI);
+use base qw(Bio::Root::Root Bio::AnnotationCollectionI Bio::AnnotationI);
 
 
 =head2 new
@@ -244,12 +240,11 @@ sub add_Annotation{
    my ($self,$key,$object,$archetype) = @_;
    
    # if there's no key we use the tagname() as key
-   if(ref($key) && $key->isa("Bio::AnnotationI") &&
-      (! ($object && ref($object)))) {
-       $archetype = $object if $object;
+   if(ref($key) && $key->isa("Bio::AnnotationI") && (!ref($object))) {
+       $archetype = $object if defined($object);
        $object = $key;
        $key = $object->tagname();
-       $key = $key->name() if $key && ref($key); # OntologyTermI
+       $key = $key->name() if ref($key); # OntologyTermI
        $self->throw("Annotation object must have a tagname if key omitted")
 	   unless $key;
    }
@@ -319,8 +314,9 @@ sub remove_Annotations{
     @keys = $self->get_all_annotation_keys() unless @keys;
     my @anns = $self->get_Annotations(@keys);
     # flush
-    foreach (@keys) {
-	delete $self->{'_annotation'}->{$_};
+    foreach my $key (@keys) {
+      delete $self->{'_annotation'}->{$key};
+      delete $self->{'_typemap'}->{'_type'}->{$key};
     }
     return @anns;
 }

@@ -1,4 +1,4 @@
-## $Id: dpAlign.pm,v 1.2 2003/06/10 18:18:05 jason Exp $
+## $Id: dpAlign.pm,v 1.18.4.1 2006/10/02 23:10:32 sendu Exp $
 
 # BioPerl module for Bio::Tools::dpAlign
 #
@@ -16,119 +16,142 @@ Bio::Tools::dpAlign - Perl extension to do pairwise dynamic programming sequence
 
 =head1 SYNOPSIS
 
-        use Bio::Tools::dpAlign;
-        use Bio::SeqIO;
-        use Bio::SimpleAlign;
-        use Bio::AlignIO;
+  use Bio::Tools::dpAlign;
+  use Bio::SeqIO;
+  use Bio::SimpleAlign;
+  use Bio::AlignIO;
+  use Bio::Matrix::IO;
 
-        $seq1 = new Bio::SeqIO(-file => $ARGV[0], -format => 'fasta');
-        $seq2 = new Bio::SeqIO(-file => $ARGV[1], -format => 'fasta');
+  $seq1 = new Bio::SeqIO(-file => $ARGV[0], -format => 'fasta');
+  $seq2 = new Bio::SeqIO(-file => $ARGV[1], -format => 'fasta');
 
-        # create a dpAlign object
-        $factory = new dpAlign(-match => 3,
-                           -mismatch => -1,
-                           -gap => 3,
-                           -ext => 1,
-                           -alg => Bio::Tools::dpAlign::DPALIGN_LOCAL_MILLER_MYERS);
+  # create a dpAlign object
+  # to do global alignment, specify DPALIGN_GLOBAL_MILLER_MYERS
+  # to do ends-free alignment, specify DPALIGN_ENDSFREE_MILLER_MYERS
+  $factory = new dpAlign(-match => 3,
+                     -mismatch => -1,
+                     -gap => 3,
+                     -ext => 1,
+                     -alg => Bio::Tools::dpAlign::DPALIGN_LOCAL_MILLER_MYERS);
 
-        # actually do the alignment
-        $out = $factory->pairwise_alignment($seq1->next_seq, $seq2->next_seq);
-        $alnout = new Bio::AlignIO(-format => 'pfam', -fh => \*STDOUT);
-        $alnout->write_aln($out);
+  # actually do the alignment
+  $out = $factory->pairwise_alignment($seq1->next_seq, $seq2->next_seq);
+  $alnout = new Bio::AlignIO(-format => 'pfam', -fh => \*STDOUT);
+  $alnout->write_aln($out);
 
-        # To do protein alignment, set the sequence type to protein
-        # currently all protein alignments are using BLOSUM62 matrix
-        # the gap opening cost is 10 and gap extension is 2. These
-        # values are from ssearch. They won't be changed even though
-        # you set other values for now. Also DPALIGN_LOCAL_GREEN is not
-        # supported for protein in this version.
-        $seq1->alphabet('protein');
-        $seq2->alphabet('protein');
-        $out = $factory->pairwise_alignment($seq1->next_seq, $seq2->next_seq);
-        $alnout->write_aln($out);
+  # To do protein alignment, set the sequence type to protein
+  # By default all protein alignments are using BLOSUM62 matrix
+  # the gap opening cost is 7 and gap extension is 1. These
+  # values are from ssearch. To use your own custom substitution 
+  # matrix, you can create a Bio::Matrix::MatrixI object.
 
-	# use the factory to make some output
+  $parser = new Bio::Matrix::IO(-format => 'scoring', -file => 'blosum50.mat');
+  $matrix = $parser->next_matrix;
+  $factory = new Bio::Tools::dpAlign(-matrix => $matrix, -alg => Bio::Tools::dpAlign::DPALIGN_LOCAL_MILLERMYERS);
+  $seq1->alphabet('protein');
+  $seq2->alphabet('protein');
+  $out = $factory->pairwise_alignment($seq1->next_seq, $seq2->next_seq);
+  $alnout->write_aln($out);
 
-	$factory->align_and_show($seq1, $seq2, STDOUT);
+  # use the factory to make some output
+
+  $factory->align_and_show($seq1, $seq2, STDOUT);
+
+  # use Phil Green's algorithm to calculate the optimal local
+  # alignment score between two sequences quickly. It is very
+  # useful when you are searching a query sequence in a database
+  # of sequences. Since finding a alignment is more costly 
+  # than just calculating scores, you can save time if you only 
+  # align sequences that have a high alignment score.
+
+  # To use this feature, first you call the sequence_profile function
+  # to obtain the profile of the query sequence.
+  $profile = $factory->sequence_profile($query);
+
+  %scores = ();
+  # Then use a loop to run a database of sequences against the
+  # profile to obtain a table of alignment scores
+  $dbseq = Bio::SeqIO(-file => 'dbseq.fa', -format => 'fasta');
+  while (defined($seq = $dbseq->next_seq)) {
+      $scores{$seq->id} = $factory->pairwise_alignment_score($profile, $seq);
+  }
 
 =head1 DESCRIPTION
 
-        Dynamic Programming approach is considered to be the most
-        sensitive way to align two biological sequences. There are
-        currently three major types of dynamic programming algorithms:
-        Global Alignment, Local Alignment and Ends-free Alignment.
+Dynamic Programming approach is considered to be the most sensitive
+way to align two biological sequences. There are currently three major
+types of dynamic programming algorithms: Global Alignment, Local
+Alignment and Ends-free Alignment.
 
-        Global Alignment compares two sequences in their entirety.
-        By inserting gaps in the two sequences, it aligns two
-        sequences to minimize the edit distance as defined by the
-        gap cost function and the substitution matrix. Global Alignment
-        is generally applied to two sequences that are very similar
-        in length and content.
+Global Alignment compares two sequences in their entirety.  By
+inserting gaps in the two sequences, it aligns two sequences to
+minimize the edit distance as defined by the gap cost function and the
+substitution matrix. Global Alignment is generally applied to two
+sequences that are very similar in length and content.
 
-        Local Alignment instead attempts to find out the subsequences
-        that has the minimal edit distance among all possible subsequences.
-        It is good for sequences that has a stretch of subsequences
-        that are similar to each other.
+Local Alignment instead attempts to find out the subsequences that has
+the minimal edit distance among all possible subsequences.  It is good
+for sequences that has a stretch of subsequences that are similar to
+each other.
 
-        Ends-free Alignment is a special case of Global Alignment. There
-        are no gap penalty imposed for the gaps that extended from
-        the end points of two sequences. Therefore it will be a good
-        application when you think one sequence is contained by the
-        other or when you think two sequences overlap each other.
+Ends-free Alignment is a special case of Global Alignment. There are
+no gap penalty imposed for the gaps that extended from the end points
+of two sequences. Therefore it will be a good application when you
+think one sequence is contained by the other or when you think two
+sequences overlap each other.
 
-        Dynamic Programming was first introduced by Needleman-Wunsch (1970)
-        to globally align two sequences. The idea of local alignment
-        was later introduced by Smith-Waterman (1981). Gotoh (1982)
-        improved both algorithms by introducing auxillary arrays that
-        reduced the time complexity of the algorithms to O(m*n).
-        Miller-Myers (1988) exploits the divide-and-conquer idea
-        introduced by Hirschberg (1975) to solve the affine gap cost
-        dynamic programming using only linear space. At the time of
-        this writing, it is accepted that Miller-Myers is the fastest
-        single CPU implementation and using the least memory that is
-        truly equivalent to original algorithm introduced by
-        Needleman-Wunsch. According to Aaron Mackey, Phil Green's SWAT
-        implemention introduced a heuristic that does not consider
-        paths throught the matrix where the score would be less than
-        the gap opening penalty, yielding a 1.5-2X speedup on most
-        comparisons. to skip the calculation of some cells. However,
-        his approach is only good for calculating the minimum edit
-        distance and find out the corresponding subsequences (aka
-        search phase). Bill Pearson's popular dynamic programming
-        alignment program SSEARCH uses Phil Green's algorithm to
-        find the subsequences and then Miller-Myers's algorithm to
-        find the actual alignment. (aka alignment phase)
+Dynamic Programming was first introduced by Needleman-Wunsch (1970) to
+globally align two sequences. The idea of local alignment was later
+introduced by Smith-Waterman (1981). Gotoh (1982) improved both
+algorithms by introducing auxillary arrays that reduced the time
+complexity of the algorithms to O(m*n).  Miller-Myers (1988) exploits
+the divide-and-conquer idea introduced by Hirschberg (1975) to solve
+the affine gap cost dynamic programming using only linear space. At
+the time of this writing, it is accepted that Miller-Myers is the
+fastest single CPU implementation and using the least memory that is
+truly equivalent to original algorithm introduced by
+Needleman-Wunsch. According to Aaron Mackey, Phil Green's SWAT
+implemention introduced a heuristic that does not consider paths
+throught the matrix where the score would be less than the gap opening
+penalty, yielding a 1.5-2X speedup on most comparisons. to skip the
+calculation of some cells. However, his approach is only good for
+calculating the minimum edit distance and find out the corresponding
+subsequences (aka search phase). Bill Pearson's popular dynamic
+programming alignment program SSEARCH uses Phil Green's algorithm to
+find the subsequences and then Miller-Myers's algorithm to find the
+actual alignment. (aka alignment phase)
 
-        The current implementation supports local alignment of
-        either DNA sequences or protein sequences. It allows you
-        to specify either the Phil Green (DPALIGN_LOCAL_GREEN)
-        or Miller-Myers (DPALIGN_LOCAL_MILLER_MYERS). For DNA
-        alignment, you can specify the scores for match, mismatch,
-        gap opening cost and gap extension cost. For protein
-        alignment, it is using BLOSUM62 by default. Currently the
-        substitution matrix is not configurable.
+The current implementation supports local alignment of either DNA
+sequences or protein sequences. It allows you to specify either the
+Miller-Myers Global Alignment (DPALIGN_GLOBAL_MILLER_MYERS) or
+Miller-Myers Local Alignment (DPALIGN_LOCAL_MILLER_MYERS). For DNA
+alignment, you can specify the scores for match, mismatch, gap opening
+cost and gap extension cost. For protein alignment, it is using
+BLOSUM62 by default. Currently the substitution matrix is not
+configurable.
 
 =head1 DEPENDENCIES
 
-	This package comes with the main bioperl distribution. You
-	also need to install the lastest bioperl-ext package which
-	contains the XS code that implements the algorithms. This 
-	package won't work if you haven't compiled the bioperl-ext
-	package.
+This package comes with the main bioperl distribution. You also need
+to install the lastest bioperl-ext package which contains the XS code
+that implements the algorithms. This package won't work if you haven't
+compiled the bioperl-ext package.
 
 =head1 TO-DO
 
-        1) Allow custom substitution matrix.
 
-        2) Support Global Alignment.
+=over 3
 
-        3) Support Ends-free Alignment.
+=item 1.
 
-        4) Include a score only calculation based on Phil Green's
-	algorithm. The code will be borrowed from do_work in
-	ssearch.
+Support IUPAC code for DNA sequence
 
-        5) Support IUPAC code for DNA sequence
+=item 2.
+
+Allow custom substitution matrix for DNA. Note that for proteins, you
+can now use your own subsitution matirx.
+
+=back
 
 =head1 FEEDBACK
 
@@ -138,17 +161,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules.  Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-    bioperl-l@bioperl.org              - General discussion
-    http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution. Bug reports can be submitted via email
-or the web:
+the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-    bioperl-bugs@bio.perl.org
-    http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -164,12 +186,11 @@ or the web:
 
 package Bio::Tools::dpAlign;
 
-use Bio::Tools::AlignFactory;
 use Bio::SimpleAlign;
 
-@ISA = qw(Bio::Tools::AlignFactory);
+use base qw(Bio::Tools::AlignFactory);
 
-$VERSION = '0.50';
+$VERSION = '0.70';
 
 # Gotoh algorithm as defined in J. Mol. Biol. (1982) 162, 705-708
 # use constant DSW_GOTOH => 1;
@@ -178,6 +199,8 @@ $VERSION = '0.50';
 # This algorithm is used in both the search phase and the
 # alignment phase.
 use constant DPALIGN_LOCAL_MILLER_MYERS => 1;
+use constant DPALIGN_GLOBAL_MILLER_MYERS => 2;
+use constant DPALIGN_ENDSFREE_MILLER_MYERS => 3;
 # my toy algorithm that tries to do SW as fast as possible
 # use constant DSW_FSW => 3; 
 # Phil Green's approximation to Smith-Waterman. It avoid calculations
@@ -185,7 +208,7 @@ use constant DPALIGN_LOCAL_MILLER_MYERS => 1;
 # This is the algorithm used by ssearch. Phil Green's algorithm is
 # used in the search phase while Miller-Myers algorithm is used in
 # the alignment phase
-use constant DPALIGN_LOCAL_GREEN => 2; 
+#use constant DPALIGN_LOCAL_GREEN => 2; 
 
 BEGIN {
     eval {
@@ -198,24 +221,25 @@ BEGIN {
 }
 
 sub new {
-    my ($class, @args) = @_;
+   my ($class, @args) = @_;
 
-    my $self = $class->SUPER::new(@args);
+   my $self = $class->SUPER::new(@args);
 
-    my ($match, $mismatch, $gap, $ext, $alg) = $self->_rearrange([qw(MATCH
-							       MISMATCH
-							       GAP
-							       EXT
-							       ALG	
+   my ($match, $mismatch, $gap, $ext, $alg, $matrix) = $self->_rearrange([qw(MATCH
+								MISMATCH
+								GAP
+								EXT
+								ALG
+								MATRIX	
 							)], @args);
 
-    $self->match(3) unless defined $match;
-    $self->mismatch(-1) unless defined $mismatch;
-    $self->gap(3) unless defined $gap;
-    $self->ext(1) unless defined $ext;
-    $self->alg(DPALIGN_LOCAL_MILLER_MYERS) unless defined $alg;
+   $self->match(3) unless defined $match;
+   $self->mismatch(-1) unless defined $mismatch;
+   $self->gap(3) unless defined $gap;
+   $self->ext(1) unless defined $ext;
+   $self->alg(DPALIGN_LOCAL_MILLER_MYERS) unless defined $alg;
 
-    if (defined $match) {
+   if (defined $match) {
 	if ($match =~ /^\d+$/) {
 	    $self->match($match);
 	}
@@ -252,14 +276,111 @@ sub new {
     }
 
     if (defined $alg) {
-	if ($alg == DPALIGN_LOCAL_MILLER_MYERS or $alg == DPALIGN_LOCAL_GREEN) {
+	if ($alg == DPALIGN_LOCAL_MILLER_MYERS or $alg == DPALIGN_GLOBAL_MILLER_MYERS or $alg == DPALIGN_ENDSFREE_MILLER_MYERS) {
 	    $self->alg($alg);
 	}
 	else {
-	    $self->throw("Algorithm must be either 1 or 2");
+	    $self->throw("Algorithm must be either 1, 2 or 3");
 	}
     }
+
+    if (defined $matrix and $matrix->isa('Bio::Matrix::MatrixI')) {
+        $self->{'matrix'} = Bio::Ext::Align::ScoringMatrix->new(join("", $matrix->row_names), $self->gap, $self->ext);
+        foreach $rowname ($matrix->row_names) {
+            foreach $colname ($matrix->column_names) {
+                Bio::Ext::Align::ScoringMatrix->set_entry($self->{'matrix'}, $rowname, $colname, $matrix->entry($rowname, $colname));
+            }
+        }
+    }
+    else {
+        $self->{'matrix'} = 0;
+    }
+
     return $self;
+}
+
+=head2 sequence_profile
+
+ Title   : sequence_profile
+ Usage   : $prof = $factory->sequence_profile($seq1)
+ Function: Makes a dpAlign_SequenceProfile object from one sequence
+ Returns : A dpAlign_SequenceProfile object
+ Args    : The lone argument is a Bio::PrimarySeqI that we want to 
+	   build a profile for. Usually, this would be the Query sequence
+
+=cut
+
+sub sequence_profile {
+    my ($self, $seq1) = @_;
+
+    if( ! defined $seq1 || ! $seq1->isa('Bio::PrimarySeqI')) {
+        $self->warn("Cannot call sequence_profilewithout specifing one sequence (Bio::PrimarySeqI object)");
+        return;
+    }
+
+    # fix Jitterbug #1044
+    if( $seq1->length() < 2) {
+        $self->warn("cannot create sequence profile with length less than 2");
+        return;
+    }
+    # create engine objects
+    $seq1->display_id('seq1') unless ( defined $seq1->id() );
+
+    if ($seq1->alphabet eq 'dna') {
+	return Bio::Ext::Align::SequenceProfile->dna_new($seq1->seq, $self->{'match'}, $self->{'mismatch'}, $self->{'gap'}, $self->{'ext'});
+    }
+    elsif ($seq1->alphabet eq 'protein') {
+	return Bio::Ext::Align::SequenceProfile->protein_new($seq1->seq, $self->{'matrix'}); 
+    }
+    else {
+	croak("There is currently no support for the types of sequences you want to align!\n");
+	return;
+    }
+}
+
+=head2 pairwise_alignment_score
+
+ Title   : pairwise_alignment_score
+ Usage   : $score = $factory->pairwise_alignment_score($prof,$seq2)
+ Function: Makes a SimpleAlign object from two sequences
+ Returns : An integer that is the score of the optimal alignment.
+ Args    : The first argument is the sequence profile obtained from a
+	   call to the sequence_profile function. The second argument 
+	   is a Bio::PrimarySeqI object to be aligned. The second argument
+	   is usually a sequence in the database sequence. Note
+	   that this function only uses Phil Green's algorithm and 
+	   therefore theoretically may not always give you the optimal
+	   score.
+
+=cut
+
+sub pairwise_alignment_score {
+    my ($self, $prof, $seq2) = @_;
+
+    if( ! defined $prof || ! $prof->isa('Bio::Ext::Align::SequenceProfile') || 
+        ! defined $seq2 || ! $seq2->isa('Bio::PrimarySeqI') ) {
+        $self->warn("Cannot call pairwise_alignment_score without specifing 2 sequences (Bio::PrimarySeqI objects)");
+        return;
+    }
+    # fix Jitterbug #1044
+    if( $seq2->length() < 2) {
+        $self->warn("cannot align sequences with length less than 2");
+        return;
+    }
+    $self->set_memory_and_report();
+    # create engine objects
+    $seq2->display_id('seq2') unless ( defined $seq2->id() );
+
+    if ($prof->alphabet eq 'dna' and $seq2->alphabet eq 'dna') {
+	return Bio::Ext::Align::Score_DNA_Sequences($prof, $seq2->seq);
+    }
+    elsif ($prof->alphabet eq 'protein' and $seq2->alphabet eq 'protein') {
+	return Bio::Ext::Align::Score_Protein_Sequences($prof, $seq2->seq);
+    }
+    else {
+	croak("There is currently no support for the types of sequences you want to align!\n");
+	return;
+    }
 }
 
 =head2 pairwise_alignment
@@ -267,9 +388,10 @@ sub new {
  Title   : pairwise_alignment
  Usage   : $aln = $factory->pairwise_alignment($seq1,$seq2)
  Function: Makes a SimpleAlign object from two sequences
- Returns : A SimpleAlign object
- Args    :
-
+ Returns : A SimpleAlign object if there is an alignment with positive
+	   score. Otherwise, return undef.
+ Args    : The first and second arguments are both Bio::PrimarySeqI
+	   objects that are to be aligned.
 
 =cut
 
@@ -280,13 +402,13 @@ sub pairwise_alignment {
     if( ! defined $seq1 || ! $seq1->isa('Bio::PrimarySeqI') ||
         ! defined $seq2 || ! $seq2->isa('Bio::PrimarySeqI') ) {
         $self->warn("Cannot call pairwise_alignment without specifing 2 sequences (Bio::PrimarySeqI objects)");
-        return undef;
+        return;
     }
     # fix Jitterbug #1044
     if( $seq1->length() < 2 ||
         $seq2->length() < 2 ) {
         $self->warn("cannot align sequences with length less than 2");
-        return undef;
+        return;
     }
     $self->set_memory_and_report();
     # create engine objects
@@ -297,10 +419,15 @@ sub pairwise_alignment {
 	$aln = Bio::Ext::Align::Align_DNA_Sequences($seq1->seq, $seq2->seq, $self->{'match'}, $self->{'mismatch'}, $self->{'gap'}, $self->{'ext'}, $self->{'alg'});
     }
     elsif ($seq1->alphabet eq 'protein' and $seq2->alphabet eq 'protein') {
-	$aln = Bio::Ext::Align::Align_Protein_Sequences($seq1->seq, $seq2->seq, 'blosum62');
+	$aln = Bio::Ext::Align::Align_Protein_Sequences($seq1->seq, $seq2->seq, $self->{'matrix'}, $self->{'alg'});
     }
     else {
 	croak("There is currently no support for the types of sequences you want to align!\n");
+	return;
+    }
+
+    if (not defined $aln or $aln == 0) {
+	return;
     }
 
     $out = Bio::SimpleAlign->new();
@@ -314,7 +441,7 @@ sub pairwise_alignment {
 					 -start => $aln->start2,
 					 -end => $aln->end2,
 					 -id => $seq2->id));
-
+    $out->score($aln->score);
     return $out;
 }
 
@@ -335,13 +462,13 @@ sub align_and_show {
     if( ! defined $seq1 || ! $seq1->isa('Bio::PrimarySeqI') ||
         ! defined $seq2 || ! $seq2->isa('Bio::PrimarySeqI') ) {
         $self->warn("Cannot call pairwise_alignment without specifing 2 sequences (Bio::PrimarySeqI objects)");
-        return undef;
+        return;
     }
     # fix Jitterbug #1044
     if( $seq1->length() < 2 ||
         $seq2->length() < 2 ) {
         $self->warn("cannot align sequences with length less than 2");
-        return undef;
+        return;
     }
     $self->set_memory_and_report();
     # create engine objects
@@ -352,28 +479,71 @@ sub align_and_show {
 	$aln = Bio::Ext::Align::Align_DNA_Sequences($seq1->seq, $seq2->seq, $self->{'match'}, $self->{'mismatch'}, $self->{'gap'}, $self->{'ext'}, $self->{'alg'});
     }
     elsif ($seq1->alphabet eq 'protein' and $seq2->alphabet eq 'protein') {
-	$aln = Bio::Ext::Align::Align_Protein_Sequences($seq1->seq, $seq2->seq, 'blosum62');
+	$aln = Bio::Ext::Align::Align_Protein_Sequences($seq1->seq, $seq2->seq, $self->{'matrix'}, $self->{'alg'});
     }
     else {
 	croak("There is currently no support for the types of sequences you want to align!\n");
     }
 
-    $out = Bio::SimpleAlign->new();
+    $out = Bio::Ext::Align::AlnBlock->new();
+    my $s1 = Bio::Ext::Align::AlnSequence->new();
+    my $s2 = Bio::Ext::Align::AlnSequence->new();
+    my $a1 = $aln->aln1;
+    my $a2 = $aln->aln2;
+    my $first_col = undef;
+    my $last_col = undef;
+    my $col;
+    my $alu1;
+    my $alu2;
+    my $g1 = 0;
+    my $g2 = 0;
 
-    $out->add_seq(Bio::LocatableSeq->new(-seq => $aln->aln1,
-					 -start => $aln->start1,
-					 -end => $aln->end1,
-					 -id => $seq1->id));
-    
-    $out->add_seq(Bio::LocatableSeq->new(-seq => $aln->aln2,
-					 -start => $aln->start2,
-					 -end => $aln->end2,
-					 -id => $seq2->id));
+# construct AlnBlock
+    for (my $i = 0; $i < length($a1); ++$i) {
+	$col = Bio::Ext::Align::AlnColumn->new();
+	$alu1 = Bio::Ext::Align::AlnUnit->new();
+	$alu2 = Bio::Ext::Align::AlnUnit->new();
+	$first_col = $col unless defined $first_col;
+	Bio::Ext::Align::AlnColumn::set_next($last_col, $col) if defined $last_col;
+	
+	if (substr($a1, $i, 1) eq "-") {
+	    Bio::Ext::Align::AlnUnit::set_text_label($alu1, "INSERT");
+	    Bio::Ext::Align::AlnUnit::set_text_label($alu2, "SEQUENCE");
+	    ++$g1;
+	}
+	elsif (substr($a2, $i, 1) eq "-") {
+	    Bio::Ext::Align::AlnUnit::set_text_label($alu1, "SEQUENCE");
+	    Bio::Ext::Align::AlnUnit::set_text_label($alu2, "INSERT");
+	    ++$g2;
+	}
+	else {
+	    Bio::Ext::Align::AlnUnit::set_text_label($alu1, "SEQUENCE");
+	    Bio::Ext::Align::AlnUnit::set_text_label($alu2, "SEQUENCE");
+	}
 
-    my $t1 = &Bio::Ext::Align::new_Sequence_from_strings($seq1->id, $seq1->seq);
-    my $t2 = &Bio::Ext::Align::new_Sequence_from_strings($seq2->id, $seq2->seq);
+	Bio::Ext::Align::AlnUnit::set_start($alu1, $aln->start1+$i-$g1-2);
+	Bio::Ext::Align::AlnUnit::set_end($alu1, $aln->start1+$i-$g1-2);
+	Bio::Ext::Align::AlnUnit::set_start($alu2, $aln->start2+$i-$g2-2);
+	Bio::Ext::Align::AlnUnit::set_end($alu2, $aln->start2+$i-$g2-2);
+	Bio::Ext::Align::AlnColumn::add_alu($col, $alu1);
+	Bio::Ext::Align::AlnColumn::add_alu($col, $alu2);
+	$last_col = $col;
+    }
+    Bio::Ext::Align::AlnBlock::set_start($out, $first_col);
+    $col = Bio::Ext::Align::AlnColumn->new();
+    $alu1 = Bio::Ext::Align::AlnUnit->new();
+    $alu2 = Bio::Ext::Align::AlnUnit->new();
+    Bio::Ext::Align::AlnUnit::set_start($alu1, $aln->end1);
+    Bio::Ext::Align::AlnUnit::set_end($alu1, $aln->end1);
+    Bio::Ext::Align::AlnUnit::set_text_label($alu1, "END");
+    Bio::Ext::Align::AlnUnit::set_start($alu2, $aln->end2);
+    Bio::Ext::Align::AlnUnit::set_end($alu2, $aln->end2);
+    Bio::Ext::Align::AlnUnit::set_text_label($alu2, "END");
+    Bio::Ext::Align::AlnColumn::add_alu($col, $alu1);
+    Bio::Ext::Align::AlnColumn::add_alu($col, $alu2);
+    Bio::Ext::Align::AlnColumn::set_next($last_col, $col);
 
-    &Bio::Ext::Align::write_pretty_seq_align($out,$t1,$t2,12,50,$fh);
+    &Bio::Ext::Align::write_pretty_str_align($out,$seq1->id,$seq1->seq,$seq2->id,$seq2->seq,12,50,$fh);
 }
 
 =head2 match
@@ -492,8 +662,8 @@ sub alg {
     my ($self,$val) = @_;
 
     if( defined $val ) {
-        if( $val != DPALIGN_LOCAL_MILLER_MYERS and $val != DPALIGN_LOCAL_GREEN) {    
-            $self->throw("Can't have an algorithm that is not 1 or 2");
+        if( $val != DPALIGN_LOCAL_MILLER_MYERS and $val != DPALIGN_GLOBAL_MILLER_MYERS and $val != DPALIGN_ENDSFREE_MILLER_MYERS) {    
+            $self->throw("Can't have an algorithm that is not 1, 2 or 3");
         }
         $self->{'alg'} = $val;
     }

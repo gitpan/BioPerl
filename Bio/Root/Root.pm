@@ -1,7 +1,7 @@
 package Bio::Root::Root;
 use strict;
 
-# $Id: Root.pm,v 1.34 2003/06/04 08:36:42 heikki Exp $
+# $Id: Root.pm,v 1.35.6.2 2006/11/08 17:25:55 sendu Exp $
 
 =head1 NAME
 
@@ -9,8 +9,7 @@ Bio::Root::Root - Hash-based implementation of Bio::Root::RootI
 
 =head1 SYNOPSIS
 
-  # any bioperl or bioperl compliant object is a RootI 
-  # compliant object
+  # Any Bioperl-compliant object is a RootI compliant object
 
   # Here's how to throw and catch an exception using the eval-based syntax.
 
@@ -28,50 +27,60 @@ Bio::Root::Root - Hash-based implementation of Bio::Root::RootI
 
   # Alternatively, using the new typed exception syntax in the throw() call:
 
-    $obj->throw( -class => 'Bio::Root::BadParameter',
-                 -text  => "Can not open file $file",
-                 -value  => $file);
+  $obj->throw( -class => 'Bio::Root::BadParameter',
+               -text  => "Can not open file $file",
+               -value  => $file );
 
+  # Want to see debug() outputs for this object
+  
+  my $obj = Bio::Object->new(-verbose=>1);
+
+  my $obj = Bio::Object->new(%args);
+  $obj->verbose(2);
+
+  # Print debug messages which honour current verbosity setting
+  
+  $obj->debug("Boring output only to be seen if verbose > 0\n");
 
 =head1 DESCRIPTION
 
 This is a hashref-based implementation of the Bio::Root::RootI
-interface.  Most bioperl objects should inherit from this.
+interface.  Most Bioperl objects should inherit from this.
 
-See the documentation for Bio::Root::RootI for most of the methods
+See the documentation for L<Bio::Root::RootI> for most of the methods
 implemented by this module.  Only overridden methods are described
 here.
 
 =head2 Throwing Exceptions
 
-One of the functionalities that Bio::Root::RootI provides is the
-ability to throw() exceptions with pretty stack traces. Bio::Root::Root
-enhances this with the ability to use B<Error.pm> (available from CPAN)
+One of the functionalities that L<Bio::Root::RootI> provides is the
+ability to L<throw()> exceptions with pretty stack traces. Bio::Root::Root
+enhances this with the ability to use L<Error> (available from CPAN)
 if it has also been installed. 
 
-If Error.pm has been installed, throw() will use it. This causes an
+If L<Error> has been installed, L<throw()> will use it. This causes an
 Error.pm-derived object to be thrown. This can be caught within a
 C<catch{}> block, from wich you can extract useful bits of
-information. If Error.pm is not installed, it will use the 
-Bio::Root::RootI-based exception throwing facilty.
+information. If L<Error> is not installed, it will use the 
+L<Bio::Root::RootI>-based exception throwing facilty.
 
 =head2 Typed Exception Syntax 
 
-The typed exception syntax of throw() has the advantage of plainly
+The typed exception syntax of L<throw()> has the advantage of plainly
 indicating the nature of the trouble, since the name of the class
 is included in the title of the exception output.
 
 To take advantage of this capability, you must specify arguments
-as named parameters in the throw() call. Here are the parameters:
+as named parameters in the L<throw()> call. Here are the parameters:
 
 =over 4
 
 =item -class
 
 name of the class of the exception.
-This should be one of the classes defined in B<Bio::Root::Exception>,
+This should be one of the classes defined in L<Bio::Root::Exception>,
 or a custom error of yours that extends one of the exceptions
-defined in B<Bio::Root::Exception>.
+defined in L<Bio::Root::Exception>.
 
 =item -text
 
@@ -90,11 +99,11 @@ via Bio::Root::Root::throw(), since Bio::Root::Root imports it.
 =head2 Try-Catch-Finally Support
 
 In addition to using an eval{} block to handle exceptions, you can
-also use a try-catch-finally block structure if B<Error.pm> has been
+also use a try-catch-finally block structure if L<Error> has been
 installed in your system (available from CPAN).  See the documentation
 for Error for more details.
 
-Here's an example. See the B<Bio::Root::Exception> module for 
+Here's an example. See the L<Bio::Root::Exception> module for 
 other pre-defined exception types:
 
    try {
@@ -119,10 +128,31 @@ other pre-defined exception types:
    };  
    # the ending semicolon is essential!
 
+=head1 FEEDBACK
 
-=head1 CONTACT
+=head2 Mailing Lists
 
-Functions originally from Steve Chervitz. Refactored by Ewan Birney.
+User feedback is an integral part of the evolution of this
+and other Bioperl modules. Send your comments and suggestions preferably
+to one of the Bioperl mailing lists.
+
+Your participation is much appreciated.
+
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Reporting Bugs
+
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
+
+  http://bugzilla.open-bio.org/
+
+=head1 AUTHOR
+
+Functions originally from Steve Chervitz. 
+Refactored by Ewan Birney.
 Re-refactored by Lincoln Stein.
 
 =head1 APPENDIX
@@ -134,17 +164,15 @@ methods. Internal methods are usually preceded with a _
 
 #'
 
-use vars qw(@ISA $DEBUG $ID $Revision $VERBOSITY $ERRORLOADED);
+use vars qw($DEBUG $ID $VERBOSITY $ERRORLOADED);
 use strict;
-use Bio::Root::RootI;
 use Bio::Root::IO;
 
-@ISA = 'Bio::Root::RootI';
+use base qw(Bio::Root::RootI);
 
 BEGIN { 
 
     $ID        = 'Bio::Root::Root';
-    $Revision  = '$Id: Root.pm,v 1.34 2003/06/04 08:36:42 heikki Exp $ ';
     $DEBUG     = 0;
     $VERBOSITY = 0;
     $ERRORLOADED = 0;
@@ -281,10 +309,13 @@ sub _cleanup_methods {
                  -class => Bio::Root::Exception
  Comments : If Error.pm is installed, and you don't want to use it
             for some reason, you can block the use of Error.pm by
-           Bio::Root::Root::throw() by defining a scalar named
-           $main::DONT_USE_ERROR (define it in your main script
-           and you don't need the main:: part) and setting it to 
-           a true value; you must do this within a BEGIN subroutine.
+            Bio::Root::Root::throw() by defining a scalar named
+            $main::DONT_USE_ERROR (define it in your main script
+            and you don't need the main:: part) and setting it to 
+            a true value; you must do this within a BEGIN subroutine.
+            
+            Also note that if you use the string form, the string cannot
+            start with a dash, or the resulting throw message will be empty.
 
 =cut
 
@@ -309,11 +340,11 @@ sub throw{
        if( ref($args[0])) {
            if( $args[0]->isa('Error')) {
                my $class = ref $args[0];
-               throw $class ( @args );
+               $class->throw( @args );
            } else {
                my $text .= "\nWARNING: Attempt to throw a non-Error.pm object: " . ref$args[0];
                my $class = "Bio::Root::Exception";
-               throw $class ( '-text' => $text, '-value' => $args[0] ); 
+               $class->throw( '-text' => $text, '-value' => $args[0] ); 
            }
        } else {
            $class ||= "Bio::Root::Exception";
@@ -325,7 +356,7 @@ sub throw{
 	       $args{-object} = $self;
 	   }
 
-           throw $class ( scalar keys %args > 0 ? %args : @args ); # (%args || @args) puts %args in scalar context!
+           $class->throw( scalar keys %args > 0 ? %args : @args ); # (%args || @args) puts %args in scalar context!
        }
    }
    else {
@@ -355,10 +386,9 @@ sub throw{
 
 sub debug{
    my ($self,@msgs) = @_;
-   
-   if( defined $self->verbose &&
-       $self->verbose > 0 ) { 
-       print STDERR join("", @msgs);
+
+   if( defined $self->verbose && $self->verbose > 0 ) { 
+       print STDERR @msgs;
    }   
 }
 
@@ -369,7 +399,6 @@ sub debug{
  Function: Loads up (like use) the specified module at run time on demand.
  Example : 
  Returns : TRUE on success. Throws an exception upon failure.
-.
  Args    : The module to load (_without_ the trailing .pm).
 
 =cut
@@ -384,6 +413,8 @@ sub _load_module {
     # a fix by Lincoln) HL
     if ($name !~ /^([\w:]+)$/) {
 	$self->throw("$name is an illegal perl package name");
+    } else { 
+	$name = $1;
     }
 
     $load = "$name.pm";

@@ -24,7 +24,7 @@
 #   Bio::SearchIO
 #
 # Author: Steve Chervitz <sac@bioperl.org>
-# Revision: $Id: htmlwriter.pl,v 1.4 2003/06/10 00:06:15 sac Exp $
+# Revision: $Id: htmlwriter.pl,v 1.5 2004/02/21 10:50:34 sac Exp $
 
 
 use strict;
@@ -37,7 +37,8 @@ my $outfile = "searchio.html";
 my $file = shift or die "Usage: $0 <BLAST-report-file>\n       HTML output is saved to $outfile\n";
 
 my $in = Bio::SearchIO->new( -format => 'blast', 
-                             -file => $file, # comment out this line to read STDIN
+                             -file => $file,  #comment this out to read STDIN
+                             #-fh => \*ARGV,  #uncomment this to read from STDIN
                              -verbose => 0 );
 
 my $writer = new Bio::SearchIO::Writer::HTMLResultWriter();

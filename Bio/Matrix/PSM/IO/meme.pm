@@ -1,9 +1,9 @@
 #---------------------------------------------------------
-# $Id: meme.pm,v 1.7 2003/12/12 17:01:42 skirov Exp $
+# $Id: meme.pm,v 1.20.4.1 2006/10/02 23:10:22 sendu Exp $
 
 =head1 NAME
 
-Bio::Matrix::PSM::meme - PSM meme parser implementation
+Bio::Matrix::PSM::IO::meme - PSM meme parser implementation
 
 =head1 SYNOPSIS
 
@@ -22,17 +22,16 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Stefan Kirov
 
@@ -45,15 +44,13 @@ Email skirov@utk.edu
 
 # Let the code begin...
 package Bio::Matrix::PSM::IO::meme;
-use Bio::Matrix::PSM::IO;
 use Bio::Matrix::PSM::InstanceSite;
 use Bio::Matrix::PSM::SiteMatrix;
 use Bio::Matrix::PSM::Psm;
-use Bio::Matrix::PSM::PsmHeader;
-use vars qw(@ISA @HEADER);
+use vars qw(@HEADER);
 use strict;
 
-@ISA=qw(Bio::Matrix::PSM::PsmHeader Bio::Matrix::PSM::IO Bio::Root::Root);
+use base qw(Bio::Matrix::PSM::PsmHeader Bio::Matrix::PSM::IO);
 
 @Bio::Matrix::PSM::IO::meme::HEADER = qw(e_val sites IC width);
 
@@ -79,6 +76,7 @@ sub new {
     $self->{file} = $file;
     $self->{query}= $query;
     $self->{end}  = 0;
+    $self->{_strand}=0; #This we'll need to see if revcom option is used
     $self->_initialize_io(@args) || warn "Did you intend to use STDIN?"; #Read only for now
     #Skip header
     my $line;
@@ -114,7 +112,7 @@ sub _parse_coordinates {
     my $line=$self->_readline;
     while ($line !~ /^\*{10,}/ ) {
 	chomp $line;
-	$line=~s/\s+/,/g;
+	$line =~ s/\s+/,/g;
 	my ($id1,$w1,$l1,$id2,$w2,$l2)=split(/,/,$line);
 	push @{$self->{hid}},$id1;
 	$self->{weight}->{$id1}=$w1;
@@ -178,11 +176,13 @@ sub header {
 sub next_psm {
     #Parses the next prediction and returns a psm objects
     my $self=shift;
-    return undef if ($self->{end});
-    my ($endm,$line,$instances,$tr,$width,$motif_id,$sites,$e_val,$id,$ic);
+    return if ($self->{end});
+    my ($endm,$line,$instances,$tr,$width,$motif_id,$sites,$e_val,$id,$ic,$lA,$lC,$lG,$lT);
     while (defined( $line = $self->_readline) ) {
+#Check if revcom is enabled, not very original check....
+  $self->{_strand}=1 if (($line=~/^Sequence name/) && ($line=~/Strand/));
 	if ($line=~ m/\sSite\s/) {
-	    $instances=$self->_parseInstance;
+	    $instances= $self->_parseInstance;
 	}
 	#Here starts the next motif
 	if ( ($line=~/width/) && ($line=~/sites/)) {
@@ -201,26 +201,34 @@ sub next_psm {
 	    ($ic)=split(/\s/,$line);
 	}
         #Last info-prob matrix data
-	if ($line=~/letter\-probability\s+matrix/) {
+	if ($line=~/position-specific\s+scoring matrix/) {
+		($lA,$lC,$lG,$lT)=_parse_logs($self);
+	}
+	if ($line=~/^letter-probability\smatrix/) {
 	    my %matrix_dat=$self->_parseMatrix($motif_id);
 	    my $psm= new Bio::Matrix::PSM::Psm(%matrix_dat, 
 					       -instances=>$instances, 
 					       -e_val=>$e_val,
 					       -IC=>$ic, 
 					       -width=>$width, 
-					       -sites=>$sites);
+					       -sites=>$sites,
+						   -lA=>$lA,
+						   -lC=>$lC,
+						   -lG=>$lG,
+						   -lT=>$lT,
+						   );
 	    return $psm;
 	}
 	if ($line=~"SUMMARY OF MOTIFS") {
 	    $self->{end}=1;
-	    return undef;
+	    return;
 	}
 	$endm=1 if ($line=~/^Time\s/); 
     }
 	if ($endm) { #End of file found, end of current motif too, but not all predictions were made as requested (No summary)
 	    $self->{end}=1;
-		warn "This MEME analysis was terminated prematurely, you may have less motifs than you requested\n";
-	    return undef;
+            warn "This MEME analysis was terminated prematurely, you may have less motifs than you requested\n";
+	    return;
 	}
     $self->throw("Wrong format\n"); # Multiple keywords not found, probably wrong format
 }
@@ -246,16 +254,46 @@ sub _parseMatrix {
     do {
 	chomp $line;
 	last if ($line eq '');
-	$line=~s/\s\s/,/g;
-	$line=~s/\s//g;
+  $line=~s/^\s+//;
+	$line=~s/\s+/,/g;
 	($pA[$i],$pC[$i],$pG[$i],$pT[$i])=split(/,/,$line);
 	$i++;
 	$line=$self->_readline;
     } until $line =~ /\-{10,}/;
-    
     return (-pA=>\@pA,-pC=>\@pC,-pG=>\@pG,-pT=>\@pT,-id=>$id);
 }
 
+=head2 _parse_logs
+
+ Title   : _parse_logs
+ Usage   :
+ Function: Parses the next site matrix log values in the meme file
+ Throws  :
+ Example :  Internal stuff
+ Returns :  array of array refs
+ Args    :  string
+
+=cut
+
+sub _parse_logs {
+    my $self=shift;
+    my (@lA,@lC,@lG,@lT);
+    my $i=0;
+    $self->_readline;   $self->_readline;
+    my $line = $self->_readline;
+    #Most important part- the probability matrix
+    do {
+	chomp $line;
+	last if ($line eq '');
+  $line=~s/^\s+//;
+	$line=~s/\s+/,/g;
+	($lA[$i],$lC[$i],$lG[$i],$lT[$i])=split(/,/,$line);
+	$i++;
+	$line=$self->_readline;
+    } until $line =~ /\-{10,}/;
+    
+    return (\@lA,\@lC,\@lG,\@lT);
+}
 
 =head2 _parseInstance
 
@@ -277,17 +315,26 @@ sub _parseInstance {
     while (defined($line=$self->_readline) ) {
 	last if ($line =~ /\-{5}/ );
 	chomp($line);
-	my $seq = $line;
-	$seq  =~ s/[^AGCTXN-]//g;
-	$line =~ s/\s[AGCTXN-]+\s[AGCTXN-]+\s[AGCTXN-]+//g;
-	$line=~s/[\s\+]+/,/g;
-	my ($id,$start,$score)=split(/,/,$line);
+	my @comp=split(/\s+/,$line);
+	my ($id,$start,$score,$strand,$s1,$s2,$s3);
+	if ( $self->{_strand}) {
+	    ($id,$strand,$start,$score,$s1,$s2,$s3)=@comp;
+	} else {
+	    ($id,$start,$score,$s1,$s2,$s3)=@comp;
+	    $strand=1;
+	}
+  	my $seq= $s1.$s2.$s3;
+	if ($seq =~ /[^ACGTacgtNnXx\-\.]/) {
+            my $col=$#comp;
+	    $self->throw("I have not been able to parse the correct instance sequence: $seq, $col columns\n");
+	}
 	my $sid = $self->{id} . '@' . $id;
 	$instance[$i] = new Bio::Matrix::PSM::InstanceSite
-	    (-mid   => $self->{id}, 
-	     -start => $start, 
-	     -score => $score,
-	     -seq   => $seq, 
+	    (-mid      => $self->{id}, 
+	     -start    => $start, 
+	     -score    => $score,
+	     -seq      => $seq, 
+	     -strand   => $strand,
 	     -accession_number => $id, 
 	     -primary_id => $sid, 
 	     -desc => 'Bioperl MEME parser object' );
@@ -296,5 +343,8 @@ sub _parseInstance {
     $self->{instances} = \@instance;
     return \@instance;
 }
+
+				
+			
 
 1;

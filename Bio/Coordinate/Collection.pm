@@ -1,8 +1,8 @@
-# $Id: Collection.pm,v 1.18 2003/12/19 03:02:11 jason Exp $
+# $Id: Collection.pm,v 1.24.4.1 2006/10/02 23:10:13 sendu Exp $
 #
 # bioperl module for Bio::Coordinate::Collection
 #
-# Cared for by Heikki Lehvaslaiho <heikki@ebi.ac.uk>
+# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
 # Copyright Heikki Lehvaslaiho
 #
@@ -61,26 +61,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to the
 Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                         - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.  Bug reports can be submitted via
- email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
-Email:  heikki@ebi.ac.uk
-Address:
-
-     EMBL Outstation, European Bioinformatics Institute
-     Wellcome Trust Genome Campus, Hinxton
-     Cambs. CB10 1SD, United Kingdom
+Email:  heikki-at-bioperl-dot-org
 
 =head1 CONTRIBUTORS
 
@@ -97,16 +91,13 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Coordinate::Collection;
-use vars qw(@ISA );
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
-use Bio::Root::Root;
-use Bio::Coordinate::MapperI;
 use Bio::Coordinate::Result;
 use Bio::Coordinate::Result::Gap;
 
-@ISA = qw(Bio::Root::Root Bio::Coordinate::MapperI);
+use base qw(Bio::Root::Root Bio::Coordinate::MapperI);
 
 
 sub new {
@@ -136,7 +127,7 @@ sub new {
 
  Title   : add_mapper
  Usage   : $obj->add_mapper($mapper)
- Function: Pushes one Bio::Coodinate::MapperI into the list of mappers.
+ Function: Pushes one Bio::Coordinate::MapperI into the list of mappers.
            Sets _is_sorted() to false.
  Example : 
  Returns : 1 when succeeds, 0 for failure.
@@ -151,7 +142,7 @@ sub add_mapper {
       unless defined $value && $value->isa('Bio::Coordinate::MapperI');
   
   # test pair range lengths
-  $self->warn("Coodinates in pair [". $value . ":" .
+  $self->warn("Coordinates in pair [". $value . ":" .
 	      $value->in->seq_id . "/". $value->out->seq_id .
 	      "] are not right.")
       unless $value->test;
@@ -260,10 +251,12 @@ sub test {
    my $res = 1;
 
    foreach my $mapper ($self->each_mapper) {
-       $self->warn("Coodinates in pair [". $mapper . ":" .
-		   $mapper->in->seq_id . "/". $mapper->out->seq_id .
-		   "] are not right.") && ($res = 0)
-	   unless $mapper->test;
+       unless( $mapper->test ) {
+	   $self->warn("Coordinates in pair [". $mapper . ":" .
+		       $mapper->in->seq_id . "/". $mapper->out->seq_id .
+		       "] are not right."); 
+	   $res = 0;
+       }
    }
    $res;
 }

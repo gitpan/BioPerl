@@ -1,4 +1,4 @@
-# $Id: EventHandlerI.pm,v 1.9 2003/04/09 03:52:36 sac Exp $
+# $Id: EventHandlerI.pm,v 1.13.4.1 2006/10/02 23:10:25 sendu Exp $
 #
 # BioPerl module for Bio::SearchIO::EventHandlerI
 #
@@ -35,27 +35,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
+Email jason-at-bioperl.org
 
 =head1 APPENDIX
 
@@ -69,13 +62,11 @@ Internal methods are usually preceded with a _
 
 
 package Bio::SearchIO::EventHandlerI;
-use vars qw(@ISA);
 use strict;
 use Carp;
 
-use Bio::Event::EventHandlerI;
 
-@ISA = qw (Bio::Event::EventHandlerI);
+use base qw(Bio::Event::EventHandlerI);
 
 =head2 start_result
 
@@ -167,6 +158,38 @@ sub start_hit {
 =cut
 
 sub end_hit {
+   my ($self,@args) = @_;
+   $self->throw_not_implemented();
+}
+
+=head2 start_iteration
+
+ Title   : start_iteration
+ Usage   : $handler->start_iteration()
+ Function: Starts an Iteration event cycle
+ Returns : none
+ Args    : type of event and associated hashref
+
+
+=cut
+
+sub start_iteration {
+   my ($self,@args) = @_;
+   $self->throw_not_implemented
+}
+
+=head2 end_iteration
+
+ Title   : end_iteration
+ Usage   : $handler->end_iteration()
+ Function: Ends an Iterationevent cycle
+ Returns : Bio::Search::Iteration::IterationI object
+ Args    : type of event and associated hashref
+
+
+=cut
+
+sub end_iteration {
    my ($self,@args) = @_;
    $self->throw_not_implemented();
 }

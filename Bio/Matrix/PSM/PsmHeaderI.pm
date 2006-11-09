@@ -1,5 +1,5 @@
 #---------------------------------------------------------
-# $Id: PsmHeaderI.pm,v 1.3 2003/10/25 15:00:57 heikki Exp $
+# $Id: PsmHeaderI.pm,v 1.10.4.1 2006/10/02 23:10:22 sendu Exp $
 
 =head1 NAME
 
@@ -50,17 +50,16 @@ and other Bioperl modules. Send your comments and suggestions preferably
  to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Stefan Kirov
 
@@ -77,8 +76,7 @@ use Bio::Matrix::PSM::InstanceSite;
 use Bio::Matrix::PSM::Psm;
 use Bio::Matrix::PSM::IO;
 use strict;
-use vars qw(@ISA);
-@ISA=qw(Bio::Matrix::PSM::Psm Bio::Root::Root);
+use base qw(Bio::Matrix::PSM::PsmI);
 
 #Accessor methods, based on the driver
 @Bio::Matrix::PSM::PsmHeader::MASTHEADER=qw(html version release 
@@ -100,7 +98,7 @@ use vars qw(@ISA);
  Function: Creates a new Bio::Matrix::PSM::PsmHeader object
  Throws  :
  Example :
- Returns :  Bio::Matrix::PSM::PsmHeader object
+ Returns :  Bio::Matrix::PSM::PsmHeaderI object
  Args    :  hash
 
 
@@ -262,7 +260,7 @@ sub revision {
 =head2 _check
 
  Title   : _check
- Usage   : if ($self->_check('weights') { #do something} else {return undef;}
+ Usage   : if ($self->_check('weights') { #do something} else {return 0;}
  Function: Checks if the method called is aplicable to the file format
  Throws  :
  Example :

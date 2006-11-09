@@ -1,4 +1,4 @@
-# $Id: PsmHeader.pm,v 1.4 2003/11/14 11:24:31 heikki Exp $
+# $Id: PsmHeader.pm,v 1.11.4.1 2006/10/02 23:10:22 sendu Exp $
 
 =head1 NAME
 
@@ -22,8 +22,8 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html     - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -31,7 +31,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Stefan Kirov
 
@@ -46,19 +46,16 @@ Email skirov@utk.edu
 package Bio::Matrix::PSM::PsmHeader;
 
 use Bio::Matrix::PSM::InstanceSite;
-use Bio::Matrix::PSM::Psm;
-use Bio::Matrix::PSM::IO;
-use Bio::Root::Root;
-use Bio::Matrix::PSM::PsmHeaderI;
+
 use strict;
-use vars qw(@ISA);
-@ISA=qw( Bio::Root::Root Bio::Matrix::PSM::PsmHeaderI);
+use base qw(Bio::Root::Root Bio::Matrix::PSM::PsmHeaderI);
 
 #These define what structures within the
 @Bio::Matrix::PSM::PsmHeader::MASTHEADER=qw(html version release seq hid 
 					    length instances unstructured);
 @Bio::Matrix::PSM::PsmHeader::MEMEHEADER=qw(html version release hid weight length unstructured);
 @Bio::Matrix::PSM::PsmHeader::TRANSFACHEADER=qw(unstructured version release);
+@Bio::Matrix::PSM::PsmHeader::PSIBLASTHEADER=qw(seq width ic);
 @Bio::Matrix::PSM::PsmHeader::ALLHEADER=qw(header release type version html 
 					   release weight length id 
 					   seq instances unstructured);
@@ -148,7 +145,7 @@ sub seq {
 
 sub hid {
     my $self = shift;
-    return undef unless ($self->_check('hid'));
+    return unless ($self->_check('hid'));
     my @header=@{$self->{hid}};
     return @header;
 }
@@ -169,7 +166,7 @@ sub hid {
 
 sub length {
      my $self = shift;
-     return undef unless ($self->_check('length'));
+     return unless ($self->_check('length'));
     return $self->{length};
 }
 
@@ -188,8 +185,8 @@ sub length {
 
 sub instances {
       my $self = shift;
-     return undef unless ($self->_check('instances'));
-    return %{$self->{instances}};
+      return unless ($self->_check('instances'));
+      return %{$self->{instances}};
 }
 
 =head2 weight
@@ -271,7 +268,7 @@ sub release {
 =head2 _check
 
  Title   : _check
- Usage   : if ($self->_check('weights') { #do something} else {return undef;}
+ Usage   : if ($self->_check('weights') { #do something} else {return 0;}
  Function: Checks if the method called is aplicable to the file format
  Throws  :
  Example :
@@ -284,11 +281,19 @@ sub release {
 sub _check {
     my ($self,$method) = @_;
     my $type= $self->{'_type'};
-  TYPE: {
-      if ($type eq 'meme') { return undef unless (grep(/$method/,@Bio::Matrix::PSM::PsmHeader::MEMEHEADER)); last TYPE; }
-      if ($type eq 'mast') { return undef unless (grep(/$method/,@Bio::Matrix::PSM::PsmHeader::MASTHEADER)); last TYPE; }
-      if ($type eq 'transfac') { return undef unless (grep(/$method/,@Bio::Matrix::PSM::PsmHeader::TRANSFACHEADER)); last TYPE; }
-  }
+    if ($type eq 'meme') { 
+	return 0 unless (grep(/$method/,
+				  @Bio::Matrix::PSM::PsmHeader::MEMEHEADER)); 
+    } elsif ($type eq 'mast') { 
+	return 0 unless (grep(/$method/,
+				  @Bio::Matrix::PSM::PsmHeader::MASTHEADER));
+    } elsif ($type eq 'transfac') { 
+	return 0 unless (grep(/$method/,
+				  @Bio::Matrix::PSM::PsmHeader::TRANSFACHEADER)); 
+    } elsif ($type eq 'psiblast') { 
+	return 0 unless (grep(/$method/,
+				  @Bio::Matrix::PSM::PsmHeader::PSIBLASTHEADER)); 
+    }
     return 1;
 }
 

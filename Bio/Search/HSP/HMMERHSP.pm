@@ -1,4 +1,4 @@
-# $Id: HMMERHSP.pm,v 1.3 2002/10/22 07:45:17 lapp Exp $
+# $Id: HMMERHSP.pm,v 1.8.4.1 2006/10/02 23:10:24 sendu Exp $
 #
 # BioPerl module for Bio::Search::HSP::HMMERHSP
 #
@@ -31,27 +31,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
+Email jason-at-bioperl.org
 
 =head1 APPENDIX
 
@@ -65,11 +58,9 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Search::HSP::HMMERHSP;
-use vars qw(@ISA);
 use strict;
-use Bio::Search::HSP::GenericHSP;
 
-@ISA = qw(Bio::Search::HSP::GenericHSP);
+use base qw(Bio::Search::HSP::GenericHSP);
 
 =head2 new
 
@@ -285,8 +276,8 @@ Implementation of Bio::Search::HSP::HSPI methods follow
 
 sub get_aln {
     my ($self) = shift;
-    $self->warn("Innapropriate to build a Bio::SimpleAlign from a HMMER HSP object");
-    return undef;
+    $self->warn("Inappropriate to build a Bio::SimpleAlign from a HMMER HSP object");
+    return;
 }
 
 =head2 num_conserved

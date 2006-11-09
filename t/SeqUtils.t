@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-##$Id: SeqUtils.t,v 1.13 2003/08/12 20:16:48 jason Exp $
+##$Id: SeqUtils.t,v 1.20 2006/08/16 16:48:59 cjfields Exp $
 
 use strict;
 
@@ -13,7 +13,7 @@ BEGIN {
 	use lib 't';
     }
     use Test;
-    plan tests => 21;
+    plan tests => 37;
 }
 
 use Bio::PrimarySeq;
@@ -23,12 +23,12 @@ ok 1;
 
 my ($seq, $util, $ascii, $ascii_aa, $ascii3);
 
-#                     !    !          
+# Entire alphabet now IUPAC-endorsed and used in GenBank (Oct 2006)          
 $ascii =    'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-$ascii_aa = 'ABCDEFGHIXKLMNXPQRSTUVWXYZ';
+$ascii_aa = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 $ascii3 = 
-    'AlaAsxCysAspGluPheGlyHisIleXaaLysLeuMetAsnXaaProGlnArgSerThrSecValTrpXaaTyrGlx';
+    'AlaAsxCysAspGluPheGlyHisIleXleLysLeuMetAsnPylProGlnArgSerThrSecValTrpXaaTyrGlx';
 
 $seq = Bio::PrimarySeq->new('-seq'=> $ascii,
 			    '-alphabet'=>'protein', 
@@ -41,12 +41,12 @@ ok $util->seq3($seq), $ascii3;
 #using anonymous hash
 ok (Bio::SeqUtils->seq3($seq), $ascii3); 
 ok (Bio::SeqUtils->seq3($seq, undef, ','), 
-    'Ala,Asx,Cys,Asp,Glu,Phe,Gly,His,Ile,Xaa,Lys,'.
-    'Leu,Met,Asn,Xaa,Pro,Gln,Arg,Ser,Thr,Sec,Val,Trp,Xaa,Tyr,Glx');
+    'Ala,Asx,Cys,Asp,Glu,Phe,Gly,His,Ile,Xle,Lys,'.
+    'Leu,Met,Asn,Pyl,Pro,Gln,Arg,Ser,Thr,Sec,Val,Trp,Xaa,Tyr,Glx');
 
 $seq->seq('asd-KJJK-');
 ok (Bio::SeqUtils->seq3($seq, '-', ':'), 
-    'Ala:Ser:Asp:Ter:Lys:Xaa:Xaa:Lys:Ter');
+    'Ala:Ser:Asp:Ter:Lys:Xle:Xle:Lys:Ter');
 
 # three letter amino acid code to one letter code
 ok (Bio::SeqUtils->seq3in($seq, 'AlaPYHCysAspGlu')), 
@@ -79,15 +79,15 @@ ok scalar @a, 6;
 #
 
 my @valid_aa = sort Bio::SeqUtils->valid_aa;
-ok(@valid_aa, 25);
+ok(@valid_aa, 27);
 ok ($valid_aa[1], 'A');
 
 @valid_aa = sort Bio::SeqUtils->valid_aa(1);
-ok(@valid_aa, 25);
+ok(@valid_aa, 27);
 ok ($valid_aa[1], 'Arg');
 
 my %valid_aa = Bio::SeqUtils->valid_aa(2);
-ok keys %valid_aa, 50;
+ok keys %valid_aa, 54;
 ok($valid_aa{'C'}, 'Cys');
 ok( $valid_aa{'Cys'}, 'C');
 
@@ -131,3 +131,149 @@ Bio::SeqUtils->mutate($seq,
                                                  )
                      );
 ok $seq->seq, 'agctaa';
+
+
+
+#
+# testing Bio::SeqUtils->cat
+#
+
+use Bio::Annotation::SimpleValue;
+use Bio::Seq::RichSeq;;
+
+
+# PrimarySeqs
+
+my $primseq1 = new Bio::PrimarySeq(-id => 1, -seq => 'acgt', -description => 'master');
+my $primseq2 = new Bio::PrimarySeq(-id => 2, -seq => 'tgca');
+
+Bio::SeqUtils->cat($primseq1, $primseq2);
+ok $primseq1->seq, 'acgttgca';
+ok $primseq1->description, 'master';
+
+#should work for Bio::LocatableSeq
+#should work for Bio::Seq::MetaI Seqs?
+
+
+# Bio::SeqI
+
+my $seq1 = new Bio::Seq(-id => 1, -seq => 'aaaa', -description => 'first');
+my $seq2 = new Bio::Seq(-id => 2, -seq => 'tttt', -description => 'second');
+my $seq3 = new Bio::Seq(-id => 3, -seq => 'cccc', -description => 'third');
+
+
+#  annotations
+my $ac2 = new Bio::Annotation::Collection;
+my $simple1 = Bio::Annotation::SimpleValue->new(
+                                                -tagname => 'colour',
+                                                -value   => 'blue'
+                                               ), ;
+my $simple2 = Bio::Annotation::SimpleValue->new(
+                                                -tagname => 'colour',
+                                                -value   => 'black'
+                                               ), ;
+$ac2->add_Annotation('simple',$simple1);
+$ac2->add_Annotation('simple',$simple2);
+$seq2->annotation($ac2);
+
+my $ac3 = new Bio::Annotation::Collection;
+my $simple3 = Bio::Annotation::SimpleValue->new(
+                                                -tagname => 'colour',
+                                                -value   => 'red'
+						 ), ;
+$ac3->add_Annotation('simple',$simple3);
+$seq3->annotation($ac3);
+
+
+ok (Bio::SeqUtils->cat($seq1, $seq2, $seq3));
+ok $seq1->seq, 'aaaattttcccc';
+ok scalar $seq1->get_Annotations, 3;
+
+
+# seq features
+use Bio::SeqFeature::Generic;
+
+my $ft2 = new Bio::SeqFeature::Generic ( -start => 1,
+                                      -end => 4,
+                                      -strand => 1,
+                                      -primary => 'source',
+				       );
+
+
+my $ft3 = new Bio::SeqFeature::Generic ( -start => 3,
+                                      -end => 3,
+                                      -strand => 1,
+                                      -primary => 'hotspot',
+				       );
+
+$seq2->add_SeqFeature($ft2);
+$seq2->add_SeqFeature($ft3);
+
+
+ok (Bio::SeqUtils->cat($seq1, $seq2));
+ok $seq1->seq, 'aaaattttcccctttt';
+ok scalar $seq1->get_Annotations, 5;
+
+
+my $protseq = new Bio::PrimarySeq(-id => 2, -seq => 'MVTF'); # protein seq
+
+eval {
+    Bio::SeqUtils->cat($seq1, $protseq);
+};
+ok 1 if $@; # did throw
+
+#use Data::Dumper; print Dumper $seq1;
+
+
+
+
+
+
+#
+# evolve()
+#
+
+$seq = Bio::PrimarySeq->new('-seq'=> 'aaaaaaaaaa',
+                            '-id'=>'test');
+
+
+
+$util = new Bio::SeqUtils(-verbose => 0);
+ok my $newseq = $util->evolve($seq, 60, 4);
+
+#  annotations
+
+$seq2 = new Bio::Seq(-id => 2, -seq => 'ggttaaaa', -description => 'second');
+$ac3 = new Bio::Annotation::Collection;
+$simple3 = Bio::Annotation::SimpleValue->new(
+                                                -tagname => 'colour',
+                                                -value   => 'red'
+                                                 ), ;
+$ac3->add_Annotation('simple',$simple3);
+$seq2->annotation($ac3);
+$ft2 = new Bio::SeqFeature::Generic ( -start => 1,
+                                      -end => 4,
+                                      -strand => 1,
+                                      -primary => 'source',
+                                       );
+
+
+$ft3 = new Bio::SeqFeature::Generic ( -start => 5,
+                                      -end => 8,
+                                      -strand => -1,
+                                      -primary => 'hotspot',
+                                       );
+$seq2->add_SeqFeature($ft2);
+$seq2->add_SeqFeature($ft3);
+
+my $trunc=Bio::SeqUtils->trunc_with_features($seq2, 2, 7);
+ok $trunc->seq, 'gttaaa';
+my @feat=$trunc->get_SeqFeatures;
+ok $feat[0]->location->to_FTstring, '<1..3';
+ok $feat[1]->location->to_FTstring, 'complement(4..>6)';
+
+my $revcom=Bio::SeqUtils->revcom_with_features($seq2);
+ok $revcom->seq, 'ttttaacc';
+my @revfeat=$revcom->get_SeqFeatures;
+ok $revfeat[0]->location->to_FTstring, 'complement(5..8)';
+ok $revfeat[1]->location->to_FTstring, '1..4';

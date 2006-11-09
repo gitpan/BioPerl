@@ -1,3 +1,4 @@
+# $Id: Coil.pm,v 1.6.4.1 2006/10/02 23:10:31 sendu Exp $
 # Parser module for Coil Bio::Tools::Coil
 #
 # Based on the EnsEMBL module Bio::EnsEMBL::Pipeline::Runnable::Protein::Coil
@@ -11,7 +12,7 @@
 
 =head1 NAME
 
-Bio::Tools::Coil
+Bio::Tools::Coil - parser for Coil output
 
 =head1 SYNOPSIS
 
@@ -35,17 +36,16 @@ Bio::Tools::Coil
  Bioperl modules. Send your comments and suggestions preferably to
  the Bioperl mailing list.  Your participation is much appreciated.
 
- bioperl-l@bioperl.org              - General discussion
- http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
- Report bugs to the Bioperl bug tracking system to help us keep track
- of the bugs and their resolution. Bug reports can be submitted via
- email or the web:
+Report bugs to the Bioperl bug tracking system to help us keep track
+of the bugs and their resolution. Bug reports can be submitted via the
+web:
 
- bioperl-bugs@bio.perl.org
- http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 
@@ -63,24 +63,21 @@ Bio::Tools::Coil
 =cut
 
 package Bio::Tools::Coil;
-use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Root;
 use Bio::SeqFeature::FeaturePair;
-use Bio::Root::IO;
 use Bio::SeqFeature::Generic;
-@ISA = qw(Bio::Root::Root Bio::Root::IO);
+use base qw(Bio::Root::Root Bio::Root::IO);
 
 
 
 sub new {
-      my($class,@args) = @_;
+    my($class,@args) = @_;
 
-      my $self = $class->SUPER::new(@args);
-      $self->_initialize_io(@args);
+    my $self = $class->SUPER::new(@args);
+    $self->_initialize_io(@args);
 
-      return $self;
+    return $self;
 }
 
 =head2 parse_results
@@ -95,41 +92,43 @@ sub new {
 =cut
 
 sub parse_results {
-  my ($self,$resfile) = @_;
-        my $filehandle = $resfile;
-        my %result_hash =_read_fasta($filehandle);#bala no file handle
+    my ($self,$resfile) = @_;
+    my $filehandle = $resfile;
+    my %result_hash =_read_fasta($filehandle);#bala no file handle
         my @ids = keys %result_hash;
-        my @feats; 
-        foreach my $id (keys %result_hash){      
-                my $pep = reverse ($result_hash{$id});
-                my $count = my $switch = 0;
-                my ($start, $end);
-                while (my $aa = chop $pep) {
-                       $count++;
-                       if (!$switch && $aa eq "x") {
-                            $start = $count;
-                            $switch = 1;
-                        }
-                       elsif ($switch && $aa ne "x") {
-                            $end = $count-1;
-                            my (%feature);
-                            $feature{name}       = $id;
-                            $feature{start}      = $start;
-                            $feature{end}        = $end;
-                            $feature{source}     = "Coils";
-                            $feature{primary}    = 'ncoils';
-                           ($feature{program})   = 'ncoils';
-                            $feature{logic_name} = 'Coils';
-                            my $new_feat = $self->create_feature (\%feature);
-                            $self->_add_prediction($new_feat);
-                            $switch = 0;
-                       }
-                 }
-         }
-        
-        $self->_predictions_parsed(1);
-        
+    my @feats; 
+    foreach my $id (keys %result_hash){      
+	my $pep = reverse ($result_hash{$id});
+	my $count = my $switch = 0;
+	my ($start, $end);
+	while (my $aa = chop $pep) {
+	    $count++;
+	    if (!$switch && $aa eq "x") {
+		$start = $count;
+		$switch = 1;
+	    }
+	    elsif ($switch && $aa ne "x") {
+		$end = $count-1;
+		my (%feature);
+		$feature{name}       = $id;
+		$feature{start}      = $start;
+		$feature{end}        = $end;
+		$feature{source}     = "Coils";
+		$feature{primary}    = 'ncoils';
+		($feature{program})   = 'ncoils';
+		$feature{logic_name} = 'Coils';
+		my $new_feat = $self->create_feature (\%feature);
+		$self->_add_prediction($new_feat);
+		$switch = 0;
+	    }
+	}
+    }
+
+    $self->_predictions_parsed(1);
+
 }
+
+
 =head2 next_result
 
  Title   : next_result
@@ -142,8 +141,8 @@ sub parse_results {
 
 =cut
 
-sub next_result{
-    
+sub next_result {
+
     my ($self,$resfile) = @_;
     my $gene;
 
@@ -165,12 +164,11 @@ sub next_result{
 
 =cut
 
-sub _result{
+sub _result {
     my ($self) = @_;
 
-    return undef unless(exists($self->{'_feats'}) && @{$self->{'_feats'}});
+    return unless(exists($self->{'_feats'}) && @{$self->{'_feats'}});
     return shift(@{$self->{'_feats'}});
-
 }
 
 =head2 _add_prediction
@@ -225,25 +223,26 @@ sub _predictions_parsed {
 =cut
 
 sub create_feature {
-       my ($self, $feat) = @_;
+    my ($self, $feat) = @_;
 
 
-       # create feature object
-       my $feature = Bio::SeqFeature::Generic->new(-seq_id     => $feat->{name},
-                                                 -start       => $feat->{start},
-                                                 -end         => $feat->{end},
-                                                 -score       => $feat->{score},
-                                                 -source      => $feat->{source},
-                                                 -primary     => $feat->{primary},
-                                                 -logic_name  => $feat->{logic_name}, 
-                                               );
-        $feature->add_tag_value('evalue',0);
-        $feature->add_tag_value('percent_id','NULL');
-        $feature->add_tag_value("hid",$feat->{primary});
-        
-        
-        return $feature;
-        
+    # create feature object
+    my $feature = Bio::SeqFeature::Generic->new
+	(-seq_id     => $feat->{name},
+	 -start       => $feat->{start},
+	 -end         => $feat->{end},
+	 -score       => $feat->{score},
+	 -source      => $feat->{source},
+	 -primary     => $feat->{primary},
+	 -logic_name  => $feat->{logic_name}, 
+	 );
+    $feature->add_tag_value('evalue',0);
+    $feature->add_tag_value('percent_id','NULL');
+    $feature->add_tag_value("hid",$feat->{primary});
+
+
+    return $feature;
+
 }
 
 =head2 _read_fasta
@@ -258,32 +257,29 @@ sub create_feature {
 =cut
 
 sub _read_fasta {
-        local (*FILE) = @_;
-        my( $id , $seq , %name2seq);#bala
+    local (*FILE) = @_;
+    my( $id , $seq , %name2seq);#bala
         while (<FILE>) {
-       chomp;#bala
-             if (/^>(\S+)/) {
-              
-              my $new_id = $1;
-                    if ($id) {
-                           $name2seq{$id} = $seq;
-                    }
-                    $id = $new_id ; $seq = "" ;
-             }
-             elsif (eof) {
-                    if ($id) {
-                           $seq .= $_ ;#bala line instead of $_
-                           $name2seq{$id} = $seq;
-                    }
-             }
-             else {
-                     $seq .= $_
-             }
+	    chomp;		#bala
+	    if (/^>(\S+)/) {
+
+		my $new_id = $1;
+		if ($id) {
+		    $name2seq{$id} = $seq;
+		}
+		$id = $new_id ; $seq = "" ;
+	    } elsif (eof) {
+		if ($id) {
+		    $seq .= $_ ;#bala line instead of $_
+		    $name2seq{$id} = $seq;
+		}
+	    }
+	    else {
+		$seq .= $_;
+	    }
         }
-                                                                                                                                                   return %name2seq;
+    return %name2seq;
 }
-
-
 
 1;
 

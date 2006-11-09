@@ -1,19 +1,20 @@
 package Bio::Graphics::Glyph::translation;
 
 use strict;
-use Bio::Graphics::Glyph::generic;
 use Bio::Graphics::Util qw(frame_and_offset);
-use vars '@ISA';
-@ISA = qw(Bio::Graphics::Glyph::generic);
+use vars qw($VERSION);
+use base qw(Bio::Graphics::Glyph::generic);
 
 my %default_colors = qw(
-			frame0f  cadetblue
+			frame0f  cornflowerblue
 			frame1f  blue
 			frame2f  darkblue
-			frame0r  darkred
+			frame0r  magenta
 			frame1r  red
-			frame2r  crimson
+			frame2r  darkred
 		       );
+
+$VERSION = 1.00;
 
 # turn off description
 sub description { 0 }
@@ -59,15 +60,22 @@ sub show_sequence {
   return $show_sequence;
 }
 
-sub protein_fits {
+sub triletter_code {
+  my $self = shift;
+  my $triletter_code = $self->option("triletter_code");
+  return 0 unless defined $triletter_code; # default to false
+  return $triletter_code;
+}
+
+sub longprotein_fits {
   my $self = shift;
   return unless $self->show_sequence;
 
-  my $pixels_per_base = $self->pixels_per_residue;
-  my $font            = $self->font;
-  my $font_width      = $font->width;
+  my $pixels_per_residue = $self->pixels_per_residue;
+  my $font               = $self->font;
+  my $font_width         = $font->width * 4; # not 3; leave room for whitespace
 
-  return $pixels_per_base >= $font_width;
+  return $pixels_per_residue >= $font_width;
 }
 
 sub translation_type {
@@ -110,7 +118,7 @@ sub draw_component {
   my @strands =  $type eq '6frame' ? (1,-1)
 	       : $strand > 0       ? (1)
 	       : -1;
-  my @phase = (0,2,1);   # looks weird, but gives correct effect
+  my @phase = (0,1,2);
   for my $s (@strands) {
     for (my $i=0; $i < @phase; $i++) {
       $self->draw_frame($self->feature,$s,$i,$phase[$i],$gd,$x1,$y1,$x2,$y2);
@@ -122,11 +130,21 @@ sub draw_component {
 sub draw_frame {
   my $self = shift;
   my ($feature,$strand,$base_offset,$phase,$gd,$x1,$y1,$x2,$y2) = @_;
-  return unless $feature->seq;  # no sequence, arggh.
-  my ($seq,$pos) = $strand < 0 ? ($feature->revcom,$feature->end)
-                               : ($feature,$feature->start);
+  my ($seq,$pos);
+  $seq = $feature->seq or return; # no sequence, arggh.
+
+  my $strand0 = $strand;
+  $strand *= -1 if $self->{flip};
+
+  $pos = $strand < 0 ? $feature->end : $feature->start;
+
   my ($frame,$offset) = frame_and_offset($pos,$strand,$phase);
+  # warn "frame=$frame, phase=$phase";
+
+  my ($x1_orig,$x2_orig) = ($x1,$x2);  # remember this for arrowheads
+
   ($strand >= 0 ? $x1 : $x2) += $self->pixels_per_base * $offset;
+  my $y0 = $y1;
   my $lh;
   if ($self->translation_type eq '6frame') {
     $lh = $self->height / 6;
@@ -137,20 +155,37 @@ sub draw_frame {
     $y1 += $lh * $frame;
   }
 
+  $y1  = $y0 + ($self->height - ($y1-$y0)) - $lh if $self->{flip};
+
   $y2 = $y1;
 
-  my $codon_table = $self->option('codontable') || 1;
-  my $protein = $seq->translate(undef,undef,$base_offset,$codon_table)->seq;
+  my $codon_table = $self->option('codontable') || $self->option('geneticcode') || 1;
 
-  my $k       = $strand>=0 ? 'f' : 'r';
+  # the dreaded difference between a Bio::SeqFeature and a Bio::Seq
+
+  my $realseq  = $self->get_seq($seq);
+  return unless $realseq;
+  $realseq    = $realseq->revcom if $strand < 0;
+
+  my $protein = $realseq->translate(undef,undef,$base_offset,$codon_table)->seq;
+
+  my $k       = $strand >= 0     ? 'f' : 'r';
+
   my $color   = $self->color("frame$frame$k") ||
                 $self->color("frame$frame") ||
                 $self->default_color("frame$frame$k") || $self->fgcolor;
+
+  my $awo = 0;
   if ($self->protein_fits) {
     $self->draw_protein(\$protein,$strand,$color,$gd,$x1,$y1,$x2,$y2);
+    $awo += $self->font->height/2;
   } else {
     $self->draw_orfs(\$protein,$strand,$color,$gd,$x1,$y1,$x2,$y2);
   }
+
+  $strand0 > 0 ? $self->arrowhead($gd,$x2_orig+5,$y1+$awo,3,+1)
+               : $self->arrowhead($gd,$x1_orig-5,$y1+$awo,3,-1)
+
 }
 
 sub draw_protein {
@@ -158,15 +193,43 @@ sub draw_protein {
   my ($protein,$strand,$color,$gd,$x1,$y1,$x2,$y2) = @_;
   my $pixels_per_base = $self->pixels_per_base;
   my $font   = $self->font;
+  my $flip   = $self->{flip};
+  my $left   = $self->panel->left;
+  my $right  = $self->panel->right;
+
+  my $longprotein = $self->triletter_code && $self->longprotein_fits;
+
+  my %abbrev = ( A => "Ala", B => "Asx", C => "Cys", D => "Asp",
+		 E => "Glu", F => "Phe", G => "Gly", H => "His",
+		 I => "Ile", J => "???", K => "Lys", L => "Leu",
+		 M => "Met", N => "Asn", O => "???", P => "Pro",
+		 Q => "Gln", R => "Arg", S => "Ser", T => "Thr",
+		 U => "Sec", V => "Val", W => "Trp", X => "Xaa",
+		 Y => "Tyr", Z => "Glx", '*' => " * ",
+	       );
 
   my @residues = split '',$$protein;
+  my $fontwidth = $font->width;
   for (my $i=0;$i<@residues;$i++) {
-    my $x = $strand > 0 
+    my $x = $strand > 0
       ? $x1 + 3 * $i * $pixels_per_base
-      : $x2 - 3 * $i * $pixels_per_base;
+      : $x2 - 3 * $i * $pixels_per_base - $pixels_per_base;
     next if $x+1 < $x1;
     last if $x > $x2;
-    $gd->char($font,$x,$y1,$residues[$i],$color);
+    if ($flip) {
+      $x -= $pixels_per_base - $font->width - 1; #align right, not left
+      if ($longprotein) {
+	$gd->string($font,$right-($x-$left+$pixels_per_base)+1,$y1,$abbrev{$residues[$i]},$color);
+      } else {
+	$gd->char($font,$right-($x-$left+$pixels_per_base)+2,$y1,$residues[$i],$color);
+      }
+    } else {
+      if ($longprotein) {
+	$gd->string($font, $x+1, $y1, $abbrev{$residues[$i]}, $color);
+      } else {
+	$gd->char($font,$x+2,$y1,$residues[$i],$color);
+      }
+    }
   }
 }
 
@@ -175,6 +238,9 @@ sub draw_orfs {
   my ($protein,$strand,$color,$gd,$x1,$y1,$x2,$y2) = @_;
   my $pixels_per_base = $self->pixels_per_base * 3;
   $y1++;
+  my $right  = $self->panel->right;
+  my $left   = $self->panel->left;
+  my $flip   = $self->{flip};
 
   my $gcolor = $self->gridcolor;
   $gd->line($x1,$y1,$x2,$y1,$gcolor);
@@ -188,7 +254,11 @@ sub draw_orfs {
         : $x2 - $stop * $pixels_per_base;
       next if $pos+1 < $x1;
       last if $pos   > $x2;
-      $gd->line($pos,$y1-2,$pos,$y1+2,$color);
+      if ($flip) {
+	$gd->line($right-($pos-$left),$y1-2,$right-($pos-$left),$y1+2,$color);
+      } else {
+	$gd->line($pos,$y1-2,$pos,$y1+2,$color);
+      }
     }
   }
 
@@ -203,6 +273,7 @@ sub draw_orfs {
         : $x2 - $start * $pixels_per_base;
       next if $pos+1 < $x1;
       last if $pos   > $x2;
+      $pos = $self->{flip} ? $right - $pos : $pos;
 
       # little arrowheads at the start codons
       $strand > 0 ? $self->arrowhead($gd,$pos-$arrowhead_height,$y1,
@@ -211,9 +282,8 @@ sub draw_orfs {
 				     $arrowhead_height,-1)
     }
   }
+  $strand *= -1 if $flip;
 
-  $strand > 0 ? $self->arrowhead($gd,$x2-1,$y1,3,+1)
-              : $self->arrowhead($gd,$x1,$y1,3,-1)
 }
 
 sub find_codons {
@@ -330,6 +400,9 @@ options are recognized:
 
   -show_sequence Show the amino acid sequence 1 (true)
                 if there's room.
+
+  -triletter_code Show the 3-letter amino acid 0 (false)
+                code if there's room
 
   -codontable   Codon table to use           1 (see Bio::Tools::CodonTable)
 

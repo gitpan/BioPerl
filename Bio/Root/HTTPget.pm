@@ -1,4 +1,4 @@
-# $Id: HTTPget.pm,v 1.7 2003/07/26 18:07:06 heikki Exp $
+# $Id: HTTPget.pm,v 1.14.4.1 2006/10/02 23:10:23 sendu Exp $
 #
 # BioPerl module for fallback HTTP get operations.
 # Module is proxy-aware 
@@ -32,7 +32,7 @@ LWP:: is unavailable
 
  $response    = $web->get('http://localhost/images/navauthors.gif');
  $response    = $web->get(-url=>'http://www.google.com',
- 		    -proxy=>'http://www.modperl.com');
+ 		                    -proxy=>'http://www.modperl.com');
 
 =head1 DESCRIPTION
 
@@ -54,20 +54,19 @@ and HTTP-based proxy authentication.
 
 User feedback is an integral part of the evolution of this
 and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
+to one of the Bioperl mailing lists.
 Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html     - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
-=head2 Reporting Bugs
+ =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Lincoln Stein
 
@@ -86,11 +85,9 @@ methods. Internal methods are usually preceded with a _
 package Bio::Root::HTTPget;
 
 use strict;
-use Bio::Root::Root;
 use IO::Socket qw(:DEFAULT :crlf);
-use vars '@ISA';
 
-@ISA = qw(Bio::Root::Root);
+use base qw(Bio::Root::Root);
 
 
 =head2 get
@@ -99,10 +96,11 @@ use vars '@ISA';
  Usage   : my $resp = get(-url => $url);
  Function: 
  Returns : string
- Args    : -url   => URL to HTTPGet
-           -proxy => proxy to use
-           -user  => username for proxy or authentication
-           -pass  => password for proxy or authentication
+ Args    : -url     => URL to HTTPGet
+           -proxy   => proxy to use
+           -user    => username for proxy or authentication
+           -pass    => password for proxy or authentication
+           -timeout => timeout
 
 =cut
 
@@ -111,7 +109,7 @@ sub get {
     if( ref($_[0]) ) {
 	$self = shift;
     }
-
+    
     my ($url,$proxy,$timeout,$auth_user,$auth_pass) = 
 	__PACKAGE__->_rearrange([qw(URL PROXY TIMEOUT USER PASS)],@_);
     my $dest  = $proxy || $url;
@@ -120,13 +118,16 @@ sub get {
 	= _http_parse_url($dest) or __PACKAGE__->throw("invalid URL $url");
     $auth_user ||= $user;
     $auth_pass ||= $pass;
-    if( $self ) { 
-	unless( $auth_user ) { 
-	    ($auth_user,$auth_pass) = $self->authentication;
-	}
-	unless( $proxy ) { $proxy = $self->proxy() }
+    if ($self) {
+        unless ($proxy) {
+            $proxy = $self->proxy;
+        }
+        unless ($auth_user) { 
+            ($auth_user, $auth_pass) = $self->authentication;
+        }
     }
     $path = $url if $proxy;
+    
     # set up the connection
     my $socket = _http_connect($host,$port) or __PACKAGE__->throw("can't connect: $@");
 
@@ -157,7 +158,7 @@ sub get {
     if ($stat_code == 302 || $stat_code == 301) { # redirect
 	my $location = $headers{Location} or 
             __PACKAGE__->throw("invalid redirect: no Location header");
-	return get($location,$proxy,$timeout); # recursive call
+	return get(-url => $location, -proxy => $proxy, -timeout => $timeout, -user => $auth_user, -pass => $auth_pass); # recursive call
     }
 
     elsif ($stat_code == 401) { # auth required
@@ -233,7 +234,7 @@ sub getFH {
   if ($stat_code == 302 || $stat_code == 301) {  # redirect
     my $location = $headers{Location} or 
         __PACKAGE__->throw("invalid redirect: no Location header");
-    return get($location,$proxy,$timeout);  # recursive call
+    return getFH(-url => $location, -proxy => $proxy, -timeout => $timeout, -user => $auth_user, -pass => $auth_pass);  # recursive call
   }
 
   elsif ($stat_code == 401) { # auth required
@@ -336,7 +337,8 @@ sub _encode_base64 {
  Title   : proxy
  Usage   : $httpproxy = $db->proxy('http')  or 
            $db->proxy(['http','ftp'], 'http://myproxy' )
- Function: Get/Set a proxy for use of proxy
+ Function: Get/Set a proxy for use of proxy. Defaults to environment variable
+           http_proxy if present.
  Returns : a string indicating the proxy
  Args    : $protocol : an array ref of the protocol(s) to set/get
            $proxyurl : url of the proxy to use for the specified protocol
@@ -348,7 +350,16 @@ sub _encode_base64 {
 sub proxy {
     my ($self,$protocol,$proxy,$username,$password) = @_;
     $protocol ||= 'http';
-    return undef unless (  defined $protocol && defined $proxy );
+    unless ($proxy) {
+        if (defined $ENV{http_proxy}) {
+            $proxy = $ENV{http_proxy};
+            if ($proxy =~ /\@/) {
+                ($username, $password, $proxy) = $proxy =~ m{http://(\S+):(\S+)\@(\S+)};
+                $proxy = 'http://'.$proxy;
+            }
+        }
+    }
+    return unless (defined $proxy);
     $self->authentication($username, $password) 
 	if ($username && $password);
     return $self->{'_proxy'}->{$protocol} = $proxy;

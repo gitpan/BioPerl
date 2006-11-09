@@ -1,17 +1,16 @@
-# $Id: AlignIO.pm,v 1.34 2003/12/10 22:43:25 heikki Exp $
+# $Id: AlignIO.pm,v 1.46.4.4 2006/10/02 23:10:11 sendu Exp $
 #
 # BioPerl module for Bio::AlignIO
 #
 #	based on the Bio::SeqIO module
-#       by Ewan Birney <birney@sanger.ac.uk>
+#       by Ewan Birney <birney@ebi.ac.uk>
 #       and Lincoln Stein  <lstein@cshl.org>
 #
 # Copyright Peter Schattner
 #
 # You may distribute this module under the same terms as perl itself
 #
-# _history
-# October 18, 1999  SeqIO largely rewritten by Lincoln Stein
+# History
 # September, 2000 AlignIO written by Peter Schattner
 
 # POD documentation - main docs before the code
@@ -25,105 +24,80 @@ Bio::AlignIO - Handler for AlignIO Formats
     use Bio::AlignIO;
 
     $inputfilename = "testaln.fasta";
-    $in  = Bio::AlignIO->new(-file => $inputfilename ,
-                             '-format' => 'fasta');
-    $out = Bio::AlignIO->new(-file => ">out.aln.pfam" ,
-                             '-format' => 'pfam');
-    # note: we quote -format to keep older perl's from complaining.
+    $in  = Bio::AlignIO->new(-file   => $inputfilename ,
+                             -format => 'fasta');
+    $out = Bio::AlignIO->new(-file   => ">out.aln.pfam" ,
+                             -format => 'pfam');
 
     while ( my $aln = $in->next_aln() ) {
         $out->write_aln($aln);
     }
 
- #or
+    # OR
 
     use Bio::AlignIO;
 
-    $inputfilename = "testaln.fasta";
-    $in  = Bio::AlignIO->newFh(-file => $inputfilename ,
-                               '-format' => 'fasta');
-    $out = Bio::AlignIO->newFh('-format' => 'pfam');
+    open MYIN,"testaln.fasta";
+    $in  = Bio::AlignIO->newFh(-fh     => \*MYIN,
+                               -format => 'fasta');
+    open my $MYOUT, '>', 'testaln.pfam';
+    $out = Bio::AlignIO->newFh(-fh     =>  $MYOUT,
+                               -format => 'pfam');
 
-    # World's shortest Fasta<->pfam format converter:
+    # World's smallest Fasta<->pfam format converter:
     print $out $_ while <$in>;
 
 =head1 DESCRIPTION
 
-Bio::AlignIO is a handler module for the formats in the AlignIO set
-(eg, Bio::AlignIO::fasta). It is the officially sanctioned way of
-getting at the alignment objects, which most people should use. The
-resulting alignment is a Bio::Align::AlignI compliant object. See
-L<Bio::Align::AlignI> for more information.
+L<Bio::AlignIO> is a handler module for the formats in the AlignIO set,
+for example, L<Bio::AlignIO::fasta>. It is the officially sanctioned way 
+of getting at the alignment objects. The resulting alignment is a
+L<Bio::Align::AlignI>-compliant object. 
 
-The idea is that you request a stream object for a particular format.
-All the stream objects have a notion of an internal file that is read
+The idea is that you request an object for a particular format.
+All the objects have a notion of an internal file that is read
 from or written to. A particular AlignIO object instance is configured
-for either input or output. A specific example of a stream object is
-the Bio::AlignIO::fasta object.
+for either input or output, you can think of it as a stream object.
 
-Each stream object has functions
+Each object has functions:
 
    $stream->next_aln();
 
-and
+And:
 
    $stream->write_aln($aln);
 
-also
+Also:
 
    $stream->type() # returns 'INPUT' or 'OUTPUT'
 
 As an added bonus, you can recover a filehandle that is tied to the
 AlignIO object, allowing you to use the standard E<lt>E<gt> and print
-operations to read and write sequence objects:
+operations to read and write alignment objects:
 
     use Bio::AlignIO;
 
-     # read from standard input
+    # read from standard input
     $stream = Bio::AlignIO->newFh(-format => 'Fasta');
 
     while ( $aln = <$stream> ) {
-	# do something with $aln
+	     # do something with $aln
     }
 
-and
+And:
 
     print $stream $aln; # when stream is in output mode
 
-This makes the simplest ever reformatter
-
-    #!/usr/local/bin/perl
-
-    $format1 = shift;
-    $format2 = shift ||
-        die "Usage: reformat format1 format2 < input > output";
-
-    use Bio::AlignIO;
-
-    $in  = Bio::AlignIO->newFh(-format => $format1 );
-    $out = Bio::AlignIO->newFh(-format => $format2 );
-    # note: you might want to quote -format to keep 
-    #  older perl's from complaining.
-
-    print $out $_ while <$in>;
-
-AlignIO.pm is patterned on the module SeqIO.pm and shares most the
-SeqIO.pm features.  One significant difference currently is that
-AlignIO.pm usually handles IO for only a single alignment at a time
-(SeqIO.pm handles IO for multiple sequences in a single stream.)  The
-principal reason for this is that whereas simultaneously handling
+L<Bio::AlignIO> is patterned on the L<Bio::SeqIO> module and shares
+most of its features.  One significant difference is that
+L<Bio::AlignIO> usually handles IO for only a single alignment at a time,
+whereas L<Bio::SeqIO> handles IO for multiple sequences in a single stream.  
+The principal reason for this is that whereas simultaneously handling
 multiple sequences is a common requirement, simultaneous handling of
 multiple alignments is not. The only current exception is format
-"bl2seq" which parses results of the Blast bl2seq program and which
+C<bl2seq> which parses results of the BLAST C<bl2seq> program and which
 may produce several alignment pairs.  This set of alignment pairs can
-be read using multiple calls to next_aln.
-
-Capability for IO for more than one multiple alignment - other than
-for bl2seq format -(which may be of use for certain applications such
-as IO for Pfam libraries) may be included in the future.  For this
-reason we keep the name "next_aln()" for the alignment input routine,
-even though in most cases only one alignment is read (or written) at a
-time and the name "read_aln()" might be more appropriate.
+be read using multiple calls to L<next_aln()>.
 
 =head1 CONSTRUCTORS
 
@@ -132,10 +106,11 @@ time and the name "read_aln()" might be more appropriate.
    $seqIO = Bio::AlignIO->new(-file => 'filename',   -format=>$format);
    $seqIO = Bio::AlignIO->new(-fh   => \*FILEHANDLE, -format=>$format);
    $seqIO = Bio::AlignIO->new(-format => $format);
+   $seqIO = Bio::AlignIO->new(-fh => \*STDOUT, -format => $format);
 
-The new() class method constructs a new Bio::AlignIO object.  The
-returned object can be used to retrieve or print BioAlign
-objects. new() accepts the following parameters:
+The L<new()> class method constructs a new L<Bio::AlignIO> object.  
+The returned object can be used to retrieve or print alignment
+objects. L<new()> accepts the following parameters:
 
 =over 4
 
@@ -179,41 +154,41 @@ Specify the format of the file.  Supported formats include:
    msf         msf (GCG) format
    nexus       Swofford et al NEXUS format
    pfam        Pfam sequence alignment format
-   phylip      Felsenstein's PHYLIP format
+   phylip      Felsenstein PHYLIP format
    prodom      prodom (protein domain) format
    psi         PSI-BLAST format
    selex       selex (hmmer) format
    stockholm   stockholm format
 
 Currently only those formats which were implemented in L<Bio::SimpleAlign>
-have been incorporated in AlignIO.pm.  Specifically, mase, stockholm
-and prodom have only been implemented for input. See the specific module
-(e.g. L<Bio::AlignIO::meme>) for notes on supported versions.
+have been incorporated into L<Bio::AlignIO>.  Specifically, C<mase>, C<stockholm>
+and C<prodom> have only been implemented for input. See the specific module
+(e.g. L<Bio::AlignIO::prodom>) for notes on supported versions.
 
 If no format is specified and a filename is given, then the module
 will attempt to deduce it from the filename suffix.  If this is unsuccessful,
-Fasta format is assumed.
+C<fasta> format is assumed.
 
-The format name is case insensitive.  'FASTA', 'Fasta' and 'fasta' are
-all supported.
+The format name is case insensitive; C<FASTA>, C<Fasta> and C<fasta> are
+all treated equivalently.
 
 =back
 
 =head2 Bio::AlignIO-E<gt>newFh()
 
    $fh = Bio::AlignIO->newFh(-fh   => \*FILEHANDLE, -format=>$format);
+   # read from STDIN or use @ARGV:
    $fh = Bio::AlignIO->newFh(-format => $format);
-   # etc.
 
-This constructor behaves like new(), but returns a tied filehandle
-rather than a Bio::AlignIO object.  You can read sequences from this
-object using the familiar E<lt>E<gt> operator, and write to it using print().
-The usual array and $_ semantics work.  For example, you can read all
-sequence objects into an array like this:
+This constructor behaves like L<new()>, but returns a tied filehandle
+rather than a L<Bio::AlignIO> object.  You can read sequences from this
+object using the familiar E<lt>E<gt> operator, and write to it using
+L<print()>. The usual array and $_ semantics work.  For example, you can
+read all sequence objects into an array like this:
 
   @sequences = <$fh>;
 
-Other operations, such as read(), sysread(), write(), close(), and printf() 
+Other operations, such as read(), sysread(), write(), close(), and printf()
 are not supported.
 
 =over 1
@@ -221,17 +196,17 @@ are not supported.
 =item -flush
 
 By default, all files (or filehandles) opened for writing alignments
-will be flushed after each write_aln() (making the file immediately
-usable).  If you don't need this facility and would like to marginally
+will be flushed after each write_aln() making the file immediately
+usable.  If you do not need this facility and would like to marginally
 improve the efficiency of writing multiple sequences to the same file
 (or filehandle), pass the -flush option '0' or any other value that
 evaluates as defined but false:
 
-  my $clustal = new Bio::AlignIO -file   => "<prot.aln",
-                          -format => "clustalw";
-  my $msf = new Bio::AlignIO -file   => ">prot.msf",
-                          -format => "msf",
-                          -flush  => 0; # go as fast as we can!
+  my $clustal = Bio::AlignIO->new( -file   => "<prot.aln",
+                                   -format => "clustalw" );
+  my $msf = Bio::AlignIO->new(-file   => ">prot.msf",
+                              -format => "msf",
+                              -flush  => 0 ); # go as fast as we can!
   while($seq = $clustal->next_aln) { $msf->write_aln($seq) }
 
 =back
@@ -260,17 +235,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org               - General discussion
-  http://bio.perl.org/MailList.html   - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Peter Schattner
 
@@ -292,27 +266,27 @@ methods. Internal methods are usually preceded with a _
 package Bio::AlignIO;
 
 use strict;
-use vars qw(@ISA);
 
-use Bio::Root::Root;
 use Bio::Seq;
 use Bio::LocatableSeq;
 use Bio::SimpleAlign;
-use Bio::Root::IO;
 use Bio::Tools::GuessSeqFormat;
-@ISA = qw(Bio::Root::Root Bio::Root::IO);
+use base qw(Bio::Root::Root Bio::Root::IO);
 
 =head2 new
 
  Title   : new
  Usage   : $stream = Bio::AlignIO->new(-file => $filename,
-                                       '-format' => 'Format')
+                                       -format => 'Format')
  Function: Returns a new seqstream
- Returns : A Bio::AlignIO::Handler initialised with 
+ Returns : A Bio::AlignIO::Handler initialised with
            the appropriate format
- Args    : -file => $filename 
+ Args    : -file => $filename
            -format => format
            -fh => filehandle to attach to
+           -displayname_flat => 1 [optional]
+                                to force the displayname to not show start/end
+                                information
 
 =cut
 
@@ -323,14 +297,14 @@ sub new {
     # or do we want to call SUPER on an object if $caller is an
     # object?
     if( $class =~ /Bio::AlignIO::(\S+)/ ) {
-	my ($self) = $class->SUPER::new(@args);	
+	my ($self) = $class->SUPER::new(@args);
 	$self->_initialize(@args);
 	return $self;
-    } else { 
+    } else {
 
 	my %param = @args;
 	@param{ map { lc $_ } keys %param } = values %param; # lowercase keys
-	my $format = $param{'-format'} || 
+	my $format = $param{'-format'} ||
 	    $class->_guess_format( $param{-file} || $ARGV[0] );
         unless ($format) {
             if ($param{-file}) {
@@ -344,7 +318,7 @@ sub new {
         $class->throw("Unknown format given or could not determine it [$format]")
             unless $format;
 
-	return undef unless( $class->_load_format_module($format) );
+	return unless( $class->_load_format_module($format) );
 	return "Bio::AlignIO::$format"->new(@args);
     }
 }
@@ -395,7 +369,9 @@ sub fh {
 
 sub _initialize {
   my($self,@args) = @_;
-
+  my ($flat) = $self->_rearrange([qw(DISPLAYNAME_FLAT)],
+				 @args);
+  $self->force_displayname_flat($flat) if defined $flat;
   $self->_initialize_io(@args);
   1;
 }
@@ -406,7 +382,7 @@ sub _initialize {
  Usage   : *INTERNAL AlignIO stuff*
  Function: Loads up (like use) a module at run time on demand
  Example :
- Returns : 
+ Returns :
  Args    :
 
 =cut
@@ -415,7 +391,7 @@ sub _load_format_module {
   my ($self,$format) = @_;
   my $module = "Bio::AlignIO::" . $format;
   my $ok;
-  
+
   eval {
       $ok = $self->_load_module($module);
   };
@@ -438,7 +414,7 @@ END
  Usage   : $aln = stream->next_aln
  Function: reads the next $aln object from the stream
  Returns : a Bio::Align::AlignI compliant object
- Args    : 
+ Args    :
 
 =cut
 
@@ -466,28 +442,29 @@ sub write_aln {
 
  Title   : _guess_format
  Usage   : $obj->_guess_format($filename)
- Function: 
- Example : 
+ Function:
+ Example :
  Returns : guessed format of filename (lower case)
- Args    : 
+ Args    :
 
 =cut
 
 sub _guess_format {
-   my $class = shift;
+my $class = shift;
    return unless $_ = shift;
-   return 'fasta'   if /\.(fasta|fast|seq|fa|fsa|nt|aa)$/i;
-   return 'maf'     if /\.maf/i;
-   return 'msf'     if /\.(msf|pileup|gcg)$/i;
-   return 'pfam'    if /\.(pfam|pfm)$/i;
-   return 'selex'   if /\.(selex|slx|selx|slex|sx)$/i;
-   return 'phylip'  if /\.(phylip|phlp|phyl|phy|phy|ph)$/i;
-   return 'nexus'   if /\.(nexus|nex)$/i;
-   return 'mega'     if( /\.(meg|mega)$/i );
-   return 'clustalw' if( /\.aln$/i );
-   return 'meme'     if( /\.meme$/i );
-   return 'emboss'   if( /\.(water|needle)$/i );
-   return 'psi'      if( /\.psi$/i );
+   return 'clustalw' if /\.aln$/i;
+   return 'emboss'   if /\.(water|needle)$/i;
+   return 'metafasta'if /\.metafasta$/;
+   return 'fasta'    if /\.(fasta|fast|seq|fa|fsa|nt|aa)$/i;
+   return 'maf'      if /\.maf/i;
+   return 'mega'     if /\.(meg|mega)$/i;
+   return 'meme'     if /\.meme$/i;
+   return 'msf'      if /\.(msf|pileup|gcg)$/i;
+   return 'nexus'    if /\.(nexus|nex)$/i;
+   return 'pfam'     if /\.(pfam|pfm)$/i;
+   return 'phylip'   if /\.(phylip|phlp|phyl|phy|ph)$/i;
+   return 'psi'      if /\.psi$/i;
+   return 'selex'    if /\.(selex|slx|selx|slex|sx)$/i;
 }
 
 sub DESTROY {
@@ -511,6 +488,25 @@ sub READLINE {
 sub PRINT {
   my $self = shift;
   $self->{'alignio'}->write_aln(@_);
+}
+
+
+=head2 force_displayname_flat
+
+ Title   : force_displayname_flat
+ Usage   : $obj->force_displayname_flat($newval)
+ Function:
+ Example :
+ Returns : value of force_displayname_flat (a scalar)
+ Args    : on set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub force_displayname_flat{
+    my $self = shift;
+    return $self->{'_force_displayname_flat'} = shift if @_;
+    return $self->{'_force_displayname_flat'} || 0;
 }
 
 1;

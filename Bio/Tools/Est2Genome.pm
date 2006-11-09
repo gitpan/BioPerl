@@ -1,8 +1,8 @@
-# $Id: Est2Genome.pm,v 1.13 2003/05/13 06:37:51 shawnh Exp $
+# $Id: Est2Genome.pm,v 1.17.4.1 2006/10/02 23:10:32 sendu Exp $
 #
 # BioPerl module for Bio::Tools::Est2Genome
 #
-# Cared for by Jason Stajich <jason@bioperl.org>
+# Cared for by Jason Stajich <jason-at-bioperl.org>
 #
 # Copyright Jason Stajich
 #
@@ -29,15 +29,12 @@ Bio::Tools::Est2Genome - Parse est2genome output, makes simple Bio::SeqFeature::
 
 =head1 DESCRIPTION
 
-This module is a parser for est2genome [EMBOSS] alignments of est/cdna
+This module is a parser for C<est2genome> [EMBOSS] alignments of est/cdna
 sequence to genomic DNA.  This is generally accepted as the best
-program for predicting splice sites based on est/cdnas*.
+program for predicting splice sites based on est/dnas (as far as I know).
 
 This module currently does not try pull out the ungapped alignments
 (Segment) but may in the future.
-
-
-* AFAIK
 
 =head1 FEEDBACK
 
@@ -47,27 +44,20 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to
 the Bioperl mailing list.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org              - General discussion
-  http://bioperl.org/MailList.shtml  - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-email or the web:
+of the bugs and their resolution. Bug reports can be submitted the
+web:
 
-  bioperl-bugs@bioperl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason@bioperl.org
-
-Describe contact details here
-
-=head1 CONTRIBUTORS
-
-Additional contributors names and emails here
+Email jason-at-bioperl.org
 
 =head1 APPENDIX
 
@@ -81,20 +71,18 @@ Internal methods are usually preceded with a _
 
 
 package Bio::Tools::Est2Genome;
-use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
 use Bio::Root::Root;
-use Bio::Tools::AnalysisResult;
 use Bio::SeqFeature::Gene::Exon;
 use Bio::SeqFeature::Gene::Transcript;
 use Bio::SeqFeature::Gene::Intron;
 use Bio::SeqFeature::Gene::GeneStructure;
 use Bio::SeqFeature::SimilarityPair;
 
-@ISA = qw(Bio::Tools::AnalysisResult );
+use base qw(Bio::Tools::AnalysisResult);
 
 =head2 new
 
@@ -236,7 +224,7 @@ sub parse_next_gene {
 	   $self->warn( "unknown line $_\n");
        }
    }
-   return undef unless( @features );
+   return unless( @features );
    return wantarray ? @features : \@features;
 }
 
@@ -316,7 +304,7 @@ sub _parse_gene_struct {
       	   $self->warn( "unknown line $_\n");
        }
    }
-   return undef unless $#exon >=0;
+   return unless $#exon >=0;
    foreach my $e(@exon){
     my @add;
     foreach my $sf(@suppf){

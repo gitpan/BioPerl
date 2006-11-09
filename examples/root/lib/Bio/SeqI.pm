@@ -1,4 +1,4 @@
-# $Id: SeqI.pm,v 1.1 2003/03/07 19:30:25 sac Exp $
+# $Id: SeqI.pm,v 1.5.4.1 2006/10/02 23:10:38 sendu Exp $
 #
 # BioPerl module for Bio::SeqI
 #
@@ -71,17 +71,16 @@ User feedback is an integral part of the evolution of this and other
 Bioperl modules. Send your comments and suggestions preferably to one
 of the Bioperl mailing lists.  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org          - General discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via email
-or the web:
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
 
-  bioperl-bugs@bio.perl.org
-  http://bugzilla.bioperl.org/
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Ewan Birney
 
@@ -102,14 +101,10 @@ methods. Internal methods are usually preceded with a _
 package Bio::SeqI;
 use strict;
 
-use vars qw(@ISA);
-use Bio::PrimarySeqI;
-use Bio::AnnotatableI;
-use Bio::FeatureHolderI;
 
 # Object preamble - inheriets from Bio::PrimarySeqI
 
-@ISA = qw(Bio::PrimarySeqI Bio::AnnotatableI Bio::FeatureHolderI);
+use base qw(Bio::PrimarySeqI Bio::AnnotatableI Bio::FeatureHolderI);
 
 =head2 get_SeqFeatures
 
