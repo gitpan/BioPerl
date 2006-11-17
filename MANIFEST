@@ -917,7 +917,6 @@ examples/root/lib/Bio/PrimarySeq.pm
 examples/root/lib/Bio/PrimarySeqI.pm
 examples/root/lib/Bio/Seq.pm
 examples/root/lib/Bio/SeqI.pm
-examples/root/lib/Error.pm
 examples/root/lib/TestInterface.pm
 examples/root/lib/TestObject.pm
 examples/root/README
