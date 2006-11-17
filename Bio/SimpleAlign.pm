@@ -1,4 +1,4 @@
-# $Id: SimpleAlign.pm,v 1.108.2.5 2006/11/08 19:26:24 cjfields Exp $
+# $Id: SimpleAlign.pm,v 1.108.2.6 2006/11/17 09:32:42 sendu Exp $
 # BioPerl module for SimpleAlign
 #
 # Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
@@ -250,7 +250,7 @@ sub add_seq {
     # will prune out the gap and missing/match chars
     # when actually asked for the symbol list in the
     # symbol_chars
-    map { $self->{'_symbols'}->{$_} = 1; } split(//,$seq->seq);
+    map { $self->{'_symbols'}->{$_} = 1; } split(//,$seq->seq) if $seq->seq;
 
     if( !defined $order ) {
 	$order = keys %{$self->{'_seq'}};

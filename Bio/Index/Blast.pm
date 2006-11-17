@@ -1,4 +1,4 @@
-# $Id: Blast.pm,v 1.21.4.3 2006/11/08 17:25:54 sendu Exp $
+# $Id: Blast.pm,v 1.21.4.4 2006/11/17 09:32:42 sendu Exp $
 #
 # BioPerl module for Bio::Index::Blast
 #
@@ -75,19 +75,15 @@ Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Index::Blast;
-use vars qw($VERSION);
 use strict;
 
 use IO::String;
+use Bio::Root::Version;
 
 use base qw(Bio::Index::Abstract Bio::Root::Root);
 
-BEGIN {
-	$VERSION = 0.1;
-}
-
 sub _version {
-	return $VERSION;
+	return ${Bio::Root::Version::VERSION};
 }
 
 =head2 new

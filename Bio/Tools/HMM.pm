@@ -1,4 +1,4 @@
-## $Id: HMM.pm,v 1.8.4.1 2006/10/02 23:10:32 sendu Exp $
+## $Id: HMM.pm,v 1.8.4.2 2006/11/17 09:32:42 sendu Exp $
 
 # BioPerl module for Bio::Tools::HMM
 #
@@ -128,8 +128,6 @@ web:
 package Bio::Tools::HMM;
 
 use base qw(Bio::Root::Root);
-
-$VERSION = '0.10';
 
 BEGIN {
     eval {

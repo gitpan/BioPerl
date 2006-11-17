@@ -191,8 +191,6 @@ Bio/DB/GFF/Util/Binning.pm
 Bio/DB/GFF/Util/Rearrange.pm
 Bio/DB/InMemoryCache.pm
 Bio/DB/LocationI.pm
-Bio/DB/Makefile.PL
-Bio/DB/MANIFEST
 Bio/DB/MeSH.pm
 Bio/DB/NCBIHelper.pm
 Bio/DB/Query/GenBank.pm
@@ -857,12 +855,15 @@ Bio/Variation/SNP.pm
 Bio/Variation/VariantI.pm
 Bio/WebAgent.pm
 BUGS
+Build.PL
 Changes
+DEPENDENCIES
 DEPRECATED
 doc/Deobfuscator/bin/deob_index.pl
 doc/Deobfuscator/Build.PL
 doc/Deobfuscator/cgi-bin/deob_detail.cgi
 doc/Deobfuscator/cgi-bin/deob_flowchart.png
+doc/Deobfuscator/cgi-bin/deob_help.html
 doc/Deobfuscator/cgi-bin/deob_interface.cgi
 doc/Deobfuscator/Changes
 doc/Deobfuscator/lib/Deobfuscator.pm
@@ -957,6 +958,7 @@ maintenance/modules.pl
 maintenance/ncbi_blast_switches.pl
 maintenance/pod.pl
 maintenance/README
+maintenance/symlink_script.pl
 maintenance/symlink_scripts.PLS
 maintenance/version.pl
 Makefile.PL
@@ -972,6 +974,7 @@ models/maps_and_markers.dia
 models/popgen.dia
 models/population_proposal.txt
 models/README
+ModuleBuildBioperl.pm
 PLATFORMS
 README
 scripts/biblio/biblio.PLS
@@ -1009,7 +1012,6 @@ scripts/index/bp_fetch.PLS
 scripts/index/bp_index.PLS
 scripts/index/bp_seqret.PLS
 scripts/index/TAG
-scripts/install_bioperl_scripts.pl
 scripts/popgen/composite_LD.PLS
 scripts/popgen/heterogeneity_test.PLS
 scripts/README
@@ -1077,8 +1079,6 @@ t/Biblio_eutils.t
 t/BiblioReferences.t
 t/BioDBGFF.t
 t/BioDBSeqFeature.t
-t/BioDBSeqFeature_BDB.t
-t/BioDBSeqFeature_mysql.t
 t/BioFetch_DB.t
 t/BioGraphics.t
 t/BlastIndex.t
@@ -1391,6 +1391,7 @@ t/data/NC_001284.gbk
 t/data/NC_006346.gb
 t/data/NC_006511-short.gbk
 t/data/nei_gojobori_test.aln
+t/data/neighbor.dist
 t/data/new_blastn.txt
 t/data/newformat.swiss
 t/data/NM_002253.tseq
@@ -1766,3 +1767,4 @@ t/Variation_IO.t
 t/WABA.t
 t/XEMBL_DB.t
 t/ztr.t
+META.yml

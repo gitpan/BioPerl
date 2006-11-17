@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: DBCUTG.t,v 1.20.4.4 2006/11/08 17:25:55 sendu Exp $ 
+# $Id: DBCUTG.t,v 1.20.4.5 2006/11/17 09:32:42 sendu Exp $ 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
@@ -89,11 +89,11 @@ SKIP: {
 	eval {$cdtable = $db->get_request(-sp =>'Pan troglodytes');};
 	skip "Could not connect to server, server/network problems? Skipping those tests", 5 if $@;
 	
-	# tests for Table.pm
-	is $cdtable->cds_count(), 617; # new value at CUD
-	is int($cdtable->aa_frequency('LEU')), 10;
+	# tests for Table.pm, the answers seem to change with time, so not specific
+	cmp_ok($cdtable->cds_count(), '>', 600);
+	cmp_ok(int($cdtable->aa_frequency('LEU')), '>', 1);
 	ok $cdtable->get_coding_gc('all');
-	is $cdtable->codon_rel_frequency('ttc'), "0.61"; 
+	cmp_ok($cdtable->codon_rel_frequency('ttc'), '<', 1); 
     
 	## now lets enter a non-existent species ans check handling..
 	## should default to human...

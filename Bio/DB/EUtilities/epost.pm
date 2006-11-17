@@ -1,4 +1,4 @@
-# $Id: epost.pm,v 1.7.4.1 2006/10/02 23:10:15 sendu Exp $
+# $Id: epost.pm,v 1.7.4.3 2006/11/10 16:48:09 cjfields Exp $
 #
 # BioPerl module for Bio::DB::EUtilities::epost
 #

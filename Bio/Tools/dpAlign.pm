@@ -1,4 +1,4 @@
-## $Id: dpAlign.pm,v 1.18.4.1 2006/10/02 23:10:32 sendu Exp $
+## $Id: dpAlign.pm,v 1.18.4.2 2006/11/17 09:32:42 sendu Exp $
 
 # BioPerl module for Bio::Tools::dpAlign
 #
@@ -189,8 +189,6 @@ package Bio::Tools::dpAlign;
 use Bio::SimpleAlign;
 
 use base qw(Bio::Tools::AlignFactory);
-
-$VERSION = '0.70';
 
 # Gotoh algorithm as defined in J. Mol. Biol. (1982) 162, 705-708
 # use constant DSW_GOTOH => 1;

@@ -1,4 +1,4 @@
-# $Id: NCBIHelper.pm,v 1.54.2.1 2006/10/02 23:10:15 sendu Exp $
+# $Id: NCBIHelper.pm,v 1.54.2.2 2006/11/10 16:45:19 cjfields Exp $
 #
 # BioPerl module for Bio::DB::NCBIHelper
 #
@@ -84,7 +84,6 @@ use Bio::DB::RefSeq;
 use URI::Escape qw(uri_unescape);
 
 use base qw(Bio::DB::WebDBSeqI Bio::Root::Root);
-$VERSION = '0.8';
 
 BEGIN {
     $MAX_ENTRIES = 19000;

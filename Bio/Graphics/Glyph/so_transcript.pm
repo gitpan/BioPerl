@@ -1,10 +1,9 @@
 package Bio::Graphics::Glyph::so_transcript;
 
-# $Id: so_transcript.pm,v 1.2.6.1 2006/10/02 23:10:20 sendu Exp $
+# $Id: so_transcript.pm,v 1.2.6.2 2006/11/17 09:32:42 sendu Exp $
 
 use strict;
 use base qw(Bio::Graphics::Glyph::processed_transcript);
-$VERSION = '1.0';
 
 1;
 
