@@ -1613,6 +1613,7 @@ t/largefasta.t
 t/LargeLocatableSeq.t
 t/largepseq.t
 t/lasergene.t
+t/lib/Error.pm
 t/lib/Test/Builder.pm
 t/lib/Test/Builder/Module.pm
 t/lib/Test/Builder/Tester.pm
