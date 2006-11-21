@@ -87,8 +87,8 @@ my $build = ModuleBuildBioperl->new(
 #                                                        options     => ['network'], # ModuleBuildBioperl unique requirement that --network was supplied
 #                                                        test        => \&ModuleBuildBioperl::test_internet
 #                                                     }
-                           }
-    
+                           },
+    create_makefile_pl  => 'passthrough'    
     #pm_files           => {}, # modules in Bio are treated as if they were in lib and auto-installed
     #script_files       => [] # scripts in scripts directory are installed on-demand
 );

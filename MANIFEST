@@ -958,10 +958,11 @@ maintenance/ncbi_blast_switches.pl
 maintenance/pod.pl
 maintenance/README
 maintenance/symlink_script.pl
+maintenance/symlink_scripts.pl
 maintenance/symlink_scripts.PLS
 maintenance/version.pl
-Makefile.PL
 MANIFEST			This list of files
+META.yml
 models/biblio.dia
 models/bio_liveseq_variation.dia
 models/bio_map.dia
@@ -1767,4 +1768,4 @@ t/Variation_IO.t
 t/WABA.t
 t/XEMBL_DB.t
 t/ztr.t
-META.yml
+Makefile.PL
