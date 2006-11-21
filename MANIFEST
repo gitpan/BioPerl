@@ -961,6 +961,7 @@ maintenance/symlink_script.pl
 maintenance/symlink_scripts.pl
 maintenance/symlink_scripts.PLS
 maintenance/version.pl
+Makefile.PL
 MANIFEST			This list of files
 META.yml
 models/biblio.dia
@@ -1768,4 +1769,3 @@ t/Variation_IO.t
 t/WABA.t
 t/XEMBL_DB.t
 t/ztr.t
-Makefile.PL
