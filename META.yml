@@ -136,6 +136,38 @@ optional_features:
     description: parsing xml
     requires:
       XML::Twig: 0
+recommends:
+  Ace: 0
+  Bio::ASN1::EntrezGene: 0
+  Class::AutoClass: 1
+  Clone: 0
+  Convert::Binary::C: 0
+  DB_File: 0
+  Data::Stag::XMLWriter: 0
+  GD: 1.3
+  GD::SVG: 0
+  Graph: 0
+  HTML::Entities: 0
+  HTML::Parser: 3
+  HTTP::Request::Common: 0
+  IO::String: 0
+  LWP::UserAgent: 0
+  SOAP::Lite: 0
+  SVG: 2.26
+  SVG::Graph: 0.01
+  Set::Scalar: 0
+  Spreadsheet::ParseExcel: 0
+  Storable: 0
+  Text::Shellwords: 0
+  XML::DOM::XPath: 0
+  XML::Parser: 0
+  XML::Parser::PerlSAX: 0
+  XML::SAX: 0
+  XML::SAX::Base: 0
+  XML::SAX::Writer: 0
+  XML::Simple: 0
+  XML::Twig: 0
+  XML::Writer: 0.4
 provides:
   Bio::Align::AlignI:
     file: Bio/Align/AlignI.pm
