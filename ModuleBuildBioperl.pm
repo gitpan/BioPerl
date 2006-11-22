@@ -9,11 +9,44 @@
 # cleanly override.
 
 package ModuleBuildBioperl;
-use base Module::Build;
+
+# we really need Module::Build to be installed
+BEGIN {
+    unless (eval "use Module::Build; 1") {
+        print "This package requires Module::Build to install itself.\n";
+        
+        require ExtUtils::MakeMaker;
+        my $yn = ExtUtils::MakeMaker::prompt('  Install Module::Build now from CPAN?', 'y');
+        
+        unless ($yn =~ /^y/i) {
+            die " *** Cannot install without Module::Build.  Exiting ...\n";
+        }
+        
+        require Cwd;
+        require File::Spec;
+        require File::Copy;
+        require CPAN;
+        
+        # Save this because CPAN will chdir all over the place.
+        my $cwd = Cwd::cwd();
+        
+        my $build_pl = File::Spec->catfile($cwd, "Build.PL");
+        
+        File::Copy::move($build_pl, $build_pl."hidden"); # avoid bizarre bug with Module::Build tests using the wrong Build.PL if it happens to be in PERL5LIB
+        CPAN::Shell->install('Module::Build');
+        File::Copy::move($build_pl."hidden", $build_pl);
+        CPAN::Shell->expand("Module", "Module::Build")->uptodate or die "Couldn't install Module::Build, giving up.\n";
+        
+        chdir $cwd or die "Cannot chdir() back to $cwd: $!";
+    }
+    
+    eval "use base Module::Build; 1" or die $@;
+}
+
 use strict;
 use warnings;
 
-our $VERSION = 1.005002004;
+our $VERSION = 1.005002005;
 
 # our modules are in Bio, not lib
 sub find_pm_files {
@@ -264,12 +297,9 @@ sub prereq_failures {
                     
                     $status->{message} .= "\n   (wanted for $why, used by $by_what)";
                     
-                    #*** if CPAN ever does anything useful with
-                    # optional_features data in META.yml, delete the next three
-                    # lines
                     my $installed = $self->install_optional($modname, $preferred_version, $status->{message});
                     next if $installed eq 'ok';
-                    $status->{message} = $installed;
+                    $status->{message} = $installed unless $installed eq 'skip';
                 }
                 else {
                     next if $status->{ok};
@@ -283,29 +313,46 @@ sub prereq_failures {
     return keys %{$out} ? $out : return;
 }
 
-# as of CPAN v1.8802 nothing useful is done with the 'recommends' data, so
-# when an optional module isn't installed, ask user if they want it.
-#*** this sub should be removed when CPAN improves
 sub install_optional {
     my ($self, $desired, $version, $msg) = @_;
     
-    my $install = $self->prompt(" * $msg\n   Do you want to install it? y/n", 'n');
+    unless (defined $self->{ask_optional}) {
+        $self->{ask_optional} = $self->prompt("Install [a]ll optional external modules, [n]one, or choose [i]nteractively?", 'n');
+    }
+    return 'skip' if $self->{ask_optional} =~ /^n/i;
     
-    if ($install =~ /^y/i) {
+    my $install;
+    if ($self->{ask_optional} =~ /^a/i) {
+        $self->log_info(" * $msg\n");
+        $install = 1;
+    }
+    else {
+        $install = $self->y_n(" * $msg\n   Do you want to install it? y/n", 'n');
+    }
+    
+    if ($install) {
+        # Here we use CPAN to actually install the desired module, the benefit
+        # being we continue even if installation fails, and that this works
+        # even when not using CPAN to install.
+        #
+        # The alternative would be to simply append the module to 'requires'
+        # and let CPAN deal with required modules in the normal way, but
+        # older CPANs don't do that (look only at META.yml), and we get
+        # total failure for something that was only optional
         require Cwd;
         require CPAN;
         
-        # Save this 'cause CPAN will chdir all over the place.
+        # Save this because CPAN will chdir all over the place.
         my $cwd = Cwd::cwd();
         
         CPAN::Shell->install($desired);
         my $msg;
         if (CPAN::Shell->expand("Module", $desired)->uptodate) {
-            $self->log_info("\n*** (back in Bioperl Build.PL) ***\n * You chose to install $desired and it installed fine\n");
+            $self->log_info("\n\n*** (back in Bioperl Build.PL) ***\n * You chose to install $desired and it installed fine\n");
             $msg = 'ok';
         }
         else {
-            $self->log_info("\n*** (back in Bioperl Build.PL) ***\n");
+            $self->log_info("\n\n*** (back in Bioperl Build.PL) ***\n");
             $msg = "You chose to install $desired but it failed to install";
         }
         
