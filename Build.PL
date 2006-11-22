@@ -11,7 +11,6 @@
 # nothing else here is likely to need changing.
 
 use strict;
-use lib '.';
 use ModuleBuildBioperl;
 
 # Set up the ModuleBuildBioperl object
