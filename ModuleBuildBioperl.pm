@@ -51,6 +51,9 @@ use strict;
 use warnings;
 
 our $VERSION = 1.005002005;
+our @extra_types = qw(options test excludes_os);
+our $checking_types = "requires|conflicts|".join("|", @extra_types);
+
 
 # our modules are in Bio, not lib
 sub find_pm_files {
@@ -74,7 +77,7 @@ sub choose_scripts {
     while (my $thing = readdir($scripts_dir)) {
         next if $thing =~ /^\./;
         next if $thing eq 'CVS';
-        if ($thing =~ /PLS$/) {
+        if ($thing =~ /PLS$|pl$/) {
             $int_ok = 0;
             last;
         }
@@ -96,12 +99,12 @@ sub choose_scripts {
     elsif ($prompt =~ /^[iI]/) {
         $self->log_info("  - will install interactively:\n");
         
-        my $chosen_scripts = '';
+        my @chosen_scripts;
         foreach my $group_dir (@group_dirs) {
             my $group = File::Basename::basename($group_dir);
             print "    * group '$group' has:\n";
             
-            my @script_files = @{$self->rscan_dir($group_dir, qr/\.PLS$/)};
+            my @script_files = @{$self->rscan_dir($group_dir, qr/\.PLS$|\.pl$/)};
             foreach my $script_file (@script_files) {
                 my $script = File::Basename::basename($script_file);
                 print "      $script\n";
@@ -111,14 +114,15 @@ sub choose_scripts {
             die if $result =~ /^[qQ]/;
             if ($result =~ /^[yY]/) {
                 $self->log_info("      + will install group '$group'\n");
-                $chosen_scripts .= join("|", @script_files);
+                push(@chosen_scripts, @script_files);
             }
             else {
                 $self->log_info("      - will not install group '$group'\n");
             }
         }
         
-        $chosen_scripts ||= 'none';
+        my $chosen_scripts = @chosen_scripts ? join("|", @chosen_scripts) : 'none';
+        
         $self->notes(chosen_scripts => $chosen_scripts);
     }
     else {
@@ -141,7 +145,7 @@ sub script_files {
         return { map {$_, 1} split(/\|/, $chosen_scripts) } unless $chosen_scripts eq 'all';
     }
     
-    return $_ = { map {$_,1} @{$self->rscan_dir('scripts', qr/\.PLS$/)} };
+    return $_ = { map {$_,1} @{$self->rscan_dir('scripts', qr/\.PLS$|\.pl$/)} };
 }
 
 # process scripts normally, except that we change name from *.PLS to bp_*.pl
@@ -167,7 +171,7 @@ sub process_script_files {
     }
 }
 
-# extended to handle option and test checking
+# extended to handle extra checking types
 sub features {
     my $self = shift;
     my $ph = $self->{phash};
@@ -180,7 +184,7 @@ sub features {
         
         if (my $info = $ph->{auto_features}->access($key)) {
             my $failures = $self->prereq_failures($info);
-            my $disabled = grep( /^(?:\w+_)?(?:requires|conflicts|options|test)$/, keys %$failures ) ? 1 : 0;
+            my $disabled = grep( /^(?:\w+_)?(?:$checking_types)$/, keys %$failures ) ? 1 : 0;
             return !$disabled;
         }
         
@@ -192,7 +196,7 @@ sub features {
     my %auto_features = $ph->{auto_features}->access();
     while (my ($name, $info) = each %auto_features) {
         my $failures = $self->prereq_failures($info);
-        my $disabled = grep( /^(?:\w+_)?(?:requires|conflicts|options|test)$/, keys %$failures ) ? 1 : 0;
+        my $disabled = grep( /^(?:\w+_)?(?:$checking_types)$/, keys %$failures ) ? 1 : 0;
         $features{$name} = $disabled ? 0 : 1;
     }
     %features = (%features, $ph->{features}->access());
@@ -201,8 +205,8 @@ sub features {
 }
 *feature = \&features;
 
-# overridden to fix a stupid bug in Module::Build and extended to handle option
-# checking and code test checking here
+# overridden to fix a stupid bug in Module::Build and extended to handle extra
+# checking types
 sub check_autofeatures {
     my ($self) = @_;
     my $features = $self->auto_features;
@@ -225,7 +229,7 @@ sub check_autofeatures {
         }
         
         if ( my $failures = $self->prereq_failures($info) ) {
-            my $disabled = grep( /^(?:\w+_)?(?:requires|conflicts|options|test)$/, keys %$failures ) ? 1 : 0;
+            my $disabled = grep( /^(?:\w+_)?(?:$checking_types)$/, keys %$failures ) ? 1 : 0;
             $self->log_info( $disabled ? "disabled\n" : "enabled\n" );
             
             my $log_text;
@@ -247,12 +251,13 @@ sub check_autofeatures {
 }
 
 # extend to handle option checking (which takes an array ref) and code test
-# checking (which takes a code ref and must return a message only on failure).
+# checking (which takes a code ref and must return a message only on failure)
+# and excludes_os (which takes an array ref of regexps).
 # also handles more informative output of recommends section
 sub prereq_failures {
     my ($self, $info) = @_;
     
-    my @types = (@{ $self->prereq_action_types }, 'options', 'test');
+    my @types = (@{ $self->prereq_action_types }, @extra_types);
     $info ||= {map {$_, $self->$_()} @types};
     
     my $out = {};
@@ -277,6 +282,15 @@ sub prereq_failures {
             if (@not_ok > 0) {
                 $status->{message} = "Command line option(s) '@not_ok' not supplied";
                 $out->{$type}{'options'} = $status;
+            }
+        }
+        elsif ($type eq 'excludes_os') {
+            foreach my $os (@{$prereqs}) {
+                if ($^O =~ /$os/i) {
+                    $status->{message} = "This feature isn't supported under your OS ($os)";
+                    $out->{$type}{'excludes_os'} = $status;
+                    last;
+                }
             }
         }
         else {
@@ -508,7 +522,7 @@ sub find_dist_packages {
   
     # Stringify versions
     for (grep exists $_->{version}, values %prime) {
-        $_->{version} = $_->{version}->stringify;
+        $_->{version} = $_->{version}->stringify if ref($_->{version});
     }
   
     return \%prime;

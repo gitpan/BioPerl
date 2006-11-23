@@ -1,6 +1,6 @@
 package Bio::DB::SeqFeature::Store::berkeleydb;
 
-# $Id: berkeleydb.pm,v 1.5.4.4 2006/10/16 17:08:16 sendu Exp $
+# $Id: berkeleydb.pm,v 1.5.4.5 2006/11/22 20:27:47 lstein Exp $
 
 
 use strict;
@@ -413,7 +413,8 @@ sub _close_databases {
   $self->index_db($_=>undef) foreach $self->_index_files;
 }
 
-sub _init_database { shift->init }
+# do nothing -- new() with -create=>1 will do the trick
+sub _init_database { }
 
 sub _delete_databases {
   my $self = shift;

@@ -1,4 +1,4 @@
-# $Id: entrezgene.pm,v 1.22.4.2 2006/10/02 23:10:29 sendu Exp $
+# $Id: entrezgene.pm,v 1.22.4.4 2006/11/23 15:02:02 sendu Exp $
 # BioPerl module for Bio::SeqIO::entrezgene
 #
 # You may distribute this module under the same terms as perl itself
