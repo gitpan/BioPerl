@@ -1,4 +1,4 @@
-# $Id: list.pm,v 1.1.4.4 2006/11/08 17:25:54 sendu Exp $
+# $Id: list.pm,v 1.1.4.5 2006/12/05 20:54:38 sendu Exp $
 #
 # BioPerl module for Bio::DB::Taxonomy::list
 #
@@ -323,6 +323,7 @@ sub get_taxonids {
 
 sub ancestor {
     my ($self, $taxon) = @_;
+    $taxon || return; # for bug 2092, or something similar to it at least: shouldn't need this!
     $self->throw("Must supply a Bio::Taxon") unless ref($taxon) && $taxon->isa('Bio::Taxon');
     $self->throw("The supplied Taxon must belong to this database") unless $taxon->db_handle && $taxon->db_handle eq $self;
     my $id = $taxon->id || $self->throw("The supplied Taxon is missing its id!");

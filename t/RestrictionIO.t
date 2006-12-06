@@ -1,5 +1,5 @@
 # -*-Perl-*- mode (to keep my emacs happy)
-# $Id: RestrictionIO.t,v 1.9.4.1 2006/10/16 17:08:15 sendu Exp $
+# $Id: RestrictionIO.t,v 1.9.4.2 2006/11/30 09:24:00 sendu Exp $
 
 # test for Bio::Restriction::Analysis.pm
 # written by Rob Edwards
@@ -11,7 +11,7 @@ my $NUMTESTS;
 BEGIN {
     eval { require Test; };
     if( $@ ) {
-        use lib 't','..';
+        use lib 't';
     }
     use Test;
     $NUMTESTS = 14;

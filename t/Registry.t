@@ -1,5 +1,5 @@
 ##-*-Perl-*-
-# $Id: Registry.t,v 1.10.6.1 2006/10/16 17:08:15 sendu Exp $
+# $Id: Registry.t,v 1.10.6.2 2006/11/30 09:24:00 sendu Exp $
 # test for Bio::DB::Registry, Flat::BinarySearch, and Flat::BDB
 # written by Brian Osborne
 
@@ -12,7 +12,7 @@ BEGIN {
 	$DEBUG = $ENV{BIOPERLDEBUG} || 0;
 	eval { require Test; };
 	if( $@ ) {
-		use lib 't','..';
+		use lib 't';
 	}
 	use Test;
 	$no_DB_File = 0;

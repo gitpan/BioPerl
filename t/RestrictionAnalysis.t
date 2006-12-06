@@ -1,5 +1,5 @@
 # -*-Perl-*- mode (to keep my emacs happy)
-# $Id: RestrictionAnalysis.t,v 1.6.8.2 2006/11/17 09:32:42 sendu Exp $
+# $Id: RestrictionAnalysis.t,v 1.6.8.3 2006/11/30 09:24:00 sendu Exp $
 
 # test for Bio::Restriction::Analysis.pm
 # written by Rob Edwards & Heikki Lehvaslaiho
@@ -11,7 +11,7 @@ my $error;
 BEGIN {
     eval { require Test::More; };
     if( $@ ) {
-        use lib 't/lib','..';
+        use lib 't/lib';
     }
     use Test::More;
     $NUMTESTS = 173;

@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: SearchIO.t,v 1.96.4.5 2006/11/08 17:25:55 sendu Exp $
+## $Id: SearchIO.t,v 1.96.4.6 2006/11/30 09:24:00 sendu Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -54,7 +54,8 @@ SKIP: {
 		# instantiated in the constructor
 		$searchio = new Bio::SearchIO ('-tempfile' => 1,
 			   '-format' => 'blastxml',
-			   '-file'   => Bio::Root::IO->catfile('t','data','ecoli_domains.rps.xml'));
+			   '-file'   => Bio::Root::IO->catfile('t','data','ecoli_domains.rps.xml'),
+			   '-verbose' => 2); # promote warn to throw so we can skip over problems
 		$result = $searchio->next_result;
 	};
 	if ($@ && $@ =~ m{Handler couldn't resolve external entity}) {

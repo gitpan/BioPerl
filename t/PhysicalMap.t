@@ -1,6 +1,6 @@
 # -*-Perl-*-
 ## Bioperl Test Harness Script for Modules
-## $Id: PhysicalMap.t,v 1.2.4.3 2006/10/02 23:10:40 sendu Exp $
+## $Id: PhysicalMap.t,v 1.2.4.4 2006/12/05 20:54:38 sendu Exp $
 #
 
 use strict;
@@ -103,7 +103,7 @@ sub test_markers
         }
     }
     ok $nmrk, 15;
-    ok $nrem, 16;
+    ok $nrem, 17;
     ok scalar(keys %types), 2;
     ok $nanch, 9;
     ok $nfrm, 7;

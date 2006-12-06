@@ -1,4 +1,4 @@
-## $Id: Primer.t,v 1.2 2004/02/18 01:25:17 redwards Exp $
+## $Id: Primer.t,v 1.2.6.1 2006/11/30 09:24:00 sendu Exp $
 
 # test for Bio::SeqFeature::Primer
 # written by Rob Edwards
@@ -9,7 +9,7 @@ use constant NUMTESTS => 18;
 BEGIN {
     eval { require Test; };
     if( $@ ) {
-        use lib 't','..';
+        use lib 't';
     }
     use Test;
 

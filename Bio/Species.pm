@@ -1,4 +1,4 @@
-# $Id: Species.pm,v 1.35.4.4 2006/11/08 17:25:54 sendu Exp $
+# $Id: Species.pm,v 1.35.4.6 2006/12/05 20:54:39 sendu Exp $
 #
 # BioPerl module for Bio::Species
 #
@@ -88,7 +88,7 @@ use strict;
 
 use Bio::DB::Taxonomy;
 use Bio::Tree::Tree;
-
+use Scalar::Util qw(weaken isweak);
 use base qw(Bio::Taxon);
 
 =head2 new
@@ -122,7 +122,7 @@ sub new {
         
         # some things want to freeze/thaw Bio::Species objects, but
         # _root_cleanup_methods contains a CODE ref, delete it.
-        delete $self->{tree}->{_root_cleanup_methods};
+        # delete $self->{tree}->{_root_cleanup_methods};
     }
     
     defined $org && $self->organelle($org);
@@ -161,11 +161,18 @@ sub classification {
         }
         
         # make sure the lineage contains us as first or second element
-        # (lineage may have subspeces, species, genus ...)
+        # (lineage may have subspecies, species, genus ...)
         my $name = $self->node_name;
-        if ($name && ($name ne $vals[0] && $name ne $vals[1]) &&
-			       $name ne "$vals[1] $vals[0]") {
-            $self->throw("The supplied lineage does not start near '$name'");
+        if ($name && ($name ne $vals[0] && $name ne $vals[1]) && $name ne "$vals[1] $vals[0]") {
+            if ($name =~ /^$vals[1] $vals[0]\s*(.+)/) {
+                # just assume the problem is someone tried to make a Bio::Species starting at subspecies
+                #*** no idea if this is appropriate! just a possible fix related to bug 2092
+                $self->sub_species($1);
+                $name = $self->node_name("$vals[1] $vals[0]");
+            }
+            else {
+                $self->throw("The supplied lineage does not start near '$name' (I was supplied '".join(" | ", @vals)."')");
+            }
         }
         
         # create a lineage for ourselves
@@ -180,7 +187,8 @@ sub classification {
         }
         
         $self->db_handle($db);
-        $self->{tree} = new Bio::Tree::Tree(-node => $self);
+
+        $self->{tree} = Bio::Tree::Tree->new(-node => $self);
         # some things want to freeze/thaw Bio::Species objects, but tree's
         # _root_cleanup_methods contains a CODE ref, delete it.
         #*** even if we don't delete the cleanup methods, we still get memory
@@ -193,6 +201,7 @@ sub classification {
     foreach my $node ($self->{tree}->get_lineage_nodes($self), $self) {
         unshift(@vals, $node->scientific_name || next);
     }
+    weaken($self->{tree}->{'_rootnode'}) unless isweak($self->{tree}->{'_rootnode'});
     return @vals;
 }
 

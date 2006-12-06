@@ -1,4 +1,4 @@
-## $Id: primedseq.t,v 1.4.8.1 2006/10/16 17:08:15 sendu Exp $
+## $Id: primedseq.t,v 1.4.8.2 2006/11/30 09:24:00 sendu Exp $
 
 # test for Bio::Seq::PrimedSeq
 # written by Rob Edwards
@@ -9,7 +9,7 @@ use constant NUMTESTS => 9;
 BEGIN {
     eval { require Test; };
     if( $@ ) {
-        use lib 't','..';
+        use lib 't';
     }
     use Test;
 

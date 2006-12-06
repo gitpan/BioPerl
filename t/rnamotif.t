@@ -1,11 +1,10 @@
 # -*-Perl-*-
 # Bioperl Test Script for RNA Motif Modules
-# $Id: rnamotif.t,v 1.2.4.1 2006/10/02 23:10:40 sendu Exp $
+# $Id: rnamotif.t,v 1.2.4.2 2006/11/30 09:24:00 sendu Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
 
-my $error = 0;
 use strict;
 BEGIN {     
     # to handle systems with no installed Test module
@@ -17,14 +16,18 @@ BEGIN {
     }
 
     use Test::More;
-    plan tests => 72; 
+	
+	eval {
+		require Bio::Tools::RNAMotif;
+	};
+	if ($@) {
+		plan skip_all => 'Bio::Tools::RNAMotif failed to load, DB_File probably not installed. This means that the module is not usable. Skipping tests';
+	}
+	else {
+		plan tests => 72;
+	}
 }
 
-if( $error == 1 ) {
-    exit(0);
-}
-
-use Bio::Tools::RNAMotif;
 use Bio::Tools::ERPIN;
 use Bio::Root::IO;
 my $verbose = $ENV{'BIOPERLDEBUG'} || 0;

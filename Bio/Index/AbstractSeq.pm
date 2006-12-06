@@ -1,4 +1,4 @@
-# $Id: AbstractSeq.pm,v 1.24.4.2 2006/11/08 17:25:54 sendu Exp $
+# $Id: AbstractSeq.pm,v 1.24.4.3 2006/11/27 15:46:48 sendu Exp $
 #
 # BioPerl module for Bio::Index::AbstractSeq
 #
@@ -63,7 +63,7 @@ Internal methods are usually preceded with a _
 
 L<Bio::Index::Abstract>, which provides dbm indexing for flat files of 
 any type, containing sequence or not. L<Bio::Index::AbstractSeq> inherits 
-from L<Bio::Index::Abstract>>
+from L<Bio::Index::Abstract>
 
 =cut
 

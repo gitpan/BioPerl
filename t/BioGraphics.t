@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: BioGraphics.t,v 1.17.4.1 2006/10/16 17:08:15 sendu Exp $
+# $Id: BioGraphics.t,v 1.17.4.2 2006/11/30 09:24:00 sendu Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -9,7 +9,6 @@
 use strict;
 use vars qw($NUMTESTS $DEBUG);
 
-use lib '..','.','./blib/lib';
 use File::Spec;
 use constant IMAGES => File::Spec->catfile(qw(t data biographics));
 use constant FILES => File::Spec->catfile(qw(t data biographics));

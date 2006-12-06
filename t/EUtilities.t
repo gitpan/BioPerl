@@ -1,7 +1,7 @@
 # This is -*-Perl-*- code
 ## Bioperl Test Harness Script for Modules
 ##
-# $Id: EUtilities.t,v 1.10.2.3 2006/11/08 17:25:55 sendu Exp $
+# $Id: EUtilities.t,v 1.10.2.4 2006/11/30 09:24:00 sendu Exp $
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.t'
@@ -10,7 +10,6 @@
 # this test suite
 
 use strict;
-use lib '..','.','./lib','./blib/lib';
 use vars qw($NUMTESTS $DEBUG $error);
 
 BEGIN { 

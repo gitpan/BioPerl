@@ -1,4 +1,4 @@
-# $Id: Registry.pm,v 1.32.4.3 2006/11/08 17:25:54 sendu Exp $
+# $Id: Registry.pm,v 1.32.4.4 2006/11/30 09:24:00 sendu Exp $
 #
 # POD documentation - main docs before the code
 
@@ -112,7 +112,7 @@ sub _load_registry {
    my $self = shift;
 	eval { $HOME = (getpwuid($>))[7]; } unless $HOME;
 	if ($@) {
-		$self->warn("This Perl doesn't implement function getpwuid(), no $HOME");
+		$self->warn("This Perl doesn't implement function getpwuid(), no \$HOME");
 	}
 	my @ini_files = $self->_get_ini_files();
 

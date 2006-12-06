@@ -1,6 +1,6 @@
 package Bio::Graphics::FeatureFile;
 
-# $Id: FeatureFile.pm,v 1.78.4.5 2006/11/08 17:25:54 sendu Exp $
+# $Id: FeatureFile.pm,v 1.78.4.7 2006/12/02 18:35:32 lstein Exp $
 # This package parses and renders a simple tab-delimited format for features.
 # It is simpler than GFF, but still has a lot of expressive power.
 # See __END__ for the file format
@@ -118,7 +118,7 @@ use strict;
 use Bio::Graphics::Feature;
 use Bio::DB::GFF::Util::Rearrange;
 use Carp 'cluck','carp','croak';
-use Bio::DB::GFF;
+# use Bio::DB::GFF; # not needed - load later
 use IO::File;
 use Text::ParseWords 'shellwords';
 
@@ -498,6 +498,7 @@ sub parse_line {
 
   # conventional GFF file, with check for numeric start/end
   if (@tokens >= 8 && $tokens[3]=~ /^-?\d+$/ && $tokens[4]=~ /^-?\d+$/) {
+    require Bio::DB::GFF unless Bio::DB::GFF->can('split_group');
     my ($r,$source,$method,$start,$stop,$scor,$s,$phase,@rest) = @tokens;
     # sanity checks
     my $group = join ' ',@rest;
