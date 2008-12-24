@@ -1,0 +1,6464 @@
+2008-12-24 19:01  cjfields
+
+	* [r15261] Changes, README: Updates for RC1
+
+2008-12-24 06:53  cjfields
+
+	* [r15260] Build.PL: remove Microarray deps
+
+2008-12-24 06:04  cjfields
+
+	* [r15258] t/RemoteDB/HIV/HIVQuery.t: Small fix for tests JIC there
+	  is a network error
+
+2008-12-24 05:27  cjfields
+
+	* [r15257] Bio/Biblio/IO.pm, Bio/DB/HIV.pm,
+	  Bio/DB/HIV/HIVQueryHelper.pm, Bio/DB/Query/HIVQuery.pm,
+	  Bio/DB/SeqFeature/Store/DBI/mysql.pm,
+	  Bio/DB/SeqFeature/Store/FeatureFileLoader.pm, Bio/FeatureIO.pm,
+	  Bio/Index/Abstract.pm, Bio/LiveSeq/IO/Loader.pm,
+	  Bio/Ontology/SimpleGOEngine/GraphAdaptor.pm,
+	  Bio/Ontology/SimpleGOEngine/GraphAdaptor02.pm, Bio/Root/IO.pm,
+	  Bio/SearchIO.pm, Bio/SeqFeature/SiRNA/Oligo.pm,
+	  Bio/SeqFeature/SiRNA/Pair.pm, Bio/SeqIO.pm, Bio/SeqIO/agave.pm,
+	  Bio/SeqIO/phd.pm, Bio/SeqIO/qual.pm, Bio/SeqIO/scf.pm,
+	  Bio/Structure/IO.pm, Bio/Tools/Lucy.pm, Bio/Tools/SiRNA.pm,
+	  Bio/Tools/SiRNA/Ruleset/saigo.pm,
+	  Bio/Tools/SiRNA/Ruleset/tuschl.pm, DEPENDENCIES, INSTALL,
+	  maintenance/dependencies.pl, maintenance/deprecated.pl,
+	  t/RemoteDB/HIV/HIV.t, t/RemoteDB/HIV/HIVQuery.t,
+	  t/Tools/rnamotif.t: Sync branch with trunk
+
+2008-12-24 05:26  cjfields
+
+	* [r15256] Bio/Microarray/Tools/MitoChipV2Parser.pm,
+	  Bio/Microarray/Tools/ReseqChip.pm,
+	  t/Microarray/Tools/ReseqChip.t: Remove Bio::Microarray from
+	  branch (still in development on trunk). May return later if API
+	  stabilizes
+
+2008-12-24 05:21  cjfields
+
+	* [r15255] Bio/Graph: Remove (merge didn't remove this for some
+	  reason)
+
+2008-12-24 05:20  cjfields
+
+	* [r15254] Bio/Tools/BPlite/HSP.pm, Bio/Tools/BPlite/Iteration.pm,
+	  Bio/Tools/BPlite/Sbjct.pm: Remove (merge didn't remove this for
+	  some reason)
+
+2008-12-22 21:51  cjfields
+
+	* [r15231] Bio/DB/NCBIHelper.pm, Bio/DB/Qual.pm,
+	  Bio/DB/SeqFeature/Store/FeatureFileLoader.pm,
+	  Bio/Factory/SeqAnalysisParserFactory.pm, Bio/Root/Build.pm,
+	  Bio/Root/Version.pm, Bio/Search/Iteration/GenericIteration.pm,
+	  Bio/Search/Result/BlastResult.pm,
+	  Bio/Search/Result/CrossMatchResult.pm,
+	  Bio/SeqFeature/Annotated.pm, Bio/Tools/ERPIN.pm,
+	  Bio/Tools/Infernal.pm, Bio/Tools/Phylo/PAML.pm,
+	  Bio/Tools/RNAMotif.pm, Bio/Tools/Run/RemoteBlast.pm,
+	  Bio/Tools/Run/StandAloneBlast.pm,
+	  Bio/Tools/Run/StandAloneNCBIBlast.pm,
+	  Bio/Tools/Run/StandAloneWUBlast.pm, Build.PL, DEPRECATED,
+	  examples/tk/hitdisplay.pl, maintenance/deprecated.pl,
+	  t/Tools/Run/StandAloneBlast.t: sync trunk with branch
+
+2008-12-20 05:44  cjfields
+
+	* [r15214] .: Created branch branch-1-6.
+
+2008-12-20 05:07  cjfields
+
+	* [r15213] 5.6.1 is min perl version required for all core modules
+	  now
+
+2008-12-19 05:47  cjfields
+
+	* [r15212] update NAMES
+
+2008-12-19 03:41  cjfields
+
+	* [r15211] small typo
+
+2008-12-18 09:26  heikki
+
+	* [r15208] skip right number of tests needing the network
+
+2008-12-18 05:42  cjfields
+
+	* [r15207] typo
+
+2008-12-18 05:33  cjfields
+
+	* [r15206] [bug 2714]
+	  * patches to update Bio::DB::HIV and related (Mark Jensen)
+
+2008-12-17 03:05  cjfields
+
+	* [r15195] fix test number
+
+2008-12-17 03:03  cjfields
+
+	* [r15194] update Test::Warn (fixes Qual.t test problems with
+	  warnings_like)
+
+2008-12-17 00:07  sendu
+
+	* [r15193] no longer assumes added order of ids in tests
+
+2008-12-17 00:06  sendu
+
+	* [r15192] passing $1 is bad in perl 5.10? - fixed
+
+2008-12-16 20:26  cjfields
+
+	* [r15191] missed one
+
+2008-12-16 20:18  cjfields
+
+	* [r15190] EUtilities remote tests back online (simple tests only)
+
+2008-12-16 20:17  cjfields
+
+	* [r15189] EUtilities remote tests back online (simple tests only)
+
+2008-12-16 17:42  sendu
+
+	* [r15180] added POD docs
+
+2008-12-16 16:55  sendu
+
+	* [r15179] new transfac pro database parser
+
+2008-12-16 12:48  sendu
+
+	* [r15178] new test method test_output_dir(), a wrapper around
+	  Temp::File::tempdir
+
+2008-12-16 07:49  jason
+
+	* [r15177] skip test count updated for instances when SVG::Graph is
+	  not installed
+
+2008-12-16 05:51  jason
+
+	* [r15176] parse DBlinks now supported
+
+2008-12-16 05:11  cjfields
+
+	* [r15175] You must actually test data if you want this module to
+	  be included in the release (this now fails two tests)
+
+2008-12-16 05:10  cjfields
+
+	* [r15174] Don't use print! Changing to $self->debug or commenting
+	  out
+
+2008-12-16 04:58  jason
+
+	* [r15173] indentation and formatting only
+
+2008-12-16 04:50  cjfields
+
+	* [r15172] Bio::Graph deprecated in 1.6
+
+2008-12-16 03:28  cjfields
+
+	* [r15171] stifle warnings when passing string instead of integer
+
+2008-12-16 03:25  cjfields
+
+	* [r15170] hash ref, not array ref
+
+2008-12-16 03:24  cjfields
+
+	* [r15169] [bug 2637]
+	  * Bio::DB::HIV and related need schema file installed along with
+	  the modules
+
+2008-12-16 03:19  cjfields
+
+	* [r15168] [bug 2637]
+	  * tests (HIVQuery may be problematic so will need to keep an eye
+	  on it)
+
+2008-12-16 03:17  cjfields
+
+	* [r15167] [bug 2637]
+	  * forgot one module!
+	  * some fixes for tests: little known fact, warnings are good!
+
+2008-12-16 03:17  cjfields
+
+	* [r15166] [bug 2637]
+	  * forgot one module!
+	  * some fixes for tests: little known fact, warnings are good!
+
+2008-12-15 20:42  cjfields
+
+	* [r15165] [bug 2637]
+	  * New modules for accessing HIV Sequence Database
+	  * Thanks to Mark Jensen for the code!
+	  * Tests to be committed soon
+
+2008-12-15 19:30  cjfields
+
+	* [r15164] [bug 2712]
+	  * allow unread lines (passes tests)
+
+2008-12-15 18:39  cjfields
+
+	* [r15163] scores
+
+2008-12-15 18:13  cjfields
+
+	* [r15162] remaining tests for Bio::Tool::EUtilities
+
+2008-12-15 18:10  cjfields
+
+	* [r15161] more test data
+
+2008-12-15 18:09  cjfields
+
+	* [r15160] Updates:
+	  * simplify data dumping/printing (everything implements
+	  to_string, calls as needed)
+	  * round out the print_* methods (DocSums, LinkSets, LinkInfo,
+	  FieldInfo, GlobalQuery, all)
+
+2008-12-15 17:49  sendu
+
+	* [r15159] Bio::Map extended to model transcription factors and
+	  their binding sites
+
+2008-12-15 11:08  sendu
+
+	* [r15158] minor comment correntions
+
+2008-12-14 17:55  jason
+
+	* [r15157] another example BLAST
+
+2008-12-13 06:14  cjfields
+
+	* [r15156] initial batch of EUtilParameters tests
+
+2008-12-13 01:14  cjfields
+
+	* [r15155] einfo tests
+
+2008-12-12 21:33  cjfields
+
+	* [r15154] some EUtilities tests (parsing from files)
+
+2008-12-12 21:32  cjfields
+
+	* [r15153] some test data for Bio::Tools::EUtilities
+
+2008-12-12 21:29  cjfields
+
+	* [r15152] updates to EUtilities (getting ready for docs, tests,
+	  etc)
+
+2008-12-12 21:28  cjfields
+
+	* [r15151] Move EUtilParameters to Tools (seems more appropriate)
+
+2008-12-12 13:47  sendu
+
+	* [r15150] new parser for the Match program from transfac
+
+2008-12-12 10:52  heikki
+
+	* [r15149] Do not use "return undef" unless you really know that it
+	  is necessary. Use plain "return". If you know what you are doing
+	  and use "return undef", mark it: "# intended return undef"
+
+2008-12-11 22:05  scain
+
+	* [r15148] Adding the postgres adaptor for SeqFeature::Store;
+	  doesn't pass tests yet!
+
+2008-12-11 21:49  cjfields
+
+	* [r15147] fix for bug when getting cached response with filename
+	  or callback (prevents resubing the request)
+
+2008-12-11 19:17  cjfields
+
+	* [r15146] small pointer to wiki page (will update along with wiki
+	  closer to release)
+
+2008-12-11 19:16  cjfields
+
+	* [r15145] small update
+
+2008-12-11 19:16  cjfields
+
+	* [r15144] updates
+
+2008-12-11 19:15  cjfields
+
+	* [r15143] return, not 'return undef'
+
+2008-12-11 18:58  cjfields
+
+	* [r15142] return, not 'return undef'
+
+2008-12-11 05:34  cjfields
+
+	* [r15141] [bug 2699]
+	  * skip off by two
+
+2008-12-11 05:30  cjfields
+
+	* [r15140] [bug 2699]
+	  * addressing Heikki's comments
+
+2008-12-11 05:02  cjfields
+
+	* [r15139] [bug 2707]
+	  * temporarily quotemeta file names for BLAST output files
+
+2008-12-10 18:27  lstein
+
+	* [r15138] added simple feature deletion script, take 2
+
+2008-12-10 18:26  lstein
+
+	* [r15137] added simple feature deletion script
+
+2008-12-10 16:52  cjfields
+
+	* [r15136] Removing from HEAD (deprecated for 1.6)
+
+2008-12-10 16:46  cjfields
+
+	* [r15135] mini pod fix
+
+2008-12-10 14:10  thm09830
+
+	* [r15134] use superclasses initialization and argument
+	  processing/attribute setting as suggested in styleguide
+
+2008-12-10 12:51  thm09830
+
+	* [r15133] Test/Example Data for ReseqChip
+
+2008-12-10 12:49  thm09830
+
+	* [r15132] Providing Testscript for ReseqChip
+
+2008-12-10 12:46  thm09830
+
+	* [r15131] Bug Fixes, New Feature: different Fasta Files (e.g.
+	  comprising Basecalls with different Quality Thresholds) for
+	  analyzing Insertion and Substitutions
+
+2008-12-10 05:51  cjfields
+
+	* [r15130] update deprecation list
+
+2008-12-10 05:48  cjfields
+
+	* [r15129] remove Bio::Graphics (separate package now)
+
+2008-12-10 05:47  cjfields
+
+	* [r15128] [bug 2637]
+	  * Add in Mark Jensen (working on adding Mark's Bio::DB::HIV
+	  modules, which come with tests)
+
+2008-12-10 01:27  cjfields
+
+	* [r15127] Remove dependencies for Bio::Graphics and deprecated
+	  modules
+
+2008-12-09 23:04  lstein
+
+	* [r15126] fixed issue of score and phase fields disappearing from
+	  the first part of a multi-child feature
+
+2008-12-09 21:46  lstein
+
+	* [r15125] removed Bio::Graphics itself
+
+2008-12-09 06:03  cjfields
+
+	* [r15124] Squash warning
+
+2008-12-09 06:02  cjfields
+
+	* [r15123] diag() only on verbose
+
+2008-12-09 03:32  cjfields
+
+	* [r15122] Fix last loop tests, move some to can_ok
+
+2008-12-09 03:19  cjfields
+
+	* [r15121] Modify to test new temp classes and ensure that added
+	  methods do not pollute original namespace
+
+2008-12-09 03:11  cjfields
+
+	* [r15120] update Mauricio's email
+
+2008-12-09 02:08  lstein
+
+	* [r15119] Bio::Graphics has become its own module; latest version
+	  is uploaded to CPAN
+
+2008-12-08 21:55  scain
+
+	* [r15118] added my info
+
+2008-12-08 21:35  dave_messina
+
+	* [r15117] adding myself to author list
+
+2008-12-08 20:12  bosborne
+
+	* [r15116] I'm a core dev
+
+2008-12-08 20:00  cjfields
+
+	* [r15115] Update Roy's email
+
+2008-12-08 19:54  cjfields
+
+	* [r15114] Roy's email (and bioperl.org not bioperl.edu)
+
+2008-12-08 19:51  cjfields
+
+	* [r15113] Updated emails
+
+2008-12-08 18:12  sendu
+
+	* [r15112] BioperlTest -> Bio::Root::Test
+
+2008-12-08 17:45  sendu
+
+	* [r15111] gain-of-function changes for mysql implementation only:
+	  features are searchable by source, and you can avoid freezing
+	  objects to the db for size and speed benefits; was unable to get
+	  any feedback from the maintainer about this change - maintainer
+	  may revert if this is undesireable
+
+2008-12-08 17:31  sendu
+
+	* [r15110] new ability to define what is consered an overlap
+
+2008-12-08 17:25  sendu
+
+	* [r15109] ModuleBuildBioperl -> Bio::Root::Build
+
+2008-12-08 13:41  sendu
+
+	* [r15104] evalue now parsed and set as score
+
+2008-12-07 15:36  cjfields
+
+	* [r15103] [bug 2699]
+	  * Fix paths for Bio::DB::SeqFeature tests
+	  * Restore BDB tests
+
+2008-12-06 18:33  jason
+
+	* [r15097] demonstrate with a valid 'site_model' as 'codons' rather
+	  than unimplemented 'syn'
+
+2008-12-06 11:49  dave_messina
+
+	* [r15096] forgot a linebreak. Oh the irony...
+
+2008-12-06 11:01  dave_messina
+
+	* [r15095] improved message for genemap read error to suggest
+	  possible solution; also added test for catching this error.
+
+2008-12-05 04:40  cjfields
+
+	* [r15094] Need to retrieve the tree for output
+
+2008-12-05 02:46  cjfields
+
+	* [r15093] [bug 2450]
+	  * aln-specific annotation in SimpleAlign->annotation
+	  * seq-specific annotation in SimpleAlign's FeatureHolderI (and
+	  tied to related sequence)
+	  * Bio::Annotation::Target (which was DBLink-y) now inherits
+	  DBLink (so we now have a DBLink that's RangeI)
+	  * tests for above
+
+2008-12-04 19:02  cjfields
+
+	* [r15092] Make Target a true DBLink
+
+2008-12-04 12:00  heikki
+
+	* [r15091] interpro XML parser tries to assign "NA" into a numeric
+	  "score" field. There does not seem to be an easy way to fix this
+	  in there, so exluding all letters_only values to score()
+
+2008-12-04 10:52  heikki
+
+	* [r15090] remove t/sequencetrace.t and add missing method tests
+	  into t/SeqIO/scf (could be split into IO and storage class
+	  spesific tests)
+
+2008-12-04 04:35  cjfields
+
+	* [r15089] Directory is no longer needed (Heikki split this up into
+	  LocalDB and RemoteDB)
+
+2008-12-04 02:49  bosborne
+
+	* [r15088] svn propset Id
+
+2008-12-04 02:48  bosborne
+
+	* [r15087] Add script that demonstrates reverse_tranlate_best()
+
+2008-12-04 02:32  lstein
+
+	* [r15086] fixed default of ##index-subfeatures to true so that it
+	  behaves the way that it is documented to work
+
+2008-12-03 22:34  cjfields
+
+	* [r15085] add force_nse tests
+
+2008-12-03 22:31  cjfields
+
+	* [r15084] leave ID undefined if it isn't present, but allow the
+	  NSE to be created if forced (this may need revisiting in the
+	  future)
+
+2008-12-03 21:31  heikki
+
+	* [r15083] reorganising tests by group (5: rest)
+
+2008-12-03 14:14  bosborne
+
+	* [r15082] Clarify what frame is used by count_codons
+
+2008-12-03 13:34  cjfields
+
+	* [r15081] Remove files accidently added from last commit
+
+2008-12-03 06:37  cjfields
+
+	* [r15080] Reorganize Tools tests (needs some more splitting)
+
+2008-12-03 06:26  cjfields
+
+	* [r15079] Remove (tests are redundant, in Consed.t)
+
+2008-12-03 06:17  cjfields
+
+	* [r15078] Merge tests and remove redundant file
+
+2008-12-03 06:15  cjfields
+
+	* [r15077] Update test count
+
+2008-12-03 06:13  cjfields
+
+	* [r15076] Merge tests
+
+2008-12-03 05:56  cjfields
+
+	* [r15075] Remove redundant file
+
+2008-12-03 04:57  bosborne
+
+	* [r15074] Add method that finds the most common codons for the
+	  aa's, uses those to reverse-translate a nucleotide sequence
+
+2008-12-03 03:40  cjfields
+
+	* [r15073] Remove old files
+
+2008-12-03 03:34  cjfields
+
+	* [r15072] Start Tools move
+
+2008-12-03 03:21  cjfields
+
+	* [r15071] small updates:
+	  * fix svn tags
+	  * add eval test to svggraph (failing for some reason)
+	  * bsml test count was wrong
+
+2008-12-03 03:05  cjfields
+
+	* [r15070] forgot to increment test count
+
+2008-12-03 02:49  cjfields
+
+	* [r15069] Add a couple of tests for seq_id (small but significant
+	  inconsistency btwn blast and blast_pull). Should rectify this
+	  prior to 1.6.
+
+2008-12-02 22:09  cjfields
+
+	* [r15068] [bug 2450]
+	  * add -source
+	  * more tests
+
+2008-12-02 21:46  cjfields
+
+	* [r15067] [bug 2450]
+	  * completely refactor stockholm to use a generic alignment
+	  Handler object (worked better than I thought, should be
+	  applicable to other formats)
+	  * now captures sequence-based annotation
+	  * now working on refactoring write_aln to get correct output
+
+2008-12-02 21:44  cjfields
+
+	* [r15066] [bug 2450]
+	  * more parameters for the constructor
+	  * if using NSE for a lookup, one should use the NSE for storing
+	  the name
+
+2008-12-02 21:41  cjfields
+
+	* [r15065] [bug 2450]
+	  * add parameter for passing in named meta tags as hash ref to the
+	  constructor
+
+2008-12-02 21:40  cjfields
+
+	* [r15064] some pod updates
+
+2008-12-02 21:38  cjfields
+
+	* [r15063] [bug 2450]
+	  * include version in NSE (Rfam/Pfam now does this)
+
+2008-12-02 20:58  cjfields
+
+	* [r15062] fix erroneously renamed stockholm tests
+
+2008-12-02 15:24  bosborne
+
+	* [r15061] Correct typos, runnable Synopsis
+
+2008-12-02 13:40  cjfields
+
+	* [r15060] small pod fix
+
+2008-12-02 08:24  heikki
+
+	* [r15059] reorganising tests by group (4: Map)
+
+2008-12-02 08:24  heikki
+
+	* [r15058] reorganising tests by group (4: Map)
+
+2008-12-02 08:20  heikki
+
+	* [r15057] reorganising tests by group (3: Root)
+
+2008-12-02 08:02  heikki
+
+	* [r15056] reorganising tests by group (2: TreeIO plugins)
+
+2008-12-02 07:37  heikki
+
+	* [r15055] reorganising tests by group (2: Tree)
+
+2008-12-02 06:46  jason
+
+	* [r15054] XML::DOM dependancy
+
+2008-12-02 04:32  heikki
+
+	* [r15053] reorganising tests by group (1)
+
+2008-12-01 08:47  heikki
+
+	* [r15052] make SYNOPSIS code to compile
+
+2008-11-30 22:19  cjfields
+
+	* [r15051] silence GuessSeqFormat.t warnings (not sure if old
+	  version was even legal Stockholm format)
+
+2008-11-30 21:04  bosborne
+
+	* [r15050] Bug 2336, test length of each sequence in tmp.fst
+
+2008-11-29 19:45  dave_messina
+
+	* [r15049] adding more diagnostic messages to t/SeqIO/intepro.t
+
+2008-11-28 13:24  dave_messina
+
+	* [r15048] verbose mistakenly left on in PrimarySeq->new, which was
+	  causing RootIO to be verbose about its tempfile handling after. I
+	  noticed this from running SeqIO/largefasta.t. Reverting r15026,
+	  wherein Heikki went after the same problem in
+	  Bio::Seq::LargeLocatableSeq. Also minor cleanup in
+	  t/SeqIO/largefasta.t and t/EUtilities.t
+
+2008-11-28 10:00  dave_messina
+
+	* [r15047] switching EUtilities.t over to BioperlTest style test
+	  initialization. Was using DEBUG flag to choose whether to run
+	  network tests.
+
+2008-11-28 06:00  cjfields
+
+	* [r15046] rearrange to avoid unnecessary warnings
+
+2008-11-28 05:58  cjfields
+
+	* [r15045] Add warning for missing data (real bug)
+
+2008-11-28 05:47  cjfields
+
+	* [r15044] hash ref, not a hash
+
+2008-11-28 05:42  cjfields
+
+	* [r15043] test file name and test # correction
+
+2008-11-28 05:40  cjfields
+
+	* [r15042] correct test file name
+
+2008-11-28 05:38  cjfields
+
+	* [r15041] '::', not ':'
+
+2008-11-28 05:33  cjfields
+
+	* [r15040] rename (recursive tests think this is a test file)
+
+2008-11-28 05:23  cjfields
+
+	* [r15039] recurse into test subdirectories (means any non-test
+	  filed in t/ must not end in *.t!)
+
+2008-11-28 04:51  cjfields
+
+	* [r15038] remove redundant copy
+
+2008-11-28 04:50  cjfields
+
+	* [r15037] move into directory structure
+
+2008-11-28 04:38  cjfields
+
+	* [r15036] move into directory structure (DaveM++)
+
+2008-11-27 16:48  dave_messina
+
+	* [r15035] Big reorganization of SeqIO tests. Now each flavor of
+	  SeqIO has its own test file (if it didn't already). Where
+	  possible, test data files were renamed test.<module> e.g.
+	  test.fasta so that it's easy to locate them and future code
+	  refactoring is simplified.
+
+2008-11-26 21:15  lstein
+
+	* [r15034] squashed occasional unit variable warning
+
+2008-11-26 21:03  cjfields
+
+	* [r15033] [bug 2567]
+	  * store sequence by placement in block (not by name)
+	  * this will not fix locatableseqs with same id/start-end (which
+	  are replaced in a SimpleAlign with a warning)
+
+2008-11-26 18:19  cjfields
+
+	* [r15032] Redundant; file was renamed SearchIO_blast_pull.t.
+
+2008-11-26 18:09  cjfields
+
+	* [r15031] [bug 2686]
+	  * preliminary support for xmlcompact preprocessing (use
+	  -xmlcompact => 1 to preprocess these files)
+
+2008-11-26 08:27  heikki
+
+	* [r15029] POD fix
+
+2008-11-26 08:12  heikki
+
+	* [r15028] get rid off "my" variable redeclaration warning
+
+2008-11-26 07:41  heikki
+
+	* [r15027] fix POD syntax
+
+2008-11-26 07:36  heikki
+
+	* [r15026] silence the warnings about removing the temporary files.
+	  Tests in t/AlignIO_largemultifasta.t are now cleaner
+
+2008-11-26 00:03  cjfields
+
+	* [r15025] fix subversion tags
+
+2008-11-25 23:59  cjfields
+
+	* [r15024] po, not poa
+
+2008-11-25 23:52  cjfields
+
+	* [r15023] fix undefined value warnings
+
+2008-11-25 23:11  cjfields
+
+	* [r15022] [bug 2686]
+	  * fix to support -m7 output from WU-BLAST (patch courtesy of
+	  Jason Wood)
+
+2008-11-25 23:09  cjfields
+
+	* [r15021] [bug 2641, 2642]
+	  * patches for bioperl.lisp, courtesy of Mark Jensen
+
+2008-11-25 22:03  cjfields
+
+	* [r15020] split up AlignIO tests
+
+2008-11-25 20:48  fangly
+
+	* [r15019] Updated Bio::Assembly tests
+
+2008-11-25 17:16  cjfields
+
+	* [r15018] [bug 2682]
+	  * patch substr() to accept named arguments, optionally strip gaps
+	  * patch courtesy of Mark Jensen
+
+2008-11-25 15:40  cjfields
+
+	* [r15017] [bug 2630]
+	  * more LocatableSeq tweaks.
+	  * no_gaps() reverted (was not counting gaps accurately)
+	  * notes (and TODO tests) about issues with using globals
+	  variables and LocatableSeq; will fix in 1.7
+
+2008-11-24 05:46  cjfields
+
+	* [r15016] [bug 2633]
+	  * frac_* method values slightly changed (rounding instead of
+	  floor'ing with int)
+	  * total gap values were wrong (now corrected in parser)
+
+2008-11-24 05:05  cjfields
+
+	* [r15015] [bug 2663]
+	  * BLAST data checked for correct seq_inds() positions; gap
+	  positions for translated sequences indicate the position just
+	  before the gap
+	  * the third codon position (not the first) to be precise
+
+2008-11-24 05:02  cjfields
+
+	* [r15014] [bug 2663]
+	  * overhaul seq_inds to handle frameshifts, true gap positions
+	  (the position just prior to the gap)
+	  * relevant data passed onto LocatableSeqs when needed
+	  * added 'frameshift' as an option to seq_inds to grab the
+	  positions a frameshift likely occurs in (for TFASTX/Y)
+
+2008-11-24 04:52  cjfields
+
+	* [r15013] [bug 2630]
+	  * small Simplealign fix to deal with symbols
+
+2008-11-24 04:50  cjfields
+
+	* [r15012] [bug 2262]
+	  * Warn about blessing into Bio::Seq, indicate Bio::LocatableSeq
+	  needs some revision.
+
+2008-11-24 02:33  cjfields
+
+	* [r15011] [bug 2630]
+	  * add frameshift support
+	  * add tests
+	  * end() now takes frameshifts into account
+
+2008-11-23 20:16  bosborne
+
+	* [r15010] Add test for bug 2339, and fix
+
+2008-11-23 19:42  bosborne
+
+	* [r15009] Add for bug 2339
+
+2008-11-21 21:33  scain
+
+	* [r15008] Fixes for the change to Bio::Annotation::Comment that
+	  removed double quote overloading
+
+2008-11-21 16:36  lstein
+
+	* [r15007] "blunting" of the generic glyph when the glyph goes off
+	  the edge of the panel is now consistent between directional
+	  (fillled arrow) and non-directional (simple box) renderings
+
+2008-11-19 21:55  lstein
+
+	* [r15006] moved more glyphs from gbrowse into bioperl
+
+2008-11-19 20:32  dave_messina
+
+	* [r15005] more sensitive fix for bug 2632, courtesy of Francisco
+	  J. Ossandon
+
+2008-11-18 03:46  cjfields
+
+	* [r15004] * Double-checked data, tested results were wrong
+
+2008-11-18 02:58  cjfields
+
+	* [r15003] * seq_inds is not defined for Model-based HSPs
+	  * remove redundant tests
+
+2008-11-18 02:43  cjfields
+
+	* [r15002] * fix POD
+	  * make verbose to trip evals
+
+2008-11-17 22:59  cjfields
+
+	* [r15001] * 'highly' (and I get r15000!)
+
+2008-11-17 22:57  cjfields
+
+	* [r15000] Remove redundant test files
+
+2008-11-17 22:57  cjfields
+
+	* [r14999] [tests]
+	  * split up SearchIO into more manageable bits
+	  * relevant Bio::Tools parsers get their own Tools_* test files
+	  where needed
+
+2008-11-17 22:54  cjfields
+
+	* [r14998] move results2hash test utility sub to SearchUtils
+
+2008-11-17 16:20  sendu
+
+	* [r14997] resolve long-standing issue with auto-install of
+	  circular dependency: no more! Now you must choose to install
+	  circular deps in interactive mode; they do not get installed when
+	  installing "all" modules
+
+2008-11-17 15:34  sendu
+
+	* [r14996] fixed bug 2667: no more complaints about code refs
+
+2008-11-16 06:20  cjfields
+
+	* [r14995] [bug 2663]
+	  * some fixes for seq_ind().
+	  * 7 other SearchIO.t tests failing (all FASTA related), will look
+	  into
+
+2008-11-16 06:18  cjfields
+
+	* [r14994] perltidy
+
+2008-11-16 06:14  cjfields
+
+	* [r14993] [bug 2635]
+	  * new method cat()
+	  * needs further evaluation using meta data, but code is iin place
+	  which should take care of it.
+	  * patch courtesy of Roy Chaudhuri
+
+2008-11-14 03:29  cjfields
+
+	* [r14991] [bug 2656]
+	  * fix mispelled module name - patch courtesy of Fernan Aguero
+
+2008-11-11 19:55  cjfields
+
+	* [r14990] remove debugging lines
+
+2008-11-11 19:52  cjfields
+
+	* [r14989] remove fixed verbose flag
+
+2008-11-11 19:45  sendu
+
+	* [r14988] corrected test to test the hmmer parser, not the
+	  hmmer_pull parser; test passes but generates big warning
+
+2008-11-11 19:44  cjfields
+
+	* [r14987] [bug 2650]
+	  * implement result_count for blastxml
+
+2008-11-11 19:29  cjfields
+
+	* [r14986] Clarify result_count (discussions on mail list per Dan
+	  Bolser and Sendu).
+
+2008-11-11 19:21  cjfields
+
+	* [r14985] [bug 2632]
+	  * added tests for plain ol' hmmer parsing
+
+2008-11-11 18:39  sendu
+
+	* [r14984] fixed significant alignment parsing bug affecting hsps,
+	  and also got rid of warnings when length not known
+
+2008-11-11 18:37  sendu
+
+	* [r14983] test data for bug 2632
+
+2008-11-11 16:03  lstein
+
+	* [r14982] migrated glyphs from gbrowse distribution into bioperl
+	  main
+
+2008-11-10 13:21  cjfields
+
+	* [r14981] [bug 2645]
+	  * return assembly only when assembly contains contigs
+	  * noticing that singlet.t tests are failing
+
+2008-11-04 19:10  cjfields
+
+	* [r14980] wrap text
+
+2008-11-04 19:08  cjfields
+
+	* [r14979] * parse 'Features in this part of subject sequence:' and
+	  pass on data to GenericHSP
+
+2008-11-04 19:07  cjfields
+
+	* [r14978] * parse 'Features in this part of subject sequence' data
+	  from some NCBI output (string can be retrieved using new
+	  GenericHSP::hit_features method)
+	  * add test
+
+2008-11-01 18:46  lstein
+
+	* [r14977] restored the ability of add_feature() to set the
+	  feature's type. Unfortunately side-effect: feature is actually
+	  altered during this operation
+
+2008-11-01 18:28  lstein
+
+	* [r14976] fixed parsing of # characters so that HTML fragments are
+	  not stripped out
+
+2008-10-30 21:28  cjfields
+
+	* [r14975] [bug 2632]
+	  * bypass CS lines (fix courtesy of Francisco Ossandon)
+
+2008-10-29 18:17  cjfields
+
+	* [r14974] fix seq_inds(); wasn't calling identical residues for
+	  FASTA parsing
+
+2008-10-29 04:03  cjfields
+
+	* [r14973] [bug 2633]
+	  * fasta.pm: switch out POSIX::ceil)( for sprintf() rounding
+	  (off-by-one error)
+	  * GenericHSP: switch out int() for sprintf() rounding. No
+	  apparent effect, but int() is effectively a POSIX::floor() in
+	  this case (no rounding)
+	  * downside: 8 tests are failing. Need to evaluate further to
+	  ensure whether the expected test results are erroneous, or
+	  whether some changes need to be rolled back.
+
+2008-10-28 17:26  jason
+
+	* [r14972] jasonfail. add missing test data file for FASTA v35.04
+
+2008-10-28 16:08  cjfields
+
+	* [r14971] [bug 2630]
+	  * initial Bio::LocatableSeq::mapping implementation (two element
+	  array, maps # symbols to # positions)
+	  * fixes GenericHSP warnings, but FastaHSP-generated LocatableSeqs
+	  are still problematic
+	  * removed redundant code from LargeLocatableSeq and fix some
+	  inheritance tree problems
+
+2008-10-26 15:47  dave_messina
+
+	* [r14968] clarifying example code. Credit to Nic Blouin.
+
+2008-10-26 05:29  cjfields
+
+	* [r14967] Fix unlink() warning
+
+2008-10-26 05:27  cjfields
+
+	* [r14966] end = start if only start is passed
+
+2008-10-26 05:10  cjfields
+
+	* [r14965] use valid_Location to check Location state
+
+2008-10-26 05:03  cjfields
+
+	* [r14964] add docs for LocationI method valid_Location
+
+2008-10-26 04:54  cjfields
+
+	* [r14963] [bug 2621]
+	  * add valid_Location method to LocationI and
+	  Bio::Location::Atomic ( if ($location->valid_Location) {...} )
+	  * checks state of Bio::LocationI (i.e. at check point, indicates
+	  whether it represents a valid Bio::LocationI, which may be
+	  implementation-specific)
+	  * use in Bio::SF::Generic for checking for feature expansion
+
+2008-10-26 04:02  cjfields
+
+	* [r14962] [bug 2621]
+	  * ##sequence region directive should be:
+	  ##sequence-region seqid start end
+
+2008-10-26 03:40  cjfields
+
+	* [r14960] [bug 2624]
+	  * store score() as a tag (don't treat as a 'first-class'
+	  attribute, but an optional value)
+
+2008-10-26 03:25  cjfields
+
+	* [r14959] [bug 2621]
+	  * end = start if not defined
+	  * Throw warnings if the above condition occurs (likely a silent
+	  bug as this is Bio::Location::Simple) or if start and end are not
+	  defined
+
+2008-10-25 23:37  cjfields
+
+	* [r14958] bullet-proof prototype test
+
+2008-10-24 19:50  bosborne
+
+	* [r14957] Add tests for Index::Blast and RPSBLAST
+
+2008-10-24 18:42  bosborne
+
+	* [r14956] Fix for RPS-BLAST
+
+2008-10-24 07:02  heikki
+
+	* [r14955] typo in docs
+
+2008-10-23 20:36  bosborne
+
+	* [r14954] Correct the example
+
+2008-10-23 19:18  jason
+
+	* [r14953] support new method in API get_seq_by_id
+
+2008-10-23 19:13  jason
+
+	* [r14952] FASTA - 35.04 Parameters section parsing for Matrix
+
+2008-10-23 19:13  jason
+
+	* [r14951] FASTA - 35.04 Parameters section parsing for Matrix
+
+2008-10-22 23:24  jason
+
+	* [r14950] Allow multi-ID indexing per sequence. This can be rolled
+	  back later if it isn't appropriate
+
+2008-10-22 06:42  sendu
+
+	* [r14949] Don't include potentially undefined variables in warning
+	  message
+
+2008-10-22 01:04  jason
+
+	* [r14948] more specific warning
+
+2008-10-22 01:03  jason
+
+	* [r14947] fix email address
+
+2008-10-22 00:52  cjfields
+
+	* [r14946] fix file properties
+
+2008-10-22 00:49  cjfields
+
+	* [r14945] new module for parsing vecscreen -f 3 output, courtesy
+	  of Robert Buels
+
+2008-10-22 00:45  jason
+
+	* [r14944] fix email address
+
+2008-10-21 18:22  fangly
+
+	* [r14943] Removed superfluous statement in Bio::Assembly::IO::ace
+
+2008-10-21 04:01  fangly
+
+	* [r14942] [Bug 2455] Bio::Assembly::IO::ace singlet support
+	  * the driver doesn't look for additional files to find the
+	  singlets in
+	  * in the ACE file, any contig of one sequence is loaded as a
+	  Bio::Assembly::Singlet
+
+2008-10-21 01:44  fangly
+
+	* [r14941] Fixed missing -end for the contig and singlet features
+	  in Bio::Assembly::IO::tigr
+
+2008-10-21 00:23  fangly
+
+	* [r14940] [Bug 2519] and [Bug 2459]
+	  Changed the Bio::Assembly::IO::ace driver to parse more generic
+	  contig IDs
+
+2008-10-20 23:06  fangly
+
+	* [r14939] Additional checks in the singlet code
+
+2008-10-20 03:56  fangly
+
+	* [r14938] Cleanup of the Bio::Assembly::Singlet module
+
+2008-10-19 21:50  fangly
+
+	* [r14937] [bug 2441] Singlets as Bio::Assembly::Singlet objects
+	  * documentation update of Bio::Assembly::ScaffoldI and
+	  Bio::Assembly::Scaffold
+	  * verification of input object type in Bio::Assembly::Scaffold
+	  * Bio::Assembly::IO::phrap modification to generate
+	  Bio::Assembly::Singlet objects
+
+2008-10-18 06:23  heikki
+
+	* [r14936] revcom on a Bio::LocatableSeq does not change the
+	  outcome of column_from_residue_number() no matter how
+	  counterintutive it is. The main reason is that revcom on sequence
+	  that is part of the alignment is a non-biological process.
+
+2008-10-17 05:45  heikki
+
+	* [r14935] Write out tags color and label as a comment understood
+	  by the FigTree program
+
+2008-10-15 18:57  cjfields
+
+	* [r14934] add -source for ARP
+
+2008-10-15 18:53  cjfields
+
+	* [r14933] [bug 2563]
+	  * add TagTree convenience method 'pairs' (get a hash of key/val
+	  for simple TagTree data)
+	  * refactored ARP parsing - add annotation data, new tests
+
+2008-10-15 04:11  hartzell
+
+	* [r14932] * commit a TODO test that catches a problem with getting
+	  a column
+	  from a locatable seq when the column is before the first residue
+	  in the sequence and the sequences start != 1.
+
+2008-10-15 03:47  hartzell
+
+	* [r14931] * touch up the documentation for
+	  column_from_residue_number and
+	  location_from_column.
+	  
+	  There's still a problem with location_from_column, the docs say
+	  it will return undef for the first column (given the example) but
+	  the reality is that it returns an IN-BETWEEN. This is consistent
+	  with how it behaves for column 11 (given the example).
+	  
+	  I'll ask around about who might be depending on the current
+	  behaviour.
+
+2008-10-14 10:48  heikki
+
+	* [r14930] fix parsimony score of ps() to work with polytomies
+
+2008-10-10 19:19  cjfields
+
+	* [r14929] typo
+
+2008-10-10 19:18  cjfields
+
+	* [r14928] [bug 2519]
+	  * forgot ace!
+
+2008-10-10 19:17  cjfields
+
+	* [r14927] [bug 2519]
+	  * fix bug introduced by previous patch (new patch courtesy of
+	  Michael Kiwala)
+
+2008-10-09 09:48  lstein
+
+	* [r14926] fixed broken primary_id generation in memory adaptor
+
+2008-10-09 08:20  heikki
+
+	* [r14925] fixed ps() output; spotted by Mira Han
+
+2008-10-08 22:11  lstein
+
+	* [r14924] removed stupid debugging statement
+
+2008-10-08 22:10  lstein
+
+	* [r14923] added a workaround that prevents panel from crashing
+	  when trying to draw an image with no tracks in it
+
+2008-10-08 17:07  lstein
+
+	* [r14922] try to distinguish between #aabbcc colors and right-hand
+	  comments
+
+2008-10-07 22:06  cjfields
+
+	* [r14920] add svn tag
+
+2008-10-07 22:06  cjfields
+
+	* [r14919] TODO's work
+
+2008-10-07 18:38  cjfields
+
+	* [r14918] [bug 2612]
+	  * undef the name, don't carry it over
+
+2008-10-07 17:52  cjfields
+
+	* [r14917] [bug 2612]
+	  Allow all-gap sequences; if start == 0, assume sequence is blank
+	  and end no longer needs adjustment
+
+2008-10-03 17:13  lstein
+
+	* [r14915] apply HTML escaping to imagemap title attributes rather
+	  than URL escaping
+
+2008-10-02 21:04  cjfields
+
+	* [r14914] clean up XMFA parsing, allow spaces in parsing (ende++,
+	  from IRC)
+
+2008-09-27 05:12  cjfields
+
+	* [r14913] [BUG] bug 2598
+	  * added more for 'J'
+	  * added pyrrolysine (O) data
+	  * removed duplicated hash
+
+2008-09-26 20:50  cjfields
+
+	* [r14912] [BUG] bugfix for # 2598 (add 'J')
+
+2008-09-26 18:42  miraceti
+
+	* [r14911] add default first line to phyloXML output
+
+2008-09-26 18:15  cjfields
+
+	* [r14910] [BUG] bug 2593
+	  * works with Storable now and passes tests
+
+2008-09-26 17:38  cjfields
+
+	* [r14909] [BUG] fix bug 2595
+	  * fix comp. stats to check for 0/1 instead of yes/no
+	  * check other yes/no for similar issues? or punt until someone
+	  takes this over?
+
+2008-09-26 13:39  sendu
+
+	* [r14908] keep memory leak fix from previous commit and solve the
+	  Speciest.t test failures introduced. But there may be issues with
+	  this kludge. See bug 2594.
+
+2008-09-24 21:01  miraceti
+
+	* [r14907] add_phyloXML_annotation
+
+2008-09-24 17:05  lstein
+
+	* [r14906] added documentation for bicolor options
+
+2008-09-23 21:50  sendu
+
+	* [r14905] increased the version number to be higher than the
+	  current release version
+
+2008-09-19 16:17  heikki
+
+	* [r14904] method to add trait values in into leaf nodes
+	  (add_trait), indicator values for trait distribution (ps, ai, mc)
+	  and tree shape (cherries)
+
+2008-09-18 19:45  lstein
+
+	* [r14903] killed a few uninit variable warnings
+
+2008-09-18 19:04  lstein
+
+	* [r14902] added missing aggregator needed by default gbrowse
+	  installation
+
+2008-09-18 18:22  lstein
+
+	* [r14901] removed another text::shellwords dependency
+
+2008-09-18 16:02  cjfields
+
+	* [r14900] Use 'warning_like' for instances where a regex match is
+	  needed
+
+2008-09-18 10:07  heikki
+
+	* [r14899] Tests for is_binary().Added set_tag_value(). Tests for
+	  tags separately in trees and nodes. Ideally there should be a
+	  separate class that is a superclass for both. After sequence
+	  features moved to Bio::AnnotationI, I am not sure if it is worth
+	  creating (TaggableI?)
+
+2008-09-18 10:03  heikki
+
+	* [r14898] added is_binary()
+
+2008-09-17 13:50  cjfields
+
+	* [r14897] * No longer a stub
+	  * Appears to work fine with BioSQL, as evidenced by swissprot
+	  tests, but needs additional bioperl-db tests to check for deeply
+	  nested data
+
+2008-09-17 04:14  cjfields
+
+	* [r14896] 1965 + 6 -1 = 1970, not 1999
+
+2008-09-17 04:13  cjfields
+
+	* [r14895] passing TODO's (?!?)
+
+2008-09-17 04:06  cjfields
+
+	* [r14894] update tests (seq length change in record verified)
+
+2008-09-17 04:05  cjfields
+
+	* [r14893] set -end to coorespond to sequence end
+
+2008-09-16 20:27  cjfields
+
+	* [r14892] test result changed (start always < end)
+
+2008-09-16 20:22  cjfields
+
+	* [r14891] Fix nexus issues with seq. ambiguity symbol '.'
+
+2008-09-16 20:18  cjfields
+
+	* [r14890] MEGA now resets $GAP_SYMBOLS and $OTHER_SYMBOLS to get
+	  around sequence ambiguity issues
+
+2008-09-16 20:09  cjfields
+
+	* [r14889] Test data matches new XMFA example
+
+2008-09-16 20:07  cjfields
+
+	* [r14888] * XMFA alignment doesn't correspond to XMFA spec
+	  (http://asap.ahabs.wisc.edu/mauve-aligner/mauve-user-guide/mauve-output-file-formats.html);
+	  changed to correct start/end coordinates (code checks this)
+	  * fixed small warning, now passes AlignIO.t
+
+2008-09-16 19:26  cjfields
+
+	* [r14887] fix xmfa.pm parsing oops
+
+2008-09-16 19:20  cjfields
+
+	* [r14886] make LocatableSeq::end() consistent
+
+2008-09-16 19:10  cjfields
+
+	* [r14885] * fix start/end/strand
+	  * add alphabet() (and guess if not set)
+
+2008-09-16 19:09  cjfields
+
+	* [r14884] typo
+
+2008-09-16 18:27  jason
+
+	* [r14883] match '*' and '?' as well
+
+2008-09-16 04:13  miraceti
+
+	* [r14882] Relation/AnnotatableNode correct pod
+
+2008-09-16 03:59  miraceti
+
+	* [r14881] phyloxml correct pod format
+
+2008-09-16 03:23  miraceti
+
+	* [r14880] phyloxml more documentation
+
+2008-09-16 02:22  bosborne
+
+	* [r14879] Add Jason's script
+
+2008-09-15 20:30  bosborne
+
+	* [r14878] Minor edits
+
+2008-09-15 16:32  cjfields
+
+	* [r14877] remove debugging statement
+
+2008-09-15 16:28  cjfields
+
+	* [r14876] partial fix for arp (-end now works and counts ? as
+	  ambigious sequence instead of gap)
+
+2008-09-15 16:27  cjfields
+
+	* [r14875] -end parameter does not take gaps into account
+
+2008-09-15 16:26  cjfields
+
+	* [r14874] * always warn about passing wrong end() coordinate
+	  * distinguish $GAP_SYMBOLS from sequence data for using in
+	  _ungapped_length (more consistent)
+	  * this unveils errors in end coordinate calculation in several
+	  parsers (breaks some AlignIO tests)
+
+2008-09-15 14:25  lstein
+
+	* [r14873] removed spurious dependency on Text::Shellwords
+
+2008-09-14 20:41  cjfields
+
+	* [r14872] Create Data::Stag node lazily; always use node() to grab
+	  node instance
+
+2008-09-14 19:23  cjfields
+
+	* [r14871] add a few new (untested) URLAPI parameters
+
+2008-09-14 19:23  cjfields
+
+	* [r14870] use direct object syntax
+
+2008-09-13 19:10  heikki
+
+	* [r14869] Start counting internal IDs from 1. 0 as an index was
+	  creating too much trouble.
+	  Should not make any difference at code usage.
+
+2008-09-10 22:30  lstein
+
+	* [r14864] fixed primary_id method to return a more rational result
+
+2008-09-09 16:23  cjfields
+
+	* [r14863] bug 2579
+	  * spliced_seq() shouldn't automatically sort circular sequences.
+	  My question: should it be sorting a 'join' at all?
+
+2008-09-09 15:51  cjfields
+
+	* [r14862] bug 2580
+	  * add GO ID parsing (patch courtesy of John Osborne)
+
+2008-09-08 17:36  fangly
+
+	* [r14861] Bug correction regarding read location in a contig
+
+2008-09-08 17:34  fangly
+
+	* [r14860] Update number of sequences and their order when removing
+	  a sequence from a contig
+
+2008-09-08 17:32  fangly
+
+	* [r14859] Documentation improvement
+
+2008-09-07 05:32  heikki
+
+	* [r14858] Document that get_tag_values() return variable is
+	  context sensitive (array of scalar)
+
+2008-09-04 22:21  lstein
+
+	* [r14857] fixed bugs that interfered with the display of stranded
+	  features defined using the FeatureFile format
+
+2008-09-04 19:18  lstein
+
+	* [r14856] essential ideogram glyph base class missing
+
+2008-09-04 06:13  heikki
+
+	* [r14855] remove a spurious line creating an unneeded object
+
+2008-09-03 23:02  hartzell
+
+	* [r14854] small documentation typo fix
+
+2008-09-03 23:01  hartzell
+
+	* [r14853] small documentation typo and grammar fix
+
+2008-09-03 23:00  hartzell
+
+	* [r14852] small documentation typo fix
+
+2008-09-03 22:57  hartzell
+
+	* [r14851] small documentation typo fix
+
+2008-09-03 22:54  hartzell
+
+	* [r14850] small documentation fix
+
+2008-09-02 22:37  miraceti
+
+	* [r14849] testing translation between nhx and phyloxml
+
+2008-08-29 16:45  cjfields
+
+	* [r14840] Allow other Bio::SeqFeature::CollectionI
+
+2008-08-29 14:58  fangly
+
+	* [r14839] Fixed bug: not using gapped length to calculate
+	  LocatableSeq->end in _overlap_alignment. Letting the default
+	  behavior use ungapped length instead
+
+2008-08-29 14:49  fangly
+
+	* [r14838] Fixed bug: all LocatableSeq->end specified based on
+	  gapped length (instead of ungapped) now not specified
+
+2008-08-29 14:36  fangly
+
+	* [r14837] Fixed bug for add_seq: $seq->end now based on ungapped
+	  length
+
+2008-08-29 14:17  fangly
+
+	* [r14836] Fixed bug for set_consensus_sequence->end: end needs to
+	  take into account sequence gaps
+
+2008-08-28 14:59  cjfields
+
+	* [r14835] [bug 2576]
+	  * explicitly leave hit table block if a blank line is encountered
+	  after the hit table (passes all SearchIO.t tests)
+
+2008-08-27 20:44  hartzell
+
+	* [r14834] Fix a typo in pod doc
+
+2008-08-27 16:37  cjfields
+
+	* [r14833] grep not needed (check for ontology is in
+	  Ontology::get_predicate_terms)
+
+2008-08-27 16:33  cjfields
+
+	* [r14832] [bug 2573]
+	  * only work with Bio::Ontology::Relationship instances with a set
+	  Bio::Ontology::Ontology
+
+2008-08-27 15:00  cjfields
+
+	* [r14831] Update documentation
+
+2008-08-27 14:59  cjfields
+
+	* [r14830] complete sentence
+
+2008-08-27 06:19  heikki
+
+	* [r14829] _build_nt_matrix() now uses $self->warn rather than
+	  straight print to report on ambiguous residues (suggested by
+	  Dominic Rose on the bioperl mailing list)
+
+2008-08-26 18:39  lstein
+
+	* [r14828] quashed an uninit variable warning
+
+2008-08-25 23:35  lstein
+
+	* [r14827] set the mysql autoreconnect flag
+
+2008-08-25 17:42  cjfields
+
+	* [r14826] Add some print_* methods for einfo, esummary, etc.
+
+2008-08-25 15:40  lstein
+
+	* [r14825] added an option to bp_seqfeature_load to ignore
+	  ##sequence-region directives in the gff3 file
+
+2008-08-22 14:57  lstein
+
+	* [r14823] added a background color fallback option
+
+2008-08-22 14:35  sendu
+
+	* [r14821] don't complain if there's no scripts directory
+
+2008-08-22 13:31  lstein
+
+	* [r14820] added get_feature_by_primary_id() method
+
+2008-08-21 20:51  lstein
+
+	* [r14817] added a get_feature_by_id() method to
+	  Bio::DB::SeqFeature::Store as an alias for the non-intuitive
+	  fetch() method that does the same thing
+
+2008-08-21 16:00  cjfields
+
+	* [r14816] * write PROJECT support
+	  * test case
+	  * round-trip tests
+	  * WGS, similar should conform with other annotation tag names
+	  (all lc)
+	  * bring handler-based parser up-to-date
+
+2008-08-21 13:37  cjfields
+
+	* [r14815] add PROJECT support (bug 2569)
+
+2008-08-20 23:02  lstein
+
+	* [r14814] fixed rotation of imagemaps, which was not correct
+
+2008-08-20 21:24  lstein
+
+	* [r14813] added regression tests for the safe() flag
+
+2008-08-19 21:06  lstein
+
+	* [r14812] fixed bugs in the ideogram glyphs that caused them to
+	  draw the label and description incorrectly
+
+2008-08-19 21:06  lstein
+
+	* [r14811] fixed bugs in the ideogram glyphs that caused them to
+	  draw the label and description incorrectly
+
+2008-08-18 06:45  miraceti
+
+	* [r14810] phyloxml documentation
+
+2008-08-18 05:25  miraceti
+
+	* [r14809] phyloxml use filehandle instead of file name
+
+2008-08-17 07:00  heikki
+
+	* [r14808] deprecate findnode_by_id
+
+2008-08-17 03:32  jason
+
+	* [r14807] fully implement Bio::LocationI
+
+2008-08-16 08:02  miraceti
+
+	* [r14806] phyloxml more tests
+
+2008-08-16 02:35  miraceti
+
+	* [r14805] phyloxml: bug fixes and tests
+
+2008-08-15 21:57  miraceti
+
+	* [r14804] added nowarnonempty arg to Bio::PrimarySeq
+
+2008-08-15 19:39  scain
+
+	* [r14803] fix for windows: glob() isn't working for paths with
+	  spaces in them
+
+2008-08-15 06:01  miraceti
+
+	* [r14802] get_nested_Annotations
+
+2008-08-14 15:23  lstein
+
+	* [r14801] made -gff an alias for -dsn in
+	  Bio::DB::Seqfeature::Store::memory adaptor new() call, since
+	  people are having trouble adapting to shift between Bio::DB::GFF
+	  and Bio::Db::SeqFeature::Store
+
+2008-08-14 08:14  heikki
+
+	* [r14800] the new method
+	  Bio::Tree::Tree::subtree_length($internal_node) is identical to
+	  total_branch_length when no Bio::Tree::NodeI object is given as
+	  an argument
+
+2008-08-14 02:21  scain
+
+	* [r14799] Getting ready for a GBrowse release
+
+2008-08-11 15:55  lstein
+
+	* [r14798] for some reason the failure to open a Bio::DB::Fasta
+	  file was not generating an error message; this is now fixed
+
+2008-08-11 15:22  miraceti
+
+	* [r14797] phyloxml: add clade_relation to node instead of tree,
+	  write clade_relation
+
+2008-08-10 23:34  lstein
+
+	* [r14795] improved the way that several glyphs are grouped when
+	  exporting panels as SVG
+
+2008-08-10 22:16  lstein
+
+	* [r14794] added feature grouping to SVG output from Bio::Graphics
+
+2008-08-09 23:34  hartzell
+
+	* [r14793] Use weaken to avoid a circular reference in the tree
+	  that's
+	  allocated, thus avoiding a memory leak.
+
+2008-08-09 17:16  bosborne
+
+	* [r14792] POD was a bit misleading, remove_SeqFeatures just
+	  removes features, sub- or not
+
+2008-08-07 15:28  avilella
+
+	* [r14791] adding parsing support for the Standard Errors (SE line)
+	  -- this goes into tags doing the clever mapping as in the branch
+	  mode -- only tested with Baseml executions
+
+2008-08-06 20:25  lstein
+
+	* [r14790] fixed a display bug that appeared when feature
+	  start=stop=0
+
+2008-08-06 15:56  miraceti
+
+	* [r14789] phyloxml: new module for clade_relation seq_relation
+
+2008-08-05 22:48  fangly
+
+	* [r14788] Used weak references (Scalar::Util::weaken) in a
+	  circular reference to fix memory leak
+
+2008-08-05 22:07  cjfields
+
+	* [r14787] For new NCBI blasttable format
+
+2008-08-05 22:00  cjfields
+
+	* [r14786] Previous changes killed RemoteBlast again; make a little
+	  more bulletproof
+
+2008-08-04 20:57  cjfields
+
+	* [r14784] Add a few new GET/PUT parameters.
+
+2008-08-04 17:10  cjfields
+
+	* [r14783] Sequences weren't being parsed correctly; unfortunately
+	  this breaks multiple alignments in one ARP file, so using
+	  todo_skip() to pass over tests until bug fix is in place.
+
+2008-08-02 16:20  lstein
+
+	* [r14782] fixes to "safe callbacks" feature
+
+2008-08-02 03:56  ymc
+
+	* [r14780] edited comments related to DNA IUPAC code
+
+2008-08-01 21:34  lstein
+
+	* [r14777] did work necessary to process option callbacks in a
+	  Safe::World context
+
+2008-07-31 14:44  lstein
+
+	* [r14775] fixed zero-width rectangles which were breaking GD::SVG
+	  representations of xyplot data
+
+2008-07-30 21:33  cjfields
+
+	* [r14774] tests should use is/isnt when possible, not ok()
+
+2008-07-30 19:01  cjfields
+
+	* [r14772] revert Roy's patch (my bad)
+
+2008-07-30 14:14  cjfields
+
+	* [r14771] bug 2556:
+	  * patch courtesy of Roy Chaudhuri
+
+2008-07-30 14:09  cjfields
+
+	* [r14770] Bug 2546
+	  * cleanup RemoteBlast a bit
+	  * blasttable now works with BLAST 2.2.18+ (extra column in new
+	  version broke parser)
+	  * added some tests
+
+2008-07-29 05:12  miraceti
+
+	* [r14769] phyloxml seq_relation clade_relation
+
+2008-07-29 03:48  cjfields
+
+	* [r14768] bug 2555
+
+2008-07-29 03:36  cjfields
+
+	* [r14767] bug 2549; fixed small bug in Bio::Taxon which doesn't
+	  catch -common_name
+
+2008-07-29 00:30  lstein
+
+	* [r14766] modified fix so that it doesn't break compatibility with
+	  those who use '+' to describe the strand of the target
+
+2008-07-29 00:26  lstein
+
+	* [r14765] pretty formatting of gff3 attributes
+
+2008-07-29 00:19  lstein
+
+	* [r14764] fixed error in which spaces are not properly escaped in
+	  GFF3 files
+
+2008-07-28 17:30  cjfields
+
+	* [r14763] add multiple record support (courtesy of Jorge Duarte,
+	  per mail list)
+
+2008-07-24 00:36  lstein
+
+	* [r14762] glyphs will now display the first alias as the label if
+	  the display_name() is not defined
+
+2008-07-21 05:55  miraceti
+
+	* [r14761] phyloxml: create Bio::Seq for <sequence>
+
+2008-07-18 23:09  lstein
+
+	* [r14760] fixed bug in the memory adapter which prevented features
+	  with a primary ID of "0" from being loaded
+
+2008-07-18 20:05  cjfields
+
+	* [r14759] bulletproof test; remote tabular BLAST is failing for
+	  some reason...
+
+2008-07-17 02:18  lstein
+
+	* [r14758] workaround a bug that emerges when the memory adapter
+	  automatically assigns a primary id of 0
+
+2008-07-13 04:56  miraceti
+
+	* [r14757] phyloxml: taxonomy, distribution, annotation, events,
+	  date, etc
+
+2008-07-09 16:05  cjfields
+
+	* [r14756] bug 2534
+
+2008-07-08 16:54  lstein
+
+	* [r14755] accept $seq_id or $seqid in link substitution rules
+
+2008-07-08 04:05  cjfields
+
+	* [r14754] Can't inherit from oneself
+
+2008-07-08 03:39  cjfields
+
+	* [r14753] bug 2539
+
+2008-07-04 20:07  bosborne
+
+	* [r14752] Minor edits
+
+2008-07-04 19:45  miraceti
+
+	* [r14751] phyloxml write_tree
+
+2008-07-02 21:05  miraceti
+
+	* [r14750] element_default instead of element_name _branch
+	  _confidence
+
+2008-07-02 06:06  miraceti
+
+	* [r14749] nested annotation collection instead of structuredValue
+
+2008-07-01 22:12  miraceti
+
+	* [r14748] phyloxml to_string <name>,<branch_length>
+
+2008-06-30 23:02  miraceti
+
+	* [r14747] _to_string callback for AnnotatableNode and phyloxml
+
+2008-06-21 05:06  miraceti
+
+	* [r14746] <property> using id_source and id_ref
+
+2008-06-20 03:16  miraceti
+
+	* [r14745] <property> using id_source and id_ref
+
+2008-06-19 23:17  jason
+
+	* [r14744] AAML parsing was failing on runmode=0 data (usertree)
+
+2008-06-18 19:44  miraceti
+
+	* [r14741] <property> via Bio::Annotation
+
+2008-06-18 00:29  jason
+
+	* [r14739] avoid undefined warnings when start/end are empty.
+	  Causing weird slowdowns in Gbrowse
+
+2008-06-17 23:19  cjfields
+
+	* [r14738] bug 2423
+
+2008-06-17 23:11  cjfields
+
+	* [r14737] bug 2423
+
+2008-06-16 18:29  miraceti
+
+	* [r14736] changed NodePhyloXML to AnnotatableNode
+
+2008-06-16 18:08  miraceti
+
+	* [r14735] changed NodePhyloXML to AnnotatableNode
+
+2008-06-14 22:16  lstein
+
+	* [r14734] Bio::Graphics::Glyph::minmax is the base class that
+	  defines midpoint(); fixed bug that mistakenly called
+	  SUPER::minmax()
+
+2008-06-14 19:52  jason
+
+	* [r14733] set the ID, typo
+
+2008-06-14 19:48  jason
+
+	* [r14732] More GFF3 like output
+
+2008-06-14 19:48  jason
+
+	* [r14731] simplify list of special ID tags and their preferred
+	  order, still needs some more work; Indentation standardization
+	  from emacs
+
+2008-06-14 17:14  lstein
+
+	* [r14730] added a bicolor_pivot option to the xyplot glyph to
+	  allow the color switch to occur at non-zero values
+
+2008-06-14 04:52  cjfields
+
+	* [r14729] bug 2512 (Gene Ontology changes)
+
+2008-06-14 04:29  cjfields
+
+	* [r14728] bug 2519
+
+2008-06-14 04:20  cjfields
+
+	* [r14727] bug 2518
+
+2008-06-14 02:04  cjfields
+
+	* [r14726] bug 2517
+
+2008-06-13 18:58  jason
+
+	* [r14725] doc expansion
+
+2008-06-12 17:11  jason
+
+	* [r14724] some whitespace cleanup
+
+2008-06-12 17:10  jason
+
+	* [r14723] inherit from Bio::Root::RootI instead of NodeI
+
+2008-06-12 02:54  miraceti
+
+	* [r14722] Removed TreePhyloXML.pm
+
+2008-06-12 02:51  miraceti
+
+	* [r14721] Removed TreePhyloXML.pm
+
+2008-06-11 19:42  miraceti
+
+	* [r14720] test new module TreePhyloXML
+
+2008-06-11 19:37  miraceti
+
+	* [r14719] phyloxml: name, confidence
+
+2008-06-11 19:35  miraceti
+
+	* [r14718] New module TreePhyloXML.pm for phyloxml specific
+	  variables.
+
+2008-06-11 06:48  heikki
+
+	* [r14716] Why is Bio::SeqFeature::Annotated object creation
+	  downloading so.obo from sourceforge? This is an emergency fix
+	  disabling these tests if no network is available. Better solution
+	  needed ASAP.
+
+2008-06-10 05:04  miraceti
+
+	* [r14712] use function hash instead of if-else
+
+2008-06-10 00:42  heikki
+
+	* [r14710] POD fixes
+
+2008-06-10 00:08  heikki
+
+	* [r14708] fixing POD whitespaceissues
+
+2008-06-09 18:02  miraceti
+
+	* [r14707] requires_modules XML::LibXML
+
+2008-06-09 17:58  miraceti
+
+	* [r14706] requires_modules XML::LibXML
+
+2008-06-09 04:09  miraceti
+
+	* [r14705] phyloxml: next_tree and basic parsing of <clade>
+
+2008-06-09 04:09  miraceti
+
+	* [r14704] phyloxml: next_tree and basic parsing of <clade>
+
+2008-06-06 22:10  miraceti
+
+	* [r14703] Change phyloxml to using libxml instead of SAX
+
+2008-06-06 22:06  miraceti
+
+	* [r14702] Change phyloxml to using libxml instead of SAX
+
+2008-06-06 22:02  miraceti
+
+	* [r14701] Change phyloxml to using libxml instead of SAX
+
+2008-06-06 22:00  miraceti
+
+	* [r14700] Change phyloxml to using libxml instead of SAX
+
+2008-06-06 15:37  lstein
+
+	* [r14699] fixed the positioning of the '0' coordinate on the scale
+	  so that it doesn't clash with the midpoint coordinate
+
+2008-06-05 16:42  lstein
+
+	* [r14698] fixed scale on xyplot so that scale values < 0 are
+	  rendered correctly
+
+2008-06-04 14:22  heikki
+
+	* [r14697] fix POD errors
+
+2008-06-04 14:21  heikki
+
+	* [r14696] point searches to bioperl-run assuming that it is at the
+	  same directory as bioperl-live
+
+2008-06-03 19:59  heikki
+
+	* [r14695] use uniform notice string when skipping network tests
+
+2008-06-03 14:45  heikki
+
+	* [r14694] skip tests that need networking using the same logic
+	  that all other modules use.
+	  fix number of enzyme prototypes returned
+
+2008-06-03 14:22  heikki
+
+	* [r14693] skip tests when XML::Writer is not installed
+
+2008-06-03 13:54  heikki
+
+	* [r14692] correct number of tests
+
+2008-06-03 13:39  heikki
+
+	* [r14691] fix number of tests
+
+2008-06-03 13:38  heikki
+
+	* [r14690] fixed POD errors
+
+2008-06-02 20:06  miraceti
+
+	* [r14689] start_element/end_element clade
+
+2008-06-02 20:05  miraceti
+
+	* [r14688] start_element/end_element clade
+
+2008-05-29 14:17  lstein
+
+	* [r14687] added some more special cases to the gene glyph so that
+	  it "behaves right" with unusual data
+
+2008-05-29 09:55  heikki
+
+	* [r14685] Added support for long IDs (give -longid => 1 to
+	  constuctor). They can be optionally surrounded by single quotes.
+	  A warning is printed out if the length of an ID is over 50
+	  characters long. Updated docs to show that both interleaved and
+	  sequential formats can be read and written.
+
+2008-05-28 19:47  miraceti
+
+	* [r14684] test scripts for phyloxml modules
+
+2008-05-28 19:42  miraceti
+
+	* [r14683] New module to handle phyloxml
+
+2008-05-27 17:52  cjfields
+
+	* [r14682] RT#12802 (via CPAN RT)
+
+2008-05-23 14:35  faga
+
+	* [r14679] Now, the loader passes unrecognized meta tags to the
+	  store object (if it can). Also, it handles the ### pragma.
+
+2008-05-21 21:04  dave_messina
+
+	* [r14678] Added support for WU-BLAST tabular output. Tests added
+	  to SearchIO.t and all tests pass.
+
+2008-05-11 07:21  jason
+
+	* [r14677] first crack at a sort_hsps option in a Hit object,
+	  impemented in GenericHit object
+
+2008-05-11 06:41  jason
+
+	* [r14676] code simplification
+
+2008-05-11 06:40  jason
+
+	* [r14675] bug #2492, credit to K.Thornton's implementation
+
+2008-05-11 06:36  jason
+
+	* [r14674] bug 2492
+
+2008-04-25 19:51  dave_messina
+
+	* [r14673] uneven tr///, thanks to Lskatz for the report.
+
+2008-04-22 21:42  cjfields
+
+	* [r14672] bug 2485 and related fixes
+
+2008-04-22 21:26  cjfields
+
+	* [r14671] correct # of skipped tests
+
+2008-04-22 21:23  cjfields
+
+	* [r14670] bug 2490 (small test)
+
+2008-04-22 21:03  cjfields
+
+	* [r14669] bug 2490
+
+2008-04-22 18:44  cjfields
+
+	* [r14668] new NCBI BLAST URL (works with RemoteBlast.t)
+
+2008-04-22 16:34  jason
+
+	* [r14667] bug #2491
+
+2008-04-22 00:20  cjfields
+
+	* [r14666] bug 2490
+
+2008-04-21 15:43  cjfields
+
+	* [r14665] Fix failing tests
+
+2008-04-21 15:28  cjfields
+
+	* [r14664] update test (seq in remote db has changed)
+
+2008-04-21 15:25  cjfields
+
+	* [r14663] bullet-proof; this needs more stringent tests
+
+2008-04-17 21:13  lstein
+
+	* [r14662] added ability to get at the parent feature in callbacks
+
+2008-04-15 00:03  thm09830
+
+	* [r14660] Function for counting number of alternative probes added
+
+2008-04-14 23:42  thm09830
+
+	* [r14659] Minor changes in the main processing function
+	  calc_sequence(), Logmessages are buffered, hence only one file
+	  open/write/close operation is needed per processed chip, udpated
+	  version of testscript is provided via Bug #2332 in Bioperl
+	  bugzilla, Documentation updated
+
+2008-04-14 21:06  jason
+
+	* [r14658] typo
+
+2008-04-14 17:56  cjfields
+
+	* [r14657] bug 2484
+
+2008-04-14 15:05  lstein
+
+	* [r14656] added a clone() method to support the (uncommon) case of
+	  passing database adaptors across a fork()
+
+2008-04-11 23:19  lapp
+
+	* [r14655] Applied SYNOPSIS patch by Adam Sjogre (asjo at koldfront
+	  dot dk).
+
+2008-04-10 21:10  lstein
+
+	* [r14654] corrected case in which seq_id of Bio::Location::Split
+	  could unintentionally be set to undef
+
+2008-04-08 16:05  cjfields
+
+	* [r14653] bug 2479
+
+2008-04-08 15:58  cjfields
+
+	* [r14652] bug 2478
+
+2008-04-07 18:24  cjfields
+
+	* [r14651] updates; may switch some data objects over to
+	  (lightweight) Data::Stag implementation at some point
+
+2008-04-03 13:58  lstein
+
+	* [r14650] added an API to prevent FeatureFile->render() from
+	  rendering indiscriminately without paying attention to the seq_id
+	  of the underlying reference sequence
+
+2008-04-03 13:24  lstein
+
+	* [r14649] restored the ability to have a "tag=value #comment"
+	  style comment
+
+2008-04-02 21:36  fangly
+
+	* [r14648] Misc cleaning, and bug fixing
+	  
+	  Bio::Assembly::Contig
+	  Fixed bug: replaced an occurence of 'elem' by '_elem'
+	  
+	  Bio::Assembly::Scaffold
+	  Fixed bug: scaffold source is implemented, stored in the scaffold
+	  at scaffold creation
+	  Fixed bug: contig or singlet addition to a scaffold now really
+	  creates a reference to that scaffold as a contig or singlet
+	  attribute
+	  Improvement: a list of singlets can be given at scaffold creation
+	  (just like a list of contigs can be specified)
+	  Improvement: adding a non singlet object using the add_singlet
+	  method is now a fatal error (like all other such errors)
+	  Improvement: adding singlet to scaffold now generates a singlet
+	  name if singlet is unnamed
+	  Improvement: method update_seq_list now also updates singlets
+	  Improvement: adding a singlet to a scaffold now puts the singlet
+	  sequence in the list of sequences belonging to the scaffold (just
+	  like for contigs)
+	  Improvement: implemented 'remove_features_collection' method
+	  
+	  Bio::Assembly::IO::Ace
+	  Fixed bug: under certain conditions, the list of scaffold
+	  sequences ('_seqs') was not populated
+
+2008-04-02 16:28  cjfields
+
+	* [r14647] Add some tests to catch tag naming
+
+2008-04-02 16:24  cjfields
+
+	* [r14646] Fix bad silent bug which doesn't set exon tags correctly
+	  (showed up when using -W flag with tests)
+
+2008-04-02 15:52  cjfields
+
+	* [r14645] merge back previous commits from Sendu and I
+
+2008-04-02 04:23  cjfields
+
+	* [r14643] get rid of variable redefined warnings
+
+2008-04-02 04:22  cjfields
+
+	* [r14642] test not matching error message (oops!)
+
+2008-04-02 04:14  cjfields
+
+	* [r14641] RefSeq redirection now requires explicit setting (note
+	  that sequence length returned by Bio::DB::RefSeq is off by one,
+	  needs investigating).
+
+2008-04-02 03:57  cjfields
+
+	* [r14640] Squash uninit. value warnings
+
+2008-04-01 16:39  cjfields
+
+	* [r14639] Remove extraneous code; update docs
+
+2008-04-01 16:31  cjfields
+
+	* [r14638] bug 2466 :
+	  * change default behavior of Bio::DB::GenBank to always retrieve
+	  from NCBI
+	  * deprecate 'no_redirect' in favor of 'redirect_refseq', which
+	  must be set for RefSeq redirection (see note above)
+	  * make explicit getter/setters out of redirect_refseq,
+	  no_redirect, seq_start, seq_end, strand, complexity along with
+	  docs
+
+2008-04-01 00:02  cjfields
+
+	* [r14637] Make regex matches safer
+
+2008-03-31 14:51  sendu
+
+	* [r14635] added POD warning about coordinate issue
+
+2008-03-28 18:22  cjfields
+
+	* [r14633] add some seq_inds() tests (appears fine)
+
+2008-03-28 17:14  cjfields
+
+	* [r14632] * revert symbol passing (forgot query and hit have
+	  different gap symbols)
+	  * add in Marc's fix for converting model gaps to '-', changed
+	  tests to reflect different output
+
+2008-03-28 15:58  cjfields
+
+	* [r14630] * Allow gap symbol to be set
+	  * Add symbol passing to hmmer parsing
+	  * Needs additional tests
+
+2008-03-27 16:13  cjfields
+
+	* [r14629] remove extraneous comment
+
+2008-03-27 16:12  cjfields
+
+	* [r14628] using seq_inds() with 'gaps' now repeats sequence
+	  indices based on the number of inserted gaps; repeated indices
+	  now collapsed into one
+
+2008-03-27 16:07  cjfields
+
+	* [r14627] Collapse repeated sequence indices into one position
+
+2008-03-27 15:37  cjfields
+
+	* [r14626] Marc's bug from mail list; repeat the seq position for
+	  gaps > 1.
+
+2008-03-25 01:12  cjfields
+
+	* [r14625] bug 2473 (with tests)
+
+2008-03-19 16:07  sendu
+
+	* [r14623] final (?!) changes now that B::SF::Annotated behaves
+	  more like Generic
+
+2008-03-19 15:59  sendu
+
+	* [r14622] futher changes now that B::SF::Annotated to behave more
+	  like Generic
+
+2008-03-19 13:27  sendu
+
+	* [r14621] added -i option to choose format; improved docs; now
+	  clusters modules in the same subdir; now colours edges according
+	  to inheritance or usage
+
+2008-03-19 04:03  jason
+
+	* [r14620] tag/value pairing associating with Trees
+
+2008-03-19 04:02  jason
+
+	* [r14619] quiet some warnings on initialization
+
+2008-03-18 14:21  sendu
+
+	* [r14618] new script to look at BioPerl module usage
+
+2008-03-18 09:37  heikki
+
+	* [r14617] use base, not ISA
+
+2008-03-18 09:35  heikki
+
+	* [r14616] No need to use Bio::AnnotationI
+
+2008-03-17 21:28  lstein
+
+	* [r14615] under some circumstances, the link_pattern() routine
+	  might think the reference sequence for a feature is empty and
+	  fail to replace $ref correctly
+
+2008-03-17 12:39  sendu
+
+	* [r14614] use base, not ISA
+
+2008-03-17 12:32  sendu
+
+	* [r14613] use base, not ISA
+
+2008-03-17 12:30  sendu
+
+	* [r14612] use base, not ISA
+
+2008-03-17 11:16  sendu
+
+	* [r14611] slightly improved docs
+
+2008-03-12 18:51  jason
+
+	* [r14610] split sequence database into individual sequence files
+
+2008-03-12 11:28  thm09830
+
+	* [r14609] Updated Documentation
+
+2008-03-11 12:22  thm09830
+
+	* [r14608] Removed obsolete Function _get_refseq_max_ins_offset()
+
+2008-03-10 22:08  lstein
+
+	* [r14607] killed horrible bug that was preventing segmented
+	  features from loading correctly
+
+2008-03-10 21:41  lstein
+
+	* [r14606] bitten by "!=" ne "ne"
+
+2008-03-10 17:15  thm09830
+
+	* [r14605] Minor Changes
+
+2008-03-07 22:19  scain
+
+	* [r14604] adding an option for `perl Build.PL` to accept the
+	  default of asked questions.
+	  To use, do `perl Build.PL --accept 1`
+
+2008-03-06 15:38  lstein
+
+	* [r14603] fixed loading problem that arose when a feature had two
+	  parents but feature repeated twice on different lines
+
+2008-03-05 16:48  bosborne
+
+	* [r14600] Add example
+
+2008-03-05 05:42  lstein
+
+	* [r14598] fixed an issue that prevented DAS features from
+	  rendering correctly on Bio::Graphics::Panels (label missing)
+
+2008-03-05 01:26  lstein
+
+	* [r14597] quenched many warnings and small bugs that crop up when
+	  processing slightly invalid config files
+
+2008-03-04 22:22  lstein
+
+	* [r14596] config file parser should be more stable in the face of
+	  odd blank lines, funny comments, etc
+
+2008-03-04 19:44  lstein
+
+	* [r14595] fix problems parsing configuration files containing
+	  embedded "[" characters inside option values
+
+2008-03-04 17:41  lstein
+
+	* [r14594] fixes out-of-memory problems during gff3 file loading
+	  (at the cost of reduced performance), and should fix the problem
+	  of bio::graphics dying when a feature does not have the
+	  source_tag method
+
+2008-03-04 05:21  cjfields
+
+	* [r14592] bug 1707
+
+2008-03-03 21:05  cjfields
+
+	* [r14591] bug 2465
+
+2008-03-03 20:16  cjfields
+
+	* [r14590] bug 2449
+
+2008-03-03 19:37  cjfields
+
+	* [r14589] some more for bug 2349
+
+2008-03-03 17:19  lstein
+
+	* [r14588] added missing Loader.pm file
+
+2008-03-03 17:14  lstein
+
+	* [r14587] removed dangling debug statement
+
+2008-03-03 04:15  cjfields
+
+	* [r14586] partial fix for bug 2439
+
+2008-03-03 00:20  lstein
+
+	* [r14585] added a version method to featurefile so that GBrowse
+	  can warn when the module is not up to date
+
+2008-03-03 00:05  lstein
+
+	* [r14584] revamped featurefile significantly in order for syntax
+	  to be compatible with GBrowse, and to support loading of
+	  featurefiles into GFF3 databases
+
+2008-03-02 23:28  cjfields
+
+	* [r14583] Bug 2378
+
+2008-03-01 17:28  cjfields
+
+	* [r14582] fix undef. variable issue when no ancestor indicated (no
+	  root and not passed in).
+
+2008-03-01 17:15  cjfields
+
+	* [r14581] add some flexibility for name length, defaulting to 10
+
+2008-03-01 17:01  cjfields
+
+	* [r14580] bug 2356 (check for correct number with multiple trees)
+
+2008-03-01 16:58  cjfields
+
+	* [r14579] bug 2356
+
+2008-03-01 14:26  cjfields
+
+	* [r14578] add driver/handler support (will clean these up more for
+	  1.7)
+
+2008-03-01 04:51  cjfields
+
+	* [r14577] add some docs
+
+2008-03-01 04:15  cjfields
+
+	* [r14576] added prototype-checking method (bug 2179)
+
+2008-03-01 02:32  cjfields
+
+	* [r14575] clean up inheritance tree; add remote database test
+
+2008-02-29 23:03  cjfields
+
+	* [r14574] Add in support for grabbing most current data via ftp;
+	  add prototype/neoschizomer support
+
+2008-02-29 23:02  cjfields
+
+	* [r14573] parser for neo/prototype format from REBASE
+
+2008-02-29 05:52  cjfields
+
+	* [r14572] bug 2179
+
+2008-02-29 01:31  cjfields
+
+	* [r14571] bug 2128
+
+2008-02-29 01:04  cjfields
+
+	* [r14570] Note about XML format (related to bug 2018)
+
+2008-02-28 18:16  sendu
+
+	* [r14569] tests for bug6421
+
+2008-02-28 18:16  sendu
+
+	* [r14568] fixed bug6421: reimplemented main code to cope with
+	  non-unique names in a lineage. Also fixed child-related bug.
+
+2008-02-28 16:41  cjfields
+
+	* [r14567] fix Handler tests
+
+2008-02-28 16:28  cjfields
+
+	* [r14566] * Implement StructureValue-like get_all_values()
+	  (flattened value array)
+	  * remove TODOs (all pass now)
+
+2008-02-28 14:53  cjfields
+
+	* [r14565] add Data::Stag to require (may change to recommend based
+	  on other core dev input)
+
+2008-02-28 14:34  cjfields
+
+	* [r14564] minor word wrapping for error message
+
+2008-02-28 14:30  cjfields
+
+	* [r14563] bug 1825
+
+2008-02-28 14:30  cjfields
+
+	* [r14562] bug 1825: updating swiss.pm/tests to try out TagTree
+	  (passes all tests). Need to update Handler.t and related modules
+	  still...
+
+2008-02-28 12:03  heikki
+
+	* [r14561] removed unused dependency to Dumpvalue module
+
+2008-02-28 03:54  cjfields
+
+	* [r14560] check tagtree in collection
+
+2008-02-28 02:13  cjfields
+
+	* [r14559] More tests
+
+2008-02-27 21:21  cjfields
+
+	* [r14558] bug 2462
+
+2008-02-27 20:29  lstein
+
+	* [r14557] worked around different behavior in
+	  Text::ParseWords::shellwords under perl 5.8 and 5.10 -- should be
+	  relatively stable over various versions
+
+2008-02-27 20:20  cjfields
+
+	* [r14556] Change name to TagTree
+
+2008-02-27 20:19  cjfields
+
+	* [r14555] changes and additions (can't fairly implement
+	  StructureValue's methods, so we'll go another route)...
+
+2008-02-27 17:30  cjfields
+
+	* [r14554] Add some tests, more to follow upon implementation...
+
+2008-02-27 16:43  cjfields
+
+	* [r14553] Remove Data::Stag cruft (use a reimplementation instead)
+
+2008-02-27 16:41  cjfields
+
+	* [r14552] StructuredTag - AnnotationI which uses Data::Stag for
+	  structured tag representation. Just the basic implementation;
+	  needs get/set tag value methods implemented.
+
+2008-02-27 16:38  cjfields
+
+	* [r14551] add error message for callbacks if no code reference
+
+2008-02-26 17:18  sendu
+
+	* [r14549] No longer makes db test if user chose not to run them
+
+2008-02-26 17:17  sendu
+
+	* [r14548] No longers stores code refs via Data::Dumper, avoiding
+	  possible warnings
+
+2008-02-26 04:13  cjfields
+
+	* [r14547] bug 2458
+
+2008-02-26 01:02  cjfields
+
+	* [r14546] Russell's fixes
+
+2008-02-25 09:46  heikki
+
+	* [r14544] RC (reference comment) line was printed in wrong place.
+	  It belongs right after RN line.
+
+2008-02-25 08:22  heikki
+
+	* [r14543] better roundtip when preventing line wrapping between
+	  author surname and initials
+
+2008-02-25 06:19  heikki
+
+	* [r14542] minor edits to docs
+
+2008-02-25 06:10  heikki
+
+	* [r14541] documentation for the GN line parsing and management
+
+2008-02-24 02:47  cjfields
+
+	* [r14540] GN changes
+
+2008-02-23 15:10  heikki
+
+	* [r14539] AC (accession) line now wraps if there are too many
+	  accession to fit one line
+
+2008-02-23 14:48  heikki
+
+	* [r14538] GN (Gene Name) line parsing rewrite. Breaks backward
+	  compatibility. Can now deal with >1 gene per entry and four
+	  categories of names per gene. Parses old style syntax (...OR ...
+	  OR ... ) into one gene name and synonyms for each gene. Docs to
+	  follow.
+
+2008-02-22 17:18  cjfields
+
+	* [r14537] revert last commit (good catch Sendu)
+
+2008-02-22 16:10  lstein
+
+	* [r14536] these loaders allow gff2 and featurefile-format data to
+	  be stored into gff3 databases
+
+2008-02-22 16:09  lstein
+
+	* [r14535] improved behavior of xy and density plots when spanning
+	  regions that contained undefined scores; now just skips over
+	  these regions
+
+2008-02-22 08:09  heikki
+
+	* [r14534] Do not print out empty KW (keyword) lines.
+
+2008-02-21 22:09  cjfields
+
+	* [r14533] run tests directly in Build.PL (don't pass code refs on
+	  to Module::Build)
+
+2008-02-21 20:21  cjfields
+
+	* [r14532] TODO now works
+
+2008-02-21 20:18  cjfields
+
+	* [r14531] fall back to empty set
+
+2008-02-21 20:17  cjfields
+
+	* [r14530] now deprecated
+
+2008-02-21 19:48  cjfields
+
+	* [r14529] Sequence gained a nucleotide
+
+2008-02-21 19:48  cjfields
+
+	* [r14528] bug 2438. 'X' can't be completely disambiguated from a
+	  protein sequence anymore
+
+2008-02-21 19:32  cjfields
+
+	* [r14527] add file test, unlink if already present
+
+2008-02-21 19:20  cjfields
+
+	* [r14526] add Graph::Directed to requirements for tests
+
+2008-02-21 18:45  cjfields
+
+	* [r14525] fix CUTG tests
+
+2008-02-21 17:30  cjfields
+
+	* [r14524] Now passes tests; added warnings for no returned exons
+	  when called
+
+2008-02-20 22:38  cjfields
+
+	* [r14523] tests for bug 2453
+
+2008-02-20 21:51  cjfields
+
+	* [r14522] Bug 2453; needs tests
+
+2008-02-20 21:30  cjfields
+
+	* [r14521] Oops! Bug 2453 again.
+
+2008-02-20 21:13  cjfields
+
+	* [r14520] small fix for bug 2453, but see bugzilla for reasons on
+	  not closing this out
+
+2008-02-20 17:03  cjfields
+
+	* [r14519] bug 2452
+
+2008-02-20 01:15  fangly
+
+	* [r14517] New module Bio::Assembly::Tools::ContigSpectrum for
+	  dealing with contig spectra obtained from metagenome assembly
+
+2008-02-19 08:51  heikki
+
+	* [r14516] FTId is no longer treated a part of the description of
+	  an FT key but similarly to EMBL FT qualifiers. This allows for
+	  100% roundtrip of the Feature Table.
+
+2008-02-19 08:17  heikki
+
+	* [r14515] Reindenting the code. Too many lines were slightly off
+	  making reading difficult. No code changes.
+
+2008-02-19 06:57  heikki
+
+	* [r14514] Reindenting the code. Too many lines were slightly off
+	  making reading difficult. No code changes.
+
+2008-02-19 02:31  cjfields
+
+	* [r14513] TODO now works
+
+2008-02-17 11:36  heikki
+
+	* [r14512] DOI can include
+
+2008-02-17 11:29  heikki
+
+	* [r14511] prevent line wrapping within author name (RA lines) and
+	  withing key frase (KW lines), but allow wrapping at hyphen in a
+	  title (RT lines)
+
+2008-02-17 10:00  heikki
+
+	* [r14510] GN line output now follows the new format. BioPerl would
+	  need new objects to store all infomation so for now only the
+	  official name (Name=) and synonym categories are kept. ORFNames
+	  and OrderedLocusNames are treated as synonyms.
+
+2008-02-17 09:48  heikki
+
+	* [r14509] removed extra space chars and a full stop at the end of
+	  the FT HELIX and STRAND lines. No more extra spaces at the end of
+	  the line. The line length in this format is 76, not 80. Changeing
+	  that solved a lot of line differences
+
+2008-02-13 20:38  cjfields
+
+	* [r14508] update interface documentation
+
+2008-02-13 20:31  cjfields
+
+	* [r14507] not 1.5.3 (modules don't work anymore)
+
+2008-02-13 08:08  heikki
+
+	* [r14506] Rewrote RX line parsing and writing to allow DOI values
+	  seen and printed out
+
+2008-02-13 06:51  heikki
+
+	* [r14505] PE (evidence) line was printed out between CC and DR
+	  lines when it needs to be between DR and KW lines
+
+2008-02-13 06:39  heikki
+
+	* [r14504] Changed the swissprot parser to work regardless of the
+	  end full stop character in DT lines. This solved an old problem
+	  with a workaround in the swiss.t: "grabbing seq_update with old
+	  SwissProt seqs fails roundtrip tests" Now make sure to print it
+	  out for each DT line.
+
+2008-02-13 05:54  heikki
+
+	* [r14503] removed BASE COUNT line printing code. Genbank does not
+	  use it any more. This should be safe, because GenPept has never
+	  had it and all (most?) genbank format parsers can deal with both
+	  formats
+
+2008-02-13 05:36  heikki
+
+	* [r14502] do not write a full stop at the end of the SOURCE line
+
+2008-02-12 05:11  cjfields
+
+	* [r14501] missing getter/setter added
+
+2008-02-12 04:09  cjfields
+
+	* [r14500] bug 2440
+
+2008-02-11 01:55  cjfields
+
+	* [r14499] remove comment (make sure tempfile/tempdirs stored in
+	  WrapperBase are removed).
+
+2008-02-11 01:41  cjfields
+
+	* [r14498] Fix for bug 2413. Shouldn't we delegate all IO-related
+	  functions to the internal IO object?
+
+2008-02-10 04:37  cjfields
+
+	* [r14497] test commit msgs from /usr/local/bin
+
+2008-02-10 04:29  cjfields
+
+	* [r14496] checking svn post commits to list
+
+2008-02-07 19:26  cjfields
+
+	* [r14495] bug 2445: clean up hit table regex to skip N (Bernd's
+	  suggestion); passes tests but needs more testing
+
+2008-02-07 18:29  bosborne
+
+	* [r14494] Remove dead links, don't know what should replace them,
+	  unfortunately
+
+2008-02-07 14:33  lstein
+
+	* [r14493] Added missing documentation for memory and berkeleydb
+	  adaptors.
+
+2008-02-05 21:39  cjfields
+
+	* [r14491] changed URL
+
+2008-02-05 20:39  cjfields
+
+	* [r14490] handles Bio::Taxon as well as Bio::Species now (might be
+	  worth propogating to other SeqIO modules?)
+
+2008-02-05 20:35  cjfields
+
+	* [r14489] * small rnamotif fix
+	  * significance conforms to spec (evalue, then pvalue)
+	  * update tests
+
+2008-02-05 20:04  cjfields
+
+	* [r14488] bug 2444 (HSP::significance returning wrong value)
+
+2008-02-05 16:35  lstein
+
+	* [r14485] fixed bug in featurefile processing that inappropriately
+	  grouped features with no name
+
+2008-02-05 03:46  lstein
+
+	* [r14484] fixed a logic error which caused undefined end
+	  coordinates when creating a feature with abs=>1, a start and an
+	  undefined end
+
+2008-02-05 03:11  cjfields
+
+	* [r14483] bug 2438; 'X' no longer completely ambiguous
+
+2008-02-05 02:37  cjfields
+
+	* [r14482] bug 2415
+
+2008-02-05 02:16  cjfields
+
+	* [r14481] bug 2442
+
+2008-02-04 23:41  cjfields
+
+	* [r14480] Fixed bits/raw_score issue related to GenericHit changes
+	  to raw_score/bits
+
+2008-01-31 23:02  cjfields
+
+	* [r14460] bug 2436; add option for 'mismatch' (no match w/o gaps)
+
+2008-01-30 19:54  cjfields
+
+	* [r14459] Add simple method to retrieve parameter settings
+
+2008-01-25 22:00  cjfields
+
+	* [r14458] Returned value from EntrezGene is different
+
+2008-01-24 13:51  cjfields
+
+	* [r14457] Stefan's fix for entrezgene which includes a fix for
+	  pseudohash warnings; works now using perl 5.10.
+
+2008-01-22 20:49  lstein
+
+	* [r14456] new feature of -strand_arrow option allows you to
+	  specify arrowheads only on first and last segment
+
+2008-01-22 20:48  lstein
+
+	* [r14455] fixed up the gene glyph so that it works properly with
+	  CDS-only genes
+
+2008-01-22 00:16  cjfields
+
+	* [r14454] revert last commit; problem more serious than initially
+	  appears (will require more debugging)
+
+2008-01-21 23:57  cjfields
+
+	* [r14453] get rid of annoying 'pseudohashes' error; tests now pass
+	  on perl 5.8.8, perl 5.10
+
+2008-01-21 22:41  cjfields
+
+	* [r14452] Use db settings for both BioDBGFF and
+	  BioDBSeqFeature_mysql (needs bypass testing for Pg and other
+	  drivers)
+
+2008-01-17 19:26  cjfields
+
+	* [r14451] remove format option for EMBL just in case...
+
+2008-01-17 18:58  cjfields
+
+	* [r14450] bug 2433
+
+2008-01-17 18:11  cjfields
+
+	* [r14449] Starter cross_match tests and sample data. Needs much
+	  more testing (see notes in test file)
+
+2008-01-17 17:35  cjfields
+
+	* [r14448] Tentative fix for bug 2427
+
+2008-01-17 11:15  sendu
+
+	* [r14447] more fixes for synopsis code, added warning to
+	  description
+
+2008-01-17 11:08  sendu
+
+	* [r14446] fixed synopsis code to work
+
+2008-01-17 06:09  cjfields
+
+	* [r14445] bug 2423
+
+2008-01-17 02:57  cjfields
+
+	* [r14444] bug 2431
+
+2008-01-16 10:54  sendu
+
+	* [r14443] improved handling of different kinds of feature object
+
+2008-01-16 10:51  sendu
+
+	* [r14442] first version of Gerp parser, usable
+
+2008-01-16 02:46  scain
+
+	* [r14440] fixing the missing space between the feature type name
+	  and the location when the type name is longer than 15 char.
+
+2008-01-15 21:56  cjfields
+
+	* [r14439] Bug 2426
+
+2008-01-14 05:31  cjfields
+
+	* [r14437] test post-commit after fsfs transfer (2nd try)
+
+2008-01-14 05:19  cjfields
+
+	* [r14436] test commits after fsfs transfer
+
+2008-01-07 23:37  hartzell
+
+	* [r14435] * a simple test commit, added a blank line to the
+	  bottom of the README file. I'll remove it in a moment.
+	  
+	  README (modified)
+	  
+
+2008-01-07 21:58  cjfields
+
+	* [r14429] Test
+
+2007-12-15 19:32  jason
+
+	* [r11793] Short circuit if the a1 is 0 to avoid divide by zero
+
+2007-12-15 19:30  jason
+
+	* [r11792] some formatting -- committing before SVN merge
+
+2007-12-06 17:58  cjfields
+
+	* [r11791] small fix for VERSIONing issue, POD fixes
+
+2007-12-05 20:31  skirov
+
+	* [r11790] Fixes sequence parsing for gapless alignments from
+	  codeml (Bug 2416)
+
+2007-12-04 04:13  scain
+
+	* [r11789] oops--missed a failed test because of a missing prereq.
+
+2007-12-03 23:37  jason
+
+	* [r11788] actually parse percent similar numbers out properly, add
+	  some tests to this effect, percent_conserved for nucleotide
+	  alignments now represents ungapped numbers from FASTA/SSEARCH
+
+2007-12-03 19:55  scain
+
+	* [r11787] the check for '>' was actually swallowing the first line
+	  of a fasta file (where the fasta file was masquerading as a GFF3
+	  file without any features). Now that works.
+
+2007-12-03 08:29  heikki
+
+	* [r11786] correct syntax in the example; doc formatting
+
+2007-11-29 22:54  cjfields
+
+	* [r11785] bug 2333; first pass at PSIBLAST XML parsing
+
+2007-11-29 06:10  cjfields
+
+	* [r11784] Match HSP, not hit table
+
+2007-11-29 06:09  cjfields
+
+	* [r11783] more memory-friendly
+
+2007-11-28 21:21  cjfields
+
+	* [r11782] WUBLAST signif gets pvalue, NCBI BLAST signif gets
+	  evalue
+
+2007-11-28 06:29  cjfields
+
+	* [r11781] Several fixes
+	  * bug 2409
+	  * code to pull out the GI if present
+	  * resolve most of the NCBI/WUBLAST bits/raw_score confusion,
+	  changed tests to reflect (needs warnings, more docs)
+	  * several tests added
+	  * one test still failing for WU-BLAST reports and significance
+	  parsing, so beware!
+
+2007-11-27 23:14  jason
+
+	* [r11780] dependancies enumearated for Bio::PhyloNetwork
+
+2007-11-27 23:13  jason
+
+	* [r11779] Initial commit of Phylogenetic Network code from Gabriel
+	  Valiente and Gabriel Cardona
+
+2007-11-27 23:07  jason
+
+	* [r11778] I'm pretty sure this returning correct values and tests
+	  don't need to be TODOed
+
+2007-11-25 18:50  cjfields
+
+	* [r11777] bug 2329
+	  * code added to Bio::SeqIO::abi to optionally grab trace data
+	  * tests added to abi.t, requires newest staden::read (1.52).
+
+2007-11-25 17:06  cjfields
+
+	* [r11776] bug 2329, example script to generate a SVG chromatogram
+
+2007-11-25 16:50  cjfields
+
+	* [r11775] bug 2329
+
+2007-11-25 16:37  cjfields
+
+	* [r11774] get rid of 'Use of uninitialized value in concatenation'
+	  warnings
+
+2007-11-25 15:37  cjfields
+
+	* [r11773] Related to Albert's fix
+
+2007-11-25 11:49  avilella
+
+	* [r11772] speed boost by not calculating _symbols -- because this
+	  will be calculated anyway when calling symbol_chars, we dont need
+	  to calculate it here for all alns
+
+2007-11-23 09:27  heikki
+
+	* [r11771] no more hardcoded line length, default changed to 25
+	  values, value for
+	  width() can be given to the constructor. Uniform indentation of
+	  code
+	  to avoid excessively long lines.
+
+2007-11-23 09:01  heikki
+
+	* [r11770] write_seq() now writes out desc string
+
+2007-11-21 17:49  cjfields
+
+	* [r11769] bug 2399
+
+2007-11-21 17:26  cjfields
+
+	* [r11768] a bit more for bug 2391
+
+2007-11-21 17:15  cjfields
+
+	* [r11767] bug 2391
+
+2007-11-21 16:48  cjfields
+
+	* [r11766] bug 2406
+
+2007-11-21 15:56  smckay
+
+	* [r11765] Changes to allow non-coding RNA genes and pseudogenes.
+
+2007-11-19 18:37  cjfields
+
+	* [r11764] bug 2392
+
+2007-11-19 18:31  cjfields
+
+	* [r11763] bug 2399
+
+2007-11-18 01:30  jason
+
+	* [r11762] add trailing newline
+
+2007-11-16 19:37  cjfields
+
+	* [r11761] fix fuzzy location bug
+
+2007-11-16 02:35  bosborne
+
+	* [r11760] Jeffrey's patch, tests pass
+
+2007-11-13 18:28  cjfields
+
+	* [r11759] Now catches primary GI
+
+2007-11-10 04:47  cjfields
+
+	* [r11758] Fix for mysql adaptor to recursively remove child
+	  features only if when all parents are removed
+
+2007-11-08 05:36  cjfields
+
+	* [r11757] fix arg list not being passed along if GFF3 is intended
+
+2007-11-08 02:20  cjfields
+
+	* [r11756] Allow phase to be set
+
+2007-11-08 02:19  cjfields
+
+	* [r11755] * alias delete_features (for GBrowse plugins)
+	  * allow IO::String (for GBrowse plugins)
+
+2007-11-06 19:47  jason
+
+	* [r11745] allow . in the names
+
+2007-11-06 19:43  jason
+
+	* [r11744] Don't we need to include Bio::Tools::GFF
+
+2007-11-05 15:27  scain
+
+	* [r11741] adding name to sort order options
+
+2007-11-04 00:11  dave_messina
+
+	* [r11740] Bug 2388 fix - added support for WU-BLAST -echofilter
+	  option. added test to SearchIO.t.
+	  All SearchIO tests pass.
+
+2007-11-02 16:29  sendu
+
+	* [r11739] fixed error when source() sets its own default value
+
+2007-11-01 14:52  jason
+
+	* [r11738] Parsing PAML4 and PAML3.15 should work now. Dealing with
+	  variable order for the sequences and summary results in the top
+	  of the MLC files
+
+2007-11-01 14:51  jason
+
+	* [r11737] add Codeml pairwise result for PAML4
+
+2007-10-31 09:45  avilella
+
+	* [r11736] using Bio::Tools::GuessSeqFormat
+
+2007-10-30 16:33  jason
+
+	* [r11735] Fixes from Claude Rispe and Fabrice Legeai for RST
+	  parsing.
+
+2007-10-26 18:39  avilella
+
+	* [r11734] render a svg of a multiple sequence alignment -- green
+	  boxes for matches/mismatches vs lines for gapped regions
+
+2007-10-26 18:22  jason
+
+	* [r11733] fix Genewise data moving and tests
+
+2007-10-26 16:47  sendu
+
+	* [r11732] Changed B::SF::Annotated to behave more like Generic
+	  (seq_id, score, phase, frame all return strings) and be more
+	  internally consistent: source() and type() only accepts and
+	  returns objects, source_tag() and primary_tag() accept and return
+	  strings. Other modules and test scripts updated as appropriate
+
+2007-10-23 19:31  cjfields
+
+	* [r11731] error in test script
+
+2007-10-23 16:50  cjfields
+
+	* [r11730] bug 2385
+
+2007-10-23 16:18  cjfields
+
+	* [r11729] bug 2368
+
+2007-10-23 16:11  cjfields
+
+	* [r11728] bug 2367
+
+2007-10-18 03:34  cjfields
+
+	* [r11727] some tweaks
+
+2007-10-17 01:31  lstein
+
+	* [r11726] accepted Danny Rice's proposed patch for improving
+	  performance and accuracy of %GC glyph
+
+2007-10-17 01:22  lstein
+
+	* [r11725] squelched warning about empty sequence in
+	  Bio::DB::GFF::Feature->seq() call when no DNA has been attached
+
+2007-10-16 19:28  lstein
+
+	* [r11724] all GFF and GFF3 stores now return the type of the
+	  feature in the information returned by search_notes()
+
+2007-10-16 14:19  bosborne
+
+	* [r11723] Check frame of 2, just for the sake of completeness
+
+2007-10-15 15:39  cjfields
+
+	* [r11722] bug 2332
+
+2007-10-09 04:19  cjfields
+
+	* [r11721] start must always be < end; strand determines
+	  directionality
+
+2007-10-08 21:34  cjfields
+
+	* [r11720] capture display_name, score data for Glimmer3 predict
+	  file
+
+2007-10-05 16:36  cjfields
+
+	* [r11719] typo
+
+2007-10-05 00:27  cjfields
+
+	* [r11718] * bug fix from Jeffrey Barrick for cases where empty
+	  midline data occurs
+	  * add simple synopsis, update POD
+
+2007-10-04 19:03  jason
+
+	* [r11717] force MYISAM for FULLTEXT indexed tables
+
+2007-10-04 15:13  cjfields
+
+	* [r11716] always use table type to MyISAM for FULLTEXT indexing
+
+2007-10-01 15:18  scain
+
+	* [r11715] Fix for the case when the Parent tag isn't present; also
+	  improving regex in GFF tool
+
+2007-09-28 18:00  jason
+
+	* [r11714] allow -ID to be set on init
+
+2007-09-28 15:37  cjfields
+
+	* [r11713] don't use Carp, use $self->warn()
+
+2007-09-28 03:17  cjfields
+
+	* [r11712] fix bug with multiple ID, DE, AC lines
+
+2007-09-27 22:10  cjfields
+
+	* [r11711] * add line_length parameter for stockholm to print
+	  blocks; default is all on one line (Pfam-like)
+	  * hacked in meta support for SimpleAlign::slice()
+
+2007-09-27 19:45  cjfields
+
+	* [r11710] Add meta data to alignments if present
+
+2007-09-27 19:43  cjfields
+
+	* [r11709] remove nonexistent exported sub
+
+2007-09-27 15:47  cjfields
+
+	* [r11708] minor change to prevent scripts from dying
+
+2007-09-27 15:40  cjfields
+
+	* [r11707] Add obo to registry
+
+2007-09-27 15:40  cjfields
+
+	* [r11706] Switch to using SO and OBO
+
+2007-09-26 14:06  jason
+
+	* [r11705] POD copy+paste fix
+
+2007-09-25 22:08  cjfields
+
+	* [r11704] Rollback last commit, don't want to change lca node data
+	  directly
+
+2007-09-25 21:50  cjfields
+
+	* [r11703] bug 2219
+
+2007-09-24 13:27  sendu
+
+	* [r11702] removed repeated print of version line
+
+2007-09-24 13:13  cjfields
+
+	* [r11701] POD fix
+
+2007-09-21 10:00  sendu
+
+	* [r11700] compatability changes with recent feature annotation
+	  rollback
+
+2007-09-21 08:46  sendu
+
+	* [r11699] safer open, corrected throw message in sort_by_list
+
+2007-09-20 16:23  lstein
+
+	* [r11698] was incorrectly adding vertical spacing to the
+	  description's vertical offset twice
+
+2007-09-20 15:51  sendu
+
+	* [r11697] in GTF mode, allow the setting of transcript id and gene
+	  id independently, allow no score, allow frame to be supplied with
+	  frame()
+
+2007-09-20 15:21  sendu
+
+	* [r11696] major bugfix: this module now actually does something!
+
+2007-09-20 15:07  lstein
+
+	* [r11695] removed a spurious lock() call which caused
+	  Bio::Graphics::Panel to fail under some versions of perl
+
+2007-09-19 19:17  lstein
+
+	* [r11694] documented -fallback_to_rectangle option
+
+2007-09-17 20:54  cjfields
+
+	* [r11693] remove overloading exceptions (more trouble than they're
+	  worth)
+
+2007-09-17 06:47  jason
+
+	* [r11692] lowercase typo
+
+2007-09-14 16:37  cjfields
+
+	* [r11691] mail list patch from Jay Hannah
+
+2007-09-14 11:53  cjfields
+
+	* [r11690] bug 2352
+
+2007-09-13 14:29  skirov
+
+	* [r11689] copy/paste error fixed: module name in Synopsis
+
+2007-09-13 14:19  skirov
+
+	* [r11688] ->new repeated
+
+2007-09-11 00:58  cjfields
+
+	* [r11687] bug 2358
+
+2007-09-10 17:34  cjfields
+
+	* [r11686] bug 2350
+
+2007-09-10 17:04  cjfields
+
+	* [r11685] bug 2354
+
+2007-09-10 16:42  cjfields
+
+	* [r11684] bug 2358, added some more tests for Assembly objects
+
+2007-09-08 03:14  cjfields
+
+	* [r11683] bug 2358
+
+2007-09-06 06:57  lstein
+
+	* [r11682] minor change to featurebase to allow gbrowse das
+	  entry_points request to work properly
+
+2007-09-05 22:16  cjfields
+
+	* [r11681] Shouldn't use Carp, use throw/warn instead
+
+2007-09-05 20:29  cjfields
+
+	* [r11680] 2357
+
+2007-09-05 14:36  cjfields
+
+	* [r11679] add in hack for alignment viewer
+
+2007-09-05 12:14  sendu
+
+	* [r11678] added GPL License
+
+2007-09-05 11:00  sendu
+
+	* [r11677] changed license to "perl", ie. artistic or GPL
+
+2007-09-05 03:59  cjfields
+
+	* [r11676] change sub redefining to to simple handler dispatch
+
+2007-09-05 02:57  cjfields
+
+	* [r11675] parses 0.81 output (still throwing a warning...)
+
+2007-09-03 01:45  cjfields
+
+	* [r11674] doc fixes
+
+2007-08-31 03:03  cjfields
+
+	* [r11673] doc fixes
+
+2007-08-31 00:22  cjfields
+
+	* [r11672] bug 2203
+
+2007-08-30 18:46  cjfields
+
+	* [r11671] * Annotation : explain display_text() more explicitly;
+	  remove commented out overloads
+	  * Ontology fixes: dagflat/obo parsers now make DBLinks, use
+	  add_dbxref
+	  * tests : added note on changes; DBLinks call display_text for
+	  simple sort or comparison
+
+2007-08-29 22:07  cjfields
+
+	* [r11670] get rid of extra 'my' declarations
+
+2007-08-29 21:39  cjfields
+
+	* [r11669] Feature-Annotation rollback (merged over from branch)
+
+2007-08-29 18:07  cjfields
+
+	* [r11668] add note about graphics tests; we'll need to allow
+	  regenerating the test files at some point
+
+2007-08-29 15:45  cjfields
+
+	* [r11667] remote data from server has changed
+
+2007-08-29 15:13  cjfields
+
+	* [r11666] committed file with DOS line endings which caused
+	  warnings, change data file to UNIX
+
+2007-08-29 15:01  cjfields
+
+	* [r11665] fix redefined sub warning
+
+2007-08-27 16:31  jason
+
+	* [r11654] return undef when demon is 0 for now in Tajima's D
+
+2007-08-27 15:55  lstein
+
+	* [r11653] killed redundant my declaration in order to get rid of
+	  -w warning
+
+2007-08-27 15:47  lstein
+
+	* [r11652] line glyph was not respecting the linewidth option!
+
+2007-08-26 23:33  jason
+
+	* [r11650] for now let's report the offending codon in the message
+
+2007-08-26 22:29  jason
+
+	* [r11649] some small code compaction in attempt to optimize, not
+	  sure it actually helped
+
+2007-08-26 22:29  jason
+
+	* [r11648] Fix some POD that was wrong. Test for completely missing
+	  outgroup and throw on error.McDonald-Kreitman returns a 5th
+	  value, hashref of warning messages about codons states (gapped,
+	  too many alleles, etc).
+
+2007-08-26 22:27  jason
+
+	* [r11647] Code optimization. Can skip ISA checking when building
+	  Population. Streamline code for building populations from
+	  alignments. Seems to have small perf improvement based on
+	  profiling
+
+2007-08-26 22:27  jason
+
+	* [r11646] Code optimization. Can force a skip ISA checking for
+	  small speed boost
+
+2007-08-26 20:13  jason
+
+	* [r11645] skip when we encounter gaps -- to better parameterize
+	  this in the future
+
+2007-08-24 21:15  lstein
+
+	* [r11629] linewidth setting was being ignored when drawing filled
+	  arrows
+
+2007-08-23 04:02  cjfields
+
+	* [r11625] fix POD syntax
+
+2007-08-21 21:55  cjfields
+
+	* [r11624] initial commit; simple index class for Rfam/Pfam
+	  alignments
+
+2007-08-21 16:14  cjfields
+
+	* [r11623] catch ERROR flag
+
+2007-08-20 21:08  jason
+
+	* [r11622] get the count right every time
+
+2007-08-20 11:21  cjfields
+
+	* [r11621] speed up indexing, add id_parser() method
+
+2007-08-20 01:01  cjfields
+
+	* [r11620] add convenience method to munge IDs from file if asked
+	  (still working on)
+
+2007-08-20 01:00  cjfields
+
+	* [r11619] add docsum printing convenience method.
+
+2007-08-20 00:58  cjfields
+
+	* [r11618] Catch algorithm and version if -m 9
+
+2007-08-20 00:57  cjfields
+
+	* [r11617] Initial commit; index class for -m 9 BLAST output
+
+2007-08-15 15:24  sendu
+
+	* [r11616] removed debugging throw from last commit
+
+2007-08-15 15:11  sendu
+
+	* [r11615] added tests for bug 2344
+
+2007-08-15 15:10  sendu
+
+	* [r11614] bug 2344 fixed
+
+2007-08-15 15:06  sendu
+
+	* [r11613] end() now allows getting and setting of 0, allowing the
+	  representation of gaps-only in a sequence alignment
+
+2007-08-15 08:55  heikki
+
+	* [r11612] hack to get LiveSeq working with newer EMBL seqs with
+	  more verbose
+	  molecule type strings. (Method is still misleadingly called
+	  alphabet.)
+
+2007-08-14 08:13  nathan
+
+	* [r11611] Changed variable name so that multiple "my" statements
+	  don't mask others in the same scope
+
+2007-08-08 20:38  cjfields
+
+	* [r11610] add use statement if only wanting to index; fix
+	  debugging
+
+2007-08-02 20:47  cjfields
+
+	* [r11609] infernal 0.81 parsing not implemented yet
+
+2007-08-02 17:48  cjfields
+
+	* [r11608] bug fix and cleanup; genemap not loaded in some cases,
+	  so let Bio::Root::IO do the error throwing.
+
+2007-08-02 09:42  sendu
+
+	* [r11607] test for 0 valued positions
+
+2007-08-02 09:15  sendu
+
+	* [r11606] fixed bug in setting position value of 0
+
+2007-08-02 03:35  scain
+
+	* [r11605] removing a deadly debugging statement
+
+2007-08-02 03:29  scain
+
+	* [r11604] fixing empty fasta database (the adaptor was partially
+	  changed to use locally scoped filehandles)
+
+2007-07-31 15:32  sendu
+
+	* [r11603] no longer prints a space at the end of the sequence name
+	  in write_aln()
+
+2007-07-30 15:46  cjfields
+
+	* [r11602] bug 2335
+
+2007-07-28 06:41  jason
+
+	* [r11601] don't force blankallele matching to be case insensitive.
+	  Update pattern to take this into account
+
+2007-07-24 20:22  cjfields
+
+	* [r11600] forogt to commit docs
+
+2007-07-24 20:22  cjfields
+
+	* [r11599] take out history setting from LinkSet for now until I
+	  can work out the kinks
+
+2007-07-24 19:03  cjfields
+
+	* [r11598] small fix for entrez links
+
+2007-07-24 18:08  cjfields
+
+	* [r11597] Simplify; remove history queue and make epost part of
+	  Query; parser now has-a HistoryI (not is-a HistoryI)
+
+2007-07-24 16:46  lstein
+
+	* [r11596] forgot to flip the GC content glyph when panel is
+	  flipped
+
+2007-07-23 14:42  cjfields
+
+	* [r11595] Catch failing tie'd DB_File handle
+
+2007-07-19 01:10  cjfields
+
+	* [r11594] bug 2334
+
+2007-07-18 17:37  cjfields
+
+	* [r11593] Bug 2212
+
+2007-07-18 04:56  cjfields
+
+	* [r11592] bug 2286
+
+2007-07-17 21:00  cjfields
+
+	* [r11591] add XML::DOM::XPath
+
+2007-07-17 18:40  cjfields
+
+	* [r11590] Stop complaints with '.' (attributeless features);
+	  should we change to a warning?
+
+2007-07-17 18:37  cjfields
+
+	* [r11589] Bug 2302
+
+2007-07-17 17:21  cjfields
+
+	* [r11588] bug 2178
+
+2007-07-17 16:07  cjfields
+
+	* [r11587] doc fixes for ace parsing, clarify warning more
+
+2007-07-17 16:03  cjfields
+
+	* [r11586] fix use base()
+
+2007-07-17 16:02  cjfields
+
+	* [r11585] add unimplemented method write_assembly; removed SeqIO
+	  carryover
+
+2007-07-17 15:58  cjfields
+
+	* [r11584] bug 2320
+
+2007-07-16 19:11  jason
+
+	* [r11583] move transcript score to transcript, set gene score as
+	  overall score FWIW
+
+2007-07-16 14:04  cjfields
+
+	* [r11582] is, not ok
+
+2007-07-16 04:14  cjfields
+
+	* [r11581] bug 2282
+
+2007-07-16 03:53  cjfields
+
+	* [r11580] use CORE::close() to close file
+
+2007-07-16 03:41  cjfields
+
+	* [r11579] test out getting rid of some of the multiple regex
+	  matches (to simplify things...)
+
+2007-07-16 02:53  cjfields
+
+	* [r11578] bug 1986 and GCG BLAST fixes (got the TODO working)
+
+2007-07-16 01:12  cjfields
+
+	* [r11577] bug 1986 (part deux)
+
+2007-07-15 21:40  cjfields
+
+	* [r11576] bug 1986 (second bit)
+
+2007-07-15 19:55  cjfields
+
+	* [r11575] bug 1986 tests
+
+2007-07-15 19:46  cjfields
+
+	* [r11574] BPLite (and ilk) deprecated
+
+2007-07-15 19:45  cjfields
+
+	* [r11573] unnecessary use Carp
+
+2007-07-15 19:43  cjfields
+
+	* [r11572] small fix to deal with attribute-less GFF files (prob.
+	  should be a warn() here...)
+
+2007-07-15 19:41  cjfields
+
+	* [r11571] partial fix for bug 1986
+
+2007-07-13 20:12  jason
+
+	* [r11570] unique_id not person_id
+
+2007-07-13 20:12  jason
+
+	* [r11569] Add test for remove Individuals and allele freq
+
+2007-07-13 16:00  sendu
+
+	* [r11568] only id, start, end are required: fixed to not require
+	  optional fields
+
+2007-07-12 10:42  sendu
+
+	* [r11567] cleaned up to avoid warnings
+
+2007-07-09 08:54  sendu
+
+	* [r11566] removed pointless print of 0-length string
+
+2007-07-09 01:35  cjfields
+
+	* [r11565] Use double quotes to interpolate
+
+2007-07-09 01:34  cjfields
+
+	* [r11564] $value is undef in some cases (apparently from
+	  GBrowseGFF SearchIO writer)
+
+2007-07-09 01:33  cjfields
+
+	* [r11563] eutils fixes
+
+2007-07-06 22:51  jason
+
+	* [r11562] remove debugging
+
+2007-07-06 22:40  jason
+
+	* [r11561] more FASTA-35 fixes, support multi-report files, parse
+	  Library section properly
+
+2007-07-06 04:59  cjfields
+
+	* [r11560] Must allow other SearchIO readmethods (anything that
+	  starts with 'blast')
+
+2007-07-05 15:51  sendu
+
+	* [r11559] changed to use Test::Exception and Test::Warn syntax
+
+2007-07-05 15:49  sendu
+
+	* [r11558] throw() fixed to print throw message starting with a
+	  dash when Error.pm is not loaded; debug() reimplemented with
+	  CORE::warn
+
+2007-07-05 15:46  sendu
+
+	* [r11557] warn() reimplemented to use CORE::warn instead of print
+	  STDERR, for Test::Warn compatability
+
+2007-07-05 15:43  sendu
+
+	* [r11556] adjusted for new Bioperl warning output
+
+2007-07-05 13:05  sendu
+
+	* [r11555] Added copy of Test::Warn, its dependencies and
+	  Test::Warn::Bioperl subclass
+
+2007-07-05 12:58  sendu
+
+	* [r11554] loads Test::Warn::Bioperl to allow the testing of
+	  warnings
+
+2007-07-05 09:34  sendu
+
+	* [r11553] added copy of Test::Exception and its dependencies
+
+2007-07-05 09:33  sendu
+
+	* [r11552] now loads in Test::Exception
+
+2007-07-05 09:31  sendu
+
+	* [r11551] improved syntax
+
+2007-07-04 22:08  jason
+
+	* [r11550] minor reformatting
+
+2007-07-04 22:08  jason
+
+	* [r11549] Changed API to used named parameters and only need
+	  ingroup and outgroup not total population. Polarized now works
+
+2007-07-03 21:32  jason
+
+	* [r11548] FASTA-35 parsing tweak
+
+2007-07-03 14:07  cjfields
+
+	* [r11547] lightweight HistoryI holder (used in a queue in place of
+	  parser)
+
+2007-07-03 14:06  cjfields
+
+	* [r11546] introduce lightweight HistoryI (aka cookies) to decouple
+	  data from parser
+
+2007-07-03 12:14  sendu
+
+	* [r11545] added -mixed_dash option to _setparams()
+
+2007-07-03 12:05  sendu
+
+	* [r11544] fixed compression test for cases that a temp file has to
+	  be made
+
+2007-07-03 07:59  sendu
+
+	* [r11543] fixed skips, typos
+
+2007-07-02 16:55  cjfields
+
+	* [r11542] Changed class name to something more relevant
+
+2007-07-02 16:53  cjfields
+
+	* [r11541] A few changes; changed poorly named GenericWebDBI to
+	  GenericWebAgent, clean up some methods, etc.
+
+2007-07-02 14:51  cjfields
+
+	* [r11540] bug 2321
+
+2007-07-02 12:49  cjfields
+
+	* [r11539] bug 2325
+
+2007-07-02 06:22  jason
+
+	* [r11538] McDonald-Kreitman implementation
+
+2007-07-02 02:53  cjfields
+
+	* [r11537] bug 2262
+
+2007-07-02 02:52  cjfields
+
+	* [r11536] bug 2262 (add caveat, TODO about Meta::Array interface
+	  ambiguity)
+
+2007-07-02 01:15  cjfields
+
+	* [r11535] bug 2305
+
+2007-07-02 01:01  cjfields
+
+	* [r11534] bug 2288
+
+2007-07-01 22:52  cjfields
+
+	* [r11533] bug 2317
+
+2007-07-01 22:02  cjfields
+
+	* [r11532] bug 2299
+
+2007-07-01 21:43  cjfields
+
+	* [r11531] bug 2295
+
+2007-06-28 18:06  cjfields
+
+	* [r11530] Add optional history queueing, other things
+
+2007-06-28 18:04  cjfields
+
+	* [r11529] added a few new methods
+
+2007-06-27 15:14  sendu
+
+	* [r11528] fixed handling of compressing/uncompressing files not
+	  owned by user
+
+2007-06-27 10:58  sendu
+
+	* [r11527] corrected in/outfile problem
+
+2007-06-27 10:27  sendu
+
+	* [r11526] corrected in/outfile problem
+
+2007-06-27 10:16  sendu
+
+	* [r11525] reimplemented with BioperlTest
+
+2007-06-27 10:15  sendu
+
+	* [r11524] Test.pm no longer used by any test script
+
+2007-06-27 08:34  sendu
+
+	* [r11523] added missing use Bio::Range statement
+
+2007-06-26 15:43  sendu
+
+	* [r11522] allowed specification of a minimum version of a required
+	  module, improved missing module feedback
+
+2007-06-26 14:41  cjfields
+
+	* [r11521] obsolete (functionality moved to Bio::Tools::EUtilities)
+
+2007-06-26 14:38  cjfields
+
+	* [r11520] commits for overhaul (finally got POST working)
+
+2007-06-26 13:50  sendu
+
+	* [r11519] allow the skipping of all tests due to deprecation
+
+2007-06-26 12:49  sendu
+
+	* [r11518] removed empty lines at start to avoid meaningless diff
+	  in new SeqIO test
+
+2007-06-26 12:48  sendu
+
+	* [r11517] obsolete, tests moved to SeqIO.t
+
+2007-06-26 09:37  sendu
+
+	* [r11516] flush after every write_result
+
+2007-06-26 08:55  sendu
+
+	* [r11515] revcom no longer tries to multiply strand if it is not
+	  set
+
+2007-06-25 19:06  cjfields
+
+	* [r11514] Implement eutils callbacks, iterator generation, lazy
+	  parsing. Need to make seekable iterators (for rewind()) and clean
+	  up POD.
+
+2007-06-25 14:25  sendu
+
+	* [r11513] bug fix: flush on write!
+
+2007-06-25 14:00  sendu
+
+	* [r11512] be silent if verbose 0 or less
+
+2007-06-25 12:06  sendu
+
+	* [r11511] solved uninitialized value in -x
+
+2007-06-25 03:43  cjfields
+
+	* [r11510] Cleaning up API, need to clean up POD and make callbacks
+	  more consistent
+
+2007-06-23 04:43  cjfields
+
+	* [r11509] eutils parsers, part of EUtilities overhaul (still need
+	  some work and tests)
+
+2007-06-23 01:38  jason
+
+	* [r11508] use DEBUG instead of STDERR
+
+2007-06-23 01:37  jason
+
+	* [r11507] refixed - now will get NHX bootstraps properly and parse
+	  empty [&&NHX] fields
+
+2007-06-23 01:19  jason
+
+	* [r11506] deal with empty NHX fields as seen in NJTREE
+
+2007-06-22 16:07  rdobson
+
+	* [r11505] Initial submission
+
+2007-06-22 15:55  sendu
+
+	* [r11504] more POD, catch more user errors
+
+2007-06-22 10:52  sendu
+
+	* [r11503] added test_output_file() and test_input_file() methods
+
+2007-06-22 09:42  sendu
+
+	* [r11502] added -requires_module option to compliment
+	  -requires_modules
+
+2007-06-21 15:55  sendu
+
+	* [r11501] print only when verbose
+
+2007-06-21 14:51  sendu
+
+	* [r11500] converted to BioperlTest
+
+2007-06-21 14:50  sendu
+
+	* [r11499] improved output, docs
+
+2007-06-21 14:11  sendu
+
+	* [r11498] added protection again arg typos, new option excludes_os
+
+2007-06-21 08:25  sendu
+
+	* [r11497] added more POD
+
+2007-06-21 08:17  sendu
+
+	* [r11496] added test_skip() method
+
+2007-06-20 15:15  sendu
+
+	* [r11495] reimplemented with BioperlTest
+
+2007-06-20 15:14  sendu
+
+	* [r11494] new base module for Bioperl tests
+
+2007-06-19 18:41  scain
+
+	* [r11493] fixing polypeptide features so that they use
+	  'Derives_from' instead of 'Parent'
+
+2007-06-19 16:38  scain
+
+	* [r11492] fixing a minor bug
+
+2007-06-19 14:58  cjfields
+
+	* [r11491] taking tests offline for the time being until I finish
+	  updates
+
+2007-06-19 06:46  sendu
+
+	* [r11490] revert last change: its not supposed to access the db to
+	  find descendents
+
+2007-06-19 00:57  jason
+
+	* [r11489] this method needs to delegate to the db handle to get
+	  the children
+
+2007-06-18 17:44  jason
+
+	* [r11488] Converted to Test::More
+
+2007-06-18 10:45  sendu
+
+	* [r11487] removed extraneous code
+
+2007-06-18 09:46  sendu
+
+	* [r11486] implemented the --network option to request network
+	  tests
+
+2007-06-14 22:50  jason
+
+	* [r11485] add $
+
+2007-06-14 22:49  jason
+
+	* [r11484] Added support for printing bootstrap values
+
+2007-06-14 21:35  sac
+
+	* [r11483] Removed the obsolete Bio::Root::Global module and use of
+	  the
+	  verbosity() method (not essential for demo-ing this module).
+
+2007-06-14 18:39  cjfields
+
+	* [r11482] Removed two tests; the warning that these tests caught
+	  is no
+	  longer there (the parser just bypasses blank lines, so no need).
+
+2007-06-14 18:01  nathan
+
+	* [r11481] POD corrections
+
+2007-06-14 14:16  sendu
+
+	* [r11480] removed bad "new Bio::Module" syntax, replaced with
+	  "Bio::Module->new"
+
+2007-06-14 14:00  sendu
+
+	* [r11479] removed bad "new Bio::Module" syntax, replaced with
+	  "Bio::Module->new"
+
+2007-06-14 13:38  sendu
+
+	* [r11478] moved to Test::More, 2 tests currently failing
+
+2007-06-14 13:13  sendu
+
+	* [r11477] fixed skipping
+
+2007-06-13 22:47  nathan
+
+	* [r11476] Test for checking POD syntax
+
+2007-06-11 15:58  heikki
+
+	* [r11475] overall_percentage_identity() enhancements by Hongyu
+	  Zhang. Bugzilla #2304
+
+2007-06-11 15:55  heikki
+
+	* [r11474] I always forget to increase NUMTESTS!
+
+2007-06-11 15:52  heikki
+
+	* [r11473] tests for overall_percentage_identity() enhancements by
+	  Hongyu Zhang. Bugzilla #2304
+
+2007-06-08 10:49  sendu
+
+	* [r11472] added a little extra advice on what to do when
+	  encountering test failures
+
+2007-06-07 17:49  cjfields
+
+	* [r11471] Some more fixes for bug 2305
+
+2007-06-07 16:00  sendu
+
+	* [r11470] corrected skips
+
+2007-06-07 15:48  sendu
+
+	* [r11469] corrected skip behaviour; still need a solution for when
+	  server fails to return any data
+
+2007-06-07 15:13  sendu
+
+	* [r11468] corrected number of tests
+
+2007-06-05 23:46  cjfields
+
+	* [r11467] Partial fix for bug 2305
+
+2007-06-05 15:07  cjfields
+
+	* [r11466] prettify verbose warnings a little more
+
+2007-06-03 21:19  lstein
+
+	* [r11465] added optional debug statements to the xyplot glyph
+
+2007-05-31 16:41  mcook
+
+	* [r11464] add newline at end of file
+
+2007-05-31 16:29  mcook
+
+	* [r11463] improved diagnostic error message when reporting on
+	  Incorrect parameters
+
+2007-05-31 16:25  mcook
+
+	* [r11462] add 'Name' as column 9 attribute if feature implements
+	  'name' such as might be for Bio::DB::SeqFeature
+
+2007-05-31 16:08  dave_messina
+
+	* [r11461] Correcting docs per bug #2303. Thanks to Heikki
+	  Lehvaslaiho for the report.
+
+2007-05-31 15:57  dave_messina
+
+	* [r11460] Correcting docs per bug #2303. Thanks to Heikki
+	  Lehvaslaiho for the report.
+
+2007-05-29 04:51  jason
+
+	* [r11459] don't need to guess the alphabet if we already know it
+
+2007-05-29 04:28  jason
+
+	* [r11458] revert ... my mistake
+
+2007-05-29 04:27  jason
+
+	* [r11457] POD fix in SYNOPSIS
+
+2007-05-25 10:11  sendu
+
+	* [r11456] tempered last commit to avoid warnings when there is no
+	  significance
+
+2007-05-25 10:10  sendu
+
+	* [r11455] _set_from_args fixed to return 0 from created methods if
+	  set with 0
+
+2007-05-23 22:42  lstein
+
+	* [r11454] fixed a problem which caused scale not to match upper
+	  values correctly
+
+2007-05-23 05:52  dave_messina
+
+	* [r11453] Fix for Bug 2300 -- thanks to Wayne Clarke for reporting
+	  it and supplying the patch.
+
+2007-05-21 20:41  cjfields
+
+	* [r11452] Remove incomplete module (OK'd per Allen Day)
+
+2007-05-17 10:51  lstein
+
+	* [r11451] fixed documentation for map_pt()
+
+2007-05-16 14:12  sendu
+
+	* [r11450] moved to Test::More, no longer tests the deprecated
+	  BPLite _READMETHOD, tests the new blast_pull instead
+
+2007-05-16 14:11  sendu
+
+	* [r11449] reimplemented to use _set_from_args and _setparams;
+	  wublast params now properly case insensitive and do not get
+	  infected by NCBI params; NCBI switches can be set with boolean;
+	  param values with spaces now auto-quoted
+
+2007-05-16 13:25  sendu
+
+	* [r11448] _setparams now quotes values that contain spaces
+
+2007-05-16 09:29  sendu
+
+	* [r11447] bodge fix for commas leaking into evalues somewhere in
+	  Bio::SearchIO::blast
+
+2007-05-16 07:49  sendu
+
+	* [r11446] hit table can be empty?
+
+2007-05-16 07:43  sendu
+
+	* [r11445] fixed hit table parsing error: scores can contain e
+
+2007-05-15 10:20  sendu
+
+	* [r11444] fixed hit table parsing bug and hsp evalues: evalues can
+	  start with an e (ie no number)
+
+2007-05-14 15:48  sendu
+
+	* [r11443] bug2293
+
+2007-05-14 15:39  sendu
+
+	* [r11442] fix for hits with no descriptions
+
+2007-05-14 15:38  sendu
+
+	* [r11441] fix to use the correct new module
+
+2007-05-14 14:17  sendu
+
+	* [r11440] roundinc accuracy increased, tests updated to match
+
+2007-05-14 12:58  sendu
+
+	* [r11439] undo debugging step of last commit
+
+2007-05-14 12:55  sendu
+
+	* [r11438] dependencies can be in parents
+
+2007-05-14 12:53  sendu
+
+	* [r11437] reimplemented start() and end() for speed - tiling not
+	  necessary
+
+2007-05-14 12:49  sendu
+
+	* [r11436] initial commit of blast pull modules and tests
+
+2007-05-14 12:46  sendu
+
+	* [r11435] bug fix: get chunk methods no longer travel outside
+	  chunk bounds
+
+2007-05-14 12:23  sendu
+
+	* [r11434] added -code and -case_sensitve options to
+	  set_from_args()
+
+2007-05-12 22:59  jason
+
+	* [r11433] TreeIO magic to now automatically move bootstrap values
+	  over if the user requests this - made it a global Bio::TreeIO
+	  flag but is really only used in Bio::TreeIO::newick and nexus
+
+2007-05-12 22:58  jason
+
+	* [r11432] test for method to move bootstrap values from id values
+	  for internal nodes automatically
+
+2007-05-12 22:58  jason
+
+	* [r11431] method to move bootstrap values from id values for
+	  internal nodes automatically
+
+2007-05-12 12:04  cjfields
+
+	* [r11430] initial commit; part of EUtilities overhaul
+
+2007-05-12 04:20  dave_messina
+
+	* [r11429] NEW: initial import of
+	  Bio::Search::Result::CrossMatchResult and
+	  Bio::SearchIO::cross_match. Many thanks to Shin Leong for these.
+
+2007-05-08 23:01  cjfields
+
+	* [r11428] small comment for tracking bug 1986
+
+2007-05-08 23:00  cjfields
+
+	* [r11427] New generic interface encapsulating parameters and
+	  helper methods
+
+2007-05-03 21:14  mcook
+
+	* [r11426] redefine gff3_string to:
+	  
+	  # Return GFF3 format for the feature $self. Optionally
+	  # $recurse to include GFF for any subfeatures of the feature. If
+	  # recursing, provide special handling to "remove an extraneous
+	  level
+	  # of parentage" (unless $preserveHomegenousParent) for features
+	  # which have at least one subfeature with the same type as the
+	  # feature itself (thus redefining Lincoln's "homogenous
+	  # parent/child" case, which previously required all children to
+	  have
+	  # the same type as parent). This usage is a convention for
+	  # representing discontiguous features; they may be created by
+	  using
+	  # the -segment directive without specifying a distinct -subtype
+	  to
+	  # Bio::Graphics::FeatureBase->new (or to Bio::DB::SeqFeature,
+	  # Bio::Graphics::Feature). Such homogenous subfeatures created in
+	  # this fashion TYPICALLY do not have the parent (GFF column 9)
+	  # attributes propogated to them; but, since they are all part of
+	  the
+	  # same parent, the ONLY difference relevant to GFF production
+	  SHOULD
+	  # be the $start and $end coordinates for their segment, and ALL
+	  # THIER OTHER ATTRIBUTES should be taken from the parent
+	  (including:
+	  # score, Name, ID, Parent, etc), which happens UNLESS
+	  # $dontPropogateParentAttrs is passed.
+
+2007-05-03 20:04  mcook
+
+	* [r11425] fixing up the RCS ID line
+
+2007-05-03 20:00  mcook
+
+	* [r11424] initial checkin
+
+2007-05-01 17:45  cjfields
+
+	* [r11423] small bug fixes
+
+2007-05-01 17:43  cjfields
+
+	* [r11422] Update on v.0.81 output; will try to add parsing support
+	  soon.
+
+2007-04-30 16:58  scain
+
+	* [r11421] added a GMOD-specific custom tag: CRUD (Create, Replace,
+	  Update, or Delete)
+
+2007-04-27 15:05  cjfields
+
+	* [r11420] possible fix for bug 2279
+
+2007-04-26 23:11  jason
+
+	* [r11419] whoops, I made a bug, test if we are in Result before
+	  deciding to close it.
+
+2007-04-22 20:17  jason
+
+	* [r11418] Handle reports with no ending stanza
+
+2007-04-22 19:55  jason
+
+	* [r11417] move some cached-handler code over from blast to help in
+	  speedup.
+
+2007-04-22 17:08  lstein
+
+	* [r11416] another fix for negative coordinates
+
+2007-04-22 11:07  spiros
+
+	* [r11415] Test::More migration
+
+2007-04-20 22:43  cjfields
+
+	* [r11414] revamping eutils tests; ramping up for refactoring
+
+2007-04-20 19:47  bosborne
+
+	* [r11413] Don's patch to the patch
+
+2007-04-20 19:17  lstein
+
+	* [r11412] whitespace fix as per AJM's letter of 20 April 2007
+
+2007-04-20 18:34  dave_messina
+
+	* [r11411] FIX: fixing typo for cvs-less Aaron Mackey.
+
+2007-04-20 16:13  lstein
+
+	* [r11410] applied patch from Aaron Mackey that escapes source and
+	  method values from inappropriate regexp matching
+
+2007-04-19 21:55  spiros
+
+	* [r11409] test::more migration
+
+2007-04-19 21:32  spiros
+
+	* [r11408] small typo fix
+
+2007-04-19 20:53  cjfields
+
+	* [r11407] Fix for recent DB.t woes
+
+2007-04-19 19:24  spiros
+
+	* [r11406] test::more migration
+
+2007-04-19 14:21  cjfields
+
+	* [r11405] separate ID string generation into a private method
+
+2007-04-19 13:13  sendu
+
+	* [r11404] cleanup, corrected perl syntax
+
+2007-04-19 13:12  sendu
+
+	* [r11403] no more printing of non-existant values
+
+2007-04-19 13:11  sendu
+
+	* [r11402] cleanup and skip all if necessary
+
+2007-04-19 10:04  sendu
+
+	* [r11401] fix for "bizarre copy of array" bug
+
+2007-04-19 09:54  sendu
+
+	* [r11400] corrected number of tests
+
+2007-04-18 19:30  lstein
+
+	* [r11399] fixed Bio::DB::GFF and Bio::DB::SeqFeature::Store to
+	  handle negative coordinates
+
+2007-04-18 16:23  sendu
+
+	* [r11398] corrected skip numbers, but are the "No seqs returned"
+	  skips valid?
+
+2007-04-18 15:21  mcook
+
+	* [r11397] throw DBI error on failed DBI-connection
+
+2007-04-17 21:14  jason
+
+	* [r11396] special MrBayes macro case, cleanup err msg a little
+	  more
+
+2007-04-17 17:16  cjfields
+
+	* [r11395] change odd messages to diag(); use isa_ok(), not ok
+	  $obj->isa()
+
+2007-04-17 10:36  spiros
+
+	* [r11394] test::more migration
+
+2007-04-16 21:03  mcook
+
+	* [r11393] build_object_tree_in_tables died when its globalID was
+	  0. Changing to hash existence test avoids this bug.
+
+2007-04-16 19:55  lstein
+
+	* [r11392] added load_gff_file() and load_fasta_file() to
+	  Bio::DB::GFF to avoid problems with the load_gff() and
+	  load_fasta() methods when run in FastCGI/mod_perl environments
+
+2007-04-16 18:27  cjfields
+
+	* [r11391] cleanup and convert to Test::More
+
+2007-04-15 15:38  bosborne
+
+	* [r11390] Minor edits
+
+2007-04-15 10:48  spiros
+
+	* [r11389] test commit, a single whitespace
+
+2007-04-13 21:23  cjfields
+
+	* [r11388] bug 2271
+
+2007-04-13 20:40  cjfields
+
+	* [r11387] bug 2272
+
+2007-04-13 20:04  cjfields
+
+	* [r11386] fix Location.t; MitoProt.t now runs under BIOPERLDEBUG=1
+
+2007-04-13 19:33  cjfields
+
+	* [r11385] cleanup from Test::More conversion
+
+2007-04-13 19:24  cjfields
+
+	* [r11384] cleanup from Test::More conversion
+
+2007-04-13 19:04  cjfields
+
+	* [r11383] forgot to uncomment
+
+2007-04-13 19:04  cjfields
+
+	* [r11382] cleanup from Test::More conversion
+
+2007-04-13 18:53  cjfields
+
+	* [r11381] cleanup from Test::More conversion
+
+2007-04-13 18:32  cjfields
+
+	* [r11380] cleanup from Test::More conversion
+
+2007-04-13 18:13  cjfields
+
+	* [r11379] cleanup from Test::More conversion
+
+2007-04-13 17:57  cjfields
+
+	* [r11378] cleanup from Test::More convesion
+
+2007-04-13 17:45  cjfields
+
+	* [r11377] cleanup from Test::More conversion
+
+2007-04-13 17:31  cjfields
+
+	* [r11376] Small DB.t fixes; GenBank query is failing but may be
+	  network issue
+
+2007-04-13 17:30  cjfields
+
+	* [r11375] convert to Test::More
+
+2007-04-13 16:50  cjfields
+
+	* [r11374] convert to Test::More; IMAGE_TESTS seem to fail but are
+	  not run by default, not sure why yet...
+
+2007-04-13 16:48  cjfields
+
+	* [r11373] convert to Test::More
+
+2007-04-13 16:35  cjfields
+
+	* [r11372] cleanup tests; set network tests so they won't run
+	  unless BIOPERLDEBUG is set
+
+2007-04-13 05:43  jason
+
+	* [r11371] some error checking
+
+2007-04-13 05:41  jason
+
+	* [r11370] do not need to include Root.pm
+
+2007-04-12 22:57  cjfields
+
+	* [r11369] Convert to Test::More
+
+2007-04-12 22:56  cjfields
+
+	* [r11368] cleanup cruft
+
+2007-04-12 04:36  cjfields
+
+	* [r11367] moved to Test::More
+
+2007-04-12 04:15  cjfields
+
+	* [r11366] bug 2270
+
+2007-04-12 04:07  cjfields
+
+	* [r11365] move to Test::More
+
+2007-04-12 03:41  cjfields
+
+	* [r11364] Finish M-N (convert to Test::More)
+
+2007-04-11 21:50  cjfields
+
+	* [r11363] Don't forget lucy!
+
+2007-04-11 21:48  cjfields
+
+	* [r11362] Finished L's (move to Test::More)
+
+2007-04-11 20:22  cjfields
+
+	* [r11361] convert to Test::More
+
+2007-04-11 19:26  cjfields
+
+	* [r11360] convert to Test::More
+
+2007-04-11 19:17  cjfields
+
+	* [r11359] convert to Test::More
+
+2007-04-11 19:08  cjfields
+
+	* [r11358] Convert to Test::More
+
+2007-04-11 18:54  cjfields
+
+	* [r11357] convert to Test::More
+
+2007-04-11 17:37  cjfields
+
+	* [r11356] convert to Test::More
+
+2007-04-11 14:01  sendu
+
+	* [r11355] removed extraneous line from select_noncont, check also
+	  that input contains appropriate numbers before attmepting a
+	  numerical sort
+
+2007-04-11 13:04  cjfields
+
+	* [r11354] select_noncont() sorts numerically by default (fixed),
+	  pass 'nosort' to prevent sorting
+
+2007-04-11 01:22  cjfields
+
+	* [r11353] bug 2264, 2265
+
+2007-04-10 13:55  bosborne
+
+	* [r11352] Don's patch
+
+2007-04-06 19:42  mcook
+
+	* [r11351] pass the "safest" value, 3, for $if_active parameter to
+	  DBD::prepare_cached, as we don't know how caller may be using the
+	  SeqFeatureStore
+
+2007-04-05 17:07  cjfields
+
+	* [r11350] bug 2263
+
+2007-04-05 14:35  bosborne
+
+	* [r11349] Don's patch, this allows simple Target values and
+	  supports existing Bioperl scripts
+
+2007-04-02 15:55  scain
+
+	* [r11348] added support for a new directive: ##organism (should
+	  use common name if available)
+
+2007-04-02 14:41  cjfields
+
+	* [r11347] write_seq() is not implemented
+
+2007-04-02 01:18  cjfields
+
+	* [r11346] bug 2246
+
+2007-04-02 00:47  cjfields
+
+	* [r11345] bug 2237
+
+2007-03-30 21:17  dave_messina
+
+	* [r11344] FIX: skip of 'Text BLAST' section caused subsequent
+	  tests to fail when BIOPERLDEBUG=0. Fixed.
+
+2007-03-30 14:05  cjfields
+
+	* [r11343] Small bug which botches some report parsing
+
+2007-03-30 12:59  sendu
+
+	* [r11342] any version of Scalar::Util will do?
+
+2007-03-30 11:43  heikki
+
+	* [r11341] initial commit
+
+2007-03-30 07:51  heikki
+
+	* [r11340] doc typos
+
+2007-03-29 15:50  sendu
+
+	* [r11339] fix for get_tree - load Bio::Tree::Tree
+
+2007-03-29 15:33  cjfields
+
+	* [r11338] Fix '.' being appended to scientific_name
+
+2007-03-29 14:27  sendu
+
+	* [r11337] remove trailing dot from bracketed scientific names
+
+2007-03-29 13:38  sendu
+
+	* [r11336] bodge for OS lines with brackets that none-the-less are
+	  a complete scientific species names
+
+2007-03-29 13:36  sendu
+
+	* [r11335] no re-declaration of variables
+
+2007-03-29 13:34  sendu
+
+	* [r11334] fix for angle-bracket queries
+
+2007-03-28 22:39  bosborne
+
+	* [r11333] Don's fixes, related to new version of genbank2gff3.pl
+
+2007-03-28 03:39  cjfields
+
+	* [r11332] is(), not ok()
+
+2007-03-28 02:18  bosborne
+
+	* [r11331] Don's changes
+
+2007-03-27 15:09  scain
+
+	* [r11330] allowing special handling of 'comment' tags since they
+	  have a special meaning in Bio::Annotation::Collection
+
+2007-03-27 15:08  scain
+
+	* [r11329] allowing 'value' as an alias for the 'text' method, to
+	  make it more interoperable with the Bio::Annotation::SimpleValue
+	  object
+
+2007-03-27 13:19  bosborne
+
+	* [r11328] Command line options
+
+2007-03-27 12:56  cjfields
+
+	* [r11327] reroute data flow through data_handler() for centralized
+	  control
+
+2007-03-27 12:43  heikki
+
+	* [r11326] 'use base'
+
+2007-03-27 09:54  sendu
+
+	* [r11325] author is Chris Fields
+
+2007-03-26 19:38  cjfields
+
+	* [r11324] pass data in chunks using element_hash()
+
+2007-03-26 18:36  cjfields
+
+	* [r11323] tests changes and additions
+
+2007-03-26 18:35  cjfields
+
+	* [r11322] add warnings for unsupported methods
+
+2007-03-26 18:17  cjfields
+
+	* [r11321] rnamotif fixes
+
+2007-03-26 17:58  cjfields
+
+	* [r11320] parsing fixes
+
+2007-03-26 15:57  scain
+
+	* [r11319] allowing Bio::FeatureIO::gff to diverge (ever so
+	  slightly) from the GFF3 spec, to allow dbxref tags to be treated
+	  the same as Dbxref tags.
+
+2007-03-22 19:14  cjfields
+
+	* [r11318] bug 2246 tentative fix
+
+2007-03-22 18:30  cjfields
+
+	* [r11317] bug 2245 (enhancement to allow relative paths for index
+	  files)
+
+2007-03-22 04:00  cjfields
+
+	* [r11316] fix some tests
+
+2007-03-22 03:51  cjfields
+
+	* [r11315] test data for BIC tests
+
+2007-03-21 17:34  cjfields
+
+	* [r11314] Removing redundant module; passes flat.t
+
+2007-03-21 16:22  cjfields
+
+	* [r11313] bug 2242
+
+2007-03-21 04:14  cjfields
+
+	* [r11312] Now passes v3 tests (at least the v3 output we have...)
+
+2007-03-21 04:11  cjfields
+
+	* [r11311] Neil & Co.'s modified Signalp parser (bug 2203) - passes
+	  Signalp.t/Signalp2.t
+
+2007-03-20 22:43  bosborne
+
+	* [r11310] More recent spec, version 3
+
+2007-03-20 16:31  cjfields
+
+	* [r11309] Changed throw() due to verbose output from Infernal
+	  programs choking the stockholm parser
+
+2007-03-19 20:37  cjfields
+
+	* [r11308] TargetP parser, data, and tests
+
+2007-03-19 20:23  cjfields
+
+	* [r11307] bug 2240
+
+2007-03-19 18:53  jason
+
+	* [r11306] correct package name in POD, use the seqname parsed from
+	  the first ID since that will be full length, rather than what is
+	  presented in the NN output
+
+2007-03-19 16:42  bosborne
+
+	* [r11305] Don's patch for GFF3
+
+2007-03-19 15:41  lstein
+
+	* [r11304] Fixed bug in which all featurefiles returned an
+	  extraneous undef feature in response to features() method
+
+2007-03-17 02:53  bosborne
+
+	* [r11303] Daniel's patch
+
+2007-03-16 21:21  lstein
+
+	* [r11302] fixed bug in FeatureFile caused by changed behavior of
+	  Text::ParseWords
+
+2007-03-16 20:41  cjfields
+
+	* [r11301] getter/setter for comment type (not implemented yet)
+
+2007-03-16 20:40  cjfields
+
+	* [r11300] tests (write_seq() for drivers not implemented yet)
+
+2007-03-16 20:39  cjfields
+
+	* [r11299] seq format drivers and single handler module for
+	  GenBank/EMBL/Swiss
+
+2007-03-16 20:38  cjfields
+
+	* [r11298] Handler-based parsing interface
+
+2007-03-15 17:30  cjfields
+
+	* [r11297] Move to Test::More
+
+2007-03-15 17:10  cjfields
+
+	* [r11296] moved to Test::More
+
+2007-03-15 16:23  cjfields
+
+	* [r11295] move to Test::More
+
+2007-03-15 14:22  cjfields
+
+	* [r11294] new signalp parser (need to merge code and tests for
+	  both parsers ala glimmer)
+
+2007-03-15 14:20  cjfields
+
+	* [r11293] signalp test data
+
+2007-03-15 14:20  cjfields
+
+	* [r11292] new signalp tests; change to Test::More
+
+2007-03-14 19:14  cjfields
+
+	* [r11291] Move to Test::More
+
+2007-03-14 19:13  cjfields
+
+	* [r11290] Fix which checks for BLAST header for text/tabular
+	  output; the QBlast status field has disappeared causing an
+	  infinite loop
+
+2007-03-13 22:20  cjfields
+
+	* [r11289] Bug 2221
+
+2007-03-13 22:15  cjfields
+
+	* [r11288] TandemRepeatsFinder parser (bug 2233)
+
+2007-03-11 19:06  bosborne
+
+	* [r11287] Bio::Graph is deprecated
+
+2007-03-11 15:21  bosborne
+
+	* [r11286] Rename
+
+2007-03-11 15:19  bosborne
+
+	* [r11285] Rename, no bp_
+
+2007-03-11 15:13  bosborne
+
+	* [r11284] Correct POD
+
+2007-03-08 18:40  cjfields
+
+	* [r11283] switch to XML::SAX (not heavily tested); this module
+	  needs to be heavily refactored per bug 2018
+
+2007-03-08 17:44  nathan
+
+	* [r11282] added POD for name() method, an alias for asString().
+
+2007-03-08 17:40  nathan
+
+	* [r11281] added POD for deprecated moltype() method.
+
+2007-03-08 17:38  cjfields
+
+	* [r11280] params use '-'
+
+2007-03-08 17:38  cjfields
+
+	* [r11279] add simple bracket_string() tests
+
+2007-03-08 17:34  nathan
+
+	* [r11278] added POD for deprecated members() method.
+
+2007-03-08 17:16  nathan
+
+	* [r11277] added POD for trunc()
+
+2007-03-08 17:02  nathan
+
+	* [r11276] added POD for cuts_after(), an alias for cut() method
+
+2007-03-08 17:00  nathan
+
+	* [r11275] added POD for model method, an alias for descriptor()
+	  method
+
+2007-03-08 16:53  nathan
+
+	* [r11274] POD method name correction
+
+2007-03-08 16:51  nathan
+
+	* [r11273] added POD for get_feature_by_name
+
+2007-03-08 16:41  nathan
+
+	* [r11272] POD method name correction
+
+2007-03-08 16:32  nathan
+
+	* [r11271] POD method name correction
+
+2007-03-08 16:26  cjfields
+
+	* [r11270] D* tests to Test::More
+
+2007-03-08 16:12  nathan
+
+	* [r11269] POD added for deprecated program_reference() method.
+
+2007-03-08 16:02  nathan
+
+	* [r11268] POD method name correction
+
+2007-03-08 15:56  cjfields
+
+	* [r11267] Finish converting C* tests to Test::More
+
+2007-03-08 14:40  cjfields
+
+	* [r11266] removed tests from old bracket_string method (will add
+	  to Simplealign tests)
+
+2007-03-08 04:53  cjfields
+
+	* [r11265] change to Test::More
+
+2007-03-08 03:54  cjfields
+
+	* [r11264] change to Test::More
+
+2007-03-08 01:49  cjfields
+
+	* [r11263] convert to Test::More
+
+2007-03-08 00:36  cjfields
+
+	* [r11262] move to Test::More
+
+2007-03-07 16:00  sendu
+
+	* [r11261] bug 2133: code matches docs
+
+2007-03-07 15:06  sendu
+
+	* [r11260] added Scalar::Util as a requirment
+
+2007-03-07 14:53  cjfields
+
+	* [r11259] bug 2221; this should catch most translate data out
+	  there; passes all tests
+
+2007-03-07 14:51  cjfields
+
+	* [r11258] Added data to spaces.nex for NEXUS TreeIO tests, no
+	  longer need this file
+
+2007-03-07 14:49  cjfields
+
+	* [r11257] this should deal with all varieties of translate lines
+	  (fingers crossed!)
+
+2007-03-07 14:36  sendu
+
+	* [r11256] corrected previously commited test, added new test for
+	  bug 2193
+
+2007-03-07 14:35  sendu
+
+	* [r11255] test data for bug 2193
+
+2007-03-07 14:34  sendu
+
+	* [r11254] bug 2193 should now be fixed
+
+2007-03-07 14:15  sendu
+
+	* [r11253] frac_aligned_sbjct method alias now points to the
+	  correct method
+
+2007-03-07 13:55  cjfields
+
+	* [r11252] Bug 2221
+
+2007-03-07 03:46  cjfields
+
+	* [r11251] bug 2205
+
+2007-03-06 21:56  cjfields
+
+	* [r11250] perltidy and untabify (no bug fix for 2221 yet)
+
+2007-03-06 21:46  cjfields
+
+	* [r11249] change to Test::More; added some tests for bug 2221, but
+	  skip until patch is fixed
+
+2007-03-02 16:15  sendu
+
+	* [r11248] test for frac_aligned_hit: used to be over 1 with this
+	  data
+
+2007-03-02 16:00  sendu
+
+	* [r11247] fix for incorrect frac_aligned_query() etc. caused by
+	  bug in contig merging
+
+2007-03-02 02:38  cjfields
+
+	* [r11246] additional spliced_seq tests (per Jay Hannah)
+
+2007-03-01 20:28  jason
+
+	* [r11245] bug #2220
+
+2007-03-01 16:36  scain
+
+	* [r11244] allowing featureloc entries for top level features when
+	  an external srcfeature is specified
+
+2007-03-01 07:49  heikki
+
+	* [r11243] typo in documentation
+
+2007-03-01 04:57  scain
+
+	* [r11242] added GFF source handling; also added defaults for some
+	  values that were ending up uninitialized
+
+2007-02-27 18:37  cjfields
+
+	* [r11241] Add doi() get/setter
+
+2007-02-27 13:40  cjfields
+
+	* [r11240] move to Test::More
+
+2007-02-27 00:26  lstein
+
+	* [r11239] fixed various problems with gff3_string formatting of
+	  Bio::Graphics::FeatureBase; (1) was dumping empty Alias
+	  attributes and (2) was not dumping phase 0 CDS fields
+
+2007-02-26 18:02  cjfields
+
+	* [r11238] Some POD fixes for bracket_string and sort_by_start
+
+2007-02-26 17:47  cjfields
+
+	* [r11237] Made bracket_string a class method
+
+2007-02-26 17:46  cjfields
+
+	* [r11236] remove bracket_strings (moving to SimpleAlign)
+
+2007-02-26 17:26  scain
+
+	* [r11235] fixed GFF3 Dbxref handling
+
+2007-02-26 15:47  scain
+
+	* [r11234] adding an override of write_seq to provide an explicit
+	  close of the chado tag to mimic the original chadoxml.pm behavior
+
+2007-02-25 11:06  sac
+
+	* [r11233] Added more tests for other methods.
+	  Included some tests that depend on external binaries but left
+	  them
+	  commented out.
+
+2007-02-25 11:03  sac
+
+	* [r11232] Major cleanup:
+	  * Removed dependency on Bio::Root::Global and Object (now gone).
+	  * Removed dependency on POSIX (now uses Bio::Root::IO for temp
+	  filenames).
+	  * Added find_exe() to avoid hard-coding paths to executables.
+	  * Fixed bug in date_format().
+	  * Updated pod.
+
+2007-02-23 21:53  mcook
+
+	* [r11231] handle Multiple attributes of the same type in GFF
+	  output correctly
+
+2007-02-23 19:17  scain
+
+	* [r11230] added Ontology_term handling
+
+2007-02-23 18:05  lstein
+
+	* [r11229] fixed problems related to retrieving segments with
+	  negative coordinates
+
+2007-02-23 09:56  sendu
+
+	* [r11228] added new files and tests for mlagan matrix handling
+
+2007-02-22 21:38  scain
+
+	* [r11227] adding Alias tag handling (requiring the addition of
+	  synonym to chadoxml.pm)
+	  I think flybase_chadoxml.pm might be broken, as it is using
+	  'polypeptide' in
+	  the resulting xml where it should be using 'protein'.
+
+2007-02-22 00:17  cjfields
+
+	* [r11226] Bug 2215
+
+2007-02-21 18:33  lapp
+
+	* [r11225] Fixed the bug reported by Samuel GRANJEAUD - adding an
+	  empty list of members
+	  was broken.
+
+2007-02-20 17:26  lstein
+
+	* [r11224] made seq_id settable
+
+2007-02-20 13:33  cjfields
+
+	* [r11223] Removed per Chris Mungall's request
+
+2007-02-19 18:35  cjfields
+
+	* [r11222] Typo; add CVS tag
+
+2007-02-19 18:15  sendu
+
+	* [r11221] first working version of parser for gumby .align output
+
+2007-02-19 17:55  sendu
+
+	* [r11220] futher correction to Caroline's patch: be less annoying
+
+2007-02-19 17:46  sendu
+
+	* [r11219] fix for tag-value pairs separated by tabs in GFF2
+
+2007-02-17 05:20  cjfields
+
+	* [r11218] infernal parsing fixes
+
+2007-02-16 13:56  sendu
+
+	* [r11217] now recommends Storable 2.05 which supports subroutine
+	  refs
+
+2007-02-16 05:21  sac
+
+	* [r11216] Adding the test script for the recently resurrected
+	  Bio::Root::Utilities. Still needs fleshing out.
+
+2007-02-16 01:47  cjfields
+
+	* [r11215] Remove XEMBL tests (no longer active)
+
+2007-02-16 01:45  cjfields
+
+	* [r11214] Add deprecation warning
+
+2007-02-16 01:21  cjfields
+
+	* [r11213] Removed extraneous line.
+
+2007-02-15 23:33  dave_messina
+
+	* [r11212] left a testing print statement behind -- oops. Removed.
+
+2007-02-15 23:29  dave_messina
+
+	* [r11211] Adding Stephen Montgomery's subtract method to RangeI
+	  (Bug 2207)
+
+2007-02-15 23:28  dave_messina
+
+	* [r11210] Added subtract unit tests (Bug 2207) and updated simple
+	  method tests
+
+2007-02-15 21:35  cjfields
+
+	* [r11209] Add back per sac's request...
+
+2007-02-15 21:19  cjfields
+
+	* [r11208] XEMBL no longer is available
+
+2007-02-15 20:14  cjfields
+
+	* [r11207] No longer needed; tests should use Glimmer*.out and
+	  Glimmer3.detail
+
+2007-02-15 19:36  cjfields
+
+	* [r11206] Bug 2206 - updates to allow all Glimmer formats to be
+	  parsed
+
+2007-02-15 14:29  cjfields
+
+	* [r11205] Fix for remote DB sort order change
+
+2007-02-14 17:32  sendu
+
+	* [r11204] added get_tree method
+
+2007-02-14 16:42  sendu
+
+	* [r11203] fixed typo bug in last commit
+
+2007-02-14 14:21  sendu
+
+	* [r11202] Caroline Johnston's patch to executable() to warn about
+	  using system path when program path was set but had no exe
+
+2007-02-14 12:02  sendu
+
+	* [r11199] Bundle::BioPerl::XMLSimple now obsolete with XML::SAX
+	  0.15
+
+2007-02-12 10:21  sendu
+
+	* [r11197] added simplify_to_leaves_string()
+
+2007-02-11 00:44  lstein
+
+	* [r11196] don't create a link unless there is an href
+
+2007-02-10 03:42  cjfields
+
+	* [r11195] XML::SAX 0.15 is req'd; may not need Bundle for
+	  XML::Simple now
+
+2007-02-08 14:17  cjfields
+
+	* [r11194] fixed saxparser(), made tests stricter(!)
+
+2007-02-08 13:36  cjfields
+
+	* [r11193] blastxml should now return all description data for
+	  every (!?!) XML::SAX backend; no need for warnings
+
+2007-02-07 15:40  lstein
+
+	* [r11192] fixed nonfunctional -temporary-directory option
+
+2007-02-07 12:21  lstein
+
+	* [r11191] fixed map_pt to round correctly
+
+2007-02-06 23:35  lstein
+
+	* [r11190] finished documentation for stackedplot glyph
+
+2007-02-06 04:13  jason
+
+	* [r11189] remove errant reference to ENV variable in POD - this
+	  only relates to the scripts bp_fetch and bp_index
+
+2007-02-05 23:05  lstein
+
+	* [r11188] changes to glyph creation to more easily allow glyphs to
+	  explicitly control types of their subglyphs
+
+2007-02-04 06:21  cjfields
+
+	* [r11187] our->my; fix GI error
+
+2007-02-04 05:55  cjfields
+
+	* [r11186] erpin, rnamotif SearchIO-based parsers with some tests
+	  (need more work)
+
+2007-02-04 05:14  cjfields
+
+	* [r11185] use quotemeta JIC for regexes
+
+2007-02-04 05:13  cjfields
+
+	* [r11184] small changes
+
+2007-02-04 05:11  cjfields
+
+	* [r11183] RNA-based SearchIO stuff (keep separate from SearchIO.t
+	  for now)
+
+2007-02-04 05:06  cjfields
+
+	* [r11182] cmsearch (Infernal) SearchIO-based parser; HSP model for
+	  above; get/setter in GenericHit for storing NCBI GI
+
+2007-02-04 02:41  cjfields
+
+	* [r11181] Add private sub for getting GI/accession/version if
+	  present
+
+2007-02-03 21:44  lstein
+
+	* [r11180] did a little work on the stackedplot glyph; bounding box
+	  is still slightly off
+
+2007-02-02 21:51  mcook
+
+	* [r11179] fixup whitespace in regexp which was causing any ID
+	  attribute to get incorrectly lower-cased during GFF3 production
+
+2007-02-02 21:46  mcook
+
+	* [r11178] - ensure that subfeatures get the `source` of their
+	  parent
+	  - comment on (bizarro?) treatment of -segment optio to ->new
+
+2007-02-02 21:05  mcook
+
+	* [r11177] _create_subfeatures : subfeatures get the `source` of
+	  their parent
+
+2007-02-02 18:11  mcook
+
+	* [r11176] When score is defined and 0, print 0, not '.'. Only
+	  print '.' if score is undefined.
+
+2007-02-02 17:28  scain
+
+	* [r11175] breaking flybase specific stuff out into a subclass
+	  (which should make
+	  it easier for dialect-specific creation of chadoxml--which is not
+	  really a good thing!! (even if it make design easier and
+	  cleaner))
+
+2007-02-02 16:25  cjfields
+
+	* [r11174] Move to Test::More
+
+2007-02-02 00:19  jason
+
+	* [r11173] bug #2201
+
+2007-02-01 21:15  scain
+
+	* [r11172] another flybase/standard difference: protein vs
+	  polypeptide
+
+2007-02-01 20:47  scain
+
+	* [r11171] fixing a typo
+
+2007-02-01 20:27  scain
+
+	* [r11170] adding options to control printing of residues
+
+2007-02-01 20:02  cjfields
+
+	* [r11169] bug 2189
+
+2007-02-01 18:19  scain
+
+	* [r11168] adding is_circular to Graphics::FeatureBase because it
+	  is required by Bio::PrimarySeqI; adding more flexible
+	  functionality to SeqIO::chadoxml while introducing a
+	  -flybase_compat arg to allow it to continue to work like they
+	  expect
+
+2007-01-31 18:07  jason
+
+	* [r11167] Need to split the range up into start/end if you want to
+	  sort on that. Let's test before we commit.
+
+2007-01-31 14:49  sendu
+
+	* [r11166] when Store::delete() is working on multiple features,
+	  fix here allows all those features to be deleted
+
+2007-01-30 23:01  mcook
+
+	* [r11165] provide fallback of operator overloading
+
+2007-01-30 22:41  lstein
+
+	* [r11164] made Bio::Graphics::FeatureBase more consistent with
+	  annotatableI interface
+
+2007-01-30 22:21  lstein
+
+	* [r11163] fixed some of the Glyph documentation;
+	  Bio::Graphics::FeatureBase->to_FTString() behaves a little more
+	  rationally on minus strand features
+
+2007-01-30 19:30  cjfields
+
+	* [r11162] XML::SAX::Expat (v. 0.38) works for XML parsing now;
+	  catch fails in testing.
+
+2007-01-30 18:24  cjfields
+
+	* [r11161] Added tests for sort_by_start
+
+2007-01-30 18:12  scain
+
+	* [r11160] Now accepts a Bio::SeqFeature::Annotated (though it
+	  still complains and doesn't create complete chadoxml--hey, one
+	  step at a time :-)
+
+2007-01-30 15:17  cjfields
+
+	* [r11159] Grr... remove Data::Dumper (from debugging)
+
+2007-01-30 15:12  cjfields
+
+	* [r11158] tests for bug 2195
+
+2007-01-30 15:04  cjfields
+
+	* [r11157] Bug 2195
+
+2007-01-30 05:39  cjfields
+
+	* [r11156] Bugs 2197, 2092
+
+2007-01-29 23:30  cjfields
+
+	* [r11155] Bug 2198
+
+2007-01-29 21:50  jason
+
+	* [r11154] POD typo
+
+2007-01-29 14:40  cjfields
+
+	* [r11153] Bug 2197
+
+2007-01-29 11:46  sendu
+
+	* [r11152] bug 2194 fixed
+
+2007-01-27 04:25  cjfields
+
+	* [r11151] small tweak to get rid of warning
+
+2007-01-26 23:13  jason
+
+	* [r11150] insure that length is positive and location object has
+	  segment's strandedness
+
+2007-01-25 17:25  cjfields
+
+	* [r11149] Move to Test::More; clean up; make WGS tests more
+	  explicit
+
+2007-01-24 16:22  cjfields
+
+	* [r11148] Bulletproof some more...
+
+2007-01-24 16:10  mcook
+
+	* [r11147] Improved error reporting on non-strider formatted file
+
+2007-01-23 20:04  lstein
+
+	* [r11146] use Bio::DB::SeqFeatureI methods rather than generic
+	  methods
+
+2007-01-23 16:24  sendu
+
+	* [r11145] ignore header lines during input
+
+2007-01-23 11:12  sendu
+
+	* [r11141] use a bundle to install XML::SAX::ExpatXS and
+	  XML::Simple in the correct order
+
+2007-01-22 17:17  sendu
+
+	* [r11140] removed code that kept pre-reqs ordered, improved
+	  detection of running under CPAN
+
+2007-01-22 15:28  weigang
+
+	* [r11139] add test files for Annotation.t
+
+2007-01-19 23:34  mcook
+
+	* [r11138] tests for 1.3.7 fixes
+
+2007-01-19 23:32  mcook
+
+	* [r11137] allow for setting score to 0 without auto-resetting it
+	  to '.'
+
+2007-01-19 22:04  cjfields
+
+	* [r11136] BIC format stuff
+
+2007-01-19 19:47  cjfields
+
+	* [r11135] bracketed consensus (BIC?)
+
+2007-01-19 16:24  sendu
+
+	* [r11134] File::Path::rmtree verbose when Bioperl is
+
+2007-01-19 15:14  cjfields
+
+	* [r11133] change File::Path verbosity to only be TRUE when
+	  debugging
+
+2007-01-19 13:21  sendu
+
+	* [r11132] no setting own version
+
+2007-01-18 19:44  cjfields
+
+	* [r11131] small change (bad example data)
+
+2007-01-18 18:38  cjfields
+
+	* [r11130] for future SearchIO-based tests
+
+2007-01-18 17:51  cjfields
+
+	* [r11129] remove comments; cleanup() should now work (fingers
+	  crossed)
+
+2007-01-18 17:47  cjfields
+
+	* [r11128] revert back to normal from debugging
+
+2007-01-18 17:45  cjfields
+
+	* [r11127] Bug 2183
+
+2007-01-18 06:00  cjfields
+
+	* [r11126] small POD change
+
+2007-01-18 05:59  cjfields
+
+	* [r11125] POD changes
+
+2007-01-18 05:58  cjfields
+
+	* [r11124] Added Bio::Tools::Infernal tests
+
+2007-01-18 01:58  cjfields
+
+	* [r11123] Bug 2189; did some pre-spring cleaning
+
+2007-01-17 20:50  cjfields
+
+	* [r11122] Small change
+
+2007-01-17 20:42  bosborne
+
+	* [r11121] Better example
+
+2007-01-17 14:11  sendu
+
+	* [r11120] fix to never confuse "Score E" line for an actual score,
+	  evalue
+
+2007-01-17 04:35  lstein
+
+	* [r11119] added a new base class for use with fixed-width glyphs
+
+2007-01-17 03:54  lstein
+
+	* [r11118] fixed (and grossly simplified) behavior of
+	  print_description()
+
+2007-01-16 21:21  lstein
+
+	* [r11117] that wasn't the right fix; reverted
+
+2007-01-16 21:14  lstein
+
+	* [r11116] description printing now takes overridden pad_bottom
+	  into account correctly
+
+2007-01-16 19:37  cjfields
+
+	* [r11115] fix filehandle issue for NEXUS parsing
+
+2007-01-16 19:34  cjfields
+
+	* [r11114] file handle tests (NEXUS still doesn't work)
+
+2007-01-16 19:31  cjfields
+
+	* [r11113] fix for filehandle IO
+
+2007-01-16 18:08  cjfields
+
+	* [r11112] Bug 2185
+
+2007-01-16 17:24  sendu
+
+	* [r11111] added rerooting option to contract_linear_paths
+
+2007-01-16 12:42  lstein
+
+	* [r11110] fixed documentation bug
+
+2007-01-14 22:00  bosborne
+
+	* [r11109] Complete list of glyphs
+
+2007-01-12 11:54  sendu
+
+	* [r11108] new test script for Bio::Tools::Run::WrapperBase
+
+2007-01-12 11:53  sendu
+
+	* [r11107] reimplemented save_tempfiles as a strict boolean
+	  get/setter and clarified docs for it; added new method
+	  _setparams()
+
+2007-01-11 16:04  cjfields
+
+	* [r11106] Bug 2182
+
+2007-01-11 16:02  cjfields
+
+	* [r11105] revert rnamotif.t changes (committed accidentally along
+	  with DB.t)
+
+2007-01-11 14:38  sendu
+
+	* [r11104] tests for _set_from_args() method, moved to Test::More
+
+2007-01-11 14:37  sendu
+
+	* [r11103] added _set_from_args() method
+
+2007-01-11 14:17  cjfields
+
+	* [r11102] removed extraneous (now wrong) comment
+
+2007-01-11 14:15  cjfields
+
+	* [r11101] Bug 2182
+
+2007-01-10 22:22  mcook
+
+	* [r11100] test implemention of offsetStranded:
+
+2007-01-10 22:21  mcook
+
+	* [r11099] implement offsetStranded
+
+2007-01-10 22:01  weigang
+
+	* [r11098] 6 tests added for Bio::Annotation::Tree
+
+2007-01-10 21:55  weigang
+
+	* [r11097] New module (Bio::Annotation::Tree) to associate a tree
+	  to an alignment
+
+2007-01-10 11:58  sendu
+
+	* [r11096] added naive read capability
+
+2007-01-10 11:52  sendu
+
+	* [r11095] get_taxonids can now search for synonym names with
+	  user-input underscores intead of spaces, just like entrez
+
+2007-01-09 23:12  mcook
+
+	* [r11094] added myself
+
+2007-01-08 22:14  weigang
+
+	* [r11093] set_displayname_safe: now assigns id of user-defined
+	  length
+
+2007-01-08 16:17  cjfields
+
+	* [r11092] bug 2172
+
+2007-01-07 22:36  cjfields
+
+	* [r11091] small changes
+
+2007-01-07 22:33  cjfields
+
+	* [r11090] POD changes
+
+2007-01-04 16:55  sendu
+
+	* [r11089] added quiet() method
+
+2007-01-03 17:56  weigang
+
+	* [r11088] Add test for the method: sort_by_list
+
+2007-01-03 17:54  weigang
+
+	* [r11087] Add new method: sort_by_list; also, bug fix in uniq_seq
+
+2007-01-03 17:43  weigang
+
+	* [r11086] This is a test file for the SimpleAlign method
+	  sort_by_list
+
+2007-01-02 20:01  lstein
+
+	* [r11085] added better explanation of how to use dna glyph with a
+	  generic seqfeature object
+
+2006-12-31 19:35  cjfields
+
+	* [r11084] bug 2167
+
+2006-12-31 03:05  jason
+
+	* [r11083] indenting fix
+
+2006-12-30 22:12  cjfields
+
+	* [r11082] small change reg. HTML::Entities
+
+2006-12-30 22:02  cjfields
+
+	* [r11081] small changes
+
+2006-12-30 21:57  cjfields
+
+	* [r11080] Bug 2166
+
+2006-12-30 20:52  cjfields
+
+	* [r11079] Removed debugging cruft
+
+2006-12-30 20:36  cjfields
+
+	* [r11078] tentative fix for bug 2166
+
+2006-12-28 22:34  cjfields
+
+	* [r11077] Moving BLAST XML SAX methods to separate class
+
+2006-12-24 17:21  lstein
+
+	* [r11076] fixed division by zero error when sequence GC content ==
+	  0
+
+2006-12-22 15:27  lstein
+
+	* [r11075] stacked plot basically working --needs to have scale
+	  reimplemented
+
+2006-12-21 17:59  cjfields
+
+	* [r11074] XML::SAX::PurePerl works with older BLAST XML report
+	  tests, must skip on newer ones.
+
+2006-12-21 17:56  cjfields
+
+	* [r11073] add tests for 'unisave', move to Test::More, minor stuff
+	  otherwise
+
+2006-12-21 16:47  sendu
+
+	* [r11072] added force_binary() method
+
+2006-12-21 14:29  cjfields
+
+	* [r11071] added 'unisave'
+
+2006-12-20 23:35  lstein
+
+	* [r11070] featurefile no longer ignores #anchor notation in
+	  configured urls; added a primitive stackplot glyph
+
+2006-12-20 22:39  cjfields
+
+	* [r11069] Bug fix for env_proxy
+
+2006-12-20 18:38  skirov
+
+	* [r11068] Added threshold to cigar_line, default is still 100
+
+2006-12-19 22:02  lstein
+
+	* [r11067] fixed a bug that would crash the database (possibly
+	  corrupting it) when adding a splice form to an existing gene or
+	  any other three-part feature
+
+2006-12-19 16:35  jason
+
+	* [r11066] email address obscuring
+
+2006-12-19 16:34  jason
+
+	* [r11065] indented code simplification
+
+2006-12-19 16:34  jason
+
+	* [r11064] indentification...
+
+2006-12-19 16:33  jason
+
+	* [r11063] specify validate_seq specific to LocatableSeq objects so
+	  that numeric values can be set - eventually make this regexp
+	  get/settable. This is per hackathon use case requirement of
+	  morphological and numeric coded data storage in Nexus data files.
+
+2006-12-19 16:32  jason
+
+	* [r11062] better detection of error if arrayref is passed in
+
+2006-12-18 19:13  sendu
+
+	* [r11061] speedup for merge_lineage()
+
+2006-12-15 13:49  sendu
+
+	* [r11060] added Weigang Qiu's set_displayname_safe() and
+	  restore_displayname() methods, for avoiding truncated alignment
+	  names in eg. Phylip
+
+2006-12-14 21:53  lstein
+
+	* [r11059] fixed egregious error in the plot which caused all
+	  content to be display off to the right of the correct position
+
+2006-12-14 14:08  sendu
+
+	* [r11058] clarified POD
+
+2006-12-13 23:47  dave_messina
+
+	* [r11057] Fixing typo and updating return value info in
+	  end_element's POD.
+
+2006-12-13 22:40  cjfields
+
+	* [r11056] If parser overheats, turn off and back slowly away
+	  (small edits)
+
+2006-12-13 21:20  cjfields
+
+	* [r11055] Very experimental Infernal (cmsearch) parser.
+	  Do not taunt parser.
+	  If bitten by parser, go to nearest emergency room.
+
+2006-12-13 17:17  scain
+
+	* [r11054] fixing a problem where the group would be missed due to
+	  case sensitivity
+
+2006-12-13 16:02  sendu
+
+	* [r11053] no longer creates features with no sequences
+
+2006-12-12 22:37  cjfields
+
+	* [r11052] small change for phase test
+
+2006-12-12 22:19  jason
+
+	* [r11051] migrate to Test::More; this needs to be tested on system
+	  without some modules before I am sure it is totally done
+
+2006-12-12 21:36  jason
+
+	* [r11050] add features to alignments to allow for better NEXUS
+	  integration
+
+2006-12-12 20:44  cjfields
+
+	* [r11049] Add convenience parameter '-phase' to spliced_seq()
+
+2006-12-12 20:21  cjfields
+
+	* [r11048] spliced_seq() phase tests
+
+2006-12-12 19:43  jason
+
+	* [r11047] even if this is not quite correct english make spelling
+	  consistency: add_Descendant -> add_Descendent in the POD
+
+2006-12-08 10:46  sendu
+
+	* [r11046] recommend PostScript::TextBlock for
+	  Bio::Tree::Draw::Cladogram
+
+2006-12-08 10:43  sendu
+
+	* [r11045] install order MUSTN'T matter; recommend XML::DOM::XPath
+	  0.13 (no longer needs XML::XPath), note that we need to make a
+	  bundle for XML::Simple
+
+2006-12-07 19:31  bosborne
+
+	* [r11044] Dashed parameters
+
+2006-12-06 18:18  sendu
+
+	* [r11041] update from wiki
+
+2006-12-06 17:57  cjfields
+
+	* [r11040] Update from wiki
+
+2006-12-06 17:42  cjfields
+
+	* [r11039] Update from wiki
+
+2006-12-06 17:02  sendu
+
+	* [r11038] corrected Bio::Root::Version version number output in
+	  ppds for non-core packages
+
+2006-12-06 16:34  avilella
+
+	* [r11037] deals roughly with multiple blocks
+
+2006-12-06 15:44  avilella
+
+	* [r11036] basic next_aln should work
+
+2006-12-06 11:31  sendu
+
+	* [r11034] workaround for ppm bug: create fake bundle for pre-reqs
+
+2006-12-05 22:31  cjfields
+
+	* [r11033] Grr...refix Bug 2159
+
+2006-12-05 22:30  cjfields
+
+	* [r11032] bug 2159
+

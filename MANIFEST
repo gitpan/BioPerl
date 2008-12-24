@@ -858,6 +858,8 @@ Bio/Variation/VariantI.pm
 Bio/WebAgent.pm
 BUGS
 Build.PL
+Bundle-BioPerl-Core-1.5.9_001-ppm.tar.gz
+ChangeLog
 Changes
 DEPENDENCIES
 DEPRECATED
