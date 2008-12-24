@@ -1,4 +1,4 @@
-# $Id: Perl.pm,v 1.26.4.4 2006/10/02 23:10:12 sendu Exp $
+# $Id: Perl.pm 14673 2008-04-25 19:51:04Z dave_messina $
 #
 # BioPerl module for Bio::Perl
 #
@@ -544,7 +544,7 @@ sub translate {
    } else {
 
      # check this looks vaguely like DNA
-     my $n = ( $scalar =~ tr/ATGCNatgc/ATGCNatgcn/ );
+     my $n = ( $scalar =~ tr/ATGCNatgcn/ATGCNatgcn/ );
 
      if( $n < length($scalar) * 0.85 ) {
        confess("Sequence [$scalar] is less than 85% ATGCN, which doesn't look very DNA to me");

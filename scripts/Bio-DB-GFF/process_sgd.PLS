@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: process_sgd.PLS,v 1.2.8.1 2006/10/02 23:10:39 sendu Exp $
+# $Id: process_sgd.PLS 15088 2008-12-04 02:49:09Z bosborne $
 # This script will convert from SGD format to GFF format
 # See http://db.yeastgenome.org/schema/Schema.html
 

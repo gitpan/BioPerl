@@ -1,4 +1,4 @@
-# $Id: SeqUtils.pm,v 1.34.2.2 2006/11/16 19:05:59 cjfields Exp $
+# $Id: SeqUtils.pm 15115 2008-12-08 20:00:49Z cjfields $
 #
 # BioPerl module for Bio::SeqUtils
 #
@@ -18,7 +18,7 @@ Bio::SeqUtils - Additional methods for PrimarySeq objects
 
     use Bio::SeqUtils;
     # get a Bio::PrimarySeqI compliant object, $seq, somehow
-    $util = new Bio::SeqUtils;
+    $util = Bio::SeqUtils->new();
     $polypeptide_3char = $util->seq3($seq);
     # or
     $polypeptide_3char = Bio::SeqUtils->seq3($seq);
@@ -107,7 +107,7 @@ Email:  heikki-at-bioperl-dot-org
 
 =head1 CONTRIBUTORS
 
-Roy Chaudhuri, roy at colibase d bham d ac d uk
+Roy R. Chaudhuri <roy.chaudhuri at gmail.com>
 
 =head1 APPENDIX
 

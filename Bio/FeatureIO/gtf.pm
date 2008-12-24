@@ -1,4 +1,4 @@
-# $Id: gtf.pm,v 1.4.4.1 2006/10/02 23:10:18 sendu Exp $
+# $Id: gtf.pm 11696 2007-09-20 15:21:14Z sendu $
 #
 # BioPerl module for Bio::FeatureIO::gtf
 #
@@ -63,7 +63,7 @@ use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-sub initialize {
+sub _initialize {
   my($self,%arg) = @_;
   $arg{-version} = 2.5;
   $self->SUPER::_initialize(%arg);

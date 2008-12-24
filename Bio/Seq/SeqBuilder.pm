@@ -1,4 +1,4 @@
-# $Id: SeqBuilder.pm,v 1.9.4.1 2006/10/02 23:10:27 sendu Exp $
+# $Id: SeqBuilder.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Seq::SeqBuilder
 #
@@ -128,7 +128,7 @@ my %param_slot_map = ("features"       => "add_SeqFeature",
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Seq::SeqBuilder();
+ Usage   : my $obj = Bio::Seq::SeqBuilder->new();
  Function: Builds a new Bio::Seq::SeqBuilder object 
  Returns : an instance of Bio::Seq::SeqBuilder
  Args    :

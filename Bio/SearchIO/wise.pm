@@ -1,4 +1,4 @@
-# $Id: wise.pm,v 1.6.4.1 2006/10/02 23:10:26 sendu Exp $
+# $Id: wise.pm 11733 2007-10-26 18:22:10Z jason $
 #
 # BioPerl module for Bio::SearchIO::wise
 #
@@ -17,7 +17,7 @@ Bio::SearchIO::wise - Parsing of wise output as alignments
 =head1 SYNOPSIS
 
   use Bio::SearchIO;
-  my $parser = new Bio::SearchIO(-file    => 'file.genewise', 
+  my $parser = Bio::SearchIO->new(-file    => 'file.genewise', 
                                  -format  => 'wise',
                                  -wisetype=> 'genewise');
 
@@ -113,7 +113,7 @@ use Bio::Tools::Genomewise;
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::SearchIO::wise();
+ Usage   : my $obj = Bio::SearchIO::wise->new();
  Function: Builds a new Bio::SearchIO::wise object 
  Returns : an instance of Bio::SearchIO::wise
  Args    : -wise => a Bio::Tools::Genewise or Bio::Tools::Genomewise object
@@ -149,9 +149,9 @@ sub _initialize {
     }
 
     if( $wisetype =~ /genewise/i ) {
-	$self->wise(new Bio::Tools::Genewise(@ioargs));
+	$self->wise(Bio::Tools::Genewise->new(@ioargs));
     } elsif( $wisetype =~ /genomewise/i ) {
-	$self->wise(new Bio::Tools::Genomewise(@ioargs));
+	$self->wise(Bio::Tools::Genomewise->new(@ioargs));
     } else { 
 	$self->throw("Must supply a -wisetype to ".ref($self)." which is one of 'genomewise' 'genewise'\n");
     }
@@ -182,7 +182,7 @@ sub next_result{
    $self->element({'Name' => 'WiseOutput_program',
 		   'Data' => $self->wisetype});
    $self->element({'Name' => 'WiseOutput_query-def',
-		   'Data' => $self->wise->_target_id});
+		   'Data' => $self->wise->_prot_id});
    my @transcripts = $prediction->transcripts;
 
    foreach my $transcript ( @transcripts ) {
@@ -194,10 +194,10 @@ sub next_result{
 	   my ($supporting_feature) = $exons[0]->get_tag_values('supporting_feature');
 	   $protid = $supporting_feature->feature2->seq_id;
 	   $self->element({'Name' => 'Hit_id',
-			   'Data' => $protid});       
+			   'Data' => $self->wise->_target_id});       
        } 
        $self->element({'Name' => 'Hit_score',
-		       'Data' => $exons[0]->score});
+		       'Data' => $self->wise->_score});
        foreach my $exon ( @exons ) {
 	   $self->start_element({'Name' => 'Hsp'});
 	   if( $exon->strand < 0 ) { 
@@ -212,7 +212,7 @@ sub next_result{
 			       'Data' => $exon->end});
 	   }
 	   $self->element({'Name' => 'Hsp_score',
-			   'Data' => $exon->score});
+			   'Data' => $self->wise->_score});
 	   if( $exon->has_tag('supporting_feature') ) {
 	       my ($sf) = $exon->get_tag_values('supporting_feature');
 	       my $protein = $sf->feature2;

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: authors.pl,v 1.6 2006/07/04 22:23:28 mauricio Exp $
+# $Id: authors.pl 10084 2006-07-04 22:23:29Z mauricio $
 #
 =head1 NAME
 

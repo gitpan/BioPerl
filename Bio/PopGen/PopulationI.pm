@@ -1,4 +1,4 @@
-# $Id: PopulationI.pm,v 1.9.4.1 2006/10/02 23:10:23 sendu Exp $
+# $Id: PopulationI.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module for Bio::PopGen::PopulationI
 #

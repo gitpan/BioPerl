@@ -1,4 +1,4 @@
-# $Id: TreeI.pm,v 1.17.4.1 2006/10/02 23:10:37 sendu Exp $
+# $Id: TreeI.pm 14899 2008-09-18 10:07:01Z heikki $
 #
 # BioPerl module for Bio::Tree::TreeI
 #
@@ -19,7 +19,7 @@ Bio::Tree::TreeI - A Tree object suitable for lots of things, designed
 
   # get a Bio::Tree::TreeI somehow
   # like from a TreeIO
-  my $treeio = new Bio::TreeIO(-format => 'newick', -file => 'treefile.dnd');
+  my $treeio = Bio::TreeIO->new(-format => 'newick', -file => 'treefile.dnd');
   my $tree   = $treeio->next_tree;
   my @nodes  = $tree->get_nodes;
   my @leaves = $tree->get_leaf_nodes;
@@ -73,7 +73,7 @@ Internal methods are usually preceded with a _
 package Bio::Tree::TreeI;
 use strict;
 
-use base qw(Bio::Tree::NodeI);
+use base qw(Bio::Root::RootI);
 
 =head2 get_nodes
 
@@ -211,5 +211,116 @@ sub get_leaf_nodes{
    return grep { $_->is_Leaf() } $self->get_nodes(-sortby  => 'none');
 }
 
+
+=head2 Methods for associating Tag/Values with a Tree
+
+These methods associate tag/value pairs with a Tree
+
+=head2 set_tag_value
+
+ Title   : set_tag_value
+ Usage   : $tree->set_tag_value($tag,$value)
+           $tree->set_tag_value($tag,@values)
+ Function: Sets a tag value(s) to a tree. Replaces old values.
+ Returns : number of values stored for this tag
+ Args    : $tag   - tag name
+           $value - value to store for the tag
+
+=cut
+
+sub set_tag_value{
+    shift->throw_not_implemented();
+}
+
+=head2 add_tag_value
+
+ Title   : add_tag_value
+ Usage   : $tree->add_tag_value($tag,$value)
+ Function: Adds a tag value to a tree 
+ Returns : number of values stored for this tag
+ Args    : $tag   - tag name
+           $value - value to store for the tag
+
+
+=cut
+
+sub add_tag_value{
+    shift->throw_not_implemented();
+}
+
+=head2 remove_tag
+
+ Title   : remove_tag
+ Usage   : $tree->remove_tag($tag)
+ Function: Remove the tag and all values for this tag
+ Returns : boolean representing success (0 if tag does not exist)
+ Args    : $tag - tagname to remove
+
+
+=cut
+
+sub remove_tag {
+    shift->throw_not_implemented();
+}
+
+=head2 remove_all_tags
+
+ Title   : remove_all_tags
+ Usage   : $tree->remove_all_tags()
+ Function: Removes all tags 
+ Returns : None
+ Args    : None
+
+
+=cut
+
+sub remove_all_tags{
+    shift->throw_not_implemented();
+}
+
+=head2 get_all_tags
+
+ Title   : get_all_tags
+ Usage   : my @tags = $tree->get_all_tags()
+ Function: Gets all the tag names for this Tree
+ Returns : Array of tagnames
+ Args    : None
+
+
+=cut
+
+sub get_all_tags {
+    shift->throw_not_implemented();
+}
+
+=head2 get_tag_values
+
+ Title   : get_tag_values
+ Usage   : my @values = $tree->get_tag_values($tag)
+ Function: Gets the values for given tag ($tag)
+ Returns : Array of values or empty list if tag does not exist
+ Args    : $tag - tag name
+
+
+=cut
+
+sub get_tag_values{
+    shift->throw_not_implemented();
+}
+
+=head2 has_tag
+
+ Title   : has_tag
+ Usage   : $tree->has_tag($tag)
+ Function: Boolean test if tag exists in the Tree
+ Returns : Boolean
+ Args    : $tag - tagname
+
+
+=cut
+
+sub has_tag{
+    shift->throw_not_implemented();
+}
 
 1;

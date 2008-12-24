@@ -2,7 +2,7 @@
 # PACKAGE : Bio::SeqIO::raw
 # AUTHOR  : Ewan Birney <birney@ebi.ac.uk>
 # CREATED : Feb 16 1999
-# REVISION: $Id: raw.pm,v 1.21.4.1 2006/10/02 23:10:30 sendu Exp $
+# REVISION: $Id: raw.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # Copyright (c) 1997-9 bioperl, Ewan Birney. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or
@@ -88,7 +88,7 @@ sub _initialize {
   my($self,@args) = @_;
   $self->SUPER::_initialize(@args);
   if( ! defined $self->sequence_factory ) {
-      $self->sequence_factory(new Bio::Seq::SeqFactory
+      $self->sequence_factory(Bio::Seq::SeqFactory->new
 			      (-verbose => $self->verbose(),
 			       -type => 'Bio::Seq'));
   }

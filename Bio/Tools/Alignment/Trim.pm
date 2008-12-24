@@ -1,4 +1,4 @@
-# $Id: Trim.pm,v 1.21.4.1 2006/10/02 23:10:32 sendu Exp $
+# $Id: Trim.pm 11480 2007-06-14 14:16:21Z sendu $
 # Bio::Tools::Alignment::Trim.pm
 #
 # Cared for by Chad Matsalla
@@ -17,7 +17,7 @@ Bio::Tools::Alignment::Trim - A kludge to do specialized trimming of
 =head1 SYNOPSIS
 
   use Bio::Tools::Alignment::Trim;
-  $o_trim = new Bio::Tools::Alignment::Trim;
+  $o_trim = Bio::Tools::Alignment::Trim->new();
   $o_trim->set_reverse_designator("R");
   $o_trim->set_forward_designator("F");
 

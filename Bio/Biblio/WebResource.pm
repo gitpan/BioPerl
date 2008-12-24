@@ -1,4 +1,4 @@
-# $Id: WebResource.pm,v 1.13.4.3 2006/10/02 23:10:12 sendu Exp $
+# $Id: WebResource.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Biblio::WebResource
 #
@@ -13,12 +13,12 @@ Bio::Biblio::WebResource - Representation of a web resource
 
 =head1 SYNOPSIS
 
-    $obj = new Bio::Biblio::WebResource
+    $obj = Bio::Biblio::WebResource->new
                   (-url  => 'http://resources/best.html',
                    -estimated_size => 45000);
   # --- OR ---
 
-    $obj = new Bio::Biblio::WebResource;
+    $obj = Bio::Biblio::WebResource->new();
     $obj->cost ('0.3 EURO');
 
 =head1 DESCRIPTION

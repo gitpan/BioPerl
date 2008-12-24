@@ -1,4 +1,4 @@
-# $Id: Tmhmm.pm,v 1.10.4.2 2006/10/19 18:44:40 jason Exp $
+# $Id: Tmhmm.pm 14716 2008-06-11 06:48:28Z heikki $
 #
 # BioPerl module for Bio::Tools::Tmhmm
 #

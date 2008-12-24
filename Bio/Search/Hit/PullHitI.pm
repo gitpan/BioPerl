@@ -1,4 +1,4 @@
-# $Id: PullHitI.pm,v 1.1.2.2 2006/10/02 23:10:24 sendu Exp $
+# $Id: PullHitI.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module Bio::Search::Hit::PullHitI
 #
@@ -18,7 +18,7 @@ Bio::Search::Hit::PullHitI - Bio::Search::Hit::HitI interface for pull parsers.
 
     # typically one gets HitI objects from a SearchIO stream via a ResultI
     use Bio::SearchIO;
-    my $parser = new Bio::SearchIO(-format => 'hmmer_pull',
+    my $parser = Bio::SearchIO->new(-format => 'hmmer_pull',
                                    -file => 't/data/hmmpfam.out');
 
     my $result = $parser->next_result;
@@ -433,7 +433,6 @@ sub seq_inds {
 	}
 	
 	my @inds = @{$self->{$storage_name}};
-    
     $collapse ? &Bio::Search::SearchUtils::collapse_nums(@inds) : @inds;
 }
 
@@ -1016,7 +1015,7 @@ sub frac_identical {
     my $ratio = $ident / $total;
     my $ratio_rounded = sprintf( "%.3f", $ratio);
     
-    # Round down iff normal rounding yields 1 (just like blast)
+    # Round down if normal rounding yields 1 (just like blast)
     $ratio_rounded = 0.999 if (($ratio_rounded == 1) && ($ratio < 1));
     return $ratio_rounded;
 }

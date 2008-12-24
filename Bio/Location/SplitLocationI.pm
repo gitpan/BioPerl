@@ -1,4 +1,4 @@
-# $Id: SplitLocationI.pm,v 1.18.4.1 2006/10/02 23:10:21 sendu Exp $
+# $Id: SplitLocationI.pm 14682 2008-05-27 17:52:48Z cjfields $
 #
 # BioPerl module for Bio::Location::SplitLocationI
 # Cared for by Jason Stajich <jason@bioperl.org>
@@ -21,9 +21,8 @@ which has multiple locations (start/end points)
 
     my $count = 1;
     # print the start/end points of the sub locations
-    foreach my $location ( sort { $a->start <=> $b->start } 
-			   @sublocs ) {
-	printf "sub feature %d [%d..%d]\n", $location->start,$location->end;
+    foreach my $location ( sort { $a->start <=> $b->start }  @sublocs ) {
+		printf "sub feature %d [%d..%d]\n", $location->start,$location->end;
         $count++;
     }
 

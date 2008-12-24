@@ -1,4 +1,4 @@
-# $Id: PullParserI.pm,v 1.1.2.4 2006/10/02 23:10:12 sendu Exp $
+# $Id: PullParserI.pm 11567 2007-07-12 10:42:06Z sendu $
 #
 # BioPerl module for Bio::PullParserI
 #
@@ -195,8 +195,7 @@ sub get_field {
             
             my $dependency = $self->_dependencies($desired);
             if ($dependency && ! defined $self->_fields->{$dependency}) {
-                my $dep_method = '_discover_'.$dependency;
-                $self->$dep_method;
+                $self->get_field($dependency);
             }
             
             # it might exist now
@@ -273,22 +272,22 @@ sub chunk {
     if (@_) {
         my $thing = shift || $self->throw("Trying to set chunk() to an undefined value");
         if (ref($thing) eq 'GLOB') {
-            $self->{_chunk} = new Bio::Root::IO(-fh => $thing);
+            $self->{_chunk} = Bio::Root::IO->new(-fh => $thing);
         }
         elsif (ref(\$thing) eq 'SCALAR') {
-            if (-e $thing) {
-                $self->{_chunk} = new Bio::Root::IO(-file => $thing);
+            if ($thing !~ /\n/ && -e $thing) {
+                $self->{_chunk} = Bio::Root::IO->new(-file => $thing);
             }
             else {
                 unless ($FORCE_TEMP_FILE) {
                     # treat a string as a filehandle
                     open(my $fake_fh, "+<", \$thing); # requires perl 5.8
-                    $self->{_chunk} = new Bio::Root::IO(-fh => $fake_fh);
+                    $self->{_chunk} = Bio::Root::IO->new(-fh => $fake_fh);
                 }
                 else {
                     my ($handle) = $self->{_chunk}->tempfile();
                     print $handle $thing;
-                    $self->{_chunk} = new Bio::Root::IO(-fh => $handle);
+                    $self->{_chunk} = Bio::Root::IO->new(-fh => $handle);
                 }
             }
         }
@@ -343,11 +342,11 @@ sub chunk {
         }
         
         # determine our line ending
-        if ($first_line =~ /\015\012/) {
-            $self->_line_ending("\015\012");
+        if ($first_line =~ /\r\n/) {
+            $self->_line_ending("\r\n");
         }
-        elsif ($first_line =~ /\015/) {
-            $self->_line_ending("\015");
+        elsif ($first_line =~ /\r/) {
+            $self->_line_ending("\r");
         }
         else {
             $self->_line_ending("\n");
@@ -532,8 +531,9 @@ sub _get_chunk_by_nol {
         last if $count == $nol;
     }
     
-    my $end = $self->_chunk_tell;
-    if ($self->_chunk_true_end ? $end <= $self->_chunk_true_end : 1) {
+    my $current = $self->_chunk_tell;
+    my $end = ($current || 0) + $self->_chunk_true_start;
+    if (! $current || ($self->_chunk_true_end ? $end <= $self->_chunk_true_end : 1)) {
         return $line;
     }
     return;
@@ -553,15 +553,21 @@ sub _get_chunk_by_nol {
 
 sub _get_chunk_by_end {
     my ($self, $chunk_ending) = @_;
+    
+    my $start = $self->_chunk_tell;
+    
     my $line_ending = $self->_line_ending;
     $chunk_ending =~ s/\n/$line_ending/g;
     local $/ = $chunk_ending || '';
     my $line = $self->chunk->_readline;
     
-    my $end = $self->_chunk_tell;
-    if ($self->_chunk_true_end ? $end <= $self->_chunk_true_end : 1) {
+    my $current = $self->_chunk_tell;
+    my $end = ($current || 0) + $self->_chunk_true_start;
+    if (! $current || ($self->_chunk_true_end ? $end <= $self->_chunk_true_end : 1)) {
         return $line;
     }
+    
+    $self->_chunk_seek($start);
     return;
 }
 
@@ -593,9 +599,12 @@ sub _find_chunk_by_end {
     $self->chunk->_readline;
     my $end = $self->_chunk_tell;
     
-    if ($self->_chunk_true_end ? $end <= $self->_chunk_true_end : 1) {
+    my $comp_end = $end + $self->_chunk_true_start;
+    if ($self->_chunk_true_end ? $comp_end <= $self->_chunk_true_end : 1) {
         return ($start, $end);
     }
+    
+    $self->_chunk_seek($start);
     return;
 }
 

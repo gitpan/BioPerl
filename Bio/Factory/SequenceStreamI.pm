@@ -1,4 +1,4 @@
-# $Id: SequenceStreamI.pm,v 1.6.4.1 2006/10/02 23:10:18 sendu Exp $
+# $Id: SequenceStreamI.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Factory::SequenceStreamI
 #
@@ -18,7 +18,7 @@ Bio::Factory::SequenceStreamI - Interface describing the basics of a Sequence St
 
   # get a SequenceStreamI object somehow like with SeqIO
   use Bio::SeqIO;
-  my $in = new Bio::SeqIO(-file => '< fastafile');
+  my $in = Bio::SeqIO->new(-file => '< fastafile');
   while( my $seq = $in->next_seq ) {
   }
 

@@ -1,5 +1,5 @@
 #
-# $Id: BDB.pm,v 1.17.4.1 2006/10/02 23:10:16 sendu Exp $
+# $Id: BDB.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module for Bio::DB::Flat::BDB
 #

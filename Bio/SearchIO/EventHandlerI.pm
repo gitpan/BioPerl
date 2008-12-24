@@ -1,4 +1,4 @@
-# $Id: EventHandlerI.pm,v 1.13.4.1 2006/10/02 23:10:25 sendu Exp $
+# $Id: EventHandlerI.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::SearchIO::EventHandlerI
 #
@@ -20,7 +20,7 @@ Bio::SearchIO::EventHandlerI - An abstract Event Handler for Search Result parsi
 # See Bio::SearchIO::SearchResultEventBuilder for an implementation
 
     use Bio::SearchIO::SearchResultEventBuilder;
-    my $handler = new Bio::SearchIO::SearchResultEventBuilder();
+    my $handler = Bio::SearchIO::SearchResultEventBuilder->new();
 
 =head1 DESCRIPTION
 

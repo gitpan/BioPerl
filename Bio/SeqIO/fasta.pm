@@ -1,4 +1,4 @@
-# $Id: fasta.pm,v 1.58.4.1 2006/10/02 23:10:29 sendu Exp $
+# $Id: fasta.pm 14669 2008-04-22 21:03:23Z cjfields $
 # BioPerl module for Bio::SeqIO::fasta
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
@@ -178,7 +178,6 @@ sub write_seq {
 		$self->throw("Did not provide a valid Bio::PrimarySeqI object") 
 		  unless defined $seq && ref($seq) && $seq->isa('Bio::PrimarySeqI');
 
-		my $str = $seq->seq;
 		my $top;
 
 		# Allow for different ids 
@@ -203,12 +202,36 @@ sub write_seq {
 			$desc =~ s/\n//g;
 			$top .= " $desc";
 		}
-		if(defined $str && length($str) > 0) {
-			$str =~ s/(.{1,$width})/$1\n/g;
+		
+		if( $seq->isa('Bio::Seq::LargeSeqI') ) {
+		  $self->_print(">$top\n");
+		  # for large seqs, don't call seq(), it defeats the
+		  # purpose of the largeseq functionality.  instead get
+		  # chunks of the seq, $width at a time
+		  my $buff_max = 2000;
+		  my $buff_size = int($buff_max/$width)*$width; #< buffer is even multiple of widths
+		  my $seq_length = $seq->length;
+		  my $num_chunks = int($seq_length/$buff_size+1);
+		  for( my $c = 0; $c < $num_chunks; $c++ ) {
+		    my $buff_end = $buff_size*($c+1);
+		    $buff_end = $seq_length if $buff_end > $seq_length;
+		    my $buff = $seq->subseq($buff_size*$c+1,$buff_end);
+		    if($buff) {
+		      $buff =~ s/(.{1,$width})/$1\n/g;
+		      $self->_print($buff);
+		    } else {
+		      $self->_print("\n");
+		    }
+		  }
 		} else {
-			$str = "\n";
+		  my $str = $seq->seq;
+		  if(defined $str && length($str) > 0) {
+		    $str =~ s/(.{1,$width})/$1\n/g;
+		  } else {
+		    $str = "\n";
+		  }
+		  $self->_print (">",$top,"\n",$str) or return;
 		}
-		$self->_print (">",$top,"\n",$str) or return;
    }
 
    $self->flush if $self->_flush_on_write && defined $self->_fh;

@@ -1,4 +1,4 @@
-# $Id: featHandler.pm,v 1.15.4.1 2006/10/02 23:10:30 sendu Exp $
+# $Id: featHandler.pm 14965 2008-10-26 05:10:11Z cjfields $
 # 
 #
 # Helper module for Bio::SeqIO::game::featHandler
@@ -735,9 +735,11 @@ sub _add_CDS {
 	    #warn "chopping off right UTR\n";
 	    $exon->end( $stop );
 	}
-
-	$exon->start( $_->start ) unless $exon->start;
-	$exon->end( $_->end ) unless $exon->end;
+	
+	unless ($exon->valid_Location) {
+		$exon->start( $_->start );
+		$exon->end( $_->end );
+	}
 	$exon->strand ( $self->{curr_strand} );
 	push @exons_to_add, $exon;
     }

@@ -1,4 +1,4 @@
-# $Id: nexus.pm,v 1.27.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: nexus.pm 14891 2008-09-16 20:22:53Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::nexus
 #
@@ -15,7 +15,7 @@ Do not use this module directly.  Use it via the L<Bio::AlignIO> class.
 
     use Bio::AlignIO;
 
-    my $in = new Bio::AlignIO(-format => 'nexus',
+    my $in = Bio::AlignIO->new(-format => 'nexus',
                               -file   => 'aln.nexus');
     while( my $aln = $in->next_aln ) {
         # do something with the alignment
@@ -70,8 +70,7 @@ BEGIN {
 =head2 new
 
  Title   : new
- Usage   : $alignio = new Bio::AlignIO(-format => 'nexus',
-													-file   => 'filename');
+ Usage   : $alignio = Bio::AlignIO->new(-format => 'nexus', -file => 'filename');
  Function: returns a new Bio::AlignIO object to handle clustalw files
  Returns : Bio::AlignIO::clustalw object
  Args    : -verbose => verbosity setting (-1,0,1,2)
@@ -136,7 +135,8 @@ sub next_aln {
     my ($aln_name, $seqcount, $residuecount, %hash, $alphabet,
 	$match, $gap, $missing, $equate, $interleave,
 	$name,$str,@names,$seqname,$start,$end,$count,$seq);
-
+    local $Bio::LocatableSeq::OTHER_SYMBOLS = '\*\?\.';
+    local $Bio::LocatableSeq::GAP_SYMBOLS = '\-';
     my $aln =  Bio::SimpleAlign->new(-source => 'nexus');
 
     # file starts with '#NEXUS' but we allow white space only lines before it
@@ -145,7 +145,7 @@ sub next_aln {
 
     return unless $entry;
     $self->throw("Not a valid interleaved NEXUS file! [#NEXUS] not starting the file\n$entry")
-	unless $entry =~ /^#NEXUS/i;
+	unless ($entry && $entry =~ /^#NEXUS/i);
 
     # skip anything before either the taxa or data block
     # but read in the optional title in a comment
@@ -158,7 +158,7 @@ sub next_aln {
 
     # data and taxa blocks
     my $incomment;
-    while ($entry = $self->_readline) {
+    while (defined ($entry = $self->_readline)) {
 	local ($_) =  $entry;
 	next if s/\[[^\]]+\]//g; # remove comments
 	if( s/\[[^\]]+$// ) {
@@ -296,15 +296,15 @@ sub next_aln {
 	    $seqname=$name;
 	    $start = 1;
 	    $str = $hash{$count};
-	    $str =~ s/[^A-Za-z]//g;
+	    $str =~ s/[$Bio::LocatableSeq::GAP_SYMBOLS]//g;
 	    $end = length($str);
 	}
 
 	# consistency test
-	$self->throw("Length of sequence [$seqname] is not [$residuecount]! ")
+	$self->throw("Length of sequence [$seqname] is not [$residuecount]; got".CORE::length($hash{$count}))
 	    unless CORE::length($hash{$count}) == $residuecount;
 
-	$seq = new Bio::LocatableSeq('-seq'=>$hash{$count},
+	$seq = Bio::LocatableSeq->new('-seq'=>$hash{$count},
 				     '-id'=>$seqname,
 				     '-start'=>$start,
 				     '-end'=>$end,
@@ -326,7 +326,8 @@ sub next_aln {
         $entry = $self->_readline;
     }
 
-    return $aln;
+    return $aln if $aln->no_sequences;
+	return;
 }
 
 sub _read_taxlabels {
@@ -394,7 +395,7 @@ sub write_aln {
 	$aln->set_displayname_flat();
 	foreach $seq ( $aln->each_seq() ) {
 	    my $nmid = $aln->displayname($seq->get_nse());
-	    if( $nmid =~ /[^\w\d]/ ) {
+	    if( $nmid =~ /[^\w\d\.]/ ) {
               # put name in single quotes incase it contains any of
               # the following chars: ()[]{}/\,;:=*'"`+-<> that are not
               # allowed in PAUP* and possible other software

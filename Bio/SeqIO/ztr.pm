@@ -1,4 +1,4 @@
-# $Id: ztr.pm,v 1.14.4.1 2006/10/02 23:10:30 sendu Exp $
+# $Id: ztr.pm 11480 2007-06-14 14:16:21Z sendu $
 # BioPerl module for Bio::SeqIO::ztr
 #
 # Cared for by Aaron Mackey <amackey@virginia.edu>
@@ -77,7 +77,7 @@ sub _initialize {
   my($self,@args) = @_;
   $self->SUPER::_initialize(@args);  
   if( ! defined $self->sequence_factory ) {
-      $self->sequence_factory(new Bio::Seq::SeqFactory(-verbose => $self->verbose(), -type => 'Bio::Seq::Quality'));      
+      $self->sequence_factory(Bio::Seq::SeqFactory->new(-verbose => $self->verbose(), -type => 'Bio::Seq::Quality'));      
   }
 
   my ($compression) = $self->_rearrange([qw[COMPRESSION]], @args);

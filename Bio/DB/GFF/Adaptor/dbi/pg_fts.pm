@@ -1,6 +1,6 @@
 package Bio::DB::GFF::Adaptor::dbi::pg_fts;
 
-# $Id: pg_fts.pm,v 1.2.4.1 2006/10/02 23:10:16 sendu Exp $
+# $Id: pg_fts.pm 11724 2007-10-16 19:28:22Z lstein $
 
 =head1 NAME
 
@@ -141,19 +141,21 @@ use Bio::DB::GFF::Adaptor::dbi;
 use base qw(Bio::DB::GFF::Adaptor::dbi::pg);
 
 use constant FULLTEXTSEARCH => <<END;
-SELECT distinct gclass,gname,fattribute_value
-    FROM fgroup,fattribute_to_feature,fdata
+SELECT distinct gclass,gname,fattribute_value,fmethod,fsource
+    FROM fgroup,fattribute_to_feature,fdata,ftype
      WHERE fgroup.gid=fdata.gid
        AND fdata.fid=fattribute_to_feature.fid
+       AND fdata.ftypeid=ftype.ftypeid
        AND (fattribute_to_feature.idxfti @@ to_tsquery('default', ?))
 END
 ;
 
 use constant FULLTEXTWILDCARD => <<END;
-SELECT distinct gclass,gname,fattribute_value
-    FROM fgroup,fattribute_to_feature,fdata
+SELECT distinct gclass,gname,fattribute_value,fmethod,fsource
+    FROM fgroup,fattribute_to_feature,fdata,ftype
      WHERE fgroup.gid=fdata.gid
        AND fdata.fid=fattribute_to_feature.fid
+       AND fdata.ftypeid=ftype.ftypeid
        AND lower(fattribute_to_feature.fattribute_value) LIKE lower(?)
 END
 ;
@@ -212,13 +214,13 @@ sub search_notes {
   } 
   
   my @results;
-  while (my ($class,$name,$note) = $sth->fetchrow_array) {
+  while (my ($class,$name,$note,$method,$source) = $sth->fetchrow_array) {
 
      next unless $class && $name;    # sorry, ignore NULL objects
      my $featname = Bio::DB::GFF::Featname->new($class=>$name);
-
-     push @results,[$featname,$note,0]; #gbrowse expects a score, but
-                                        #pg doesn't give one, thus the 0
+     my $type     = Bio::DB::GFF::Typename->new($method,$source);
+     push @results,[$featname,$note,0,$type]; #gbrowse expects a score, but
+                                              #pg doesn't give one, thus the 0
   }
 
   return @results;

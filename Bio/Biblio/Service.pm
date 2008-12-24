@@ -1,4 +1,4 @@
-# $Id: Service.pm,v 1.13.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: Service.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Biblio::Service
 #
@@ -13,11 +13,11 @@ Bio::Biblio::Service - Representation of a provider of type service
 
 =head1 SYNOPSIS
 
-    $obj = new Bio::Biblio::Service (-name => 'Report generator');
+    $obj = Bio::Biblio::Service->new(-name => 'Report generator');
 
   #--- OR ---
 
-    $obj = new Bio::Biblio::Service;
+    $obj = Bio::Biblio::Service->new();
     $obj->name ('Report generator');
 
 =head1 DESCRIPTION

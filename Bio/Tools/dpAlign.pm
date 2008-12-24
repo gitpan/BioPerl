@@ -1,4 +1,4 @@
-## $Id: dpAlign.pm,v 1.18.4.2 2006/11/17 09:32:42 sendu Exp $
+## $Id: dpAlign.pm 14780 2008-08-02 03:56:53Z ymc $
 
 # BioPerl module for Bio::Tools::dpAlign
 #
@@ -22,8 +22,8 @@ Bio::Tools::dpAlign - Perl extension to do pairwise dynamic programming sequence
   use Bio::AlignIO;
   use Bio::Matrix::IO;
 
-  $seq1 = new Bio::SeqIO(-file => $ARGV[0], -format => 'fasta');
-  $seq2 = new Bio::SeqIO(-file => $ARGV[1], -format => 'fasta');
+  $seq1 = Bio::SeqIO->new(-file => $ARGV[0], -format => 'fasta');
+  $seq2 = Bio::SeqIO->new(-file => $ARGV[1], -format => 'fasta');
 
   # create a dpAlign object
   # to do global alignment, specify DPALIGN_GLOBAL_MILLER_MYERS
@@ -36,7 +36,7 @@ Bio::Tools::dpAlign - Perl extension to do pairwise dynamic programming sequence
 
   # actually do the alignment
   $out = $factory->pairwise_alignment($seq1->next_seq, $seq2->next_seq);
-  $alnout = new Bio::AlignIO(-format => 'pfam', -fh => \*STDOUT);
+  $alnout = Bio::AlignIO->new(-format => 'pfam', -fh => \*STDOUT);
   $alnout->write_aln($out);
 
   # To do protein alignment, set the sequence type to protein
@@ -45,9 +45,9 @@ Bio::Tools::dpAlign - Perl extension to do pairwise dynamic programming sequence
   # values are from ssearch. To use your own custom substitution 
   # matrix, you can create a Bio::Matrix::MatrixI object.
 
-  $parser = new Bio::Matrix::IO(-format => 'scoring', -file => 'blosum50.mat');
+  $parser = Bio::Matrix::IO->new(-format => 'scoring', -file => 'blosum50.mat');
   $matrix = $parser->next_matrix;
-  $factory = new Bio::Tools::dpAlign(-matrix => $matrix, -alg => Bio::Tools::dpAlign::DPALIGN_LOCAL_MILLERMYERS);
+  $factory = Bio::Tools::dpAlign->new(-matrix => $matrix, -alg => Bio::Tools::dpAlign::DPALIGN_LOCAL_MILLERMYERS);
   $seq1->alphabet('protein');
   $seq2->alphabet('protein');
   $out = $factory->pairwise_alignment($seq1->next_seq, $seq2->next_seq);
@@ -144,7 +144,10 @@ compiled the bioperl-ext package.
 
 =item 1.
 
-Support IUPAC code for DNA sequence
+Basic support for IUPAC code for DNA sequence is now implemented. 
+X will mismatch any character. T will match U. For others, whenever
+there is a possibility for match, it is considered a full match, for
+example, W will match B.
 
 =item 2.
 

@@ -1,4 +1,4 @@
-# $Id: Seg.pm,v 1.10.4.1 2006/10/02 23:10:32 sendu Exp $
+# $Id: Seg.pm 10553 2006-09-28 03:45:11Z tseemann $
 #
 # BioPerl module for Bio::Tools::Seg
 #

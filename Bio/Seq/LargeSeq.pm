@@ -1,4 +1,4 @@
-# $Id: LargeSeq.pm,v 1.15.4.1 2006/10/02 23:10:27 sendu Exp $
+# $Id: LargeSeq.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Seq::LargeSeq
 #
@@ -84,7 +84,7 @@ sub new {
     my ($pseq) = $self->_rearrange([qw(PRIMARYSEQ)], @args);
 
     if( ! defined $pseq ) {
-	$pseq = new Bio::Seq::LargePrimarySeq(@args);
+	$pseq = Bio::Seq::LargePrimarySeq->new(@args);
     }
     $self->primary_seq($pseq);
 

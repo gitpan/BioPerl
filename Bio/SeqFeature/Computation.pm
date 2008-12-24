@@ -1,4 +1,4 @@
-# $Id: Computation.pm,v 1.16.4.1 2006/10/02 23:10:28 sendu Exp $
+# $Id: Computation.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::SeqFeature::Generic
 #
@@ -16,7 +16,7 @@ Bio::SeqFeature::Computation - Computation SeqFeature
 
 =head1 SYNOPSIS
 
-   $feat = new Bio::SeqFeature::Computation (
+   $feat = Bio::SeqFeature::Computation->new(
                                 -start => 10, -end => 100,
 				-strand => -1, -primary => 'repeat',
 				-program_name => 'GeneMark',
@@ -88,8 +88,6 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::SeqFeature::Computation;
 use strict;
-
-use Bio::Root::Root;
 
 use base qw(Bio::SeqFeature::Generic);
 						     

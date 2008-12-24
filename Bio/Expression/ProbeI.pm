@@ -1,4 +1,4 @@
-# $Id: ProbeI.pm,v 1.8.6.1 2006/08/20 22:03:29 sendu Exp $
+# $Id: ProbeI.pm 5005 2002-10-30 23:19:44Z allenday $
 # BioPerl module for Bio::Expression::ProbeI
 #
 # Copyright Allen Day <allenday@ucla.edu>, Stan Nelson <snelson@ucla.edu>

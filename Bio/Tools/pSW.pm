@@ -1,4 +1,4 @@
-## $Id: pSW.pm,v 1.27.4.1 2006/10/02 23:10:32 sendu Exp $
+## $Id: pSW.pm 11480 2007-06-14 14:16:21Z sendu $
 
 #
 # BioPerl module for Bio::Tools::pSW
@@ -19,7 +19,7 @@ Bio::Tools::pSW - pairwise Smith Waterman object
 
     use Bio::Tools::pSW;
     use Bio::AlignIO;
-    my $factory = new Bio::Tools::pSW( '-matrix' => 'blosum62.bla',
+    my $factory = Bio::Tools::pSW->new( '-matrix' => 'blosum62.bla',
 				       '-gap' => 12,
 				       '-ext' => 2,
 				       );
@@ -31,7 +31,7 @@ Bio::Tools::pSW - pairwise Smith Waterman object
     # make a Bio::SimpleAlign and do something with it
 
     my $aln = $factory->pairwise_alignment($seq1,$seq2);
-    my $alnout = new Bio::AlignIO(-format => 'msf',
+    my $alnout = Bio::AlignIO->new(-format => 'msf',
 				  -fh     => \*STDOUT);
 
     $alnout->write_aln($aln);

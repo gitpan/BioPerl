@@ -1,4 +1,4 @@
-# $Id: TreeIO.pm,v 1.20.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: TreeIO.pm 14708 2008-06-10 00:08:17Z heikki $
 #
 # BioPerl module for Bio::TreeIO
 #
@@ -18,7 +18,7 @@ Bio::TreeIO - Parser for Tree files
 
   {
       use Bio::TreeIO;
-      my $treeio = new Bio::TreeIO('-format' => 'newick',
+      my $treeio = Bio::TreeIO->new('-format' => 'newick',
   				   '-file'   => 'globin.dnd');
       while( my $tree = $treeio->next_tree ) {
   	  print "Tree is ", $tree->size, "\n";
@@ -78,10 +78,12 @@ use Bio::TreeIO::TreeEventBuilder;
 
 use base qw(Bio::Root::Root Bio::Root::IO Bio::Event::EventGeneratorI Bio::Factory::TreeFactoryI);
 
+use constant INTERNAL_NODE_ID => 'id'; # id or bootstrap, default is 'id' 
+
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::TreeIO();
+ Usage   : my $obj = Bio::TreeIO->new();
  Function: Builds a new Bio::TreeIO object 
  Returns : Bio::TreeIO
  Args    : a hash.  useful keys:
@@ -93,6 +95,9 @@ use base qw(Bio::Root::Root Bio::Root::IO Bio::Event::EventGeneratorI Bio::Facto
      svggraph           SVG graphical representation of tree
      tabtree            ASCII text representation of tree
      lintree            lintree output format
+   -internal_node_id : what is stored in the internal node ids, 
+                       bootstrap values or ids, coded as 
+                       'bootstrap' or 'id'
 
 =cut
 
@@ -193,13 +198,16 @@ sub _eventHandler{
 sub _initialize {
     my($self, @args) = @_;
     $self->{'_handler'} = undef;
-    ($self->{'newline_each_node'}) = $self->_rearrange
-	([qw(NEWLINE_EACH_NODE)],@args);
+    my $internal_node_id;
+    $self->{'internal_node_id'} = INTERNAL_NODE_ID;
+    ($self->{'newline_each_node'},$internal_node_id) = $self->_rearrange
+	([qw(NEWLINE_EACH_NODE INTERNAL_NODE_ID)],@args);
     
     # initialize the IO part
     $self->_initialize_io(@args);
     $self->attach_EventHandler(Bio::TreeIO::TreeEventBuilder->new
 			       (-verbose => $self->verbose(), @args));
+    $self->internal_node_id($internal_node_id) if defined $internal_node_id;
 }
 
 =head2 _load_format_module
@@ -250,6 +258,34 @@ sub newline_each_node{
     my $self = shift;
     return $self->{'newline_each_node'} = shift if @_;
     return $self->{'newline_each_node'};
+}
+
+=head2 internal_node_id
+
+ Title   : internal_node_id
+ Usage   : $obj->internal_node_id($newval)
+ Function: Internal Node Id type, coded as 'bootstrap' or 'id'
+           Default is 'id'
+ Returns : value of internal_node_id (a scalar)
+ Args    : on set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub internal_node_id{
+    my $self = shift;
+    my $val = shift;
+    if( defined $val ) {
+	if( $val =~ /^b/i ) {
+	    $val = 'bootstrap';
+	} elsif( $val =~ /^i/ ) {
+	    $val = 'id';
+	} else {
+	    $self->warn("Unknown value $val for internal_node_id not resetting value\n");
+	}	
+	return $self->{'internal_node_id'} = $val;	
+    }
+    return $self->{'internal_node_id'};
 }
 
 

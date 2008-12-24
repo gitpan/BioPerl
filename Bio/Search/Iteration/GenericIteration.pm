@@ -1,4 +1,4 @@
-# $Id: GenericIteration.pm,v 1.6.4.2 2006/10/02 23:10:24 sendu Exp $
+# $Id: GenericIteration.pm 15231 2008-12-22 21:51:02Z cjfields $
 #
 # BioPerl module for Bio::Search::Iteration::GenericIteration
 #
@@ -19,7 +19,7 @@ Bio::Search::Iteration::GenericIteration - A generic implementation of the Bio::
 =head1 SYNOPSIS
 
     use Bio::Search::Iteration::GenericIteration;
-    my $it = new Bio::Search::GenericIteration(
+    my $it = Bio::Search::GenericIteration->new(
                               -number => 1,
                               -converged => 0,
                               -newhits_unclassified => [@newhits_unclass],
@@ -50,10 +50,10 @@ For documentation on what you can do with GenericIteration (and other IterationI
 objects), please see the API documentation in
 L<Bio::Search::Iteration::IterationI|Bio::Search::Iteration::IterationI>.
 
-Bio::Search::Iteration::GenericIteration is similar in spirit to
-Bio::Tools::BPlite::Iteration, except that
-Bio::Search::Iteration::GenericIteration is a pure container, without
-any parsing functionality as is in Bio::Tools::BPlite::Iteration.
+Bio::Search::Iteration::GenericIteration is similar in spirit to the deprecated
+Bio::Tools::BPlite::Iteration modules in bioperl releases prior to 1.6, except
+that Bio::Search::Iteration::GenericIteration is a pure container, without any
+parsing functionality as is in Bio::Tools::BPlite::Iteration.
 
 =head1 FEEDBACK
 
@@ -98,7 +98,7 @@ use base qw(Bio::Root::Root Bio::Search::Iteration::IterationI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Search::Iteration(%args);
+ Usage   : my $obj = Bio::Search::Iteration->new(%args);
  Function: Builds a new Bio::Search::Iteration object 
  Returns : Bio::Search::Iteration::GenericIteration object
  Args    : -number => integer for the number of this iteration (required)

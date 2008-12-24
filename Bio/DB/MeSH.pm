@@ -1,4 +1,4 @@
-# $Id: MeSH.pm,v 1.8.4.1 2006/10/02 23:10:15 sendu Exp $
+# $Id: MeSH.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::DB::MeSH
 #
@@ -14,7 +14,7 @@ Bio::DB::MeSH - Term retrieval from a Web MeSH database
 
 =head1 SYNOPSIS
 
- my $mesh = new Bio::DB::MeSH();
+ my $mesh = Bio::DB::MeSH->new();
  my $term = $mesh->get_exact_term('Butter');
  print $term->description;
 

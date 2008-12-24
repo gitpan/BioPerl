@@ -1,4 +1,4 @@
-# $Id: WidestCoordPolicy.pm,v 1.10.4.1 2006/10/02 23:10:21 sendu Exp $
+# $Id: WidestCoordPolicy.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module for Bio::Location::WidestCoordPolicy
 #

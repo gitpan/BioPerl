@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Tools::Sigcleave
 # AUTHOR  : Chris Dagdigian, dag@sonsorol.org
 # CREATED : Jan 28 1999
-# REVISION: $Id: Sigcleave.pm,v 1.22.4.1 2006/10/02 23:10:32 sendu Exp $
+# REVISION: $Id: Sigcleave.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # Copyright (c) 1997-9 bioperl, Chris Dagdigian and others. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
@@ -38,14 +38,14 @@ Bio::Tools::Sigcleave - Bioperl object for sigcleave analysis
 
   # this works
   $seq = "MVLLLILSVLLLKEDVRGSAQSSERRVVAHMPGDIIIGALFSVHHQPTVDKVHERKCGAVREQYGI";
-  $sig = new Bio::Tools::Sigcleave(-seq  => $seq,
+  $sig = Bio::Tools::Sigcleave->new(-seq  => $seq,
                                                 -type => 'protein',
                                                 -threshold=>'3.5',
                                                 );
   # but you do:
   $seqobj = Bio::PrimarySeq->new(-seq => $seq);
 
-  $sig = new Bio::Tools::Sigcleave(-seq  => $seqobj,
+  $sig = Bio::Tools::Sigcleave->new(-seq  => $seqobj,
                                                 -threshold=>'3.5',
                                                 );
 
@@ -144,7 +144,7 @@ Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 
 =head1 VERSION
 
-Bio::Tools::Sigcleave, $Id: Sigcleave.pm,v 1.22.4.1 2006/10/02 23:10:32 sendu Exp $
+Bio::Tools::Sigcleave, $Id: Sigcleave.pm 11480 2007-06-14 14:16:21Z sendu $
 
 =head1 COPYRIGHT
 

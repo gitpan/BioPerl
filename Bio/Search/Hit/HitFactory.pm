@@ -1,4 +1,4 @@
-# $Id: HitFactory.pm,v 1.6.4.1 2006/10/02 23:10:24 sendu Exp $
+# $Id: HitFactory.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Search::Hit::HitFactory
 #
@@ -17,7 +17,7 @@ Bio::Search::Hit::HitFactory - A factory to create Bio::Search::Hit::HitI object
 =head1 SYNOPSIS
 
     use Bio::Search::Hit::HitFactory;
-    my $factory = new Bio::Search::Hit::HitFactory();
+    my $factory = Bio::Search::Hit::HitFactory->new();
     my $resultobj = $factory->create(@args);
 
 =head1 DESCRIPTION
@@ -76,7 +76,7 @@ BEGIN {
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Search::Hit::HitFactory();
+ Usage   : my $obj = Bio::Search::Hit::HitFactory->new();
  Function: Builds a new Bio::Search::Hit::HitFactory object 
  Returns : Bio::Search::Hit::HitFactory
  Args    :

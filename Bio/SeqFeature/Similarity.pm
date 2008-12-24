@@ -1,4 +1,4 @@
-# $Id: Similarity.pm,v 1.16.4.1 2006/10/02 23:10:28 sendu Exp $
+# $Id: Similarity.pm 11669 2007-08-29 21:39:51Z cjfields $
 #
 # BioPerl module for Bio::SeqFeature::Similarity
 #
@@ -184,7 +184,7 @@ sub seqdesc {
 	$self->annotation->add_Annotation('description',$v);
     }
     my ($v) = $self->annotation()->get_Annotations('description');
-    return $v ? $v->value : undef;
+    return defined $v ? $v->value : undef;
 }
 
 #

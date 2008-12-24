@@ -1,4 +1,4 @@
-# $Id: AlphabetI.pm,v 1.8.4.1 2006/10/02 23:10:31 sendu Exp $
+# $Id: AlphabetI.pm 10458 2006-09-20 05:53:53Z tseemann $
 #
 # BioPerl module for Bio::Symbol::AlphabetI
 #

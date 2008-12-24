@@ -1,4 +1,4 @@
-# $Id: PSLHSP.pm,v 1.4.4.1 2006/10/02 23:10:24 sendu Exp $
+# $Id: PSLHSP.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Search::HSP::PSLHSP
 #
@@ -67,7 +67,7 @@ use base qw(Bio::Search::HSP::GenericHSP);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Search::HSP::PSLHSP();
+ Usage   : my $obj = Bio::Search::HSP::PSLHSP->new();
  Function: Builds a new Bio::Search::HSP::PSLHSP object 
  Returns : an instance of Bio::Search::HSP::PSLHSP
  Args    : -gapblocks => arrayref of gap locations which are [start,length]

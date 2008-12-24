@@ -1,4 +1,4 @@
-# $Id: PsmHeader.pm,v 1.11.4.1 2006/10/02 23:10:22 sendu Exp $
+# $Id: PsmHeader.pm 11480 2007-06-14 14:16:21Z sendu $
 
 =head1 NAME
 
@@ -63,7 +63,7 @@ use base qw(Bio::Root::Root Bio::Matrix::PSM::PsmHeaderI);
 =head2 new
 
  Title   : new
- Usage   : my $header= new Bio::Matrix::PSM::PsmHeader(-seq=>\%seq, 
+ Usage   : my $header= Bio::Matrix::PSM::PsmHeader->new(-seq=>\%seq, 
 						       -mid=>\%mid, 
 						       -width=>\%width,
                                                        -instances=>\%instances,

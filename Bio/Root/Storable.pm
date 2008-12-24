@@ -1,4 +1,4 @@
-# $Id: Storable.pm,v 1.7.4.1 2006/10/02 23:10:23 sendu Exp $
+# $Id: Storable.pm 10689 2006-10-04 05:52:06Z tseemann $
 #
 # BioPerl module for Bio::Root::Storable
 #
@@ -89,7 +89,7 @@ package Bio::Root::Storable;
 use strict;
 use Data::Dumper qw( Dumper );
 
-
+use File::Spec;
 use Bio::Root::IO;
 
 use vars qw( $BINARY );
@@ -196,8 +196,7 @@ sub statefile{
 =head2 workdir
 
   Arg [1]   : string (optional) (TODO - convert to array for x-platform)
-  Function  : Accessor for the statefile directory. Defaults to
-              $Bio::Root::IO::TEMPDIR
+  Function  : Accessor for the statefile directory. Defaults to File::Spec->tmpdir
   Returntype: string
   Exceptions: 
   Caller    : 
@@ -213,7 +212,8 @@ sub workdir {
     $self->{$key} && $self->debug("Overwriting workdir: probably bad!");
     $self->{$key} = shift
   }
-  $self->{$key} ||= $Bio::Root::IO::TEMPDIR;
+#  $self->{$key} ||= $Bio::Root::IO::TEMPDIR;
+  $self->{$key} ||= File::Spec->tmpdir();
   return $self->{$key};
 }
 

@@ -1,4 +1,4 @@
-# $Id: BinarySearch.pm,v 1.23.4.1 2006/10/02 23:10:16 sendu Exp $
+# $Id: BinarySearch.pm 15052 2008-12-01 08:47:39Z heikki $
 #
 # BioPerl module for Bio::DB::Flat::BinarySearch
 #
@@ -14,7 +14,7 @@ Bio::DB::Flat::BinarySearch - BinarySearch search indexing system for sequence f
 
 =head1 SYNOPSIS
 
-BinarySearch search indexing system for sequence files
+
 
 =head1 DESCRIPTION
 
@@ -45,7 +45,7 @@ A string also has to be entered to defined what the primary key
 
 The index can now be created using 
 
-    my $index = new Bio::DB::Flat::BinarySearch(
+    my $index = Bio::DB::Flat::BinarySearch->new(
              -directory         => "/home/max/",
              -dbname            => "mydb",
 	          -start_pattern     => $start_pattern,
@@ -99,7 +99,7 @@ id (1433_CAEEL) as the secondary id.  The index is created as follows
 
     $secondary_patterns{"ID"} = '^ID   (\S+)';
 
-    my $index = new Bio::DB::Flat::BinarySearch(
+    my $index = Bio::DB::Flat::BinarySearch->new(
                 -directory          => $index_directory,
 		          -dbname             => "ppp",
 		          -write_flag         => 1,
@@ -119,7 +119,7 @@ memory.
 To fetch sequences using an existing index first of all create your sequence 
 object 
 
-    my $index = new Bio::DB::Flat::BinarySearch(
+    my $index = Bio::DB::Flat::BinarySearch->new(
                   -directory => $index_directory);
 
 Now you can happily fetch sequences either by the primary key or
@@ -137,7 +137,7 @@ Other ways of getting sequences are
 This can then be passed to a seqio object for output or converting
 into objects.
 
-    my $seq = new Bio::SeqIO(-fh     => $fh,
+    my $seq = Bio::SeqIO->new(-fh     => $fh,
 			                    -format => 'fasta');
 
 The last way is to retrieve a sequence directly.  This is the
@@ -201,6 +201,7 @@ use Fcntl qw(SEEK_END SEEK_CUR);
 sub systell{ sysseek($_[0], 0, SEEK_CUR) }
 sub syseof{ sysseek($_[0], 0, SEEK_END) }
 
+use File::Spec;
 use Bio::Root::RootI;
 use Bio::SeqIO;
 use Bio::Seq;
@@ -210,13 +211,14 @@ use base qw(Bio::DB::RandomAccessI);
 use constant CONFIG_FILE_NAME => 'config.dat';
 use constant HEADER_SIZE      => 4;
 use constant DEFAULT_FORMAT   => 'fasta';
+
 my @formats = ['FASTA','SWISSPROT','EMBL'];
 
 =head2 new
 
  Title   : new
  Usage   : For reading 
-             my $index = new Bio::DB::Flat::BinarySearch(
+             my $index = Bio::DB::Flat::BinarySearch->new(
                      -directory => '/Users/michele/indices/dbest',
 		     -dbname    => 'mydb',
                      -format    => 'fasta');
@@ -224,7 +226,7 @@ my @formats = ['FASTA','SWISSPROT','EMBL'];
            For writing 
 
              my %secondary_patterns = {"ACC" => "^>\\S+ +(\\S+)"}
-             my $index = new Bio::DB::Flat::BinarySearch(
+             my $index = Bio::DB::Flat::BinarySearch->new(
 		     -directory          => '/Users/michele/indices',
                      -dbname             => 'mydb',
 		     -primary_pattern    => "^>(\\S+)",
@@ -303,7 +305,7 @@ sub new_from_registry {
     my $dbname   = $config{'dbname'};
     my $location = $config{'location'};
     
-    my $index =  new Bio::DB::Flat::BinarySearch(-dbname    => $dbname,
+    my $index =  Bio::DB::Flat::BinarySearch->new(-dbname    => $dbname,
 						 -index_dir => $location,
 						 );
 }
@@ -335,7 +337,7 @@ sub get_Seq_by_id {
 
     unless ( defined($self->{_seqio}) ) {
 
-	$self->{_seqio} = new Bio::SeqIO(-fh => $fh,
+	$self->{_seqio} = Bio::SeqIO->new(-fh => $fh,
 					 -format => $self->format);
     } else {
 	$self->{_seqio}->fh($fh);
@@ -410,7 +412,6 @@ sub get_stream_by_id {
       return;
     }
 
-    my $fh = $self->get_filehandle_by_fileid($fileid);
     my $file = $self->{_file}{$fileid};
 
     open (my $IN,"<$file");
@@ -723,7 +724,7 @@ sub build_index {
 	$self->throw("Index directory [$rootdir] is not a directory. Cant' build indices");
     }
 
-    my $dbpath = Bio::Root::IO->catfile($rootdir,$self->dbname);
+    my $dbpath = File::Spec->catfile($rootdir,$self->dbname);
     if (! -d $dbpath) {
       warn "Creating directory $dbpath\n";
       mkdir $dbpath,0777 or $self->throw("Couldn't create $dbpath: $!");
@@ -778,112 +779,113 @@ sub build_index {
 =cut
 
 sub _index_file {
-    my ($self,$file) = @_;
-    my $v = $self->verbose;
-    open(my $FILE,"<", $file) || $self->throw("Can't open file [$file]");
+	my ($self,$file) = @_;
+	my $v = $self->verbose;
+	open(my $FILE,"<", $file) || $self->throw("Can't open file [$file]");
 
-    my $recstart = 0;
-    my $fileid = $self->get_fileid_by_filename($file);
-    my $found = 0;
-    my $id;
-    my $count = 0;
+	my $recstart = 0;
+	my $fileid = $self->get_fileid_by_filename($file);
+	my $found = 0;
+	my $id;
+	my $count = 0;
 
-    my $primary       = $self->primary_pattern;
-    my $start_pattern = $self->start_pattern;
+	my $primary       = $self->primary_pattern;
+	my $start_pattern = $self->start_pattern;
 
-    my $pos = 0;
+	my $pos = 0;
 
-    my $new_primary_entry;
+	my $new_primary_entry;
 
-    my $length;
-    #my $pos = 0;
-    my $fh = $FILE;
+	my $length;
 
-    my $done = -1;
+	my $fh = $FILE;
 
-    my @secondary_names = $self->secondary_namespaces;
-    my %secondary_id;
-    my $last_one;
+	my $done = -1;
 
-    while (<$fh>) {
+	my @secondary_names = $self->secondary_namespaces;
+	my %secondary_id;
+	my $last_one;
+
+	while (<$fh>) {
       $last_one = $_;
       $self->{alphabet} ||= $self->guess_alphabet($_);		
       if ($_ =~ /$start_pattern/) {
-	 if ($done == 0) {
-	    $id = $new_primary_entry;
-	    $self->{alphabet} ||= $self->guess_alphabet($_);
+			if ($done == 0) {
+				$id = $new_primary_entry;
+				$self->{alphabet} ||= $self->guess_alphabet($_);
 	  
-	  my $tmplen = (tell $fh) - length($_);
+				my $tmplen = (tell $fh) - length($_);
 
-	  $length = $tmplen  - $pos;
+				$length = $tmplen  - $pos;
 		
-	  unless( defined($id)) {
-	    $self->throw("No id defined for sequence");
-	  }
-	  unless( defined($fileid)) {
-	    $self->throw("No fileid defined for file $file");
-	  }
-	  unless( defined($pos)) {
-	    $self->throw("No position defined for " . $id . "\n");
-	  }
-	  unless( defined($length)) {
-	    $self->throw("No length defined for " . $id . "\n");
-	  }
-	  $self->_add_id_position($id,$pos,$fileid,$length,\%secondary_id);
+				unless( defined($id)) {
+					$self->throw("No id defined for sequence");
+				}
+				unless( defined($fileid)) {
+					$self->throw("No fileid defined for file $file");
+				}
+				unless( defined($pos)) {
+					$self->throw("No position defined for " . $id . "\n");
+				}
+				unless( defined($length)) {
+					$self->throw("No length defined for " . $id . "\n");
+				}
+				$self->_add_id_position($id,$pos,$fileid,$length,\%secondary_id);
 
-	  $pos   = $tmplen;
+				$pos   = $tmplen;
 		
-	  if ($count > 0 && $count%1000 == 0) {
-	    $self->debug( "Indexed $count ids\n") if $v > 0;
-	  }
+				if ($count > 0 && $count%1000 == 0) {
+					$self->debug( "Indexed $count ids\n") if $v > 0;
+				}
 	    
-	  $count++;
-	} else {
-	  $done = 0;
-	}
+				$count++;
+			} else {
+				$done = 0;
+			}
       }
 
       if ($_ =~ /$primary/) {
-	$new_primary_entry = $1;    
+			$new_primary_entry = $1;    
       }
 
       my $secondary_patterns = $self->secondary_patterns;
 
       foreach my $sec (@secondary_names) {
-	my $pattern = $secondary_patterns->{$sec};
+			my $pattern = $secondary_patterns->{$sec};
 
-	if ($_ =~ /$pattern/) {
-	  $secondary_id{$sec} = $1;
-	}
+			if ($_ =~ /$pattern/) {
+				$secondary_id{$sec} = $1;
+			}
       }
-	
-    }
+		
+	}
 
-    # Remember to add in the last one
+	# Remember to add in the last one
 
-    $id = $new_primary_entry;
-    my $tmplen = (tell $fh) - length($last_one);
+	$id = $new_primary_entry;
+	# my $tmplen = (tell $fh) - length($last_one);
+	my $tmplen = (tell $fh);
 
-    $length = $tmplen  - $pos;
+	$length = $tmplen - $pos;
     
-    if (!defined($id)) {
-	$self->throw("No id defined for sequence");
-    }
-    if (!defined($fileid)) {
-	$self->throw("No fileid defined for file $file");
-    }
-    if (!defined($pos)) {
-	$self->throw("No position defined for " . $id . "\n");
-    }
-    if (!defined($length)) {
-	$self->throw("No length defined for " . $id . "\n");
-    }
+	if (!defined($id)) {
+		$self->throw("No id defined for sequence");
+	}
+	if (!defined($fileid)) {
+		$self->throw("No fileid defined for file $file");
+	}
+	if (!defined($pos)) {
+		$self->throw("No position defined for " . $id . "\n");
+	}
+	if (!defined($length)) {
+		$self->throw("No length defined for " . $id . "\n");
+	}
     
-    $self->_add_id_position($id,$pos,$fileid,$length,\%secondary_id);
-    $count++;
+	$self->_add_id_position($id,$pos,$fileid,$length,\%secondary_id);
+	$count++;
     
-    close(FILE);
-    $count;
+	close(FILE);
+	$count;
 }
 
 =head2 write_primary_index
@@ -899,42 +901,41 @@ sub _index_file {
 =cut
 
 sub write_primary_index {
-    my ($self) = @_;
+	my ($self) = @_;
 
-    my @ids = keys %{$self->{_id}};
+	my @ids = keys %{$self->{_id}};
 
-    @ids = sort {$a cmp $b} @ids;
+	@ids = sort {$a cmp $b} @ids;
 
-    open (my $INDEX,">" . $self->primary_index_file) || 
-	$self->throw("Can't open primary index file [" . 
-		     $self->primary_index_file . "]");
+	open (my $INDEX,">" . $self->primary_index_file) || 
+	  $self->throw("Can't open primary index file [" . 
+						$self->primary_index_file . "]");
 
-    my $recordlength = $self->{_maxidlength} +
-	               $self->{_maxfileidlength} + 
-	               $self->{_maxposlength} +
-   		       $self->{_maxlengthlength} + 3;
-	
+	my $recordlength = $self->{_maxidlength} +
+	                   $self->{_maxfileidlength} + 
+		                $self->{_maxposlength} +
+			             $self->{_maxlengthlength} + 3;
     
-    print $INDEX sprintf("%4d",$recordlength);
+	print $INDEX sprintf("%04d",$recordlength);
 
-    foreach my $id (@ids) {
+	foreach my $id (@ids) {
 
-	if (!defined($self->{_id}{$id}{_fileid})) {
-	    $self->throw("No fileid for $id\n");
-	}
-	if (!defined($self->{_id}{$id}{_pos})) {
-	    $self->throw("No position for $id\n");
-	}
-	if (!defined($self->{_id}{$id}{_length})) {
-	    $self->throw("No length for $id");
-	}
+		if (!defined($self->{_id}{$id}{_fileid})) {
+			$self->throw("No fileid for $id\n");
+		}
+		if (!defined($self->{_id}{$id}{_pos})) {
+			$self->throw("No position for $id\n");
+		}
+		if (!defined($self->{_id}{$id}{_length})) {
+			$self->throw("No length for $id");
+		}
 
-	my $record =  $id              . "\t" . 
-	    $self->{_id}{$id}{_fileid} . "\t" .
-	    $self->{_id}{$id}{_pos}    . "\t" .
-	    $self->{_id}{$id}{_length};
+		my $record =  $id              . "\t" . 
+		  $self->{_id}{$id}{_fileid} . "\t" .
+			 $self->{_id}{$id}{_pos}    . "\t" .
+				$self->{_id}{$id}{_length};
 
-	print $INDEX sprintf("%-${recordlength}s",$record);
+		print $INDEX sprintf("%-${recordlength}s",$record);
 
     }
 }
@@ -982,7 +983,7 @@ sub write_secondary_indices {
 	
 	my $fh = $self->new_secondary_filehandle($name);	
 
-	print $fh sprintf("%4d",$length);
+	print $fh sprintf("%04d",$length);
 	@seconds = sort @seconds;
 	
 	foreach my $second (@seconds) {
@@ -1022,7 +1023,7 @@ sub new_secondary_filehandle {
 
     my $indexdir = $self->_config_path;
 
-    my $secindex = Bio::Root::IO->catfile($indexdir,"id_$name.index");
+    my $secindex = File::Spec->catfile($indexdir,"id_$name.index");
 
     open(my $fh,">", $secindex) || $self->throw($!);
     return $fh;
@@ -1154,11 +1155,9 @@ sub make_config_file {
 
 	my $fh;
 	open($fh,"<", $file) || $self->throw($!);
-	$self->{_fileid}{$count}   = $fh;
 	$self->{_file}  {$count}   = $file;
 	$self->{_dbfile}{$file}    = $count;
 	$self->{_size}{$count}     = $size; 
-	
 	$count++;
     }
 
@@ -1231,11 +1230,11 @@ sub read_config_file {
 		chomp;
 
 		# Look for fileid lines
-		if ($_ =~ /^fileid_(\d+)\t(\S+)\t(\d+)/) {
+		if ($_ =~ /^fileid_(\d+)\t(.+)\t(\d+)/) {
 			my $fileid   = $1;
 			my $filename = $2;
 			my $filesize = $3;
-	    
+
 			if (! -e $filename) {
 				$self->throw("File [$filename] does not exist!");
 			}
@@ -1245,9 +1244,6 @@ sub read_config_file {
 		
 			my $fh;
 			open($fh,"<", $filename) || $self->throw($!);
-			close $fh;
-
-			$self->{_fileid}{$fileid}   = $fh;
 			$self->{_file}  {$fileid}   = $filename;
 			$self->{_dbfile}{$filename} = $fileid;
 			$self->{_size}  {$fileid}   = $filesize; 
@@ -1283,7 +1279,7 @@ sub read_config_file {
 
     # Now check we have all that we need
 
-    my @fileid_keys = keys (%{$self->{_fileid}});
+    my @fileid_keys = keys (%{$self->{_file}});
 
     if (!(@fileid_keys)) {
 	     $self->throw("No flatfile fileid files in config - check the index has been made correctly");
@@ -1336,11 +1332,13 @@ sub get_fileid_by_filename {
 sub get_filehandle_by_fileid {
     my ($self,$fileid) = @_;
 
-    if (!defined($self->{_fileid}{$fileid})) {
+    if (!defined($self->{_file}{$fileid})) {
 	$self->throw("ERROR: undefined fileid in index [$fileid]");
     }
    
-    return $self->{_fileid}{$fileid};
+   	my $fh;
+	open($fh,"<", $self->{_file}{$fileid}) || $self->throw($!);
+    return $fh;
 }
 
 =head2 primary_index_file
@@ -1358,7 +1356,7 @@ sub get_filehandle_by_fileid {
 sub primary_index_file {
     my ($self) = @_;
 
-    return Bio::Root::IO->catfile($self->_config_path,"key_" . $self->primary_namespace . ".key");
+    return File::Spec->catfile($self->_config_path,"key_" . $self->primary_namespace . ".key");
 }
 
 =head2 primary_index_filehandle
@@ -1479,13 +1477,13 @@ sub _config_path {
   my $self = shift;
   my $root = $self->index_directory;
   my $dbname = $self->dbname;
-  Bio::Root::IO->catfile($root,$dbname);
+  File::Spec->catfile($root,$dbname);
 }
 
 sub _config_file {
   my $self = shift;
   my $path = $self->_config_path;
-  Bio::Root::IO->catfile($path,CONFIG_FILE_NAME);
+  File::Spec->catfile($path,CONFIG_FILE_NAME);
 }
 
 =head2 record_size
@@ -1658,7 +1656,7 @@ sub new_SWISSPROT_index {
 
     $secondary_patterns{"ID"} = $start_pattern;
 
-    my $index =  new Bio::DB::Flat::BinarySearch
+    my $index =  Bio::DB::Flat::BinarySearch->new
 	(-index_dir          => $index_dir,
 	 -format             => 'swissprot',
 	 -primary_pattern    => $primary_pattern,
@@ -1680,7 +1678,7 @@ sub new_EMBL_index {
 
    $secondary_patterns{"ID"} = $start_pattern;
 
-   my $index = new Bio::DB::Flat::BinarySearch
+   my $index = Bio::DB::Flat::BinarySearch->new
        (-index_dir          => $index_dir,
 	-format             => 'embl',
 	-primary_pattern    => $primary_pattern,
@@ -1704,7 +1702,7 @@ sub new_FASTA_index {
 
    $secondary_patterns{"ID"} = "^>\\S+ +(\\S+)";
 
-   my $index =  new Bio::DB::Flat::BinarySearch
+   my $index =  Bio::DB::Flat::BinarySearch->new
        (-index_dir          => $index_dir,
 	-format             => 'fasta',
 	-primary_pattern    => $primary_pattern,

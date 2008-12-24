@@ -1,4 +1,4 @@
-# $Id: ChainI.pm,v 1.16 2006/07/04 22:23:17 mauricio Exp $
+# $Id: ChainI.pm 10084 2006-07-04 22:23:29Z mauricio $
 #
 # bioperl module for Bio::LiveSeq::ChainI
 #

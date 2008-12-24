@@ -1,4 +1,4 @@
-# $Id: GenericHit.pm,v 1.37.4.2 2006/10/02 23:10:24 sendu Exp $
+# $Id: GenericHit.pm 14677 2008-05-11 07:21:06Z jason $
 #
 # BioPerl module for Bio::Search::Hit::GenericHit
 #
@@ -17,11 +17,11 @@ Bio::Search::Hit::GenericHit - A generic implementation of the Bio::Search::Hit:
 =head1 SYNOPSIS
 
     use Bio::Search::Hit::GenericHit;
-    my $hit = new Bio::Search::Hit::GenericHit(-algorithm => 'blastp');
+    my $hit = Bio::Search::Hit::GenericHit->new(-algorithm => 'blastp');
 
     # typically one gets HitI objects from a SearchIO stream via a ResultI
     use Bio::SearchIO;
-    my $parser = new Bio::SearchIO(-format => 'blast', -file => 'result.bls');
+    my $parser = Bio::SearchIO->new(-format => 'blast', -file => 'result.bls');
 
     my $result = $parser->next_result;
     my $hit    = $result->next_hit;
@@ -92,12 +92,13 @@ use base qw(Bio::Root::Root Bio::Search::Hit::HitI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Search::Hit::GenericHit();
+ Usage   : my $obj = Bio::Search::Hit::GenericHit->new();
  Function: Builds a new Bio::Search::Hit::GenericHit object 
  Returns : Bio::Search::Hit::GenericHit
  Args    : -name         => Name of Hit (required)
            -description  => Description (optional)
            -accession    => Accession number (optional)
+           -ncbi_gi      => NCBI GI UID (optional)
            -length       => Length of the Hit (optional)
            -score        => Raw Score for the Hit (optional)
            -bits         => Bit Score for the Hit (optional)
@@ -117,7 +118,7 @@ sub new {
   my $self = $class->SUPER::new(@args);
   my ($hsps, $name,$query_len,$desc, $acc, $locus, $length,
       $score,$algo,$signif,$bits,
-      $rank, $hsp_factory) = $self->_rearrange([qw(HSPS
+      $rank, $hsp_factory, $gi) = $self->_rearrange([qw(HSPS
                                      NAME 
                                      QUERY_LEN
                                      DESCRIPTION
@@ -126,7 +127,8 @@ sub new {
                                      LENGTH SCORE ALGORITHM 
                                      SIGNIFICANCE BITS
                                      RANK
-                                     HSP_FACTORY)], @args);
+                                     HSP_FACTORY
+                                     NCBI_GI)], @args);
   
   defined $query_len && $self->query_length($query_len);
 
@@ -146,6 +148,7 @@ sub new {
   defined $bits        && $self->bits($bits);
   defined $rank        && $self->rank($rank);
   defined $hsp_factory && $self->hsp_factory($hsp_factory);
+  defined $gi          && $self->ncbi_gi($gi);
 
   $self->{'_iterator'} = 0;
   if( defined $hsps  ) {
@@ -330,12 +333,19 @@ sub algorithm {
 =cut
 
 sub raw_score {
-    my ($self,$value) = @_;
+    my ($self,$value) = @_; 
     my $previous = $self->{'_score'};
-    if( defined $value || ! defined $previous ) { 
-        $value = $previous = '' unless defined $value;
+    if( defined $value ) { 
         $self->{'_score'} = $value;
-    } 
+    } elsif ( ! defined $previous ) {
+        # Set the bits of the Hit to that of the top HSP.
+        unless( defined $self->{'_hsps'}->[0] ) {
+            $self->warn("No HSPs for this minimal Hit (".$self->name.")\n".
+                    "If using NCBI BLAST, check bits() instead");
+            return;
+        }   
+        $previous = $self->{'_score'} = ($self->hsps)[0]->score;
+    }    
     return $previous;
 }
 
@@ -398,7 +408,8 @@ sub bits {
     } elsif ( ! defined $previous ) {
         # Set the bits of the Hit to that of the top HSP.
 	unless( defined $self->{'_hsps'}->[0] ) {
-	    $self->warn("No HSPs for this Hit (".$self->name.")");
+	    $self->warn("No HSPs for this minimal Hit (".$self->name.")\n".
+                    "If using WU-BLAST, check raw_score() instead");
 	    return;
 	}
         $previous = $self->{'_bits'} = ($self->hsps)[0]->bits;
@@ -618,7 +629,7 @@ sub p {
     my $val = $self->{'_p'};
 
     # $val can be zero.
-    if(not defined $val) {
+    if(!defined $val) {
         # P-value not defined, must be a NCBI Blast2 report.
         # Use expect instead.
         $self->warn( "P-value not defined. Using expect() instead.");
@@ -901,11 +912,6 @@ sub matches {
  Argument  : In scalar context: seq_type = 'query' or 'hit' or 'sbjct' (default = 'query')
              ('sbjct' is synonymous with 'hit')
  Throws    : n/a
- Comments  : This method requires that all HSPs be tiled. If there is more than one
-           : HSP and they have not already been tiled, they will be tiled first automatically..
-           : Remember that the start and end coordinates of all HSPs are 
-           : normalized so that start < end. Strand information can be
-           : obtained by calling $hit->strand().
 
 See Also   : L<end()|end>, L<range()|range>, L<strand()|strand>, 
              L<Bio::Search::HSP::BlastHSP::start|Bio::Search::HSP::BlastHSP>
@@ -931,15 +937,37 @@ sub start {
     # If there is only one HSP, defer this call to the solitary HSP.
     if($self->num_hsps == 1) {
         return $self->hsp->start($seqType);
-    } else {
-        &Bio::Search::SearchUtils::tile_hsps($self) unless $self->tiled_hsps;
-	if($seqType =~ /list|array/i) {
-	    return ($self->{'_queryStart'}, $self->{'_sbjctStart'});
-	} else {
-	    ## Sensitive to member name changes.
-	    $seqType = "_\L$seqType\E";
-	    return $self->{$seqType.'Start'};
-	}
+    }
+    else {
+        # Tiling normally generates $self->{'_queryStart'} and
+        # $self->{'_sbjctStart'}, but is very slow. If we haven't tiled,
+        # find the answer quickly without tiling.
+        unless (defined $self->{'_queryStart'}) {
+            my $earliest_query_start;
+            my $earliest_sbjct_start;
+            foreach my $hsp ($self->hsps) {
+                my $this_query_start = $hsp->start('query');
+                if (! defined $earliest_query_start || $this_query_start < $earliest_query_start) {
+                    $earliest_query_start = $this_query_start;
+                }
+                
+                my $this_sbjct_start = $hsp->start('sbjct');
+                if (! defined $earliest_sbjct_start || $this_sbjct_start < $earliest_sbjct_start) {
+                    $earliest_sbjct_start = $this_sbjct_start;
+                }
+            }
+            $self->{'_queryStart'} = $earliest_query_start;
+            $self->{'_sbjctStart'} = $earliest_sbjct_start;
+        }
+        
+        
+        if ($seqType =~ /list|array/i) {
+            return ($self->{'_queryStart'}, $self->{'_sbjctStart'});
+        } else {
+            ## Sensitive to member name changes.
+            $seqType = "_\L$seqType\E";
+            return $self->{$seqType.'Start'};
+        }
     }
 }
 
@@ -962,12 +990,6 @@ sub start {
  Argument  : In scalar context: seq_type = 'query' or 'sbjct'
            :  (case insensitive). If not supplied, 'query' is used.
  Throws    : n/a
- Comments  : This method requires that all HSPs be tiled. If there is 
-           : more than one HSP and they have not already been tiled, 
-           : they will be tiled first automatically..
-           : Remember that the start and end coordinates of all HSPs are 
-           : normalized so that start < end. Strand information can be
-           : obtained by calling $hit->strand().
 
 See Also   : L<start()|start>, L<range()|range>, L<strand()|strand>
 
@@ -991,8 +1013,30 @@ sub end {
     # If there is only one HSP, defer this call to the solitary HSP.
     if($self->num_hsps == 1) {
         return $self->hsp->end($seqType);
-    } else {
-        Bio::Search::SearchUtils::tile_hsps($self) unless $self->tiled_hsps;
+    }
+    else {
+        # Tiling normally generates $self->{'_queryStop'} and
+        # $self->{'_sbjctStop'}, but is very slow. If we haven't tiled,
+        # find the answer quickly without tiling.
+        unless (defined $self->{'_queryStop'}) {
+            my $latest_query_end;
+            my $latest_sbjct_end;
+            foreach my $hsp ($self->hsps) {
+                my $this_query_end = $hsp->end('query');
+                if (! defined $latest_query_end || $this_query_end > $latest_query_end) {
+                    $latest_query_end = $this_query_end;
+                }
+                
+                my $this_sbjct_end = $hsp->end('sbjct');
+                if (! defined $latest_sbjct_end || $this_sbjct_end > $latest_sbjct_end) {
+                    $latest_sbjct_end = $this_sbjct_end;
+                }
+            }
+            $self->{'_queryStop'} = $latest_query_end;
+            $self->{'_sbjctStop'} = $latest_sbjct_end;
+        }
+        
+        
         if($seqType =~ /list|array/i) {
             return ($self->{'_queryStop'}, $self->{'_sbjctStop'});
         } else {
@@ -1259,7 +1303,7 @@ Same as L<frac_aligned_hit()|frac_aligned_hit>
 
 =cut
 
-*frac_aligned_sbjct = \&fract_aligned_hit;
+*frac_aligned_sbjct = \&frac_aligned_hit;
 
 =head2 num_unaligned_sbjct
 
@@ -1481,7 +1525,7 @@ sub frame {
 
     my ($frame);
     if(not defined($self->{'_frame'})) {
-        $frame = $self->hsp->frame;
+        $frame = $self->hsp->frame('hit');
     } else {
         $frame = $self->{'_frame'}; 
     } 
@@ -1616,5 +1660,71 @@ sub query_length {
     return $self->{'_query_length'};
 }
 
+=head2 ncbi_gi
+
+ Title   : ncbi_gi
+ Usage   : $acc = $hit->ncbi_gi();
+ Function: Retrieve the NCBI Unique ID (aka the GI #),
+           if available, for the hit
+ Returns : a scalar string (empty string if not set)
+ Args    : none
+
+=cut
+
+sub ncbi_gi {
+    my ($self,$value) = @_;
+    if( defined $value ) {
+        $self->{'_ncbi_gi'} = $value;
+    } else {
+        $self->{'_ncbi_gi'} = $self->name =~ m{^gi\|(\d+)} ? $1 : '';
+    } 
+    return $self->{'_ncbi_gi'};
+}
+
+
+# sort method for HSPs
+
+=head2 sort_hits
+
+ Title		: sort_hsps
+ Usage		: $result->sort_hsps(\&sort_function)
+ Function	: Sorts the available HSP objects by a user-supplied function. Defaults to sort
+                  by descending score.
+ Returns	: n/a
+ Args		: A coderef for the sort function.  See the documentation on the Perl sort()
+                  function for guidelines on writing sort functions.  
+ Note		: To access the special variables $a and $b used by the Perl sort() function 
+                  the user function must access Bio::Search::Hit::HitI namespace. 
+                  For example, use :
+                  $hit->sort_hsps( sub{$Bio::Search::Result::HitI::a->length <=> 
+					  $Bio::Search::Result::HitI::b->length});
+                   NOT $hit->sort_hsps($a->length <=> $b->length);
+
+=cut
+
+sub sort_hsps {
+    my ($self, $coderef) = @_;
+    my @sorted_hsps;
+
+    if ($coderef)  {
+	$self->throw('sort_hsps requires a sort function passed as a subroutine reference')
+	    unless (ref($coderef) eq 'CODE');
+    }
+    else {
+	$coderef = \&_default_sort_hsps;
+	# throw a warning?
+    }
+
+    my @hsps = $self->hsps();
+    eval {@sorted_hsps = sort $coderef @hsps };
+
+   if ($@) {
+       $self->throw("Unable to sort hsps: $@");
+   }
+   else {
+       $self->{'_hsps'} = \@sorted_hsps;
+       1;
+   }
+}
 
 1;

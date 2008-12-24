@@ -11,7 +11,7 @@ Bio::DB::SeqHound - Database object interface to SeqHound
 =head1 SYNOPSIS
 
     use Bio::DB::SeqHound;
-    $sh = new Bio::DB::SeqHound();
+    $sh = Bio::DB::SeqHound->new();
 
     $seq = $sh->get_Seq_by_acc("CAA28783"); # Accession Number
 
@@ -86,8 +86,9 @@ use IO::String;
 use POSIX qw(strftime);
 
 use base qw(Bio::DB::WebDBSeqI Bio::Root::Root);
+
 BEGIN {    
-    $HOSTBASE = 'http://seqhound.blueprint.org';
+    $HOSTBASE = 'http://dogboxonline.unleashedinformatics.com';
     $CGILOCATION = '/cgi-bin/seqrem?fnct=';
     $LOGFILENAME = 'shoundlog';
 }
@@ -580,7 +581,7 @@ sub postprocess_data
 
 
 =head2 _get_gi_from_name
- 
+
  Title   : _get_gi_from_name
  Usage   : $self->_get_gi_from_name('J05128');
  Function: get the gene identifier from a sequence name
@@ -606,7 +607,7 @@ sub _get_gi_from_name
 }
 
 =head2 _get_gi_from_acc
- 
+
  Title   : _get_gi_from_acc
  Usage   : $self->_get_gi_from_acc('M34830')
  Function: get the gene identifier from an accession number
@@ -632,7 +633,7 @@ sub _get_gi_from_acc
 }
 
 =head2 _get_Seq_from_gbff
- 
+
  Title   : _get_Seq_from_gbff
  Usage   : $self->_get_Seq_from_gbff($str)
  Function: get the Bio::SeqIO stream object from gi or a list of gi

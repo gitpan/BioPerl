@@ -1,4 +1,4 @@
-# $Id: Tree.pm,v 1.21.4.1 2006/10/02 23:10:37 sendu Exp $
+# $Id: Tree.pm 14899 2008-09-18 10:07:01Z heikki $
 #
 # BioPerl module for Bio::Tree::Tree
 #
@@ -17,7 +17,7 @@ Bio::Tree::Tree - An Implementation of TreeI interface.
 =head1 SYNOPSIS
 
     # like from a TreeIO
-    my $treeio = new Bio::TreeIO(-format => 'newick', -file => 'treefile.dnd');
+    my $treeio = Bio::TreeIO->new(-format => 'newick', -file => 'treefile.dnd');
     my $tree = $treeio->next_tree;
     my @nodes = $tree->get_nodes;
     my $root = $tree->get_root_node;
@@ -77,7 +77,7 @@ use base qw(Bio::Root::Root Bio::Tree::TreeI Bio::Tree::TreeFunctionsI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Tree::Tree();
+ Usage   : my $obj = Bio::Tree::Tree->new();
  Function: Builds a new Bio::Tree::Tree object 
  Returns : Bio::Tree::Tree
  Args    : -root     => L<Bio::Tree::NodeI> object which is the root
@@ -152,8 +152,8 @@ sub nodelete{
 
  Title   : get_nodes
  Usage   : my @nodes = $tree->get_nodes()
- Function: Return list of Tree::NodeI objects
- Returns : array of Tree::NodeI objects
+ Function: Return list of Bio::Tree::NodeI objects
+ Returns : array of Bio::Tree::NodeI objects
  Args    : (named values) hash with one value 
            order => 'b|breadth' first order or 'd|depth' first order
 
@@ -227,21 +227,36 @@ sub set_root_node{
  Title   : total_branch_length
  Usage   : my $size = $tree->total_branch_length
  Function: Returns the sum of the length of all branches
- Returns : integer
+ Returns : real
  Args    : none
 
 =cut
 
-sub total_branch_length {
-   my ($self) = @_;
-   my $sum = 0;
-   if( defined $self->get_root_node ) {
-       for ( $self->get_root_node->get_all_Descendents('none') ) {
-	   $sum += $_->branch_length || 0;
-       }
-   }
-   return $sum;
+sub total_branch_length { shift->subtree_length }
+
+=head2 subtree_length
+
+ Title   : subtree_length
+ Usage   : my $subtree_size = $tree->subtree_length($internal_node)
+ Function: Returns the sum of the length of all branches in a subtree
+           under the node. Calculates the size of the whole tree
+           without an argument (but only if root node is defined)
+ Returns : real or undef
+ Args    : Bio::Tree::NodeI object, defaults to the root node
+
+=cut
+
+sub subtree_length {
+    my $tree = shift;
+    my $node = shift || $tree->get_root_node;
+    return unless $node;
+    my $sum = 0;
+    for ( $node->get_all_Descendents ) {
+	$sum += $_->branch_length || 0;
+    }
+    return $sum;
 }
+
 
 =head2 id
 
@@ -308,6 +323,135 @@ sub score{
 
 =cut
 
+=head2 Methods for associating Tag/Values with a Tree
+
+These methods associate tag/value pairs with a Tree
+
+=head2 set_tag_value
+
+ Title   : set_tag_value
+ Usage   : $tree->set_tag_value($tag,$value)
+           $tree->set_tag_value($tag,@values)
+ Function: Sets a tag value(s) to a tree. Replaces old values.
+ Returns : number of values stored for this tag
+ Args    : $tag   - tag name
+           $value - value to store for the tag
+
+=cut
+
+sub set_tag_value{
+    my ($self,$tag,@values) = @_;
+    if( ! defined $tag || ! scalar @values ) {
+	$self->warn("cannot call set_tag_value with an undefined value");
+    }
+    $self->remove_tag ($tag);
+    map { push @{$self->{'_tags'}->{$tag}}, $_ } @values;
+    return scalar @{$self->{'_tags'}->{$tag}};
+}
+
+=head2 add_tag_value
+
+ Title   : add_tag_value
+ Usage   : $tree->add_tag_value($tag,$value)
+ Function: Adds a tag value to a tree 
+ Returns : number of values stored for this tag
+ Args    : $tag   - tag name
+           $value - value to store for the tag
+
+=cut
+
+sub add_tag_value{
+    my ($self,$tag,$value) = @_;
+    if( ! defined $tag || ! defined $value ) {
+	$self->warn("cannot call add_tag_value with an undefined value");
+    }
+    push @{$self->{'_tags'}->{$tag}}, $value;
+    return scalar @{$self->{'_tags'}->{$tag}};
+}
+
+=head2 remove_tag
+
+ Title   : remove_tag
+ Usage   : $tree->remove_tag($tag)
+ Function: Remove the tag and all values for this tag
+ Returns : boolean representing success (0 if tag does not exist)
+ Args    : $tag - tagname to remove
+
+
+=cut
+
+sub remove_tag {
+   my ($self,$tag) = @_;
+   if( exists $self->{'_tags'}->{$tag} ) {
+       $self->{'_tags'}->{$tag} = undef;
+       delete $self->{'_tags'}->{$tag};
+       return 1;
+   }
+   return 0;
+}
+
+=head2 remove_all_tags
+
+ Title   : remove_all_tags
+ Usage   : $tree->remove_all_tags()
+ Function: Removes all tags 
+ Returns : None
+ Args    : None
+
+=cut
+
+sub remove_all_tags{
+   my ($self) = @_;
+   $self->{'_tags'} = {};
+   return;
+}
+
+=head2 get_all_tags
+
+ Title   : get_all_tags
+ Usage   : my @tags = $tree->get_all_tags()
+ Function: Gets all the tag names for this Tree
+ Returns : Array of tagnames
+ Args    : None
+
+=cut
+
+sub get_all_tags{
+   my ($self) = @_;
+   my @tags = sort keys %{$self->{'_tags'} || {}};
+   return @tags;
+}
+
+=head2 get_tag_values
+
+ Title   : get_tag_values
+ Usage   : my @values = $tree->get_tag_values($tag)
+ Function: Gets the values for given tag ($tag)
+ Returns : Array of values or empty list if tag does not exist
+ Args    : $tag - tag name
+
+=cut
+
+sub get_tag_values{
+   my ($self,$tag) = @_;
+   return wantarray ? @{$self->{'_tags'}->{$tag} || []} :
+                     (@{$self->{'_tags'}->{$tag} || []})[0];
+}
+
+=head2 has_tag
+
+ Title   : has_tag
+ Usage   : $tree->has_tag($tag)
+ Function: Boolean test if tag exists in the Tree
+ Returns : Boolean
+ Args    : $tag - tagname
+
+=cut
+
+sub has_tag {
+   my ($self,$tag) = @_;
+   return exists $self->{'_tags'}->{$tag};
+}
 
 # -- private internal methods --
 

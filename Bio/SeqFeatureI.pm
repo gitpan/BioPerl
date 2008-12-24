@@ -1,4 +1,4 @@
-# $Id: SeqFeatureI.pm,v 1.66.4.4 2006/10/02 23:10:12 sendu Exp $
+# $Id: SeqFeatureI.pm 14863 2008-09-09 16:23:19Z cjfields $
 #
 # BioPerl module for Bio::SeqFeatureI
 #
@@ -83,7 +83,6 @@ methods. Internal methods are usually preceded with a _
 package Bio::SeqFeatureI;
 use vars qw($HasInMemory);
 use strict;
-
 BEGIN {
     eval { require Bio::DB::InMemoryCache };
     if( $@ ) { $HasInMemory = 0 }
@@ -94,7 +93,7 @@ use Bio::Seq;
 
 use Carp;
 
-use base qw(Bio::RangeI Bio::AnnotatableI);
+use base qw(Bio::RangeI);
 
 =head1 Bio::SeqFeatureI specific methods
 
@@ -169,6 +168,82 @@ sub source_tag{
    $self->throw_not_implemented();
 }
 
+=head2 has_tag
+
+ Title   : has_tag
+ Usage   : $tag_exists = $self->has_tag('some_tag')
+ Function: 
+ Returns : TRUE if the specified tag exists, and FALSE otherwise
+ Args    :
+
+
+=cut
+
+sub has_tag{
+   my ($self,@args) = @_;
+
+   $self->throw_not_implemented();
+
+}
+
+=head2 get_tag_values
+
+ Title   : get_tag_values
+ Usage   : @values = $self->get_tag_values('some_tag')
+ Function: 
+ Returns : An array comprising the values of the specified tag.
+ Args    : a string
+
+throws an exception if there is no such tag
+
+=cut
+
+sub get_tag_values {
+    shift->throw_not_implemented();
+}
+
+=head2 get_tagset_values
+
+ Title   : get_tagset_values
+ Usage   : @values = $self->get_tagset_values(qw(label transcript_id product))
+ Function: 
+ Returns : An array comprising the values of the specified tags, in order of tags
+ Args    : An array of strings
+
+does NOT throw an exception if none of the tags are not present
+
+this method is useful for getting a human-readable label for a
+SeqFeatureI; not all tags can be assumed to be present, so a list of
+possible tags in preferential order is provided
+
+=cut
+
+# interface + abstract method
+sub get_tagset_values {
+    my ($self, @args) = @_;
+    my @vals = ();
+    foreach my $arg (@args) {
+        if ($self->has_tag($arg)) {
+            push(@vals, $self->get_tag_values($arg));
+        }
+    }
+    return @vals;
+}
+
+=head2 get_all_tags
+
+ Title   : get_all_tags
+ Usage   : @tags = $feat->get_all_tags()
+ Function: gives all tags for this feature
+ Returns : an array of strings
+ Args    : none
+
+
+=cut
+
+sub get_all_tags{
+    shift->throw_not_implemented();
+}
 
 =head2 attach_seq
 
@@ -305,7 +380,7 @@ my $static_gff_formatter = undef;
 
 sub _static_gff_formatter{
    my ($self,@args) = @_;
-
+   require Bio::Tools::GFF; # on the fly inclusion -- is this better?
    if( !defined $static_gff_formatter ) {
        $static_gff_formatter = Bio::Tools::GFF->new('-gff_version' => 2);
    }
@@ -353,6 +428,10 @@ but can be validly overwritten by subclasses
                        in a circular sequence where a gene span starts
                        before the end of the sequence and ends after the
                        sequence start. Example : join(15685..16260,1..207)
+					   (default = if sequence is_circular(), 1, otherwise 0)
+			-phase     truncates the returned sequence based on the
+					   intron phase (0,1,2).
+
   Returns : A L<Bio::PrimarySeqI> object
 
 =cut
@@ -360,30 +439,51 @@ but can be validly overwritten by subclasses
 sub spliced_seq {
     my $self = shift;
 	my @args = @_;
-	my ($db,$nosort) = $self->_rearrange([qw(DB NOSORT)], @args);
-
+	my ($db, $nosort, $phase) =
+	   $self->_rearrange([qw(DB NOSORT PHASE)], @args);
+	
+	# set no_sort based on the parent sequence status
+	if ($self->entire_seq->is_circular) {
+		$nosort = 1;
+	}
+	
 	# (added 7/7/06 to allow use old API (with warnings)
-	my $old_api = (!(grep {$_ =~ /(?:nosort|db)/} @args)) ? 1 : 0;
+	my $old_api = (!(grep {$_ =~ /(?:nosort|db|phase)/} @args)) ? 1 : 0;
 	if (@args && $old_api) {
 		$self->warn(q(API has changed; please use '-db' or '-nosort' ).
                      qq(for args. See POD for more details.));
 		$db = shift @args if @args;
 		$nosort = shift @args if @args;
+		$phase = shift @args if @args;
 	};
-
+	
+	if (defined($phase) && ($phase < 0 || $phase > 2)) {
+	    $self->warn("Phase must be 0,1, or 2.  Setting phase to 0...");
+	    $phase = 0;
+	}
+	
 	if( $db && ref($db) && ! $db->isa('Bio::DB::RandomAccessI') ) {
         $self->warn("Must pass in a valid Bio::DB::RandomAccessI object".
                     " for access to remote locations for spliced_seq");
         $db = undef;
     } elsif( defined $db && $HasInMemory &&
             $db->isa('Bio::DB::InMemoryCache') ) {
-        $db = new Bio::DB::InMemoryCache(-seqdb => $db);
+        $db = Bio::DB::InMemoryCache->new(-seqdb => $db);
     }
 
     if( ! $self->location->isa("Bio::Location::SplitLocationI") ) {
-	return $self->seq(); # nice and easy!
+        if ($phase) {
+	    $self->debug("Subseq start: ",$phase+1,"\tend: ",$self->end,"\n");
+	    my $seqstr = substr($self->seq->seq, $phase);
+	    my $out = Bio::Seq->new( -id => $self->entire_seq->display_id
+				. "_spliced_feat",
+			 -seq => $seqstr);
+	    return $out;
+	} else {
+	    return $self->seq(); # nice and easy!
+	}
     }
-
+    
     # redundant test, but the above ISA is probably not ideal.
     if( ! $self->location->isa("Bio::Location::SplitLocationI") ) {
 	$self->throw("not atomic, not split, yikes, in trouble!");
@@ -481,7 +581,10 @@ sub spliced_seq {
 
 	if( $self->isa('Bio::Das::SegmentI') ) {
 	    my ($s,$e) = ($loc->start,$loc->end);
-	    $seqstr .= $called_seq->subseq($s,$e)->seq();
+		# $called_seq is Bio::DB::GFF::RelSegment, as well as its subseq();
+		# Bio::DB::GFF::RelSegment::seq() returns a Bio::PrimarySeq, and using seq()
+		# in turn returns a string.  Confused?
+	    $seqstr .= $called_seq->subseq($s,$e)->seq()->seq();
 	} else {
 	    # This is dumb, subseq should work on locations...
 	    if( $loc->strand == 1 ) {
@@ -495,6 +598,11 @@ sub spliced_seq {
 	    }
 	}
     }
+    
+    if (defined($phase)) {
+	$seqstr = substr($seqstr, $phase);
+    }
+    
     my $out = Bio::Seq->new( -id => $self->entire_seq->display_id
 			            . "_spliced_feat",
 			     -seq => $seqstr);
@@ -559,7 +667,7 @@ sub primary_id{
 sub generate_unique_persistent_id {
     # DEPRECATED - us IDHandler
     my $self = shift;
-    require "Bio/SeqFeature/Tools/IDHandler.pm";
+    require Bio::SeqFeature::Tools::IDHandler;
     Bio::SeqFeature::Tools::IDHandler->new->generate_unique_persistent_id($self);
 }
 

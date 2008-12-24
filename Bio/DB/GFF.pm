@@ -1,4 +1,4 @@
-# $Id: GFF.pm,v 1.139.4.1 2006/10/02 23:10:14 sendu Exp $
+# $Id: GFF.pm 14864 2008-09-10 22:30:20Z lstein $
 
 =head1 NAME
 
@@ -78,8 +78,8 @@ The following operations are supported by this module:
     offsets
 
 The data model used by Bio::DB::GFF is compatible with the GFF flat
-file format (http://www.sanger.ac.uk/software/GFF).  The module can
-load a set of GFF files into the database, and serves objects that
+file format (L<http://www.sequenceontology.org/gff3.shtml>). The module 
+can load a set of GFF files into the database, and serves objects that
 have methods corresponding to GFF fields.
 
 The objects returned by Bio::DB::GFF are compatible with the
@@ -561,6 +561,7 @@ package Bio::DB::GFF;
 
 use strict;
 
+use IO::File;
 use Bio::DB::GFF::Util::Rearrange;
 use Bio::DB::GFF::RelSegment;
 use Bio::DB::GFF::Feature;
@@ -577,7 +578,7 @@ my %valid_range_types = (overlaps     => 1,
 =head2 new
 
  Title   : new
- Usage   : my $db = new Bio::DB::GFF(@args);
+ Usage   : my $db = Bio::DB::GFF->new(@args);
  Function: create a new Bio::DB::GFF object
  Returns : new Bio::DB::GFF object
  Args    : lists of adaptors and aggregators
@@ -1030,15 +1031,20 @@ are ANDed together.
 
 sub features {
   my $self = shift;
-  my ($types,$automerge,$sparse,$iterator,$other);
+  my ($types,$automerge,$sparse,$iterator,$refseq,$start,$end,$other);
   if (defined $_[0] && 
       $_[0] =~ /^-/) {
-    ($types,$automerge,$sparse,$iterator,$other) = rearrange([
-							      [qw(TYPE TYPES)],
-							      [qw(MERGE AUTOMERGE)],
-							      [qw(RARE SPARSE)],
-							      'ITERATOR'
-							     ],@_);
+    ($types,$automerge,$sparse,$iterator,
+     $refseq,$start,$end,
+     $other) = rearrange([
+	[qw(TYPE TYPES)],
+	[qw(MERGE AUTOMERGE)],
+	[qw(RARE SPARSE)],
+	'ITERATOR',
+	[qw(REFSEQ SEQ_ID)],
+	'START',
+	[qw(STOP END)],
+			 ],@_);
   } else {
     $types = \@_;
   }
@@ -1047,8 +1053,11 @@ sub features {
   $automerge = $self->automerge unless defined $automerge;
   $other ||= {};
   $self->_features({
-		    rangetype => 'contains',
+		    rangetype => $refseq ? 'overlaps' : 'contains',
 		    types     => $types,
+		    refseq    => $refseq,
+		    start     => $start,
+		    stop      => $end,
 		   },
 		   { sparse    => $sparse,
 		     automerge => $automerge,
@@ -1277,6 +1286,34 @@ sub get_feature_by_gid {
   return wantarray ? @$features : $features->[0];
 }
 *fetch_feature_by_gid = \&get_feature_by_gid;
+
+=head2 delete_fattribute_to_features
+
+ Title   : delete_fattribute_to_features
+ Usage   : $db->delete_fattribute_to_features(@ids_or_features)
+ Function: delete one or more fattribute_to_features
+ Returns : count of fattribute_to_features deleted
+ Args    : list of features or feature ids
+ Status  : public
+
+Pass this method a list of numeric feature ids or a set of features.  
+It will attempt to remove the fattribute_to_features rows of those features
+from the database and return a count of the rows removed.  
+
+NOTE: This method is also called delete_fattribute_to_feature().  Also see
+delete_groups() and delete_features().
+
+=cut
+
+*delete_fattribute_to_feature = \&delete_fattribute_to_features;
+
+sub delete_fattribute_to_features {
+  my $self = shift;
+  my @features_or_ids = @_;
+  my @ids = map {UNIVERSAL::isa($_,'Bio::DB::GFF::Feature') ? $_->id : $_} @features_or_ids;
+  return unless @ids;
+  $self->_delete_fattribute_to_features(@ids);
+}
 
 =head2 delete_features
 
@@ -1764,6 +1801,28 @@ sub load_gff {
 
 *load = \&load_gff;
 
+=head2 load_gff_file
+
+ Title   : load_gff_file
+ Usage   : $db->load_gff_file($file [,$verbose]);
+ Function: load GFF data into database
+ Returns : count of records loaded
+ Args    : a path to a file
+ Status  : Public
+
+This is provided as an alternative to load_gff_file. It doesn't munge
+STDIN or play tricks with ARGV.
+
+=cut
+
+sub load_gff_file {
+  my $self     = shift;
+  my $file     = shift;
+  my $verbose  = shift;
+  my $fh = IO::File->new($file) or return;
+  return $self->do_load_gff($fh);
+}
+
 =head2 load_fasta
 
  Title   : load_fasta
@@ -1825,6 +1884,30 @@ sub load_fasta {
   open STDIN,"<", $SAVEIN unless $tied;  # restore STDIN
   return $result;
 }
+
+
+=head2 load_fasta_file
+
+ Title   : load_fasta_file
+ Usage   : $db->load_fasta_file($file [,$verbose]);
+ Function: load FASTA data into database
+ Returns : count of records loaded
+ Args    : a path to a file
+ Status  : Public
+
+This is provided as an alternative to load_fasta. It doesn't munge
+STDIN or play tricks with ARGV.
+
+=cut
+
+sub load_fasta_file {
+  my $self     = shift;
+  my $file     = shift;
+  my $verbose  = shift;
+  my $fh = IO::File->new($file) or return;
+  return $self->do_load_fasta($fh);
+}
+
 
 =head2 load_sequence_string
 
@@ -2018,7 +2101,7 @@ sub automerge {
 
  Title   : attributes
  Usage   : @attributes = $db->attributes($id,$name)
- Function: get the "attributres" on a particular feature
+ Function: get the "attributes" on a particular feature
  Returns : an array of string
  Args    : feature ID
  Status  : public
@@ -2354,7 +2437,7 @@ sub _load_gff_line {
   $self->{load_data}{gff3_flag}++           if $line =~ /^\#\#\s*gff-version\s+3/;
   $self->preferred_groups(split(/\s+/,$1))  if $line =~ /^\#\#\s*group-tags?\s+(.+)/;
 
-  if ($line =~ /^\#\#\s*sequence-region\s+(\S+)\s+(\d+)\s+(\d+)/i) { # header line
+  if ($line =~ /^\#\#\s*sequence-region\s+(\S+)\s+(-?\d+)\s+(-?\d+)/i) { # header line
     $self->load_gff_line(
 			 {
 			  ref    => $1,
@@ -3177,8 +3260,8 @@ sub make_match_sub {
   my @expr;
   for my $type (@$types) {
     my ($method,$source) = @$type;
-    $method ||= '.*';
-    $source  = $source ? ":$source" : "(?::.+)?";
+    $method = $method ? "\\Q$method\\E"  : ".*";
+    $source = $source ? ":\\Q$source\\E" : "(?::.+)?";
     push @expr,"${method}${source}";
   }
   my $expr = join '|',@expr;
@@ -3253,6 +3336,19 @@ sub do_attributes {
   return ();
 }
 
+=head2 clone
+
+The clone() method should be used when you want to pass the
+Bio::DB::GFF object to a child process across a fork(). The child must
+call clone() before making any queries.
+
+The default behavior is to do nothing, but adaptors that use the DBI
+interface may need to implement this in order to avoid database handle
+errors. See the dbi adaptor for an example.
+
+=cut
+
+sub clone { }
 
 
 =head1 Internal Methods
@@ -3302,6 +3398,7 @@ sub _features {
   my ($search,$options,$parent) = @_;
   (@{$search}{qw(start stop)}) = (@{$search}{qw(stop start)})
     if defined($search->{start}) && $search->{start} > $search->{stop};
+  $search->{refseq} = $search->{seq_id} if exists $search->{seq_id};
 
   my $types = $self->parse_types($search->{types});  # parse out list of types
   my @aggregated_types = @$types;         # keep a copy
@@ -3541,7 +3638,7 @@ sub _split_gff3_group {
       }
       $id{$tag} = @names > 1 ? [\@names,\@classes] : [$names[0],$classes[0]];
     }
-    elsif ($tag eq 'ID') {
+    elsif ($tag eq 'ID' || $tag eq 'Name') {
       $id{$tag} = [$self->_gff3_name_munging(shift(@values),$dc)];
     }
     elsif ($tag eq 'Target') {
@@ -3583,26 +3680,26 @@ sub _gff3_name_munging {
   }
 }
 
-=head2 _delete_features(), _delete_groups(),_delete()
+=head2 _delete_features(), _delete_groups(),_delete(),_delete_fattribute_to_features()
 
- Title   : _delete_features(), _delete_groups(),_delete()
+ Title   : _delete_features(), _delete_groups(),_delete(),_delete_fattribute_to_features()
  Usage   : $count = $db->_delete_features(@feature_ids)
            $count = $db->_delete_groups(@group_ids)
            $count = $db->_delete(\%delete_spec)
+           $count = $db->_delete_fattribute_to_features(@feature_ids)
  Function: low-level feature/group deleter
  Returns : count of groups removed
  Args    : list of feature or group ids removed
  Status  : for implementation by subclasses
 
-These methods need to be implemented in adaptors.  For
-_delete_features and _delete_groups, the arguments are a list of
-feature or group IDs to remove.  For _delete(), the argument is a
-hashref with the three keys 'segments', 'types' and 'force'.  The
-first contains an arrayref of Bio::DB::GFF::RelSegment objects to
-delete (all FEATURES within the segment are deleted).  The second
-contains an arrayref of [method,source] feature types to delete.  The
-two are ANDed together.  If 'force' has a true value, this forces the
-operation to continue even if it would delete all features.
+These methods need to be implemented in adaptors.  For _delete_features,
+_delete_groups and _delete_fattribute_to_features, the arguments are a list of
+feature or group IDs to remove.  For _delete(), the argument is a hashref with
+the three keys 'segments', 'types' and 'force'.  The first contains an arrayref
+of Bio::DB::GFF::RelSegment objects to delete (all FEATURES within the segment
+are deleted).  The second contains an arrayref of [method,source] feature types
+to delete.  The two are ANDed together.  If 'force' has a true value, this
+forces the operation to continue even if it would delete all features.
 
 =cut
 
@@ -3623,6 +3720,13 @@ sub _delete {
   my $delete_options = shift;
   $self->throw('_delete is not implemented in this adaptor');
 }
+
+sub _delete_fattribute_to_features {
+  my $self = shift;
+  my @feature_ids = @_;
+  $self->throw('_delete_fattribute_to_features is not implemented in this adaptor');
+}
+
 
 sub unescape {
   my $v = shift;

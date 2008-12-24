@@ -1,4 +1,4 @@
-# $Id: DocumentRegistry.pm,v 1.11.4.1 2006/10/02 23:10:22 sendu Exp $
+# $Id: DocumentRegistry.pm 11708 2007-09-27 15:47:41Z cjfields $
 #
 # BioPerl module for Bio::Ontology::DocumentRegistry
 #
@@ -77,9 +77,14 @@ my $instance;
 BEGIN {
 $instance = {
    'Sequence Ontology' => {
-	     ontology => "http://song.cvs.sourceforge.net/*checkout*/song/ontology/so.ontology?rev=HEAD",
+	    ontology => "http://song.cvs.sourceforge.net/*checkout*/song/ontology/so.ontology?rev=HEAD",
         definitions => "http://song.cvs.sourceforge.net/*checkout*/song/ontology/so.definition?rev=HEAD",
         format => 'soflat',
+                                    },
+   'Sequence Ontology OBO' => {
+	    ontology => "http://song.cvs.sourceforge.net/*checkout*/song/ontology/so.obo?rev=HEAD",
+        definitions => "http://song.cvs.sourceforge.net/*checkout*/song/ontology/so.definition?rev=HEAD",
+        format => 'obo',
                                     },
    'Sequence Ontology Feature Annotation' => {
         ontology => 'http://umn.dl.sourceforge.net/sourceforge/song/sofa.ontology',

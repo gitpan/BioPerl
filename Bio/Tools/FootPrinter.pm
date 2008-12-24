@@ -1,4 +1,4 @@
-# $Id: FootPrinter.pm,v 1.8.4.2 2006/11/08 17:25:55 sendu Exp $
+# $Id: FootPrinter.pm 11480 2007-06-14 14:16:21Z sendu $
 # BioPerl module for Bio::Tools::FootPrinter
 #
 # Cared for by Shawn Hoon <shawnh@fugu-sg.org>
@@ -75,7 +75,7 @@ use base qw(Bio::Root::Root Bio::Root::IO);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Tools::FootPrinter();
+ Usage   : my $obj = Bio::Tools::FootPrinter->new();
  Function: Builds a new Bio::Tools::FootPrinter object 
  Returns : Bio::Tools::FootPrinter
  Args    : -fh/-file => $val, # for initing input, see Bio::Root::IO
@@ -161,6 +161,9 @@ sub _parse_predictions {
     $seq        .= $array[0];
     $third      .= $array[2];
   }
+  
+  $seq || return;
+  
   $name=~s/>//;
   my $feat = $self->_parse($name,$seq,$second,$third);
   $self->_add_feature($feat);
@@ -236,14 +239,14 @@ sub _parse {
 	push @words, $word;
     }
     my $last;
-    my $feat = new Bio::SeqFeature::Generic(-seq_id=>$name);
+    my $feat = Bio::SeqFeature::Generic->new(-seq_id=>$name);
     my $offset = $i = 0;
     my $count = 1;
     for my $w (@words){
         if(length($w) ) { 
 	    my $index = index($pattern,$w,$offset);
 	    $offset = $index + length($w);
-	    my $subfeat = new Bio::SeqFeature::Generic 
+	    my $subfeat = Bio::SeqFeature::Generic->new 
 		( -seq_id  =>"$name-motif".$count++,
 		  -start   => $index+1, 
 		  -end     => $index+length($w),

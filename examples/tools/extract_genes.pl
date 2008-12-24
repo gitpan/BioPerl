@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: extract_genes.pl,v 1.4 2006/02/28 02:52:11 bosborne Exp $
+# $Id: extract_genes.pl 15087 2008-12-04 02:48:00Z bosborne $
 =pod
 
 =head1 NAME

@@ -1,4 +1,4 @@
-# $Id: Individual.pm,v 1.15.4.1 2006/10/02 23:10:23 sendu Exp $
+# $Id: Individual.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::PopGen::Individual
 #
@@ -19,7 +19,7 @@ Genotype or Sequence Results
 
   use Bio::PopGen::Individual;
 
-  my $ind = new Bio::PopGen::Individual(-unique_id => $id,
+  my $ind = Bio::PopGen::Individual->new(-unique_id => $id,
                                         -genotypes => \@genotypes);
 
 =head1 DESCRIPTION
@@ -77,7 +77,7 @@ use base qw(Bio::Root::Root Bio::PopGen::IndividualI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::PopGen::Individual();
+ Usage   : my $obj = Bio::PopGen::Individual->new();
  Function: Builds a new Bio::PopGen::Individual object 
  Returns : an instance of Bio::PopGen::Individual
  Args    : -unique_id => $id,

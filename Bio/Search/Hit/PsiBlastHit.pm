@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: PsiBlastHit.pm,v 1.6.4.1 2006/10/02 23:10:24 sendu Exp $
+# $Id: PsiBlastHit.pm 14672 2008-04-22 21:42:50Z cjfields $
 #
 # BioPerl module Bio::Search::Hit::PsiBlastHit
 #
@@ -906,7 +906,7 @@ sub frame {
 
     my ($frame);
     if(not defined($self->{'_frame'})) {
-        $frame = $self->hsp->frame;
+        $frame = $self->hsp->frame('hit');
     } else {
         $frame = $self->{'_frame'};
     }

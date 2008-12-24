@@ -1,4 +1,4 @@
-# $Id: SeqDiff.pm,v 1.23.4.1 2006/10/02 23:10:38 sendu Exp $
+# $Id: SeqDiff.pm 11480 2007-06-14 14:16:21Z sendu $
 # bioperl module for Bio::Variation::SeqDiff
 #
 # Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
@@ -1051,7 +1051,7 @@ sub alignment {
 	    
 	    return unless $mut->AAChange;
 	    #translate
-	    my $tr = new Bio::Tools::CodonTable ('-id' => $mut->codon_table);
+	    my $tr = Bio::Tools::CodonTable->new('-id' => $mut->codon_table);
 	    my $apos =  $mut->AAChange->start;
 	    my $aposmax = CORE::length($self->aa_ori); #terminator codon no 
 	    my $rseqori;

@@ -1,4 +1,4 @@
-# $Id: ERPIN.pm,v 1.5.4.1 2006/10/02 23:10:32 sendu Exp $
+# $Id: ERPIN.pm 15231 2008-12-22 21:51:02Z cjfields $
 #
 # BioPerl module for Bio::Tools::ERPIN
 #
@@ -17,7 +17,7 @@ Bio::Tools::ERPIN -  a parser for ERPIN output
 =head1 SYNOPSIS
 
   use Bio::Tools::ERPIN;
-  my $parser = new Bio::Tools::ERPIN( -file => $rna_output,
+  my $parser = Bio::Tools::ERPIN->new( -file => $rna_output,
                                       -motiftag => 'protein_bind'
                                       -desctag => 'TRAP_binding');
   #parse the results
@@ -103,7 +103,7 @@ our($MotifTag,$SrcTag,$DescTag) = qw(misc_binding ERPIN erpin);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Tools::ERPIN();
+ Usage   : my $obj = Bio::Tools::ERPIN->new();
  Function: Builds a new Bio::Tools::ERPIN object 
  Returns : an instance of Bio::Tools::ERPIN
  Args    : -fh/-file for input filename
@@ -115,6 +115,7 @@ our($MotifTag,$SrcTag,$DescTag) = qw(misc_binding ERPIN erpin);
 
 sub _initialize {
     my($self,@args) = @_;
+    $self->warn('Use of this module is deprecated.  Use Bio::SearchIO::erpin instead');    
     $self->SUPER::_initialize(@args);
     my ($motiftag,$desctag,$srctag) =  $self->SUPER::_rearrange([qw(MOTIFTAG
                                                                     DESCTAG

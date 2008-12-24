@@ -1,4 +1,4 @@
-# $Id: Fasta.pm,v 1.44.4.3 2006/10/02 23:10:14 sendu Exp $
+# $Id: Fasta.pm 14950 2008-10-22 23:24:04Z jason $
 #
 # BioPerl module for Bio::DB::Fasta
 #
@@ -30,8 +30,9 @@ Bio::DB::Fasta -- Fast indexed access to a directory of fasta files
   my $db      = Bio::DB::Fasta->new('/path/to/fasta/files');
 
   my $obj     = $db->get_Seq_by_id('CHROMOSOME_I');
-  my $seq     = $obj->seq;
-  my $subseq  = $obj->subseq(4_000_000 => 4_100_000);
+  my $seq     = $obj->seq; # sequence string
+  my $subseq  = $obj->subseq(4_000_000 => 4_100_000); # string
+  my $trunc   = $obj->trunc(4_000_000 => 4_100_000); # seq object
   my $length  = $obj->length;
   # (etc)
 
@@ -74,6 +75,8 @@ Entries may have any line length up to 65,536 characters, and
 different line lengths are allowed in the same file.  However, within
 a sequence entry, all lines must be the same length except for the
 last.
+
+An error will be thrown if this is not the case.
 
 The module uses /^E<gt>(\S+)/ to extract the primary ID of each sequence 
 from the Fasta header.  During indexing, you may pass a callback routine to
@@ -420,6 +423,7 @@ use constant STRUCTBIG =>'QQnnCa*'; # 64-bit file offset and seq length
 use constant DNA     => 1;
 use constant RNA     => 2;
 use constant PROTEIN => 3;
+use constant DIE_ON_MISSMATCHED_LINES => 1; # if you want 
 
 # Bio::DB-like object
 # providing fast random access to a directory of FASTA files
@@ -427,7 +431,7 @@ use constant PROTEIN => 3;
 =head2 new
 
  Title   : new
- Usage   : my $db = new Bio::DB::Fasta( $path, @options);
+ Usage   : my $db = Bio::DB::Fasta->new( $path, @options);
  Function: initialize a new Bio::DB::Fasta object
  Returns : new Bio::DB::Fasta object
  Args    : path to dir of fasta files or a single filename
@@ -481,7 +485,7 @@ sub new {
     # that contain whitespace.
     $path = Win32::GetShortPathName($path)
       if $^O =~ /^MSWin/i && eval 'use Win32; 1';
-    $offsets = $self->index_dir($path,$opts{-reindex});
+    $offsets = $self->index_dir($path,$opts{-reindex}) or return;
     $dirname = $path;
   } elsif (-f _) {
     $offsets = $self->index_file($path,$opts{-reindex});
@@ -519,8 +523,11 @@ sub _open_index {
   my %offsets;
   my $flags = $write ? O_CREAT|O_RDWR : O_RDONLY;
   my @dbmargs = $self->dbmargs;
-  tie %offsets,'AnyDBM_File',$index,$flags,0644,@dbmargs 
-	 or $self->throw( "Can't open cache file $index: $!");
+  eval {
+      tie %offsets,'AnyDBM_File',$index,$flags,0644,@dbmargs 
+	  or die "Can't open sequence index file $index: $!";
+  };
+  warn $@ if $@;
   return \%offsets;
 }
 
@@ -547,7 +554,8 @@ sub index_dir {
 
   # find all fasta files
   my @files = glob("$dir/$self->{glob}");
-  $self->throw( "no fasta files in $dir") unless @files;
+#  $self->throw( "no fasta files in $dir") unless @files;
+  return unless @files;
 
   # get name of index
   my $index = $self->index_name($dir,1);
@@ -732,25 +740,37 @@ sub calculate_offsets {
   my $fh = IO::File->new($file) or $self->throw( "Can't open $file: $!");
   binmode $fh;
   warn "indexing $file\n" if $self->{debug};
-  my ($offset,$id,$linelength,$type,$firstline,$count,$termination_length,$seq_lines,$last_line,%offsets);
+  my ($offset,@id,$linelength,$type,$firstline,$count,
+      $termination_length,$seq_lines,$last_line,%offsets);
+  my ($l3_len,$l2_len,$l_len)=(0,0,0);
+
   while (<$fh>) {		# don't try this at home
-    $termination_length ||= /\r\n$/ ? 2 : 1;  # account for crlf-terminated Windows files
+    $termination_length ||= /\r\n$/ ? 2 : 1; # account for crlf-terminated Windows files
     if (/^>(\S+)/) {
       print STDERR "indexed $count sequences...\n" 
 	if $self->{debug} && (++$count%1000) == 0;
       my $pos = tell($fh);
-      if ($id) {
+      if (@id) {
 	my $seqlength    = $pos - $offset - length($_);
 	$seqlength      -= $termination_length * $seq_lines;
-	$offsets->{$id}  = &{$self->{packmeth}}($offset,$seqlength,
-					$linelength,$firstline,
-					$type,$base);
+	my $ppos = &{$self->{packmeth}}($offset,$seqlength,
+				       $linelength,$firstline,
+				       $type,$base);
+	for my $id (@id) { $offsets->{$id}  = $ppos }
       }
-      $id = ref($self->{makeid}) eq 'CODE' ? $self->{makeid}->($_) : $1;
+      @id = ref($self->{makeid}) eq 'CODE' ? $self->{makeid}->($_) : $1;
       ($offset,$firstline,$linelength) = ($pos,length($_),0);
       $self->_check_linelength($linelength);
+      ($l3_len,$l2_len,$l_len)=(0,0,0);
       $seq_lines = 0;
     } else {
+      $l3_len= $l2_len; $l2_len= $l_len; $l_len= length($_); # need to check every line :(
+      if (DIE_ON_MISSMATCHED_LINES &&
+	  $l3_len>0 && $l2_len>0 && $l3_len!=$l2_len) {
+	my $fap= substr($_,0,20)."..";
+	$self->throw("Each line of the fasta entry must be the same length except the last.
+    Line above #$. '$fap' is $l2_len != $l3_len chars.");
+  }
       $linelength ||= length($_);
       $type       ||= $self->_type($_);
       $seq_lines++;
@@ -760,22 +780,22 @@ sub calculate_offsets {
 
   $self->_check_linelength($linelength);
   # deal with last entry
-  if ($id) {
+  if (@id) {
     my $pos = tell($fh);
     my $seqlength   = $pos - $offset;
-
     if ($linelength == 0) { # yet another pesky empty chr_random.fa file
       $seqlength = 0;
     } else {
       if ($last_line !~ /\s$/) {
-        $seq_lines--;
+	$seq_lines--;
       }
       $seqlength -= $termination_length * $seq_lines;
     };
-    $offsets->{$id} = &{$self->{packmeth}}($offset,$seqlength,
-				   $linelength,$firstline,
-				   $type,$base);
-}
+    my $ppos = &{$self->{packmeth}}($offset,$seqlength,
+					   $linelength,$firstline,
+					   $type,$base);
+    for my $id (@id) { $offsets->{$id}  = $ppos }
+  }
   $offsets->{__termination_length} = $termination_length;
   return \%offsets;
 }

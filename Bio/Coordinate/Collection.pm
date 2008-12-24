@@ -1,4 +1,4 @@
-# $Id: Collection.pm,v 1.24.4.1 2006/10/02 23:10:13 sendu Exp $
+# $Id: Collection.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # bioperl module for Bio::Coordinate::Collection
 #
@@ -289,7 +289,7 @@ sub map {
 
    if ($value->isa("Bio::Location::SplitLocationI")) {
 
-       my $result = new Bio::Coordinate::Result;
+       my $result = Bio::Coordinate::Result->new();
        foreach my $loc ( $value->sub_Location(1) ) {
 
            my $res = $self->_map($loc);

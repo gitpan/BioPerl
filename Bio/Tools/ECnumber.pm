@@ -1,4 +1,4 @@
-# $Id: ECnumber.pm,v 1.11.4.1 2006/10/02 23:10:31 sendu Exp $
+# $Id: ECnumber.pm 10585 2006-09-29 01:42:50Z tseemann $
 #
 # BioPerl module for Bio::Tools::ECnumber
 #

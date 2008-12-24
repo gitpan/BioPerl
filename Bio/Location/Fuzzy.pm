@@ -1,4 +1,4 @@
-# $Id: Fuzzy.pm,v 1.33.4.2 2006/10/02 23:10:21 sendu Exp $
+# $Id: Fuzzy.pm 14964 2008-10-26 05:03:15Z cjfields $
 #
 # BioPerl module for Bio::Location::Fuzzy
 # Cared for by Jason Stajich <jason@bioperl.org>
@@ -16,7 +16,7 @@ which has unclear start and/or end locations
 =head1 SYNOPSIS
 
     use Bio::Location::Fuzzy;
-    my $fuzzylocation = new Bio::Location::Fuzzy(
+    my $fuzzylocation = Bio::Location::Fuzzy->new(
                                                  -start => '<30',
                                                  -end   => 90,
                                                  -location_type => '..');
@@ -110,7 +110,7 @@ our %FUZZYRANGEENCODE  = (  '\.'   => 'WITHIN',
 =head2 new
 
  Title   : new
- Usage   : my $fuzzyloc = new Bio::Location::Fuzzy( @args);
+ Usage   : my $fuzzyloc = Bio::Location::Fuzzy->new( @args);
  Function:
  Returns : 
  Args    : -start    => value for start  (initialize by superclass)
@@ -539,6 +539,17 @@ sub to_FTstring {
     }
     return $str;
 }
+
+=head2 valid_Location
+
+ Title   : valid_Location
+ Usage   : if ($location->valid_location) {...};
+ Function: boolean method to determine whether location is considered valid
+           (has minimum requirements for Simple implementation)
+ Returns : Boolean value: true if location is valid, false otherwise
+ Args    : none
+
+=cut
 
 =head2 _fuzzypointdecode
 

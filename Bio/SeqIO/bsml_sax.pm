@@ -1,4 +1,4 @@
-# $Id: bsml_sax.pm,v 1.4.4.1 2006/10/02 23:10:28 sendu Exp $
+# $Id: bsml_sax.pm 11480 2007-06-14 14:16:21Z sendu $
 # BioPerl module for Bio::SeqIO::bsml_sax
 #
 # Cared for by Jason Stajich
@@ -85,7 +85,7 @@ sub _initialize {
     $self->SUPER::_initialize(@_);
     $self->{'_parser'} = XML::SAX::ParserFactory->parser('Handler' => $self);
     if( ! defined $self->sequence_factory ) {
-	$self->sequence_factory(new Bio::Seq::SeqFactory
+	$self->sequence_factory(Bio::Seq::SeqFactory->new
 				(-verbose => $self->verbose(),
 				 -type => 'Bio::Seq::RichSeq'));
     }

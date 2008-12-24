@@ -1,4 +1,4 @@
-# $Id: Loader.pm,v 1.19.4.1 2006/10/02 23:10:21 sendu Exp $
+# $Id: Loader.pm 15257 2008-12-24 05:27:05Z cjfields $
 #
 # bioperl module for Bio::LiveSeq::IO::Loader
 #
@@ -152,7 +152,7 @@ sub gene2liveseq {
     return (0);
   }
   if (($gene_name)&&($cds_position)) {
-    carp "Gene_Name and Position cannot be given together, use one";
+    carp "Gene_Name and Position cannot be given together";
     return (0);
   } elsif ($gene_name) {
     $input=$gene_name;

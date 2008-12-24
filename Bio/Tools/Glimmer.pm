@@ -1,4 +1,4 @@
-# $Id: Glimmer.pm,v 1.4.4.1 2006/10/02 23:10:32 sendu Exp $
+# $Id: Glimmer.pm 14737 2008-06-17 23:11:19Z cjfields $
 #
 # BioPerl module for Bio::Tools::Glimmer
 #
@@ -12,29 +12,36 @@
 
 =head1 NAME
 
-Bio::Tools::Glimmer - parser for GlimmerM/GlimmerHMM eukaryotic gene predictions
+Bio::Tools::Glimmer - parser for Glimmer 2.X/3.X prokaryotic and 
+GlimmerM/GlimmerHMM eukaryotic gene predictions
 
 =head1 SYNOPSIS
 
    use Bio::Tools::Glimmer;
 
-   my $parser = new Bio::Tools::Glimmer(-file => $file);
+   # file
+   my $parser = Bio::Tools::Glimmer->new(-file => $file);
    # filehandle:
    $parser = Bio::Tools::Glimmer->new( -fh  => \*INPUT );
+   # provide a sequence identifier (Glimmer 2.X)
+   my $parser = Bio::Tools::Glimmer->new(-file => $file, -seqname => seqname);
+   # force format (override automatic detection)
+   my $parser = Bio::Tools::Glimmer->new(-file => $file, -format => 'GlimmerM');
 
    # parse the results
    # note: this class is-a Bio::Tools::AnalysisResult which implements
    # Bio::SeqAnalysisParserI, i.e., $glimmer->next_feature() is the same
 
    while(my $gene = $parser->next_prediction()) {
-       # $gene is an instance of Bio::Tools::Prediction::Gene, which inherits
-       # off Bio::SeqFeature::Gene::Transcript.
-       #
-       # $gene->exons() returns an array of 
-       # Bio::Tools::Prediction::Exon objects
-       # all exons:
-       @exon_arr = $gene->exons();
+       # For eukaryotic input (GlimmerM/GlimmerHMM), $gene will be an instance
+       # of Bio::Tools::Prediction::Gene, which inherits off
+       # Bio::SeqFeature::Gene::Transcript, and $gene->exons() will return an
+       # array of Bio::Tools::Prediction::Exon objects.
+       # For prokaryotic input (Glimmer2.X/Glimmer3.X), $gene will be an
+       # instance of Bio::SeqFeature::Generic
 
+       # all exons (eukaryotic only):
+       @exon_arr = $gene->exons();
        # initial exons only
        @init_exons = $gene->exons('Initial');
        # internal exons only
@@ -45,10 +52,13 @@ Bio::Tools::Glimmer - parser for GlimmerM/GlimmerHMM eukaryotic gene predictions
 
 =head1 DESCRIPTION
 
-This is a module for parsing GlimmerM and GlimmerHMM predictions 
+This is a module for parsing Glimmer, GlimmerM and GlimmerHMM predictions.  
 It will create gene objects from the prediction report which can 
 be attached to a sequence using Bioperl objects, or output as GFF 
 suitable for loading into Bio::DB::GFF for use with Gbrowse.
+
+Glimmer is open source and available at
+L<http://www.cbcb.umd.edu/software/glimmer/>.
 
 GlimmerM is open source and available at 
 L<http://www.tigr.org/software/glimmerm/>.
@@ -56,11 +66,13 @@ L<http://www.tigr.org/software/glimmerm/>.
 GlimmerHMM is open source and available at
 L<http://www.cbcb.umd.edu/software/GlimmerHMM/>.
 
-=head1 BUGS
+Note that Glimmer 2.X will only process the first
+sequence in a fasta file, and the prediction report does not contain any
+sort of sequence identifier
 
-This module does B<not> parse Glimmer2 or Glimmer3 bacterial gene
-prediction files. Details on their output formats can be found at
-L<http://www.cbcb.umd.edu/software/glimmer/>.
+Note that Glimmer 3.X produces two output files.  This module only parses
+the .predict file.
+
 
 =head1 FEEDBACK
 
@@ -105,6 +117,7 @@ Internal methods are usually preceded with a _
 package Bio::Tools::Glimmer;
 use strict;
 
+use Bio::Factory::FTLocationFactory;
 use Bio::Tools::Prediction::Gene;
 use Bio::Tools::Prediction::Exon;
 
@@ -124,10 +137,10 @@ sub _initialize_state {
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Tools::Glimmer();
+ Usage   : my $obj = Bio::Tools::Glimmer->new();
  Function: Builds a new Bio::Tools::Glimmer object 
  Returns : an instance of Bio::Tools::Glimmer
- Args    :
+ Args    : format ('Glimmer', 'GlimmerM', 'GlimmerHMM'), seqname
 
 
 =cut
@@ -136,6 +149,30 @@ sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
+
+  my ($format, $seqname, $seqlength, $detail) =
+      $self->_rearrange([qw(FORMAT SEQNAME SEQLENGTH DETAIL)], @args);
+
+  # override automagic format detection
+  if (defined($format) &&
+      (($format eq 'Glimmer')  ||
+       ($format eq 'GlimmerM') ||
+       ($format eq 'GlimmerHMM'))
+  ) {
+      $self->_format($format);
+  }
+  
+  if (defined($detail)) {
+      $self->_format('Glimmer');
+      $self->_detail_file($detail);
+  }
+  
+  # hardwire seq_id when creating gene and exon objects (Glimmer 2.X)
+  $self->_seqname($seqname) if defined($seqname);
+  
+  # store the length of the input sequence (Glimmer 2.X)
+  $self->_seqlength($seqlength) if defined($seqlength);
+  
   return $self;
 }
 
@@ -208,7 +245,7 @@ sub next_prediction {
 
     # if the prediction section hasn't been parsed yet, we do this now
     $self->_parse_predictions() unless $self->_predictions_parsed();
-
+    
     # get next gene structure
     $gene = $self->_prediction();
     return $gene;
@@ -226,6 +263,68 @@ sub next_prediction {
 =cut
 
 sub _parse_predictions {
+
+    my ($self) = @_;
+
+    
+    my %method = (
+                  'Glimmer'    => '_parse_prokaryotic',
+                  'GlimmerM'   => '_parse_eukaryotic',
+                  'GlimmerHMM' => '_parse_eukaryotic',
+                  '_DEFAULT_'  => '_parse_eukaryotic',
+              );
+    
+    my $format = $self->_format();
+    
+    if (!$format) {
+        
+        while (my $line = $self->_readline()) {
+
+            if ( $line =~ /^Glimmer\S*\s+\(Version\s*\S+\)/ ) {
+                $format = 'GlimmerM';
+                $self->_pushback($line);
+                last;
+            }
+            elsif ( $line =~ /^Glimmer\S*$/ ) {
+                $format = 'GlimmerHMM';
+                $self->_pushback($line);
+                last;
+            }
+            elsif ($line =~ /^Putative Genes:$/) {
+                $format = 'Glimmer';
+                $self->_pushback($line);
+                last;
+            }
+            elsif ($line =~ /^>(\S+)/) {
+                $format = 'Glimmer';
+                $self->_pushback($line);
+                last;
+            }
+            
+        }
+        
+    }
+
+    my $method =
+        (exists($method{$format})) ? $method{$format} : $method{'_DEFAULT_'};
+
+    return $self->$method();
+    
+}
+
+
+=head2 _parse_eukaryotic
+
+ Title   : _parse_eukaryotic()
+ Usage   : $obj->_parse_eukaryotic()
+ Function: Parses the prediction section. Automatically called by
+           next_prediction() if not yet done.
+ Example :
+ Returns : 
+
+=cut
+
+sub _parse_eukaryotic {
     my ($self) = @_;
 
     my ($gene,$seqname,$seqlen,$source,$lastgenenum);
@@ -234,7 +333,7 @@ sub _parse_predictions {
 	if( /^(Glimmer\S*)\s+\(Version\s*(\S+)\)/ ) {
 	    $source = "$1_$2";
 	    next;
-	} elsif( /^(Glimmer\S*)$/ ) { # GlimmerHMM has no version
+	} elsif( /^(GlimmerHMM\S*)$/ ) { # GlimmerHMM has no version
 	    $source = $1;
 	    next;
 	} elsif(/^Sequence name:\s+(.+)$/ ) {
@@ -266,7 +365,7 @@ sub _parse_predictions {
 		     '-tag'         => { 'Group' => "GenePrediction$genenum"},
 		     );
 	    }
-	    my $exon = new Bio::Tools::Prediction::Exon
+	    my $exon = Bio::Tools::Prediction::Exon->new
 		('-seq_id'     => $seqname,
 		 '-start'      => $start,
 		 '-end'        => $end,
@@ -280,6 +379,192 @@ sub _parse_predictions {
 	}
     }
     $self->_add_prediction($gene) if( $gene );
+    $self->_predictions_parsed(1);
+}
+
+=head2 _parse_prokaryotic
+
+ Title   : _parse_prokaryotic()
+ Usage   : $obj->_parse_prokaryotic()
+ Function: Parses the prediction section. Automatically called by
+           next_prediction() if not yet done.
+ Example :
+ Returns : 
+
+=cut
+
+sub _parse_prokaryotic {
+    my ($self) = @_;
+
+    # default value, possibly overriden later
+    my $source = 'Glimmer';
+
+    # Store the sequence length(s) here, either from the
+    # seqlength arg to the constructor, or from the
+    # Glimmer 3.X detail file
+    my %seqlength = ( );
+    
+    # Glimmer 2.X does not provide a sequence identifer
+    # in the prediction report (will default to unknown
+    # if not specified in the seqname arg to the
+    # constructor
+    #
+    # Glimmer 2.X does not report the length of the
+    # input sequence, either (will default to undef
+    # if not specified in the seqlength arg to the
+    # constructor
+    my $seqname = $self->_seqname();
+    my $seqlength = $self->_seqlength();
+
+    if (defined($seqlength)) {
+        $seqlength{$seqname} = $seqlength
+    }
+
+    # Parse the detail file, if we have one (Glimmer 3.X)
+    my $detail_file = $self->_detail_file();
+    
+    if (defined($detail_file)) {
+
+        my $io = Bio::Root::IO->new(-file => $detail_file);
+        my $seqname;
+        
+        while (defined($_ = $io->_readline())) {
+            if ($_ =~ /^>(\S+)/) {
+                $seqname = $1;
+                next;
+            }
+
+            if (defined($seqname) && ($_ =~ /^Sequence length = (\d+)$/)) {
+                $seqlength{$seqname} = $1;
+                next;
+            }
+        }
+    }
+    
+    my $location_factory = Bio::Factory::FTLocationFactory->new();
+    
+    while(defined($_ = $self->_readline())) {
+        # Glimmer 3.X does provide a sequence identifier -
+        # beware whitespace at the end (comes through from
+        # the fasta file)
+        if ($_ =~ /^Putative Genes:$/) {
+            $source = 'Glimmer_2.X';
+            next;
+        }
+        # Glimmer 3.X sequence identifier
+        elsif ($_ =~ /^>(\S+)/) {
+            $seqname = $1;
+            $seqlength = $seqlength{$seqname};
+            $source = 'Glimmer_3.X';
+            next;
+        }        
+        elsif (
+               # Glimmer 2.X prediction 
+               (/^\s+(\d+)\s+      # gene num
+                (\d+)\s+(\d+)\s+   # start, end
+                \[([\+\-])(\d{1})\s+ # strand, frame
+                /ox ) ||
+               # Glimmer 3.X prediction
+               (/^[^\d]+(\d+)\s+    # orf (numeric portion)
+                (\d+)\s+(\d+)\s+   # start, end
+                ([\+\-])(\d{1})\s+   # strand, frame
+                ([\d\.]+)          # score
+                /ox)) {
+	    my ($genenum,$start,$end,$strand,$frame,$score) = 
+		( $1,$2,$3,$4,$5,$6 );
+
+            my $circular_prediction = 0;
+
+            # Check for a circular prediction before we
+            # start fiddling with the coordinates
+            if ($strand eq '+') {
+                if ($start > $end) {
+                    $circular_prediction = 1;
+                }
+            }
+            else {
+                if ($start < $end) {
+                    $circular_prediction = 1;
+                }
+            }
+
+            if ($circular_prediction) {
+                unless (defined($seqlength)) {
+                    $self->throw("need to know the sequence length to handle wraparound genes");
+                }
+            }
+            
+            # Glimmer 2.X predictions do not include
+            # the stop codon - this might extend the
+            # prediction off either end of the sequence.
+            # This works fine even on circular/wraparound
+            # predictions.  
+            if ($source eq 'Glimmer_2.X') {
+                if ($strand eq '+') { 
+                    $end += 3;
+                }
+                else {
+                    $end -= 3;
+                }
+            }
+
+            # We might have extended a Glimmer 2.X prediction
+            # beyond the boundaries of the input sequence.
+            # Also, Glimmer 3.X (with -X) will output predictions
+            # with coordinates less than 1 or greater than the
+            # length of the sequence.
+            my ($fst, $fend);
+            foreach my $coord ($start, $end) {
+                if ($coord < 1) {
+                    $coord = '<1';
+                    $fst++;
+                } elsif (defined($seqlength) && ($coord > $seqlength)) {
+                    $coord = ">$seqlength";
+                    $fend++;
+                }
+            }
+            
+            my $location_string;
+
+            if ($circular_prediction) {
+                if ($strand eq '+') {
+                    $location_string = "join($start..$seqlength,1..$end)";
+                }
+                else {
+                    $location_string = "join($start..1,$seqlength..$end)";
+                }
+                }
+            else {
+                # start must always be less than end for gene locations
+                if ($strand eq '-' && !$fst && !$fend && $start > $end) {
+                    ($start, $end) = ($end, $start);
+                }
+                $location_string = "$start..$end";
+            }
+            
+            my $location_object =
+                $location_factory->from_string($location_string);
+            
+            # convert glimmer's frame range from 1-3 to SeqFeature's 0-2.
+            $frame--;
+            
+            my $gene = Bio::SeqFeature::Generic->new
+                (
+                 '-seq_id'      => $seqname,
+                 '-location'   => $location_object,
+                 '-strand'     => $strand eq '-' ? '-1' : '1',
+                 '-frame'		=> $frame,
+                 '-source_tag'  => $source,
+                 '-display_name' => "orf$genenum",
+                 '-primary_tag'=> 'gene',
+                 '-tag'         => { 'Group' => "GenePrediction_$genenum"},
+                 '-score'       => $score || undef
+             );
+            
+            $self->_add_prediction($gene) 
+	}
+    }
+    
     $self->_predictions_parsed(1);
 }
 
@@ -339,5 +624,76 @@ sub _predictions_parsed {
     return $self->{'_preds_parsed'};
 }
 
+=head2 _seqname
+
+ Title   : _seqname
+ Usage   : $obj->_seqname($seqname)
+ Function: internal (for Glimmer 2.X)
+ Example :
+ Returns : String
+
+=cut
+
+sub _seqname {
+    my ($self, $val) = @_;
+
+    $self->{'_seqname'} = $val if $val;
+    if(! exists($self->{'_seqname'})) {
+	$self->{'_seqname'} = 'unknown';
+    }
+    return $self->{'_seqname'};
+}
+
+=head2 _seqlength
+
+ Title   : _seqlength
+ Usage   : $obj->_seqlength($seqlength)
+ Function: internal (for Glimmer 2.X)
+ Example :
+ Returns : String
+
+=cut
+
+sub _seqlength {
+    my ($self, $val) = @_;
+
+    $self->{'_seqlength'} = $val if $val;
+    return $self->{'_seqlength'};
+}
+
+=head2 _format
+
+ Title   : _format
+ Usage   : $obj->_format($format)
+ Function: internal
+ Example :
+ Returns : String
+
+=cut
+
+sub _format {
+    my ($self, $val) = @_;
+
+    $self->{'_format'} = $val if $val;
+
+    return $self->{'_format'};
+}
+
+=head2 _detail_file
+
+ Title   : _detail_file
+ Usage   : $obj->_detail_file($filename)
+ Function: internal (for Glimmer 3.X)
+ Example :
+ Returns : String
+
+=cut
+
+sub _detail_file {
+    my ($self, $val) = @_;
+
+    $self->{'_detail_file'} = $val if $val;
+    return $self->{'_detail_file'};
+}
 
 1;

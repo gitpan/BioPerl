@@ -1,4 +1,4 @@
-# $Id: ELM.pm,v 1.12.4.1 2006/10/02 23:10:32 sendu Exp $
+# $Id: ELM.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module for Bio::Tools::Analysis::Protein::ELM
 #

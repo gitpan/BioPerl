@@ -1,4 +1,4 @@
-# $Id: Mutator.pm,v 1.33.4.3 2006/10/02 23:10:21 sendu Exp $
+# $Id: Mutator.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # bioperl module for Bio::LiveSeq::Mutator
 #
@@ -593,24 +593,24 @@ sub create_mutation {
     
     if ($len == 1 and $refstring =~ /[^\.\-\*\?]/ and 
 	$varstring  =~ /[^\.\-\*\?]/ ) { #point
-	$mutation = new Bio::LiveSeq::Mutation (-seq => $varstring,
+	$mutation = Bio::LiveSeq::Mutation->new(-seq => $varstring,
 						-pos => $pos,
 						);
     }
     elsif ( $refstring =~ /^[^\.\-\*\?]+$/ and 
 	    $varstring  !~ /^[^\.\-\*\?]+$/ ) { # deletion
-	$mutation = new Bio::LiveSeq::Mutation (-pos => $pos,
+	$mutation = Bio::LiveSeq::Mutation->new(-pos => $pos,
 						-len => $len
 						);
     }
     elsif ( $refstring !~ /^[^\.\-\*\?]+$/ and 
 	    $varstring  =~ /^[^\.\-\*\?]+$/ ) { # insertion
-	$mutation = new Bio::LiveSeq::Mutation (-seq => $varstring,
+	$mutation = Bio::LiveSeq::Mutation->new(-seq => $varstring,
 						-pos => $pos,
 						-len => 0
 						);
     } else { # complex
-	$mutation = new Bio::LiveSeq::Mutation (-seq => $varstring,
+	$mutation = Bio::LiveSeq::Mutation->new(-seq => $varstring,
 						-pos => $pos,
 						-len => $len
 						);

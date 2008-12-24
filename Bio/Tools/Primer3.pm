@@ -1,4 +1,4 @@
-# $Id: Primer3.pm,v 1.20.4.1 2006/10/02 23:10:32 sendu Exp $
+# $Id: Primer3.pm 14772 2008-07-30 19:01:52Z cjfields $
 #
 # BioPerl module for Bio::Tools::Primer3
 #
@@ -384,7 +384,7 @@ sub _separate {
 		if ($tempkey =~ s/_(\d+)//) {
 			$location=$1;
 			if ($location > $maxlocation) {$maxlocation = $location}
-		} elsif ( $tempkey =~ /PRIMER_(RIGHT|LEFT)/ ) {
+		} elsif ( $tempkey =~ /PRIMER_(RIGHT|LEFT)_SEQUENCE/ ) {
 			# first primers reported without a number, therefore set $location to 0
 			$location = 0;
 			if ($location > $maxlocation) {$maxlocation = $location}

@@ -1,4 +1,4 @@
-# $Id: Comment.pm,v 1.12.6.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: Comment.pm 14708 2008-06-10 00:08:17Z heikki $
 #
 # BioPerl module for Bio::Annotation::Comment
 #
@@ -43,9 +43,6 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Annotation::Comment;
 use strict;
-use overload '""' => sub { $_[0]->text || ''};
-use overload 'eq' => sub { "$_[0]" eq "$_[1]" };
-
 
 use base qw(Bio::Root::Root Bio::AnnotationI);
 
@@ -67,11 +64,11 @@ sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
-  my ($text,$tag) = $self->_rearrange([qw(TEXT TAGNAME)], @args);
+  my ($text,$tag, $type) = $self->_rearrange([qw(TEXT TAGNAME TYPE)], @args);
 
   defined $text && $self->text($text);
   defined $tag && $self->tagname($tag);
-
+  defined $type && $self->type($type);
   return $self;
 }
 
@@ -95,6 +92,34 @@ sub as_text{
    my ($self) = @_;
 
    return "Comment: ".$self->text;
+}
+
+=head2 display_text
+
+ Title   : display_text
+ Usage   : my $str = $ann->display_text();
+ Function: returns a string. Unlike as_text(), this method returns a string
+           formatted as would be expected for te specific implementation.
+
+           One can pass a callback as an argument which allows custom text
+           generation; the callback is passed the current instance and any text
+           returned
+ Example :
+ Returns : a string
+ Args    : [optional] callback
+
+=cut
+
+{
+  my $DEFAULT_CB = sub {$_[0]->text || ''};
+
+  sub display_text {
+    my ($self, $cb) = @_;
+    $cb ||= $DEFAULT_CB;
+    $self->throw("Callback must be a code reference") if ref $cb ne 'CODE';
+    return $cb->($self);
+  }
+
 }
 
 =head2 hash_tree
@@ -173,6 +198,42 @@ sub text{
 
 }
 
+=head2 value
 
+ Title   : value
+ Usage   : $value = $self->value($newval)
+ Function: Alias of the 'text' method
+ Example :
+ Returns : value of text
+ Args    : newvalue (optional)
+
+
+=cut
+
+
+*value = \&text;
+
+=head2 type
+
+ Title   : type
+ Usage   : $value = $self->type($newval)
+ Function: get/set for the comment type field.  The comment type
+           is normally found as a subfield within comment sections
+           in some files, such as SwissProt
+ Example : 
+ Returns : value of text
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub type {
+   my ($self,$type) = @_;
+   if( defined $type) {
+      $self->{'type'} = $type;
+    }
+    return $self->{'type'};
+
+}
 
 1;

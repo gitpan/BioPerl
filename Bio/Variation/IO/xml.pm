@@ -1,4 +1,4 @@
-# $Id: xml.pm,v 1.19.4.1 2006/10/02 23:10:38 sendu Exp $
+# $Id: xml.pm 11480 2007-06-14 14:16:21Z sendu $
 # BioPerl module for Bio::Variation::IO::xml
 #
 # Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
@@ -137,12 +137,12 @@ sub _variant {
 	}
     } else { # create new variants
 	if ($term->gi eq 'DNA') {
-	    $var = new Bio::Variation::DNAMutation;
+	    $var = Bio::Variation::DNAMutation->new();
 	}
 	elsif ($term->gi eq 'RNA') {
-	    $var = new Bio::Variation::RNAChange;
+	    $var = Bio::Variation::RNAChange->new();
 	} else { # AA
-	    $var = new Bio::Variation::AAChange;
+	    $var = Bio::Variation::AAChange->new();
 	}
 
 	# these are always present

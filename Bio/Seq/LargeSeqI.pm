@@ -1,4 +1,4 @@
-# $Id $
+# $Id: LargeSeqI.pm 14920 2008-10-07 22:06:40Z cjfields $
 #
 # BioPerl module for Bio::Seq::LargeSeqI
 #

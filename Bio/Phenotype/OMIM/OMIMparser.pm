@@ -1,4 +1,4 @@
-# $Id: OMIMparser.pm,v 1.20.4.1 2006/10/02 23:10:22 sendu Exp $
+# $Id: OMIMparser.pm 15095 2008-12-06 11:01:13Z dave_messina $
 #
 # BioPerl module for Bio::Phenotype::OMIM::OMIMparser
 #
@@ -405,9 +405,7 @@ sub genemap_file_name {
 
     if ( defined $value ) {
         $self->{ "_genemap_file_name" } = $value;
-        if ( $value =~ /\W/ ) {
-            _genemap_hash( $self->_read_genemap( $value ) );
-        }
+        $self->_genemap_hash( $self->_read_genemap( $value ) );
     }
     
     return $self->{ "_genemap_file_name" };
@@ -432,7 +430,7 @@ sub omimtxt_file_name {
     if ( defined $value ) {
         $self->{ "_omimtxt_file_name" } = $value;
         if ( $value =~ /\W/ ) {
-            $self->_OMIM_text_file( new Bio::Root::IO->new( -file => $value ) );
+            $self->_OMIM_text_file( Bio::Root::IO->new->new( -file => $value ) );
         } 
     }
     
@@ -874,7 +872,7 @@ sub _read_genemap {
     
     my $line         = "";
     my %genemap_hash = ();
-    my $genemap_file = new Bio::Root::IO->new( -file => $genemap_file_name );
+    my $genemap_file = Bio::Root::IO->new( -file => $genemap_file_name );
     my @a            = ();
     my %gm           = ();
     
@@ -882,7 +880,8 @@ sub _read_genemap {
         @a = split( /\|/, $line );
         unless( scalar( @a ) == 18 ) {
             $self->throw( "Gene map file \"".$self->genemap_file_name()
-            . "\" is not in the expected format" );
+            . "\" is not in the expected format."
+            . " Make sure there is a linebreak after the final line." );
         }
         $gm{ $a[ 9 ] } = $line;
     }

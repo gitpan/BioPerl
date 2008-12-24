@@ -83,7 +83,7 @@ use URI::Escape;
 use base qw(Bio::FeatureIO);
 
 use constant DEFAULT_VERSION => 3;
-my $RESERVED_TAGS   = "ID|Name|Alias|Parent|Target|Gap|Derives_from|Note|Dbxref|Ontology_term|Index";
+my $RESERVED_TAGS   = "ID|Name|Alias|Parent|Target|Gap|Derives_from|Note|Dbxref|dbxref|Ontology_term|Index|CRUD";
 
 sub _initialize {
   my($self,%arg) = @_;
@@ -98,16 +98,12 @@ sub _initialize {
   }
   else {
     my $directive;
-    while(($directive = $self->_readline()) && ( $directive =~ /^##/ || $directive =~ /^>/)){
+    while(($directive = $self->_readline()) && ($directive =~ /^##/) ){
       $self->_handle_directive($directive);
     }
     $self->_pushback($directive);
   }
-
-  if ($arg{-file} =~ /^>.*/ ) {
-    $self->_print("##gff-version " . $self->version() . "\n");
-  }
-
+  
   #need to validate against SOFA, no SO
   if ($self->validate) {
     $self->so(
@@ -201,7 +197,8 @@ sub next_feature_group {
   while ($self->{group_not_done} && ($feat = $self->next_feature()) && defined($feat)) {
 	# we start by collecting all features in the group and
 	# memorizing those which have an ID attribute
-	if(my $anno_ID = $feat->get_Annotations('ID')) {
+    my $anno_ID = $feat->get_Annotations('ID');
+	if(ref($anno_ID)) {
       my $attr_ID = $anno_ID->value;
       $self->throw("Oops! ID $attr_ID exists more than once in your file!")
 		if (exists($seen_ids{$attr_ID}));
@@ -332,7 +329,7 @@ sub sequence_region {
     return $v;
   }
   elsif(defined($k)){
-    return $self->{'sequence-region'}{$k};
+    return $self->{'sequence_region'}{$k};
   }
   else {
     return;
@@ -451,6 +448,8 @@ sub _handle_directive {
     # for these we want to store the seqid, start, and end. Then when we validate
     # we want to make sure that the features are within the seqid/start/end
 
+    $self->throw('Both start and end for sequence region should be defined')
+      unless $arg[1] && $arg[2];
     my $fta = Bio::Annotation::OntologyTerm->new();
     $fta->name( 'region');
 
@@ -492,6 +491,11 @@ sub _handle_directive {
     $self->{group_not_done} = 0;
   }
 
+  elsif($directive eq 'organism') {
+    my $organism = $arg[0];
+    $self->organism($organism);
+  }
+
   else {
     $self->throw("don't know what do do with directive: '##".$directive."'");
   }
@@ -512,7 +516,7 @@ sub _handle_feature {
   my($seq,$source,$type,$start,$end,$score,$strand,$phase,$attribute_string) = split /\t/, $feature_string;
 
   $feat->seq_id($seq);
-  $feat->source($source);
+  $feat->source_tag($source);
   $feat->start($start) unless $start eq '.';
   $feat->end($end) unless $end eq '.';
   $feat->strand($strand eq '+' ? 1 : $strand eq '-' ? -1 : 0);
@@ -594,7 +598,7 @@ sub _handle_feature {
 
       # remove leading and trailing quotes from values
       $values =~ s/^["']//;
-      $values =~ s/["']$//;
+      $values =~ s/["']$//; #' terminate the quote for emacs
 
       my @values = map{uri_unescape($_)} split ',', $values;
 
@@ -610,8 +614,8 @@ sub _handle_feature {
   }
 
   #Handle Dbxref attributes
-  if($attr{Dbxref}){
-    foreach my $value (@{ $attr{Dbxref} }){
+  if($attr{Dbxref} or $attr{dbxref}){
+    foreach my $value (@{ $attr{Dbxref} }, @{ $attr{dbxref} }){
       my $a = Bio::Annotation::DBLink->new();
       my($db,$accession) = $value =~ /^(.+?):(.+)$/;
 
@@ -720,7 +724,7 @@ sub _handle_feature {
     $feat->add_Annotation('Name',$a);
   }
 
-  foreach my $other_canonical (qw(Alias Parent Note Derives_from Index)){
+  foreach my $other_canonical (qw(Alias Parent Note Derives_from Index CRUD)){
     if($attr{$other_canonical}){
       foreach my $value (@{ $attr{$other_canonical} }){
         my $a = Bio::Annotation::SimpleValue->new();
@@ -732,6 +736,7 @@ sub _handle_feature {
 
   my @non_reserved_tags = grep {/^[a-z]/} keys %attr;
   foreach my $non_reserved_tag (@non_reserved_tags) {
+    next if ($non_reserved_tag eq 'dbxref');
     foreach my $value (@{ $attr{$non_reserved_tag} }){
       $feat = $self->_handle_non_reserved_tag($feat,$non_reserved_tag,$value);
     }
@@ -770,12 +775,32 @@ sub _handle_non_reserved_tag {
   #  do something different
   # else { do what is below
 
-  my $a = Bio::Annotation::SimpleValue->new();
-  $a->value($value);
+  my $a;
+  if ($tag eq 'comment') {
+    $a = Bio::Annotation::Comment->new();
+  }
+  else {
+    $a = Bio::Annotation::SimpleValue->new();
+  }
+  $a->value($value); 
   $feat->add_Annotation($tag,$a);
-
+  
   return $feat;
 }
+
+=head1 organims
+
+Gets/sets the organims from the organism directive
+
+=cut
+
+sub organism {
+    my $self = shift;
+    my $organism = shift if defined(@_);
+    return $self->{'organism'} = $organism if defined($organism);
+    return $self->{'organism'};
+}
+
 
 =head1 _write_feature_1()
 
@@ -809,25 +834,29 @@ sub _write_feature_25 {
   my($self,$feature,$group) = @_;
 
   #the top-level feature is an aggregate of all subfeatures
+  my ($transcript_id, $gene_id) = (($feature->get_Annotations('transcript_id'))[0], ($feature->get_Annotations('gene_id'))[0]);
   if(!defined($group)){
-    $group = ($feature->get_Annotations('ID'))[0]->value;
+    $group = ($feature->get_Annotations('ID'))[0];
+    $transcript_id ||= $group;
+    $gene_id ||= $group;
   }
+  
 
-  my $seq    = $feature->seq_id->value;
+  my $seq    = ref($feature->seq_id) ? $feature->seq_id->value : $feature->seq_id;
   my $source = $feature->source->value;
   my $type   = $feature->type->name;
   $type = 'EXON' if $type eq 'exon'; #a GTF peculiarity, incosistent with the sequence ontology.
   my $min    = $feature->start   || '.';
   my $max    = $feature->end     || '.';
   my $strand = $feature->strand == 1 ? '+' : $feature->strand == -1 ? '-' : '.';
-  my $score  = $feature->score->value;
-  my $phase  = $feature->phase->value;
+  my $score  = defined($feature->score) ? (ref($feature->score) ? $feature->score->value : $feature->score) : '.'; # score is optional
+  my $frame  = defined($feature->frame) ? (ref($feature->frame) ? $feature->frame->value : $feature->frame) : (ref($feature->phase) ? $feature->phase->value : $feature->phase);
 
   #these are the only valid types in a GTF document
   if($type eq 'EXON' or $type eq 'CDS' or $type eq 'start_codon' or $type eq 'stop_codon'){
-    my $attr = sprintf('gene_id "%s"; transcript_id "%s";',$group,$group);
+    my $attr = sprintf('gene_id "%s"; transcript_id "%s";',$gene_id ? $gene_id->value : '',$transcript_id ? $transcript_id->value : '');
     my $outstring = sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-                            $seq,$source,$type,$min,$max,$score,$strand,$phase,$attr);
+                            $seq,$source,$type,$min,$max,$score,$strand,$frame eq '.' ? 0 : $frame,$attr);
 
     $self->_print($outstring);
   }
@@ -845,7 +874,7 @@ write a feature in GFF v3 format.
 
 sub _write_feature_3 {
   my($self,$feature) = @_;
-  my $seq    = $feature->seq_id->value;
+  my $seq    = ref($feature->seq_id) ? $feature->seq_id->value : $feature->seq_id;
   my $source;
   if ($feature->source()) {
     $source = $feature->source->value;
@@ -859,7 +888,7 @@ sub _write_feature_3 {
   my $min    = $feature->start   || '.';
   my $max    = $feature->end     || '.';
   my $strand = $feature->strand == 1 ? '+' : $feature->strand == -1 ? '-' : '.';
-  my $score  = $feature->score->value;
+  my $score  = defined($feature->score) ? (ref($feature->score) ? $feature->score->value : $feature->score) : undef;
   my $phase  = $feature->phase->value;
 
   my @attr;

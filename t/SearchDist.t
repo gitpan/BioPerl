@@ -1,40 +1,21 @@
-# -*-Perl-*-
-## Bioperl Test Harness Script for Modules
-##
+# -*-Perl-*- Test Harness script for Bioperl
+# $Id: SearchDist.t 15112 2008-12-08 18:12:38Z sendu $
 
-my $error;
 use strict;
+
 BEGIN { 
-    # to handle systems with no installed Test module
-    # we include the t dir (where a copy of Test.pm is located)
-    # as a fallback
-    $error = 0; 
-    eval { require Test; };
-    if( $@ ) {
-	use lib 't';
-    }
-    use Test;
-    plan tests => 3;
-
-    eval { local * STDERR; require Bio::Ext::Align };
-    if ( $@ ) {
-	foreach ( 1..3) {
-	    skip('Bio::Ext::Align not loaded',1);
-	}
-        $error = 1;
-    }
+    use lib '.';
+    use Bio::Root::Test;
+    
+    test_begin(-tests => 3,
+			   -requires_module => 'Bio::Ext::Align');
+	
+	use_ok('Bio::SearchDist');
 }
 
-if( $error == 1 ) { 
-    exit(0);
-}
+my $dist = Bio::SearchDist->new();
 
-require Bio::SearchDist;
-ok(1);
-
-my $dist = new Bio::SearchDist;
-
-ok ref($dist), 'Bio::SearchDist';
+isa_ok $dist, 'Bio::SearchDist';
 
 my @scores;
 foreach my $i ( 1..5000 ) {
@@ -48,5 +29,6 @@ foreach my $i ( 1..5000 ) {
 # as the distribution is not gaussian, it gives
 # non-sensical results    
 
-ok $dist->fit_Gaussian(1200), 1;
+is $dist->fit_Gaussian(1200), 1;
 
+# TODO? there are no useful tests here!

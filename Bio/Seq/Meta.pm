@@ -1,4 +1,4 @@
-# $Id: Meta.pm,v 1.12.4.2 2006/11/08 19:00:33 cjfields Exp $
+# $Id: Meta.pm 15065 2008-12-02 21:41:42Z cjfields $
 #
 # BioPerl module for Bio::Seq::Meta
 #
@@ -22,7 +22,7 @@ residue-based meta information
   use Bio::Tools::OddCodes;
   use Bio::SeqIO;
 
-  my $seq = Bio::LocatableSeq->new(-id=>'test',
+  my $seq = Bio::Seq::Meta->new(-id=>'test',
                                    -seq=>'ACTGCTAGCT',
                                    -start=>2434,
                                    -end=>2443,
@@ -30,7 +30,6 @@ residue-based meta information
                                    -verbose=>1, # to see warnings
                                   );
 
-  bless $seq, Bio::Seq::Meta;
   # the existing sequence object can be a Bio::PrimarySeq, too
 
   # to test this is a meta seq object
@@ -60,7 +59,6 @@ residue-based meta information
 
   my $out = Bio::SeqIO->new(-format=>'metafasta');
   $out->write_seq($seq);
-
 
 =head1 DESCRIPTION
 
@@ -124,6 +122,15 @@ name will silently store the data under a wrong name. The used names
 (keys) can be retrieved using method meta_names(). See L<meta_names>.
 
 =back
+
+=head1 NOTE
+
+This Bio::Seq::MetaI implementation inherits from Bio::LocatableSeq, which
+itself inherits from Bio::PrimarySeq. It is not a Bio::SeqI, so bless-ing
+objects of this class into a Bio::SeqI or vice versa and will not work as
+expected (see bug 2262). This may be addressed in a future refactor of
+Bio::LocatableSeq.
+
 
 =head1 SEE ALSO
 
@@ -208,16 +215,21 @@ sub new {
 
     my $self = $class->SUPER::new(@args);
 
-    my($meta, $forceflush) =
+    my($meta, $forceflush, $nm) =
         $self->_rearrange([qw(META
                               FORCE_FLUSH
-                              )],
+                              NAMED_META)],
                           @args);
 
     #$self->{'_meta'} = {};
     $self->{'_meta'}->{$DEFAULT_NAME} = "";
 
     $meta && $self->meta($meta);
+    if ($nm && ref($nm) eq 'HASH') {
+        while (my ($name, $meta) = each %$nm) {
+            $self->named_meta($name, $meta);
+        }
+    }
     $forceflush && $self->force_flush($forceflush);
 
     return $self;

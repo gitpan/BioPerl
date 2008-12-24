@@ -1,4 +1,4 @@
-# $Id: GDB.pm,v 1.20.4.2 2006/10/02 23:10:14 sendu Exp $
+# $Id: GDB.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::DB::GDB
 #
@@ -19,7 +19,7 @@ Bio::DB::GDB - Database object interface to GDB HTTP query
 
     use Bio::DB::GDB;
 
-    $gdb = new Bio::DB::GDB;
+    $gdb = Bio::DB::GDB->new();
 
     $info = $gdb->get_info(-type => 'marker',
 			                  -id => 'D1S243'); # Marker name

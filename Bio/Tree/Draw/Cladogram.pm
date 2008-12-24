@@ -1,4 +1,4 @@
-# Cladogram.pm,v 1.8 2005/09/04 07:35:05 valiente Exp
+# $Id: Cladogram.pm 14716 2008-06-11 06:48:28Z heikki $
 #
 # BioPerl module for Cladogram
 #
@@ -19,16 +19,16 @@ Encapsulated PostScript (EPS) format.
 
   use Bio::Tree::Draw::Cladogram;
   use Bio::TreeIO;
-  my $treeio = new Bio::TreeIO('-format' => 'newick',
+  my $treeio = Bio::TreeIO->new('-format' => 'newick',
   			       '-file'   => 'input.nwk');
   my $t1 = $treeio->next_tree;
   my $t2 = $treeio->next_tree;
 
-  my $obj1 = new Bio::Tree::Draw::Cladogram(-tree => $t1);
+  my $obj1 = Bio::Tree::Draw::Cladogram->new(-tree => $t1);
   $obj1->print(-file => 'cladogram.eps');
 
   if ($t2) {
-    my $obj2 = new Bio::Tree::Draw::Cladogram(-tree => $t1, -second => $t2);
+    my $obj2 = Bio::Tree::Draw::Cladogram->new(-tree => $t1, -second => $t2);
     $obj2->print(-file => 'tanglegram.eps');
   }
 
@@ -110,8 +110,6 @@ Internal methods are usually preceded with a _
 package Bio::Tree::Draw::Cladogram;
 use strict;
 
-# Object preamble - inherits from Bio::Root::Root
-
 use PostScript::TextBlock;
 
 use base qw(Bio::Root::Root);
@@ -137,11 +135,12 @@ my $colors;    # use colors to color edges
 my %Rcolor;    # red color for each node
 my %Gcolor;    # green color for each node
 my %Bcolor;    # blue color for each node
+my $bootstrap; # Draw Bootstrap boolean
 
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Tree::Draw::Cladogram();
+ Usage   : my $obj = Bio::Tree::Draw::Cladogram->new();
  Function: Builds a new Bio::Tree::Draw::Cladogram object 
  Returns : Bio::Tree::Draw::Cladogram
  Args    : -tree => Bio::Tree::Tree object
@@ -157,6 +156,7 @@ my %Bcolor;    # blue color for each node
            -compact => ignore branch lengths [boolean] (optional)
            -ratio => horizontal to vertical ratio [integer] (optional)
            -colors => use colors to color edges [boolean] (optional)
+           -bootstrap => draw bootstrap or internal ids [boolean]
 
 =cut
 
@@ -165,9 +165,10 @@ sub new {
 
   my $self = $class->SUPER::new(@args);
   ($t1, $t2, $font, $size, my $top, my $bottom, my $left, my $right,
-    $tip, my $column, $compact, $ratio, $colors) = $self->_rearrange([qw(TREE
-    SECOND FONT SIZE TOP BOTTOM LEFT RIGHT TIP COLUMN
-    COMPACT RATIO COLORS INHERIT)], @args);
+    $tip, my $column, $compact, $ratio, $colors,$bootstrap) = 
+	$self->_rearrange([qw(TREE SECOND FONT SIZE TOP BOTTOM LEFT RIGHT 
+			      TIP COLUMN COMPACT RATIO COLORS BOOTSTRAP)], 
+				   @args);
   $font ||= "Helvetica-Narrow";
   $size ||= 12;
   $top ||= 10;
@@ -179,6 +180,7 @@ sub new {
   $compact ||= 0;
   $ratio ||= 1 / 1.6180339887;
   $colors ||= 0;
+  $bootstrap ||= 0;
 
   # Roughly, a cladogram is set according to the following parameters.
 
@@ -446,11 +448,19 @@ sub print {
       # print $xx{$node}, " ", $yy{$node}, " lineto\n";
       if ($colors) {
 	print $INFO "stroke\n";
-	print $INFO $Rcolor{$node->ancestor}, " ", $Gcolor{$node->ancestor}, " ", $Bcolor{$node->ancestor}, " setrgbcolor\n";
+	print $INFO $Rcolor{$node}, " ", $Gcolor{$node}, " ", 
+	$Bcolor{$node}, " setrgbcolor\n";
       }
       print $INFO $xx{$node}, " ", $yy{$node}, " moveto\n";
       print $INFO $xx{$node->ancestor}, " ", $yy{$node}, " lineto\n";
+      if( $bootstrap ) {
+	  print $INFO $xx{$node->ancestor}+ $size/10, " ", $yy{$node->ancestor} - ($size / 3), " moveto\n";
+	  print $INFO "(", $node->ancestor->id, ") show\n";
+	  print $INFO $xx{$node->ancestor}, " ", $yy{$node}, " moveto\n";
+      }
       print $INFO $xx{$node->ancestor}, " ", $yy{$node->ancestor}, " lineto\n";
+      
+      
     }
   }
   my $ymin = $yy{$root1};

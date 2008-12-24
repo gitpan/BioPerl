@@ -1,4 +1,4 @@
-# $Id: SNP.pm,v 1.16.4.1 2006/10/02 23:10:38 sendu Exp $
+# $Id: SNP.pm 10525 2006-09-26 22:03:22Z sendu $
 # bioperl module for Bio::Variation::SNP
 #
 # Copyright Allen Day <allenday@ucla.edu>, Stan Nelson <snelson@ucla.edu>

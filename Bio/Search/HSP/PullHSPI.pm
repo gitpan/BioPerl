@@ -1,4 +1,4 @@
-# $Id: PullHSPI.pm,v 1.1.2.2 2006/10/02 23:10:24 sendu Exp $
+# $Id: PullHSPI.pm 15084 2008-12-03 22:31:23Z cjfields $
 #
 # BioPerl module for Bio::Search::HSP::PullHSPI
 #
@@ -14,29 +14,32 @@ Bio::Search::HSP::PullHSPI - Bio::Search::HSP::HSPI interface for pull parsers.
 
 =head1 SYNOPSIS
 
-	# This is an interface and cannot be instantiated
+  # This is an interface and cannot be instantiated
 
-    # generally we use Bio::SearchIO to build these objects
-    use Bio::SearchIO;
-    my $in = new Bio::SearchIO(-format => 'hmmer_pull',
-							   -file   => 'result.hmmer');
+  # generally we use Bio::SearchIO to build these objects
+  use Bio::SearchIO;
+  my $in = Bio::SearchIO->new(-format => 'hmmer_pull',
+                              -file   => 'result.hmmer');
 
-    while (my $result = $in->next_result) {
-		while (my $hit = $result->next_hit) {
-			while (my $hsp = $hit->next_hsp) {
-                $r_type = $hsp->algorithm;
-                $pvalue = $hsp->p();
-                $evalue = $hsp->evalue();
-                $frac_id = $hsp->frac_identical( ['query'|'hit'|'total'] );
-                $frac_cons = $hsp->frac_conserved( ['query'|'hit'|'total'] );
-                $gaps = $hsp->gaps( ['query'|'hit'|'total'] );
-                $qseq = $hsp->query_string;
-                $hseq = $hsp->hit_string;
-                $homo_string = $hsp->homology_string;
-                $len = $hsp->length( ['query'|'hit'|'total'] );
-                $len = $hsp->length( ['query'|'hit'|'total'] );
-                $rank = $hsp->rank;
-            }
+  while (my $result = $in->next_result) {
+      while (my $hit = $result->next_hit) {
+          while (my $hsp = $hit->next_hsp) {
+              $r_type = $hsp->algorithm;
+              $pvalue = $hsp->p();
+              $evalue = $hsp->evalue();
+              $frac_id = $hsp->frac_identical( ['query'|'hit'|'total'] );
+              $frac_cons = $hsp->frac_conserved( ['query'|'hit'|'total'] );
+              $gaps = $hsp->gaps( ['query'|'hit'|'total'] );
+              $qseq = $hsp->query_string;
+              $hseq = $hsp->hit_string;
+              $homo_string = $hsp->homology_string;
+              $len = $hsp->length( ['query'|'hit'|'total'] );
+              $len = $hsp->length( ['query'|'hit'|'total'] );
+              $rank = $hsp->rank;
+          }
+      }
+  }
+
 
 =head1 DESCRIPTION
 
@@ -258,7 +261,7 @@ sub frac_identical {
 	$type = 'total' if (! defined $type || $type eq 'hsp' || $type !~ /query|hit|subject|sbjct|total/);
 	
 	my $ratio = $self->num_identical($type) / $self->length($type);
-    return sprintf( "%.3f", $ratio);
+    return sprintf( "%.4f", $ratio);
 }
 
 =head2 frac_conserved
@@ -284,7 +287,7 @@ sub frac_conserved {
 	$type = 'total' if (! defined $type || $type eq 'hsp' || $type !~ /query|hit|subject|sbjct|total/);
 	
 	my $ratio = $self->num_conserved($type) / $self->length($type);
-    return sprintf( "%.3f", $ratio);
+    return sprintf( "%.4f", $ratio);
 }
 
 =head2 num_identical
@@ -321,8 +324,8 @@ sub num_conserved {
 
  Title    : gaps
  Usage    : my $gaps = $hsp->gaps( ['query'|'hit'|'total'] );
- Function : Get the number of gaps in the query, hit, or total alignment.
- Returns  : Integer, number of gaps or 0 if none
+ Function : Get the number of gap characters in the query, hit, or total alignment.
+ Returns  : Integer, number of gap characters or 0 if none
  Args     : 'query', 'hit' or 'total'; default = 'total' 
 
 =cut
@@ -460,7 +463,7 @@ sub get_aln {
 	
     require Bio::LocatableSeq;
     require Bio::SimpleAlign;
-    my $aln = new Bio::SimpleAlign;
+    my $aln = Bio::SimpleAlign->new();
     my $hs = $self->seq('hit');
     my $qs = $self->seq('query');
 	if ($hs && $qs) {
@@ -666,7 +669,8 @@ sub strand {
  Title   : start
  Usage   : $hsp->start('query')
  Function: Retrieves the start for the HSP component requested
- Returns : integer
+ Returns : integer, or list of two integers (query start and subject start) in
+           list context
  Args    : 'hit' or 'subject' or 'sbjct' to retrieve the start of the subject
            'query' to retrieve the query start (default)
 
@@ -675,7 +679,7 @@ sub strand {
 sub start {
     my $self = shift;
     my $val = shift;
-    $val = 'query' unless defined $val;
+    $val = (wantarray ? 'list' : 'query') unless defined $val;
     $val =~ s/^\s+//;
 
     if ($val =~ /^q/i) { 
@@ -698,7 +702,8 @@ sub start {
  Title   : end
  Usage   : $hsp->end('query')
  Function: Retrieves the end for the HSP component requested
- Returns : integer
+ Returns : integer, or list of two integers (query end and subject end) in
+           list context
  Args    : 'hit' or 'subject' or 'sbjct' to retrieve the end of the subject
            'query' to retrieve the query end (default)
 
@@ -707,7 +712,7 @@ sub start {
 sub end {
     my $self = shift;
     my $val = shift;
-    $val = 'query' unless defined $val;
+    $val = (wantarray ? 'list' : 'query') unless defined $val;
     $val =~ s/^\s+//;
 
     if ($val =~ /^q/i) { 
@@ -747,13 +752,15 @@ sub seq {
 	
     my $str = $self->seq_str($seqType) || return;
     require Bio::LocatableSeq;
-    my $id = $seqType =~ /^q/i ? $self->query->seq_id : $self->hit->seq_id;
-    return new Bio::LocatableSeq (  -ID    => $id,
-                                    -SEQ   => $str,
-                                    -START => $self->start($seqType),
-                                    -END   => $self->end($seqType),
-                                    -STRAND=> $self->strand($seqType),
-                                    -DESC  => "$seqType sequence " );
+    my $id = ($seqType =~ /^q/i) ? $self->query->seq_id : $self->hit->seq_id;
+    return Bio::LocatableSeq->new(  -ID        => $id,
+                                    -SEQ       => $str,
+                                    -START     => $self->start($seqType),
+                                    -END       => $self->end($seqType),
+                                    -STRAND    => $self->strand($seqType),
+                                    -FORCE_NSE => $id ? 0 : 1,
+                                    -DESC      => "$seqType sequence " );
+
 }
 
 =head2 seq_str

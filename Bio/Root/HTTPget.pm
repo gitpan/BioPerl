@@ -1,4 +1,4 @@
-# $Id: HTTPget.pm,v 1.14.4.1 2006/10/02 23:10:23 sendu Exp $
+# $Id: HTTPget.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for fallback HTTP get operations.
 # Module is proxy-aware 
@@ -19,7 +19,7 @@ LWP:: is unavailable
 =head1 SYNOPSIS
 
  use Bio::Root::HTTPget;
- my $web = new Bio::Root::HTTPget;
+ my $web = Bio::Root::HTTPget->new();
 
  my $response = $web->get('http://localhost');
  $response    = $web->get('http://localhost/images');

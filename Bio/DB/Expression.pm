@@ -1,4 +1,4 @@
-# $Id: Expression.pm,v 1.4.4.1 2006/10/02 23:10:14 sendu Exp $
+# $Id: Expression.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::DB::Expression
 #
@@ -75,7 +75,7 @@ our $DefaultSource = 'geo';
 
 =head2 new()
 
- Usage   : my $obj = new Bio::DB::Expression();
+ Usage   : my $obj = Bio::DB::Expression->new();
  Function: Builds a new Bio::DB::Expression object 
  Returns : an instance of Bio::DB::Expression
  Args    :

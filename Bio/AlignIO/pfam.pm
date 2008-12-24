@@ -1,4 +1,4 @@
-# $Id: pfam.pm,v 1.12.4.3 2006/10/02 23:10:12 sendu Exp $
+# $Id: pfam.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::AlignIO::pfam
 
@@ -95,7 +95,7 @@ sub next_aln {
 	$seq = $4;
 
 
-	$add = new Bio::LocatableSeq('-seq'=>$seq,
+	$add = Bio::LocatableSeq->new('-seq'=>$seq,
 			    '-id'=>$name,
 			    '-start'=>$start,
 			    '-end'=>$end,

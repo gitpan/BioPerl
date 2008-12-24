@@ -1,4 +1,4 @@
-# $Id: Sample.pm,v 1.3.4.1 2006/10/02 23:10:17 sendu Exp $
+# $Id: Sample.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Expression::Sample
 #
@@ -62,7 +62,7 @@ use base qw(Bio::Root::Root);
 
 =head2 new()
 
- Usage   : my $obj = new Bio::Expression::Sample();
+ Usage   : my $obj = Bio::Expression::Sample->new();
  Function: Builds a new Bio::Expression::Sample object 
  Returns : an instance of Bio::Expression::Sample
  Args    :

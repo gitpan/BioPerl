@@ -1,4 +1,4 @@
-# $Id: Results.pm,v 1.25.4.1 2006/10/02 23:10:37 sendu Exp $
+# $Id: Results.pm 10554 2006-09-28 04:09:02Z tseemann $
 #
 # BioPerl module for Bio::Tools::Sim4::Results
 #

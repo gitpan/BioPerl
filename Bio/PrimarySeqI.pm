@@ -1,4 +1,4 @@
-# $Id: PrimarySeqI.pm,v 1.65.4.4 2006/10/02 23:10:12 sendu Exp $
+# $Id: PrimarySeqI.pm 11281 2007-03-08 17:40:32Z nathan $
 #
 # BioPerl module for Bio::PrimarySeqI
 #
@@ -299,6 +299,13 @@ sub alphabet{
     my ( $self ) = @_;
     $self->throw_not_implemented();
 }
+
+=head2 moltype
+
+ Title   : moltype
+ Usage   : Deprecated. Use alphabet() instead.
+
+=cut
 
 sub moltype{
    my ($self,@args) = @_;

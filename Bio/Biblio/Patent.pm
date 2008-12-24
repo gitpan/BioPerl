@@ -1,4 +1,4 @@
-# $Id: Patent.pm,v 1.14.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: Patent.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Biblio::Patent
 #
@@ -13,11 +13,11 @@ Bio::Biblio::Patent - Representation of a patent
 
 =head1 SYNOPSIS
 
-    $obj = new Bio::Biblio::Patent (-doc_number => '1-2-3-4-5');
+    $obj = Bio::Biblio::Patent->new(-doc_number => '1-2-3-4-5');
 
   #--- OR ---
 
-    $obj = new Bio::Biblio::Patent;
+    $obj = Bio::Biblio::Patent->new();
     $obj->doc_number ('1-2-3-4-5');
 
 =head1 DESCRIPTION

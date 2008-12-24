@@ -1,4 +1,4 @@
-# $Id: Genomewise.pm,v 1.6.4.1 2006/10/02 23:10:32 sendu Exp $
+# $Id: Genomewise.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Tools::Genomewise
 #
@@ -18,7 +18,7 @@ Bio::Tools::Genomewise - Results of one Genomewise run
   my $gw = Bio::Tools::Genomewise(-file=>"genomewise.out");
 
   while (my $gene = $gw->next_prediction){
-      my @transcripts = $gw->transcripts;
+      my @transcripts = $gene->transcripts;
       foreach my $t(@transcripts){
         my @exons =  $t->exons;
         foreach my $e(@exons){
@@ -163,22 +163,22 @@ sub next_prediction {
 
     my $genes;
     while ($_ = $self->_readline) {
-	$self->debug( $_ ) if( $self->verbose > 0);
+	$self->debug( $_ );
 	last if m{^//};
 
 	if( /^Gene\s+\d+\s*$/ ) {
-	    $genes = new Bio::SeqFeature::Gene::GeneStructure
+	    $genes = Bio::SeqFeature::Gene::GeneStructure->new
 		(-source => $Srctag,
 		 -seq_id => $self->_target_id, # if this had been specified
 		 );
 	    $_ = $self->_readline;
-	    $self->debug( $_ ) if( $self->verbose > 0);
+	    $self->debug( $_ );
 
 	    unless ( /^Gene\s+(\d+)\s+(\d+)\s*$/ ) {
 		$self->warn("Unparseable genomewise output");
 		last;
 	    }
-	    my $transcript = new Bio::SeqFeature::Gene::Transcript
+	    my $transcript = Bio::SeqFeature::Gene::Transcript->new
 		(-source => $Srctag,
 		 -seq_id => $self->_target_id, # if this had been specified
 		 -start  => $1,
@@ -186,7 +186,7 @@ sub next_prediction {
 		 );
 	    my $nbr = 1;
 	    while( $_ = $self->_readline ) {    
-		$self->debug( $_ ) if( $self->verbose > 0);
+		$self->debug( $_ );
 
 		unless( m/^\s+Exon\s+(\d+)\s+(\d+)\s+phase\s+(\d+)/ ){
 		    $self->_pushback($_);
@@ -198,7 +198,7 @@ sub next_prediction {
 								 $e_end);
 		$transcript->strand($e_strand) unless $transcript->strand != 0;
 		
-		my $exon = new Bio::SeqFeature::Gene::Exon 
+		my $exon = Bio::SeqFeature::Gene::Exon->new 
 		    (-seq_id=>$self->_target_id,
 		     -source => $Srctag,
 		     -start=>$e_start, 

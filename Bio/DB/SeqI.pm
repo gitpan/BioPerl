@@ -1,6 +1,6 @@
 
 #
-# $Id: SeqI.pm,v 1.10.4.1 2006/10/02 23:10:15 sendu Exp $
+# $Id: SeqI.pm 10554 2006-09-28 04:09:02Z tseemann $
 #
 # BioPerl module for Bio::DB::SeqI.pm
 #

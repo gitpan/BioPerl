@@ -1,41 +1,33 @@
-# -*-Perl-*-
-## Bioperl Test Harness Script for Modules
-## $Id: Symbol.t,v 1.1 2001/10/01 15:36:15 jason Exp $
+# -*-Perl-*- Test Harness script for Bioperl
+# $Id: Symbol.t 15112 2008-12-08 18:12:38Z sendu $
 
 use strict;
 
 BEGIN { 
-    # to handle systems with no installed Test module
-    # we include the t dir (where a copy of Test.pm is located)
-    # as a fallback
-    eval { require Test; };
-    if( $@ ) {
-	use lib 't';
-    }
-    use Test;
-
-    plan tests => 8;
+    use lib '.';
+    use Bio::Root::Test;
+    
+    test_begin(-tests => 9);
+	
+	use_ok('Bio::Symbol::Symbol');
 }
 
-use Bio::Symbol::Symbol;
-
-my $thymine = new Bio::Symbol::Symbol(-name => 'Arg',
+ok my $thymine = Bio::Symbol::Symbol->new(-name => 'Arg',
 				      -token=> 'R');
-my $a = new Bio::Symbol::Symbol(-token => 'A' );
-my $u = new Bio::Symbol::Symbol(-token => 'U' );
-my $g = new Bio::Symbol::Symbol(-token => 'G' );
+my $a = Bio::Symbol::Symbol->new(-token => 'A' );
+my $u = Bio::Symbol::Symbol->new(-token => 'U' );
+my $g = Bio::Symbol::Symbol->new(-token => 'G' );
 
-ok($thymine);
-ok($thymine->name, "Arg");
-ok($thymine->token, "R");
-my $M = new Bio::Symbol::Symbol(-name  => 'Met',
+is($thymine->name, "Arg");
+is($thymine->token, "R");
+my $M = Bio::Symbol::Symbol->new(-name  => 'Met',
 				-token => 'M',
 				-symbols => [ $a, $u, $g ]);
 
-ok($M->name, "Met");
-ok($M->token, 'M');
+is($M->name, "Met");
+is($M->token, 'M');
 my @symbols = $M->symbols;
 my @expected = ($a, $u, $g);
 foreach ( 0..2 ) {
-    ok($expected[$_], $symbols[$_]);
+    is($expected[$_], $symbols[$_]);
 }

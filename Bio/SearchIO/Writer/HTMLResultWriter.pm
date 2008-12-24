@@ -1,4 +1,4 @@
-# $Id: HTMLResultWriter.pm,v 1.38.4.1 2006/10/02 23:10:27 sendu Exp $
+# $Id: HTMLResultWriter.pm 14697 2008-06-04 14:22:22Z heikki $
 #
 # BioPerl module for Bio::SearchIO::Writer::HTMLResultWriter
 #
@@ -22,11 +22,11 @@ Bio::SearchIO::Writer::HTMLResultWriter - write a Bio::Search::ResultI in HTML
   use Bio::SearchIO;
   use Bio::SearchIO::Writer::HTMLResultWriter;
 
-  my $in = new Bio::SearchIO(-format => 'blast',
+  my $in = Bio::SearchIO->new(-format => 'blast',
 			     -file   => shift @ARGV);
 
-  my $writer = new Bio::SearchIO::Writer::HTMLResultWriter();
-  my $out = new Bio::SearchIO(-writer => $writer);
+  my $writer = Bio::SearchIO::Writer::HTMLResultWriter->new();
+  my $out = Bio::SearchIO->new(-writer => $writer);
   $out->write_result($in->next_result);
 
 
@@ -41,9 +41,9 @@ Bio::SearchIO::Writer::HTMLResultWriter - write a Bio::Search::ResultI in HTML
       return $hsp->num_hits > 0;
   }
 
-  my $writer = new Bio::SearchIO::Writer::HTMLResultWriter
+  my $writer = Bio::SearchIO::Writer::HTMLResultWriter->new
                      (-filters => { 'HSP' => \&hsp_filter} );
-  my $out = new Bio::SearchIO(-writer => $writer);
+  my $out = Bio::SearchIO->new(-writer => $writer);
   $out->write_result($in->next_result);
 
   # can also set the filter via the writer object
@@ -52,7 +52,7 @@ Bio::SearchIO::Writer::HTMLResultWriter - write a Bio::Search::ResultI in HTML
 =head1 DESCRIPTION
 
 This object implements the SearchWriterI interface which will produce
-a set of HTML for a specific L<Bio::Search::Report::ReportI interface>.
+a set of HTML for a specific L<Bio::Search::Report::ReportI> interface.
 
 See L<Bio::SearchIO::SearchWriterI> for more info on the filter method.
 
@@ -99,7 +99,7 @@ use vars qw(%RemoteURLDefault
 # Object preamble - inherits from Bio::Root::RootI
 
 BEGIN {
-    $Revision = '$Id: HTMLResultWriter.pm,v 1.38.4.1 2006/10/02 23:10:27 sendu Exp $';
+    $Revision = '$Id: HTMLResultWriter.pm 14697 2008-06-04 14:22:22Z heikki $';
     $DATE = localtime(time);
     %RemoteURLDefault = ( 
       'PROTEIN' => 'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=protein&cmd=search&term=%s',			  
@@ -115,7 +115,7 @@ use base qw(Bio::Root::Root Bio::SearchIO::SearchWriterI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::SearchIO::Writer::HTMLResultWriter();
+ Usage   : my $obj = Bio::SearchIO::Writer::HTMLResultWriter->new();
  Function: Builds a new Bio::SearchIO::Writer::HTMLResultWriter object 
  Returns : Bio::SearchIO::Writer::HTMLResultWriter
  Args    : -filters => hashref with any or all of the keys (HSP HIT RESULT)
@@ -208,7 +208,6 @@ sub to_string {
 
     my ($qtype,$dbtype,$dbseqtype,$type);
     my $alg = $result->algorithm;
-
     # This is actually wrong for the FASTAs I think
     if(  $alg =~ /T(FAST|BLAST)([XY])/i ) {
 	$qtype      = $dbtype = 'translated';
@@ -239,7 +238,7 @@ sub to_string {
 		     'Query:'   => ( $qtype  eq 'translated' )  ? 3 : 1);
 
     my $str;
-    if( ! defined $num || $num <= 1 ) { 
+    if( $num <= 1 ) { 
 	$str = &{$self->start_report}($result);
     }
 
@@ -282,8 +281,8 @@ sub to_string {
 	    # no HSPs so no link 
 	    $str .= sprintf('<tr><td>%s %s</td><td>%s</td><td>%.2g</td></tr>'."\n",
 			    $url_desc, $descsub, 
-			    ($hit->raw_score ? $hit->raw_score : 
-			     (defined $hsps[0] ? $hsps[0]->score : ' ')),
+			    ($hit->bits ? $hit->bits : 
+			     (defined $hsps[0] ? $hsps[0]->bits : ' ')),
 			    ( $hit->significance ? $hit->significance :
 			      (defined $hsps[0] ? $hsps[0]->evalue : ' ')) 
 			    );
@@ -293,16 +292,16 @@ sub to_string {
 
 	    $str .= sprintf('<tr><td>%s %s</td><td>%s</td><td><a href="#%s">%.2g</a></td></tr>'."\n",
 			    $url_desc, $descsub, 
-			    ($hit->raw_score ? $hit->raw_score : 
-			     (defined $hsps[0] ? $hsps[0]->score : ' ')),
+			    ($hit->bits ? $hit->bits : 
+			     (defined $hsps[0] ? $hsps[0]->bits : ' ')),
 			    $acc,
 			    ( $hit->significance ? $hit->significance :
 			      (defined $hsps[0] ? $hsps[0]->evalue : ' ')) 
 			    );
+        my $dline = &{$self->hit_desc_line}($self, $hit, $result);
 	    $hspstr .= "<a name=\"$acc\">\n".
-		sprintf("><b>%s</b> %s\n<dd>Length = %s</dd><p>\n\n", $url_align, 
-			defined $hit->description ? $hit->description : '', 
-			&_numwithcommas($hit->length));
+		sprintf("><b>%s</b> %s</br><dd>Length = %s</dd><p>\n\n", $url_align, 
+			$dline , &_numwithcommas($hit->length));
 	    my $ct = 0;
 	    foreach my $hsp (@hsps ) {
 		next if( $hspfilter && ! &{$hspfilter}($hsp) );
@@ -417,7 +416,7 @@ sub to_string {
 						    length($hspvals[2]->{'start'}),
 						    length($hspvals[2]->{'end'}));
 		my $count = 0;
-		while ( $count <= $hsp->length('total') ) {
+		while ( $count < $hsp->length('total') ) {
 		    foreach my $v ( @hspvals ) {
 			my $piece = substr($v->{'seq'}, $v->{'index'} + $count,
 					   $AlignmentLineWidth);
@@ -453,19 +452,28 @@ sub to_string {
 #	$hspstr .= "</pre>\n";
     }
 
-
-    # make table of search statistics and end the web page
-    $str .= "</table><p>\n".$hspstr."<p><p><hr><h2>Search Parameters</h2><table border=1><tr><th>Parameter</th><th>Value</th>\n";
+    $str .= "</table><p>\n".$hspstr;
+    my ($pav, $sav) = ($result->available_parameters, $result->available_statistics);
+    if ($pav || $sav) {
+        # make table of search statistics and end the web page
+        $str .= "<p><p><hr><h2>Search Parameters</h2>";
+        if ($pav) {
+        $str .= "<table border=1><tr><th>Parameter</th><th>Value</th>\n";
+        foreach my $param ( sort $result->available_parameters ) {
+            $str .= "<tr><td>$param</td><td>". $result->get_parameter($param) ."</td></tr>\n";
+        }
+        $str .= "</table>";
+        }
         
-    foreach my $param ( sort $result->available_parameters ) {
-	$str .= "<tr><td>$param</td><td>". $result->get_parameter($param) ."</td></tr>\n";
-	
+        if ($sav) {
+        $str .= "<p><h2>Search Statistics</h2><table border=1><tr><th>Statistic</th><th>Value</th></tr>\n";
+        foreach my $stat ( sort $result->available_statistics ) {
+            $str .= "<tr><td>$stat</td><td>". $result->get_statistic($stat). "</td>\n";
+        }
+        $str .=  "</tr></table>";
+        }
     }
-    $str .= "</table><p><h2>Search Statistics</h2><table border=1><tr><th>Statistic</th><th>Value</th></tr>\n";
-    foreach my $stat ( sort $result->available_statistics ) {
-	$str .= "<tr><td>$stat</td><td>". $result->get_statistic($stat). "</td></tr>\n";
-    }
-    $str .=  "</table><P>".$self->footer() . "<P>\n";
+    $str .= $self->footer() . "<P>\n";
     return $str;
 }
 
@@ -495,7 +503,7 @@ sub hit_link_desc{
 
 =head2 default_hit_link_desc
 
- Title   : defaulthit_link_desc
+ Title   : default_hit_link_desc
  Usage   : $self->default_hit_link_desc($hit, $result)
  Function: Provides an HTML link(s) for the given hit to be used
            within the description section at the top of the BLAST report.
@@ -557,6 +565,79 @@ sub hit_link_align {
         $self->{'_hit_link_align'} = $code;
     }
     return $self->{'_hit_link_align'} || \&default_hit_link_desc;
+}
+
+=head2 hit_desc_line
+
+ Title   : hit_desc_line
+ Usage   : $self->hit_desc_line(\&link_function);
+ Function: Get/Set the function which provides HTML for the description
+           information from a hit. This allows one to parse
+           the rest of the description and split up lines, add links, etc.
+ Returns : Function reference
+ Args    : Function reference
+ See Also: L<default_hit_link_desc()>
+
+=cut
+
+sub hit_desc_line{
+    my( $self, $code ) = @_; 
+    if ($code) {
+        $self->{'_hit_desc_line'} = $code;
+    }
+    return $self->{'_hit_desc_line'} || \&default_hit_desc_line;
+}
+
+=head2 default_hit_desc_line
+
+ Title   : default_hit_desc_line
+ Usage   : $self->default_hit_desc_line($hit, $result)
+ Function: Parses the description line information, splits based on the
+           hidden \x01 between independent descriptions, checks the lines for
+           possible web links, and adds HTML link(s) for the given hit to be
+           used.
+
+ Returns : string containing HTML markup "<a href...")
+           The default implementation returns an HTML link to the
+           URL supplied by the remote_database_url() method
+           and using the identifier supplied by the id_parser() method.
+           It will use the NCBI GI if present, and the accession if not.
+
+ Args    : First argument is a Bio::Search::Hit::HitI
+           Second argument is a Bio::Search::Result::ResultI
+
+See Also: L<hit_link_align>, L<remote_database>, L<id_parser>
+
+=cut
+
+sub default_hit_desc_line {
+    my($self, $hit, $result) = @_;
+    my $type = ( $result->algorithm =~ /(P|X|Y)$/i ) ? 'PROTEIN' : 'NUCLEOTIDE';
+    my @descs = split /\x01/, $hit->description;
+    #my $descline = join("</br>",@descs)."</br>";
+    my $descline = '';
+    #return $descline;
+    for my $sec (@descs) {
+        my $url = '';
+        if ($sec =~ s/((?:gi\|(\d+)\|)?        # optional GI
+                     (\w+)\|([A-Z\d\.\_]+) # main 
+                     (\|[A-Z\d\_]+)?) # optional secondary ID//xms) {
+            my ($name, $gi, $db, $acc) = ($1, $2, $3, $4);
+            #$acc ||= ($rest) ? $rest : $gi;
+            $acc =~ s/^\s+(\S+)/$1/;
+            $acc =~ s/(\S+)\s+$/$1/;
+            $url =
+            length($self->remote_database_url($type)) > 0 ? 
+              sprintf('<a href="%s">%s</a> %s',
+                      sprintf($self->remote_database_url($type),
+                      $gi || $acc || $db), 
+                      $name, $sec) :  $sec;
+        } else {
+            $url = $sec;
+        }
+        $descline .= "$url</br>\n";
+    }
+    return $descline;
 }
 
 =head2 start_report

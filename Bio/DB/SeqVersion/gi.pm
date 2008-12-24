@@ -1,4 +1,4 @@
-# $Id: gi.pm,v 1.4.4.2 2006/10/05 12:17:55 sendu Exp $
+# $Id: gi.pm 10663 2006-10-03 03:42:29Z tseemann $
 #
 # BioPerl module for Bio::DB::SeqVersion::gi
 #

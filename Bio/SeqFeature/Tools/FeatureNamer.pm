@@ -1,4 +1,4 @@
-# $Id: FeatureNamer.pm,v 1.6.4.1 2006/10/02 23:10:28 sendu Exp $
+# $Id: FeatureNamer.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # bioperl module for Bio::SeqFeature::Tools::FeatureNamer
 #

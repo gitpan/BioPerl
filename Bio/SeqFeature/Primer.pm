@@ -1,4 +1,4 @@
-# $Id: Primer.pm,v 1.21.4.1 2006/10/02 23:10:28 sendu Exp $
+# $Id: Primer.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::SeqFeature::Primer
 #
@@ -178,7 +178,7 @@ sub new {
     if (ref($args{$argument}) eq "Bio::Seq") {$self->{seq} = $args{$argument}}
     else {
      unless ($args{-id}) {$args{-id}="SeqFeature Primer object"}
-     $self->{seq} = new Bio::Seq( -seq => $args{$argument}, -id => $args{-id});
+     $self->{seq} = Bio::Seq->new( -seq => $args{$argument}, -id => $args{-id});
     }
     $self->{$argument} = $self->{seq};
     push (@{$self->{arguments}}, "seq");

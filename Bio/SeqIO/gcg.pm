@@ -1,4 +1,4 @@
-# $Id: gcg.pm,v 1.26.4.1 2006/10/02 23:10:29 sendu Exp $
+# $Id: gcg.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::SeqIO::gcg
 #
@@ -74,7 +74,7 @@ sub _initialize {
   my($self,@args) = @_;
   $self->SUPER::_initialize(@args);
   if( ! defined $self->sequence_factory ) {
-      $self->sequence_factory(new Bio::Seq::SeqFactory
+      $self->sequence_factory(Bio::Seq::SeqFactory->new
 			      (-verbose => $self->verbose(),
 			       -type => 'Bio::Seq::RichSeq'));
    }
@@ -121,14 +121,14 @@ sub next_seq {
        }
 
        next if($_ eq "\n");       ## skip whitespace lines in formatted seq
-       s/[^a-zA-Z]//g;            ## remove anything that is not alphabet char
+       s/[\d\s\t]//g;            ## remove anything that is not alphabet char: preserve anything that is not explicitly specified for removal (Stefan Kirov)
        # $_ = uc($_);               ## uppercase sequence: NO. Keep the case. HL
        $sequence .= $_;
    }
    ##If we parsed out a checksum, we might as well test it
 
    if(defined $chksum) {
-       unless(_validate_checksum($sequence,$chksum)) {
+       unless(_validate_checksum(uc($sequence),$chksum)) {
 	   $self->throw("Checksum failure on parsed sequence.");
        }
    }

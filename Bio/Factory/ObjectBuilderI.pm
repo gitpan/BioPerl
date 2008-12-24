@@ -1,4 +1,4 @@
-# $Id: ObjectBuilderI.pm,v 1.5.4.1 2006/10/02 23:10:18 sendu Exp $
+# $Id: ObjectBuilderI.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module for Bio::Factory::ObjectBuilderI
 #

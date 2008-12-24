@@ -1,4 +1,4 @@
-# $Id: CollectionI.pm,v 1.5.4.1 2006/10/02 23:10:28 sendu Exp $
+# $Id: CollectionI.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::SeqFeature::CollectionI
 #
@@ -22,12 +22,12 @@ Bio::SeqFeature::CollectionI - An interface for a collection of SeqFeatureI obje
 
 
     use Bio::SeqFeature::Collection;
-    my $collection = new Bio::SeqFeature::Collection;
+    my $collection = Bio::SeqFeature::Collection->new();
     $collection->add_features(\@featurelist);
 
 
     $collection->features(-attributes => 
-			  [ { 'location' => new Bio::Location::Simple
+			  [ { 'location' => Bio::Location::Simple->new
 				  (-start=> 1, -end => 300) ,
 				  'overlaps' }]);
 

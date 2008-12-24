@@ -38,7 +38,7 @@
 #   Bio::SearchIO
 #
 # Author: Steve Chervitz <sac@bioperl.org>
-# Revision: $Id: hitwriter.pl,v 1.4 2004/05/06 02:11:46 sac Exp $
+# Revision: $Id: hitwriter.pl 15087 2008-12-04 02:48:00Z bosborne $
 
 use strict;
 use lib '../../';

@@ -1,4 +1,4 @@
-# $Id: Physical.pm,v 1.8.4.3 2006/10/02 23:10:21 sendu Exp $
+# $Id: Physical.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Map::Physical
 #
@@ -19,7 +19,7 @@ Bio::Map::Physical - A class for handling a Physical Map (such as FPC)
     use Bio::MapIO;
 
     # accquire a Bio::Map::Physical using Bio::MapIO::fpc
-    my $mapio = new Bio::MapIO(-format => "fpc",-file => "rice.fpc",
+    my $mapio = Bio::MapIO->new(-format => "fpc",-file => "rice.fpc",
                                -readcor => 0);
 
     my $physical = $mapio->next_map();

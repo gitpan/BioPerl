@@ -1,4 +1,4 @@
-# $Id: pubmedxml.pm,v 1.8.4.1 2006/10/02 23:10:13 sendu Exp $
+# $Id: pubmedxml.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module Bio::Biblio::IO::pubmedxml.pm
 #
@@ -17,7 +17,7 @@ Do not use this object directly, it is recommended to access it and use
 it through the I<Bio::Biblio::IO> module:
 
   use Bio::Biblio::IO;
-  my $io = new Bio::Biblio::IO (-format => 'pubmedxml');
+  my $io = Bio::Biblio::IO->new(-format => 'pubmedxml');
 
 =head1 DESCRIPTION
 

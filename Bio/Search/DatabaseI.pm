@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: DatabaseI.pm,v 1.10.4.1 2006/10/02 23:10:24 sendu Exp $
+# $Id: DatabaseI.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module Bio::Search::DatabaseI
 #

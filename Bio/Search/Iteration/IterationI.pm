@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: IterationI.pm,v 1.8.4.1 2006/10/02 23:10:24 sendu Exp $
+# $Id: IterationI.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module Bio::Search::Iteration::IterationI
 #
@@ -26,7 +26,7 @@ iteration from an iterated search result, such as PSI-BLAST.
     # First, open up a SearchIO stream
     use Bio::SearchIO;
     my $file = shift or die "Usage: $0 <BLAST-report-file>\n";
-    my $in = new Bio::SearchIO(-format => 'blast',
+    my $in = Bio::SearchIO->new(-format => 'blast',
                                -file => $file # comment out this line to read STDIN
                               );
     # Iterate over all results in the input stream

@@ -1,6 +1,6 @@
 # BioPerl module for Bio::Tools::Pseudowise
 #
-# $Id: Pseudowise.pm,v 1.10.4.1 2006/10/02 23:10:32 sendu Exp $
+# $Id: Pseudowise.pm 10525 2006-09-26 22:03:22Z sendu $
 # 
 # Copyright Jason Stajich, Fugu Team 
 #

@@ -1,4 +1,4 @@
-# $Id: MapI.pm,v 1.15.4.4 2006/10/17 09:35:22 sendu Exp $
+# $Id: MapI.pm 10742 2006-10-17 09:26:55Z sendu $
 #
 # BioPerl module for Bio::Map::MapI
 #

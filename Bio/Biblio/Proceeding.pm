@@ -1,4 +1,4 @@
-# $Id: Proceeding.pm,v 1.13.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: Proceeding.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Biblio::Proceeding
 #
@@ -13,11 +13,11 @@ Bio::Biblio::Proceeding - Representation of a conference proceeding
 
 =head1 SYNOPSIS
 
-    $obj = new Bio::Biblio::Proceeding (-title => 'JavaONE');
+    $obj = Bio::Biblio::Proceeding->new(-title => 'JavaONE');
 
   #--- OR ---
 
-    $obj = new Bio::Biblio::Proceeding;
+    $obj = Bio::Biblio::Proceeding->new();
     $obj->title ('JavaONE');
 
 =head1 DESCRIPTION

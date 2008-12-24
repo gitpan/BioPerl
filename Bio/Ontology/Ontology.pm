@@ -1,4 +1,4 @@
-# $Id: Ontology.pm,v 1.18.4.3 2006/10/02 23:10:22 sendu Exp $
+# $Id: Ontology.pm 14832 2008-08-27 16:33:51Z cjfields $
 #
 # BioPerl module for Bio::Ontology::Ontology
 #
@@ -108,7 +108,7 @@ use base qw(Bio::Root::Root Bio::Ontology::OntologyI Bio::AnnotatableI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Ontology::Ontology();
+ Usage   : my $obj = Bio::Ontology::Ontology->new();
  Function: Builds a new Bio::Ontology::Ontology object
  Returns : an instance of Bio::Ontology::Ontology
  Args    : any number of named arguments. The following names will be
@@ -448,8 +448,9 @@ sub get_relationships {
 
 sub get_predicate_terms{
     my $self = shift;
-
-    return grep { $_->ontology->name eq $self->name;
+    
+    # skipped Bio::Ontology::Relationship w/o defined Ontology (bug 2573)
+    return grep { $_->ontology && ($_->ontology->name eq $self->name)
               } $self->engine->get_predicate_terms(@_);
 }
 

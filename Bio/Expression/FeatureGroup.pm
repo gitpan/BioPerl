@@ -1,4 +1,4 @@
-# $Id: FeatureGroup.pm,v 1.8 2006/07/04 22:23:15 mauricio Exp $
+# $Id: FeatureGroup.pm 10084 2006-07-04 22:23:29Z mauricio $
 # BioPerl module for Bio::Expression::FeatureGroup
 #
 # Copyright Allen Day <allenday@ucla.edu>, Stanley Nelson <snelson@ucla.edu>

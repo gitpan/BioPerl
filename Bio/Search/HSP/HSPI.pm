@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: HSPI.pm,v 1.36.4.2 2006/10/02 23:10:24 sendu Exp $
+# $Id: HSPI.pm 15084 2008-12-03 22:31:23Z cjfields $
 #
 # BioPerl module for Bio::Search::HSP::HSPI
 #
@@ -235,8 +235,8 @@ sub num_conserved{
 
  Title    : gaps
  Usage    : my $gaps = $hsp->gaps( ['query'|'hit'|'total'] );
- Function : Get the number of gaps in the query, hit, or total alignment.
- Returns  : Integer, number of gaps or 0 if none
+ Function : Get the number of gap charcters in the query, hit, or total alignment.
+ Returns  : Integer, number of gap characters or 0 if none
  Args     : 'query' = num conserved / length of query seq (without gaps)
             'hit'   = num conserved / length of hit seq (without gaps)
             'total' = num conserved / length of alignment (with gaps)
@@ -553,9 +553,7 @@ See Also   : L<seq_str()|seq_str>, L<seq_inds()|seq_inds>, L<Bio::Seq>
 
 =cut
 
-#-------
 sub seq {
-#-------
     my($self,$seqType) = @_; 
     $seqType ||= 'query';
     $seqType = 'sbjct' if $seqType eq 'hit';
@@ -565,13 +563,13 @@ sub seq {
     }
     require Bio::LocatableSeq;
     my $id = $seqType =~ /^q/i ? $self->query->seq_id : $self->hit->seq_id;
-    new Bio::LocatableSeq (-ID    => $id,
-                           -SEQ   => $str,
-                           -START => $self->start($seqType),
-                           -END   => $self->end($seqType),
-                           -STRAND=> $self->strand($seqType),
-                           -DESC  => "$seqType sequence ",
-                           );
+    return Bio::LocatableSeq->new(  -ID        => $id,
+                                    -SEQ       => $str,
+                                    -START     => $self->start($seqType),
+                                    -END       => $self->end($seqType),
+                                    -STRAND    => $self->strand($seqType),
+                                    -FORCE_NSE => $id ? 0 : 1,
+                                    -DESC      => "$seqType sequence " );
 }
 
 =head2 seq_str

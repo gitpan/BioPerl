@@ -1,4 +1,4 @@
-# $Id: megablast.pm,v 1.7.4.1 2006/10/02 23:10:26 sendu Exp $
+# $Id: megablast.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::SearchIO::megablast
 #
@@ -21,7 +21,7 @@ megablast reports (format 0)
 
   use Bio::SearchIO;
   # for default format output from megablast
-  my $in = new Bio::SearchIO(-file   => 'file.mbl',
+  my $in = Bio::SearchIO->new(-file   => 'file.mbl',
                              -format => 'megablast',
                              -report_format => 0);
 
@@ -37,7 +37,7 @@ megablast reports (format 0)
 Beware!
 
 Because of the way megablast report format 0 is coded, realize that score
-means # gaps + # mismatches for a HSP.
+means # gap characters + # mismatches for a HSP.
 
 The docs from NCBI regarding FORMAT 0
 #   0: Produce one-line output for each alignment, in the form
@@ -50,8 +50,8 @@ The docs from NCBI regarding FORMAT 0
 #   + or - corresponds to same or different strand alignment.
 #
 #   Score for non-affine gapping parameters means the total number of
-#   differences (mismatches + gaps). For affine case it is the actual (raw)
-#   score of the alignment.
+#   differences (mismatches + gap characters). For affine case it is the
+#   actual (raw) score of the alignment.
 
 FORMAT 1 parsing has not been implemented
 FORMAT 2 parsing should work with the SearchIO 'blast' parser
@@ -132,7 +132,7 @@ BEGIN {
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::SearchIO::blast();
+ Usage   : my $obj = Bio::SearchIO::blast->new();
  Function: Builds a new Bio::SearchIO::blast object
  Returns : Bio::SearchIO::blast
  Args    : -fh/-file => filehandle/filename to BLAST file
@@ -145,7 +145,7 @@ sub _initialize {
     $self->SUPER::_initialize(@args);
     my ($fmt) = $self->_rearrange([qw(REPORT_FORMAT)], @args);
 
-    $self->throw("Must have provided a value for -report_format when initializing a megablast parser") unless defined $fmt ;
+    $self->throw("Must provide a value for -report_format when initializing a megablast parser") unless defined $fmt ;
     $self->report_format($fmt);
     return 1;
 }
@@ -219,8 +219,8 @@ sub next_result{
 #   + or - corresponds to same or different strand alignment.
 #
 #   Score for non-affine gapping parameters means the total number of
-#   differences (mismatches + gaps). For affine case it is the actual (raw)
-#   score of the alignment.
+#   differences (mismatches + gap characters). For affine case it is the
+#   actual (raw) score of the alignment.
 	
 	       # and yet when rev strand hits are made I see
 	       # (MBL 2.2.4)

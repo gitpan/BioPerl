@@ -62,6 +62,9 @@ Bio::DB::SeqFeature::Store::memory -- In-memory implementation of Bio::DB::SeqFe
   $db->insert_sequence('Chr1','GATCCCCCGGGATTCCAAAA...');
   my $sequence = $db->fetch_sequence('Chr1',5000=>6000);
 
+  # what feature types are defined in the database?
+  my @types    = $db->types;
+
   # create a new feature in the database
   my $feature = $db->new_feature(-primary_tag => 'mRNA',
                                  -seq_id      => 'chr3',
@@ -106,6 +109,9 @@ single GFF3 file. Examples:
   $db  = Bio::DB::SeqFeature::Store->new( -adaptor => 'memory',
                                           -dsn     => '/usr/annotations/worm.gff3.gz');
 
+For compatibility with the Bio::DB::GFF memory adapter, -gff is
+recognized as an alias for -dsn.
+
 See L<Bio::DB::SeqFeature::Store> for all the access methods supported
 by this adaptor. The various methods for storing and updating features
 and sequences into the database are supported, including GFF3 loading
@@ -114,7 +120,7 @@ will be lost when the script exits.
 
 =cut
 
-# $Id: memory.pm,v 1.5.4.3 2006/10/02 23:10:17 sendu Exp $
+# $Id: memory.pm 15006 2008-11-19 21:55:18Z lstein $
 use strict;
 use base 'Bio::DB::SeqFeature::Store';
 use Bio::DB::SeqFeature::Store::GFF3Loader;
@@ -122,6 +128,7 @@ use Bio::DB::GFF::Util::Rearrange 'rearrange';
 use File::Temp 'tempdir';
 use IO::File;
 use Bio::DB::Fasta;
+use File::Glob ':glob';
 
 use constant BINSIZE => 10_000;
 
@@ -140,7 +147,7 @@ sub init {
 
 sub post_init {
   my $self = shift;
-  my ($file_or_dir) = rearrange([['DIR','DSN','FILE']],@_);
+  my ($file_or_dir) = rearrange([['DIR','DSN','FILE','GFF']],@_);
   return unless $file_or_dir;
 
   my $loader = Bio::DB::SeqFeature::Store::GFF3Loader->new(-store    => $self,
@@ -149,8 +156,8 @@ sub post_init {
   my @argv;
   if (-d $file_or_dir) {
     @argv = (
-	     glob("$file_or_dir/*.gff"),            glob("$file_or_dir/*.gff3"),
-	     glob("$file_or_dir/*.gff.{gz,Z,bz2}"), glob("$file_or_dir/*.gff3.{gz,Z,bz2}")
+	     bsd_glob("$file_or_dir/*.gff"),            bsd_glob("$file_or_dir/*.gff3"),
+	     bsd_glob("$file_or_dir/*.gff.{gz,Z,bz2}"), bsd_glob("$file_or_dir/*.gff3.{gz,Z,bz2}")
 	     );
   } else {
     @argv = $file_or_dir;
@@ -163,10 +170,10 @@ sub commit { # reindex fasta files
   my $self = shift;
 
   if (my $fh = $self->{fasta_fh}) {
-    $fh->close;
-    $self->{fasta_db} = Bio::DB::Fasta->new($self->{fasta_file});
-  } elsif (exists $self->{file_or_dir}) {
-    $self->{fasta_db} = Bio::DB::Fasta->new($self->{file_or_dir});
+      $fh->close;
+      $self->{fasta_db} = Bio::DB::Fasta->new($self->{fasta_file});
+  } elsif (exists $self->{file_or_dir} && -d $self->{file_or_dir}) {
+      $self->{fasta_db} = Bio::DB::Fasta->new($self->{file_or_dir});
   }
 }
 
@@ -186,7 +193,7 @@ sub _store {
   my $count = 0;
   for my $obj (@_) {
     my $primary_id = $obj->primary_id;
-    $primary_id    = @{$data} unless defined $primary_id;
+    $primary_id    = 1 + @{$data} unless $primary_id;  # primary id of 0 causes a downstream bug
     $self->data->[$primary_id] = $obj;
     $obj->primary_id($primary_id);
     $self->{_index}{ids}{$primary_id} = undef if $indexed;
@@ -248,10 +255,10 @@ sub _update_name_index {
   my ($obj,$id) = @_;
   my ($names,$aliases) = $self->feature_names($obj);
   foreach (@$names) {
-    $self->{_index}{name}{lc $_}{$id} = 1;
+    $self->{_index}{name}{lc $_}{$id}   = 1;
   }
   foreach (@$aliases) {
-    $self->{_index}{name}{lc $_}{$id} = 2;
+    $self->{_index}{name}{lc $_}{$id} ||= 2;
   }
 }
 
@@ -272,8 +279,8 @@ sub _update_location_index {
   my ($obj,$id) = @_;
 
   my $seq_id      = $obj->seq_id || '';
-  my $start       = $obj->start  || '';
-  my $end         = $obj->end    || '';
+  my $start       = $obj->start  || 0;
+  my $end         = $obj->end    || 0;
   my $strand      = $obj->strand;
   my $bin_min     = int $start/BINSIZE;
   my $bin_max     = int $end/BINSIZE;
@@ -288,8 +295,8 @@ sub _update_attribute_index {
   my $self = shift;
   my ($obj,$id) = @_;
 
-  for my $tag ($obj->all_tags) {
-    for my $value ($obj->each_tag_value($tag)) {
+  for my $tag ($obj->get_all_tags) {
+    for my $value ($obj->get_tag_values($tag)) {
       $self->{_index}{attribute}{lc $tag}{lc $value}{$id} = undef;
     }
   }
@@ -385,6 +392,11 @@ sub find_types {
                                           : grep {/^$primary_tag:/i} keys %{$index};
   }
   return @types_found;
+}
+
+sub attributes {
+    my $self = shift;
+    return keys %{$self->{_index}{attribute}};
 }
 
 sub filter_by_attribute {
@@ -549,12 +561,32 @@ sub _search_attributes {
     my $relevance = 10 * $hits;
     my $feature   = $self->fetch($id);
     my $name      = $feature->display_name or next;
-    push @results,[$name,$note,$relevance];
+    my $type      = $feature->type;
+    push @results,[$name,$note,$relevance,$type,$id];
   }
 
   return @results;
 }
 
+=head2 types
+
+ Title   : types
+ Usage   : @type_list = $db->types
+ Function: Get all the types in the database
+ Returns : array of Bio::DB::GFF::Typename objects (arrayref in scalar context)
+ Args    : none
+ Status  : public
+
+=cut
+
+sub types {
+    my $self = shift;
+    eval "require Bio::DB::GFF::Typename" 
+	unless Bio::DB::GFF::Typename->can('new');
+    return map {
+	Bio::DB::GFF::Typename->new($_);
+    } keys %{$self->{_index}{type}};
+}
 
 # this is ugly
 sub _insert_sequence {

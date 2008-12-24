@@ -2,7 +2,7 @@
 # PACKAGE : Bio::SeqIO::lasergene
 # AUTHOR  : Malcolm Cook <mec@stowers-institute.org>
 # CREATED : Feb 16 1999
-# REVISION: $Id: lasergene.pm,v 1.5.4.1 2006/10/02 23:10:29 sendu Exp $
+# REVISION: $Id: lasergene.pm 10535 2006-09-27 05:39:32Z mauricio $
 #
 # _History_
 #

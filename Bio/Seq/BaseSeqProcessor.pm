@@ -1,4 +1,4 @@
-# $Id: BaseSeqProcessor.pm,v 1.7.4.1 2006/10/02 23:10:27 sendu Exp $
+# $Id: BaseSeqProcessor.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Seq::BaseSeqProcessor
 #
@@ -87,7 +87,7 @@ use base qw(Bio::Root::Root Bio::Factory::SequenceProcessorI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Seq::BaseSeqProcessor();
+ Usage   : my $obj = Bio::Seq::BaseSeqProcessor->new();
  Function: Builds a new Bio::Seq::BaseSeqProcessor object 
  Returns : an instance of Bio::Seq::BaseSeqProcessor
  Args    : Named parameters. Currently supported are

@@ -1,4 +1,4 @@
-# $Id: GOterm.pm,v 1.22.4.1 2006/10/02 23:10:22 sendu Exp $
+# $Id: GOterm.pm 11669 2007-08-29 21:39:51Z cjfields $
 #
 # BioPerl module for Bio::Ontology::GOterm
 #
@@ -99,9 +99,6 @@ use constant TRUE         => 1;
 use constant FALSE        => 0;
 
 use base qw(Bio::Ontology::Term);
-
-
-
 
 =head2 new
 
@@ -294,7 +291,7 @@ sub to_string {
     $s .= "-- Comment:\n";
     $s .= ($self->comment() || '') ."\n"; 
     $s .= "-- Definition references:\n";
-    $s .= $self->_array_to_string( $self->get_dblinks() )."\n";
+    $s .= $self->_array_to_string( $self->get_dbxrefs() )."\n";
     $s .= "-- Secondary GO ids:\n";
     $s .= $self->_array_to_string( $self->get_secondary_GO_ids() )."\n";
     $s .= "-- Aliases:\n";

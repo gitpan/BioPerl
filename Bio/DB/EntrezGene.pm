@@ -1,4 +1,4 @@
-# $Id: EntrezGene.pm,v 1.8.4.1 2006/10/02 23:10:14 sendu Exp $
+# $Id: EntrezGene.pm 10639 2006-10-02 16:00:59Z bosborne $
 #
 # BioPerl module for Bio::DB::EntrezGene
 #

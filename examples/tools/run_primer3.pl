@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: run_primer3.pl,v 1.3.4.1 2006/10/02 23:10:38 sendu Exp $
+# $Id: run_primer3.pl 15087 2008-12-04 02:48:00Z bosborne $
 
 =head1 NAME
 

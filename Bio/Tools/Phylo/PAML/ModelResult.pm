@@ -1,4 +1,4 @@
-# $Id: ModelResult.pm,v 1.7.4.1 2006/10/02 23:10:34 sendu Exp $
+# $Id: ModelResult.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Tools::Phylo::PAML::ModelResult
 #
@@ -18,9 +18,9 @@ Bio::Tools::Phylo::PAML::ModelResult - A container for NSSite Model Result from 
 
   # get a ModelResult from a PAML::Result object
   use Bio::Tools::Phylo::PAML;
-  my $paml = new Bio::Tools::Phylo::PAML(-file => 'mlc');
+  my $paml = Bio::Tools::Phylo::PAML->new(-file => 'mlc');
   my $result = $paml->next_result;
-  foreach my $model ( $result->get_model_results ) {
+  foreach my $model ( $result->get_NSSite_results ) {
     print $model->model_num, " ", $model->model_description, "\n";
     print $model->kappa, "\n";
     print $model->run_time, "\n";
@@ -88,7 +88,7 @@ use base qw(Bio::Root::Root);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Tools::Phylo::PAML::ModelResult();
+ Usage   : my $obj = Bio::Tools::Phylo::PAML::ModelResult->new();
  Function: Builds  a new Bio::Tools::Phylo::PAML::ModelResult object 
  Returns : an instance of Bio::Tools::Phylo::PAML::ModelResult
  Args    : -model_num           => model number
@@ -142,7 +142,7 @@ sub new {
 						 @args);
   if( $trees ) {
       if(ref($trees) !~ /ARRAY/i ) { 
-	  $self->warn("Must have provided a valid array reference to initialize trees");
+	  $self->warn("Must provide a valid array reference to initialize trees");
       } else { 
 	  foreach my $t ( @$trees ) {
 	      $self->add_tree($t);
@@ -152,11 +152,11 @@ sub new {
   $self->{'_treeiterator'} = 0;
   if( $pos_sites ) {
       if(ref($pos_sites) !~ /ARRAY/i ) { 
-	  $self->warn("Must have provided a valid array reference to initialize pos_sites");
+	  $self->warn("Must provide a valid array reference to initialize pos_sites");
       } else { 
 	  foreach my $s ( @$pos_sites ) {
 	      if( ref($s) !~ /ARRAY/i ) {
-		  $self->warn("need an array ref for each entry in the pos_sites object");
+		  $self->warn("Need an array reference for each entry in the pos_sites object");
 		  next;
 	      }
 	      $self->add_pos_selected_site(@$s);
@@ -165,7 +165,7 @@ sub new {
   }
   if( $beb_sites ) {
     if(ref($beb_sites) !~ /ARRAY/i ) { 
-	  $self->warn("Must have provided a valid array reference to initialize beb_sites");
+	  $self->warn("Must provide a valid array reference to initialize beb_sites");
       } else { 
 	  foreach my $s ( @$beb_sites ) {
 	      if( ref($s) !~ /ARRAY/i ) {
@@ -178,7 +178,7 @@ sub new {
   }
   if( $neb_sites ) {
     if(ref($neb_sites) !~ /ARRAY/i ) { 
-	  $self->warn("Must have provided a valid array reference to initialize neb_sites");
+	  $self->warn("Must provide a valid array reference to initialize neb_sites");
       } else { 
 	  foreach my $s ( @$neb_sites ) {
 	      if( ref($s) !~ /ARRAY/i ) {
@@ -480,10 +480,10 @@ sub get_trees{
    return @{$self->{'_trees'} || []};
 }
 
-=head2 rewind_tree
+=head2 rewind_tree_iterator
 
  Title   : rewind_tree_iterator
- Usage   : $result->rewind_tree()
+ Usage   : $result->rewind_tree_iterator()
  Function: Rewinds the tree iterator so that next_tree can be 
            called again from the beginning
  Returns : none

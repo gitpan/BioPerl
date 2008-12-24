@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: GbrowseGFF.pm,v 1.15.4.1 2006/10/02 23:10:27 sendu Exp $
+# $Id: GbrowseGFF.pm 11565 2007-07-09 01:35:40Z cjfields $
 #
 # BioPerl module Bio::SearchIO::Writer::GbrowseGFF.pm
 #
@@ -15,9 +15,9 @@ Bio::SearchIO::Writer::GbrowseGFF - Interface for outputting parsed search resul
 =head1 SYNOPSIS
 
   use Bio::SearchIO;
-  my $in = new Bio::SearchIO(-file   => 'result.blast',      
+  my $in = Bio::SearchIO->new(-file   => 'result.blast',      
                              -format => 'blast');
-  my $out = new Bio::SearchIO(-output_format  => 'GbrowseGFF',
+  my $out = Bio::SearchIO->new(-output_format  => 'GbrowseGFF',
                               -output_cigar   => 1,
                               -output_signif  => 1,
                               -file           => ">result.gff");
@@ -79,7 +79,7 @@ use base qw(Bio::Root::Root Bio::SearchIO::SearchWriterI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::SearchIO::Writer::GbrowseGFF(@args);
+ Usage   : my $obj = Bio::SearchIO::Writer::GbrowseGFF->new(@args);
  Function: Builds a new Bio::SearchIO::Writer::GbrowseGFF object 
  Returns : an instance of Bio::SearchIO::Writer::GbrowseGFF
  Args    :  -e_value => 10   : set e_value parsing cutoff (default undef)
@@ -96,7 +96,7 @@ sub new {
      $self->{'_prefix'},
      $self->{'signif'} ) = $self->_rearrange([qw(E_VALUE OUTPUT_CIGAR PREFIX
 						 OUTPUT_SIGNIF)], @args);
-    $self->{'_evalue'} && warn( 'use of the -e_value argument is deprecated.  In future, use $writer->filter("type", \&code)  instead.\n\tparsing will proceed correctly with this e_value\n');
+    $self->{'_evalue'} && warn( "Use of the -e_value argument is deprecated.\nIn future, use \$writer->filter(\"type\", \&code) instead.\n\tparsing will proceed correctly with this e_value\n");
     $self->{Gbrowse_HSPID} = 0;
     $self->{Gbrowse_HITID} = 0;
     $self->{'_prefix'} ||= $Defaults{'Prefix'};
@@ -149,7 +149,7 @@ sub to_string {
 				       REFERENCE 
 				       MATCH_TAG HSP_TAG
 				       PREFIX)], @args);
-    warn $reference if $reference;
+    $self->warn($reference) if $reference; 
     $reference ||='hit'; # default is that the hit sequence (db sequence) becomes the reference sequence.  I think this is fairly typical...
     $match_tag ||= $Defaults{'MatchTag'}; # default is the generic 'match' tag.
     $hsp_tag   ||= $Defaults{'HSPTag'}; # default is the generic 'hsp' tag.

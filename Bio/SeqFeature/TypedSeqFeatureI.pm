@@ -1,6 +1,6 @@
-
+# $Id: TypedSeqFeatureI.pm 11713 2007-09-28 15:37:31Z cjfields $
 #
-# BioPerl module for Bio::SeqFeature::OntologyTypedI
+# BioPerl module for Bio::SeqFeature::TypedSeqFeatureI
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
@@ -88,7 +88,6 @@ Internal methods are usually preceded with a _
 package Bio::SeqFeature::TypedSeqFeatureI;
 
 use strict;
-use Carp;
 use Bio::Root::RootI;
 
 use base qw(Bio::SeqFeatureI);

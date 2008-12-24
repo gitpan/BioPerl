@@ -1,4 +1,4 @@
-# $Id: Organisation.pm,v 1.14.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: Organisation.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Biblio::Organisation
 #
@@ -13,11 +13,11 @@ Bio::Biblio::Organisation - Representation of an organisation
 
 =head1 SYNOPSIS
 
-    $obj = new Bio::Biblio::Organisation (-name => 'O\'Reilly');
+    $obj = Bio::Biblio::Organisation->new(-name => 'O\'Reilly');
 
   #--- OR ---
 
-    $obj = new Bio::Biblio::Organisation;
+    $obj = Bio::Biblio::Organisation->new();
     $obj->name ('O\'Reilly');
 
 =head1 DESCRIPTION

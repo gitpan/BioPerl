@@ -1,4 +1,4 @@
-# $Id: BioPerl.pm,v 1.20.4.1 2006/10/02 23:10:21 sendu Exp $
+# $Id: BioPerl.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # bioperl module for Bio::LiveSeq::IO::BioPerl
 #
@@ -163,10 +163,10 @@ sub load {
     } else { # i.e. if -id
 	
 	if( $DBEMBLLOADED ) {
-	    my $embl = new Bio::DB::EMBL;
+	    my $embl = Bio::DB::EMBL->new();
 	    $seqobj = $embl->get_Seq_by_id($id); # EMBL ID or ACC
 	} else { 
-	    my $root = new Bio::Root::Root();
+	    my $root = Bio::Root::Root->new();
 	    $root->warn("Must have HTTP::Request::Common installed, cannot run load without the -filename option specified, see docs for Bio::LiveSeq::IO::BioPerl");
 	    return;
 	}

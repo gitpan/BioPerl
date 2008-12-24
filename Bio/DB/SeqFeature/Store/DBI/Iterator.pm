@@ -1,6 +1,6 @@
 package Bio::DB::SeqFeature::Store::DBI::Iterator;
 
-# $Id: Iterator.pm,v 1.1.4.1 2006/10/02 23:10:17 sendu Exp $
+# $Id: Iterator.pm 10476 2006-09-20 16:15:36Z cjfields $
 
 =head1 NAME
 

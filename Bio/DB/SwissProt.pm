@@ -1,5 +1,5 @@
 #
-# $Id: SwissProt.pm,v 1.30.4.1 2006/10/02 23:10:15 sendu Exp $
+# $Id: SwissProt.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::DB::SwissProt
 #
@@ -20,7 +20,7 @@ Bio::DB::SwissProt - Database object interface to SwissProt retrieval
 
     use Bio::DB::SwissProt;
 
-    $sp = new Bio::DB::SwissProt;
+    $sp = Bio::DB::SwissProt->new();
 
     $seq = $sp->get_Seq_by_id('KPY1_ECOLI'); # SwissProt ID
     # <4-letter-identifier>_<species 5-letter code>
@@ -34,7 +34,7 @@ Bio::DB::SwissProt - Database object interface to SwissProt retrieval
     # then interchangeably
 
     # choose a different server to query
-    $sp = new Bio::DB::SwissProt('-servertype' => 'expasy',
+    $sp = Bio::DB::SwissProt->new('-servertype' => 'expasy',
 				 '-hostlocation' => 'us');
 
     $seq = $sp->get_Seq_by_id('BOLA_HAEIN'); # SwissProtID

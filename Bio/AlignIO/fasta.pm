@@ -1,4 +1,4 @@
-# $Id: fasta.pm,v 1.27.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: fasta.pm 11603 2007-07-31 15:32:43Z sendu $
 #
 # BioPerl module for Bio::AlignIO::fasta
 #
@@ -47,12 +47,10 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::AlignIO::fasta;
-use vars qw($WIDTH);
 use strict;
 
-
 use base qw(Bio::AlignIO);
-$WIDTH = 60;
+our $WIDTH = 60;
 
 =head2 next_aln
 
@@ -78,47 +76,49 @@ sub next_aln {
 	my $aln = Bio::SimpleAlign->new();
 
 	while (defined ($entry = $self->_readline) ) {
-		chomp $entry;
-		if ( $entry =~ s/^>\s*(\S+)\s*// ) {
-			$tempname  = $1;
-			chomp($entry);
-			$tempdesc = $entry;
-			if ( defined $name ) {
+	    chomp $entry;
+	    if ( $entry =~ s/^>\s*(\S+)\s*// ) {
+		$tempname  = $1;
+		chomp($entry);
+		$tempdesc = $entry;
+		if ( defined $name ) {
+		    $seqchar =~ s/\s//g;
 				# put away last name and sequence
-				if ( $name =~ /(\S+)\/(\d+)-(\d+)/ ) {
-					$seqname = $1;
-					$start = $2;
-					$end = $3;
-				} else {
-					$seqname = $name;
-					$start = 1;
-					$end = $self->_get_len($seqchar);
-				}
-				$seq = new Bio::LocatableSeq(
+		    if ( $name =~ /(\S+)\/(\d+)-(\d+)/ ) {
+			$seqname = $1;
+			$start = $2;
+			$end = $3;
+		    } else {
+			$seqname = $name;
+			$start = 1;
+			$end = $self->_get_len($seqchar);
+		    }
+		    $seq = Bio::LocatableSeq->new(
 						  -seq         => $seqchar,
-					     -display_id  => $seqname,
-					     -description => $desc,
-					     -start       => $start,
-					     -end         => $end,
-					     );
-				$aln->add_seq($seq);
-				$self->debug("Reading $seqname\n");
-			}
-			$desc = $tempdesc;	
-			$name = $tempname;
-			$desc = $entry;
-			$seqchar  = "";
-			next;
+						  -display_id  => $seqname,
+						  -description => $desc,
+						  -start       => $start,
+						  -end         => $end,
+						  );
+		    $aln->add_seq($seq);
+		    $self->debug("Reading $seqname\n");
 		}
-		# removed redundant symbol validation
-		# this is already done in Bio::PrimarySeq
-		$seqchar .= $entry;
+		$desc = $tempdesc;	
+		$name = $tempname;
+		$desc = $entry;
+		$seqchar  = "";
+		next;
+	    }
+	    # removed redundant symbol validation
+	    # this is already done in Bio::PrimarySeq
+	    $seqchar .= $entry;
 	}
 
 	#  Next two lines are to silence warnings that
 	#  otherwise occur at EOF when using <$fh>
 	$name = "" if (!defined $name);
 	$seqchar="" if (!defined $seqchar);
+        $seqchar =~ s/\s//g;
 
 	#  Put away last name and sequence
 	if ( $name =~ /(\S+)\/(\d+)-(\d+)/ ) {
@@ -137,25 +137,25 @@ sub next_aln {
 		undef $aln; 
 		return $aln;
 	}
-
+	
 	# This logic now also reads empty lines at the 
 	# end of the file. Skip this is seqchar and seqname is null
 	unless ( length($seqchar) == 0 && length($seqname) == 0 ) {
-		$seq = new Bio::LocatableSeq(-seq         => $seqchar,
-											  -display_id  => $seqname,
-											  -description => $desc,
-											  -start       => $start,
-											  -end         => $end,
-											 );
-		$aln->add_seq($seq);
-		$self->debug("Reading $seqname\n");
+	    $seq = Bio::LocatableSeq->new(-seq         => $seqchar,
+					  -display_id  => $seqname,
+					  -description => $desc,
+					  -start       => $start,
+					  -end         => $end,
+					  );
+	    $aln->add_seq($seq);
+	    $self->debug("Reading $seqname\n");
 	}
 	my $alnlen = $aln->length;
 	foreach my $seq ( $aln->each_seq ) {
-		if ( $seq->length < $alnlen ) {
-			my ($diff) = ($alnlen - $seq->length);
-			$seq->seq( $seq->seq() . "-" x $diff);
-		}
+	    if ( $seq->length < $alnlen ) {
+		my ($diff) = ($alnlen - $seq->length);
+		$seq->seq( $seq->seq() . "-" x $diff);
+	    }
 	}
 	return $aln;
 }
@@ -189,7 +189,8 @@ sub write_aln {
 	    $name = $aln->displayname($rseq->get_nse());
 	    $seq  = $rseq->seq();
 	    $desc = $rseq->description || '';
-	    $self->_print (">$name $desc\n") or return ;	
+		$desc = ' '.$desc if $desc;
+	    $self->_print (">$name$desc\n") or return;	
 	    $count = 0;
 	    $length = length($seq);
 	    if(defined $seq && $length > 0) {

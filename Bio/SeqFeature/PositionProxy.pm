@@ -1,4 +1,4 @@
-# $Id: PositionProxy.pm,v 1.9.4.1 2006/10/02 23:10:28 sendu Exp $
+# $Id: PositionProxy.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::SeqFeature::PositionProxy
 #
@@ -16,7 +16,7 @@ Bio::SeqFeature::PositionProxy - handle features when truncation/revcom sequence
 
 =head1 SYNOPSIS
 
-   $proxy = new Bio::SeqFeature::PositionProxy ( -loc => $loc,
+   $proxy = Bio::SeqFeature::PositionProxy->new( -loc => $loc,
                                                  -parent => $basefeature);
 
    $seq->add_SeqFeature($feat);

@@ -1,4 +1,4 @@
-# $Id: maf.pm,v 1.10.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: maf.pm 14522 2008-02-20 21:51:27Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::maf
 #
@@ -7,7 +7,7 @@
 
 =head1 NAME
 
-Bio::AlignIO::maf - Multipla Alignment Format sequence input stream
+Bio::AlignIO::maf - Multiple Alignment Format sequence input stream
 
 =head1 SYNOPSIS
 
@@ -44,7 +44,7 @@ multiple alignment file.
 Writing in MAF format is currently unimplemented.
 
 Spec of MAF format is here:
-  http://hgwdev-sugnet.cse.ucsc.edu/cgi-bin/hgGateway?org=human
+  http://genome.ucsc.edu/FAQ/FAQformat
 
 =head1 FEEDBACK
 
@@ -70,19 +70,16 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::AlignIO::maf;
-use vars qw($seen_header);
 use strict;
 
 use Bio::SimpleAlign;
-
-$seen_header = 0;
 
 use base qw(Bio::AlignIO);
 
 =head2 new
 
  Title   : new
- Usage   : my $alignio = new Bio::AlignIO(-format => 'maf'
+ Usage   : my $alignio = Bio::AlignIO->new(-format => 'maf'
 					  -file   => '>file',
 					  -idlength => 10,
 					  -idlinebreak => 1);
@@ -114,23 +111,37 @@ sub _initialize {
 sub next_aln {
     my $self = shift;
 
-    if(!$seen_header){
-	my $line = $self->_readline;
-	$self->throw("This doesn't look like a MAF file.  First line should start with ##maf, but it was: ".$line)
-	    unless $line =~ /^##maf/;
-	$seen_header = 1;
+	# check beginning of file for proper header
+    if(!$self->{seen_header}){
+	  my $line = $self->_readline;
+	  $self->throw("This doesn't look like a MAF file.  First line should start with ##maf, but it was: ".$line)
+		  unless $line =~ /^##maf/;
+	  $self->{seen_header} = 1;
+	  # keep in case we parse this later
+	  $self->_pushback($line);
     }
-
+	
     my $aln =  Bio::SimpleAlign->new(-source => 'maf');
 
-    my($aline, @slines);
+    my($aline, @slines, $seen_aline);
     while(my $line = $self->_readline()){
-	$aline = $line if $line =~ /^a/;
-	push @slines, $line if $line =~ /^s /;
-	last if $line !~ /\S/;
-
+	  if ($line =~ /^a\s/xms) {
+		# next block?
+		if ($seen_aline) {
+		  $self->_pushback($line);
+		  last;
+		}
+		$aline = $line;
+		$seen_aline++;
+	  } elsif ($line =~ /^s\s/xms) {
+		push @slines, $line;
+	  } else {
+		# missed lines
+		$self->debug($line);
+	  }
     }
-
+	
+	# all MAF starts with 'a' line
     return unless $aline;
 
     my($kvs) = $aline =~ /^a\s+(.+)$/;
@@ -148,7 +159,7 @@ sub next_aln {
 	    split /\s+/, $sline;
 	# adjust coordinates to be one-based inclusive
         $start = $start + 1;
-	my $seq = new Bio::LocatableSeq('-seq'    => $text,
+	my $seq = Bio::LocatableSeq->new('-seq'    => $text,
 					'-id'     => $src,
 					'-start'  => $start,
 					'-end'    => $start + $size - 1,

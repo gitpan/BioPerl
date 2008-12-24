@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: Exception.pm,v 1.15.8.1 2006/10/02 23:10:23 sendu Exp $
+# $Id: Exception.pm 15171 2008-12-16 03:28:01Z cjfields $
 #
 # BioPerl module Bio::Root::Exception
 #
@@ -210,7 +210,7 @@ my $DEFAULT_VALUE = "__DUMMY__";  # Permits eval{} based handlers to work
 
 =over 4
 
-=item L< new() >
+=item L<new()>
 
  Purpose : Guarantees that -value is set properly before
            calling Error::new().
@@ -249,9 +249,9 @@ sub new {
         $value = $args[1];
     }
 
-    if( defined $value and not $value) {
-	$value = "The number zero (0)" if $value == 0;
-	$value = "An empty string (\"\")" if $value eq "";
+    if( defined $value ) {
+        $value = "The number zero (0)" if $value =~ /^\d+$/ && $value == 0;
+        $value = "An empty string (\"\")" if $value eq "";
     }
     else {
 	$value ||= $DEFAULT_VALUE;

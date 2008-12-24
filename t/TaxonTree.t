@@ -1,29 +1,20 @@
-# -*-Perl-*-
-## Bioperl Test Harness Script for Modules
-##
+# -*-Perl-*- Test Harness script for Bioperl
+# $Id: TaxonTree.t 15112 2008-12-08 18:12:38Z sendu $
 
-# These modules are now deprecated, don't bother testing them.
+# These modules are now deprecated, don't bother testing them. --sendubala
 
 ## I am pretty sure this module is going the way of the dodo bird so 
 ## I am not sure how much work to put into fixing the tests/module
 ## --jasonstajich
 
-my $error;
 use strict;
-BEGIN { 
-    # to handle systems with no installed Test module
-    # we include the t dir (where a copy of Test.pm is located)
-    # as a fallback
-    $error = 0; 
-    eval { require Test; };
-    if( $@ ) {
-	use lib 't';
-    }
-    use Test;
-    plan tests => 1;
-}
 
-ok(1);
+BEGIN { 
+    use lib '.';
+    use Bio::Root::Test;
+    
+    test_begin(-tests => 0);
+}
 
 if (0) {
 	use Bio::Taxonomy::Taxon;
@@ -45,9 +36,9 @@ if (0) {
 	skip 1, $taxonL->rank('foo is not a rank, class variable @RANK not initialised'); 
 	ok $taxonL->to_string, '"could this be called taxid?":5';
 	
-	my $taxonR = new Bio::Taxonomy::Taxon;
+	my $taxonR = Bio::Taxonomy::Taxon->new();
 	
-	my $taxon = new Bio::Taxonomy::Taxon(-id =>'ancient', -taxon => 'genus');
+	my $taxon = Bio::Taxonomy::Taxon->new(-id =>'ancient', -taxon => 'genus');
 	ok $taxon->id(), 'ancient'; 
 	ok $taxon->taxon(), 'genus'; 
 	ok $taxon->internal_id, 2;
@@ -107,9 +98,9 @@ if (0) {
 	use Bio::Taxonomy::Tree;
 	use Bio::Taxonomy;
 	
-	my $human=new Bio::Species;
-	my $chimp=new Bio::Species;
-	my $bonobo=new Bio::Species;
+	my $human=Bio::Species->new();
+	my $chimp=Bio::Species->new();
+	my $bonobo=Bio::Species->new();
 	
 	$human->classification(qw( sapiens Homo Hominidae
 							   Catarrhini Primates Eutheria
@@ -132,13 +123,13 @@ if (0) {
 				 'no rank 1','no rank 2','class','no rank 3','order',
 				 'suborder','family','genus','species');
 	
-	my $taxonomy=new Bio::Taxonomy(-ranks => \@ranks,
+	my $taxonomy=Bio::Taxonomy->new(-ranks => \@ranks,
 								   -method => 'trust',
 								   -order => -1);
 	
 	
-	ok my $tree1=new Bio::Taxonomy::Tree;
-	my $tree2=new Bio::Taxonomy::Tree;
+	ok my $tree1=Bio::Taxonomy::Tree->new();
+	my $tree2=Bio::Taxonomy::Tree->new();
 	
 	$tree1->make_species_branch($human,$taxonomy);
 	$tree2->make_species_branch($chimp,$taxonomy);

@@ -1,4 +1,4 @@
-# $Id: BiblioI.pm,v 1.10.4.1 2006/10/02 23:10:14 sendu Exp $
+# $Id: BiblioI.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::DB::BiblioI
 #
@@ -18,7 +18,7 @@ This is an interface module - you do not instantiate it.
 Use I<Bio::Biblio> module:
 
   use Bio::Biblio;
-  my $biblio = new Bio::Biblio (@args);
+  my $biblio = Bio::Biblio->new(@args);
 
 =head1 DESCRIPTION
 
@@ -330,7 +330,7 @@ it this is how you can check the collection existence:
 
     use Bio::Biblio;
     print
-      new Bio::Biblio (-collection_id => '1014324148861')->exists;
+      Bio::Biblio->new(-collection_id => '1014324148861')->exists;
 
 It throws an exception if this object does not represent any query
 result - see explanation in method I<reset_retrieval> elsewhere in

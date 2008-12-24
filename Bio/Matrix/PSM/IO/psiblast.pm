@@ -1,5 +1,5 @@
 #---------------------------------------------------------
-# $Id: psiblast.pm,v 1.11.4.1 2006/10/02 23:10:22 sendu Exp $
+# $Id: psiblast.pm 11480 2007-06-14 14:16:21Z sendu $
 
 =head1 NAME
 
@@ -56,7 +56,7 @@ our @ordered_alphabet = qw/A  R  N  D  C  Q  E  G  H  I  L  K  M  F  P  S  T  W 
 =head2 new
 
  Title   : new
- Usage   : my $psmIO  =  new Bio::Matrix::PSM::IO(-format=>'psiblast', 
+ Usage   : my $psmIO  =  Bio::Matrix::PSM::IO->new(-format=>'psiblast', 
                                                   -file=>$file);
  Function: Associates a file with the appropriate parser
  Throws  :

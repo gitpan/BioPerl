@@ -1,4 +1,4 @@
-# $Id: HMMERHit.pm,v 1.6.4.1 2006/10/02 23:10:24 sendu Exp $
+# $Id: HMMERHit.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Search::Hit::HMMERHit
 #
@@ -17,7 +17,7 @@ Bio::Search::Hit::HMMERHit - A Hit module for HMMER hits
 =head1 SYNOPSIS
 
     use Bio::Search::Hit::HMMERHit;
-    my $hit = new Bio::Search::Hit::HMMERHit;
+    my $hit = Bio::Search::Hit::HMMERHit->new();
     # use it in the same way as Bio::Search::Hit::GenericHit
 
 =head1 DESCRIPTION
@@ -70,7 +70,7 @@ use base qw(Bio::Search::Hit::GenericHit);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Search::Hit::HMMERHit();
+ Usage   : my $obj = Bio::Search::Hit::HMMERHit->new();
  Function: Builds a new Bio::Search::Hit::HMMERHit object 
  Returns : Bio::Search::Hit::HMMERHit
  Args    : 

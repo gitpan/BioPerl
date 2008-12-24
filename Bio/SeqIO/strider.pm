@@ -1,4 +1,4 @@
-# $Id: strider.pm,v 1.6.4.2 2006/10/02 23:10:30 sendu Exp $
+# $Id: strider.pm 11147 2007-01-24 16:10:16Z mcook $
 # BioPerl module for Bio::SeqIO::strider
 #
 # Cared for by Malcolm Cook <mec@stowers-institute.org>
@@ -141,7 +141,8 @@ sub next_seq {
   my( $self ) = @_;
   my $fh =  $self->_fh;
   my ($header,$sequence,$fulldesc);
-  read $fh,$header,$size_F_HEADER or return ; #don't die here with "could not read header: $@" !!!;
+  eval {read $fh,$header,$size_F_HEADER};
+  $self->throw ("$@  while attempting to reading strider header from " . $self->{'_file'}) if $@; 
   $self->throw("required $size_F_HEADER bytes while reading strider header in " . $self->{'_file'} . " but found: " . length($header))  
     unless $size_F_HEADER == length($header);
   my $headerdata = $c->unpack('F_HEADER',$header) or return;

@@ -1,4 +1,4 @@
-# $Id: pdb.pm,v 1.17.4.1 2006/10/02 23:10:31 sendu Exp $
+# $Id: pdb.pm 11669 2007-08-29 21:39:51Z cjfields $
 #
 # BioPerl module for Bio::Structure::IO::pdb
 #
@@ -440,13 +440,13 @@ $self->debug("get COMPND $compnd\n");
 
 
    if (defined($buffer) && $buffer =~ /^(ATOM |MODEL |HETATM)/ ) {  # can you have an entry without ATOM ?
-	until( !defined ($buffer) ) {				 #  (yes : 1a7z )
+	while( defined ($buffer) ) {				 #  (yes : 1a7z )
 		   # read in one model at a time
 		   my $model = $self->_read_PDB_coordinate_section(\$buffer, $struc);
 		   # add this to $struc
 		   $struc->add_model($struc, $model);
 
-		   if ($buffer !~ /^MODEL /) { # if we get here we have multiple MODELs
+		   if ($buffer && $buffer !~ /^MODEL /) { # if we get here we have multiple MODELs
 			   last;
 		   }
 	}
@@ -529,7 +529,7 @@ sub write_structure {
 	my ($ann, $string, $output_string, $key);
 	# HEADER
 	($ann) = $struc->annotation->get_Annotations("header");
-	if ($ann) {
+	if (defined $ann) {
 		$string = $ann->as_text;
 		$string =~ s/^Value: //;
 		$output_string = pack ("A10 A56", "HEADER", $string);

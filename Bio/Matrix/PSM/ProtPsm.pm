@@ -1,5 +1,5 @@
 #---------------------------------------------------------
-# $Id: ProtPsm.pm,v 1.8.4.1 2006/10/02 23:10:22 sendu Exp $
+# $Id: ProtPsm.pm 11480 2007-06-14 14:16:21Z sendu $
 
 #ISA ProtMatrix, HAS InstanceSite
 
@@ -12,7 +12,7 @@ Bio::Matrix::PSM::ProtPsm - handle combination of site matricies
   use Bio::Matrix::PSM::IO;
 
   #To get a ProtPsm object from a file use the Psm parser:
-  my $psmIO =  new Bio::Matrix::PSM::IO(-format=>'psiblast', -file=>$file);
+  my $psmIO =  Bio::Matrix::PSM::IO->new(-format=>'psiblast', -file=>$file);
 
   # Now go through all entities in the file with next_psm, which
   # returns a Psm object see Bio::Matrix::PSM::IO for detailed

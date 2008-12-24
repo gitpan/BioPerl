@@ -1,4 +1,4 @@
-# $Id: PullResultI.pm,v 1.1.2.2 2006/10/02 23:10:24 sendu Exp $
+# $Id: PullResultI.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module Bio::Search::Result::PullResultI
 #
@@ -19,7 +19,7 @@ Bio::Search::Result::PullResultI - Bio::Search::Result::ResultI interface for
 
     # typically one gets Results from a SearchIO stream
     use Bio::SearchIO;
-    my $io = new Bio::SearchIO(-format => 'hmmer_pull',
+    my $io = Bio::SearchIO->new(-format => 'hmmer_pull',
                                 -file   => 't/data/hmmpfam.out');
 
     my $result = $io->next_result;
@@ -463,7 +463,7 @@ sub available_parameters {
 =head2 add_parameter
 
  Title   : add_parameter
- Usage   : $report->add_parameter('gapext', 11);
+ Usage   : $result->add_parameter('gapext', 11);
  Function: Adds a parameter
  Returns : none
  Args    : key  - key value name for this parama
@@ -474,7 +474,7 @@ sub available_parameters {
 sub add_parameter {
     my ($self, $key, $value) = @_;
     unless (exists $self->{_parameters}) {
-        $self->{_parameters} = new Bio::Tools::Run::GenericParameters;
+        $self->{_parameters} = Bio::Tools::Run::GenericParameters->new();
     }
     $self->{_parameters}->set_parameter($key => $value);
 }
@@ -516,7 +516,7 @@ sub available_statistics {
 =head2 add_statistic
 
  Title   : add_statistic
- Usage   : $report->add_statistic('lambda', 2.3);
+ Usage   : $result->add_statistic('lambda', 2.3);
  Function: Adds a statistic
  Returns : none
  Args    : key  - key value name for this statistic
@@ -527,7 +527,7 @@ sub available_statistics {
 sub add_statistic {
     my ($self, $key, $value) = @_;
     unless (exists $self->{_statistics}) {
-        $self->{_statistics} = new Bio::Search::GenericStatistics;
+        $self->{_statistics} = Bio::Search::GenericStatistics->new();
     }
     $self->{_statistics}->set_statistic($key => $value);
 }

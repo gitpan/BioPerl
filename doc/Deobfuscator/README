@@ -1,4 +1,4 @@
-Deobfuscator version 0.0.2
+Deobfuscator version 0.0.3
 
 The Deobfuscator was written to make it easier to determine the methods that
 are available from a given BioPerl module.
@@ -103,6 +103,7 @@ DEPENDENCIES
 
 - version              Available from CPAN.
 - Class::Inspector     Available from CPAN.
+- Test::Pod            Available from CPAN.
 - BioPerl              Tested with v1.5.1, but other versions should work
                        too. Get the latest from http://www.bioperl.org.
 

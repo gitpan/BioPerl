@@ -1,4 +1,4 @@
-# $Id: LocationI.pm,v 1.25.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: LocationI.pm 14963 2008-10-26 04:54:36Z cjfields $
 #
 # BioPerl module for Bio::LocationI
 # Cared for by Jason Stajich <jason@bioperl.org>
@@ -398,6 +398,23 @@ sub to_FTstring {
 =cut
 
 sub each_Location {
+    my ($self,@args) = @_;
+    $self->throw_not_implemented();
+}
+
+
+=head2 valid_Location
+
+ Title   : valid_Location
+ Usage   : if ($location->valid_location) {...};
+ Function: boolean method to determine whether location is considered valid
+           (has minimum requirements for a specific LocationI implementation)
+ Returns : Boolean value: true if location is valid, false otherwise
+ Args    : none
+
+=cut
+
+sub valid_Location {
     my ($self,@args) = @_;
     $self->throw_not_implemented();
 }

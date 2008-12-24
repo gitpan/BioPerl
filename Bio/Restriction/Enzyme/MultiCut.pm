@@ -1,4 +1,4 @@
-# $Id: MultiCut.pm,v 1.7.4.1 2006/10/02 23:10:23 sendu Exp $
+# $Id: MultiCut.pm 10525 2006-09-26 22:03:22Z sendu $
 #------------------------------------------------------------------
 #
 # BioPerl module Bio::Restriction::Enzyme::MultiCut

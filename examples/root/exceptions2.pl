@@ -12,7 +12,7 @@
 #
 # Author: Steve Chervitz <sac@bioperl.org>
 #
-# $Id: exceptions2.pl,v 1.1 2003/03/07 19:25:19 sac Exp $
+# $Id: exceptions2.pl 15087 2008-12-04 02:48:00Z bosborne $
 
 use strict;
 

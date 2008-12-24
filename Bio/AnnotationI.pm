@@ -1,4 +1,4 @@
-# $Id: AnnotationI.pm,v 1.10.4.4 2006/10/02 23:10:12 sendu Exp $
+# $Id: AnnotationI.pm 14708 2008-06-10 00:08:17Z heikki $
 
 #
 # BioPerl module for Bio::AnnotationI
@@ -129,6 +129,31 @@ use base qw(Bio::Root::RootI);
 =cut
 
 sub as_text{
+    shift->throw_not_implemented();
+}
+
+=head2 display_text
+
+ Title   : display_text
+ Usage   : my $str = $ann->display_text();
+ Function: returns a string. Unlike as_text(), this method returns a string
+           formatted as would be expected for the specific implementation.
+
+           Implementations should allow passing a callback as an argument which
+           allows custom text generation; the callback will be passed the
+           current implementation.
+
+           Note that this is meant to be used as a simple representation
+           of the annotation data but probably shouldn't be used in cases
+           where more complex comparisons are needed or where data is
+           stored.
+ Example :
+ Returns : a string
+ Args    : [optional] callback
+
+=cut
+
+sub display_text {
     shift->throw_not_implemented();
 }
 

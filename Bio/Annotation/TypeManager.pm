@@ -1,4 +1,4 @@
-# $Id: TypeManager.pm,v 1.6.4.3 2006/10/02 23:10:12 sendu Exp $
+# $Id: TypeManager.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module for Bio::Annotation::TypeManager
 #

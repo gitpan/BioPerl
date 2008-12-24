@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.61.4.1 2006/10/02 23:10:23 sendu Exp $
+# $Id: IO.pm 15257 2008-12-24 05:27:05Z cjfields $
 #
 # BioPerl module for Bio::Root::IO
 #
@@ -262,7 +262,7 @@ sub _initialize_io {
         #$self->warn("has lwp");
         my $http_result;
         my($handle,$tempfile) = $self->tempfile();
-        close($handle);
+        CORE::close($handle);
 
         for(my $try = 1 ; $try <= $trymax ; $try++){
           $http_result = LWP::Simple::getstore($url, $tempfile);
@@ -565,13 +565,13 @@ sub noclose{
 
 sub _io_cleanup {
     my ($self) = @_;
-
     $self->close();
     my $v = $self->verbose;
 
     # we are planning to cleanup temp files no matter what    
     if( exists($self->{'_rootio_tempfiles'}) &&
-	ref($self->{'_rootio_tempfiles'}) =~ /array/i) { 
+	ref($self->{'_rootio_tempfiles'}) =~ /array/i &&
+    !$self->save_tempfiles) { 
 	if( $v > 0 ) {
 	    warn( "going to remove files ", 
 		  join(",",  @{$self->{'_rootio_tempfiles'}}), "\n");
@@ -581,8 +581,8 @@ sub _io_cleanup {
     # cleanup if we are not using File::Temp
     if( $self->{'_cleanuptempdir'} &&
 	exists($self->{'_rootio_tempdirs'}) &&
-	ref($self->{'_rootio_tempdirs'}) =~ /array/i) {	
-
+	ref($self->{'_rootio_tempdirs'}) =~ /array/i &&
+    !$self->save_tempfiles) {	
 	if( $v > 0 ) {
 	    warn( "going to remove dirs ", 
 		  join(",",  @{$self->{'_rootio_tempdirs'}}), "\n");
@@ -694,10 +694,6 @@ sub tempfile {
 	    $file = Win32::GetShortPathName($file);
 	}
 
-	# taken from File::Temp
-	if ($] < 5.006) {
-	    $tfh = &Symbol::gensym;
-	}    
 	# Try to make sure this will be marked close-on-exec
 	# XXX: Win32 doesn't respect this, nor the proper fcntl,
 	#      but may have O_NOINHERIT. This may or may not be in Fcntl.
@@ -947,6 +943,25 @@ sub _flush_on_write {
 	$self->{'_flush_on_write'} = $value;
     }
     return $self->{'_flush_on_write'};
+}
+
+=head2 save_tempfiles
+
+ Title   : save_tempfiles
+ Usage   : $obj->save_tempfiles(1)
+ Function: Boolean flag to indicate whether to retain tempfiles/tempdir
+ Returns : Boolean value : 1 = save tempfiles/tempdirs, 0 = remove (default)
+ Args    : Value evaluating to TRUE or FALSE
+
+=cut
+
+sub save_tempfiles {
+    my $self = shift;
+    if (@_) {
+        my $value = shift;
+        $self->{save_tempfiles} = $value ? 1 : 0;
+    }
+    return $self->{save_tempfiles} || 0;
 }
 
 1;

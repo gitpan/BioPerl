@@ -1,4 +1,4 @@
-# $Id: FuzzyLocationI.pm,v 1.21.4.1 2006/10/02 23:10:21 sendu Exp $
+# $Id: FuzzyLocationI.pm 10528 2006-09-27 00:02:06Z cjfields $
 #
 # BioPerl module for Bio::Location::FuzzyLocationI
 # Cared for by Jason Stajich <jason@bioperl.org>

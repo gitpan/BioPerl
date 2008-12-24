@@ -1,4 +1,4 @@
-# $Id: FTLocationFactory.pm,v 1.21.4.2 2006/10/02 23:10:18 sendu Exp $
+# $Id: FTLocationFactory.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Factory::FTLocationFactory
 #
@@ -105,7 +105,7 @@ BEGIN {
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Factory::FTLocationFactory();
+ Usage   : my $obj = Bio::Factory::FTLocationFactory->new();
  Function: Builds a new Bio::Factory::FTLocationFactory object 
  Returns : an instance of Bio::Factory::FTLocationFactory
  Args    :

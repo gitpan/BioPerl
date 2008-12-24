@@ -1,4 +1,4 @@
-# $Id: Statistics.pm,v 1.34.4.1 2006/10/02 23:10:23 sendu Exp $
+# $Id: Statistics.pm 15149 2008-12-12 10:52:28Z heikki $
 #
 # BioPerl module for Bio::PopGen::Statistics
 #
@@ -21,20 +21,20 @@ Bio::PopGen::Statistics - Population Genetics statistical tests
   use Bio::PopGen::IO;
   use Bio::PopGen::Simulation::Coalescent;
 
-  my $sim = new Bio::PopGen::Simulation::Coalescent( -sample_size => 12);
+  my $sim = Bio::PopGen::Simulation::Coalescent->new( -sample_size => 12);
 
   my $tree = $sim->next_tree;
 
   $sim->add_Mutations($tree,20);
 
-  my $stats = new Bio::PopGen::Statistics();
+  my $stats = Bio::PopGen::Statistics->new();
   my $individuals = [ $tree->get_leaf_nodes];
   my $pi = $stats->pi($individuals);
   my $D  = $stats->tajima_D($individuals);
 
   # Alternatively to do this on input data from
   # See the tests in t/PopGen.t for more examples
-  my $parser = new Bio::PopGen::IO(-format => 'prettybase',
+  my $parser = Bio::PopGen::IO->new(-format => 'prettybase',
                                    -file   => 't/data/popstats.prettybase');
   my $pop = $parser->next_population;
   # Note that you can also call the stats as a class method if you like
@@ -49,7 +49,7 @@ Bio::PopGen::Statistics - Population Genetics statistical tests
   use Bio::PopGen::Utilities;
   use Bio::AlignIO;
 
-  my $in = new Bio::AlignIO(-file   => 't/data/t7.aln',
+  my $in = Bio::AlignIO->new(-file   => 't/data/t7.aln',
                             -format => 'clustalw');
   my $aln = $in->next_aln;
   # get a population, each sequence is an individual and 
@@ -82,8 +82,11 @@ Currently implemented:
  Watterson's theta (theta)
  pi               (pi) - number of pairwise differences
  composite_LD     (composite_LD)
+ McDonald-Kreitman (mcdonald_kreitman or MK)
 
-Count based methods also exist in case you have already calculated the key statistics (seg sites, num individuals, etc) and just want to compute the statistic.
+Count based methods also exist in case you have already calculated the
+key statistics (seg sites, num individuals, etc) and just want to
+compute the statistic.
 
 In all cases where a the method expects an arrayref of
 L<Bio::PopGen::IndividualI> objects and L<Bio::PopGen::PopulationI>
@@ -97,8 +100,11 @@ Mutations." Genetics 133:693-709.
 Fu Y.X. (1996) "New Statistical Tests of Neutrality for DNA samples
 from a Population." Genetics 143:557-570.
 
+McDonald J, Kreitman M.
+
 Tajima F. (1989) "Statistical method for testing the neutral mutation
 hypothesis by DNA polymorphism." Genetics 123:585-595.
+
 
 =head2 CITING THIS WORK
 
@@ -134,6 +140,10 @@ the web:
 Email jason-at-bioperl-dot-org
 Email matthew-dot-hahn-at-duke-dot-edu
 
+McDonald-Kreitman implementation based on work by Alisha Holloway at
+UC Davis.
+
+
 =head1 APPENDIX
 
 The rest of the documentation details each of the object methods.
@@ -147,14 +157,35 @@ Internal methods are usually preceded with a _
 
 package Bio::PopGen::Statistics;
 use strict;
+use constant { 
+    in_label => 'ingroup',
+    out_label => 'outgroup',
+    non_syn   => 'non_synonymous',
+    syn       => 'synonymous',
+    default_codon_table => 1, # Standard Codon table
+};
 
+use Bio::MolEvol::CodonModel;
+use List::Util qw(sum);
 
 use base qw(Bio::Root::Root);
+our $codon_table => default_codon_table;
+our $has_twotailed => 0;
+BEGIN {
+    eval { require Text::NSP::Measures::2D::Fisher2::twotailed };
+    if( $@ ) { $has_twotailed = 0; }
+    else { $has_twotailed = 1; }
+}
+
+
+
+
+
 
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::PopGen::Statistics();
+ Usage   : my $obj = Bio::PopGen::Statistics->new();
  Function: Builds a new Bio::PopGen::Statistics object 
  Returns : an instance of Bio::PopGen::Statistics
  Args    : none
@@ -166,7 +197,9 @@ use base qw(Bio::Root::Root);
 =head2 fu_and_li_D
 
  Title   : fu_and_li_D
- Usage   : my $D = $statistics->fu_and_li_D(\@ingroup,$extmutations);
+ Usage   : my $D = $statistics->fu_and_li_D(\@ingroup,\@outgroup);
+	    OR
+	   my $D = $statistics->fu_and_li_D(\@ingroup,$extmutations);
  Function: Fu and Li D statistic for a list of individuals
            given an outgroup and the number of external mutations
            (either provided or calculated from list of outgroup individuals)
@@ -286,7 +319,7 @@ sub fu_and_li_D_star {
 	$seg_sites   = $self->segregating_sites_count($pop);
 	$singletons  = $self->singleton_count($pop);
     } else { 
-	$self->throw("expected an array reference of a list of Bio::PopGen::IndividualI OR a Bio::PopGen::PopulationI object to tajima_D");
+	$self->throw("expected an array reference of a list of Bio::PopGen::IndividualI OR a Bio::PopGen::PopulationI object to fu_and_li_D_star");
 	return 0;
     }
 
@@ -611,9 +644,9 @@ sub tajima_D_counts {
     my $e1 = $c1 / $a1;
     my $e2 = $c2 / ( $a1**2 + $a2 );
     
-    my $D = ( $pi - ( $seg_sites / $a1 ) ) / 
-	sqrt ( ($e1 * $seg_sites) + (( $e2 * $seg_sites) * ( $seg_sites - 1)));
-
+    my $denom = sqrt ( ($e1 * $seg_sites) + (( $e2 * $seg_sites) * ( $seg_sites - 1)));
+    return if $denom == 0;
+    my $D = ( $pi - ( $seg_sites / $a1 ) ) / $denom;
     return $D;
 }
 
@@ -641,7 +674,7 @@ sub tajima_D_counts {
 
 sub pi {
     my ($self,$individuals,$numsites) = @_;
-    my (%data,@marker_names,$n);
+    my (%data,%marker_total,@marker_names,$n);
 
     if( ref($individuals) =~ /ARRAY/i ) {
 	# one possible argument is an arrayref of Bio::PopGen::IndividualI objs
@@ -649,7 +682,6 @@ sub pi {
 	$n = scalar @$individuals;
 
 	# Here we are calculating the allele frequencies
-	my %marker_total;
 	foreach my $ind ( @$individuals ) {
 	    if( ! $ind->isa('Bio::PopGen::IndividualI') ) {
 		$self->warn("Expected an arrayref of Bio::PopGen::IndividualI objects, this is a ".ref($ind)."\n");
@@ -657,50 +689,55 @@ sub pi {
 	    }
 	    foreach my $m ( @marker_names ) {
 		foreach my $allele (map { $_->get_Alleles} 
-			       $ind->get_Genotypes($m) ) {
+				    $ind->get_Genotypes($m) ) {
 		    $data{$m}->{$allele}++;
 		    $marker_total{$m}++;
 		}
 	    }
 	}
-	while( my ($marker,$count) =  each %marker_total ) {
-	    foreach my $c ( values %{$data{$marker}} ) {
-		$c /= $count;
-	    }
-	}
+#	while( my ($marker,$count) =  each %marker_total ) {
+#	    foreach my $c ( values %{$data{$marker}} ) {
+#		$c /= $count;
+#	    }
+#	}
 	# %data will contain allele frequencies for each marker, allele
-    } elsif( ref($individuals) && 
+    } elsif( ref($individuals) &&
 	     $individuals->isa('Bio::PopGen::PopulationI') ) {
 	my $pop = $individuals;
 	$n = $pop->get_number_individuals;
 	foreach my $marker( $pop->get_Markers ) {
 	    push @marker_names, $marker->name;
-	    $data{$marker->name} = {$marker->get_Allele_Frequencies};
+	    #$data{$marker->name} = {$marker->get_Allele_Frequencies};
+	    my @genotypes = $pop->get_Genotypes(-marker => $marker->name);
+	    for my $al ( map { $_->get_Alleles} @genotypes ) {
+	      $data{$marker->name}->{$al}++;
+	      $marker_total{$marker->name}++;
+	   }
 	}
-    } else { 
+    } else {
 	$self->throw("expected an array reference of a list of Bio::PopGen::IndividualI to pi");
     }
-    # doing all pairwise combinations
-
+    # based on Kevin Thornton's code:
+    # http://molpopgen.org/software/libsequence/doc/html/PolySNP_8cc-source.html#l00152
     # For now we assume that all individuals have the same markers
     my ($diffcount,$totalcompare) = (0,0);
     my $pi = 0;
-    foreach my $markerdat ( values %data ) {
-	my $totalalleles; # this will only be different among markers
-	                  # when there is missing data
-	my @alleles = keys %$markerdat;
-	foreach my $al ( @alleles ) { $totalalleles += $markerdat->{$al} }
-	for( my $i =0; $i < scalar @alleles -1; $i++ ) {
-	    my ($a1,$a2) = ( $alleles[$i], $alleles[$i+1]);
-	    $pi += $self->heterozygosity($n, 
-					 $markerdat->{$a1} / $totalalleles,
-					 $markerdat->{$a2} / $totalalleles);
+    while ( my ($marker,$markerdat) = each %data ) {
+      my $sampsize = $marker_total{$marker};
+      my $ssh = 0;
+      my @alleles = keys %$markerdat;
+      if ( $sampsize > 1 ) {
+	my $denom = $sampsize * ($sampsize - 1.0);
+	foreach my $al ( @alleles ) {
+	  $ssh += ($markerdat->{$al} * ($markerdat->{$al} - 1)) / $denom;
 	}
+	$pi += 1.0 - $ssh;
+      }
     }
     $self->debug( "pi=$pi\n");
-    if( $numsites ) { 
+    if( $numsites ) {
 	return $pi / $numsites;
-    } else { 
+    } else {
 	return $pi;
     }
 }
@@ -731,7 +768,7 @@ sub pi {
 #'
 
 sub theta {
-    my $self = shift;    
+    my $self = shift;
     my ( $n, $seg_sites,$totalsites) = @_;
     if( ref($n) =~ /ARRAY/i ) {
 	my $samps = $n;
@@ -757,6 +794,9 @@ sub theta {
     if( $totalsites ) { # 0 and undef are the same can't divide by them
 	$seg_sites /= $totalsites;
     }
+    if( $a1 == 0 ) { 
+	return 0;
+    } 
     return $seg_sites / $a1;
 }
 
@@ -839,7 +879,7 @@ sub singleton_count {
 # so one can use this to pull in the names of those sites.
 # Would be trivial if it is useful.
 
-sub segregating_sites_count{
+sub segregating_sites_count {
    my ($self,$individuals) = @_;
    my $type = ref($individuals);
    my $seg_sites = 0;
@@ -919,7 +959,7 @@ sub heterozygosity {
 
 =cut
 
-sub derived_mutations{
+sub derived_mutations {
    my ($self,$ingroup,$outgroup) = @_;
    my (%indata,%outdata,@marker_names);
 
@@ -988,7 +1028,7 @@ sub derived_mutations{
 	       }
 	   }
        }
-   } elsif( $otype->isa('Bio::PopGen::PopulationI') ) { 
+   } else {
        $self->warn("Need an arrayref of Bio::PopGen::IndividualI objs or a Bio::PopGen::Population for outgroup in external_mutations");
        return 0;
    }
@@ -1049,7 +1089,7 @@ sub composite_LD {
     my ($self,$pop) = @_;
     if( ref($pop) =~ /ARRAY/i ) {
 	if( ref($pop->[0]) && $pop->[0]->isa('Bio::PopGen::IndividualI') ) {
-	    $pop = new Bio::PopGen::Population(-individuals => @$pop);
+	    $pop = Bio::PopGen::Population->new(-individuals => @$pop);
 	} else { 
 	    $self->warn("composite_LD expects a Bio::PopGen::PopulationI or an arrayref of Bio::PopGen::IndividualI objects");
 	    return ();
@@ -1243,6 +1283,301 @@ sub composite_LD {
     return %stats_for_sites;
 }
 
+=head2 mcdonald_kreitman
+
+ Title   : mcdonald_kreitman
+ Usage   : $Fstat = mcdonald_kreitman($ingroup, $outgroup);
+ Function: Calculates McDonald-Kreitman statistic based on a set of ingroup
+           individuals and an outgroup by computing the number of 
+           differences at synonymous and non-synonymous sites
+           for intraspecific comparisons and with the outgroup 
+ Returns : 2x2 table, followed by a hash reference indicating any 
+           warning messages about the status of the alleles or codons 
+ Args    : -ingroup    => L<Bio::PopGen::Population> object or 
+                          arrayref of L<Bio::PopGen::Individual>s 
+           -outgroup   => L<Bio::PopGen::Population> object or 
+                          arrayef of L<Bio::PopGen::Individual>s
+           -polarized  => Boolean, to indicate if this should be 
+                          a polarized test. Must provide two individuals 
+                          as outgroups.
+
+=cut
+
+sub mcdonald_kreitman {
+    my ($self,@args) = @_;
+    my ($ingroup, $outgroup,$polarized) = 
+	$self->_rearrange([qw(INGROUP OUTGROUP POLARIZED)],@args);
+    my $verbose = $self->verbose;
+    my $outgroup_count;
+    my $gapchar = '\-';
+    if( ref($outgroup) =~ /ARRAY/i ) {
+	$outgroup_count = scalar @$outgroup;
+    } elsif( UNIVERSAL::isa($outgroup,'Bio::PopGen::PopulationI') ) {
+	$outgroup_count = $outgroup->get_number_individuals;
+    } else {
+	$self->throw("Expected an ArrayRef of Individuals OR a Bio::PopGen::PopulationI");
+    }
+	
+    if( $polarized ) {
+	if( $outgroup_count < 2 ) {
+	    $self->throw("Need 2 outgroups with polarized option\n");
+	}
+    } elsif( $outgroup_count > 1 ) {
+	$self->warn(sprintf("%s outgroup sequences provided, but only first will be used",$outgroup_count ));
+    } elsif( $outgroup_count == 0 ) {
+	$self->throw("No outgroup sequence provided");
+    }
+    
+    my $codon_path = Bio::MolEvol::CodonModel->codon_path;
+    
+    my (%marker_names,%unique,@inds);
+    for my $p ( $ingroup, $outgroup)  {
+	if( ref($p) =~ /ARRAY/i ) {
+	    push @inds, @$p;
+	} else {
+	    push @inds, $p->get_Individuals;
+	}
+    }
+    for my $i ( @inds ) {
+	if( $unique{$i->unique_id}++ ) {
+	    $self->warn("Individual ". $i->unique_id. " is seen more than once in the ingroup or outgroup set\n");
+	}
+	for my $n ( $i->get_marker_names ) {
+	    $marker_names{$n}++;
+	}
+    }
+
+    my @marker_names = keys %marker_names;
+    if( $marker_names[0] =~ /^(Site|Codon)/ ) {
+	# sort by site or codon number and do it in 
+	# a schwartzian transformation baby!
+	@marker_names = map { $_->[1] } 
+	sort { $a->[0] <=> $b->[0] }
+	map { [$_ =~ /^(?:Codon|Site)-(\d+)/, $_] } @marker_names;
+    }
+
+
+    my $num_inds = scalar @inds;
+    my %vals = ( 'ingroup'  => $ingroup,
+		 'outgroup' => $outgroup,		 
+		 );
+
+    # Make the Codon Table type a parameter!
+    my $table = Bio::Tools::CodonTable->new(-id => $codon_table);
+    my @vt = qw(outgroup ingroup);
+    my %changes;
+    my %status;
+    my %two_by_two = ( 'fixed_N' => 0,
+		       'fixed_S' => 0,
+		       'poly_N'  => 0,
+		       'poly_S'  => 0);
+
+    for my $codon ( @marker_names ) {
+	my (%codonvals);
+	my %all_alleles;
+	for my $t ( @vt ) {
+	    my $outcount = 1;
+	    for my $ind ( @{$vals{$t}} ) {
+		my @alleles = $ind->get_Genotypes($codon)->get_Alleles;
+		if( @alleles > 1 ) {
+		    die;
+#		  warn("$codon $codon saw ", scalar @alleles, " for ind ", $ind->unique_id, "\n");
+		} else {
+		    my ($allele) = shift @alleles;
+		    $all_alleles{$ind->unique_id} = $allele;
+		    my $AA = $table->translate($allele);
+		    next if( $AA eq 'X' || $AA eq '*' || $allele =~ /N/i);
+
+		    my $label = $t;
+		    if( $t eq 'outgroup' ) {
+			$label = $t.$outcount++;
+		    }
+		    $codonvals{$label}->{$allele}++;
+		    $codonvals{all}->{$allele}++;
+		}
+	    }
+	}
+	my $total = sum ( values %{$codonvals{'ingroup'}} );
+	next if( $total && $total < 2 ); # skip sites with < alleles
+	# process all the seen alleles (codons) 
+	# this is a vertical slide through the alignment
+	if( keys %{$codonvals{all}} <= 1 ) {
+	    # no changes or no VALID codons - monomorphic
+	} else { 
+	    # grab only the first outgroup codon (what to do with rest?)
+	    my ($outcodon) = keys %{$codonvals{'outgroup1'}};
+            if( ! $outcodon ) { 
+		$status{"no outgroup codon $codon"}++;
+		next;
+	    }
+	    my $out_AA = $table->translate($outcodon);
+	    my ($outcodon2) = keys %{$codonvals{'outgroup2'}};
+	    if( ($polarized && ($outcodon ne $outcodon2)) ||
+		$out_AA eq 'X' || $out_AA eq '*' ) {
+		# skip if outgroup codons are different 
+		# (when polarized option is on)
+		# or skip if the outcodon is STOP or 'NNN'
+		if( $verbose > 0 ) {
+		    $self->debug("skipping $out_AA and $outcodon $outcodon2\n");
+		}
+		$status{'outgroup codons different'}++;
+		next;
+	    }
+
+	    # check if ingroup is actually different from outgroup -
+	    # if there are the same number of alleles when considering
+	    # ALL or just the ingroup, then there is nothing new seen
+	    # in the outgroup so it must be a shared allele (codon)
+
+	    # so we just count how many total alleles were seen
+	    # if this is the same as the number of alleles seen for just 
+	    # the ingroup then the outgroup presents no new information
+
+	    my @ingroup_codons = keys %{$codonvals{'ingroup'}};
+	    my $diff_from_out = ! exists $codonvals{'ingroup'}->{$outcodon};
+
+	    if( $verbose > 0 ) {
+		$self->debug("alleles are in: ", join(",", @ingroup_codons),
+			     " out: ", join(",", keys %{$codonvals{outgroup1}}),
+			     " diff_from_out=$diff_from_out\n");
+
+		for my $ind ( sort keys %all_alleles ) {
+		    $self->debug( "$ind\t$all_alleles{$ind}\n");
+		}
+	    }
+	    # are all the ingroup alleles the same and diferent from outgroup?
+	    # fixed differences between species
+	    if( $diff_from_out ) {
+		if( scalar @ingroup_codons == 1 ) { 
+		    # fixed differences
+		    if( $outcodon =~ /^$gapchar/ ) {
+			$status{'outgroup codons with gaps'}++;
+			next;
+		    } elsif( $ingroup_codons[0] =~ /$gapchar/) {
+			$status{'ingroup codons with gaps'}++;
+			next;
+		    }
+		    my $path = $codon_path->{uc $ingroup_codons[0].$outcodon};
+		    $two_by_two{fixed_N} += $path->[0];
+		    $two_by_two{fixed_S} += $path->[1];
+		    if( $verbose > 0 ) {
+			$self->debug("ingroup is @ingroup_codons outcodon is $outcodon\n");
+			$self->debug("path is ",join(",",@$path),"\n");
+			$self->debug
+			    (sprintf("%-15s fixeddiff - %s;%s(%s) %d,%d\tNfix=%d Sfix=%d Npoly=%d Spoly=%s\n",$codon,$ingroup_codons[0], $outcodon,$out_AA,
+				     @$path, map { $two_by_two{$_} } 
+				     qw(fixed_N fixed_S poly_N poly_S)));
+		    }
+		} else { 
+		    # polymorphic and all are different from outgroup
+		    # Here we find the minimum number of NS subst
+		    my ($Ndiff,$Sdiff) = (3,0);	# most different path
+		    for my $c ( @ingroup_codons ) {
+			next if( $c =~ /$gapchar/ || $outcodon =~ /$gapchar/);
+			my $path = $codon_path->{uc $c.$outcodon};
+			my ($tNdiff,$tSdiff) = @$path;
+			if( $path->[0] < $Ndiff ||
+			    ($tNdiff == $Ndiff &&
+			     $tSdiff  <= $Sdiff)) {
+			    ($Ndiff,$Sdiff) = ($tNdiff,$tSdiff);
+			}
+		    }
+		    $two_by_two{fixed_N} += $Ndiff;
+		    $two_by_two{fixed_S} += $Sdiff;
+	            if( @ingroup_codons > 2 ) { 
+			$status{"more than 2 ingroup codons $codon"}++;
+			warn("more than 2 ingroup codons (@ingroup_codons)\n");	
+		    } else {
+		    	my $path = $codon_path->{uc join('',@ingroup_codons)};
+
+		    	$two_by_two{poly_N} += $path->[0];
+		    	$two_by_two{poly_S} += $path->[1];
+		    	if( $verbose > 0 ) {
+			    $self->debug(sprintf("%-15s polysite_all - %s;%s(%s) %d,%d\tNfix=%d Sfix=%d Npoly=%d Spoly=%s\n",$codon,join(',',@ingroup_codons), $outcodon,$out_AA,@$path, map { $two_by_two{$_} } qw(fixed_N fixed_S poly_N poly_S)));
+			}
+		    } 
+		} 
+	    } else {
+		my %unq = map { $_ => 1 } @ingroup_codons;
+		delete $unq{$outcodon};
+		my @unique_codons = keys %unq;
+
+		# calc path for diff add to poly
+		# Here we find the minimum number of subst bw
+		# codons
+		my ($Ndiff,$Sdiff) = (3,0); # most different path
+		for my $c ( @unique_codons ) {
+		    my $path = $codon_path->{uc $c.$outcodon };
+		    if( ! defined $path ) {
+			die " cannot get path for ", $c.$outcodon, "\n";
+		    }
+		    my ($tNdiff,$tSdiff) = @$path;
+		    if( $path->[0] < $Ndiff ||
+			($tNdiff == $Ndiff &&
+			 $tSdiff  <= $Sdiff)) {
+			($Ndiff,$Sdiff) = ($tNdiff,$tSdiff);
+		    }
+		}
+
+		if( @unique_codons == 2 ) {
+		    my $path = $codon_path->{uc join('',@unique_codons)};
+		    if( ! defined $path ) {
+			$self->throw("no path for @unique_codons\n");
+		    }
+		    $Ndiff += $path->[0];
+		    $Sdiff += $path->[1];
+		}
+		$two_by_two{poly_N} += $Ndiff;
+		$two_by_two{poly_S} += $Sdiff;
+		if( $verbose > 0 ) {
+		    $self->debug(sprintf("%-15s polysite - %s;%s(%s) %d,%d\tNfix=%d Sfix=%d Npoly=%d Spoly=%s\n",$codon,join(',',@ingroup_codons), $outcodon,$out_AA,
+					 $Ndiff, $Sdiff, map { $two_by_two{$_} } 
+					 qw(fixed_N fixed_S poly_N poly_S)));
+		}
+	    }
+	}	    
+    }
+    return ( $two_by_two{'poly_N'},
+	     $two_by_two{'fixed_N'},
+	     $two_by_two{'poly_S'},
+	     $two_by_two{'fixed_S'},
+	     {%status});
+    
+}
+
+*MK = \&mcdonald_kreitman;
+
+
+=head2 mcdonald_kreitman_counts
+
+ Title   : mcdonald_kreitman_counts
+ Usage   : my $MK = $statistics->mcdonald_kreitman_counts(
+
+             N_poly -> integer of count of non-syn polymorphism
+             N_fix  -> integer of count of non-syn fixed substitutions
+             S_poly -> integer of count of syn polymorphism
+             S_fix  -> integer of count of syn fixed substitutions
+							  );
+ Function:
+ Returns : decimal number
+ Args    : 
+
+=cut
+
+
+sub mcdonald_kreitman_counts {
+    my ($self,$Npoly,$Nfix,$Spoly,$Sfix) = @_;
+    if( $has_twotailed ) {
+	return &Text::NSP::Measures::2D::Fisher2::twotailed::calculateStatistic 
+	    (n11=>$Npoly,
+	     n1p=>$Npoly+$Spoly,
+	     np1=>$Npoly+$Nfix,
+	     npp=>$Npoly+$Nfix+$Spoly+$Sfix);
+    } else {
+	$self->warn("cannot call mcdonald_kreitman_counts because no Fisher's exact is available - install Text::NSP::Measures::2D::Fisher2::twotailed");
+	return 0;
+    }
+}
 
 
 1;

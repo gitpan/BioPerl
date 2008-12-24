@@ -1,4 +1,4 @@
-# $Id: Translation.pm,v 1.15.4.1 2006/10/02 23:10:21 sendu Exp $
+# $Id: Translation.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # bioperl module for Bio::LiveSeq::Translation
 #
@@ -146,7 +146,7 @@ sub seq {
     my $downstreamseq=$transcript->downstream_seq();
     #carp "the downstream is: $downstreamseq"; # debug
     my $cdnaseq=$transcript->seq();
-    my $extendedseq = new Bio::PrimarySeq(-seq => "$cdnaseq$downstreamseq",
+    my $extendedseq = Bio::PrimarySeq->new(-seq => "$cdnaseq$downstreamseq",
 					  -alphabet => 'dna'
 					  );
 

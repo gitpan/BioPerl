@@ -1,4 +1,4 @@
-# $Id: Pair.pm,v 1.6.4.1 2006/10/02 23:10:28 sendu Exp $
+# $Id: Pair.pm 15257 2008-12-24 05:27:05Z cjfields $
 #
 # BioPerl module for Bio::SeqFeature::SiRNA::Pair
 #
@@ -75,10 +75,8 @@ Internal methods are usually preceded with a _
 
 package Bio::SeqFeature::SiRNA::Pair;
 
-require 5.005_62;
 use strict;
 use warnings;
-
 
 use base qw(Bio::SeqFeature::Generic);
 

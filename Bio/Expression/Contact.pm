@@ -1,4 +1,4 @@
-# $Id: Contact.pm,v 1.4.4.1 2006/10/02 23:10:17 sendu Exp $
+# $Id: Contact.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Expression::Contact
 #
@@ -62,7 +62,7 @@ use base qw(Bio::Root::Root);
 
 =head2 new()
 
- Usage   : my $obj = new Bio::Expression::Contact();
+ Usage   : my $obj = Bio::Expression::Contact->new();
  Function: Builds a new Bio::Expression::Contact object 
  Returns : an instance of Bio::Expression::Contact
  Args    :

@@ -1,4 +1,4 @@
-# $Id: obo.pm,v 1.8.4.4 2006/10/02 23:10:22 sendu Exp $
+# $Id: obo.pm 14729 2008-06-14 04:52:01Z cjfields $
 #
 # BioPerl module for Bio::OntologyIO::obo
 #
@@ -90,7 +90,6 @@ use Bio::Ontology::Ontology;
 use Bio::Ontology::OntologyStore;
 use Bio::Ontology::TermFactory;
 use Bio::Annotation::Collection;
-use Data::Dumper;
 use Text::Balanced qw(extract_quotelike extract_bracketed);
 
 use constant TRUE  => 1;
@@ -209,7 +208,10 @@ sub parse {
     foreach (
         $self->_part_of_relationship(),
         $self->_is_a_relationship(),
-        $self->_related_to_relationship()
+        $self->_related_to_relationship(),
+        $self->_regulates_relationship(),
+        $self->_positively_regulates_relationship(),
+        $self->_negatively_regulates_relationship(),
       )
     {
         $_->ontology($ont);
@@ -230,6 +232,8 @@ sub parse {
             );
             next;
         }
+
+				#print $term->identifier(),"\t",$term->name(),"\n";
 
         my $new_ontology_flag    = 1;
         my $ontologies_array_ref = $self->{'_ontologies'};
@@ -409,6 +413,29 @@ sub _related_to_relationship {
     return $self->_ont_engine()->related_to_relationship(@_);
 }    # _is_a_relationship
 
+
+# This simply delegates. See OBOEngine
+sub _regulates_relationship {
+    my $self = shift;
+
+    return $self->_ont_engine()->regulates_relationship(@_);
+}    # _part_of_relationship
+
+# This simply delegates. See OBOEngine
+sub _positively_regulates_relationship {
+    my $self = shift;
+
+    return $self->_ont_engine()->positively_regulates_relationship(@_);
+}    # _part_of_relationship
+
+
+# This simply delegates. See OBOEngine
+sub _negatively_regulates_relationship {
+    my $self = shift;
+
+    return $self->_ont_engine()->negatively_regulates_relationship(@_);
+}    # _part_of_relationship
+
 # This simply delegates. See OBOEngine
 sub _add_relationship {
     my ( $self, $parent, $child, $type, $ont ) = @_;
@@ -464,7 +491,7 @@ sub _filter_line {
 # Parses the header
 sub _header {
     my $self                  = shift;
-    my $annotation_collection = new Bio::Annotation::Collection();
+    my $annotation_collection = Bio::Annotation::Collection->new();
     my ( $tag, $value );
     my $line_counter = 0;
     $self->{'_current_line_no'} = 0;
@@ -511,7 +538,7 @@ sub _header {
                 $default_namespace_header_flag = 1;
             }
 
-            my $header = new Bio::Annotation::SimpleValue( -value => $value );
+            my $header = Bio::Annotation::SimpleValue->new( -value => $value );
             $annotation_collection->add_Annotation( $tag, $header );
 
             #### Assign the Ontology name as the value of the default-namespace header
@@ -605,12 +632,12 @@ sub _next_term {
                 $term->name($val);
             }
             elsif ( $tag eq "XREF_ANALOG" ) {
-                if ( !$term->has_dblink($val) ) {
-                    $term->add_dblink($val);
+                if ( !$term->has_dbxref($val) ) {
+                    $term->add_dbxref(-dbxrefs => $self->_to_annotation([$val]));
                 }
             }
             elsif ( $tag eq "XREF_UNKNOWN" ) {
-                $term->add_dblink($val);
+                $term->add_dbxref(-dbxrefs => $self->_to_annotation([$val]));
             }
             elsif ( $tag eq "NAMESPACE" ) {
                 $term->namespace($val);
@@ -618,7 +645,8 @@ sub _next_term {
             elsif ( $tag eq "DEF" ) {
                 my ( $defstr, $parts ) = $self->_extract_qstr($val);
                 $term->definition($defstr);
-                $term->add_dblink(@$parts);
+                my $ann = $self->_to_annotation($parts);
+                $term->add_dbxref(-dbxrefs => $ann);
             }
             elsif ( $tag =~ /(\w*)synonym/i ) {
                 $val =~ s/['"\[\]]//g;
@@ -763,7 +791,7 @@ sub _handle_relationship_tag {
     my ( $self, $val ) = @_;
     my @parts        = split( / /, $val );
     my $relationship = uc($parts[0]);
-    my $id           = $parts[1];
+    my $id           = $parts[1] =~ /\^(w+)\s+\!/ ? $1 : $parts[1];
     my $parent_term  = $self->_create_term_object();
     $parent_term->identifier($id);
 
@@ -781,6 +809,18 @@ sub _handle_relationship_tag {
 
     }
 
+}
+
+# convert simple strings to Bio::Annotation::DBLinks
+sub _to_annotation {
+    my ($self , $links) = @_;
+    return unless $links;
+    my @dbxrefs;
+    for my $string (@{$links}) {
+        my ($db, $id) = split(':',$string);
+        push @dbxrefs, Bio::Annotation::DBLink->new(-database => $db, -primary_id => $id);
+    }
+    return \@dbxrefs;
 }
 
 1;

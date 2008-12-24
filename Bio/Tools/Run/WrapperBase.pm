@@ -1,4 +1,4 @@
-# $Id: WrapperBase.pm,v 1.21.4.2 2006/10/17 09:12:57 sendu Exp $
+# $Id: WrapperBase.pm 14708 2008-06-10 00:08:17Z heikki $
 #
 # BioPerl module for Bio::Tools::Run::WrapperBase
 #
@@ -56,6 +56,10 @@ web:
 =head1 AUTHOR - Jason Stajich
 
 Email jason-at-bioperl.org
+
+=head1 CONTRIBUTORS
+
+Sendu Bala, bix@sendu.me.uk
 
 =head1 APPENDIX
 
@@ -160,19 +164,18 @@ sub no_param_checks{
 
  Title   : save_tempfiles
  Usage   : $obj->save_tempfiles($newval)
- Function: 
- Returns : value of save_tempfiles
- Args    : newvalue (optional)
-
+ Function: Get/set the choice of if tempfiles in the temp dir (see tempdir())
+           are kept or cleaned up. Default is '0', ie. delete temp files.
+           NB:ÊThis must be set to the desired value PRIOR to first creating
+           a temp dir with tempdir().
+ Returns : boolean
+ Args    : none to get, boolean to set
 
 =cut
 
 sub save_tempfiles{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'save_tempfiles'} = $value;
-    }
-    return $self->{'save_tempfiles'};
+    my $self = shift;
+    return $self->io->save_tempfiles(@_);
 }
 
 =head2 outfile_name
@@ -236,8 +239,8 @@ sub cleanup{
    my ($self) = @_;
    $self->io->_io_cleanup();
    if( defined $self->{'_tmpdir'} && -d $self->{'_tmpdir'} ) {
-       # $self->io->rmtree($self->{'_tmpdir'});
-       File::Path->rmtree( $self->{'_tmpdir'} );
+      my $verbose = ($self->verbose >= 1) ? 1 : 0;
+      File::Path::rmtree( $self->{'_tmpdir'}, $verbose);
    }
 }
 
@@ -255,7 +258,7 @@ sub cleanup{
 sub io{
    my ($self) = @_;
    unless( defined $self->{'io'} ) {
-       $self->{'io'} = new Bio::Root::IO(-verbose => $self->verbose());
+       $self->{'io'} = Bio::Root::IO->new(-verbose => $self->verbose);
    }
     return $self->{'io'};
 }
@@ -287,28 +290,36 @@ sub version{
 
 =cut
 
-sub executable{
-   my ($self, $exe,$warn) = @_;
-
-   if( defined $exe ) {
-     $self->{'_pathtoexe'} = $exe;
-   }
-   unless( defined $self->{'_pathtoexe'} ) {
-       my $prog_path = $self->program_path;
-       if( $prog_path && -e $prog_path && -x $prog_path ) {
-           $self->{'_pathtoexe'} = $prog_path;
-       } else {
-           my $exe;
-           if( ( $exe = $self->io->exists_exe($self->program_name) ) &&
-               -x $exe ) {
-               $self->{'_pathtoexe'} = $exe;
-           } else {
-               $self->warn("Cannot find executable for ".$self->program_name) if $warn;
-               $self->{'_pathtoexe'} = undef;
-           }
-       }
-   }
-   $self->{'_pathtoexe'};
+sub executable {
+    my ($self, $exe, $warn) = @_;
+    
+    if (defined $exe) {
+        $self->{'_pathtoexe'} = $exe;
+    }
+    
+    unless( defined $self->{'_pathtoexe'} ) {
+        my $prog_path = $self->program_path;
+        
+        if ($prog_path) {
+            if (-e $prog_path && -x $prog_path) {
+                $self->{'_pathtoexe'} = $prog_path;
+            }
+            elsif ($self->program_dir) {
+                $self->warn("executable not found in $prog_path, trying system path...") if $warn;
+            }
+        }
+        unless ($self->{'_pathtoexe'}) {
+            my $exe;
+            if (($exe = $self->io->exists_exe($self->program_name)) && -x $exe) {
+                $self->{'_pathtoexe'} = $exe;
+            }
+            else {
+                $self->warn("Cannot find executable for ".$self->program_name) if $warn;
+                $self->{'_pathtoexe'} = undef;
+            }
+        }
+    }
+    $self->{'_pathtoexe'};
 }
 
 =head2 program_path
@@ -360,6 +371,105 @@ sub program_dir {
 sub program_name {
     my ($self) = @_;
     $self->throw_not_implemented();
+}
+
+=head2 quiet
+
+ Title   : quiet
+ Usage   : $factory->quiet(1);
+           if ($factory->quiet()) { ... }
+ Function: Get/set the quiet state. Can be used by wrappers to control if
+           program output is printed to the console or not.
+ Returns : boolean
+ Args    : none to get, boolean to set
+
+=cut
+
+sub quiet {
+    my $self = shift;
+    if (@_) { $self->{quiet} = shift }
+    return $self->{quiet} || 0;
+}
+
+=head2  _setparams()
+
+ Title   : _setparams
+ Usage   : $params = $self->_setparams(-params => [qw(window evalue_cutoff)])
+ Function: For internal use by wrapper modules to build parameter strings
+           suitable for sending to the program being wrapped. For each method
+           name supplied, calls the method and adds the method name (as modified
+           by optional things) along with its value (unless a switch) to the
+           parameter string
+ Example : $params = $self->_setparams(-params => [qw(window evalue_cutoff)],
+                                       -switches => [qw(simple large all)],
+                                       -double_dash => 1,
+                                       -underscore_to_dash => 1);
+           If window() and simple() had not been previously called, but
+           evalue_cutoff(0.5), large(1) and all(0) had been called, $params
+           would be ' --evalue-cutoff 0.5 --large'
+ Returns : parameter string
+ Args    : -params => [] or {}  # array ref of method names to call,
+                                  or hash ref where keys are method names and
+                                  values are how those names should be output
+                                  in the params string
+           -switches => [] or {}# as for -params, but no value is printed for
+                                  these methods
+           -join => string      # define how parameters and their values are
+                                  joined, default ' '. (eg. could be '=' for
+                                  param=value)
+           -lc => boolean       # lc() method names prior to output in string
+           -dash => boolean     # prefix all method names with a single dash
+           -double_dash => bool # prefix all method names with a double dash
+           -mixed_dash => bool  # prefix single-character method names with a
+                                # single dash, and multi-character method names
+                                # with a double-dash
+           -underscore_to_dash => boolean # convert all underscores in method
+                                            names to dashes
+
+=cut
+
+sub _setparams {
+    my ($self, @args) = @_;
+    
+    my ($params, $switches, $join, $lc, $d, $dd, $md, $utd) =
+        $self->_rearrange([qw(PARAMS
+                              SWITCHES
+                              JOIN
+                              LC
+                              DASH
+                              DOUBLE_DASH
+                              MIXED_DASH
+                              UNDERSCORE_TO_DASH)], @args);
+    $self->throw('at least one of -params or -switches is required') unless ($params || $switches);
+    $self->throw("-dash, -double_dash and -mixed_dash are mutually exclusive") if (defined($d) + defined($dd) + defined($md) > 1);
+    $join ||= ' ';
+    
+    my %params = ref($params) eq 'HASH' ? %{$params} : map { $_ => $_ } @{$params};
+    my %switches = ref($switches) eq 'HASH' ? %{$switches} : map { $_ => $_ } @{$switches};
+    
+    my $param_string = '';
+    for my $hash_ref (\%params, \%switches) {
+        while (my ($method, $method_out) = each %{$hash_ref}) {
+            my $value = $self->$method();
+            next unless (defined $value);
+            next if (exists $switches{$method} && ! $value);
+            
+            $method_out = lc($method_out) if $lc;
+            my $method_length = length($method_out) if $md;
+            $method_out = '-'.$method_out if ($d || ($md && ($method_length == 1)));
+            $method_out = '--'.$method_out if ($dd || ($md && ($method_length > 1)));
+            $method_out =~ s/_/-/g if $utd;
+            
+            # quote values that contain spaces
+            if (exists $params{$method} && $value =~ /^[^'"\s]+\s+[^'"\s]+$/) {
+                $value = '"'.$value.'"';
+            }
+            
+            $param_string .= ' '.$method_out.(exists $switches{$method} ? '' : $join.$value);
+        }
+    }
+    
+    return $param_string;
 }
 
 sub DESTROY {

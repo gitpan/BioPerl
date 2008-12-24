@@ -1,4 +1,4 @@
-# $Id: SiRNA.pm,v 1.13.4.1 2006/10/02 23:10:32 sendu Exp $
+# $Id: SiRNA.pm 15257 2008-12-24 05:27:05Z cjfields $
 #
 # BioPerl module for Bio::Tools::SiRNA
 #
@@ -116,7 +116,6 @@ Internal methods are usually preceded with a _
 
 package Bio::Tools::SiRNA;
 
-require 5.005_62;
 use strict;
 use warnings;
 

@@ -1,5 +1,5 @@
 #
-# $Id: Abstract.pm,v 1.49.4.1 2006/10/02 23:10:20 sendu Exp $
+# $Id: Abstract.pm 15257 2008-12-24 05:27:05Z cjfields $
 #
 # BioPerl module for Bio::Index::Abstract
 #
@@ -78,7 +78,7 @@ use vars qw( $TYPE_AND_VERSION_KEY
 
 
 use Bio::Root::IO;
-use Symbol();
+use Symbol;
 
 use base qw(Bio::Root::Root);
 
@@ -124,12 +124,13 @@ BEGIN {
 sub new {
     my($class, @args) = @_;
     my $self = $class->SUPER::new(@args);
-    my( $filename, $write_flag, $dbm_package, $cachesize, $ffactor ) =
+    my( $filename, $write_flag, $dbm_package, $cachesize, $ffactor, $pathtype ) =
         $self->_rearrange([qw(FILENAME 
-			                     WRITE_FLAG
-			                     DBM_PACKAGE
-			                     CACHESIZE
-			                     FFACTOR
+			      WRITE_FLAG
+			      DBM_PACKAGE
+			      CACHESIZE
+			      FFACTOR
+			      PATHTYPE
 			      )], @args);
 
     # Store any parameters passed
@@ -138,6 +139,9 @@ sub new {
     $self->ffactor($ffactor)     	 if $ffactor;
     $self->write_flag($write_flag)   if $write_flag;
     $self->dbm_package($dbm_package) if $dbm_package;
+
+    #If user doesn't give a path, we default it to absolute
+    $pathtype ? $self->pathtype($pathtype) : $self->pathtype('absolute');
 
     $self->{'_filehandle'} = []; # Array in which to cache SeqIO objects
     $self->{'_DB'}         = {}; # Gets tied to the DBM file
@@ -544,8 +548,9 @@ sub make_index {
 	# We're really fussy/lazy, expecting all file names to be fully qualified
 	$self->throw("No files to index provided") unless @files;
 	for(my $i=0;$i<scalar @files; $i++)  {
-		if( $Bio::Root::IO::FILESPECLOADED && File::Spec->can('rel2abs') ) {	    
-			if( ! File::Spec->file_name_is_absolute($files[$i]) ) {
+		if( $Bio::Root::IO::FILESPECLOADED && File::Spec->can('rel2abs') ) {
+			if( ! File::Spec->file_name_is_absolute($files[$i])
+			    && $self->pathtype() ne 'relative') {
 				$files[$i] = File::Spec->rel2abs($files[$i]);
 			}
 		} else {
@@ -581,8 +586,7 @@ sub make_index {
 
 				 # if it is the same size - fine. Otherwise die 
 				 if( -s $file == $size ) {
-					 warn "File $file already indexed. Skipping...\n" 
-						if $self->verbose >= 0;
+					 $self->warn("File $file already indexed. Skipping..."); 
 					 next FILE;
 				 } else {
 					 $self->throw("In index, $file has changed size ($size). Indicates that the index is out of date");
@@ -590,7 +594,7 @@ sub make_index {
 			 }
 
 			 # index this file
-			 warn "Indexing file $file\n" if( $self->verbose > 0);
+			 $self->debug("Indexing file $file\n");
 
 			 # this is supplied by the subclass and does the serious work
 			 $recs += $self->_index_file( $file, $i ); # Specific method for each type of index
@@ -608,6 +612,40 @@ sub make_index {
 		 }
 	return ($count, $recs);
 }
+
+=head2 pathtype
+
+  Title   : pathtype
+  Usage   : $index->pathtype($pathtype)
+  Function: Set the type of the file path
+            Only two values are supported, 'relative' or 'absolute'.
+            If the user does not give any value, it is set to
+            absolute by default. Thus it mimics the default
+            behavior of Bio::Index::Abstract module.
+  Example : my $index = Bio::Index::Abstract->(-pathtype => 'relative',
+                                               -file     => $file.inx,
+                                              );
+            or
+            $index->pathtype('relative');
+  Returns : Type of the path.
+  Args    : String (relative|absolute)
+
+=cut
+
+sub pathtype {
+
+    my($self, $type) = @_;
+
+    if(defined($type)){
+	if($type ne 'absolute' && $type ne 'relative'){
+	    $self->throw("Type of path can only be 'relative' or 'absolute', not [$type].");
+	}
+	$self->{'_filepathtype'} = $type;
+    }	
+
+    return $self->{'_filepathtype'};
+}
+
 
 =head2 _filename
 
@@ -700,7 +738,7 @@ sub _file_count {
 
 sub add_record {
 	my( $self, $id, @rec ) = @_;
-	$self->debug( "Adding key $id\n") if( $self->verbose > 0 );
+	$self->debug( "Adding key $id\n");
 	if( exists $self->db->{$id} ) {
 		$self->warn("overwriting a current value stored for $id\n");
 	}

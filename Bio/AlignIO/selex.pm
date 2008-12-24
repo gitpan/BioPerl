@@ -1,4 +1,4 @@
-# $Id: selex.pm,v 1.14.4.3 2006/10/02 23:10:12 sendu Exp $
+# $Id: selex.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::AlignIO::selex
 
@@ -120,7 +120,7 @@ sub next_aln {
 	    $start = 1;
 	    $end = length($align{$name});
 	}
-	my $seq = new Bio::LocatableSeq
+	my $seq = Bio::LocatableSeq->new
 	    ('-seq'              => $align{$name},
 	     '-display_id'       => $seqname,
 	     '-start'            => $start,

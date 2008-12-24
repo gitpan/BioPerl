@@ -1,6 +1,6 @@
 #!perl
 # -*-Perl-*-
-# $Id: flanks.PLS,v 1.7 2006/07/04 22:23:29 mauricio Exp $
+# $Id: flanks.PLS 15088 2008-12-04 02:49:09Z bosborne $
 #
 # Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 # Finding flanking sequences for a variant.

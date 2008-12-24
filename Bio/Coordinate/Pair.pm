@@ -1,4 +1,4 @@
-# $Id: Pair.pm,v 1.19.4.1 2006/10/02 23:10:14 sendu Exp $
+# $Id: Pair.pm 14855 2008-09-04 06:13:58Z heikki $
 #
 # bioperl module for Bio::Coordinate::Pair
 #
@@ -244,8 +244,7 @@ sub map {
 
    if ($value->isa("Bio::Location::SplitLocationI")) {
 
-       my $result = new Bio::Coordinate::Result;
-       my $split = new Bio::Location::Split(-seq_id=>$self->out->seq_id);
+       my $result = Bio::Coordinate::Result->new();
        foreach my $loc ( $value->sub_Location(1) ) {
            my $res = $self->_map($loc);
            map { $result->add_sub_Location($_) } $res->each_Location;
@@ -273,7 +272,7 @@ sub map {
 sub _map {
    my ($self,$value) = @_;
 
-   my $result = new Bio::Coordinate::Result;
+   my $result = Bio::Coordinate::Result->new();
 
    my $offset = $self->in->start - $self->out->start;
    my $start  = $value->start - $offset;

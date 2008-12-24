@@ -1,4 +1,4 @@
-# $Id: DasI.pm,v 1.18.4.4 2006/10/02 23:10:12 sendu Exp $
+# $Id: DasI.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module for Bio::DasI
 #

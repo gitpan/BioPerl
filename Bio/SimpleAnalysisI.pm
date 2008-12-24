@@ -1,4 +1,4 @@
-# $Id: SimpleAnalysisI.pm,v 1.9.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: SimpleAnalysisI.pm 10622 2006-10-02 04:34:53Z tseemann $
 #
 # BioPerl module for Bio::SimpleAnalysisI
 #

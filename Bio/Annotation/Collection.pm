@@ -1,5 +1,4 @@
-# $Id: Collection.pm,v 1.23.4.1 2006/10/02 23:10:12 sendu Exp $
-
+# $Id: Collection.pm 14802 2008-08-15 06:01:18Z miraceti $
 #
 # BioPerl module for Bio::Annotation::Collection.pm
 #
@@ -150,14 +149,88 @@ sub get_Annotations{
     my @anns = ();
     @keys = $self->get_all_annotation_keys() unless @keys;
     foreach my $key (@keys) {
-	if(exists($self->{'_annotation'}->{$key})) {
-	    push(@anns,
-		 map {
-		     $_->tagname($key) if ! $_->tagname(); $_;
-		 } @{$self->{'_annotation'}->{$key}});
-	}
+      if(exists($self->{'_annotation'}->{$key})) {
+        push(@anns,
+            map {
+            $_->tagname($key) if ! $_->tagname(); $_;
+            } @{$self->{'_annotation'}->{$key}});
+      }
     }
     return @anns;
+}
+
+
+=head2 get_nested_Annotations
+
+ Title   : get_nested_Annotations
+ Usage   : my @annotations = $collection->get_nested_Annotations(
+                                '-key' => \@keys,
+                                '-recursive => 1);
+ Function: Retrieves all the Bio::AnnotationI objects for one or more
+           specific key(s). If -recursive is set to true, traverses the nested 
+           annotation collections recursively and returns all annotations 
+           matching the key(s).
+
+           If no key is given, returns all annotation objects.
+
+           The returned objects will have their tagname() attribute set to
+           the key under which they were attached, unless the tagname was
+           already set.
+
+ Returns : list of Bio::AnnotationI - empty if no objects stored for a key
+ Args    : -keys      => arrayref of keys to search for (optional)
+           -recursive => boolean, whether or not to recursively traverse the 
+            nested annotations and return annotations with matching keys.
+
+=cut
+
+sub get_nested_Annotations {
+  my ($self, @args) = @_;
+  my ($keys, $recursive) = $self->_rearrange([qw(KEYS RECURSIVE)], @args);
+  $self->verbose(1);
+  
+  my @anns = ();
+  # if not recursive behave exactly like get_Annotations()
+  if (!$recursive) {
+	  my @keys = $keys? @$keys : $self->get_all_annotation_keys();
+    foreach my $key (@keys) {
+      if(exists($self->{'_annotation'}->{$key})) {
+        push(@anns,
+            map {
+            $_->tagname($key) if ! $_->tagname(); $_;
+            } @{$self->{'_annotation'}->{$key}});
+      }
+    }
+  }
+  # if recursive search for keys recursively
+  else {
+    my @allkeys = $self->get_all_annotation_keys();
+    foreach my $key (@allkeys) {
+      my $keymatch = 0;
+      foreach my $searchkey (@$keys) {
+        if ($key eq $searchkey) { $keymatch = 1;}
+      }
+      if ($keymatch) {
+        if(exists($self->{'_annotation'}->{$key})) {
+          push(@anns,
+              map {
+              $_->tagname($key) if ! $_->tagname(); $_;
+              } @{$self->{'_annotation'}->{$key}});
+        }
+      }
+      else {
+        my @annotations = @{$self->{'_annotation'}->{$key}};
+        foreach (@annotations) {
+          if ($_->isa("Bio::AnnotationCollectionI")) {
+            push (@anns, 
+                  $_->get_nested_Annotations('-keys' => $keys, '-recursive' => 1)
+                 );
+          }
+        }
+      }
+    }
+  }
+  return @anns;
 }
 
 =head2 get_all_Annotations
@@ -189,6 +262,7 @@ sub get_all_Annotations{
 	    $_->get_all_Annotations() : $_;
     } $self->get_Annotations(@keys);
 }
+
 
 =head2 get_num_of_annotations
 
@@ -258,7 +332,7 @@ sub add_Annotation{
    }
 
    if( !$object->isa("Bio::AnnotationI") ) {
-       $self->throw("object must be AnnotationI compliant, otherwise we wont add it!");
+       $self->throw("object must be AnnotationI compliant, otherwise we won't add it!");
    }
 
    # ok, now we are ready! If we don't have an archetype, set it
@@ -276,7 +350,9 @@ sub add_Annotation{
        # this means isa stuff is executed correctly
 
        if( !$self->_typemap()->is_valid($key,$object) ) {
-	   $self->throw("Object $object was not valid with key $key. If you were adding new keys in, perhaps you want to make use of the archetype method to allow registration to a more basic type");
+	   $self->throw("Object $object was not valid with key $key. ".
+         "If you were adding new keys in, perhaps you want to make use\n".
+         "of the archetype method to allow registration to a more basic type");
        }
    } else {
        $self->_typemap->_add_type_map($key,$archetype);
@@ -354,8 +430,8 @@ sub flatten_Annotations{
 
 =head1 Bio::AnnotationI methods implementations
 
-   This is to allow nested annotation: you can a collection as an
-   annotation object to an annotation collection.
+   This is to allow nested annotation: you can use a collection as an
+   annotation object for an annotation collection.
 
 =cut
 
@@ -386,6 +462,43 @@ sub as_text{
     }
     return $txt;
 }
+
+=head2 display_text
+
+ Title   : display_text
+ Usage   : my $str = $ann->display_text();
+ Function: returns a string. Unlike as_text(), this method returns a string
+           formatted as would be expected for te specific implementation.
+
+           One can pass a callback as an argument which allows custom text
+           generation; the callback is passed the current instance and any text
+           returned
+ Example :
+ Returns : a string
+ Args    : [optional] callback
+
+=cut
+
+{
+   # this just calls the default display_text output for
+   # any AnnotationI
+  my $DEFAULT_CB = sub {
+    my $obj = shift;
+    my $txt;
+    foreach my $ann ($obj->get_Annotations()) {
+      $txt .= $ann->display_text()."\n";
+    }
+    return $txt;
+    };
+
+  sub display_text {
+    my ($self, $cb) = @_;
+    $cb ||= $DEFAULT_CB;
+    $self->throw("") if ref $cb ne 'CODE';
+    return $cb->($self);
+  }
+}
+
 
 =head2 hash_tree
 

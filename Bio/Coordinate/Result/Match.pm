@@ -1,4 +1,4 @@
-# $Id: Match.pm,v 1.9.4.1 2006/10/02 23:10:14 sendu Exp $
+# $Id: Match.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Coordinate::Result::Match
 #
@@ -17,7 +17,7 @@ Bio::Coordinate::Result::Match - Another name for Bio::Location::Simple
 
 =head1 SYNOPSIS
 
-  $loc = new Bio::Coordinate::Result::Match(-start=>10,
+  $loc = Bio::Coordinate::Result::Match->new(-start=>10,
                                             -end=>30,
                                             -strand=>+1);
 

@@ -1,8 +1,8 @@
-# $Id: TreeFunctionsI.pm,v 1.28.2.1 2006/10/02 23:10:37 sendu Exp $
+# $Id: TreeFunctionsI.pm 14904 2008-09-19 16:17:32Z heikki $
 #
 # BioPerl module for Bio::Tree::TreeFunctionsI
 #
-# Cared for by Jason Stajich <jason@bioperl.org>
+# Cared for by Jason Stajich <jason-at-bioperl-dot-org>
 #
 # Copyright Jason Stajich
 #
@@ -17,7 +17,7 @@ Bio::Tree::TreeFunctionsI - Decorated Interface implementing basic Tree explorat
 =head1 SYNOPSIS
 
   use Bio::TreeIO;
-  my $in = new Bio::TreeIO(-format => 'newick', -file => 'tree.tre');
+  my $in = Bio::TreeIO->new(-format => 'newick', -file => 'tree.tre');
 
   my $tree = $in->next_tree;
 
@@ -78,6 +78,8 @@ Internal methods are usually preceded with a _
 package Bio::Tree::TreeFunctionsI;
 use strict;
 
+use UNIVERSAL qw(isa);
+
 use base qw(Bio::Tree::TreeI);
 
 =head2 find_node
@@ -115,9 +117,9 @@ sub find_node {
 
    # could actually do this by testing $rootnode->can($type) but
    # it is possible that a tree is implemeted with different node types
-   # - although it is unlikely that the root node would be richer than the 
+   # - although it is unlikely that the root node would be richer than the
    # leaf nodes.  Can't handle NHX tags right now
-    
+
    my @nodes = grep { $_->can($type) && defined $_->$type() &&
 		     $_->$type() eq $field } $self->get_nodes();
 
@@ -184,12 +186,12 @@ sub get_lineage_nodes {
     else { 
         $node = $input;
     }
-    
+
     # when dealing with Bio::Taxon objects with databases, the root will always
     # be the database's root, ignoring this Tree's set root node; prefer the
     # Tree's idea of root.
     my $root = $self->get_root_node || '';
-    
+
     my @lineage;
     while ($node) {
         $node = $node->ancestor || last;
@@ -229,7 +231,7 @@ sub get_lineage_nodes {
 sub splice {
     my ($self, @args) = @_;
     $self->throw("Must supply some arguments") unless @args > 0;
-    
+
     my @nodes_to_remove;
     if (ref($args[0])) {
         $self->throw("When supplying just a list of Nodes, they must be Bio::Tree::NodeI objects") unless $args[0]->isa('Bio::Tree::NodeI');
@@ -243,7 +245,7 @@ sub splice {
         my $remove_all = 1;
         while (my ($key, $value) = each %args) {
             my @values = ref($value) ? @{$value} : ($value);
-            
+
             if ($key =~ s/remove_//) {
                 $remove_all = 0;
                 foreach my $value (@values) {
@@ -256,16 +258,15 @@ sub splice {
                 }
             }
         }
-        
+
         if ($remove_all) {
             if (@keep_nodes == 0) {
                 $self->warn("Requested to remove everything except certain nodes, but those nodes were not found; doing nothing instead");
                 return;
             }
-            
+
             @remove_nodes = $self->get_nodes;
         }
-        
         if (@keep_nodes > 0) {
             my %keep_iids = map { $_->internal_id => 1 } @keep_nodes;
             foreach my $node (@remove_nodes) {
@@ -276,7 +277,6 @@ sub splice {
             @nodes_to_remove = @remove_nodes;
         }
     }
-    
     # do the splicing
     #*** the algorithm here hasn't really been thought through and tested much,
     #    will probably need revising
@@ -284,7 +284,6 @@ sub splice {
     my $reroot = 0;
     foreach my $node (@nodes_to_remove) {
         my @descs = $node->each_Descendent;
-        
         my $ancestor = $node->ancestor;
         if (! $ancestor && ! $reroot) {
             # we're going to remove the tree root, so will have to re-root the
@@ -294,17 +293,14 @@ sub splice {
             $node->remove_all_Descendents;
             next;
         }
-        
         if (exists $root_descs{$node->internal_id}) {
             # well, this one can't be the future root anymore
             delete $root_descs{$node->internal_id};
-            
             # but maybe one of this one's descs will become the root
             foreach my $desc (@descs) {
                 $root_descs{$desc->internal_id} = $desc;
             }
         }
-        
         # make the ancestor of our descendents our own ancestor, and give us
         # no ancestor of our own to remove us from the tree
         foreach my $desc (@descs) {
@@ -312,7 +308,6 @@ sub splice {
         }
         $node->ancestor(undef);
     }
-    
     if ($reroot) {
         my @candidates = values %root_descs;
         $self->throw("After splicing, there was no tree root!") unless @candidates > 0;
@@ -328,7 +323,7 @@ sub splice {
            get_lca(@nodes);
  Function: given two or more nodes, returns the lowest common ancestor (aka most
            recent common ancestor)
- Returns : node object or undef if there is no commen ancestor
+ Returns : node object or undef if there is no common ancestor
  Args    : -nodes => arrayref of nodes to test, OR
            just a list of nodes
 
@@ -345,7 +340,6 @@ sub get_lca {
         @nodes = @args;
     }
     @nodes >= 2 or $self->throw("At least 2 nodes are required");
-    
     # We must go root->leaf to get the correct answer to lca (in a world where
     # internal_id might not be uniquely assigned), but leaf->root is more
     # forgiving (eg. lineages may not all have the same root, or they may have
@@ -354,14 +348,15 @@ sub get_lca {
     # I use root->leaf so that we can easily do multiple nodes at once - no
     # matter what taxa are below the lca, the lca and all its ancestors ought to
     # be identical.
-    
     my @paths;
     foreach my $node (@nodes) {
+	unless(ref($node) && $node->isa('Bio::Tree::NodeI')) {
+	    $self->throw("Cannot process get_lca() with a non-NodeI object ($node)\n");
+	}
         my @path = ($self->get_lineage_nodes($node), $node);
         push(@paths, \@path);
     }
     return unless @paths >= 2;
-    
     my $lca;
     LEVEL: while ($paths[0] > 0) {
         my %node_ids;
@@ -375,7 +370,6 @@ sub get_lca {
             }
             $node_ids{$node_id}++;
         }
-        
         if (keys %node_ids == 1) {
             $lca = $node;
         }
@@ -385,7 +379,6 @@ sub get_lca {
             last LEVEL;
         }
     }
-    
     # If the tree that we are contains the lca (get_lca could have been called
     # on an empty tree, since it works with plain Nodes), prefer to return the
     # node object that belongs to us
@@ -393,7 +386,6 @@ sub get_lca {
         my $own_lca = $self->find_node(-internal_id => $lca->internal_id);
         $lca = $own_lca if $own_lca;
     }
-    
     return $lca;
 }
 
@@ -431,7 +423,7 @@ sub get_lca {
 sub merge_lineage {
     my ($self, $thing) = @_;
     $self->throw("Must supply an object reference") unless ref($thing);
-    
+
     my ($lineage_tree, $lineage_leaf);
     if ($thing->isa('Bio::Tree::TreeI')) {
         my @leaves = $thing->get_leaf_nodes;
@@ -444,32 +436,25 @@ sub merge_lineage {
         $lineage_tree = $self->new(-node => $thing);
         $lineage_leaf = $thing;
     }
-    
-    # get the lca of this node and every leaf of the main tree until we find
-    # the branch that isn't in the main tree yet
-    my ($main_tree_lca, $new_branch_base);
-    foreach my $leaf ($self->get_leaf_nodes) {
-        $main_tree_lca = $self->get_lca($lineage_leaf, $leaf) || ($self->warn("couldn't get the lca of nodes ".$lineage_leaf->id." and ".$leaf->id."!") && next);
-        
-        my $branch_lca = $lineage_tree->find_node(-internal_id => $main_tree_lca->internal_id);
-        ($new_branch_base) = $branch_lca->each_Descendent;
-        if ($new_branch_base) {
-            if ($self->find_node(-internal_id => $new_branch_base->internal_id)) {
-                # this branch is already in the main tree, try again
-                $new_branch_base = undef;
-                next;
-            }
-            else {
-                last;
-            }
-        }
-        else {
-            # the lca is the lineage leaf itself, nothing for us to merge
+
+    # see if any node in the supplied lineage is in our tree - that will be
+    # our lca and we can merge at the node below
+    my @lineage = ($lineage_leaf, reverse($self->get_lineage_nodes($lineage_leaf)));
+    my $merged = 0;
+    for my $i (0..$#lineage) {
+        my $lca = $self->find_node(-internal_id => $lineage[$i]->internal_id) || next;
+
+        if ($i == 0) {
+            # the supplied thing to merge is already in the tree, nothing to do
             return;
         }
+        # $i is the lca, so the previous node is new to the tree and should
+        # be merged on
+        $lca->add_Descendent($lineage[$i-1]);
+        $merged = 1;
+        last;
     }
-    $new_branch_base || ($self->warn("couldn't merge the lineage of ".$lineage_leaf->id." with the rest of the tree!\n") && return);
-    $main_tree_lca->add_Descendent($new_branch_base);
+    $merged || ($self->warn("Couldn't merge the lineage of ".$lineage_leaf->id." with the rest of the tree!\n") && return);
 }
 
 =head2 contract_linear_paths
@@ -479,7 +464,8 @@ sub merge_lineage {
  Function: Splices out all nodes in the tree that have an ancestor and only one
            descendent.
  Returns : n/a
- Args    : none
+ Args    : none for normal behaviour, true to dis-regard the ancestor requirment
+           and re-root the tree as necessary
 
  For example, if we are the tree $tree:
 
@@ -497,10 +483,19 @@ sub merge_lineage {
      |
      +---F
 
+ Instead, $tree->contract_linear_paths(1) would have given:
+
+ +---E
+ |
+ D
+ |
+ +---F
+
 =cut
 
 sub contract_linear_paths {
     my $self = shift;
+    my $reroot = shift;
     my @remove;
     foreach my $node ($self->get_nodes) {
         if ($node->ancestor && $node->each_Descendent == 1) {
@@ -508,6 +503,253 @@ sub contract_linear_paths {
         }
     }
     $self->splice(@remove) if @remove;
+    if ($reroot) {
+        my $root = $self->get_root_node;
+        my @descs = $root->each_Descendent;
+        if (@descs == 1) {
+            my $new_root = shift(@descs);
+            $self->set_root_node($new_root);
+            $new_root->ancestor(undef);
+        }
+    }
+}
+
+=head2 is_binary
+
+  Example    : is_binary(); is_binary($node);
+  Description: Finds if the tree or subtree defined by
+               the internal node is a true binary tree
+               without polytomies
+  Returns    : boolean
+  Exceptions : 
+  Args       : Internal node Bio::Tree::NodeI, optional
+
+
+=cut
+
+sub is_binary;
+
+sub is_binary {
+    my $self = shift;
+    my $node = shift || $self->get_root_node;
+
+    my $binary = 1;
+    my @descs = $node->each_Descendent;
+    $binary = 0 unless @descs == 2 or @descs == 0;
+    #print "$binary, ", scalar @descs, "\n";
+
+    # recurse
+    foreach my $desc (@descs) {
+        $binary += $self->is_binary($desc) -1;
+    }
+    $binary = 0 if $binary < 0;
+    return $binary;
+}
+
+
+=head2 force_binary
+
+ Title   : force_binary
+ Usage   : force_binary()
+ Function: Forces the tree into a binary tree, splitting branches arbitrarily
+           and creating extra nodes as necessary, such that all nodes have
+           exactly two or zero descendants.
+ Returns : n/a
+ Args    : none
+
+ For example, if we are the tree $tree:
+
+ +---G
+ |
+ +---F
+ |
+ +---E
+ |
+ A
+ |
+ +---D
+ |
+ +---C
+ |
+ +---B
+
+ (A has 6 descendants B-G)
+
+ After calling $tree->force_binary(), $tree looks like:
+
+         +---X
+         |
+     +---X
+     |   |
+     |   +---X
+     |
+ +---X
+ |   |
+ |   |   +---G
+ |   |   |
+ |   +---X
+ |       |
+ |       +---F
+ A
+ |       +---E
+ |       |
+ |   +---X
+ |   |   |
+ |   |   +---D
+ |   |
+ +---X
+     |
+     |   +---C
+     |   |
+     +---X
+         |
+         +---B
+
+ (Where X are artificially created nodes with ids 'artificial_n', where n is
+ an integer making the id unique within the tree)
+
+=cut
+
+sub force_binary {
+    my $self = shift;
+    my $node = shift || $self->get_root_node;
+
+    my @descs = $node->each_Descendent;
+    if (@descs > 2) {
+        $self->warn("Node ".($node->can('node_name') ? ($node->node_name || $node->id) : $node->id).
+                    " has more than two descendants\n(".
+                    join(", ", map { $node->can('node_name') ? ($node->node_name || $node->id) : $node->id } @descs).
+                    ")\nWill do an arbitrary balanced split");
+        my @working = @descs;
+        # create an even set of artifical nodes on which to later hang the descs
+        my $half = @working / 2;
+        $half++ if $half > int($half);
+        $half = int($half);
+        my @artificials;
+        while ($half > 1) {
+            my @this_level;
+            foreach my $top_node (@artificials || $node) {
+                for (1..2) {
+                    my $art = $top_node->new(-id => "artificial_".++$self->{_art_num});
+                    $top_node->add_Descendent($art);
+                    push(@this_level, $art);
+                }
+            }
+            @artificials = @this_level;
+            $half--;
+        }
+        # attach two descs to each artifical leaf
+        foreach my $art (@artificials) {
+            for (1..2) {
+                my $desc = shift(@working) || $node->new(-id => "artificial_".++$self->{_art_num});
+                $desc->ancestor($art);
+            }
+        }
+    }
+    elsif (@descs == 1) {
+        # ensure that all nodes have 2 descs
+        $node->add_Descendent($node->new(-id => "artificial_".++$self->{_art_num}));
+    }
+    # recurse
+    foreach my $desc (@descs) {
+        $self->force_binary($desc);
+    }
+}
+
+=head2 simplify_to_leaves_string
+
+ Title   : simplify_to_leaves_string
+ Usage   : my $leaves_string = $tree->simplify_to_leaves_string()
+ Function: Creates a simple textual representation of the relationship between
+           leaves in self. It forces the tree to be binary, so the result may
+           not strictly correspond to the tree (if the tree wasn't binary), but
+           will be as close as possible. The tree object is not altered. Only
+           leaf node ids are output, in a newick-like format.
+ Returns : string
+ Args    : none
+
+=cut
+
+sub simplify_to_leaves_string {
+    my $self = shift;
+
+    # Before contracting and forcing binary we need to clone self, but Clone.pm
+    # clone() seg faults and fails to make the clone, whilst Storable dclone
+    # needs $self->{_root_cleanup_methods} deleted (code ref) and seg faults at
+    # end of script. Let's make our own clone...
+    my $tree = $self->_clone;
+
+    $tree->contract_linear_paths(1);
+    $tree->force_binary;
+    foreach my $node ($tree->get_nodes) {
+        my $id = $node->id;
+        $id = ($node->is_Leaf && $id !~ /^artificial/) ? $id : '';
+        $node->id($id);
+    }
+
+    my %paired;
+    my @data = $self->_simplify_helper($tree->get_root_node, \%paired);
+
+    return join(',', @data);
+}
+
+# safe tree clone that doesn't seg fault
+sub _clone {
+    my ($self, $parent, $parent_clone) = @_;
+    $parent ||= $self->get_root_node;
+    $parent_clone ||= $self->_clone_node($parent);
+
+    foreach my $node ($parent->each_Descendent()) {
+        my $child = $self->_clone_node($node);
+        $child->ancestor($parent_clone);
+        $self->_clone($node, $child);
+    }
+    $parent->ancestor && return;
+
+    my $tree = $self->new(-root => $parent_clone);
+    return $tree;
+}
+
+# safe node clone that doesn't seg fault, but deliberately loses ancestors and
+# descendents
+sub _clone_node {
+    my ($self, $node) = @_;
+    my $clone = $node->new;
+
+    while (my ($key, $val) = each %{$node}) {
+        if ($key eq '_desc' || $key eq '_ancestor') {
+            next;
+        }
+        ${$clone}{$key} = $val;
+    }
+
+    return $clone;
+}
+
+# tree string generator for simplify_to_leaves_string, based on
+# Bio::TreeIO::newick::_write_tree_Helper
+sub _simplify_helper {
+    my ($self, $node, $paired) = @_;
+    return () if (!defined $node);
+
+    my @data = ();
+    foreach my $node ($node->each_Descendent()) {
+        push(@data, $self->_simplify_helper($node, $paired));
+    }
+
+    my $id = $node->id_output || '';
+    if (@data) {
+        unless (exists ${$paired}{"@data"} || @data == 1)  {
+            $data[0] = "(" . $data[0];
+            $data[-1] .= ")";
+            ${$paired}{"@data"} = 1;
+        }
+    }
+    elsif ($id) {
+        push(@data, $id);
+    }
+
+    return @data;
 }
 
 =head2 distance
@@ -528,17 +770,18 @@ sub distance {
 	return;
     }
     $self->throw("Must provide 2 nodes") unless @{$nodes} == 2;
-    
+
     my $lca = $self->get_lca(@{$nodes});
     unless($lca) { 
         $self->warn("could not find the lca of supplied nodes; can't find distance either");
         return;
     }
-    
+
     my $cumul_dist = 0;
     my $warned = 0;
     foreach my $current_node (@{$nodes}) {
         while (1) {
+            last if $current_node eq $lca;
             if ($current_node->branch_length) {
                 $cumul_dist += $current_node->branch_length;
             }
@@ -546,12 +789,11 @@ sub distance {
                 $self->warn("At least some nodes do not have a branch length, the distance returned could be wrong");
                 $warned = 1;
             }
-            
+
             $current_node = $current_node->ancestor || last;
-            last if $current_node eq $lca;
         }
     }
-    
+
     return $cumul_dist;
 }
 
@@ -581,13 +823,13 @@ is_monophyletic");
    if( ref($nodes) !~ /ARRAY/i ) {
        $self->warn("Must provide a valid array reference for -nodes");
    }
-   
+
    my $clade_root = $self->get_lca(@{$nodes});
    unless( defined $clade_root ) { 
        $self->warn("could not find clade root via lca");
        return;
    }
-   
+
    my $og_ancestor = $outgroup->ancestor;
    while( defined ($og_ancestor ) ) {
        if( $og_ancestor->internal_id == $clade_root->internal_id ) {
@@ -636,13 +878,13 @@ sub is_paraphyletic{
    foreach my $n ( @$nodes ) {
        $nodehash{$n->internal_id} = $n;
    }
-   
+
    my $clade_root = $self->get_lca(-nodes => $nodes );
    unless( defined $clade_root ) { 
        $self->warn("could not find clade root via lca");
        return;
    }
-   
+
    my $og_ancestor = $outgroup->ancestor;
 
    # Is this necessary/correct for paraphyly test?
@@ -653,7 +895,7 @@ sub is_paraphyletic{
        }
        $og_ancestor = $og_ancestor->ancestor;
    }
-   my $tree = new Bio::Tree::Tree(-root     => $clade_root,
+   my $tree = Bio::Tree::Tree->new(-root     => $clade_root,
 				  -nodelete => 1);
 
    foreach my $n ( $tree->get_nodes() ) { 
@@ -683,9 +925,9 @@ sub reroot {
         $self->warn("Must provide a valid Bio::Tree::NodeI when rerooting");
         return 0;
     }
-    
+
     {
-        my $anc = $new_root->ancestor;	
+        my $anc = $new_root->ancestor;
         unless( $anc ) {
             return 0;
         }
@@ -708,7 +950,7 @@ sub reroot {
         $self->warn("Node requested for reroot is already the root node!");
         return 0;
     }
-    
+
     # reverse the ancestor & children pointers
     my @path_from_oldroot = ($self->get_lineage_nodes($new_root), $new_root);
     for (my $i = 0; $i < @path_from_oldroot - 1; $i++) {
@@ -737,8 +979,8 @@ sub reroot {
 =head2 findnode_by_id
 
  Title   : findnode_by_id
- Usage   : my $node = $tree->find_node_by_id($id);
- Function: Get a node by its internal id (which should be 
+ Usage   : my $node = $tree->findnode_by_id($id);
+ Function: Get a node by its id (which should be 
            unique for the tree)
  Returns : L<Bio::Tree::NodeI>
  Args    : node id
@@ -749,6 +991,8 @@ sub reroot {
 
 sub findnode_by_id {
     my $tree = shift;
+    $tree->deprecated("use of findnode_by_id() is deprecated; ".
+		      "use find_node() instead");
     my $id = shift;
     my $rootnode = $tree->get_root_node;
     if ( ($rootnode->id) and ($rootnode->id eq $id) ) {
@@ -761,5 +1005,92 @@ sub findnode_by_id {
         }
     }
 }
+
+=head2 move_id_to_bootstrap
+
+ Title   : move_id_to_bootstrap
+ Usage   : $tree->move_id_to_bootstrap
+ Function: Move internal IDs to bootstrap slot
+ Returns : undef
+ Args    : undef
+
+
+=cut
+
+sub move_id_to_bootstrap{
+   my ($tree) = shift;
+   for my $node ( grep { ! $_->is_Leaf } $tree->get_nodes ) {
+       $node->bootstrap($node->id);
+       $node->id('');
+   }
+}
+
+
+=head2 add_traits
+
+  Example    : $key = $stat->add_traits($tree, $trait_file, 3);
+  Description: Add traits to a Bio::Tree:Tree nodes
+               of a tree from a file.
+  Returns    : trait name
+  Exceptions : log an error if a node has no value in the file
+  Caller     : main()
+
+The trait file is a tab-delimied text file and need to have a header
+line giving names to traits. The first column contains the leaf node
+ids. Subsequent columns contain different trait value sets. Columns
+numbering starts from 0. The default trait column is the second
+(1). The returned hashref has one special key, my_trait_name, that
+holds the trait name. Single or double quotes are removed.
+
+=cut
+
+sub _read_trait_file {
+    my $self = shift;
+    my $file = shift;
+    my $column = shift || 1;
+
+    my $traits;
+    open my $TRAIT, "<", $file or $self->("Can't find file $file: $!\n");
+
+    my $first_line = 1;
+    while (<$TRAIT>) {
+	if ($first_line) {
+	    $first_line = 0;
+	    s/['"]//g;
+	    my @line = split;
+	    $traits->{'my_trait_name'} = $line[$column];
+	    next;
+	}
+	s/['"]//g;
+	my @line = split;
+	last unless $line[0];
+	$traits->{$line[0]} = $line[$column];
+    }
+    return $traits;
+}
+
+
+sub add_trait {
+    my $self = shift;
+    my $file = shift;
+    my $column = shift;
+
+    my $traits = $self->_read_trait_file($file, $column); # filename, trait column
+    my $key = $traits->{'my_trait_name'};
+    #use YAML; print Dump $traits; exit;
+    foreach my $node ($self->get_leaf_nodes) {
+	# strip quotes from the node id
+	$node->id($1) if $node->id =~ /^['"]+(.*)['"]+$/;
+	eval {
+	    $node->verbose(2);
+	    $node->add_tag_value($key, $traits->{ $node->id } );
+	};
+	$self->throw("ERROR: No trait for node [".
+		     $node->id. "/".  $node->internal_id. "]")
+	    if $@;
+    }
+    return $key;
+}
+
 
 1;

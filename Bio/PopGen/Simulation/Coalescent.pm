@@ -1,4 +1,4 @@
-# $Id: Coalescent.pm,v 1.11.4.1 2006/10/02 23:10:23 sendu Exp $
+# $Id: Coalescent.pm 15149 2008-12-12 10:52:28Z heikki $
 #
 # BioPerl module for Bio::PopGen::Simulation::Coalescent
 #
@@ -100,7 +100,7 @@ use base qw(Bio::Root::Root Bio::Factory::TreeFactoryI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::PopGen::Simulation::Coalescent();
+ Usage   : my $obj = Bio::PopGen::Simulation::Coalescent->new();
  Function: Builds a new Bio::PopGen::Simulation::Coalescent object 
  Returns : an instance of Bio::PopGen::Simulation::Coalescent
  Args    : -samples => arrayref of sample names
@@ -158,8 +158,8 @@ sub next_tree{
    # If maxcount is set to something non-zero then next tree will
    # continue to return valid trees until maxcount is reached
    # otherwise will always return trees 
-   return undef if( $self->maxcount &&
-		    $self->{'_treecounter'}++ >= $self->maxcount );
+   return if( $self->maxcount &&
+	      $self->{'_treecounter'}++ >= $self->maxcount );
    my $size = $self->sample_size;
    
    my $in;
@@ -207,7 +207,7 @@ sub next_tree{
    my @nodes = ();   
    foreach my $n ( @tree ) { 
        push @nodes, 
-	   new Bio::Tree::AlleleNode(-id => $n->{'nodenum'},
+	   Bio::Tree::AlleleNode->new(-id => $n->{'nodenum'},
 				     -branch_length => $n->{'time'});
    }
    my $ct = 0;
@@ -288,7 +288,7 @@ sub add_Mutations{
 
        # We're using an infinite sites model so every new
        # mutation is a new site
-       my $g = new Bio::PopGen::Genotype(-marker_name  => "Mutation$j",
+       my $g = Bio::PopGen::Genotype->new(-marker_name  => "Mutation$j",
 					 -alleles => [1]);
        $nodes[$branch]->add_Genotype($g);
        push @mutations, "Mutation$j";
@@ -303,7 +303,7 @@ sub add_Mutations{
    foreach my $node ( @nodes ) {
        foreach my $m ( @mutations ) {
 	   if( ! $node->has_Marker($m) ) {
-	       my $emptyg = new Bio::PopGen::Genotype(-marker_name => $m,
+	       my $emptyg = Bio::PopGen::Genotype->new(-marker_name => $m,
 						      -alleles     => [0]);
 	       $node->add_Genotype($emptyg);
 	   }

@@ -1,56 +1,48 @@
-# -*-Perl-*-
-## Bioperl Test Harness Script for Modules
-## $Id: Alphabet.t,v 1.4 2006/08/16 22:25:59 cjfields Exp $
+# -*-Perl-*- Test Harness script for Bioperl
+# $Id: Alphabet.t 15112 2008-12-08 18:12:38Z sendu $
 
 use strict;
 
 BEGIN { 
-    # to handle systems with no installed Test module
-    # we include the t dir (where a copy of Test.pm is located)
-    # as a fallback
-    eval { require Test; };
-    if( $@ ) {
-	use lib 't';
-    }
-    use Test;
-
-    plan tests => 96;
+    use lib '.';
+    use Bio::Root::Test;
+    
+    test_begin(-tests => 100);
+	
+	use_ok('Bio::Symbol::Alphabet');
+	use_ok('Bio::Symbol::Symbol');
+	use_ok('Bio::Symbol::DNAAlphabet');
+	use_ok('Bio::Symbol::ProteinAlphabet');
 }
 
-use Bio::Symbol::Alphabet;
-use Bio::Symbol::Symbol;
-use Bio::Symbol::DNAAlphabet;
-use Bio::Symbol::ProteinAlphabet;
+my $A = Bio::Symbol::Symbol->new(-token => 'A' );
+my $U = Bio::Symbol::Symbol->new(-token => 'U' );
+my $G = Bio::Symbol::Symbol->new(-token => 'G' );
+my $T = Bio::Symbol::Symbol->new(-token => 'T' );
 
-my $A = new Bio::Symbol::Symbol(-token => 'A' );
-my $U = new Bio::Symbol::Symbol(-token => 'U' );
-my $G = new Bio::Symbol::Symbol(-token => 'G' );
-my $T = new Bio::Symbol::Symbol(-token => 'T' );
-
-my $rna = new Bio::Symbol::Alphabet( -symbols => [ $A, $U, $G, $T ] );
+my $rna = Bio::Symbol::Alphabet->new( -symbols => [ $A, $U, $G, $T ] );
 				     
-ok($rna);
+isa_ok($rna, 'Bio::Symbol::Alphabet');
 my @symbols = $rna->symbols;
-ok(scalar @symbols, 4);
+is(scalar @symbols, 4);
 
 ok($rna->contains($A));
 ok($rna->contains($T));
 ok($rna->contains($U));
 ok($rna->contains($G));
 
-
-my $dna = new Bio::Symbol::DNAAlphabet();
-ok($dna->isa('Bio::Symbol::AlphabetI'));
+my $dna = Bio::Symbol::DNAAlphabet->new();
+isa_ok($dna, 'Bio::Symbol::AlphabetI');
 my $count = 0;
 
 my @dnasymbols = sort qw( A B C D G H K M N R S T U V W X Y );
 foreach my $s ( sort { $a->name cmp $b->name } $dna->symbols ) {
-    ok($s->name, $dnasymbols[$count]);    
-    ok($s->token, $dnasymbols[$count++]);    
+    is($s->name, $dnasymbols[$count]);    
+    is($s->token, $dnasymbols[$count++]);    
 }
 
-my $prot = new Bio::Symbol::ProteinAlphabet();
-ok($prot->isa('Bio::Symbol::AlphabetI'));
+my $prot = Bio::Symbol::ProteinAlphabet->new();
+isa_ok($prot, 'Bio::Symbol::AlphabetI');
 
 my @protsymbols = sort qw( * A B C D E F G H I J K L M N O P Q R S T U V W X Y Z);
 my %h = (
@@ -65,7 +57,6 @@ my %h = (
 my @protnms = sort { $h{$a} cmp $h{$b} } keys %h;
 $count = 0;
 foreach my $s ( sort { $a->token cmp $b->token } $prot->symbols ) {
-    ok($s->name, $protnms[$count]);
-    ok($s->token, $protsymbols[$count++]);    
+    is($s->name, $protnms[$count]);
+    is($s->token, $protsymbols[$count++]);    
 }
-

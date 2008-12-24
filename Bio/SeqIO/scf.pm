@@ -1,4 +1,4 @@
-# $Id: scf.pm,v 1.36.4.2 2006/11/08 17:25:55 sendu Exp $
+# $Id: scf.pm 15257 2008-12-24 05:27:05Z cjfields $
 #
 # Copyright (c) 1997-2001 bioperl, Chad Matsalla. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or
@@ -70,7 +70,7 @@ use vars qw($DEFAULT_QUALITY);
 use strict;
 use Bio::Seq::SeqFactory;
 use Bio::Seq::SequenceTrace;
-use Dumpvalue();
+use Dumpvalue;
 
 my $dumper = new Dumpvalue();
 $dumper->veryCompact(1);
@@ -85,7 +85,7 @@ sub _initialize {
   my($self,@args) = @_;
   $self->SUPER::_initialize(@args);
   if( ! defined $self->sequence_factory ) {
-      $self->sequence_factory(new Bio::Seq::SeqFactory
+      $self->sequence_factory(Bio::Seq::SeqFactory->new
 			      (-verbose => $self->verbose(),
 			       -type => 'Bio::Seq::Quality'));
   }
@@ -114,7 +114,8 @@ sub next_seq {
 	my ($seq, $seqc, $fh, $buffer, $offset, $length, $read_bytes, @read,
 		 %names);
 	# set up a filehandle to read in the scf
-	$fh = $self->_filehandle();
+	return if $self->{_readfile};
+	$fh = $self->_fh();
 	unless ($fh) {		# simulate the <> function
 		if ( !fileno(ARGV) or eof(ARGV) ) {
 			return unless my $ARGV = shift;
@@ -221,10 +222,13 @@ sub next_seq {
 	$length = $creator->{header}->{comment_size};
 	$buffer = $self->read_from_buffer($fh,$buffer,$length);
 	$creator->{comments} = $self->_get_comments($buffer);
-        my @name_comments = grep {$_->tagname() eq 'NAME'}
-                          $creator->{comments}->get_Annotations('comment');
-        my $name_comment = $name_comments[0]->as_text();
-        $name_comment =~ s/^Comment:\s+//;
+	my @name_comments = grep {$_->tagname() eq 'NAME'}
+				$creator->{comments}->get_Annotations('comment');
+	my $name_comment;
+	if (@name_comments){
+		 $name_comment = $name_comments[0]->as_text();
+		 $name_comment =~ s/^Comment:\s+//;
+	}
 
 	my $swq = Bio::Seq::Quality->new(
 												-seq =>   $creator->{'sequence'},
@@ -245,6 +249,7 @@ sub next_seq {
 															 );
 
         $returner->annotation($creator->{'comments'}); # add SCF comments
+	$self->{'_readfile'} = 1;
 	return $returner;
 }
 
@@ -343,7 +348,7 @@ sub _get_v3_base_accuracies {
 
 sub _get_comments {
 	my ($self,$buffer) = @_;
-    my $comments = new Bio::Annotation::Collection();
+    my $comments = Bio::Annotation::Collection->new();
 	my $size = length($buffer);
 	my $comments_retrieved = unpack "a$size",$buffer;
 	$comments_retrieved =~ s/\0//;
@@ -600,7 +605,7 @@ sub write_seq {
                if (ref($swq) eq "Bio::Seq::Quality") {
                          # this means that the object *has no trace data*
                          # we might as well synthesize some now, ok?
-                    my $swq2 = new Bio::Seq::SequenceTrace(
+                    my $swq2 = Bio::Seq::SequenceTrace->new(
                          -swq     =>   $swq
                     );
                     $swq2->_synthesize_traces();
@@ -807,7 +812,7 @@ sub _get_binary_traces {
           # if so, call synthesize_base
      my ($traceobj,@traces,$current);
      if ( ref($ref) eq "Bio::Seq::Quality" ) {
-          $traceobj = new Bio::Seq::Quality(
+          $traceobj = Bio::Seq::Quality->new(
                -target   =>   $ref
           );
           $traceobj->_synthesize_traces();

@@ -1,4 +1,4 @@
-# $Id: SequenceProcessorI.pm,v 1.4.4.1 2006/10/02 23:10:18 sendu Exp $
+# $Id: SequenceProcessorI.pm 11573 2007-07-15 19:45:33Z cjfields $
 #
 # BioPerl module for Bio::Factory::SequenceProcessorI
 #
@@ -108,7 +108,6 @@ Internal methods are usually preceded with a _
 
 package Bio::Factory::SequenceProcessorI;
 use strict;
-use Carp;
 use Bio::Root::RootI;
 
 use base qw(Bio::Factory::SequenceStreamI);

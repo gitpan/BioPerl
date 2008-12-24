@@ -1,5 +1,5 @@
-# $Id: chaos.pm,v 1.10.4.1 2006/10/02 23:10:28 sendu Exp $
-# $Date: 2006/10/02 23:10:28 $
+# $Id: chaos.pm 11480 2007-06-14 14:16:21Z sendu $
+# $Date: 2007-06-14 09:16:21 -0500 (Thu, 14 Jun 2007) $
 #
 # BioPerl module for Bio::SeqIO::chaos
 #
@@ -142,7 +142,7 @@ sub _initialize {
 
     $self->SUPER::_initialize(@args);
     if( ! defined $self->sequence_factory ) {
-	$self->sequence_factory(new Bio::Seq::SeqFactory
+	$self->sequence_factory(Bio::Seq::SeqFactory->new
 				(-verbose => $self->verbose(),
 				 -type => 'Bio::Seq::RichSeq'));
     }
@@ -168,7 +168,7 @@ sub _initialize {
                                         [export_perl5lib=>$ENV{PERL5LIB}],
                                         [export_program=>$0],
                                         [export_module=>'Bio::SeqIO::chaos'],
-                                        [export_module_cvs_id=>'$Id: chaos.pm,v 1.10.4.1 2006/10/02 23:10:28 sendu Exp $'],
+                                        [export_module_cvs_id=>'$Id: chaos.pm 11480 2007-06-14 14:16:21Z sendu $'],
                                        ]);
 
     return;

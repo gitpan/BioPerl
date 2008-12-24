@@ -1,7 +1,7 @@
 # Let the code begin...
 package Bio::Expression::FeatureGroup::FeatureGroupMas50;
 
-# $Id: FeatureGroupMas50.pm,v 1.2.8.1 2006/10/02 23:10:17 sendu Exp $
+# $Id: FeatureGroupMas50.pm 10475 2006-09-20 15:47:57Z cjfields $
 
 =head1 NAME
 

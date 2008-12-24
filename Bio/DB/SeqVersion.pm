@@ -1,4 +1,4 @@
-# $Id: SeqVersion.pm,v 1.5.4.2 2006/10/05 12:17:55 sendu Exp $
+# $Id: SeqVersion.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::DB::SeqVersion
 #
@@ -76,7 +76,7 @@ my $DEFAULTIDTYPE = 'gi'; # sub default_id_type()
 
 =head2 new()
 
- Usage   : my $obj = new Bio::DB::SeqVersion();
+ Usage   : my $obj = Bio::DB::SeqVersion->new();
  Function: Create a Bio::DB::SeqVersion object 
  Returns : An instance of Bio::DB::SeqVersion
  Args    : -type      Identifier namespace, default is 'gi' 

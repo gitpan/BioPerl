@@ -1,4 +1,4 @@
-# $Id: MedlineBookArticle.pm,v 1.10.4.3 2006/10/02 23:10:12 sendu Exp $
+# $Id: MedlineBookArticle.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Biblio::MedlineBookArticle
 #
@@ -13,12 +13,12 @@ Bio::Biblio::MedlineBookArticle - Representation of a MEDLINE book article
 
 =head1 SYNOPSIS
 
-    $obj = new Bio::Biblio::MedlineBookArticle
+    $obj = Bio::Biblio::MedlineBookArticle->new
                   (-title => 'Getting started'.
-                   -book => new Bio::Biblio::MedlineBook);
+                   -book => Bio::Biblio::MedlineBook->new());
   #--- OR ---
 
-    $obj = new Bio::Biblio::MedlineBookArticle;
+    $obj = Bio::Biblio::MedlineBookArticle->new();
     $obj->title ('Getting started');
 
 =head1 DESCRIPTION

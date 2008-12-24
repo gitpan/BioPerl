@@ -1,4 +1,4 @@
-# $Id: DNA.pm,v 1.11.4.1 2006/10/02 23:10:21 sendu Exp $
+# $Id: DNA.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # bioperl module for Bio::LiveSeq::DNA
 #

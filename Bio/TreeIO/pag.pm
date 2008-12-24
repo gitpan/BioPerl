@@ -1,4 +1,4 @@
-# $Id: pag.pm,v 1.9.4.1 2006/10/02 23:10:37 sendu Exp $
+# $Id: pag.pm 14582 2008-03-01 17:28:31Z cjfields $
 #
 # BioPerl module for Bio::TreeIO::pag
 #
@@ -65,23 +65,34 @@ Internal methods are usually preceded with a _
 
 
 package Bio::TreeIO::pag;
-use vars qw($TaxonNameLen);
 use strict;
 
-$TaxonNameLen = 10;
+our $TaxonNameLen = 10;
 
 use base qw(Bio::TreeIO);
 
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::TreeIO::pag();
+ Usage   : my $obj = Bio::TreeIO::pag->new();
  Function: Builds a new Bio::TreeIO::pag object 
  Returns : an instance of Bio::TreeIO::pag
  Args    : -file/-fh for filename or filehandles
+           -name_length for minimum name length (default = 10)
 
 =cut
 
+sub _initialize {
+    my $self = shift;
+    $self->SUPER::_initialize(@_);
+    my ( $name_length ) = $self->_rearrange(
+        [
+            qw(NAME_LENGTH)
+        ],
+        @_
+    );
+    $self->name_length( defined $name_length ? $name_length : $TaxonNameLen );
+}
 
 =head2 write_tree
 
@@ -109,18 +120,21 @@ sub write_tree {
 	$special_node, 
 	$outgroup_ancestor,
 	$tree_no) = (0,0,1);
+    my $name_len = $self->name_length;
     if( @args ) {
 	($no_outgroups,
 	 $print_header,
 	 $special_node, 
 	 $outgroup_ancestor,
 	 $tree_no,
-	 $keep_outgroup) = $self->_rearrange([qw(NO_OUTGROUPS
+	 $keep_outgroup) = $self->_rearrange([qw(
+                         NO_OUTGROUPS
 						 PRINT_HEADER
 						 SPECIAL_NODE
 						 OUTGROUP_ANCESTOR
 						 TREE_NO
-						 KEEP_OUTGROUP)],@args);
+						 KEEP_OUTGROUP
+                         NAME_LENGTH)],@args);
     }
     my $newname_base = 1;
 
@@ -140,10 +154,10 @@ sub write_tree {
 	    $species_ct++;
 
 	    my $node_name = $node->id;
-	    if( length($node_name)> $TaxonNameLen ) {
-		$self->warn( "Found a taxon name longer than $TaxonNameLen letters, \n",
+	    if( length($node_name)> $name_len ) {
+		$self->warn( "Found a taxon name longer than $name_len letters, \n",
 			     "name will be abbreviated.\n");
-		$node_name = substr($node_name, 0,$TaxonNameLen);
+		$node_name = substr($node_name, 0,$name_len);
 	    } else { 
 		# $node_name = sprintf("%-".$TaxonNameLen."s",$node_name);
 	    }
@@ -176,7 +190,7 @@ sub write_tree {
     foreach my $node (@nodes) {
         my $i = 0;
         foreach my $anc (@ancestors) {
-            if ($node eq $anc) { $i = 1; last }
+            if ($anc && $node eq $anc) { $i = 1; last }
         }
         unless ($i > 0) {       # root not given in PAG
             my $current_name = $names{$node->internal_id};
@@ -225,5 +239,20 @@ sub next_tree{
    $self->throw_not_implemented();
 }
 
+=head2 name_length
+
+ Title   : name_length
+ Usage   : $self->name_length(20);
+ Function: set mininum taxon name length
+ Returns : integer (length of name)
+ Args    : integer
+
+=cut
+
+sub name_length {
+    my ($self, $val) = @_;
+    return $self->{'name_len'} = $val if $val;
+    return $self->{'name_len'};
+}
 
 1;

@@ -1,4 +1,4 @@
-# $Id: AnnotationAdaptor.pm,v 1.10.4.1 2006/10/02 23:10:28 sendu Exp $
+# $Id: AnnotationAdaptor.pm 14481 2008-02-05 02:16:21Z cjfields $
 #
 # BioPerl module for Bio::SeqFeature::AnnotationAdaptor
 #
@@ -47,7 +47,7 @@ Bio::SeqFeature::AnnotationAdaptor - integrates SeqFeatureIs annotation
    # to integrate tag/value annotation with AnnotationCollectionI
    # annotation, use this adaptor, which also implements 
    # Bio::AnnotationCollectionI
-   my $anncoll = Bio::SeqFeature::AnnotationAdaptor(-feature => $feat);
+   my $anncoll = Bio::SeqFeature::AnnotationAdaptor->new(-feature => $feat);
 
    # this will now return tag/value pairs as 
    # Bio::Annotation::SimpleValue objects
@@ -135,14 +135,13 @@ use strict;
 # Object preamble - inherits from Bio::Root::Root
 
 use Bio::Annotation::SimpleValue;
-use Data::Dumper;
 
 use base qw(Bio::Root::Root Bio::AnnotationCollectionI Bio::AnnotatableI);
 
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::SeqFeature::AnnotationAdaptor();
+ Usage   : my $obj = Bio::SeqFeature::AnnotationAdaptor->new();
  Function: Builds a new Bio::SeqFeature::AnnotationAdaptor object 
  Returns : an instance of Bio::SeqFeature::AnnotationAdaptor
  Args    : Named parameters
@@ -245,7 +244,11 @@ sub get_all_annotation_keys{
     my @keys = ();
     
     # get the tags from the feature object
-    push(@keys, $self->feature()->all_tags());
+    if ($self->feature()->can('get_all_tags')) {
+        push(@keys, $self->feature()->get_all_tags());
+    } else {
+        push(@keys, $self->feature()->all_tags());
+    }
     # ask the annotation implementation in addition, while avoiding duplicates
     if($self->annotation()) {
 	push(@keys,
@@ -277,24 +280,22 @@ sub get_Annotations{
     # get all tags if no keys have been provided
     @keys = $self->feature->all_tags() unless @keys;
 
-# don't bother.  SeqFeatureI now inherits AnnotatableI so $self->annotation() will give you all you need
-#
-#     # build object for each value for each tag
-#     foreach my $key (@keys) {
-#       # protect against keys that aren't tags
-#       next unless $self->feature->has_tag($key);
-#       # add each tag/value pair as a SimpleValue object
-#       foreach my $val ($self->feature()->get_tag_values($key)) {
-# 	    my $ann;
-# 	    if($fact) {
-#           $ann = $fact->create_object(-value => $val, -tagname => $key);
-# 	    } else {
-#           $ann = Bio::Annotation::SimpleValue->new(-value => $val,
-#                                                    -tagname => $key);
-# 	    }
-# 	    push(@anns, $ann);
-#       }
-#     }
+    # build object for each value for each tag
+    foreach my $key (@keys) {
+      # protect against keys that aren't tags
+      next unless $self->feature->has_tag($key);
+      # add each tag/value pair as a SimpleValue object
+      foreach my $val ($self->feature()->get_tag_values($key)) {
+       my $ann;
+       if($fact) {
+          $ann = $fact->create_object(-value => $val, -tagname => $key);
+       } else {
+          $ann = Bio::Annotation::SimpleValue->new(-value => $val,
+                                                   -tagname => $key);
+       }
+       push(@anns, $ann);
+      }
+    }
 
     # add what is in the annotation implementation if any
     if($self->annotation()) {
@@ -322,9 +323,9 @@ sub get_num_of_annotations{
   # first, count the number of tags on the feature
   my $num_anns = 0;
 
-#  foreach ($self->feature()->all_tags()) {
-#	$num_anns += scalar( $self->feature()->annotation->get_Annotations($_) );
-#  }
+  foreach ($self->feature()->all_tags()) {
+	$num_anns += scalar( $self->feature()->each_tag_value($_));
+  }
 
   # add from the annotation implementation if any
   if($self->annotation()) {

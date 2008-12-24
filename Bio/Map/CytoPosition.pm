@@ -1,4 +1,4 @@
-# $Id: CytoPosition.pm,v 1.16.4.1 2006/10/02 23:10:21 sendu Exp $
+# $Id: CytoPosition.pm 11523 2007-06-27 08:34:31Z sendu $
 #
 # BioPerl module for Bio::Map::CytoPosition
 #
@@ -90,6 +90,7 @@ package Bio::Map::CytoPosition;
 
 use strict;
 use integer;
+use Bio::Range;
 
 use base qw(Bio::Map::Position);
 
@@ -157,7 +158,7 @@ sub cytorange {
     $chr = 101 if $chr eq 'Y';
     $chr *= 1000000;
 
-    $r = new Bio::Range();
+    $r = Bio::Range->new();
 
     $band = '';
     if (defined $3 ) {
@@ -292,21 +293,21 @@ sub cytorange {
     elsif (defined $3 ) {
 	if ($2 eq 'p') {
 	    if ($3 eq 'ter') { # e.g. 10pter
-		$r = new Bio::Range('-start' => $chr,
+		$r = Bio::Range->new('-start' => $chr,
 				    '-end' => $chr,
 				    );
 	    } else { # e.g 10p22.1
-		$r = new Bio::Range('-start' => -(_pad($band, 5, '9')) + 100000 + $chr,
+		$r = Bio::Range->new('-start' => -(_pad($band, 5, '9')) + 100000 + $chr,
 				    '-end' => -(_pad($band, 5, '0')) + 100000 + $chr,
 				    );
 	    }
 	} elsif ($2 eq 'q') {
 	    if ($3 eq 'ter') { # e.g. 10qter
-		$r = new Bio::Range('-start' => 200000 + $chr,
+		$r = Bio::Range->new('-start' => 200000 + $chr,
 				    '-end' => 200000 + $chr,
 				    );
 	    } else { # e.g 10q22.1
-		$r = new Bio::Range('-start' => _pad($band, 5, '0') + 100000 + $chr,
+		$r = Bio::Range->new('-start' => _pad($band, 5, '0') + 100000 + $chr,
 				    '-end' => _pad($band, 5, '9') + 100000 + $chr,
 				    );
 	    }
@@ -319,16 +320,16 @@ sub cytorange {
     #
     elsif (defined $2 ) { # e.g. 10p
 	if ($2 eq 'p' ) {
-	    $r = new Bio::Range('-start' => $chr,
+	    $r = Bio::Range->new('-start' => $chr,
 				'-end' => 100000  + $chr
 				);
 	}
 	elsif ($2 eq 'q' )  {
-	    $r = new Bio::Range('-start' => 100000 + $chr,
+	    $r = Bio::Range->new('-start' => 100000 + $chr,
 				'-end' => 200000 + $chr
 				);
 	} else { # $2 eq 'cen' || 'qcen'
-	    $r = new Bio::Range('-start' => 100000 + $chr,
+	    $r = Bio::Range->new('-start' => 100000 + $chr,
 				'-end' => 100000 + $chr
 				);
 	}
@@ -337,7 +338,7 @@ sub cytorange {
     # chr only, e.g. X
     #
     else {
-	$r = new Bio::Range('-start' => $chr,
+	$r = Bio::Range->new('-start' => $chr,
 			    '-end' => 200000 + $chr
 			    );
     }

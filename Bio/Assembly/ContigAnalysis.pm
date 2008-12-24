@@ -1,4 +1,4 @@
-# $Id: ContigAnalysis.pm,v 1.6.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: ContigAnalysis.pm 11587 2007-07-17 16:07:05Z cjfields $
 #
 # BioPerl module for Bio::Assembly::ContigAnalysis
 #
@@ -21,7 +21,7 @@ Bio::Assembly::ContigAnalysis -
     use Bio::Assembly::ContigAnalysis;
 
     # Assembly loading methods
-    my $ca = new Bio::Assembly::ContigAnalysis( -contig=>$contigOBJ );
+    my $ca = Bio::Assembly::ContigAnalysis->new( -contig=>$contigOBJ );
 
     my @lcq = $ca->low_consensus_quality;
     my @hqd = $ca->high_quality_discrepancies;
@@ -174,6 +174,10 @@ sub high_quality_discrepancies {
 	# Scanning the aligned region of each read
 	my $seq_ix = 0;
 	my $coord = $self->{'_objref'}->get_seq_feat_by_tag($seq,"_align_clipping:$seqID");
+    if (!$coord) {
+        $self->warn("Read $seqID has no alignment coordinates; considered low quality.\nSkipping...");
+        next;
+    }
 	my ($astart,$aend) = ($coord->start,$coord->end);
 	$astart = $astart + $ignore; # Redefining limits to evaluate HQDs (jump $ignore at start)
 	$aend   = $aend   - $ignore; # Redefining limits to evaluate HQDs (stop $ignore before end)

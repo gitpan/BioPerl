@@ -1,4 +1,4 @@
-# $Id: Seq.pm,v 1.6.4.1 2006/10/02 23:10:38 sendu Exp $
+# $Id: Seq.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Seq
 #
@@ -928,7 +928,7 @@ sub annotation {
 	    unless $value->isa("Bio::AnnotationCollectionI");
 	$obj->{'_annotation'} = $value;
     } elsif( ! defined $obj->{'_annotation'}) {
-	$obj->{'_annotation'} = new Bio::Annotation::Collection;
+	$obj->{'_annotation'} = Bio::Annotation::Collection->new();
     }
     return $obj->{'_annotation'};
 }

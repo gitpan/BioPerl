@@ -1,4 +1,4 @@
-# $Id: Person.pm,v 1.15.4.3 2006/10/02 23:10:12 sendu Exp $
+# $Id: Person.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Biblio::Person
 #
@@ -13,11 +13,11 @@ Bio::Biblio::Person - Representation of a person
 
 =head1 SYNOPSIS
 
-    $obj = new Bio::Biblio::Person (-lastname => 'Capek',
+    $obj = Bio::Biblio::Person->new(-lastname => 'Capek',
                                     -firstname => 'Karel');
   #--- OR ---
 
-    $obj = new Bio::Biblio::Person;
+    $obj = Bio::Biblio::Person->new();
     $obj->firstname ('Karel');
     $obj->lastname ('Capek');
 

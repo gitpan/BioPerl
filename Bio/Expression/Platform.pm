@@ -1,4 +1,4 @@
-# $Id: Platform.pm,v 1.4.4.1 2006/10/02 23:10:17 sendu Exp $
+# $Id: Platform.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Expression::Platform
 #
@@ -63,7 +63,7 @@ use Bio::DB::Taxonomy;
 
 =head2 new()
 
- Usage   : my $obj = new Bio::Expression::Platform();
+ Usage   : my $obj = Bio::Expression::Platform->new();
  Function: Builds a new Bio::Expression::Platform object 
  Returns : an instance of Bio::Expression::Platform
  Args    :

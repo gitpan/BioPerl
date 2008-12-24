@@ -1,4 +1,4 @@
-# $Id: HSPTableWriter.pm,v 1.17.4.1 2006/10/02 23:10:27 sendu Exp $
+# $Id: HSPTableWriter.pm 14672 2008-04-22 21:42:50Z cjfields $
 
 =head1 NAME
 
@@ -91,9 +91,9 @@ is not specified, this list, in this order, will be used as the default.
     frac_conserved_hit     # fraction of conserved substitutions in hit
     length_aln_query       # Length of the aligned portion of the query sequence
     length_aln_hit         # Length of the aligned portion of the hit sequence
-    gaps_query             # Number of gaps in the aligned query sequence
-    gaps_hit               # Number of gaps in the aligned hit sequence
-    gaps_total             # Number of gaps in the aligned query and hit sequences
+    gaps_query             # Number of gap characters in the aligned query sequence
+    gaps_hit               # Number of gap characters in the aligned hit sequence
+    gaps_total             # Number of gap characters in the aligned query and hit sequences
     start_query            # Starting coordinate of the aligned portion of the query sequence
     end_query              # Ending coordinate of the aligned portion of the query sequence
     start_hit              # Starting coordinate of the aligned portion of the hit sequence
@@ -198,13 +198,13 @@ my %column_map = (
                   'end_hit'               => ['22', 'hsp', 'end/hit', 'd', 'END_H'],
                   'strand_query'          => ['23', 'hsp', 'strand/query', 'd', 'STRND_Q'],
                   'strand_hit'            => ['24', 'hsp', 'strand/hit', 'd', 'STRND_H'],
-                  'frame'                 => ['25', 'hsp', 'frame', 's', 'FRAME'],
-                  'hit_description'       => ['26', 'hit', 'hit_description', 's', 'DESC_H'],
-                  'query_description'     => ['27', 'result', 'query_description', 's', 'DESC_Q'],
+                  'frame_hit'             => ['25', 'hsp', 'frame/hit', 's', 'FRAME_H'],
+                  'frame_query'           => ['26', 'hsp', 'frame/query', 's', 'FRAME_Q'],
+                  'hit_description'       => ['27', 'hit', 'hit_description', 's', 'DESC_H'],
+                  'query_description'     => ['28', 'result', 'query_description', 's', 'DESC_Q'],
                  );
 
 sub column_map { return %column_map }
-
 
 =head2 to_string()
 
@@ -244,9 +244,9 @@ sub to_string {
 	    next if( defined $hitfilter && ! &{$hitfilter}($hit) );
 	    $hit->can('rewind') && $hit->rewind;# insure we're at the beginning
 	    while(my $hsp = $hit->next_hsp) {
-		next if ( defined $hspfilter && ! &{$hspfilter}($hsp));
-		my @row_data  = &{$func_ref}($result, $hit, $hsp);
-		$str .= sprintf "$printf_fmt\n", @row_data;
+            next if ( defined $hspfilter && ! &{$hspfilter}($hsp));
+            my @row_data  = &{$func_ref}($result, $hit, $hsp);
+            $str .= sprintf "$printf_fmt\n", @row_data;
 	    }
 	}
     }

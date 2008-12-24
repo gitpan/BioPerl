@@ -1,10 +1,8 @@
-# $Id: StructuredValue.pm,v 1.7.4.3 2006/10/02 23:10:12 sendu Exp $
+# $Id: StructuredValue.pm 14708 2008-06-10 00:08:17Z heikki $
 #
 # BioPerl module for Bio::Annotation::StructuredValue
 #
 # Cared for by Hilmar Lapp <hlapp at gmx.net>
-#
-
 #
 # (c) Hilmar Lapp, hlapp at gmx.net, 2002.
 # (c) GNF, Genomics Institute of the Novartis Research Foundation, 2002.
@@ -18,7 +16,6 @@
 # WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 # MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-
 # POD documentation - main docs before the code
 
 =head1 NAME
@@ -31,8 +28,8 @@ information
    use Bio::Annotation::StructuredValue;
    use Bio::Annotation::Collection;
 
-   my $col = new Bio::Annotation::Collection;
-   my $sv = new Bio::Annotation::StructuredValue(-value => 'someval');
+   my $col = Bio::Annotation::Collection->new();
+   my $sv = Bio::Annotation::StructuredValue->new(-value => 'someval');
    $col->add_Annotation('tagname', $sv);
 
 =head1 DESCRIPTION
@@ -77,16 +74,12 @@ use strict;
 
 # Object preamble - inherits from Bio::Root::Root
 
-use Bio::AnnotationI;
-use overload '""' => sub { $_[0]->value || ''};
-use overload 'eq' => sub { "$_[0]" eq "$_[1]" };
-
 use base qw(Bio::Annotation::SimpleValue);
 
 =head2 new
 
  Title   : new
- Usage   : my $sv = new Bio::Annotation::StructuredValue;
+ Usage   : my $sv = Bio::Annotation::StructuredValue->new();
  Function: Instantiate a new StructuredValue object
  Returns : Bio::Annotation::StructuredValue object
  Args    : -value => $value to initialize the object data field [optional]
@@ -98,9 +91,8 @@ sub new{
    my ($class,@args) = @_;
 
    my $self = $class->SUPER::new(@args);
-
+   
    my ($value,$tag) = $self->_rearrange([qw(VALUE TAGNAME)], @args);
-
    $self->{'values'} = [];
    defined $value  && $self->value($value);
    defined $tag    && $self->tagname($tag);
@@ -128,6 +120,34 @@ sub as_text{
    my ($self) = @_;
 
    return "Value: ".$self->value;
+}
+
+=head2 display_text
+
+ Title   : display_text
+ Usage   : my $str = $ann->display_text();
+ Function: returns a string. Unlike as_text(), this method returns a string
+           formatted as would be expected for te specific implementation.
+
+           One can pass a callback as an argument which allows custom text
+           generation; the callback is passed the current instance and any text
+           returned
+ Example :
+ Returns : a string
+ Args    : [optional] callback
+
+=cut
+
+{
+  my $DEFAULT_CB = sub { $_[0]->value || ''};
+
+  sub display_text {
+    my ($self, $cb) = @_;
+    $cb ||= $DEFAULT_CB;
+    $self->throw("Callback must be a code reference") if ref $cb ne 'CODE';
+    return $cb->($self);
+  }
+
 }
 
 =head2 hash_tree
@@ -285,7 +305,6 @@ sub get_values{
 
 sub get_all_values{
     my ($self) = @_;
-
     # we code lazy here and just take advantage of value()
     my $txt = $self->value(-joins => ['@!@'], -brackets => ['','']);
     return split(/\@!\@/, $txt);

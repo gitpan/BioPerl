@@ -1,4 +1,4 @@
-# $Id: metafasta.pm,v 1.9.4.1 2006/10/02 23:10:30 sendu Exp $
+# $Id: metafasta.pm 10554 2006-09-28 04:09:02Z tseemann $
 # BioPerl module for Bio::SeqIO::metafasta
 #
 # Cared for by Heikki Lehvaslaiho

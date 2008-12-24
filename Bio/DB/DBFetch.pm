@@ -1,4 +1,4 @@
-# $Id: DBFetch.pm,v 1.13.4.2 2006/10/02 23:10:14 sendu Exp $
+# $Id: DBFetch.pm 10591 2006-09-29 02:47:44Z mauricio $
 #
 # BioPerl module for Bio::DB::DBFetch
 #

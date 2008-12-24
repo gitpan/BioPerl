@@ -1,4 +1,4 @@
-# $Id: Measure.pm,v 1.9.4.1 2006/10/02 23:10:22 sendu Exp $
+# $Id: Measure.pm 10586 2006-09-29 01:44:39Z tseemann $
 #
 # BioPerl module for Bio::Phenotype::Measure
 #

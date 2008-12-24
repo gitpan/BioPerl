@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: pod.pl,v 1.9 2006/07/04 22:23:28 mauricio Exp $
+# $Id: pod.pl 14696 2008-06-04 14:21:33Z heikki $
 #
 =head1 NAME
 
@@ -53,7 +53,7 @@ sub blankline;
 #
 ## Directories to check
 #
-my @dirs = qw( ../Bio/ ../../run/Bio  ../scripts ../../run/scripts . );
+my @dirs = qw( ../Bio/ ../../bioperl-run/Bio  ../scripts ../../bioperl-run/scripts . );
 
 # command line options
 my ($verbose, $blankline, $dir, $help) = (0, undef, undef, undef);

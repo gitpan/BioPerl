@@ -1,4 +1,4 @@
-# $Id: SeqPattern.pm,v 1.21.4.1 2006/10/02 23:10:32 sendu Exp $
+# $Id: SeqPattern.pm 14710 2008-06-10 00:42:00Z heikki $
 #
 # bioperl module for Bio::Tools::SeqPattern
 #
@@ -77,7 +77,7 @@ send me some email (sac@bioperl.org). Thanks.
 
 This module supports the same set of ambiguity codes for nucleotide
 sequences as supported by L<Bio::Seq>. These ambiguity codes
-define the behavior or the L<expand()> method.
+define the behavior or the L<expand> method.
 
  ------------------------------------------
  Symbol       Meaning      Nucleic Acid
@@ -215,7 +215,7 @@ my (%Processed_braces, %Processed_asterics);
 =head1 new
 
  Title     : new
- Usage     : my $seqpat = new Bio::Tools::SeqPattern();
+ Usage     : my $seqpat = Bio::Tools::SeqPattern->new();
  Purpose   : Verifies that the type is correct for superclass (Bio::Seq.pm)
            : and calls superclass constructor last.
  Returns   : n/a
@@ -224,8 +224,8 @@ my (%Processed_braces, %Processed_asterics);
  Comments  : The process of creating a new SeqPattern.pm object
            : ensures that the pattern string is untained.
 
-See Also   : L<Bio::Root::Root::new()>,
-             L<Bio::Seq::_initialize()>
+See Also   : L<Bio::Root::Root::new>,
+             L<Bio::Seq::_initialize>
 
 =cut
 

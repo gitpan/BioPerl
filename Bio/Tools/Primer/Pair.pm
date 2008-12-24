@@ -1,4 +1,4 @@
-# $Id: Pair.pm,v 1.4.4.1 2006/10/02 23:10:35 sendu Exp $
+# $Id: Pair.pm 10525 2006-09-26 22:03:22Z sendu $
 # BioPerl module for Bio::Tools::Primer::Pair
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>

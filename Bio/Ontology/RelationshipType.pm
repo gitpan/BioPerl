@@ -1,4 +1,4 @@
-# $Id: RelationshipType.pm,v 1.17.4.1 2006/10/02 23:10:22 sendu Exp $
+# $Id: RelationshipType.pm 14729 2008-06-14 04:52:01Z cjfields $
 #
 # BioPerl module for Bio::Ontology::RelationshipType  
 #
@@ -89,6 +89,9 @@ use constant RELATED_TO => "RELATED_TO";
 use constant IS_A       => "IS_A";
 use constant CONTAINS   => "CONTAINS";
 use constant FOUND_IN   => "FOUND_IN";
+use constant REGULATES   => "REGULATES";
+use constant POSITIVELY_REGULATES   => "POSITIVELY_REGULATES";
+use constant NEGATIVELY_REGULATES   => "NEGATIVELY_REGULATES";
 
 
 use base qw(Bio::Ontology::Term);
@@ -152,7 +155,6 @@ sub get_instance {
 } # get_instance
 
 
-
 =head2 init
 
  Title   : init()
@@ -170,7 +172,6 @@ sub init {
 
     # at this point we don't really need to do anything special for us
 } # init
-
 
 
 =head2 equals
@@ -203,7 +204,6 @@ sub equals {
 } # equals
 
 
-
 =head2 identifier
 
  Title   : identifier
@@ -226,8 +226,6 @@ sub identifier {
     }
     return $ret;
 } # identifier
-
-
 
 
 =head2 name

@@ -1,4 +1,4 @@
-# $Id: mega.pm,v 1.11.4.3 2006/10/02 23:10:12 sendu Exp $
+# $Id: mega.pm 14890 2008-09-16 20:18:26Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::mega
 #
@@ -17,7 +17,7 @@ Bio::AlignIO::mega - Parse and Create MEGA format data files
 =head1 SYNOPSIS
 
     use Bio::AlignIO;
-    my $alignio = new Bio::AlignIO(-format => 'mega',
+    my $alignio = Bio::AlignIO->new(-format => 'mega',
                                    -file   => 't/data/hemoglobinA.meg');
 
     while( my $aln = $alignio->next_aln ) {
@@ -71,6 +71,8 @@ use strict;
 use Bio::SimpleAlign;
 use Bio::LocatableSeq;
 
+# symbols are changed due to MEGA's use of '.' for redundant sequences
+
 BEGIN {
   $MEGANAMELEN = 10;
   $LINELEN = 60;
@@ -102,7 +104,8 @@ sub next_aln{
    my ($self) = @_;
    my $entry;
    my ($alphabet,%seqs);
-
+   local $Bio::LocatableSeq::OTHER_SYMBOLS = '\*\?\.';
+   local $Bio::LocatableSeq::GAP_SYMBOLS = '\-';
    my $aln = Bio::SimpleAlign->new(-source => 'mega');
 
    while( defined($entry = $self->_readline()) && ($entry =~ /^\s+$/) ) {}
@@ -145,9 +148,9 @@ sub next_aln{
 
    foreach my $seqname ( @order ) {
        my $s = $seqs{$seqname};
-       $s =~ s/\-//g;
+       $s =~ s/[$Bio::LocatableSeq::GAP_SYMBOLS]+//g;
        my $end = length($s);
-       my $seq = new Bio::LocatableSeq(-alphabet => $alphabet,
+       my $seq = Bio::LocatableSeq->new(-alphabet => $alphabet,
 				       -id => $seqname,
 				       -seq => $seqs{$seqname},
 				       -start => 1,

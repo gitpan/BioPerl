@@ -1,4 +1,4 @@
-# $Id: SimilarityPair.pm,v 1.30.4.1 2006/10/02 23:10:28 sendu Exp $
+# $Id: SimilarityPair.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::SeqFeature::SimilarityPair
 #
@@ -83,7 +83,7 @@ use base qw(Bio::SeqFeature::FeaturePair);
 =head2 new
 
  Title   : new
- Usage   : my $similarityPair = new Bio::SeqFeature::SimilarityPair
+ Usage   : my $similarityPair = Bio::SeqFeature::SimilarityPair->new
                                  (-hit   => $hit,
                                   -query => $query,
                                   -source => 'blastp');

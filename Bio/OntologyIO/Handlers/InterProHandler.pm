@@ -1,4 +1,4 @@
-# $Id: InterProHandler.pm,v 1.15.4.1 2006/10/02 23:10:22 sendu Exp $
+# $Id: InterProHandler.pm 10619 2006-10-02 04:06:18Z tseemann $
 #
 # BioPerl module for InterProHandler
 #

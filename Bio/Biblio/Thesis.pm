@@ -1,4 +1,4 @@
-# $Id: Thesis.pm,v 1.12.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: Thesis.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Biblio::Thesis
 #
@@ -13,11 +13,11 @@ Bio::Biblio::Thesis - Representation of thesis
 
 =head1 SYNOPSIS
 
-    $obj = new Bio::Biblio::Thesis (-title => 'Perl on the edge');
+    $obj = Bio::Biblio::Thesis->new(-title => 'Perl on the edge');
 
  #--- OR ---
 
-    $obj = new Bio::Biblio::Thesis;
+    $obj = Bio::Biblio::Thesis->new();
     $obj->title ('Perl on the edge');
 
 =head1 DESCRIPTION

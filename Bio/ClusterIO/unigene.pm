@@ -1,4 +1,4 @@
-# $Id: unigene.pm,v 1.29.4.1 2006/10/02 23:10:13 sendu Exp $
+# $Id: unigene.pm 10531 2006-09-27 01:11:08Z tseemann $
 # BioPerl module for Bio::ClusterIO::unigene
 #
 # Cared for by Andrew Macgregor <andrew at cbbc.murdoch.edu.au>

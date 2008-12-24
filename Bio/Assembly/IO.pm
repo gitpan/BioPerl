@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.6.4.3 2006/10/02 23:10:12 sendu Exp $
+# $Id: IO.pm 14859 2008-09-08 17:32:30Z fangly $
 #
 # BioPerl module for Bio::Assembly::IO
 #
@@ -27,9 +27,14 @@ Bio::Assembly::IO - Handler for Assembly::IO Formats
     $out = Bio::Assembly::IO->new(-file=>">outputfilename",
                                   -format=>'phrap');
 
-    while ( my $seq = $in->next_seq() ) {
-       $out->write_seq($seq);
+    while ( my $scaffold = $in->next_assembly() ) {
+       # do something with Bio::Assembly::Scaffold instance
+       # ...
+       $out->write_assembly(-scaffold => $scaffold);
     }
+
+    $in->close;
+    $out->close;
 
 =head1 DESCRIPTION
 
@@ -142,6 +147,19 @@ sub next_assembly {
    $self->throw("Sorry, you cannot read from a generic Bio::Assembly::IO object.");
 }
 
+=head2 write_assembly
+
+  Title   : write_assembly
+  Usage   : $ass_io->write_assembly($assembly)
+  Function: Write the assembly object in Phrap compatible ACE format
+  Returns : 1 on success, 0 for error
+  Args    : A Bio::Assembly::Scaffold object
+
+=cut
+
+sub write_assembly {
+   shift->throw_not_implemented;
+}
 
 =head2 _load_format_module
 

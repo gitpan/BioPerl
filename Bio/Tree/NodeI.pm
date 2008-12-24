@@ -1,4 +1,4 @@
-# $Id: NodeI.pm,v 1.35.4.1 2006/10/02 23:10:37 sendu Exp $
+# $Id: NodeI.pm 14899 2008-09-18 10:07:01Z heikki $
 #
 # BioPerl module for Bio::Tree::NodeI
 #
@@ -20,7 +20,7 @@ Bio::Tree::NodeI - Interface describing a Tree Node
     # like from a TreeIO
     use Bio::TreeIO;
     # read in a clustalw NJ in phylip/newick format
-    my $treeio = new Bio::TreeIO(-format => 'newick', -file => 'file.dnd');
+    my $treeio = Bio::TreeIO->new(-format => 'newick', -file => 'file.dnd');
 
     my $tree = $treeio->next_tree; # we'll assume it worked for demo purposes
                                    # you might want to test that it was defined
@@ -116,7 +116,7 @@ use base qw(Bio::Root::RootI);
 =head2 add_Descendent
 
  Title   : add_Descendent
- Usage   : $node->add_Descendant($node);
+ Usage   : $node->add_Descendent($node);
  Function: Adds a descendent to a node
  Returns : number of current descendents for this node
  Args    : Bio::Node::NodeI
@@ -394,6 +394,22 @@ sub invalidate_height {
 
 These methods associate tag/value pairs with a Node
 
+=head2 set_tag_value
+
+ Title   : set_tag_value
+ Usage   : $node->set_tag_value($tag,$value)
+           $node->set_tag_value($tag,@values)
+ Function: Sets a tag value(s) to a node. Replaces old values.
+ Returns : number of values stored for this tag
+ Args    : $tag   - tag name
+           $value - value to store for the tag
+
+=cut
+
+sub set_tag_value{
+    shift->throw_not_implemented();
+}
+
 =head2 add_tag_value
 
  Title   : add_tag_value
@@ -458,7 +474,7 @@ sub get_all_tags {
 =head2 get_tag_values
 
  Title   : get_tag_values
- Usage   : my @values = $node->get_tag_value($tag)
+ Usage   : my @values = $node->get_tag_values($tag)
  Function: Gets the values for given tag ($tag)
  Returns : Array of values or empty list if tag does not exist
  Args    : $tag - tag name

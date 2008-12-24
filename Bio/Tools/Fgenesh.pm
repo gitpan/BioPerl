@@ -1,4 +1,4 @@
-# $Id: Fgenesh.pm,v 1.10.4.2 2006/10/02 23:10:32 sendu Exp $
+# $Id: Fgenesh.pm 14646 2008-04-02 16:24:49Z cjfields $
 #
 # BioPerl module for Bio::Tools::Fgenesh
 #
@@ -275,7 +275,11 @@ sub _parse_predictions {
 	    }
 	    # split into fields
 	    chomp();
-	    my @flds = split(/\s+/, $line);
+	    my @flds = split(/\s+/, ' ' . $line);
+	    ## NB - the above adds leading whitespace before the gene
+	    ## number in case there was none (as quick patch to code
+	    ## below which expects it but it is not present after 999
+	    ## predictions!) This allows >999 predictions to be parsed.
 
 	    # create the feature object depending on the type of signal
 	    my $predobj;
@@ -316,7 +320,7 @@ sub _parse_predictions {
 	    # are set, in order to allow for proper expansion of the range)
 	    if($is_exon) {
 		# first, set fields unique to exons
-		$predobj->primary_tag($ExonTags{$flds[3]} . 'Exon');
+		$predobj->primary_tag($ExonTags{$flds[4]} . 'Exon');
 		$predobj->is_coding(1);
 		my $cod_offset;
 		if($predobj->strand() == 1) {
@@ -388,6 +392,7 @@ sub _parse_predictions {
 	    last;
 	};
     }
+
     $self->_predictions_parsed(1);
 }
 

@@ -1,4 +1,4 @@
-# $Id: AnalysisI.pm,v 1.7.4.1 2006/10/02 23:10:18 sendu Exp $
+# $Id: AnalysisI.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Factory::AnalysisI
 #
@@ -18,7 +18,7 @@ This is an interface module - you do not instantiate it.
 Use I<Bio::Tools::Run::AnalysisFactory> module:
 
   use Bio::Tools::Run::AnalysisFactory;
-  my $list = new Bio::Tools::Run::AnalysisFactory->available_analyses;
+  my $list = Bio::Tools::Run::AnalysisFactory->new->available_analyses;
 
 =head1 DESCRIPTION
 

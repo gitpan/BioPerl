@@ -1,4 +1,4 @@
-# $Id: RNAMotif.pm,v 1.10.4.4 2006/10/02 23:10:32 sendu Exp $
+# $Id: RNAMotif.pm 15231 2008-12-22 21:51:02Z cjfields $
 #
 # BioPerl module for Bio::Tools::RNAMotif
 #
@@ -17,7 +17,7 @@ Bio::Tools::RNAMotif - A parser for RNAMotif output
 =head1 SYNOPSIS
 
   use Bio::Tools::RNAMotif;
-  my $parser = new Bio::Tools::RNAMotif(-file => $rna_output,
+  my $parser = Bio::Tools::RNAMotif->new(-file => $rna_output,
                                         -motiftag => 'protein_bind'
                                         -desctag => 'TRAP_binding');
   #parse the results
@@ -52,7 +52,7 @@ warning that sprintf() may have been used.
 Several values have also been added in the 'tag' hash.  These can be
 accessed using the following syntax:
 
-  my ($entry) = $feature->get_Annotations('Secstructure');
+  my ($entry) = $feature->get_Annotations('secstructure');
 
 Added tags are : 
 
@@ -151,7 +151,7 @@ our($MotifTag,$SrcTag,$DescTag) = qw(misc_binding RNAMotif rnamotif);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Tools::RNAMotif();
+ Usage   : my $obj = Bio::Tools::RNAMotif->new();
  Function: Builds a new Bio::Tools::RNAMotif object 
  Returns : an instance of Bio::Tools::RNAMotif
  Args    : -fh/-file for input filename
@@ -163,6 +163,7 @@ our($MotifTag,$SrcTag,$DescTag) = qw(misc_binding RNAMotif rnamotif);
 
 sub _initialize {
   my($self,@args) = @_;
+  $self->warn('Use of this module is deprecated.  Use Bio::SearchIO::rnamotif instead');
   $self->SUPER::_initialize(@args);
   my ($motiftag,$desctag,$srctag) =  $self->SUPER::_rearrange([qw(MOTIFTAG
                                                                   DESCTAG

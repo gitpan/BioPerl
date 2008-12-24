@@ -1,4 +1,4 @@
-# $Id: Graph.pm,v 1.10.4.1 2006/10/02 23:10:14 sendu Exp $
+# $Id: Graph.pm 14854 2008-09-03 23:02:53Z hartzell $
 #
 # bioperl module for Bio::Coordinate::Graph
 #
@@ -60,9 +60,9 @@ The shortest path is found using the Dijkstra's algorithm. This
 algorithm is fast and greedy and requires all weights to be
 positive. All weights in the gene coordinate system graph are
 currently equal (1) making the graph unweighted. That makes the use of
-Dijkstra's algorithm an overkill. A impler and faster breadth-first
+Dijkstra's algorithm an overkill. A simpler and faster breadth-first
 would be enough. Luckily the difference for small graphs is not
-signigicant and the implementation is capable to take weights into
+significant and the implementation is capable of taking weights into
 account if needed at some later time.
 
 =head2 Input format
@@ -93,7 +93,7 @@ is part of the gene coordiante system graph::
 	    };
 
 
-Note that the names need to be positive integrers. Root should be '1'
+Note that the names need to be positive integers. Root should be '1'
 and directness of the graph is taken advantage of to speed
 calculations by assuming that downsream nodes always have larger
 number as name.

@@ -1,4 +1,4 @@
-# $Id: bairoch.pm,v 1.8.4.1 2006/10/02 23:10:23 sendu Exp $
+# $Id: bairoch.pm 14575 2008-03-01 02:32:01Z cjfields $
 # BioPerl module for Bio::Restriction::IO::withrefm
 #
 # Cared for by Rob Edwards <redwards@utmem.edu>
@@ -75,26 +75,6 @@ use Bio::Restriction::EnzymeCollection;
 use Data::Dumper;
 
 use base qw(Bio::Restriction::IO::base);
-
-
-sub new {
-    my($class, @args) = @_;
-    my $self = bless {}, $class;
-    $self->_initialize(@args);
-    return $self;
-}
-
-sub _initialize {
-    my($self,@args) = @_;
-    my ($verbose) =
-            $self->_rearrange([qw(
-                                  VERBOSE
-                                 )], @args);
-    $verbose || 0;
-    $self->verbose($verbose);
-
-    return unless $self->SUPER::_initialize(@args);
-}
 
 =head2 read
 

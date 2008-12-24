@@ -1,4 +1,4 @@
-# $Id: BookArticle.pm,v 1.13.4.3 2006/10/02 23:10:12 sendu Exp $
+# $Id: BookArticle.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Biblio::BookArticle
 #
@@ -13,12 +13,12 @@ Bio::Biblio::BookArticle - Representation of a book article
 
 =head1 SYNOPSIS
 
-    $obj = new Bio::Biblio::BookArticle (-identifier => '123abc',
-                                         -book => new Bio::Biblio::Book);
+    $obj = Bio::Biblio::BookArticle->new(-identifier => '123abc',
+                                         -book => Bio::Biblio::Book->new());
   #--- OR ---
 
-    $obj = new Bio::Biblio::BookArticle;
-    $obj->book (new Bio::Biblio::Book);
+    $obj = Bio::Biblio::BookArticle->new();
+    $obj->book (Bio::Biblio::Book->new());
 
 
 =head1 DESCRIPTION

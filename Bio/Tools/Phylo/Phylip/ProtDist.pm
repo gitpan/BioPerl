@@ -1,4 +1,4 @@
-# $Id: ProtDist.pm,v 1.9.4.1 2006/10/02 23:10:34 sendu Exp $
+# $Id: ProtDist.pm 11594 2007-07-19 01:10:56Z cjfields $
 # BioPerl module for Bio::Tools::Phylo::Phylip::ProtDist
 #
 # Cared for by Shawn Hoon <shawnh@fugu-sg.org>
@@ -16,7 +16,7 @@ Bio::Tools::Phylo::Phylip::ProtDist - parser for ProtDist output
 =head1 SYNOPSIS
 
     use Bio::Tools::Phylo::Phylip::ProtDist;
-    my $parser = new Bio::Tools::Phylo::Phylip::ProtDist(-file => 'outfile');
+    my $parser = Bio::Tools::Phylo::Phylip::ProtDist->new(-file => 'outfile');
     while( my $result = $parser->next_matrix) {
       # do something with it
     }
@@ -71,7 +71,7 @@ use base qw(Bio::Root::Root Bio::Root::IO);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Tools::Phylo::Phylip::ProtDist();
+ Usage   : my $obj = Bio::Tools::Phylo::Phylip::ProtDist->new();
  Function: Builds a new Bio::Tools::Phylo::Phylip::ProtDist object 
  Returns : Bio::Tools::ProtDist
  Args    : -fh/-file => $val, # for initing input, see Bio::Root::IO
@@ -108,7 +108,7 @@ sub next_matrix{
    my $size = 0;
    while ($entry=$self->_readline) {
        if($#names >=0 && $entry =~/^\s+\d+\n$/){
-	   $self->_pushback($_);
+	   $self->_pushback($entry);
 	   last;
        } elsif($entry=~/^\s+(\d+)\n$/){	   
 	   $size = $1;

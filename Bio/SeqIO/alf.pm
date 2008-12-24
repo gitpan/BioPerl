@@ -1,4 +1,4 @@
-# $Id: alf.pm,v 1.12.4.1 2006/10/02 23:10:28 sendu Exp $
+# $Id: alf.pm 11480 2007-06-14 14:16:21Z sendu $
 # BioPerl module for Bio::SeqIO::alf
 #
 # Cared for by Aaron Mackey <amackey@virginia.edu>
@@ -77,7 +77,7 @@ sub _initialize {
   my($self,@args) = @_;
   $self->SUPER::_initialize(@args);  
   if( ! defined $self->sequence_factory ) {
-      $self->sequence_factory(new Bio::Seq::SeqFactory(-verbose => $self->verbose(), -type => 'Bio::Seq'));      
+      $self->sequence_factory(Bio::Seq::SeqFactory->new(-verbose => $self->verbose(), -type => 'Bio::Seq'));      
   }
   unless ($READ_AVAIL) {
       Bio::Root::Root->throw( -class => 'Bio::Root::SystemException',

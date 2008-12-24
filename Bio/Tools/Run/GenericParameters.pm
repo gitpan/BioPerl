@@ -1,4 +1,4 @@
-# $Id: GenericParameters.pm,v 1.6.2.1 2006/10/02 23:10:36 sendu Exp $
+# $Id: GenericParameters.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module for wrapping runtime parameters
 #

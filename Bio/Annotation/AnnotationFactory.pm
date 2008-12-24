@@ -1,4 +1,4 @@
-# $Id: AnnotationFactory.pm,v 1.6.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: AnnotationFactory.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Annotation::AnnotationFactory
 #
@@ -33,7 +33,7 @@ Bio::AnnotationI (or derived class) through a factory
 
     use Bio::Annotation::AnnotationFactory;
     # 
-    my $factory = new Bio::Annotation::AnnotationFactory(
+    my $factory = Bio::Annotation::AnnotationFactory->new(
                     -type => 'Bio::Annotation::SimpleValue');
     my $ann = $factory->create_object(-value => 'peroxisome',
                                       -tagname => 'cellular component');
@@ -93,7 +93,7 @@ use base qw(Bio::Root::Root Bio::Factory::ObjectFactoryI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Annotation::AnnotationFactory();
+ Usage   : my $obj = Bio::Annotation::AnnotationFactory->new();
  Function: Builds a new Bio::Annotation::AnnotationFactory object 
  Returns : Bio::Annotation::AnnotationFactory
  Args    : -type => string, name of a L<Bio::AnnotationI> derived class.

@@ -1,4 +1,4 @@
-# $Id: PubmedJournalArticle.pm,v 1.10.4.3 2006/10/02 23:10:12 sendu Exp $
+# $Id: PubmedJournalArticle.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Biblio::PubmedJournalArticle
 #
@@ -13,11 +13,11 @@ Bio::Biblio::PubmedJournalArticle - Representation of a PUBMED journal article
 
 =head1 SYNOPSIS
 
-    $obj = new Bio::Biblio::PubmedJournalArticle (
+    $obj = Bio::Biblio::PubmedJournalArticle->new(
 
                   # some attributes from MedlineJournalArticle
                   -title => 'Thermal adaptation analyzed by comparison of protein sequences from mesophilic and extremely thermophilic Methanococcus species.',
-                  -journal => new Bio::Biblio::MedlineJournal (-issn => '0027-8424'),
+                  -journal => Bio::Biblio::MedlineJournal->new(-issn => '0027-8424'),
                   -volume => 96,
                   -issue => 7,
 
@@ -30,9 +30,9 @@ Bio::Biblio::PubmedJournalArticle - Representation of a PUBMED journal article
                    -pubmed_status => 'ppublish');
   #--- OR ---
 
-    $obj = new Bio::Biblio::PubmedJournalArticle;
+    $obj = Bio::Biblio::PubmedJournalArticle->new();
     $obj->title ('...');
-    $obj->journal (new Bio::Biblio::MedlineJournal (-issn => '0027-8424'));
+    $obj->journal (Bio::Biblio::MedlineJournal->new(-issn => '0027-8424'));
     $obj->pubmed_status ('ppublish');
 
 

@@ -1,4 +1,4 @@
-# $Id: ProtMatrix.pm,v 1.16.4.1 2006/10/02 23:10:22 sendu Exp $
+# $Id: ProtMatrix.pm 11480 2007-06-14 14:16:21Z sendu $
 #---------------------------------------------------------
 
 =head1 NAME
@@ -63,10 +63,10 @@ information.
    my $matrix = Bio::Matrix::PSM::ProtMatrix( %param );
 
 
-   my $site = new Bio::Matrix::PSM::ProtMatrix(%param);
+   my $site = Bio::Matrix::PSM::ProtMatrix->new(%param);
    # Or get it from a file:
    use Bio::Matrix::PSM::IO;
-   my $psmIO = new Bio::Matrix::PSM::IO(-file => $file, -format => 'psi-blast');
+   my $psmIO = Bio::Matrix::PSM::IO->new(-file => $file, -format => 'psi-blast');
    while (my $psm = $psmIO->next_psm) {
       #Now we have a Bio::Matrix::PSM::Psm object, 
       # see Bio::Matrix::PSM::PsmI for details
@@ -184,7 +184,7 @@ use base qw(Bio::Root::Root Bio::Matrix::PSM::SiteMatrixI);
 =head2 new
 
  Title    : new
- Usage    : my $site = new Bio::Matrix::PSM::ProtMatrix( 
+ Usage    : my $site = Bio::Matrix::PSM::ProtMatrix->new( 
                %probs,
                %logs,
                -IC    => $ic,
@@ -245,7 +245,7 @@ sub new {
    return $self;
 }
 
-=head2 _calculate_consensus
+=head2 alphabet
 
  Title    : Returns an array (or array reference if desired) to the alphabet 
  Usage    :
@@ -266,6 +266,7 @@ sub alphabet {
       return @{$self->{_alphabet}};
    }
 }
+
 =head2 _calculate_consensus
 
  Title    : _calculate_consensus

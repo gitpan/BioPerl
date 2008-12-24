@@ -1,4 +1,4 @@
-# $Id: RemoteBlast.pm,v 1.38.4.2 2006/10/16 17:08:15 sendu Exp $
+# $Id: RemoteBlast.pm 15231 2008-12-22 21:51:02Z cjfields $
 #
 # BioPerl module for Bio::Tools::Run::RemoteBlast
 #
@@ -88,7 +88,8 @@ via HTTP
   }
 
   # This example shows how to change a CGI parameter:
-  $Bio::Tools::Run::RemoteBlast::HEADER{'MATRIX_NAME'} = 'BLOSUM25';
+  $Bio::Tools::Run::RemoteBlast::HEADER{'MATRIX_NAME'} = 'BLOSUM45';
+  $Bio::Tools::Run::RemoteBlast::HEADER{'GAPCOSTS'} = '15 2';
 
   # And this is how to delete a CGI parameter:
   delete $Bio::Tools::Run::RemoteBlast::HEADER{'FILTER'};
@@ -146,7 +147,6 @@ use strict;
 
 use Bio::SeqIO;
 use IO::String;
-use Bio::Tools::BPlite;
 use Bio::SearchIO;
 use LWP;
 use HTTP::Request::Common;
@@ -155,14 +155,15 @@ use base qw(Bio::Root::Root Bio::Root::IO);
 
 BEGIN {
     $MODVERSION = $Bio::Root::Version::VERSION;
-    $URLBASE = 'http://www.ncbi.nlm.nih.gov/blast/Blast.cgi';
+    $URLBASE = 'http://blast.ncbi.nlm.nih.gov/Blast.cgi';
 
     # In GET/PUTPARAMS the values are regexes which validate the input.
     %PUTPARAMS = (
 	'AUTO_FORMAT' 	=> '(Off|(Semi|Full)auto)',	# Off, Semiauto, Fullauto
-	'COMPOSITION_BASED_STATISTICS'	=> '(yes|no)',	# yes, no
+	'COMPOSITION_BASED_STATISTICS'	=> '(0|1)',	# yes, no on NCBI's site, but actually binary 0/1
 	'DATABASE' 	=>  '.*',
 	'DB_GENETIC_CODE' => '([1-9]|1[1-6]|2(1|2))',   # 1..16,21,22
+    'DISPLAY_SORT'   => '\d',
 	'ENDPOINTS'	=> '(yes|no)',			# yes,no
 	'ENTREZ_QUERY'	=> '.*',
 	'EXPECT'	=> '\d+(\.\d+)?([eE]-\d+)?',	# Positive double
@@ -190,6 +191,7 @@ BEGIN {
 	'SEARCHSP_EFF'	=> '\d+',			# Positive integer
 	'SERVICE'	=> '(plain|p[sh]i|(rps|mega)blast)',
 					# plain,psi,phi,rpsblast,megablast
+    'SHORT_QUERY_ADJUST' => '(true|false)',
 	'THRESHOLD'	=> '-?\d+',			# Integer
 	'UNGAPPED_ALIGNMENT' => '(yes|no)',		# yes, no
 	'WORD_SIZE'	=> '\d+'			# Positive integer
@@ -200,6 +202,7 @@ BEGIN {
 		  '(Pairwise|(Flat)?QueryAnchored(NoIdentities)?|Tabular)',
 	 # Pairwise, QueryAnchored, QueryAnchoredNoIdentities, 
   	 # FlatQueryAnchored, FlatQueryAnchoredNoIdentities, Tabular
+     'DATABASE_SORT' => '\d',
 	 'DESCRIPTIONS'	=> '\d+',			# Positive integer
 	 'ENTREZ_LINKS_NEW_WINDOW' => '(yes|no)',	# yes, no
 	 'EXPECT_LOW'	=> '\d+(\.\d+)?([eE]-\d+)?',	# Positive double
@@ -212,6 +215,7 @@ BEGIN {
 	 'FORMAT_TYPE'	=> '((HT|X)ML|ASN\.1|Text)',
 					# HTML, Text, ASN.1, XML
 	 'NCBI_GI'	=> '(yes|no)',			# yes, no
+     'NEW_VIEW' => '(true|false)',
 	 'RID' 		=>  '.*',
 	 'RESULTS_FILE' 	=>  '(yes|no)',			# yes, no
 	 'SERVICE' 	=>  '(plain|p[sh]i|(rps|mega)blast)',
@@ -354,14 +358,17 @@ sub header {
  Usage   : my $readmethod = $self->readmethod
  Function: Get/Set the method to read the blast report
  Returns : string
- Args    : string [ Blast, BPlite, blasttable, xml ]
+ Args    : string [ blast, blasttable, xml ]
 
 =cut
 
 sub readmethod {
     my ($self, $val) = @_;
     if( defined $val ) {
-	$self->{'_readmethod'} = $val;
+        if ($val =~ /bplite/i) {
+            $self->throw("Use of Bio::Tools::BPlite is deprecated; use Bio::SearchIO modules instead");
+        }
+        $self->{'_readmethod'} = $val;
     }
     return $self->{'_readmethod'};
 }
@@ -500,6 +507,7 @@ sub submit_blast {
     return 0 unless ( @seqs );
     my $tcount = 0;
     my %header = $self->header;
+    $header{$_} ||= $RETRIEVALHEADER{$_} foreach (keys %RETRIEVALHEADER);    
     foreach my $seq ( @seqs ) {
 	#If query has a fasta header, the output has the query line.
 	$header{'QUERY'} = ">".(defined $seq->display_id() ? $seq->display_id() : "").
@@ -514,14 +522,14 @@ sub submit_blast {
 	    foreach ( @subdata ) {
 			if( /$RIDLINE/ ) {
 		    	$count++;
-		    	print STDERR $_ if( $self->verbose > 0);
-		    	$self->add_rid($1);		
+		    	$self->debug("RID: $1\n");
+		    	$self->add_rid($1);
 		    	last;
-			}	
+			}
 	    }
 	    if( $count == 0 ) {
-		$self->warn("req was ". $request->as_string() . "\n");
-		$self->warn(join('', @subdata));
+            $self->warn("req was ". $request->as_string() . "\n");
+            $self->warn(join('', @subdata));
 	    }    	
 	    $tcount += $count;
 	} else {
@@ -558,35 +566,40 @@ sub retrieve_blast {
     my $response = $self->ua->request($req, $tempfile);
     if( $response->is_success ) {
     	if( $self->verbose > 0 ) {
-	    #print content of reply if verbose > 1
-            open(my $TMP, $tempfile) or $self->throw("cannot open $tempfile");
-            while(<$TMP>) { print $_; }
-    	}   
-        ## if proper reply 
+            #print content of reply if verbose > 1
+            open(my $DEBUG, $tempfile) || $self->throw("cannot open $tempfile");
+            while(<$DEBUG>) { print $_; }
+            close $DEBUG;
+    	}
         open(my $TMP, $tempfile) || $self->throw("Error opening $tempfile");
+        ## if proper reply 
         my $waiting = 1;
         my $s = 0;
         my $got_content = 0;
-        while(<$TMP>) {
-            if (/./) {
+        my $is_tabular = 0;
+        while(my $line = <$TMP>) {
+            if ($line =~ /./) {
                 $got_content = 1;
             }
-            if( /<\?xml version=/ ) { # xml time
+            if($line =~ /<\?xml version=/ ) { # xml time
                 $waiting = 0;
+                $self->readmethod('blastxml');
                 last;
             }
-            if( /QBlastInfoBegin/i ) {
+            if($line =~ /QBlastInfoBegin/i ) {
                 $s = 1;
             } elsif( $s ) {
-                if( /Status=(WAITING|ERROR|READY)/i ) {
-                    if( $1 eq 'WAITING' ) {
+                if($line =~ /Status=(WAITING|ERROR|READY)/i ) {
+                    my $status = $1;
+                    if( $status eq 'WAITING' ) {
                         $waiting = 1;
-                    } elsif( $1 eq 'ERROR' ) {
+                    } elsif( $status eq 'ERROR' ) {
                         close($TMP);
                         open(my $ERR, "<$tempfile") or $self->throw("cannot open file $tempfile");
                         $self->warn(join("", <$ERR>));
+                        close $ERR;
                         return -1;
-                    } elsif( $1 eq 'READY' ) {
+                    } elsif( $status eq 'READY' ) {
                         $waiting = 0;
                         last;
                     } else {
@@ -594,40 +607,25 @@ sub retrieve_blast {
                         last;
                     }
                 }
+            } elsif ($line =~ /ERROR/i ) {
+                close($TMP);
+                open(my $ERR, "<$tempfile") or $self->throw("cannot open file $tempfile");
+                $self->warn(join("", <$ERR>));
+                close $ERR;
+                return -1;
             }
+            
         }
         close($TMP);
         if( ! $waiting ) {
             my $blastobj;
             my $mthd = $self->readmethod;
-            if( $mthd =~ /BPlite/i ) {
-                $blastobj = new Bio::Tools::BPlite(-file => $tempfile);
-            } elsif( $mthd =~ /blasttable/i ) {
-            # pre-process
-            my ($fh2,$tempfile2) = $self->tempfile();
-            open(my $TMP,$tempfile) || $self->throw($!);
-            my $s = 0;
-            while(<$TMP>) {
-                if(/\<PRE\>/i ) {
-                $s = 1;
-                } elsif( /\<\/PRE\>/i ) {
-                $s = 0;
-                last;
-                } elsif( $s ) {
-                print $fh2 $_;
-                }
-            } 
-            close($fh2);
-            $blastobj = new Bio::SearchIO( -file => $tempfile2,
-                               -format => 'blasttable');
-            } elsif( $mthd =~ /xml/ ) {
-            $blastobj = new Bio::SearchIO( -file => $tempfile,
-                               -format => 'blastxml');
-            } else {
-            $blastobj = new Bio::SearchIO( -file => $tempfile,
-                               -format => 'blast');
-            } 
-            
+            $mthd = ($mthd =~ /blasttable/i) ? 'blasttable' :
+                    ($mthd =~ /xml/i)        ? 'blastxml'   :
+                    ($mthd =~ /pull/i)       ? 'blast_pull' :
+                    'blast';
+            $blastobj = Bio::SearchIO->new( -file => $tempfile,
+                               -format => $mthd);                    
             ## store filename in object ##
             $self->file($tempfile);
             return $blastobj;
@@ -640,8 +638,8 @@ sub retrieve_blast {
         }
 	
     } else {
-	$self->warn($response->error_as_HTML);
-	return -1;
+        $self->warn($response->error_as_HTML);
+        return -1;
     }
 }
 
@@ -691,7 +689,7 @@ sub _load_input {
 	my @seqs;
 	if( ! ref $input ) {
 		if( -e $input ) {
-			my $seqio = new Bio::SeqIO(-format => 'fasta',
+			my $seqio = Bio::SeqIO->new(-format => 'fasta',
 												-file => $input);
 			while( my $seq = $seqio->next_seq ) {
 				push @seqs, $seq;

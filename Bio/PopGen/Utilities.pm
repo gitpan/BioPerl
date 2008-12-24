@@ -1,8 +1,8 @@
-# $Id: Utilities.pm,v 1.7.4.1 2006/10/02 23:10:23 sendu Exp $
+# $Id: Utilities.pm 15097 2008-12-06 18:33:27Z jason $
 #
 # BioPerl module for Bio::PopGen::Utilities
 #
-# Cared for by Jason Stajich <jason-at-open-bio-dot-org>
+# Cared for by Jason Stajich <jason-at-bioperl-dot-org>
 #
 # Copyright Jason Stajich
 #
@@ -19,7 +19,7 @@ Bio::PopGen::Utilities - Utilities for working with PopGen data and objects
   use Bio::PopGen::Utilities;
   use Bio::AlignIO;
 
-  my $in = new Bio::AlignIO(-file   => 't/data/t7.aln',
+  my $in = Bio::AlignIO->new(-file   => 't/data/t7.aln',
                             -format => 'clustalw');
   my $aln = $in->next_aln;
   # get a population, each sequence is an individual and 
@@ -31,7 +31,7 @@ Bio::PopGen::Utilities - Utilities for working with PopGen data and objects
 
   # get the synonymous sites from the alignemt only as the 'genotypes'
   # for the population
-  my $synpop = Bio::PopGen::Utilities->aln_to_population(-site_model => 'syn',
+  my $synpop = Bio::PopGen::Utilities->aln_to_population(-site_model => 'cod',
                                                          -alignment  => $aln);
 
 
@@ -62,7 +62,7 @@ the web:
 
 =head1 AUTHOR - Jason Stajich
 
-Email jason-at-open-bio-dot-org
+Email jason-at-bioperl-dot-org
 
 =head1 APPENDIX
 
@@ -83,6 +83,7 @@ use Bio::PopGen::Population;
 use Bio::PopGen::Individual;
 
 use base qw(Bio::Root::Root);
+use constant CodonLen => 3;
 
 
 =head2 aln_to_population
@@ -100,17 +101,12 @@ use base qw(Bio::Root::Root);
 
            Specify a site model as one of those listed
            'all' -- every base in the alignment is considered a site
-           'syn' -- Synonomous sites. Those where a seen substition do 
-                    not change the amino acid [Assumes this is only 
-                    coding sequence and the frame starts with first base 
-                    in the alignment]
-           'non' -- Non-Synonomous sites.  Those where a substitution changes
-                    the encoded amino acid.
+           'cod' -- codons 
 
            The option -site_model
-                for Non-synonymous: 'non' or 'non-synonomous' or 'NS' or 'Ka'
-		    Synonymous	  : 'synonomous' or 'syn' or 'S' or 'Ks'
-                    All           : 'all' 
+                for All sites          : 'all' 
+                    Codon sites        : 'cod' or 'codon'
+
           To see all sites, including those which are fixed in the population
           add -include_monomorphic => 1
           to the arguments
@@ -120,9 +116,12 @@ use base qw(Bio::Root::Root);
                                        in the population 
                                   (useful for HKA test mostly) 
                             [default is false]
-           -site_model     => one-of 'all', 'syn', or 'non' 
-                             to specify a site model you want to see data
-                             for
+           -phase          => specify a phase for the data, this is only
+                              used if the site_mode is codon
+                            [default is 0]
+           -site_model     => one-of 'all', 'codon'
+                             to specify a site model for the data extraction
+                             from the alignment
                             [default is all]
            -alignment      => provide a L<Bio::SimpleAlign> object [required]
 
@@ -131,100 +130,99 @@ use base qw(Bio::Root::Root);
 sub aln_to_population{
    my ($self,@args) = @_;
    my ($aln,
-       $sitemodel,
-       $includefixed) = $self->_rearrange([qw(ALIGNMENT
-					      SITE_MODEL
-					      INCLUDE_MONOMORPHIC)],
+       $sitemodel,$phase,
+       $includefixed,$checkisa) = $self->_rearrange([qw(ALIGNMENT
+				                     SITE_MODEL
+					             PHASE
+					             INCLUDE_MONOMORPHIC
+					             CHECKISA)],
 					  @args);
    if( ! defined $aln ) { 
        $self->warn("Must provide a valid Bio::SimpleAlign object to run aln_to_population");
        return;
    }
+
    if( ! $aln->is_flush ) {
        $self->warn("Must provide a Bio::SimpleAlign object with aligned sequences to aln_to_population!");
        return;
    }
-
-   my $population = Bio::PopGen::Population->new(-source => 'alignment');
-   my @seqs = map { $_->seq() } $aln->each_seq;
-
-   if( ! defined $sitemodel ||
-       $sitemodel =~ /all/i ) {
-       my $ct = 0;
-       my @inds;
+   $phase = 0 unless defined $phase;
+   if( $phase != 0 && $phase != 1 && $phase != 2 ) { 
+       warn("phase must be 0,1, or 2");
+       return;
+   }
+   my $alength = $aln->length;
+   my @inds;
+   if( ! defined $sitemodel || $sitemodel =~ /all/i ) {
+       my $ct = 0;       
        my @seqs;
        for my $seq ( $aln->each_seq ) {
-	   my $ind = Bio::PopGen::Individual->new(-unique_id => $seq->display_id);
 	   push @seqs, $seq->seq;
-	   push @inds, $ind;
+	   push @inds, Bio::PopGen::Individual->new(-unique_id => $seq->display_id);
        }
-       for( my $i = 0; $i < $aln->length; $i++ ) {
+
+       for( my $i = 0; $i < $alength; $i++ ) {
 	   my $nm = "Site-$i";
 	   my (@genotypes,%set);
-	   # do we skip indels?
+	   
+           # do we skip indels?
+	   # slicing vertically
 	   for my $seq ( @seqs ) {
 	       my $site = substr($seq,$i,1);
 	       $set{$site}++;
 	       push @genotypes, $site;
 	   }
 	   if( keys %set > 1 || $includefixed ) {
-	       for( my $i = 0; $i < scalar @genotypes; $i++ ) {
-		   $inds[$i]->add_Genotype(Bio::PopGen::Genotype->new
+	       my $genoct = scalar @genotypes;
+	       for( my $j = 0; $j < $genoct; $j++ ) {
+		   $inds[$j]->add_Genotype(Bio::PopGen::Genotype->new
 					   (-marker_name  => $nm,
-					    -individual_id=> $inds[$i]->unique_id,
-					    -alleles      => [$genotypes[$i]]));
+					    -individual_id=> $inds[$j]->unique_id,
+					    -alleles      => [$genotypes[$j]]));
 	       }
 	   }
        }
-       for my $ind ( @inds ) { 
-	   $population->add_Individual($ind);
+   } elsif( $sitemodel =~ /cod(on)?/i ) {
+       my $ct = 0;
+       my @seqs;
+       for my $seq ( $aln->each_seq ) {
+	   push @seqs, $seq->seq;
+	   push @inds, Bio::PopGen::Individual->new(-unique_id => $seq->display_id);
+       }
+       my $codonct = 0;
+       for( my $i = $phase; $i < $alength; $i += CodonLen ) {
+	   my $nm = "Codon-$codonct-$i";
+	   my (@genotypes,%set,$genoct);
+	   
+	   for my $seq ( @seqs ) {
+	       my $site = substr($seq,$i,CodonLen);
+	       if( length($site) < CodonLen ) {
+		   # at end of alignment and this is not in phase
+		   $self->debug("phase was $phase, but got to end of alignment with overhang of $site");
+		   next;
+	       }
+	       # do we check for gaps/indels here?
+	       $set{$site}++;
+	       push @genotypes, $site;
+	   }
+	   $genoct = scalar @genotypes;
+	   
+	   # do we include fixed sites? yes I think so since this is 
+	   # typically being used by MK	   
+	   for( my $j = 0; $j < $genoct; $j++ ) {
+	       $inds[$j]->add_Genotype(Bio::PopGen::Genotype->new
+				       (-marker_name  => $nm,
+					-individual_id=> $inds[$j]->unique_id,
+					-alleles      => [$genotypes[$j]]));
+	   }
+	   $codonct++;
        }
    } else { 
        $self->throw("Can only build sites based on all the data right now!");
-       my ($sitecount,@sites) = ($aln->length);
-       my @sitecat;
-       # ToDo: categorize site a syn, non-syn, monomorphic
-       #      4-fold degenerate?
-       my (@codons,@codons_v, $codon_ct);
-       
-       for( my $i = 0; $i < $sitecount; $i++ ) {
-	   if( $i && $i % 3 == 0 ) {
-	       # A A T  T T G  T C G
-	       # A A A  T A G  T A G
-	       # A A T  T A G  T C T	       
-	       for my $cod ( @{$codons[$codon_ct]} ) {
-		   $codons_v[$codon_ct]->{$cod}++;
-	       }
-	       $codon_ct++;	       
-	   }
-	   my $seqct = 0;
-	   foreach my $seq ( @seqs ) {   
-	       my $char = substr($seq,$i,1);
-	       $sites[$i]->{'alleles'}->{$char}++;
-	       $sites[$i]->{'seq'}->[$seqct] = $char;
-	       $codons[$codon_ct]->[$seqct] .= $char;	       
-	       $seqct++;
-	   }
-       }
-
-       # at the end @sites will be full, each entry is a column and it
-       # will have a hashref with 2 values, 'alleles' which will have
-       # a frequency for each base as an allele. 
-       # 'seq' will have the
-       # participating residue for each sequence
-
-
-       my ($i,$seqctr) = (0,0); 
-       for my $site ( @sites ) { 
-	   my %alleles = %{$site->{'alleles'}};
-	   my %codons = $codons_v[$i % 3]->[$seqctr];
-	   $i++;
-	   $seqctr++;
-       }
    }
-   return $population;
+   return Bio::PopGen::Population->new(-checkisa => 0,
+				       -source => 'alignment',
+				       -individuals=> \@inds);
 }
-
-
 
 1;

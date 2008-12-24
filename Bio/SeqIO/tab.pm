@@ -2,7 +2,7 @@
 # PACKAGE : Bio::SeqIO::tab
 # AUTHOR  : Philip Lijnzaad <p.lijnzaad@med.uu.nl>
 # CREATED : Feb 6 2003
-# REVISION: $Id: tab.pm,v 1.6.4.1 2006/10/02 23:10:30 sendu Exp $
+# REVISION: $Id: tab.pm 11513 2007-06-25 14:25:41Z sendu $
 #
 # Copyright (c) This module is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
@@ -146,6 +146,8 @@ sub write_seq {
        }
        $self->_print($_->display_id(), "\t",$_->seq, "\n") or return;
    }
+   
+   $self->flush if $self->_flush_on_write && defined $self->_fh;
    return 1;
 }
 

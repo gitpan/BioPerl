@@ -1,4 +1,4 @@
-# $Id: GenericHSP.pm,v 1.68.4.5 2006/10/02 23:10:24 sendu Exp $
+# $Id: GenericHSP.pm 15084 2008-12-03 22:31:23Z cjfields $
 #
 # BioPerl module for Bio::Search::HSP::GenericHSP
 #
@@ -16,7 +16,7 @@ Bio::Search::HSP::GenericHSP - A "Generic" implementation of a High Scoring Pair
 
 =head1 SYNOPSIS
 
-    my $hsp = new Bio::Search::HSP::GenericHSP( -algorithm => 'blastp',
+    my $hsp = Bio::Search::HSP::GenericHSP->new( -algorithm => 'blastp',
                                                 -evalue    => '1e-30',
                                                 );
 
@@ -46,7 +46,6 @@ Bio::Search::HSP::GenericHSP - A "Generic" implementation of a High Scoring Pair
 
 # TODO: Describe how to configure a SearchIO stream so that it generates
 #       GenericHSP objects.
-
 
 =head1 DESCRIPTION
 
@@ -103,7 +102,6 @@ Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Search::HSP::GenericHSP;
-use vars qw($GAP_SYMBOL);
 use strict;
 
 use Bio::Root::Root;
@@ -111,13 +109,10 @@ use Bio::SeqFeature::Similarity;
 
 use base qw(Bio::Search::HSP::HSPI);
 
-BEGIN {
-    $GAP_SYMBOL = '-';
-}
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Search::HSP::GenericHSP();
+ Usage   : my $obj = Bio::Search::HSP::GenericHSP->new();
  Function: Builds a new Bio::Search::HSP::GenericHSP object
  Returns : Bio::Search::HSP::GenericHSP
  Args    : -algorithm => algorithm used (BLASTP, TBLASTX, FASTX, etc)
@@ -153,19 +148,29 @@ BEGIN {
            -rank        => HSP rank
            -links       => HSP links information (WU-BLAST only)
            -hsp_group   => HSP Group informat (WU-BLAST only)
+           -gap_symbol  => symbol representing a gap (default = '-')
+           -hit_features=> string of features found in or near HSP hit
+                           region (reported in some BLAST text output,
+                           v. 2.2.13 and up)
+           -stranded    => If the algorithm isn't known (i.e. defaults to
+                           'generic'), setting this will indicate start/end
+                           coordinates are to be used to determine the strand
+                           for 'query', 'subject', 'hit', 'both', or 'none'
+                           (default = 'none')
+
 =cut
 
 sub new {
-    my($class,@args) = @_;
+    my($class,%args) = @_;
 
-    # don't pass anything to SUPER; complex heirarchy results in lots of work
+    # don't pass anything to SUPER; complex hierarchy results in lots of work
     # for nothing
+    
     my $self = $class->SUPER::new();
 
     # for speed, don't use _rearrange and just store all input data directly
     # with no method calls and no work done. work can be carried
     # out just-in-time later if desired
-    my %args = @args;
     while (my ($arg, $value) = each %args) {
         $arg =~ tr/a-z\055/A-Z/d;
         $self->{$arg} = $value;
@@ -173,9 +178,19 @@ sub new {
     my $bits = $self->{BITS};
 
     defined $self->{VERBOSE} && $self->verbose($self->{VERBOSE});
-
+    if (exists $self->{GAP_SYMBOL}) {
+        # not checking anything else but the length (must be 1 as only one gap
+        # symbol allowed currently); can add in support for symbol checks or
+        # multiple symbols later if needed
+        $self->throw("Gap symbol must be of length 1") if
+            CORE::length($self->{GAP_SYMBOL}) != 1;
+    } else {
+        # dafault
+        $self->{GAP_SYMBOL} = '-';
+    }
     $self->{ALGORITHM} ||= 'GENERIC';
-
+    $self->{STRANDED} ||= 'NONE';
+    
     if (! defined $self->{QUERY_LENGTH} || ! defined $self->{HIT_LENGTH}) {
         $self->throw("Must define hit and query length");
     }
@@ -185,7 +200,6 @@ sub new {
     $self->{_finished_new} = 1;
     return $self;
 }
-
 
 sub _logical_length {
     my ($self, $type) = @_;
@@ -257,16 +271,14 @@ sub pvalue {
 
 =cut
 
-sub evalue { shift->significance(@_) }
-
-# Override significance to return the e-value or, if this is
-# not defined (WU-BLAST), return the p-value.
-sub significance {
-    my $self = shift;
-    my $signif = $self->query->significance(@_);
-    return (defined $signif && $signif ne '') ? $signif : $self->pvalue(@_);
+sub evalue {
+    my ($self,$value) = @_;
+    my $previous = $self->{'EVALUE'};
+    if( defined $value  ) {
+        $self->{'EVALUE'} = $value;
+    }
+    return $previous;
 }
-
 
 =head2 frac_identical
 
@@ -277,7 +289,7 @@ sub significance {
  Args    : arg 1:  'query' = num identical / length of query seq (without gaps)
                    'hit'   = num identical / length of hit seq (without gaps)
                              synonyms: 'sbjct', 'subject'
-                   'total' = num conserved / length of alignment (with gaps)
+                   'total' = num identical / length of alignment (with gaps)
                              synonyms: 'hsp'
                    default = 'total'
            arg 2: [optional] frac identical value to set for the type requested
@@ -349,18 +361,18 @@ sub frac_conserved {
 
  Title    : gaps
  Usage    : my $gaps = $hsp->gaps( ['query'|'hit'|'total'] );
- Function : Get the number of gaps in the query, hit, or total alignment.
+ Function : Get the number of gap characters in the query, hit, or total alignment.
  Returns  : Integer, number of gaps or 0 if none
- Args     : arg 1: 'query' = num gaps in query seq
-                   'hit'   = num gaps in hit seq; synonyms: 'sbjct', 'subject'
-                   'total' = num gaps in whole alignment;  synonyms: 'hsp'
+ Args     : arg 1: 'query' = num gap characters in query seq
+                   'hit'   = num gap characters in hit seq; synonyms: 'sbjct', 'subject'
+                   'total' = num gap characters in whole alignment;  synonyms: 'hsp'
                    default = 'total'
             arg 2: [optional] integer gap value to set for the type requested
 
 =cut
 
 sub gaps {
-    my ($self, $type,$value) = @_;
+    my ($self, $type, $value) = @_;
 
     unless ($self->{_did_pregaps}) {
         $self->_pre_gaps;
@@ -527,84 +539,66 @@ sub percent_identity {
 =head2 frame
 
  Title   : frame
- Usage   : $hsp->frame($queryframe,$subjectframe)
+ Usage   : my ($qframe, $hframe) = $hsp->frame('list',$queryframe,$subjectframe)
  Function: Set the Frame for both query and subject and insure that
            they agree.
            This overrides the frame() method implementation in
            FeaturePair.
- Returns : array of query and subjects if return type wants an array
-           or query frame if defined or subject frame
- Args    : none
+ Returns : array of query and subject frame if return type wants an array
+           or query frame if defined or subject frame if not defined
+ Args    : 'hit' or 'subject' or 'sbjct' to retrieve the frame of the subject (default)
+           'query' to retrieve the query frame 
+           'list' or 'array' to retrieve both query and hit frames together
  Note    : Frames are stored in the GFF way (0-2) not 1-3
            as they are in BLAST (negative frames are deduced by checking
                                  the strand of the query or hit)
 
 =cut
 
+# Note: changed 4/19/08 - bug 2485
+#
+# frame() is supposed to be a getter/setter (as is implied by the Function desc
+# above; this is also consistent with Bio::SeqFeature::SimilarityPair).  Also,
+# the API is not consistent with the other HSP/SimilarityPair methods such as
+# strand(), start(), end(), etc. 
+#
+# In order to make this consistent with other methods all work is now done
+# when the features are instantiated and not delayed.  We compromise by
+# defaulting back 'to hit' w/o passed args.  Setting is now allowed.  
+
 sub frame {
     my $self = shift;
-
-    unless (defined $self->{_did_preframe}) {
-        $self->_pre_frame;
+    my $val = shift;
+    if (!defined $val) {
+        # unfortunately, w/o args we need to warn about API changes
+        $self->warn("API for frame() has changed.\n".
+                    "Please refer to documentation for Bio::Search::HSP::GenericHSP;\n".
+                    "returning query frame");
+        $val = 'query';
     }
-    my $qframe = $self->{QUERY_FRAME};
-    my $sframe = $self->{HIT_FRAME};
+    $val =~ s/^\s+//;
 
-    if( defined $qframe ) {
-        if( $qframe == 0 ) {
-            $qframe = 0;
-        } elsif( $qframe !~ /^([+-])?([1-3])/ ) {
-            $self->warn("Specifying an invalid query frame ($qframe)");
-            $qframe = undef;
-        } else {
-            my $dir = $1;
-            $dir = '+' unless defined $dir;
-            if( ($dir eq '-' && $self->query->strand >= 0) ||
-                ($dir eq '+' && $self->query->strand <= 0) ) {
-                $self->warn("Query frame ($qframe) did not match strand of query (". $self->query->strand() . ")");
-            }
-            # Set frame to GFF [0-2] -
-            # what if someone tries to put in a GFF frame!
-            $qframe = $2 - 1;
-        }
-        $self->query->frame($qframe);
+    if( $val =~ /^q/i ) {
+        return $self->query->frame(@_);
+    } elsif( $val =~ /^hi|^s/i ) {
+        return $self->hit->frame(@_);
+    } elsif (  $val =~ /^list|array/i ) {
+        return ($self->query->frame($_[0]), 
+            $self->hit->frame($_[1]) );
+    } elsif ( $val =~ /^\d+$/) {
+        # old API i.e. frame($query_frame, $hit_frame). This catches all but one
+        # case, where no arg is passed (so the hit is wanted).  
+        $self->warn("API for frame() has changed.\n".
+                    "Please refer to documentation for Bio::Search::HSP::GenericHSP");
+        wantarray ? 
+        return ($self->query->frame($val), 
+            $self->hit->frame(@_) ) :
+        return $self->hit->frame($val,@_);
+    } else { 
+        $self->warn("unrecognized component '$val' requested\n");
     }
-    if( defined $sframe ) {
-          if( $sframe == 0 ) {
-            $sframe = 0;
-          } elsif( $sframe !~ /^([+-])?([1-3])/ ) {
-            $self->warn("Specifying an invalid subject frame ($sframe)");
-            $sframe = undef;
-          } else {
-              my $dir = $1;
-              $dir = '+' unless defined $dir;
-              if( ($dir eq '-' && $self->hit->strand >= 0) ||
-                  ($dir eq '+' && $self->hit->strand <= 0) )
-              {
-                  $self->warn("Subject frame ($sframe) did not match strand of subject (". $self->hit->strand() . ")");
-              }
-
-              # Set frame to GFF [0-2]
-              $sframe = $2 - 1;
-          }
-          $self->hit->frame($sframe);
-      }
-    if (wantarray() && $self->algorithm =~ /^T(BLAST|FAST)(X|Y|XY)/oi)
-    {
-        return ($self->query->frame(), $self->hit->frame());
-    } elsif (wantarray())  {
-        ($self->query->frame() &&
-         return ($self->query->frame(), undef)) ||
-             ($self->hit->frame() &&
-              return (undef, $self->hit->frame()));
-    } else {
-        ($self->query->frame() &&
-         return $self->query->frame()) ||
-        ($self->hit->frame() &&
-         return $self->hit->frame());
-    }
+    return 0;
 }
-
 
 =head2 get_aln
 
@@ -620,7 +614,7 @@ sub get_aln {
     my ($self) = @_;
     require Bio::LocatableSeq;
     require Bio::SimpleAlign;
-    my $aln = new Bio::SimpleAlign;
+    my $aln = Bio::SimpleAlign->new();
     my $hs = $self->hit_string();
     my $qs = $self->query_string();
     # FASTA specific stuff moved to the FastaHSP object
@@ -628,23 +622,32 @@ sub get_aln {
     $seqonly =~ s/[\-\s]//g;
     my ($q_nm,$s_nm) = ($self->query->seq_id(),
                         $self->hit->seq_id());
-    unless( defined $q_nm && CORE::length ($q_nm) ) {
-        $q_nm = 'query';
-    }
-    unless( defined $s_nm && CORE::length ($s_nm) ) {
-        $s_nm = 'hit';
-    }
-    my $query = new Bio::LocatableSeq('-seq'   => $qs,
+    # Should we silently change the name of the query or hit if it isn't
+    # defined?  May need revisiting... cjfields 2008-12-3 (commented out below)
+    
+    #unless( defined $q_nm && CORE::length ($q_nm) ) {
+    #    $q_nm = 'query';
+    #}
+    #unless( defined $s_nm && CORE::length ($s_nm) ) {
+    #    $s_nm = 'hit';
+    #}
+    
+    # mapping: 1 residues for every x coordinate positions
+    my $query = Bio::LocatableSeq->new('-seq'   => $qs,
                                       '-id'    => $q_nm,
                                       '-start' => $self->query->start,
                                       '-end'   => $self->query->end,
+                                      '-force_nse' => $q_nm ? 0 : 1,
+                                      '-mapping' => [1, $self->{_query_mapping}]
                                       );
     $seqonly = $hs;
     $seqonly =~ s/[\-\s]//g;
-    my $hit =  new Bio::LocatableSeq('-seq'    => $hs,
+    my $hit =  Bio::LocatableSeq->new('-seq'    => $hs,
                                       '-id'    => $s_nm,
                                       '-start' => $self->hit->start,
                                       '-end'   => $self->hit->end,
+                                      '-force_nse' => $s_nm ? 0 : 1,
+                                      '-mapping' => [1, $self->{_hit_mapping}]
                                       );
     $aln->add_seq($query);
     $aln->add_seq($hit);
@@ -656,7 +659,7 @@ sub get_aln {
  Title   : num_conserved
  Usage   : $obj->num_conserved($newval)
  Function: returns the number of conserved residues in the alignment
- Returns : inetger
+ Returns : integer
  Args    : integer (optional)
 
 
@@ -717,7 +720,6 @@ sub rank {
     return $self->{RANK};
 }
 
-
 =head2 seq_inds
 
  Title   : seq_inds
@@ -731,17 +733,32 @@ sub rank {
            : May include ranges if collapse is true.
  Argument  : seq_type  = 'query' or 'hit' or 'sbjct'  (default = query)
            :  ('sbjct' is synonymous with 'hit')
-           : class     = 'identical' or 'conserved' or 'nomatch' or 'gap'
-           :              (default = identical)
-           :              (can be shortened to 'id' or 'cons')
-           :             or 'conserved-not-identical'
+           : class     = 'identical' - identical positions
+           :             'conserved' - conserved positions
+           :             'nomatch'   - mismatched residue or gap positions
+           :             'mismatch'  - mismatched residue positions (no gaps)
+           :             'gap'       - gap positions only
+           :             'frameshift'- frameshift positions only
+           :             'conserved-not-identical' - conserved positions w/o 
+           :                            identical residues
+           :             The name can be shortened to 'id' or 'cons' unless
+           :             the name is ambiguous.  The default value is
+           :             'identical'
+           :
            : collapse  = boolean, if true, consecutive positions are merged
            :             using a range notation, e.g., "1 2 3 4 5 7 9 10 11"
            :             collapses to "1-5 7 9-11". This is useful for
            :             consolidating long lists. Default = no collapse.
+           :
  Throws    : n/a.
- Comments  :
-
+ Comments  : For HSPs partially or completely derived from translated sequences
+           : (TBLASTN, BLASTX, TBLASTX, or similar), some positional data
+           : cannot easily be attributed to a single position (i.e. the 
+           : positional data is ambiguous).  In these cases all three codon 
+           : positions are reported.  Under these conditions you can check 
+           : ambiguous_seq_inds() to determine whether the query, subject, 
+           : or both are ambiguous.
+           :
 See Also   : L<Bio::Search::SearchUtils::collapse_nums()|Bio::Search::SearchUtils>,
              L<Bio::Search::Hit::HitI::seq_inds()|Bio::Search::Hit::HitI>
 
@@ -767,6 +784,7 @@ sub seq_inds{
        $self->warn("unknown seqtype $seqType using 'query'");
        $seqType = 'query';
    }
+   
    $t = lc(substr($class,0,1));
 
    if( $t eq 'c' ) {
@@ -779,8 +797,12 @@ sub seq_inds{
        $class = 'identical';
    } elsif( $t eq 'n' ) {
        $class = 'nomatch';
+   } elsif( $t eq 'm' ) {
+       $class = 'mismatch';
    } elsif( $t eq 'g' ) {
        $class = 'gap';
+   } elsif( $t eq 'f' ) {
+       $class = 'frameshift';    
    } else {
        $self->warn("unknown sequence class $class using 'identical'");
        $class = 'identical';
@@ -792,28 +814,57 @@ sub seq_inds{
    my @ary;
 
    if( $class eq '_gap' ) {
-       # this means that we are remapping the gap length that is stored
-       # in the hash (for example $self->{'_gapRes_query'} )
-       # so we'll return an array which has the values of the position of the
-       # of the gap (the key in the hash) + the gap length (value in the
-       # hash for this key - 1.
-
-       @ary = map { $_ > 1 ?
-                        $_..($_ + $self->{"${class}Res$seqType"}->{$_} - 1) :
-                        $_ }
-              sort { $a <=> $b } keys %{ $self->{"${class}Res$seqType"}};
+        # this means that we are remapping the gap length that is stored
+        # in the hash (for example $self->{'_gapRes_query'} )
+        # so we'll return an array which has the values of the position of the
+        # of the gap (the key in the hash) + the gap length (value in the
+        # hash for this key - 1.
+        
+        # changing this; since the index is the position prior to the insertion,
+        # repeat the position based on the number of gaps inserted
+        @ary = map { my @tmp;
+                     # position holds number of gaps inserted
+                     for my $g (1..$self->{seqinds}{"${class}Res$seqType"}->{$_}) {
+                        push @tmp, $_ ;
+                     }
+                     @tmp}
+              sort { $a <=> $b } keys %{ $self->{seqinds}{"${class}Res$seqType"}};
    } elsif( $class eq '_conservedall' ) {
        @ary = sort { $a <=> $b }
-       keys %{ $self->{"_conservedRes$seqType"}},
-       keys %{ $self->{"_identicalRes$seqType"}},
+       keys %{ $self->{seqinds}{"_conservedRes$seqType"}},
+       keys %{ $self->{seqinds}{"_identicalRes$seqType"}},
    }  else {
-       @ary = sort { $a <=> $b } keys %{ $self->{"${class}Res$seqType"}};
+       @ary = sort { $a <=> $b } keys %{ $self->{seqinds}{"${class}Res$seqType"}};
    }
    require Bio::Search::BlastUtils if $collapse;
 
    return $collapse ? &Bio::Search::SearchUtils::collapse_nums(@ary) : @ary;
 }
 
+=head2 ambiguous_seq_inds
+
+ Title     : ambiguous_seq_inds
+ Purpose   : returns a string denoting whether sequence indices for query, 
+           : subject, or both are ambiguous
+ Returns   : String; 'query', 'subject', 'query/subject', or empty string ''
+ Argument  : none
+ Comments  : For HSPs partially or completely derived from translated sequences
+           : (TBLASTN, BLASTX, TBLASTX, or similar), some positional data
+           : cannot easily be attributed to a single position (i.e. the 
+           : positional data is ambiguous).  In these cases all three codon 
+           : positions are reported when using seq_inds().  Under these
+           : conditions you can check ambiguous_seq_inds() to determine whether
+           : the query, subject, or both are ambiguous.
+See Also   : L<Bio::Search::Hit::HSPI::seq_inds()>
+
+=cut
+
+sub ambiguous_seq_inds {
+    my $self = shift;
+    $self->_calculate_seq_positions();    
+    return $self->{seqinds}{'_warnRes'} if exists $self->{seqinds}{'_warnRes'};
+    return $self->{seqinds}{'_warnRes'} = '';
+}
 
 =head2 Inherited from L<Bio::SeqFeature::SimilarityPair>
 
@@ -890,6 +941,18 @@ sub feature2 {
  Returns : numeric
  Args    : [optional] new value to set
 
+=cut 
+
+# Override significance to return the e-value or, if this is
+# not defined (WU-BLAST), return the p-value.
+sub significance {
+    my ($self, $val) = @_;
+    if (!defined $self->{SIGNIFICANCE} || $val) {
+        $self->query->significance($val) if $val;
+        $self->{SIGNIFICANCE} = $val || $self->evalue || $self->pvalue;
+    }
+    return $self->{SIGNIFICANCE};
+}
 
 =head2 score
 
@@ -941,94 +1004,165 @@ sub _calculate_seq_positions {
     my ($self,@args) = @_;
     return unless ( $self->{'_sequenceschanged'} );
     $self->{'_sequenceschanged'} = 0;
-    my ($mchar, $schar, $qchar);
     my ($seqString, $qseq,$sseq) = ( $self->homology_string(),
                                      $self->query_string(),
                                      $self->hit_string() );
-
-    # Using hashes to avoid saving duplicate residue numbers.
-    my %identicalList_query = ();
-    my %identicalList_sbjct = ();
-    my %conservedList_query = ();
-    my %conservedList_sbjct = ();
-
-    my %gapList_query = ();
-    my %gapList_sbjct = ();
-    my %nomatchList_query = ();
-    my %nomatchList_sbjct = ();
-
+    my ($mlen, $qlen, $slen) = (CORE::length($seqString), CORE::length($qseq), CORE::length($sseq));
     my $qdir = $self->query->strand || 1;
     my $sdir = $self->hit->strand || 1;
-    my $resCount_query = ($qdir >=0) ? $self->query->end : $self->query->start;
-    my $resCount_sbjct = ($sdir >=0) ? $self->hit->end : $self->hit->start;
-
+    my ($resCount_query, $endpoint_query) = ($qdir <=0) ? ($self->query->end, $self->query->start)
+        : ($self->query->start, $self->query->end);
+    my ($resCount_sbjct, $endpoint_sbjct) = ($sdir <=0) ? ($self->hit->end, $self->hit->start)
+        : ($self->hit->start, $self->hit->end);
+    
     my $prog = $self->algorithm;
+    
     if( $prog  =~ /FAST|SSEARCH|SMITH-WATERMAN/i ) {
+    
+        # we infer the end of the regional sequence where the first and last
+        # non spaces are in the homology string
+        # then we use the HSP->length to tell us how far to read
+        # to cut off the end of the sequence
+        
+        my ($start, $rest) = (0,0);
+        if( $seqString =~ /^(\s+)?(.*?)\s*$/ ) {
+            ($start, $rest) = ($1 ? CORE::length($1) : 0, CORE::length($2));
+        }
+    
+        $seqString = substr($seqString, $start, $rest);
+        $qseq = substr($qseq, $start, $rest);
+        $sseq = substr($sseq, $start, $rest);
+
+        # commented out 10/29/08
+        # removing frameshift symbols doesn't take into account the following:
+        # 1) does not remove the same point in the homology string (get
+        # positional errors)
+        # 2) adjustments to the overall position in the string due to the
+        # frameshift must be taken into consideration (get balancing errors)
+        #
+        # Frameshifts will be handled directly in the main loop. 
+        # --chris
+        
         # fasta reports some extra 'regional' sequence information
         # we need to clear out first
         # this seemed a bit insane to me at first, but it appears to
         # work --jason
+        
+        #$qseq =~ s![\\\/]!!g;
+        #$sseq =~ s![\\\/]!!g;
+    }
 
-        # we infer the end of the regional sequence where the first
-        # non space is in the homology string
-        # then we use the HSP->length to tell us how far to read
-        # to cut off the end of the sequence
-
-        # one possible problem is the sequence which
-
-        my ($start) = (0);
-        if( $seqString =~ /^(\s+)/ ) {
-            $start = CORE::length($1);
+    $self->{seqinds}{'_warnRes'} = '';
+    ($self->{_sbjct_offset}, $self->{_query_offset}) = (1,1);
+    if($prog =~ /^(?:PSI)?T(BLAST|FAST)(N|X|Y)/oi ) {
+        $self->{_sbjct_offset} = 3;
+        if ($1 eq 'BLAST' && $2 eq 'X') { #TBLASTX
+            $self->{_query_offset} = 3;
+            $self->{seqinds}{'_warnRes'} = 'query/subject';
+        } else {
+            $self->{seqinds}{'_warnRes'} = 'subject';
         }
-
-        $seqString = substr($seqString, $start,$self->length('total'));
-        $qseq = substr($qseq, $start,$self->length('total'));
-        $sseq = substr($sseq, $start,$self->length('total'));
-
-        $qseq =~ s![\\\/]!!g;
-        $sseq =~ s![\\\/]!!g;
-    }
-
-    if($prog =~ /^(PSI)?T(BLAST|FAST)N/oi ) {
-	$resCount_sbjct = int($resCount_sbjct / 3);
     } elsif($prog =~ /^(BLAST|FAST)(X|Y|XY)/oi  ) {
-	$resCount_query = int($resCount_query / 3);
-    } elsif($prog =~ /^T(BLAST|FAST)(X|Y|XY)/oi ) {
-	$resCount_query = int($resCount_query / 3);
-	$resCount_sbjct = int($resCount_sbjct / 3);
+        $self->{_query_offset} = 3;
+        $self->{seqinds}{'_warnRes'} = 'query';
     }
-    while( $mchar = chop($seqString) ) {
-	($qchar, $schar) = (chop($qseq), chop($sseq));
-	if( $mchar eq '+' || $mchar eq '.' || $mchar eq ':' ) {
-	    $conservedList_query{ $resCount_query } = 1;
-	    $conservedList_sbjct{ $resCount_sbjct } = 1;
-	} elsif( $mchar ne ' ' ) {
-	    $identicalList_query{ $resCount_query } = 1;
-	    $identicalList_sbjct{ $resCount_sbjct } = 1;
-	} elsif( $mchar eq ' ') {
-	    $nomatchList_query{ $resCount_query } = 1;
-	    $nomatchList_sbjct{ $resCount_sbjct } = 1;
-	}
-	if( $qchar eq $GAP_SYMBOL ) {
-	    $gapList_query{ $resCount_query } ++;
-	} else {
-	    $resCount_query -= $qdir;
-	}
-	if( $schar eq $GAP_SYMBOL ) {
-	    $gapList_sbjct{ $resCount_query } ++;
-	} else {
-	    $resCount_sbjct -=$sdir;
-	}
+    my ($qfs, $sfs) = (0,0);
+    CHAR_LOOP:
+    for my $pos (0..CORE::length($seqString)-1) {
+        my @qrange = (0 - $qfs)..($self->{_query_offset} - 1);
+        my @srange = (0 - $sfs)..($self->{_sbjct_offset} - 1);
+        # $self->debug("QRange:@qrange SRange:@srange\n") if ($qfs || $sfs);
+        ($qfs, $sfs) = (0,0);
+        my ($mchar, $qchar, $schar) = (
+            unpack("x$pos A1",$seqString) || ' ',
+            $pos < CORE::length($qseq) ? unpack("x$pos A1",$qseq) : '-',
+            $pos < CORE::length($sseq) ? unpack("x$pos A1",$sseq) : '-'
+            );
+        my $matchtype = '';
+        my ($qgap, $sgap) = (0,0);
+        if( $mchar eq '+' || $mchar eq '.') {    # conserved
+            $self->{seqinds}{_conservedRes_query}{ $resCount_query + ($_ * $qdir) } = 1 for @qrange;
+            $self->{seqinds}{_conservedRes_sbjct}{ $resCount_sbjct + ($_ * $sdir) } = 1 for @srange;
+            $matchtype = 'conserved';
+        } elsif( $mchar eq ':' || $mchar ne ' ' ) { # identical
+            $self->{seqinds}{_identicalRes_query}{ $resCount_query + ($_ * $qdir) } = 1 for @qrange;
+            $self->{seqinds}{_identicalRes_sbjct}{ $resCount_sbjct + ($_ * $sdir) } = 1 for @srange;
+            $matchtype = 'identical';
+        } elsif( $mchar eq ' ' ) {  # possible mismatch/nomatch/frameshift
+            $qfs = $qchar eq '/'  ?  -1 : # base inserted to match frame
+                   $qchar eq '\\' ?   1 : # base deleted to match frame
+                   0;
+            $sfs = $schar eq '/'  ?  -1 :
+                   $schar eq '\\' ?   1 :
+                   0;
+            if ($qfs) {
+                # Frameshifts are tricky.
+                
+                # '/' indicates that the next residue is shifted back one
+                # (-1) frame position and is a deletion of one base (so to
+                # correctly align, a base is inserted). That residue should only
+                # occupy two sequence positions instead of three.
+                
+                # '\' indicates that the next residue is shifted forward
+                # one (+1) frame position and is an insertion of one base (so to
+                # correctly align, a base is removed). That residue should
+                # occupy four sequence positions instead of three.
+                
+                # Note that gaps are not counted across from frameshifts.
+                # Frameshift indices are a range of positions starting in the
+                # previous sequence position in which the frameshift occurs;
+                # they are ambiguous by nature.
+                $self->{seqinds}{_frameshiftRes_query}{ $resCount_query - ($_ * $qdir * $qfs) } = $qfs for @qrange;
+                $matchtype = "$qfs frameshift-query";
+                $sgap = $qgap = 1;
+            }
+            elsif ($sfs) {
+                $self->{seqinds}{_frameshiftRes_sbjct}{ $resCount_sbjct - ($_ * $sdir * $sfs) } = $sfs for @srange;
+                $matchtype = "$sfs frameshift-sbcjt";
+                $sgap = $qgap = 1;
+            }
+            elsif ($qchar eq $self->{GAP_SYMBOL}) {
+                # gap are counted as being in the immediately preceeding residue
+                # position; for translated sequences this is not the start of
+                # the previous codon, but the third codon position
+                $self->{seqinds}{_gapRes_query}{ $resCount_query - $qdir }++ for @qrange;
+                $matchtype = 'gap-query';
+                $qgap++;
+            }
+            elsif ($schar eq $self->{GAP_SYMBOL}) {
+                $self->{seqinds}{_gapRes_sbjct}{ $resCount_sbjct - $sdir }++ for @srange;
+                $matchtype = 'gap-sbjct';
+                $sgap++;
+            }
+            else {
+                # if not a gap or frameshift in either seq, must be mismatch
+                $self->{seqinds}{_mismatchRes_query}{ $resCount_query + ($_ * $qdir) } = 1 for @qrange;
+                $self->{seqinds}{_mismatchRes_sbjct}{ $resCount_sbjct + ($_ * $sdir) } = 1 for @srange;
+                $matchtype = 'mismatch';
+            }
+            # always add a nomatch unless the current position in the seq is a gap
+            if (!$sgap) {
+                $self->{seqinds}{_nomatchRes_sbjct}{ $resCount_sbjct + ($_ * $sdir) } = 1 for @srange;
+            }
+            if (!$qgap) {
+                $self->{seqinds}{_nomatchRes_query}{ $resCount_query + ($_ * $qdir) } = 1 for @qrange;
+            }
+        } else {
+            $self->warn("Unknown midline character: [$mchar]");
+        }
+        # leave in and uncomment for future debugging
+        #$self->debug(sprintf("%7d %1s[%1s]%1s %-7d Type: %-20s QOff:%-2d SOff:%-2d\n",
+        #                     $resCount_query,
+        #                     $qchar,
+        #                     $mchar,
+        #                     $schar,
+        #                     $resCount_sbjct,
+        #                     $matchtype,
+        #                     ($self->{_query_offset} * $qdir),
+        #                     ($self->{_sbjct_offset} * $sdir)));
+        $resCount_query += ($qdir * (scalar(@qrange) + $qfs)) if !$qgap;
+        $resCount_sbjct += ($sdir * (scalar(@srange) + $sfs)) if !$sgap;
     }
-    $self->{'_identicalRes_query'} = \%identicalList_query;
-    $self->{'_conservedRes_query'} = \%conservedList_query;
-    $self->{'_nomatchRes_query'}   = \%nomatchList_query;
-    $self->{'_gapRes_query'}       = \%gapList_query;
-
-    $self->{'_identicalRes_sbjct'} = \%identicalList_sbjct;
-    $self->{'_conservedRes_sbjct'} = \%conservedList_sbjct;
-    $self->{'_nomatchRes_sbjct'}   = \%nomatchList_sbjct;
-    $self->{'_gapRes_sbjct'}       = \%gapList_sbjct;
     return 1;
 }
 
@@ -1040,8 +1174,8 @@ See documentation in L<Bio::Search::HSP::HSPI::n()|Bio::Search::HSP::HSPI>
 
 sub n {
     my $self = shift;
-    if(@_) { $self->{'_n'} = shift; }
-    defined $self->{'_n'} ? $self->{'_n'} : '';
+    if(@_) { $self->{'N'} = shift; }
+    defined $self->{'N'} ? $self->{'N'} : '';
 }
 
 =head2 range
@@ -1105,6 +1239,26 @@ sub hsp_group {
 
     return $self->{HSP_GROUP} = shift if @_;
     return $self->{HSP_GROUP};
+}
+
+=head2 hit_features
+
+ Title   : hit_features
+ Usage   : $obj->hit_features($newval)
+ Function: Get/Set the HSP hit feature string (from some BLAST 2.2.13 text
+           output), which is a string of overlapping or nearby features in HSP
+           hit
+ Returns : Value of hit features, if present
+ Args    : On set, new value (a scalar or undef, optional)
+
+
+=cut
+
+sub hit_features {
+    my $self = shift;
+
+    return $self->{HIT_FEATURES} = shift if @_;
+    return $self->{HIT_FEATURES};
 }
 
 # The cigar string code is written by Juguang Xiao <juguang@fugu-sg.org>
@@ -1195,11 +1349,11 @@ sub generate_cigar_string {
     for(my $i=0; $i <= $#qchars; $i++){
         my $qchar = $qchars[$i];
         my $hchar = $hchars[$i];
-        if($qchar ne $GAP_SYMBOL && $hchar ne $GAP_SYMBOL){ # Match
+        if($qchar ne $self->{GAP_SYMBOL} && $hchar ne $self->{GAP_SYMBOL}){ # Match
             $cigar_string .= $self->_sub_cigar_string('M');
-        }elsif($qchar eq $GAP_SYMBOL){ # Deletion
+        }elsif($qchar eq $self->{GAP_SYMBOL}){ # Deletion
             $cigar_string .= $self->_sub_cigar_string('D');
-        }elsif($hchar eq $GAP_SYMBOL){ # Insertion
+        }elsif($hchar eq $self->{GAP_SYMBOL}){ # Insertion
             $cigar_string .= $self->_sub_cigar_string('I');
         }else{
             $self->throw("Impossible state that 2 gaps on each seq aligned");
@@ -1227,30 +1381,44 @@ sub _sub_cigar_string {
     return $sub_cigar_string;
 }
 
-
-
 # needed before seqfeatures can be made
 sub _pre_seq_feature {
     my $self = shift;
     my $algo = $self->{ALGORITHM};
 
     my ($queryfactor, $hitfactor) = (0,0);
-    if( $algo =~ /^(PSI)?T(BLAST|FAST|SW)[NY]/oi ) {
+    my ($hitmap, $querymap) = (1,1);
+    if( $algo =~ /^(?:PSI)?T(?:BLAST|FAST|SW)[NY]/oi ) {
         $hitfactor = 1;
+        $hitmap = 3;
     }
-    elsif ($algo =~ /^(FAST|BLAST)(X|Y|XY)/oi || $algo =~ /^P?GENEWISE/oi ) {
+    elsif ($algo =~ /^(?:FAST|BLAST)(?:X|Y|XY)/oi || $algo =~ /^P?GENEWISE/oi ) {
         $queryfactor = 1;
+        $querymap = 3;
     }
     elsif ($algo =~ /^T(BLAST|FAST|SW)(X|Y|XY)/oi || $algo =~ /^(BLAST|FAST|SW)N/oi || $algo =~ /^WABA|AXT|BLAT|BLASTZ|PSL|MEGABLAST|EXONERATE|SW|SMITH\-WATERMAN|SIM4$/){
+        if ($2) {
+            $hitmap = $querymap = 3;
+        }
         $hitfactor = 1;
         $queryfactor = 1;
     }
     elsif ($algo =~ /^RPS-BLAST/) {
-        $queryfactor = ($algo =~ /^RPS-BLAST\(BLASTX\)/) ? 1 : 0;
+        if ($algo =~ /^RPS-BLAST\(BLASTX\)/) {
+            $queryfactor = 1;
+            $querymap  = 3;
+        }
         $hitfactor = 0;
+    }
+    else {
+        my $stranded = lc substr($self->{STRANDED}, 0,1);
+        $queryfactor = ($stranded eq 'q' || $stranded eq 'b') ? 1 : 0;
+        $hitfactor = ($stranded eq 'h' || $stranded eq 's' || $stranded eq 'b') ? 1 : 0;
     }
     $self->{_query_factor} = $queryfactor;
     $self->{_hit_factor} = $hitfactor;
+    $self->{_hit_mapping} = $hitmap;
+    $self->{_query_mapping} = $querymap;
 }
 
 # make query seq feature
@@ -1301,23 +1469,34 @@ sub _query_seq_feature {
     $sim1->seqlength($self->{QUERY_LENGTH});
     $sim1->source_tag($self->{ALGORITHM});
     $sim1->seqdesc($self->{QUERY_DESC});
-    
-    $self->SUPER::feature1($sim1);
-
+    $sim1->add_tag_value('meta', $self->{META}) if $self->can('meta');
     # to determine frame from something like FASTXY which doesn't
     # report the frame
     my $qframe = $self->{QUERY_FRAME};
-    if (defined $strand && ! defined $qframe && $queryfactor) {
-        $qframe = ( $self->query->start % 3 ) * $strand;
+    
+    if (defined $strand && !defined $qframe && $queryfactor) {
+        $qframe = ( $qs % 3 ) * $strand;
     }
-    elsif (! defined $strand) {
+    elsif (!defined $strand) {
         $qframe = 0;
     }
-    $self->{QUERY_FRAME} = $qframe;
+    
+    if( $qframe =~ /^([+-])?([0-3])/ ) {
+        my $dir = $1 || '+';
+        if($qframe && (($dir eq '-' && $strand >= 0) || ($dir eq '+' && $strand <= 0)) ) {
+            $self->warn("Query frame ($qframe) did not match strand of query ($strand)");
+        }
+        $qframe = $2 != 0 ? $2 - 1 : $2;
+    }  else {
+        $self->warn("Unknown query frame ($qframe)");
+        $qframe = 0;
+    }
+    
+    $sim1->frame($qframe);
+    $self->SUPER::feature1($sim1);
 
     $self->{_created_qff} = 1;
     $self->{_making_qff} = 0;
-    $self->_pre_frame;
 }
 
 # make subject seq feature
@@ -1363,29 +1542,32 @@ sub _subject_seq_feature {
     $sim2->seqlength($self->{HIT_LENGTH});
     $sim2->source_tag($self->{ALGORITHM});
     $sim2->seqdesc($self->{HIT_DESC});
-    $self->SUPER::feature2($sim2);
-
+    $sim2->add_tag_value('meta', $self->{META}) if $self->can('meta');
     my $hframe = $self->{HIT_FRAME};
-    if (defined $strand && ! defined $hframe && $hitfactor) {
+    
+    if (defined $strand && !defined $hframe && $hitfactor) {
         $hframe = ( $hs % 3 ) * $strand;
     }
-    elsif (! defined $strand) {
+    elsif (!defined $strand) {
         $hframe = 0;
     }
-    $self->{HIT_FRAME} = $hframe;
+    
+    if( $hframe =~ /^([+-])?([0-3])/ ) {
+        my $dir = $1 || '+';
+        if($hframe && (($dir eq '-' && $strand >= 0) || ($dir eq '+' && $strand <= 0)) ) {
+            $self->warn("Subject frame ($hframe) did not match strand of subject ($strand)");
+        }
+        $hframe = $2 != 0 ? $2 - 1 : $2;
+    }  else {
+        $self->warn("Unknown subject frame ($hframe)");
+        $hframe = 0;
+    }
+    
+    $sim2->frame($hframe);
+    $self->SUPER::feature2($sim2);
 
     $self->{_created_sff} = 1;
     $self->{_making_sff} = 0;
-    $self->_pre_frame;
-}
-
-# know the frame following seq feature creation
-sub _pre_frame {
-    my $self = shift;
-    $self->{_created_qff} || $self->_query_seq_feature;
-    $self->{_created_sff} || $self->_subject_seq_feature;
-    $self->{_did_preframe} = 1;
-    $self->frame;
 }
 
 # before calling the num_* methods
@@ -1397,16 +1579,16 @@ sub _pre_similar_stats {
 
     if (! defined $identical) {
         if (! defined $percent_id) {
-            $self->warn("Did not defined the number of identical matches or overall percent identity in the HSP assuming 0");
+            $self->warn("Did not defined the number of identical matches or overall percent identity in the HSP; assuming 0");
             $identical = 0;
         }
         else {
-            $identical = int($percent_id * $self->{HSP_LENGTH});
+            $identical = sprintf("%.0f",$percent_id * $self->{HSP_LENGTH});
         }
     }
 
     if (! defined $conserved) {
-        $self->warn("Did not defined the number of conserved matches in the HSP assuming conserved == identical ($identical)")
+        $self->warn("Did not define the number of conserved matches in the HSP; assuming conserved == identical ($identical)")
             if( $self->{ALGORITHM} !~ /^((FAST|BLAST)N)|EXONERATE|SIM4|AXT|PSL|BLAT|BLASTZ|WABA/oi);
         $conserved = $identical;
     }
@@ -1416,6 +1598,7 @@ sub _pre_similar_stats {
 }
 
 # before calling the frac_* methods
+
 sub _pre_frac {
     my $self = shift;
     my $hsp_len = $self->{HSP_LENGTH};
@@ -1446,6 +1629,10 @@ sub _pre_frac {
 }
 
 # before calling gaps()
+# This relies first on passed parameters (parser-dependent), then on gaps
+# calculated by seq_inds() (if set), then falls back to directly checking
+# for '-' as a last resort  
+
 sub _pre_gaps {
     my $self = shift;
     my $query_gaps = $self->{QUERY_GAPS};
@@ -1458,12 +1645,16 @@ sub _pre_gaps {
     if( defined $query_gaps ) {
         $self->gaps('query', $query_gaps);
     } elsif( defined $query_seq ) {
-        $self->gaps('query', scalar ( $query_seq =~ tr/\-//));
+        my $qg = (defined $self->{'_query_offset'}) ? $self->seq_inds('query','gaps') : scalar( $query_seq =~ tr/\-//);
+        my $offset = $self->{'_query_offset'} || 1;
+        $self->gaps('query', $qg/$offset);
     }
     if( defined $hit_gaps ) {
         $self->gaps('hit', $hit_gaps);
     } elsif( defined $hit_seq ) {
-        $self->gaps('hit', scalar ( $hit_seq =~ tr/\-//));
+        my $hg = (defined $self->{'_sbjct_offset'}) ? $self->seq_inds('hit','gaps') : scalar( $hit_seq =~ tr/\-//);
+        my $offset = $self->{'_sbjct_offset'} || 1;
+        $self->gaps('hit', $hg/$offset);
     }
     if( ! defined $gaps ) {
         $gaps = $self->gaps("query") + $self->gaps("hit");

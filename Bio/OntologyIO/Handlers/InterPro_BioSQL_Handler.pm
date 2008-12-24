@@ -1,4 +1,4 @@
-# $Id: InterPro_BioSQL_Handler.pm,v 1.7.6.1 2006/10/02 23:10:22 sendu Exp $
+# $Id: InterPro_BioSQL_Handler.pm 11671 2007-08-30 18:46:39Z cjfields $
 #
 # BioPerl module for InterPro_BioSQL_Handler
 #
@@ -507,7 +507,7 @@ sub end_element {
         my $comment = $self->_chars_hash->{example};
         $comment =~ s/^(\s+)//; $comment =~ s/(\s+)$//;
         $example->comment($comment);
-        $self->_relationship->subject_term->add_dblink($example);
+        $self->_relationship->subject_term->add_dbxref(-dbxrefs => [$example]);
         $self->_chars_hash->{example}='';
     }elsif($tag eq 'publication'){
         my $publication = $self->_create_publication;

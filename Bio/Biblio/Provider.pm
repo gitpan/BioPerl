@@ -1,4 +1,4 @@
-# $Id: Provider.pm,v 1.11.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: Provider.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Biblio::Provider
 #
@@ -14,11 +14,11 @@ Bio::Biblio::Provider - Representation of a general provider
 =head1 SYNOPSIS
 
     # usually this class is not instantiated but can be...
-    $obj = new Bio::Biblio::Provider (-type => 'Department');
+    $obj = Bio::Biblio::Provider->new(-type => 'Department');
 
   #--- OR ---
 
-    $obj = new Bio::Biblio::Provider;
+    $obj = Bio::Biblio::Provider->new();
     $obj->type ('Department');
 
 =head1 DESCRIPTION

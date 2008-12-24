@@ -1,4 +1,4 @@
-# $Id: Set.pm,v 1.15.4.1 2006/10/02 23:10:33 sendu Exp $
+# $Id: Set.pm 10576 2006-09-28 20:56:02Z mauricio $
 #
 # BioPerl module for Bio::Tools::HMMER::Set
 #

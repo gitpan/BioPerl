@@ -1,4 +1,4 @@
-# $Id: Gel.pm,v 1.11.4.1 2006/10/02 23:10:32 sendu Exp $
+# $Id: Gel.pm 15052 2008-12-01 08:47:39Z heikki $
 # 
 # BioPerl module for Bio::Tools::Gel
 # Copyright Allen Day <allenday@ucla.edu>
@@ -13,7 +13,7 @@ Bio::Tools::Gel - Calculates relative electrophoretic migration distances
 =head1 SYNOPSIS
 
     use Bio::PrimarySeq;
-    use Bio::Tools::RestrictionAnalysis;
+    use Bio::Restriction::Analysis;
     use Bio::Tools::Gel;
 
     # get a sequence
@@ -95,7 +95,7 @@ use base qw(Bio::Root::Root);
 =head2 new
 
  Title   : new
- Usage   : my $gel = new Bio::Tools::Gel(-seq => $sequence,-dilate => 3);
+ Usage   : my $gel = Bio::Tools::Gel->new(-seq => $sequence,-dilate => 3);
  Function: Initializes a new Gel
  Returns : Bio::Tools::Gel
  Args    : -seq      => Bio::Seq(s), scalar(s) or list of either/both 

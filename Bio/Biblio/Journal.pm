@@ -1,4 +1,4 @@
-# $Id: Journal.pm,v 1.13.4.3 2006/10/02 23:10:12 sendu Exp $
+# $Id: Journal.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Biblio::Journal
 #
@@ -13,11 +13,11 @@ Bio::Biblio::Journal - Representation of a journal
 
 =head1 SYNOPSIS
 
-    $obj = new Bio::Biblio::Journal (-name => 'The Perl Journal',
+    $obj = Bio::Biblio::Journal->new(-name => 'The Perl Journal',
                                      -issn  => '1087-903X');
   #--- OR ---
 
-    $obj = new Bio::Biblio::Journal;
+    $obj = Bio::Biblio::Journal->new();
     $obj->issn ('1087-903X');
 
 =head1 DESCRIPTION

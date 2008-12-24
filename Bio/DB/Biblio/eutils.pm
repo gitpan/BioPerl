@@ -1,4 +1,4 @@
-# $Id: eutils.pm,v 1.11.4.1 2006/10/02 23:10:15 sendu Exp $
+# $Id: eutils.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module Bio::DB::Biblio::eutils.pm
 #
@@ -17,8 +17,14 @@ Do not use this object directly, it is recommended to access it and use
 it through the I<Bio::Biblio> module:
 
   use Bio::Biblio;
-  my $biblio = new Bio::Biblio (-access => 'eutils');
-  $biblio->db('PMC'); #optional, default is PubMed.
+  use Bio::Biblio::IO;
+
+  my $biblio = Bio::Biblio->new( -access => 'eutils' );
+  $biblio->find("10336996");
+  my $xml = $biblio->get_next;
+  my $io = Bio::Biblio::IO->new( -data => $xml, 
+                                 -format => 'medlinexml' );
+  my $article = $io->next_bibref();
 
 =head1 DESCRIPTION
 
@@ -125,7 +131,7 @@ our $MAX_RECORDS = 100_000;
 
 =head2 _initialize
 
- Usage   : my $obj = new Bio::Biblio (-access => 'eutils' ...);
+ Usage   : my $obj = Bio::Biblio->new(-access => 'eutils' ...);
            (_initialize is internally called from this constructor)
  Returns : 1 on success
  Args    : none

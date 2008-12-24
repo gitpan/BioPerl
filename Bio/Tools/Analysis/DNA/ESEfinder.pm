@@ -1,4 +1,4 @@
-# $Id: ESEfinder.pm,v 1.12.4.3 2006/11/08 17:25:55 sendu Exp $
+# $Id: ESEfinder.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Tools::Analysis::DNA::ESEfinder
 #
@@ -194,7 +194,7 @@ sub _run {
     my $self  = shift;
     my $seq_fasta;
     my $stringfh = new IO::String($seq_fasta);
-    my $seqout = new Bio::SeqIO(-fh => $stringfh,
+    my $seqout = Bio::SeqIO->new(-fh => $stringfh,
                                 -format => 'fasta');
     $seqout->write_seq($self->seq);
     $self->debug($seq_fasta);

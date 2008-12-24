@@ -1,5 +1,5 @@
 #
-# $Id: Qual.pm,v 1.9.4.1 2006/10/02 23:10:20 sendu Exp $
+# $Id: Qual.pm 11345 2007-04-02 00:47:04Z cjfields $
 #
 # BioPerl module for Bio::Index::Qual
 #
@@ -174,7 +174,8 @@ sub _index_file {
 	while (<$QUAL>) {
 		if (/^>/) {
 			# $begin is the position of the first character after the '>'
-			my $begin = tell($QUAL) - length( $_ ) + 1;
+                        my $offset = ( $^O =~ /mswin/i ) ? 0 : 1;
+			my $begin = tell($QUAL) - length( $_ ) + $offset;
 
 			foreach my $id (&$id_parser($_)) {
 				$self->add_record($id, $i, $begin);

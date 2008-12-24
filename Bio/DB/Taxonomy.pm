@@ -1,4 +1,4 @@
-# $Id: Taxonomy.pm,v 1.11.4.2 2006/10/02 23:10:15 sendu Exp $
+# $Id: Taxonomy.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::DB::Taxonomy
 #
@@ -17,7 +17,7 @@ Bio::DB::Taxonomy - Access to a taxonomy database
 =head1 SYNOPSIS
 
   use Bio::DB::Taxonomy;
-  my $db = new Bio::DB::Taxonomy(-source => 'entrez');
+  my $db = Bio::DB::Taxonomy->new(-source => 'entrez');
   # use NCBI Entrez over HTTP
   my $taxonid = $db->get_taxonid('Homo sapiens');
 
@@ -67,7 +67,7 @@ Internal methods are usually preceded with a _
 package Bio::DB::Taxonomy;
 use vars qw($DefaultSource $TAXON_IIDS);
 use strict;
-
+use Bio::Tree::Tree;
 
 use base qw(Bio::Root::Root);
 
@@ -77,7 +77,7 @@ $TAXON_IIDS = {};
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::DB::Taxonomy(-source => 'entrez');
+ Usage   : my $obj = Bio::DB::Taxonomy->new(-source => 'entrez');
  Function: Builds a new Bio::DB::Taxonomy object.
  Returns : an instance of Bio::DB::Taxonomy
  Args    : -source => which database source 'entrez' or 'flatfile' or 'list'
@@ -145,6 +145,46 @@ sub get_taxonids {
 
 *get_taxonid = \&get_taxonids;
 *get_taxaid = \&get_taxonids;
+
+=head2 get_tree
+
+ Title   : get_tree
+ Usage   : my $tree = $db->get_tree(@species_names)
+ Function: Generate a tree comprised of the full lineages of all the supplied
+           species names. The nodes for the requested species are given
+           name('supplied') values corresponding to the supplied name, such that
+           they can be identified if the real species name in the database
+           (stored under node_name()) is different.
+ Returns : Bio::Tree::Tree
+ Args    : a list of species names (strings)
+
+=cut
+
+sub get_tree {
+    my ($self, @species_names) = @_;
+    
+    # the full lineages of the species are merged into a single tree
+    my $tree;
+    foreach my $name (@species_names) {
+        my $ncbi_id = $self->get_taxonid($name);
+        if ($ncbi_id) {
+            my $node = $self->get_taxon(-taxonid => $ncbi_id);
+            $node->name('supplied', $name);
+            
+            if ($tree) {
+                $tree->merge_lineage($node);
+            }
+            else {
+                $tree = Bio::Tree::Tree->new(-verbose => $self->verbose, -node => $node);
+            }
+        }
+        else {
+            $self->throw("No taxonomy database node for species ".$name);
+        }
+    }
+    
+    return $tree;
+}
 
 =head2 ancestor
 

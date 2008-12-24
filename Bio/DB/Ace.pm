@@ -1,5 +1,5 @@
 
-# $Id: Ace.pm,v 1.15.4.2 2006/10/02 23:10:14 sendu Exp $
+# $Id: Ace.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module for Bio::DB::Ace
 #

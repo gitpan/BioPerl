@@ -1,4 +1,4 @@
-# $Id: SeqI.pm,v 1.31.4.1 2006/10/02 23:10:21 sendu Exp $
+# $Id: SeqI.pm 11612 2007-08-15 08:55:47Z heikki $
 #
 # bioperl module for Bio::LiveSeq::SeqI
 #
@@ -752,7 +752,6 @@ sub strand {
 
  Returns : a string either 'dna','rna','protein'.
  Args    : none
- Note    : "circular dna" is set as dna
 
 =cut
 
@@ -761,7 +760,8 @@ sub alphabet {
   my %valid_type = map {$_, 1} qw( dna rna protein );
   my ($self,$value) = @_;
   if (defined $value) {
-    $value =~ s/circular dna/dna/;
+    $value = 'dna' if $value =~ /dna/i;
+    $value = 'rna' if $value =~ /rna/i;
     unless ( $valid_type{$value} ) {
       $self->warn("Molecular type '$value' is not a valid type");
     }

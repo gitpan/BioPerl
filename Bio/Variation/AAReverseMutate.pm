@@ -1,4 +1,4 @@
-# $Id: AAReverseMutate.pm,v 1.12.4.1 2006/10/02 23:10:38 sendu Exp $
+# $Id: AAReverseMutate.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Variation::AAReverseMutate
 #
@@ -17,7 +17,7 @@ Bio::Variation::AAReverseMutate - point mutation and codon
 
 =head1 SYNOPSIS
 
-    $aamut = new Bio::Variation::AAReverseMutate
+    $aamut = Bio::Variation::AAReverseMutate->new
                  (-aa_ori => 'F', 
 		  -aa_mut => 'S',
 		  -codon_ori => 'ttc', # optional

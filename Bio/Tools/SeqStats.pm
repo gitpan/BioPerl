@@ -1,4 +1,4 @@
-# $Id: SeqStats.pm,v 1.30.4.1 2006/10/02 23:10:32 sendu Exp $
+# $Id: SeqStats.pm 15082 2008-12-03 14:14:15Z bosborne $
 #
 # BioPerl module for Bio::Tools::SeqStats
 #
@@ -214,7 +214,7 @@ BEGIN {
 			 'dna'     => [ qw(A C G T R Y M K S W H B V D X N) ],
 		    'rna'     => [ qw(A C G U R Y M K S W H B V D X N) ],
 		    'protein' => [ qw(A R N D C Q E G H I L K M F U
-									 P S T W X Y V B Z *) ], # sac: added B, Z
+									 P S T W X Y V B Z J O *) ], # sac: added B, Z
 						);
 
 # SAC: new strict alphabet: doesn't allow any ambiguity characters.
@@ -222,7 +222,7 @@ BEGIN {
 			 'dna'     => [ qw( A C G T ) ],
 			 'rna'     => [ qw( A C G U ) ],
 			 'protein'    => [ qw(A R N D C Q E G H I L K M F U
-					      P S T W Y V) ],
+					      P S T W Y V O) ],
 			 );
 
 
@@ -247,6 +247,7 @@ BEGIN {
     my $amino_L_wt = 131.17;
     my $amino_M_wt = 149.21;
     my $amino_N_wt = 132.12;
+    my $amino_O_wt = 255.31;
     my $amino_P_wt = 115.13;
     my $amino_Q_wt = 146.15;
     my $amino_R_wt = 174.20;
@@ -268,10 +269,12 @@ BEGIN {
 	'G'     => [$amino_G_wt, $amino_G_wt], # Glycine
 	'H'     => [$amino_H_wt, $amino_H_wt], # Histidine
 	'I'     => [$amino_I_wt, $amino_I_wt], # Isoleucine
+	'J'     => [$amino_L_wt, $amino_I_wt], # Leucine, Isoleucine
 	'K'     => [$amino_K_wt, $amino_K_wt], # Lysine
 	'L'     => [$amino_L_wt, $amino_L_wt], # Leucine
 	'M'     => [$amino_M_wt, $amino_M_wt], # Methionine
 	'N'     => [$amino_N_wt, $amino_N_wt], # Asparagine
+	'O'     => [$amino_O_wt, $amino_O_wt], # Pyrrolysine
 	'P'     => [$amino_P_wt, $amino_P_wt], # Proline
 	'Q'     => [$amino_Q_wt, $amino_Q_wt], # Glutamine
 	'R'     => [$amino_R_wt, $amino_R_wt], # Arginine
@@ -364,33 +367,6 @@ BEGIN {
 		  'rna'     =>  $rna_weights,
 		  'protein' =>  $amino_weights,
 		  );
-
-    $amino_weights = {
-	'A'     => [$amino_A_wt, $amino_A_wt], # Alanine
-	'B'     => [$amino_N_wt, $amino_D_wt], # Aspartic Acid, Asparagine
-	'C'     => [$amino_C_wt, $amino_C_wt], # Cysteine
-	'D'     => [$amino_D_wt, $amino_D_wt], # Aspartic Acid
-	'E'     => [$amino_E_wt, $amino_E_wt], # Glutamic Acid
-	'F'     => [$amino_F_wt, $amino_F_wt], # Phenylalanine
-	'G'     => [$amino_G_wt, $amino_G_wt], # Glycine
-	'H'     => [$amino_H_wt, $amino_H_wt], # Histidine
-	'I'     => [$amino_I_wt, $amino_I_wt], # Isoleucine
-	'K'     => [$amino_K_wt, $amino_K_wt], # Lysine
-	'L'     => [$amino_L_wt, $amino_L_wt], # Leucine
-	'M'     => [$amino_M_wt, $amino_M_wt], # Methionine
-	'N'     => [$amino_N_wt, $amino_N_wt], # Asparagine
-	'P'     => [$amino_P_wt, $amino_P_wt], # Proline
-	'Q'     => [$amino_Q_wt, $amino_Q_wt], # Glutamine
-	'R'     => [$amino_R_wt, $amino_R_wt], # Arginine
-	'S'     => [$amino_S_wt, $amino_S_wt], # Serine
-	'T'     => [$amino_T_wt, $amino_T_wt], # Threonine
-	'U'     => [$amino_U_wt, $amino_U_wt], # SelenoCysteine
-	'V'     => [$amino_V_wt, $amino_V_wt], # Valine
-	'W'     => [$amino_W_wt, $amino_W_wt], # Tryptophan
-	'X'     => [$amino_G_wt, $amino_W_wt], # Unknown
-	'Y'     => [$amino_Y_wt, $amino_Y_wt], # Tyrosine
-	'Z'     => [$amino_Q_wt, $amino_E_wt], # Glutamic Acid, Glutamine
-	};
 	
 	# Amino acid scale: Hydropathicity.
 	# Ref: Kyte J., Doolittle R.F. J. Mol. Biol. 157:105-132(1982).
@@ -615,18 +591,16 @@ sub get_mol_wt {
 =head2  count_codons
 
  Title   : count_codons
- Usage   : $rcount = $seqstats->count_codons(); or
-           $rcount = Bio::Tools::SeqStats->count_codons($seqobj);
-
- Function: Counts the number of each type of codons in a given frame
-           for a dna or rna sequence.
+ Usage   : $rcount = $seqstats->count_codons() or
+           $rcount = Bio::Tools::SeqStats->count_codons($seqobj)
+ Function: Counts the number of each type of codons for a dna or rna 
+           sequence, starting at the 1st triple of the input sequence.
  Example :
  Returns : Reference to a hash in which keys are codons of the genetic
            alphabet used and values are number of occurrences of the
            codons in the sequence. All codons with "ambiguous" bases
            are counted together.
- Args    : None or reference to sequence object
-
+ Args    : None or sequence object
  Throws  : an exception if type of sequence is unknown or protein.
 
 =cut

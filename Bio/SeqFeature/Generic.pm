@@ -1,4 +1,4 @@
-# $Id: Generic.pm,v 1.103.4.1 2006/10/02 23:10:28 sendu Exp $
+# $Id: Generic.pm 15091 2008-12-04 12:00:09Z heikki $
 #
 # BioPerl module for Bio::SeqFeature::Generic
 #
@@ -16,7 +16,7 @@ Bio::SeqFeature::Generic - Generic SeqFeature
 
 =head1 SYNOPSIS
 
-   $feat = new Bio::SeqFeature::Generic ( 
+   $feat = Bio::SeqFeature::Generic->new( 
             -start        => 10, 
             -end          => 100,
             -strand       => -1, 
@@ -28,9 +28,9 @@ Bio::SeqFeature::Generic - Generic SeqFeature
                                author => 'someone',
                                sillytag => 'this is silly!' } );
 
-   $feat = new Bio::SeqFeature::Generic ( -gff_string => $string );
+   $feat = Bio::SeqFeature::Generic->new( -gff_string => $string );
    # if you want explicitly GFF1
-   $feat = new Bio::SeqFeature::Generic ( -gff1_string => $string );
+   $feat = Bio::SeqFeature::Generic->new( -gff1_string => $string );
 
    # add it to an annotated sequence
 
@@ -130,14 +130,13 @@ methods. Internal methods are usually preceded with a _
 package Bio::SeqFeature::Generic;
 use strict;
 
-use Bio::AnnotatableI;
 use Bio::Annotation::Collection;
 use Bio::Location::Simple;
 use Bio::Location::Split;
 use Bio::Tools::GFF;
 #use Tie::IxHash;
 
-use base qw(Bio::Root::Root Bio::SeqFeatureI Bio::FeatureHolderI);
+use base qw(Bio::Root::Root Bio::SeqFeatureI Bio::FeatureHolderI Bio::AnnotatableI);
 
 sub new {
     my ( $caller, @args) = @_;
@@ -152,7 +151,6 @@ sub new {
     # done - we hope
     return $self;
 }
-
 
 =head2 set_attributes
 
@@ -366,19 +364,25 @@ sub strand {
 =cut
 
 sub score {
-  my $self = shift;
+    my $self = shift;
 
-  if (@_) {
-      my $value = shift;
-      if ( defined $value && $value &&
-	   $value !~ /^[+-]?\d+\.?\d*(e-\d+)?/ and $value != 0) {
-	  $self->throw(-class=>'Bio::Root::BadParameter',
-		       -text=>"'$value' is not a valid score",
-		       -value=>$value);
-      }
-      return $self->{'_gsf_score'} = $value;
-  }
-  return $self->{'_gsf_score'};
+    if (@_) {
+        my $value = shift;
+
+        if ( defined $value && $value && $value !~ /^[A-Za-z]+$/ &&
+            $value !~ /^[+-]?\d+\.?\d*(e-\d+)?/ and $value != 0) {
+            $self->throw(-class=>'Bio::Root::BadParameter',
+                    -text=>"'$value' is not a valid score",
+                    -value=>$value);
+        }
+        if ($self->has_tag('score')) {
+            $self->warn("Removing score value(s)");
+            $self->remove_tags('score');
+        }
+        $self->add_tag_value('score',$value);
+    }
+    my ($score) = $self->has_tag('score') ? $self->get_tag_values('score') : undef;
+    return $score;
 }
 
 =head2 frame
@@ -444,6 +448,106 @@ sub source_tag {
     my $self = shift;
     return $self->{'_source_tag'} = shift if @_;
     return $self->{'_source_tag'};
+}
+
+=head2 has_tag
+
+ Title   : has_tag
+ Usage   : $value = $self->has_tag('some_tag')
+ Function: Tests wether a feature contaings a tag
+ Returns : TRUE if the SeqFeature has the tag,
+           and FALSE otherwise.
+ Args    : The name of a tag
+
+
+=cut
+
+sub has_tag {
+    my ($self, $tag) = @_;
+    return exists $self->{'_gsf_tag_hash'}->{$tag};
+}
+
+=head2 add_tag_value
+
+ Title   : add_tag_value
+ Usage   : $self->add_tag_value('note',"this is a note");
+ Returns : TRUE on success
+ Args    : tag (string) and one or more values (any scalar(s))
+
+
+=cut
+
+sub add_tag_value {
+    my $self = shift;
+    my $tag = shift;
+    $self->{'_gsf_tag_hash'}->{$tag} ||= [];
+    push(@{$self->{'_gsf_tag_hash'}->{$tag}},@_);
+}
+
+
+=head2 get_tag_values
+
+ Title   : get_tag_values
+ Usage   : @values = $gsf->get_tag_values('note');
+ Function: Returns a list of all the values stored
+           under a particular tag.
+ Returns : A list of scalars
+ Args    : The name of the tag
+
+
+=cut
+
+sub get_tag_values {
+   my ($self, $tag) = @_;
+
+   if( ! defined $tag ) { return (); }
+   if ( ! exists $self->{'_gsf_tag_hash'}->{$tag} ) {
+       $self->throw("asking for tag value that does not exist $tag");
+   }
+   return @{$self->{'_gsf_tag_hash'}->{$tag}};
+}
+
+
+=head2 get_all_tags
+
+ Title   : get_all_tags
+ Usage   : @tags = $feat->get_all_tags()
+ Function: Get a list of all the tags in a feature
+ Returns : An array of tag names
+ Args    : none
+
+# added a sort so that tags will be returned in a predictable order
+# I still think we should be able to specify a sort function
+# to the object at some point
+# -js
+
+=cut
+
+sub get_all_tags {
+   my ($self, @args) = @_;   
+   return sort keys %{ $self->{'_gsf_tag_hash'}};
+}
+
+=head2 remove_tag
+
+ Title   : remove_tag
+ Usage   : $feat->remove_tag('some_tag')
+ Function: removes a tag from this feature
+ Returns : the array of values for this tag before removing it
+ Args    : tag (string)
+
+
+=cut
+
+sub remove_tag {
+   my ($self, $tag) = @_;
+
+   if ( ! exists $self->{'_gsf_tag_hash'}->{$tag} ) {
+       $self->throw("trying to remove a tag that does not exist: $tag");
+   }
+   my @vals = @{$self->{'_gsf_tag_hash'}->{$tag}};
+   delete $self->{'_gsf_tag_hash'}->{$tag};
+   return @vals;
 }
 
 =head2 attach_seq
@@ -601,7 +705,7 @@ sub annotation {
     # we are smart if someone references the object and there hasn't been
     # one set yet
     if(defined $value || ! defined $obj->{'annotation'} ) {
-        $value = new Bio::Annotation::Collection unless ( defined $value );
+        $value = Bio::Annotation::Collection->new() unless ( defined $value );
         $obj->{'annotation'} = $value;
     }
     return $obj->{'annotation'};
@@ -635,8 +739,8 @@ sub get_SeqFeatures {
  Title   : add_SeqFeature
  Usage   : $feat->add_SeqFeature($subfeat);
            $feat->add_SeqFeature($subfeat,'EXPAND')
- Function: adds a SeqFeature into the subSeqFeature array.
-           with no 'EXPAND' qualifer, subfeat will be tested
+ Function: Adds a SeqFeature into the subSeqFeature array.
+           With no 'EXPAND' qualifer, subfeat will be tested
            as to whether it lies inside the parent, and throw
            an exception if not.
 
@@ -677,14 +781,13 @@ sub add_SeqFeature{
 
  Title   : remove_SeqFeatures
  Usage   : $sf->remove_SeqFeatures
- Function: Removes all sub SeqFeatures
+ Function: Removes all SeqFeatures
 
-           If you want to remove only a subset, remove that subset from the
-           returned array, and add back the rest.
-
+           If you want to remove only a subset of features then remove that 
+           subset from the returned array, and add back the rest.
  Example :
- Returns : The array of Bio::SeqFeatureI implementing sub-features that was
-           deleted from this feature.
+ Returns : The array of Bio::SeqFeatureI implementing features that was
+           deleted.
  Args    : none
 
 
@@ -836,8 +939,9 @@ sub _expand_region {
     if(! $feat->isa('Bio::SeqFeatureI')) {
         $self->warn("$feat does not implement Bio::SeqFeatureI");
     }
-    # if this doesn't have start/end set - forget it!
-    if((! defined($self->start)) && (! defined $self->end)) {
+    # if this doesn't have start set - forget it!
+    # changed to reflect sanity checks for LocationI
+    if(!$self->location->valid_Location) {
         $self->start($feat->start);
         $self->end($feat->end);
         $self->strand($feat->strand) unless $self->strand;
@@ -925,32 +1029,10 @@ sub cleanup_generic {
 	$f = undef;
     }
     $self->{'_gsf_seq'} = undef;
-    foreach my $t ( keys %{$self->{'_gsf_tag_hash'} || {}} ) {
+    foreach my $t ( keys %{$self->{'_gsf_tag_hash'} } ) {
 	$self->{'_gsf_tag_hash'}->{$t} = undef;
 	delete($self->{'_gsf_tag_hash'}->{$t}); # bug 1720 fix
     }
 }
-
-=head1 INHERITED METHODS FOR L<Bio::AnnotatableI> VIA L<Bio::SeqFeatureI>
-
-=head2 has_tag()
-
-=cut
-
-=head2 add_tag_value()
-
-=cut
-
-=head2 get_tag_values()
-
-=cut
-
-=head2 get_all_tags()
-
-=cut
-
-=head2 remove_tag()
-
-=cut
 
 1;

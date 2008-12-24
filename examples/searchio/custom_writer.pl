@@ -30,7 +30,7 @@
 #   STDERR: Progress info.
 #
 # Author: Steve Chervitz <sac@bioperl.org>
-# Revision: $Id: custom_writer.pl,v 1.3 2004/02/21 10:50:34 sac Exp $
+# Revision: $Id: custom_writer.pl 15087 2008-12-04 02:48:00Z bosborne $
 
 package MyBlastWriter;
 
@@ -39,8 +39,7 @@ use lib '../../';
 use Bio::Root::Root;
 use Bio::SearchIO::SearchWriterI;
 
-use vars qw( @ISA );
-@ISA = qw( Bio::Root::Root Bio::SearchIO::SearchWriterI );
+use base qw( Bio::Root::Root Bio::SearchIO::SearchWriterI );
 
 sub to_string {
     my ($self, $result, @args) = @_;

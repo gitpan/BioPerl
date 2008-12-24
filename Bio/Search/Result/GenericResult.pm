@@ -1,4 +1,4 @@
-# $Id: GenericResult.pm,v 1.23.2.7 2006/10/16 17:08:16 sendu Exp $
+# $Id: GenericResult.pm 14708 2008-06-10 00:08:17Z heikki $
 #
 # BioPerl module for Bio::Search::Result::GenericResult
 #
@@ -21,7 +21,7 @@ results.
 
     # typically one gets Results from a SearchIO stream
     use Bio::SearchIO;
-    my $io = new Bio::SearchIO(-format => 'blast',
+    my $io = Bio::SearchIO->new(-format => 'blast',
                                 -file   => 't/data/HUMBETGLOA.tblastx');
     while( my $result = $io->next_result ) {
         # process all search results within the input stream
@@ -33,7 +33,7 @@ results.
     use Bio::Search::Result::GenericResult;
     my @hits = (); # would be a list of Bio::Search::Hit::HitI objects
     # typically these are created from a Bio::SearchIO stream
-    my $result = new Bio::Search::Result::GenericResult
+    my $result = Bio::Search::Result::GenericResult->new
         ( -query_name        => 'HUMBETGLOA',
           -query_accession   => ''
           -query_description => 'Human haplotype C4 beta-globin gene, complete cds.'
@@ -138,7 +138,7 @@ use base qw(Bio::Root::Root Bio::Search::Result::ResultI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Search::Result::GenericResult();
+ Usage   : my $obj = Bio::Search::Result::GenericResult->new();
  Function: Builds a new Bio::Search::Result::GenericResult object 
  Returns : Bio::Search::Result::GenericResult
  Args    : -query_name        => Name of query Sequence
@@ -166,16 +166,17 @@ sub new {
 
   $self->{'_hits'} = [];
   $self->{'_hitindex'} = 0;
-  $self->{'_statistics'} = new Bio::Search::GenericStatistics;
-  $self->{'_parameters'} = new Bio::Tools::Run::GenericParameters;
+  $self->{'_statistics'} = Bio::Search::GenericStatistics->new();
+  $self->{'_parameters'} = Bio::Tools::Run::GenericParameters->new();
 
-  my ($qname,$qacc,$qdesc,$qlen,
+  my ($qname,$qacc,$qdesc,$qlen, $qgi,
       $dbname,$dblet,$dbent,$params,   
       $stats, $hits, $algo, $algo_v,
       $prog_ref, $algo_r, $hit_factory) = $self->_rearrange([qw(QUERY_NAME
                                                   QUERY_ACCESSION
                                                   QUERY_DESCRIPTION
                                                   QUERY_LENGTH
+                                                  QUERY_GI
                                                   DATABASE_NAME
                                                   DATABASE_LETTERS
                                                   DATABASE_ENTRIES
@@ -198,6 +199,7 @@ sub new {
   defined $qacc  && $self->query_accession($qacc);
   defined $qdesc && $self->query_description($qdesc);
   defined $qlen  && $self->query_length($qlen);
+  defined $qgi   && $self->query_gi($qgi);
   defined $dbname && $self->database_name($dbname);
   defined $dblet  && $self->database_letters($dblet);
   defined $dbent  && $self->database_entries($dbent);
@@ -344,6 +346,27 @@ sub query_accession {
         $self->{'_queryacc'} = $value;
     } 
     return $previous;
+}
+
+=head2 query_gi
+
+ Title   : query_gi
+ Usage   : $acc = $hit->query_gi();
+ Function: Retrieve the NCBI Unique ID (aka the GI #),
+           if available, for the query
+ Returns : a scalar string (empty string if not set)
+ Args    : none
+
+=cut
+
+sub query_gi {
+    my ($self,$value) = @_;
+    if( defined $value ) {
+        $self->{'_query_gi'} = $value;
+    } else {
+        $self->{'_query_gi'} = $self->query_name =~ m{^gi\|(\d+)} ? $1 : '';
+    } 
+    return $self->{'_query_gi'};
 }
 
 =head2 query_length
@@ -636,7 +659,6 @@ sub add_statistic {
  Returns : integer
  Args    : none
 
-
 =cut
 
 sub num_hits{
@@ -695,6 +717,16 @@ sub algorithm_reference{
     return $self->{'algorithm_reference'};
 }
 
+=head2 program_reference
+
+ Title   : program_reference
+ Usage   : $obj->program_reference()
+ Function:
+ Returns : string containing literature reference for the algorithm
+ Args    : 
+ Comments: Deprecated - use algorithm_reference() instead.
+
+=cut
 
 sub program_reference { shift->algorithm_reference(@_); }
 

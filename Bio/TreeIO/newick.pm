@@ -1,4 +1,4 @@
-# $Id: newick.pm,v 1.36.4.2 2006/10/02 23:10:37 sendu Exp $
+# $Id: newick.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::TreeIO::newick
 #
@@ -19,7 +19,7 @@ Bio::TreeIO::newick - TreeIO implementation for parsing
 
   # do not use this module directly
   use Bio::TreeIO;
-  my $treeio = new Bio::TreeIO(-format => 'newick', 
+  my $treeio = Bio::TreeIO->new(-format => 'newick', 
                                -file => 't/data/LOAD_Ccd1.dnd');
   my $tree = $treeio->next_tree;
 
@@ -144,6 +144,9 @@ sub next_tree{
        if( $ch eq ';' ) {
 	   my $tree = $self->_eventHandler->end_document($chars);
 	   $tree->score($score) if defined $score;
+	   if( $self->internal_node_id eq 'bootstrap' ) {
+	       $tree->move_id_to_bootstrap;
+	   }
 	   return $tree;
        } elsif( $ch eq '(' ) {
 	   $chars = '';
@@ -245,6 +248,11 @@ sub write_tree{
    }
    my $nl = $self->newline_each_node;
    foreach my $tree( @trees ) {
+       
+       if( ! defined $tree || ref($tree) =~ /ARRAY/i ||
+	   ! $tree->isa('Bio::Tree::TreeI') ) {
+	   $self->throw("Calling write_tree with non Bio::Tree::TreeI object\n");
+       }
        my @data = _write_tree_Helper($tree->get_root_node,
 				     $bootstrap_style,
 				     $orderby,

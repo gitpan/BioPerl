@@ -1,4 +1,4 @@
-# $Id: GraphAdaptor02.pm,v 1.6.4.1 2006/10/02 23:10:22 sendu Exp $
+# $Id: GraphAdaptor02.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl adaptor for old Graph verions (0.2x) for use in 
 # Bio::Ontology::SimpleGOEngine

@@ -1,4 +1,4 @@
-# $Id: AlleleNode.pm,v 1.13.4.1 2006/10/02 23:10:37 sendu Exp $
+# $Id: AlleleNode.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Tree::AlleleNode
 #
@@ -83,7 +83,7 @@ use base qw(Bio::Tree::Node Bio::PopGen::IndividualI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Tree::AlleleNode();
+ Usage   : my $obj = Bio::Tree::AlleleNode->new();
  Function: Builds a new Bio::Tree::AlleleNode() object 
  Returns : an instance of Bio::Tree::AlleleNode
  Args    : -unique_id     => $id,
@@ -269,7 +269,7 @@ Methods inherited from L<Bio::Tree::Node>.
 =head2 add_Descendent
 
  Title   : add_Descendent
- Usage   : $node->add_Descendant($node);
+ Usage   : $node->add_Descendent($node);
  Function: Adds a descendent to a node
  Returns : number of current descendents for this node
  Args    : Bio::Node::NodeI

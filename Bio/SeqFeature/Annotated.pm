@@ -1,4 +1,4 @@
-# $Id: Annotated.pm,v 1.34.4.3 2006/10/17 09:12:57 sendu Exp $
+# $Id: Annotated.pm 15231 2008-12-22 21:51:02Z cjfields $
 #
 # BioPerl module for Bio::SeqFeature::Annotated
 #
@@ -24,7 +24,7 @@ None yet, complain to authors.
 
 =head1 Implemented Interfaces
 
-This class implementes the following interfaces.
+This class implements the following interfaces.
 
 =over 4
 
@@ -82,10 +82,34 @@ use Bio::LocatableSeq;
 use Bio::Location::Simple;
 use Bio::Ontology::OntologyStore;
 use Bio::Tools::GFF;
-
+use Bio::SeqFeature::AnnotationAdaptor;
+use Data::Dumper;
 use URI::Escape;
 
-use base qw(Bio::Root::Root Bio::SeqFeatureI Bio::AnnotatableI Bio::FeatureHolderI);
+use base qw(Bio::Root::Root
+    Bio::SeqFeature::TypedSeqFeatureI
+    Bio::AnnotatableI
+    Bio::FeatureHolderI);
+
+our %tagclass = (
+  comment        => 'Bio::Annotation::Comment',
+  dblink         => 'Bio::Annotation::DBLink',
+  description    => 'Bio::Annotation::SimpleValue',
+  gene_name      => 'Bio::Annotation::SimpleValue',
+  ontology_term  => 'Bio::Annotation::OntologyTerm',
+  reference      => 'Bio::Annotation::Reference',
+  __DEFAULT__    => 'Bio::Annotation::SimpleValue',
+);
+
+our %tag2text = (
+  'Bio::Annotation::Comment'        => 'text',
+  'Bio::Annotation::DBLink'         => 'primary_id',
+  'Bio::Annotation::SimpleValue'    => 'value',
+  'Bio::Annotation::SimpleValue'    => 'value',
+  'Bio::Annotation::OntologyTerm'   => 'name',
+  'Bio::Annotation::Reference'      => 'title',
+  __DEFAULT__                       => 'value',
+);
 
 ######################################
 #get_SeqFeatures
@@ -107,6 +131,77 @@ use base qw(Bio::Root::Root Bio::SeqFeatureI Bio::AnnotatableI Bio::FeatureHolde
 #strand                           x
 #location
 #primary_id
+
+=head1 PREAMBLE
+
+Okay, where to start...
+
+The original idea for this class appears to lump all SeqFeatureI data
+(primary_tag, source_tag, etc) into AnnotationI objects into an
+Bio::Annotation::Collection. The type is then checked against SOFA.
+
+There have been several requests to have type checking be optionally run. 
+
+Bio::FeatureHolderI::create_hierarchy_from_ParentIDs
+Bio::FeatureHolderI::feature_count
+Bio::FeatureHolderI::get_all_SeqFeatures
+Bio::FeatureHolderI::set_ParentIDs_from_hierarchy
+Bio::RangeI::contains
+Bio::RangeI::disconnected_ranges
+Bio::RangeI::equals
+Bio::RangeI::intersection
+Bio::RangeI::offsetStranded
+Bio::RangeI::overlap_extent
+Bio::RangeI::overlaps
+Bio::RangeI::subtract
+Bio::RangeI::union
+Bio::SeqFeature::Annotated::Dumper
+Bio::SeqFeature::Annotated::MAX_TYPE_CACHE_MEMBERS
+Bio::SeqFeature::Annotated::add_Annotation
+Bio::SeqFeature::Annotated::add_SeqFeature
+Bio::SeqFeature::Annotated::add_tag_value
+Bio::SeqFeature::Annotated::add_target
+Bio::SeqFeature::Annotated::annotation
+Bio::SeqFeature::Annotated::attach_seq
+Bio::SeqFeature::Annotated::display_name
+Bio::SeqFeature::Annotated::each_target
+Bio::SeqFeature::Annotated::end
+Bio::SeqFeature::Annotated::entire_seq
+Bio::SeqFeature::Annotated::frame
+Bio::SeqFeature::Annotated::from_feature
+Bio::SeqFeature::Annotated::get_Annotations
+Bio::SeqFeature::Annotated::get_SeqFeatures
+Bio::SeqFeature::Annotated::get_all_tags
+Bio::SeqFeature::Annotated::get_tag_values
+Bio::SeqFeature::Annotated::get_tagset_values
+Bio::SeqFeature::Annotated::has_tag
+Bio::SeqFeature::Annotated::length
+Bio::SeqFeature::Annotated::location
+Bio::SeqFeature::Annotated::name
+Bio::SeqFeature::Annotated::new
+Bio::SeqFeature::Annotated::phase
+Bio::SeqFeature::Annotated::primary_tag
+Bio::SeqFeature::Annotated::remove_Annotations
+Bio::SeqFeature::Annotated::remove_SeqFeatures
+Bio::SeqFeature::Annotated::remove_tag
+Bio::SeqFeature::Annotated::score
+Bio::SeqFeature::Annotated::seq
+Bio::SeqFeature::Annotated::seq_id
+Bio::SeqFeature::Annotated::source
+Bio::SeqFeature::Annotated::source_tag
+Bio::SeqFeature::Annotated::start
+Bio::SeqFeature::Annotated::strand
+Bio::SeqFeature::Annotated::type
+Bio::SeqFeature::Annotated::uri_escape
+Bio::SeqFeature::Annotated::uri_unescape
+Bio::SeqFeature::TypedSeqFeatureI::croak
+Bio::SeqFeature::TypedSeqFeatureI::ontology_term
+Bio::SeqFeatureI::generate_unique_persistent_id
+Bio::SeqFeatureI::gff_string
+Bio::SeqFeatureI::primary_id
+Bio::SeqFeatureI::spliced_seq
+
+=cut
 
 sub new {
     my ( $caller, @args) = @_;
@@ -145,8 +240,8 @@ sub _initialize {
   defined $frame        && $self->frame($frame);
   defined $phase        && $self->phase($phase);
   defined $score        && $self->score($score);
-  defined $source       && $self->source($source);
-  defined $type         && $self->type($type);
+  defined $source       && ref($source) ? $self->source($source) : $self->source_tag($source);
+  defined $type         && ref($type) ? $self->type($type) : $self->primary_tag($type);
   defined $location     && $self->location($location);
   defined $annot        && $self->annotation($annot);
   defined $feature      && $self->from_feature($feature);
@@ -176,34 +271,39 @@ sub _initialize {
 =cut
 
 sub from_feature {
-  my ($self,$feat,%opts) = @_;
-
-  ref($feat) && ($feat->isa('Bio::AnnotationCollectionI') || $feat->isa('Bio::SeqFeatureI'))
-    or $self->throw('invalid arguments to from_feature');
-
-  #TODO: add overrides in opts for these values, so people don't have to screw up their feature object
-  #if they don't want to
-
-  ### set most of the data
-  foreach my $fieldname (qw/ start end strand frame score location seq_id source_tag primary_tag/) {
-    no strict 'refs'; #using symbolic refs
-    $self->$fieldname( $feat->$fieldname );
-  }
-
-  ### now pick up the annotations/tags of the other feature
-  #for Bio::AnnotationCollectionI features
-  if ( $feat->isa('Bio::AnnotatableI') ) {
-    foreach my $key ( $feat->annotation->get_all_annotation_keys() ) {
-      my @values = $feat->annotation->get_Annotations($key);
-      @values = _aggregate_scalar_annotations(\%opts,$key,@values);
-      foreach my $val (@values) {
-	$self->add_Annotation($key,$val)
-      }
+    my ($self,$feat,%opts) = @_;
+  
+    # should deal with any SeqFeatureI implementation (i.e. we don't want to
+    # automatically force a OO-heavy implementation on all classes)
+    ref($feat) && ($feat->isa('Bio::SeqFeatureI')) 
+      or $self->throw('invalid arguments to from_feature');
+  
+    #TODO: add overrides in opts for these values, so people don't have to screw up their feature object
+    #if they don't want to
+  
+    ### set most of the data
+    foreach my $fieldname (qw/ start end strand frame score location seq_id source_tag primary_tag/) {
+      #no strict 'refs'; #using symbolic refs, yes, but using them for methods is allowed now
+      $self->$fieldname( $feat->$fieldname );
     }
-  }
+
+    # now pick up the annotations/tags of the other feature
+    # We'll use AnnotationAdaptor to convert everything over
+
+    my %no_copy = map {$_ => 1} qw/seq_id source type frame phase score/;
+    my $adaptor = Bio::SeqFeature::AnnotationAdaptor->new(-feature => $feat);
+    for my $key ( $adaptor->get_all_annotation_keys() ) {
+        next if $no_copy{$key};
+        my @values = $adaptor->get_Annotations($key);
+        @values = _aggregate_scalar_annotations(\%opts,$key,@values);
+        foreach my $val (@values) {
+            $self->add_Annotation($key,$val)
+        }
+    }
 }
 #given a key and its values, make the values into
 #Bio::Annotation::\w+ objects
+
 sub _aggregate_scalar_annotations {
   my ($opts,$key,@values) = @_;
 
@@ -263,7 +363,7 @@ sub _aggregate_scalar_annotations {
  Function: holds a string corresponding to the unique
            seq_id of the sequence underlying the feature
            (e.g. database accession or primary key).
- Returns : a Bio::Annotation::SimpleValue object representing the seq_id.
+ Returns : string representing the seq_id.
  Args    : on set, some string or a Bio::Annotation::SimpleValue object.
 
 =cut
@@ -284,9 +384,9 @@ sub seq_id {
       $self->add_Annotation('seq_id', $term);
   }
 
-  $self->seq_id('.') unless ($self->get_Annotations('seq_id')); # make sure we always have something
+  $self->seq_id('.') unless $self->get_Annotations('seq_id'); # make sure we always have something
 
-  return $self->get_Annotations('seq_id');
+  return ($self->get_Annotations('seq_id'))[0]->value;
 }
 
 =head2 name()
@@ -309,7 +409,9 @@ sub name {
  Usage   : $obj->type($newval)
  Function: a SOFA type for the feature.
  Returns : Bio::Annotation::OntologyTerm object representing the type.
- Args    : on set, a SOFA name, identifier, or Bio::Annotation::OntologyTerm object.
+           NB: to get a string, use primary_tag().
+ Args    : on set, Bio::Annotation::OntologyTerm object.
+           NB: to set a string (SOFA name or identifier), use primary_tag()
 
 =cut
 
@@ -317,35 +419,10 @@ use constant MAX_TYPE_CACHE_MEMBERS => 20;
 sub type {
   my($self,$val) = @_;
   if(defined($val)){
-    # print("Trying to set annotated->type to $val\n");
     my $term = undef;
 
     if(!ref($val)){
-      #we have a plain text annotation coming in.  try to map it to SOFA.
-
-      our %__type_cache; #a little cache of plaintext types we've already seen
-
-      #clear our cache if it gets too big
-      if(scalar(keys %__type_cache) > MAX_TYPE_CACHE_MEMBERS) {
-	%__type_cache = ();
-      }
-
-      #set $term to either a cached value, or look up a new one, throwing
-      #up if not found
-      $term = $__type_cache{$val} ||= do {
-	my $sofa = Bio::Ontology::OntologyStore->get_instance->get_ontology('Sequence Ontology Feature Annotation');
-	my ($soterm) = $val =~ /^\D+:\d+$/ #does it look like an ident?
-	  ? ($sofa->find_terms(-identifier => $val))[0] #yes, lookup by ident
-	  : ($sofa->find_terms(-name => $val))[0];      #no, lookup by name
-	
-	#throw up if it's not in SOFA
-	unless($soterm){
-	  $self->throw("couldn't find a SOFA term matching type '$val'.");
-	}
-	my $newterm = Bio::Annotation::OntologyTerm->new;
-	$newterm->term($soterm);
-	$newterm;
-      };
+      $self->throw("give type() a Bio::Annotation::OntologyTerm object, not a string");
     }
     elsif(ref($val) && $val->isa('Bio::Annotation::OntologyTerm')){
       $term = $val;
@@ -357,17 +434,18 @@ sub type {
     $self->remove_Annotations('type');
     $self->add_Annotation('type',$term);
   }
-  else {
-    return $self->get_Annotations('type');
-  }
+  
+  return $self->get_Annotations('type');
 }
 
 =head2 source()
 
  Usage   : $obj->source($newval)
- Function: holds a string corresponding to the source of the feature.
- Returns : a Bio::Annotation::SimpleValue object representing the source.
- Args    : on set, some scalar or a Bio::Annotation::SimpleValue object.
+ Function: holds the source of the feature.
+ Returns : a Bio::Annotation::SimpleValue representing the source.
+           NB: to get a string, use source_tag()
+ Args    : on set, a Bio::Annotation::SimpleValue object.
+           NB: to set a string, use source_tag()
 
 =cut
 
@@ -377,7 +455,8 @@ sub source {
   if (defined($val)) {
       my $term;
       if (!ref($val)) {
-	  $term = Bio::Annotation::SimpleValue->new(-value => uri_unescape($val));
+        $self->throw("give source() a Bio::Annotation::SimpleValue object, not a string");
+        #$term = Bio::Annotation::SimpleValue->new(-value => uri_unescape($val));
       } elsif (ref($val) && $val->isa('Bio::Annotation::SimpleValue')) {
 	  $term = $val;
       } else {
@@ -385,14 +464,12 @@ sub source {
       }
       $self->remove_Annotations('source');
       $self->add_Annotation('source', $term);
-     
   }
-  else {
-    if (!$self->get_Annotations('source')) {
-        $self->source('.');
-    }
-    return $self->get_Annotations('source');
+  
+  unless ($self->get_Annotations('source')) {
+    $self->source(Bio::Annotation::SimpleValue->new(-value => '.'));
   }
+  return $self->get_Annotations('source');
 }
 
 =head2 score()
@@ -400,7 +477,7 @@ sub source {
  Usage   : $score = $feat->score()
            $feat->score($score)
  Function: holds a value corresponding to the score of the feature.
- Returns : a Bio::Annotation::SimpleValue object representing the score.
+ Returns : a string representing the score.
  Args    : on set, a scalar or a Bio::Annotation::SimpleValue object.
 
 =cut
@@ -425,9 +502,9 @@ sub score {
       $self->add_Annotation('score', $term);
   }
 
-  $self->score('.') unless ($self->get_Annotations('score')); # make sure we always have something
-  
-  return $self->get_Annotations('score');
+  $self->score('.') unless scalar($self->get_Annotations('score')); # make sure we always have something
+
+  return ($self->get_Annotations('score'))[0]->display_text;
 }
 
 =head2 phase()
@@ -435,8 +512,7 @@ sub score {
  Usage   : $phase = $feat->phase()
            $feat->phase($phase)
  Function: get/set on phase information
- Returns : a Bio::Annotation::SimpleValue object holdig one of 0,1,2,'.'
-           as its value.
+ Returns : a string 0,1,2,'.'
  Args    : on set, one of 0,1,2,'.' or a Bio::Annotation::SimpleValue
            object holding one of 0,1,2,'.' as its value.
 
@@ -460,9 +536,9 @@ sub phase {
       $self->add_Annotation('phase', $term);
   }
 
-  $self->phase('.') unless (defined $self->get_Annotations('phase')); # make sure we always have something
+  $self->phase('.') unless $self->get_Annotations('phase'); # make sure we always have something
   
-  return $self->get_Annotations('phase');
+  return ($self->get_Annotations('phase'))[0]->value;
 }
 
 
@@ -471,8 +547,7 @@ sub phase {
  Usage   : $frame = $feat->frame()
            $feat->frame($phase)
  Function: get/set on phase information
- Returns : a Bio::Annotation::SimpleValue object holdig one of 0,1,2,'.'
-           as its value.
+ Returns : a string 0,1,2,'.'
  Args    : on set, one of 0,1,2,'.' or a Bio::Annotation::SimpleValue
            object holding one of 0,1,2,'.' as its value.
 
@@ -496,14 +571,14 @@ sub frame {
       $self->add_Annotation('frame', $term);
   }
 
-  $self->frame('.') unless ($self->get_Annotations('frame')); # make sure we always have something
+  $self->frame('.') unless $self->get_Annotations('frame'); # make sure we always have something
   
-  return $self->get_Annotations('frame');
+  return ($self->get_Annotations('frame'))[0]->value;
 }
 
 ############################################################
 
-=head1 SHORTCUT METHDODS TO ACCESS Bio::AnnotatableI INTERFACE METHODS
+=head1 SHORTCUT METHODS TO ACCESS Bio::AnnotatableI INTERFACE METHODS
 
 =cut
 
@@ -539,51 +614,81 @@ sub remove_Annotations {
 
 =head1 INTERFACE METHODS FOR Bio::SeqFeatureI
 
+Note that no methods are deprecated.  Any SeqFeatureI methods must return
+strings (no objects).
+
 =cut
 
 =head2 display_name()
-
- Deprecated, use L<Bio::SeqFeatureI/name()>.  Will raise a warning.
 
 =cut
 
 sub display_name {
   my $self = shift;
-
-  #1.6
-  #$self->warn('display_name() is deprecated, use name()');
-
   return $self->name(@_);
 }
 
 =head2 primary_tag()
 
- Deprecated, use L<Bio::SeqFeatureI/type()>.  Will raise a warning.
-
 =cut
 
 sub primary_tag {
   my $self = shift;
+  if (@_) {
+    my $val = shift;
+    my $term;
+    if(!ref($val) && $val){
+      #we have a plain text annotation coming in.  try to map it to SOFA.
 
-  #1.6
-  #$self->warn('primary_tag() is deprecated, use type()');
-  my $t = $self->type(@_);
-  return ref($t) ? $t->name : $t;
+      our %__type_cache; #a little cache of plaintext types we've already seen
+
+      #clear our cache if it gets too big
+      if(scalar(keys %__type_cache) > MAX_TYPE_CACHE_MEMBERS) {
+        %__type_cache = ();
+      }
+
+      #set $term to either a cached value, or look up a new one, throwing
+      #up if not found
+      my $anntext = $val;
+      if ($__type_cache{$anntext}) {
+        $term = $__type_cache{$anntext};
+      } else {
+        my $sofa = Bio::Ontology::OntologyStore->get_instance->get_ontology('Sequence Ontology OBO');
+        my ($soterm) = $anntext =~ /^\D+:\d+$/ #does it look like an ident?
+          ? ($sofa->find_terms(-identifier => $anntext))[0] #yes, lookup by ident
+          : ($sofa->find_terms(-name => $anntext))[0];      #no, lookup by name
+        #throw if it's not in SOFA
+        unless($soterm){
+          $self->throw("couldn't find a SOFA term matching type '$val'.");
+        }
+        my $newterm = Bio::Annotation::OntologyTerm->new;
+        $newterm->term($soterm);
+        $term = $newterm;
+      }
+      
+      $self->type($term);
+    }
+  }
+  
+  my $t = $self->type() || return;
+  return $t->name;
 }
 
 =head2 source_tag()
-
- Deprecated, use L<Bio::SeqFeatureI/source()>.  Will raise a warning.
 
 =cut
 
 sub source_tag {
   my $self = shift;
-
-  #1.6
-  #$self->warn('source_tag() is deprecated, use source()');
-
-  return $self->source(@_);
+  if (@_) {
+    my $val = shift;
+    if(!ref($val) && $val){
+      my $term = Bio::Annotation::SimpleValue->new(-value => uri_unescape($val));
+      $self->source($term);
+    }
+  }
+  my $t = $self->source() || return;
+  return $t->display_text;
 }
 
 
@@ -652,67 +757,6 @@ sub entire_seq {
   return shift->{'seq'};
 }
 
-=head2 has_tag()
-
- See Bio::AnnotatableI::has_tag().
-
-=cut
-
-#implemented in Bio::AnnotatableI
-
-# sub has_tag {
-#   return shift->annotation->has_tag(@_);
-# }
-
-=head2 add_tag_value()
-
- See Bio::AnnotatableI::add_tag_value().
-
-=cut
-
-#implemented in Bio::AnnotatableI
-
-# sub add_tag_value {
-#   return shift->annotation->add_tag_value(@_);
-# }
-
-=head2 get_tag_values()
-
- See Bio::AnnotationCollectionI::get_tag_values().
-
-=cut
-
-#implemented in Bio::AnnotatableI
-
-# sub get_tag_values {
-#   return shift->annotation->get_tag_values(@_);
-# }
-
-=head2 get_all_tags()
-
- See Bio::AnnotationCollectionI::get_all_annotation_keys().
-
-=cut
-
-#implemented in Bio::AnnotatableI
-
-# sub get_all_tags {
-#   return shift->annotation->get_all_annotation_keys(@_);
-# }
-
-=head2 remove_tag()
-
- See Bio::AnnotationCollectionI::remove_tag().
-
-=cut
-
-#implemented in Bio::AnnotatableI
-
-# sub remove_tag {
-#   return shift->annotation->remove_tag(@_);
-# }
-
-
 ############################################################
 
 =head1 INTERFACE METHODS FOR Bio::RangeI
@@ -768,7 +812,7 @@ sub end {
  Usage   : $strand = $feat->strand($newval)
  Function: get/set on strand information, being 1,-1 or 0
  Returns : -1,1 or 0
- Args    : ???
+ Args    : on set, new value (a scalar or undef, optional)
 
 =cut
 
@@ -882,7 +926,7 @@ sub annotation {
     # we are smart if someone references the object and there hasn't been
     # one set yet
     if(defined $value || ! defined $obj->{'annotation'} ) {
-        $value = new Bio::Annotation::Collection unless ( defined $value );
+        $value = Bio::Annotation::Collection->new() unless ( defined $value );
         $obj->{'annotation'} = $value;
     }
     return $obj->{'annotation'};
@@ -979,6 +1023,169 @@ sub _expand_region {
         $self->end($range->end);
         $self->strand($range->strand);
     }
+}
+
+=head2 get_Annotations
+
+ Usage   : my $parent   = $obj->get_Annotations('Parent');
+           my @parents = $obj->get_Annotations('Parent');
+ Function: a wrapper around Bio::Annotation::Collection::get_Annotations().
+ Returns : returns annotations as
+           Bio::Annotation::Collection::get_Annotations() does, but
+           additionally returns a single scalar in scalar context
+           instead of list context so that if an annotation tag
+           contains only a single value, you can do:
+
+           $parent = $feature->get_Annotations('Parent');
+
+           instead of:
+
+           ($parent) = ($feature->get_Annotations('Parent'))[0];
+
+           if the 'Parent' tag has multiple values and is called in a
+           scalar context, the number of annotations is returned.
+
+ Args    : an annotation tag name.
+
+=cut
+
+sub get_Annotations {
+    my $self = shift;
+
+    my @annotations = $self->annotation->get_Annotations(@_);
+
+    if(wantarray){
+        return @annotations;
+    } elsif(scalar(@annotations) == 1){
+        return $annotations[0];
+    } else {
+        return scalar(@annotations);
+    }
+}
+
+=head1 Bio::SeqFeatureI implemented methods
+
+These are specialized implementations of SeqFeatureI methods which call the
+internal Bio::Annotation::AnnotationCollection object. Just prior to the 1.5
+release the below methods were moved from Bio::SeqFeatureI to Bio::AnnotatableI,
+and having Bio::SeqFeatureI inherit Bio::AnnotatableI. This behavior forced all
+Bio::SeqFeatureI-implementing classes to use Bio::AnnotationI objects for any
+data. It is the consensus of the core developers that this be rolled back in
+favor of a more flexible approach by rolling back the above changes and making
+this class Bio::AnnotatableI. The SeqFeatureI tag-related methods are
+reimplemented in order to approximate the same behavior as before.
+
+The methods below allow mapping of the "get_tag_values()"-style annotation
+access to Bio::AnnotationCollectionI. These need not be implemented in a
+Bio::AnnotationCollectionI compliant class, as they are built on top of the
+methods.  For usage, see Bio::SeqFeatureI.
+
+=cut
+
+=head2 has_tag
+
+=cut
+
+sub has_tag {
+  my ($self,$tag) = @_;
+  return scalar($self->annotation->get_Annotations($tag));
+}
+
+=head2 add_tag_value
+
+=cut
+
+sub add_tag_value {
+  my ($self,$tag,@vals) = @_;
+
+  foreach my $val (@vals){
+    my $class = $tagclass{$tag}   || $tagclass{__DEFAULT__};
+    my $slot  = $tag2text{$class};
+
+    my $a = $class->new();
+    $a->$slot($val);
+
+    $self->annotation->add_Annotation($tag,$a);
+  }
+
+  return 1;
+}
+
+=head2 get_tag_values
+
+ Usage   : @annotations = $obj->get_tag_values($tag)
+ Function: returns annotations corresponding to $tag
+ Returns : a list of scalars
+ Args    : tag name
+
+=cut
+
+sub get_tag_values {
+    my ($self,$tag) = @_;
+    if(!$tagclass{$tag} && $self->annotation->get_Annotations($tag)){
+        #new tag, haven't seen it yet but it exists.  add to registry
+        my($proto) = $self->annotation->get_Annotations($tag);
+        # we can only register if there's a method known for obtaining the value
+        if (exists($tag2text{ref($proto)})) {
+            $tagclass{$tag} = ref($proto);
+        }
+    }
+
+    my $slot  = $tag2text{ $tagclass{$tag} || $tagclass{__DEFAULT__} };
+    
+    return map { $_->$slot } $self->annotation->get_Annotations($tag);
+}
+
+=head2 get_tagset_values
+
+ Usage   : @annotations = $obj->get_tagset_values($tag1,$tag2)
+ Function: returns annotations corresponding to a list of tags.
+           this is a convenience method equivalent to multiple calls
+           to get_tag_values with each tag in the list.
+ Returns : a list of Bio::AnnotationI objects.
+ Args    : a list of tag names
+
+=cut
+
+sub get_tagset_values {
+  my ($self,@tags) = @_;
+  my @r = ();
+  foreach my $tag (@tags){
+    my $slot  = $tag2text{ $tagclass{$tag} || $tagclass{__DEFAULT__} };
+    push @r, map { $_->$slot } $self->annotation->get_Annotations($tag);
+  }
+  return @r;
+}
+
+=head2 get_all_tags
+
+ Usage   : @tags = $obj->get_all_tags()
+ Function: returns a list of annotation tag names.
+ Returns : a list of tag names
+ Args    : none
+
+=cut
+
+sub get_all_tags {
+  my ($self,@args) = @_;
+  return $self->annotation->get_all_annotation_keys(@args);
+}
+
+=head2 remove_tag
+
+ Usage   : See remove_Annotations().
+ Function:
+ Returns : 
+ Args    : 
+ Note    : Contrary to what the name suggests, this method removes
+           all annotations corresponding to $tag, not just a
+           single anntoation.
+
+=cut
+
+sub remove_tag {
+  my ($self,@args) = @_;
+  return $self->annotation->remove_Annotations(@args);
 }
 
 1;

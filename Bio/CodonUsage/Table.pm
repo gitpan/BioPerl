@@ -1,4 +1,4 @@
-# $Id: Table.pm,v 1.14.4.1 2006/10/02 23:10:13 sendu Exp $
+# $Id: Table.pm 15074 2008-12-03 04:57:49Z bosborne $
 #
 # BioPerl module for Bio::CodonUsage::Table
 #
@@ -19,34 +19,30 @@ at http://www.kazusa.or.jp/codon.
 
   use Bio::CodonUsage::Table;
   use Bio::DB::CUTG;
+  use Bio::CodonUsage::IO;
+  use Bio::Tools::SeqStats;
 
-  ## get  a codon usage table from web database ##
-  my $cdtable = Bio::DB::CUTG->new(-sp => 'Mus musculus'
+  # Get  a codon usage table from web database
+  my $cdtable = Bio::DB::CUTG->new(-sp => 'Mus musculus',
                                    -gc => 1);
 
-  ## or from local file
-
-  my $io      = Bio::CodonUsage::IO->new(-file=>"file");
+  # Or from local file
+  my $io      = Bio::CodonUsage::IO->new(-file => "file");
   my $cdtable = $io->next_data();
 
+  # Or create your own from a Bio::PrimarySeq compliant object,
+  # $codonstats is a ref to a hash of codon name /count key-value pairs
+  my $codonstats = Bio::Tools::SeqStats->count_codons($Seq_objct);
 
-  ## or create your own from your own sequences 
-
-  ## get a Bio::PrimarySeq compliant object ##
-  # $codonstats is a ref to a hash of codon name /count key-value pairs.
-
-  my $codonstats = Bio::Tools::SeqStats->codon_count($my_1ary_Seq_objct);
-
-  ### the '-data' field must be specified ##
-  ### the '-species' and 'genetic_code' fields are optional
+  # '-data' must be specified, '-species' and 'genetic_code' are optional
   my $CUT = Bio::CodonUsage::Table->new(-data    => $codonstats,
                                         -species => 'Hsapiens_kinase');
 
   print "leu frequency is ", $cdtable->aa_frequency('LEU'), "\n";
-  print "freqof ATG is ", $cdtable->codon_rel_frequency('ttc'), "\n";
+  print "freq of ATG is ", $cdtable->codon_rel_frequency('ttc'), "\n";
   print "abs freq of ATG is ", $cdtable->codon_abs_frequency('ATG'), "\n";
   print "number of ATG codons is ", $cdtable->codon_count('ATG'), "\n";
-  print "gc content at position 1 is ", $cdtable->get_coding_gc('1'), "\n";
+  print "GC content at position 1 is ", $cdtable->get_coding_gc('1'), "\n";
   print "total CDSs for Mus musculus  is ", $cdtable->cds_count(), "\n";
 
 =head1 DESCRIPTION
@@ -279,6 +275,44 @@ sub probable_codons {
 }
 		
 
+=head2 most_common_codons
+
+ Title    : most_common_codons
+ Usage    : my $common_codons = $cd_table->most_common_codons();
+ Purpose  : To obtain the most common codon for a given amino acid
+ Returns  : A reference to a hash where keys are 1 letter amino acid codes
+            and the values are the single most common codons for those amino acids
+ Arguments: None
+
+=cut
+
+sub most_common_codons {
+	my $self = shift;
+
+	my %return_hash;
+
+	for my $a ( keys %STRICTAA ) {
+
+		my $common_codon = '';
+		my $rel_freq = 0;
+		my $aa = $Bio::SeqUtils::THREECODE{$a};
+
+		if ( ! defined $self->{'_table'}{$aa} ) {
+			$self->warn("Amino acid $aa ($a) does not have any codons!");
+			next;
+		}
+
+		for my $codon ( keys %{ $self->{'_table'}{$aa}} ) {
+			if ($self->{'_table'}{$aa}{$codon}{'rel_freq'} > $rel_freq ){
+				$common_codon = $codon;
+				$rel_freq = $self->{'_table'}{$aa}{$codon}{'rel_freq'};
+			}
+		}
+		$return_hash{$a} = $common_codon;
+	}
+   
+	return \%return_hash;
+}
 
 =head2 codon_count
 

@@ -1,4 +1,4 @@
-# $Id: HMMERHSP.pm,v 1.8.4.1 2006/10/02 23:10:24 sendu Exp $
+# $Id: HMMERHSP.pm 14672 2008-04-22 21:42:50Z cjfields $
 #
 # BioPerl module for Bio::Search::HSP::HMMERHSP
 #
@@ -65,7 +65,7 @@ use base qw(Bio::Search::HSP::GenericHSP);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Search::HSP::HMMERHSP();
+ Usage   : my $obj = Bio::Search::HSP::HMMERHSP->new();
  Function: Builds a new Bio::Search::HSP::HMMERHSP object 
  Returns : Bio::Search::HSP::HMMERHSP
  Args    :
@@ -249,20 +249,21 @@ Implementation of Bio::Search::HSP::HSPI methods follow
 =head2 frame
 
  Title   : frame
- Usage   : $hsp->frame($queryframe,$subjectframe)
+ Usage   : my ($qframe, $hframe) = $hsp->frame('list',$queryframe,$subjectframe)
  Function: Set the Frame for both query and subject and insure that
            they agree.
            This overrides the frame() method implementation in
            FeaturePair.
- Returns : array of query and subjects if return type wants an array
-           or query frame if defined or subject frame
- Args    : none
+ Returns : array of query and subject frame if return type wants an array
+           or query frame if defined or subject frame if not defined
+ Args    : 'hit' or 'subject' or 'sbjct' to retrieve the frame of the subject (default)
+           'query' to retrieve the query frame 
+           'list' or 'array' to retrieve both query and hit frames together
  Note    : Frames are stored in the GFF way (0-2) not 1-3
-           as they are in BLAST (negative frames are deduced by checking 
-				 the strand of the query or hit)
+           as they are in BLAST (negative frames are deduced by checking
+                                 the strand of the query or hit)
 
 =cut
-
 
 =head2 get_aln
 

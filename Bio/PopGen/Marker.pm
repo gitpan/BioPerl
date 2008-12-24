@@ -1,4 +1,4 @@
-# $Id: Marker.pm,v 1.7.4.1 2006/10/02 23:10:23 sendu Exp $
+# $Id: Marker.pm 14676 2008-05-11 06:41:28Z jason $
 #
 # BioPerl module for Bio::PopGen::Marker
 #
@@ -84,7 +84,7 @@ use base qw(Bio::Root::Root Bio::PopGen::MarkerI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::PopGen::Marker();
+ Usage   : my $obj = Bio::PopGen::Marker->new();
  Function: Builds a new Bio::PopGen::Marker object 
  Returns : an instance of Bio::PopGen::Marker
  Args    : -name          => [string] marker name
@@ -111,7 +111,7 @@ sub new {
   if( defined $name) {
       $self->name($name);
   } else { 
-      $self->throw("Must have provided a name when initializing a Marker");
+      $self->throw("Must provide a name when initializing a Marker");
   }
   defined $desc && $self->description($desc);
   defined $type && $self->type($type);
@@ -215,7 +215,7 @@ sub unique_id{
 sub get_Alleles{
     my $self = shift;
     my (@numeric,@alpha);
-    
+
     for ( keys %{$self->{'_allele_freqs'}} ) {
 	if( /[^\d\.\-e]/ ) { push @alpha, $_ }
 	else { push @numeric, $_ }

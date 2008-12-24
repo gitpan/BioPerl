@@ -16,13 +16,19 @@
 
 =item * Lincoln Stein <lstein at cshl.org>
 
+=item * Sendu Bala <bix at sendu.me.uk>
+
+=item * Christopher Fields <cjfields at bioperl.org>
+
+=item * Brian Osborne <bosborne at bioteam.net>
+
 =back
 
 =head2 Previous Bioperl Coordinators:
 
 =over
 
-=item * Steven Brenner <brenner at compbio.berkely.edu>
+=item * Steven Brenner <brenner at compbio.berkeley.edu>
 
 =item * Georg Fuellen <fuellen at alum.mit.edu>
 
@@ -41,8 +47,6 @@ for if you see fit)
 
 =item * Shuly Avraham <avraham at cshl.org> - Bio::Graphics::Glyph
 
-=item * Sendu Bala <bix at sendu.me.uk>
-
 =item * Peter Blaiklock <pblaiklo at restrictionmapper.org>
 
 =item * Benjamin Berman <benb at fruitfly.berkeley.edu>
@@ -55,13 +59,17 @@ for if you see fit)
 
 =item * Tim Bunce <Tim.Bunce at pobox.com> - code optimizations
 
-=item * Scott Cain <cain at cshl.org> - Bio::Graphics::Glyph
+=item * Scott Cain <scott at scottcain.net> - Bio::Graphics::Glyph, Bio::DB::GFF::Adaptor::dbi::pg, GFF related tools and scripts
 
 =item * Yee Man Chan <ymc at yahoo.com> - Bio::Tools::dpAlign
 
 =item * Brad Chapman <chapmanb at arches.uga.edu>
 
+=item * Roy R. Chaudhuri <roy.chaudhuri at gmail.com> - Bio::SeqUtils Bio::Align::Utilities
+
 =item * Michele Clamp <michele at sanger.ac.uk>
+
+=item * Malcolm Cook <mec at stowers-institute.org>
 
 =item * Tony Cox <avc at sanger.ac.uk>
 
@@ -89,8 +97,6 @@ for if you see fit)
 
 =item * David Evans <David.Evans at vir.gla.ac.uk>
 
-=item * Christopher Fields <cjfields at uiuc.edu>
-
 =item * Mark Fiers <M.W.E.J.Fiers at plant.wag-ur.nl>
 
 =item * The Fugu Team <fuguteam at fugu-sg.org>
@@ -109,7 +115,7 @@ for if you see fit)
 
 =item * Todd Harris <harris at cshl.org> - SVG support in Bio::Graphics
 
-=item * Mauricio Herrera Cuadra <arareko at campus.iztacala.unam.mx>
+=item * Mauricio Herrera Cuadra <mauricio at open-bio.org>
 
 =item * Ian Holmes <ihn at fruitfly.org>
 
@@ -122,6 +128,8 @@ for if you see fit)
 =item * Donald Jackson <donald.jackson at bms.com> - SiRNA
 
 =item * Keith James <kdj at sanger.ac.uk> - Bio::Tools::Geneid
+
+=item * Mark A. Jensen <maj at fortinbras.us> - Bio::DB::HIVQuery
 
 =item * Nicolas Joly <njoly at pasteur.fr> 
 
@@ -157,13 +165,13 @@ for if you see fit)
 
 =item * Sheldon McKay <mckays at cshl.edu>
 
+=item * Dave Messina <dmessina at cpan.org> - Deobfuscator, judicious meddling
+
 =item * Juha Muilu <muilu at ebi.ac.uk>
 
 =item * Chris Mungall <cjm at fruitfly.org>
 
 =item * Giri Narasimhan <giri at cs.fiu.edu>
-
-=item * Brian Osborne <bosborne at alum.mit.edu>
 
 =item * Xiaokang Pan <pan at cshl.org> - Bio::Graphics::Glyph
 
@@ -191,7 +199,7 @@ for if you see fit)
 
 =item * Marc Sohrmann <ms2 at sanger.ac.uk>
 
-=item * Robson Francisco de Souza <rfsouza at citri.iq.usp.br> - Bio::Assembly
+=item * Robson Francisco de Souza <robfsouza at gmail.com> - Bio::Assembly
 
 =item * Mark Southern <mark_southern at merck.com>
 

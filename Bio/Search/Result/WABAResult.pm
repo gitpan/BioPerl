@@ -1,4 +1,4 @@
-# $Id: WABAResult.pm,v 1.5.4.1 2006/10/02 23:10:24 sendu Exp $
+# $Id: WABAResult.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Search::Result::WABAResult
 #
@@ -71,7 +71,7 @@ use base qw(Bio::Search::Result::GenericResult);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Search::Result::WABAResult();
+ Usage   : my $obj = Bio::Search::Result::WABAResult->new();
  Function: Builds a new Bio::Search::Result::WABAResult object 
  Returns : Bio::Search::Result::WABAResult
  Args    : -query_database => "name of the database where the query came from"

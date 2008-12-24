@@ -1,6 +1,6 @@
 #!perl -w
 use strict;
-# $Id: split_seq.PLS,v 1.7 2006/07/04 22:23:29 mauricio Exp $
+# $Id: split_seq.PLS 15120 2008-12-09 03:11:13Z cjfields $
 
 =head1 NAME
 
@@ -49,7 +49,7 @@ web:
 =head1 AUTHORS
 
   Ewan Birney E<lt>birney-at-ebi.ac.ukE<gt>
-  Mauricio Herrera Cuadra E<lt>arareko-at-campus.iztacala.unam.mxE<gt>
+  Mauricio Herrera Cuadra E<lt>mauricio at open-bio.orgE<gt>
   (some enhancements)
 
 =cut

@@ -1,4 +1,4 @@
-# $Id: blast.pm,v 1.99.4.4 2006/10/11 19:55:17 sendu Exp $
+# $Id: blast.pm 15084 2008-12-03 22:31:23Z cjfields $
 #
 # BioPerl module for Bio::SearchIO::blast
 #
@@ -21,6 +21,8 @@
 #          Parse more blast statistics, lambda, entropy, etc
 #          from WU-BLAST in frame-specific manner
 # 20060216 - cjf - fixed blast parsing for BLAST v2.2.13 output
+# 20071104 - dmessina - added support for WUBLAST -echofilter
+# 20071121 - cjf - fixed several bugs (bugs 2391, 2399, 2409)
 
 =head1 NAME
 
@@ -33,7 +35,7 @@ blast reports
    # Bio::SearchIO system.
 
     use Bio::SearchIO;
-    my $searchio = new Bio::SearchIO(-format => 'blast',
+    my $searchio = Bio::SearchIO->new(-format => 'blast',
                                      -file   => 't/data/ecolitst.bls');
     while( my $result = $searchio->next_result ) {
         while( my $hit = $result->next_hit ) {
@@ -80,7 +82,7 @@ doesn't report the algorithm used - I assume it is BLASTX by default -
 you can supply the program type with -report_type in the SearchIO
 constructor i.e.
 
-  my $parser = new Bio::SearchIO(-format => 'blast',
+  my $parser = Bio::SearchIO->new(-format => 'blast',
                                  -file => 'bl2seq.tblastn.report',
                                  -report_type => 'tblastn');
 
@@ -139,6 +141,7 @@ use vars qw(%MAPPING %MODEMAP
 
 
 use base qw(Bio::SearchIO);
+use Data::Dumper;
 
 BEGIN {
 
@@ -157,6 +160,7 @@ BEGIN {
         'Hsp_bit-score'   => 'HSP-bits',
         'Hsp_score'       => 'HSP-score',
         'Hsp_evalue'      => 'HSP-evalue',
+        'Hsp_n',          => 'HSP-n',
         'Hsp_pvalue'      => 'HSP-pvalue',
         'Hsp_query-from'  => 'HSP-query_start',
         'Hsp_query-to'    => 'HSP-query_end',
@@ -175,13 +179,13 @@ BEGIN {
         'Hsp_hit-frame'   => 'HSP-hit_frame',
         'Hsp_links'       => 'HSP-links',
         'Hsp_group'       => 'HSP-hsp_group',
+        'Hsp_features'    => 'HSP-hit_features',
 
         'Hit_id'        => 'HIT-name',
         'Hit_len'       => 'HIT-length',
         'Hit_accession' => 'HIT-accession',
         'Hit_def'       => 'HIT-description',
         'Hit_signif'    => 'HIT-significance',
-
         # For NCBI blast, the description line contains bits.
         # For WU-blast, the  description line contains score.
         'Hit_score' => 'HIT-score',
@@ -195,6 +199,7 @@ BEGIN {
         'BlastOutput_query-def'           => 'RESULT-query_name',
         'BlastOutput_query-len'           => 'RESULT-query_length',
         'BlastOutput_query-acc'           => 'RESULT-query_accession',
+        'BlastOutput_query-gi'            => 'RESULT-query_gi',
         'BlastOutput_querydesc'           => 'RESULT-query_description',
         'BlastOutput_db'                  => 'RESULT-database_name',
         'BlastOutput_db-len'              => 'RESULT-database_entries',
@@ -311,7 +316,7 @@ BEGIN {
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::SearchIO::blast(%args);
+ Usage   : my $obj = Bio::SearchIO::blast->new(%args);
  Function: Builds a new Bio::SearchIO::blast object 
  Returns : Bio::SearchIO::blast
  Args    : Key-value pairs:
@@ -370,18 +375,19 @@ sub _initialize {
     my ( $self, @args ) = @_;
     $self->SUPER::_initialize(@args);
 
- # Blast reports require a specialized version of the SREB due to the
- # possibility of iterations (PSI-BLAST). Forwarding all arguments to it.
- # An issue here is that we want to set new default object factories if none are
- # supplied.
+    # Blast reports require a specialized version of the SREB due to the
+    # possibility of iterations (PSI-BLAST). Forwarding all arguments to it. An
+    # issue here is that we want to set new default object factories if none are
+    # supplied.
 
-    my $handler = new Bio::SearchIO::IteratedSearchResultEventBuilder(@args);
+    my $handler = Bio::SearchIO::IteratedSearchResultEventBuilder->new(@args);
     $self->attach_EventHandler($handler);
     
-    # 2006-04-26 move this to the attach_handler function in this
-    # module so we can really reset the handler 
+    # 2006-04-26 move this to the attach_handler function in this module so we
+    # can really reset the handler 
     # Optimization: caching
     # the EventHandler since it is used a lot during the parse.
+    
     # $self->{'_handler_cache'} = $handler;
 
     my ( $min_qlen, $check_all, $overlap, $best, $rpttype ) = $self->_rearrange(
@@ -427,6 +433,7 @@ sub next_result {
     my $data   = '';
     my $flavor = '';
     $self->{'_seentop'} = 0;     # start next report at top
+    $self->{'_seentop'} = 0;
     my ( $reporttype, $seenquery, $reportline );  
     my ( $seeniteration, $found_again );
     my $incl_threshold = $self->inclusion_threshold;
@@ -436,33 +443,29 @@ sub next_result {
     my $gapped_stats = 0;    # for switching between gapped/ungapped
                              # lambda, K, H
     local $_ = "\n";   #consistency
+    PARSER:
     while ( defined( $_ = $self->_readline ) ) {
         next if (/^\s+$/);       # skip empty lines
         next if (/CPU time:/);
         next if (/^>\s*$/);
         if (
-               /^([T]?BLAST[NPX])\s*(.+)$/i               # NCBI BLAST
-            || /^(PSITBLASTN)\s+(.+)$/i                   # PSIBLAST
-            || /^(RPS-BLAST)\s*(.+)$/i                    # RPSBLAST
-            || /^(MEGABLAST)\s*(.+)$/i                    # MEGABLAST
+               /^((?:\S+?)?BLAST[NPX])\s+(.+)$/i  # NCBI BLAST, PSIBLAST
+                                                 # RPSBLAST, MEGABLAST
             || /^(P?GENEWISE|HFRAME|SWN|TSWN)\s+(.+)/i    #Paracel BTK
           )
         {
-            $self->debug("blast.pm: Start of new report: $1 $2\n");
+            ($reporttype, my $reportversion) = ($1, $2);
+            # need to keep track of whether this is WU-BLAST
+            if ($reportversion && $reportversion =~ m{WashU$}) {
+                $self->{'_wublast'}++;
+            }
+            $self->debug("blast.pm: Start of new report: $reporttype, $reportversion\n");
             if ( $self->{'_seentop'} ) { 
                 # This handles multi-result input streams
                 $self->_pushback($_);
-                $self->in_element('hsp')
-                  && $self->end_element( { 'Name' => 'Hsp' } );
-                $self->in_element('hit')
-                  && $self->end_element( { 'Name' => 'Hit' } );
-                $self->within_element('iteration')
-                  && $self->end_element( { 'Name' => 'Iteration' } );
-                $self->end_element( { 'Name' => 'BlastOutput' } );
-                return $self->end_document();
+                last PARSER;
             }
             $self->_start_blastoutput;
-            $reporttype = $1;
             if ($reporttype =~ /RPS-BLAST/) {
                 $reporttype .= '(BLASTP)'; # default RPS-BLAST type
             }
@@ -477,7 +480,7 @@ sub next_result {
             $self->element(
                 {
                     'Name' => 'BlastOutput_version',
-                    'Data' => $2
+                    'Data' => $reportversion
                 }
             );
             $self->element(
@@ -499,36 +502,21 @@ sub next_result {
             if ( defined $seeniteration ) {
                 $self->within_element('iteration')
                   && $self->end_element( { 'Name' => 'Iteration' } );
-                $self->_start_iteration;
+                $self->start_element( { 'Name' => 'Iteration' } );
             }
             else {
-                $self->_start_iteration;
+                $self->start_element( { 'Name' => 'Iteration' } );
             }
             $seeniteration = 1;
         }
         elsif (/^Query=\s*(.*)$/) {
-            $self->debug("blast.pm: Query= found...$_\n");
             my $q    = $1;
+            $self->debug("blast.pm: Query= found...$_\n");
             my $size = 0;
             if ( defined $seenquery ) {
                 $self->_pushback($reportline) if $reportline;
                 $self->_pushback($_);
-                $self->in_element('hsp')
-                  && $self->end_element( { 'Name' => 'Hsp' } );
-                $self->in_element('hit')
-                  && $self->end_element( { 'Name' => 'Hit' } );
-                $self->within_element('iteration')
-                  && $self->end_element( { 'Name' => 'Iteration' } );
-                if ($bl2seq_fix) {
-                    $self->element(
-                        {
-                            'Name' => 'BlastOutput_program',
-                            'Data' => $reporttype
-                        }
-                    );
-                }
-                $self->end_element( { 'Name' => 'BlastOutput' } );
-                return $self->end_document();
+                last PARSER;
             }
             else {
                 if ( !defined $reporttype ) {
@@ -536,10 +524,10 @@ sub next_result {
                     if ( defined $seeniteration ) {
                         $self->in_element('iteration')
                           && $self->end_element( { 'Name' => 'Iteration' } );
-                        $self->_start_iteration;
+                        $self->start_element( { 'Name' => 'Iteration' } );
                     }
                     else {
-                        $self->_start_iteration;
+                        $self->start_element( { 'Name' => 'Iteration' } );
                     }
                     $seeniteration = 1;
                 }
@@ -551,7 +539,6 @@ sub next_result {
                     $self->_pushback($_);
                     last;
                 }
-                chomp;
                 # below line fixes length issue with BLAST v2.2.13; still works 
                 # with BLAST v2.2.12
                 if ( /\((\-?[\d,]+)\s+letters.*\)/ || /^Length=(\-?[\d,]+)/ ) {
@@ -560,8 +547,9 @@ sub next_result {
                     last;
                 }
                 else {
-                    $q .= " $_";
-                    $q =~ s/ +/ /g;
+                    # bug 2391
+                    $q .= ($q =~ /\w$/ && $_ =~ /^\w/) ? " $_" : $_;
+                    $q =~ s/\s+/ /g; # this catches the newline as well
                     $q =~ s/^ | $//g;
                 }
 
@@ -574,7 +562,7 @@ sub next_result {
                     'Name' => 'BlastOutput_query-def',
                     'Data' => $nm
                 }
-            );
+            ) if $nm;
             $self->element(
                 {
                     'Name' => 'BlastOutput_query-len',
@@ -588,16 +576,24 @@ sub next_result {
                     'Data' => $desc
                 }
             );
-            my ( $acc, $version ) = &_get_accession_version($nm);
+            my ( $gi, $acc, $version ) = $self->_get_seq_identifiers($nm);
             $version = defined($version) && length($version) ? ".$version" : "";
-            $acc = '' unless defined($acc);
             $self->element(
                 {
                     'Name' => 'BlastOutput_query-acc',
                     'Data' => "$acc$version"
                 }
-            );
+            ) if $acc;
         }
+		# added check for WU-BLAST -echofilter option (bug 2388)
+		elsif (/^>Unfiltered[+-]1$/) {
+        	# skip all of the lines of unfiltered sequence
+			while($_ !~ /^Database:/) {
+				$self->debug("Bypassing features line: $_");
+        		$_ = $self->_readline;
+        	}
+			$self->_pushback($_);
+		}
         elsif (/Sequences producing significant alignments:/) {
             $self->debug("blast.pm: Processing NCBI-BLAST descriptions\n");
             $flavor = 'ncbi';
@@ -611,31 +607,61 @@ sub next_result {
             # for a line with a leading >. Blank lines occur with this section
             # for psiblast.
             if ( !$self->in_element('iteration') ) {
-                $self->_start_iteration;
+                $self->start_element( { 'Name' => 'Iteration' } );
             }
-          descline:
-            while ( defined( $_ = $self->_readline() ) ) {
-                if (/^>/ 
-                    || /^\s+Database:\s+?/
-                    || /^Parameters:/
-                    || /^\s+Subset/
-                    || /^\s*Lambda/
-                    || /^\s*Histogram/
-                    ) {
-                    $self->_pushback($_); # Catch leading > (end of section)
-                    last descline;
+            # these elements are dropped with some multiquery reports; add
+            # back here
+            $self->element(
+                {
+                    'Name' => 'BlastOutput_db-len',
+                    'Data' => $self->{'_blsdb_length'}
+                } 
+            ) if $self->{'_blsdb_length'};
+            $self->element(
+                {
+                    'Name' => 'BlastOutput_db-let',
+                    'Data' => $self->{'_blsdb_letters'}
                 }
-                elsif (/([\d\.\+\-eE]+)\s+([\d\.\+\-eE]+)(\s+\d+)?\s*$/) {
-
-                    # the last match is for gapped BLAST output
-                    # which will report the number of HSPs for the Hit
-                    my ( $score, $evalue ) = ( $1, $2 );
-
+            ) if $self->{'_blsdb_letters'};
+            $self->element(
+                {
+                    'Name' => 'BlastOutput_db',
+                    'Data' => $self->{'_blsdb'}
+                }
+            ) if $self->{'_blsdb_letters'};
+            
+            # changed 8/28/2008 to exit hit table if blank line is found after an
+            # appropriate line
+            my $h_regex;
+            my $seen_block;
+          DESCLINE:
+            while ( defined( my $descline = $self->_readline() ) ) {
+                if ($descline =~ m{^\s*$}) {
+                    last DESCLINE if $seen_block;
+                    next DESCLINE;
+                }
+                # any text match is part of block...
+                $seen_block++;
+                # GCG multiline oddness...
+                if ($descline =~ /^(\S+)\s+Begin:\s\d+\s+End:\s+\d+/xms) {
+                    my ($id, $nextline) = ($1, $self->_readline);
+                    $nextline =~ s{^!}{};
+                    $descline = "$id $nextline";
+                }
+                # NCBI style hit table (no N)
+                if ($descline =~ /(?<!cor)          # negative lookahead
+                    (\d*\.?(?:[\+\-eE]+)?\d+)       # number (float or scientific notation)
+                    \s+                             # space
+                    (\d*\.?(?:[\+\-eE]+)?\d+)       # number (float or scientific notation)
+                    \s*$/xms) {
+                    
+                    my ( $score, $evalue ) = ($1, $2);
+                    
                     # Some data clean-up so e-value will appear numeric to perl
                     $evalue =~ s/^e/1e/i;
 
                     # This to handle no-HSP case
-                    my @line = split;
+                    my @line = split ' ',$descline;
                     
                     # we want to throw away the score, evalue
                     pop @line, pop @line;
@@ -646,19 +672,18 @@ sub next_result {
 
                     # add the last 2 entries s.t. we can reconstruct
                     # a minimal Hit object at the end of the day
-                    push @hit_signifs,
-                      [ $evalue, $score, shift @line, join( ' ', @line ) ];
-                    
-                }
-                elsif (/^CONVERGED/i) {
+                    push @hit_signifs, [ $evalue, $score, shift @line, join( ' ', @line ) ];
+                } elsif ($descline =~ /^CONVERGED/i) {
                     $self->element(
                         {
                             'Name' => 'Iteration_converged',
                             'Data' => 1
                         }
                     );
+                } else {
+                    $self->_pushback($descline); # Catch leading > (end of section)
+                    last DESCLINE;
                 }
-                @hit_signifs = sort {$a->[0] <=> $b->[0]} @hit_signifs;
             }
         }
         elsif (/Sequences producing High-scoring Segment Pairs:/) {
@@ -670,7 +695,7 @@ sub next_result {
             $flavor = 'wu';
 
             if ( !$self->in_element('iteration') ) {
-                $self->_start_iteration;
+                $self->start_element( { 'Name' => 'Iteration' } );
             }
 
             while ( defined( $_ = $self->_readline() )
@@ -712,6 +737,10 @@ sub next_result {
                             'Data' => $l
                         }
                     );
+                    # cache for next round in cases with multiple queries
+                    $self->{'_blsdb'} = $db;
+                    $self->{'_blsdb_length'} = $s;
+                    $self->{'_blsdb_letters'} = $l;                    
                     last;
                 }
                 else {
@@ -728,13 +757,18 @@ sub next_result {
         }
         # bypasses this NCBI blast 2.2.13 extra output for now...
 		# Features in/flanking this part of subject sequence:
-        elsif (/^\sFeatures\s\w+\sthis\spart\sof\ssubject\ssequence:/) {
-        	# junk following lines up to start of HSP
-			while($_ !~ /^\sScore\s=/) {
-				$self->debug("Bypassing features line: $_");
+        elsif (/^\sFeatures\s\w+\sthis\spart/xmso) {
+            my $featline;
+            $_ = $self->_readline;
+			while($_ !~ /^\s*$/) {
+                chomp;
+                $featline .= $_;
         		$_ = $self->_readline;
         	}
 			$self->_pushback($_);
+            $featline =~ s{(?:^\s+|\s+^)}{}g;
+            $featline =~ s{\n}{;}g;
+            $self->{'_last_hspdata'}->{'Hsp_features'} = $featline;
         }
         
         # move inside of a hit
@@ -751,10 +785,10 @@ sub next_result {
             # Query=
             if ( !$self->within_element('result') ) {
                 $self->_start_blastoutput;
-                $self->_start_iteration;
+                $self->start_element( { 'Name' => 'Iteration' } );
             }
             elsif ( !$self->within_element('iteration') ) {
-                $self->_start_iteration;
+                $self->start_element( { 'Name' => 'Iteration' } );
             }
             $self->start_element( { 'Name' => 'Hit' } );
             my $id         = $1;
@@ -767,31 +801,28 @@ sub next_result {
                     'Data' => $id
                 }
             );
-            my ( $acc, $version ) = &_get_accession_version($id);
+            my ($gi, $acc, $version ) = $self->_get_seq_identifiers($id);
             $self->element(
                 {
                     'Name' => 'Hit_accession',
                     'Data' => $acc
                 }
             );
- 
             # add hit significance (from the hit table)
-            # this is where Bug 1986 goes awry
+            # this is where Bug 1986 went awry
             
-            my $v = shift @hit_signifs;
-            if ( defined $v ) {
-                $self->element(
-                    {
-                        'Name' => 'Hit_signif',
-                        'Data' => $v->[0]
-                    }
-                );
-                $self->element(
-                    {
-                        'Name' => 'Hit_score',
-                        'Data' => $v->[1]
-                    }
-                );
+            # Changed for Bug2409; hit->significance and hit->score/bits derived
+            # from HSPs, not hit table unless necessary
+            
+            HITTABLE:
+            while (my $v = shift @hit_signifs) {        
+                my $tableid = $v->[2];
+                if ($tableid !~ m{\Q$id\E}) {
+                    $self->debug("Hit table ID $tableid doesn't match current hit id $id, checking next hit table entry...\n");
+                    next HITTABLE;
+                } else {
+                    last HITTABLE;
+                }
             }
             while ( defined( $_ = $self->_readline() ) ) {
                 next if (/^\s+$/);
@@ -808,6 +839,7 @@ sub next_result {
                     last;
                 }
                 else {
+                    s/^\s(?!\s)/\x01/; #new line to concatenate desc lines with <soh>
                     $restofline .= $_;
                 }
             }
@@ -957,10 +989,10 @@ sub next_result {
         }
         elsif (
             ( $self->in_element('hit') || $self->in_element('hsp') )
-            &&    # ncbi blast
+            &&    # ncbi blast, works with 2.2.17
             m/Score\s*=\s*(\S+)\s*bits\s* # Bit score
                 (?:\((\d+)\))?,            # Missing for BLAT pseudo-BLAST fmt 
-                \s*Expect(?:\(\d+\+?\))?\s*=\s*(\S+) # E-value
+                \s*Expect(?:\((\d+\+?)\))?\s*=\s*([^,\s]+) # E-value
                 /ox
           )
         {         # parse NCBI blast HSP
@@ -968,9 +1000,8 @@ sub next_result {
               && $self->end_element( { 'Name' => 'Hsp' } );
 
             # Some data clean-up so e-value will appear numeric to perl
-            my ( $bits, $score, $evalue ) = ( $1, $2, $3 );
+            my ( $bits, $score, $n, $evalue ) = ( $1, $2, $3, $4 );
             $evalue =~ s/^e/1e/i;
-
             $self->start_element( { 'Name' => 'Hsp' } );
             $self->element(
                 {
@@ -990,6 +1021,12 @@ sub next_result {
                     'Data' => $evalue
                 }
             );
+            $self->element(
+                {
+                    'Name' => 'Hsp_n',
+                    'Data' => $n
+                }
+            ) if defined $n;
             $score = '' unless defined $score;    # deal with BLAT which
                                                   # has no score only bits
             $self->debug("Got NCBI HSP score=$score, evalue $evalue\n");
@@ -1140,48 +1177,7 @@ sub next_result {
 
             # This is for the case when we specify -b 0 (or B=0 for WU-BLAST)
             # and still want to construct minimal Hit objects
-            while ( my $v = shift @hit_signifs ) {
-                next unless defined $v;
-                $self->start_element( { 'Name' => 'Hit' } );
-                my $id   = $v->[2];
-                my $desc = $v->[3];
-                $self->element(
-                    {
-                        'Name' => 'Hit_id',
-                        'Data' => $id
-                    }
-                );
-                my ( $acc, $version ) = &_get_accession_version($id);
-                $self->element(
-                    {
-                        'Name' => 'Hit_accession',
-                        'Data' => $acc
-                    }
-                );
-
-                if ( defined $v ) {
-                    $self->element(
-                        {
-                            'Name' => 'Hit_signif',
-                            'Data' => $v->[0]
-                        }
-                    );
-                    $self->element(
-                        {
-                            'Name' => 'Hit_score',
-                            'Data' => $v->[1]
-                        }
-                    );
-                }
-                $self->element(
-                    {
-                        'Name' => 'Hit_def',
-                        'Data' => $desc
-                    }
-                );
-                $self->end_element( { 'Name' => 'Hit' } );
-            }
-
+            $self->_cleanup_hits(\@hit_signifs) if scalar(@hit_signifs);
             $self->within_element('iteration')
               && $self->end_element( { 'Name' => 'Iteration' } );
 
@@ -1202,8 +1198,8 @@ sub next_result {
             );
             while ( defined( $_ = $self->_readline ) ) {
                 if (
-                       /^(PSI)?([T]?BLAST[NPX])\s*(.+)/i
-                    || /^MEGABLAST\s*(.+)/i
+                    /^((?:\S+)?BLAST[NPX])\s+(.+)$/i  # NCBI BLAST, PSIBLAST
+                                                      # RPSBLAST, MEGABLAST
                     || /^(P?GENEWISE|HFRAME|SWN|TSWN)\s+(.+)/i    #Paracel BTK
                   )
                 {
@@ -1215,24 +1211,7 @@ sub next_result {
                 elsif (/^Query=/) {
                     $self->_pushback($reportline) if $reportline;
                     $self->_pushback($_);
-
-                    # -- Superfluous I think, but adding nonetheless
-                    $self->in_element('hsp')
-                      && $self->end_element( { 'Name' => 'Hsp' } );
-                    $self->in_element('hit')
-                      && $self->end_element( { 'Name' => 'Hit' } );
-
-                    # --
-                    if ($bl2seq_fix) {
-                        $self->element(
-                            {
-                                'Name' => 'BlastOutput_program',
-                                'Data' => $reporttype
-                            }
-                        );
-                    }
-                    $self->end_element( { 'Name' => 'BlastOutput' } );
-                    return $self->end_document();
+                    last PARSER;
                 }
 
                 # here is where difference between wublast and ncbiblast
@@ -1846,6 +1825,8 @@ sub next_result {
           && $self->end_element( { 'Name' => 'Hsp' } );
         $self->within_element('hit')
           && $self->end_element( { 'Name' => 'Hit' } );
+        # cleanup extra hits
+        $self->_cleanup_hits(\@hit_signifs) if scalar(@hit_signifs);
         $self->within_element('iteration')
           && $self->end_element( { 'Name' => 'Iteration' } );
         if ($bl2seq_fix) {
@@ -1868,13 +1849,6 @@ sub _start_blastoutput {
     $self->{'_seentop'} = 1;
     $self->{'_result_count'}++;
     $self->{'_handler_rc'} = undef;
-}
-
-sub _start_iteration {
-    my $self = shift;
-    $self->start_element( { 'Name' => 'Iteration' } );
-
-    #   $self->{'_hit_info'} = undef;
 }
 
 =head2 _will_handle
@@ -1949,19 +1923,17 @@ sub start_element {
             my $func = sprintf( "start_%s", lc $type );
             $self->{'_handler_rc'} = $handler->$func( $data->{'Attributes'} );
         }
-        else {
+        #else {
             #$self->debug( # changed 4/29/2006 to play nice with other event handlers
             #    "Bio::SearchIO::InternalParserError ".
             #    "\nCan't handle elements of type \'$type.\'"
             #);
-        }
+        #}
         unshift @{ $self->{'_elements'} }, $type;
         if ( $type eq 'result' ) {
             $self->{'_values'} = {};
             $self->{'_result'} = undef;
-        }
-        else {
-
+        } else {
             # cleanup some things
             if ( defined $self->{'_values'} ) {
                 foreach my $k (
@@ -1978,10 +1950,10 @@ sub start_element {
 
 =head2 end_element
 
- Title   : start_element
+ Title   : end_element
  Usage   : $eventgenerator->end_element
  Function: Handles an end element event
- Returns : none
+ Returns : hashref with an element's worth of data
  Args    : hashref with at least 2 keys 'Data' and 'Name'
 
 
@@ -1991,7 +1963,7 @@ sub end_element {
     my ( $self, $data ) = @_;
     
     my $nm   = $data->{'Name'};
-    my $type = $MODEMAP{$nm};
+    my $type;
     my $rc;
     if ( $nm eq 'BlastOutput_program' ) {
         if ( $self->{'_last_data'} =~ /(t?blast[npx])/i ) {
@@ -2003,13 +1975,13 @@ sub end_element {
     # Hsps are sort of weird, in that they end when another
     # object begins so have to detect this in end_element for now
     if ( $nm eq 'Hsp' ) {
-        foreach (qw(Hsp_qseq Hsp_midline Hsp_hseq)) {
+        foreach (qw(Hsp_qseq Hsp_midline Hsp_hseq Hsp_features)) {
             $self->element(
                 {
                     'Name' => $_,
                     'Data' => $self->{'_last_hspdata'}->{$_}
                 }
-            );
+            ) if defined $self->{'_last_hspdata'}->{$_};
         }
         $self->{'_last_hspdata'} = {};
         $self->element(
@@ -2051,7 +2023,6 @@ sub end_element {
 
     }
     elsif ( $MAPPING{$nm} ) {
-
         if ( ref( $MAPPING{$nm} ) =~ /hash/i ) {
 
             # this is where we shove in the data from the
@@ -2086,7 +2057,9 @@ sub end_element {
 
 sub element {
     my ( $self, $data ) = @_;
-    $self->start_element($data);
+    # Note that start element isn't needed for character data
+    # Not too SAX-y, though
+    #$self->start_element($data);
     $self->characters($data);
     $self->end_element($data);
 }
@@ -2339,54 +2312,113 @@ sub check_all_hits {
     $self->{'_check_all'};
 }
 
-=head2 _get_accession_version
+# commented out, using common base class util method
+#=head2 _get_accession_version
+#
+# Title   : _get_accession_version
+# Usage   : my ($acc,$ver) = &_get_accession_version($id)
+# Function:Private function to get an accession,version pair
+#           for an ID (if it is in NCBI format)
+# Returns : 2-pule of accession, version
+# Args    : ID string to process
+#
+#
+#=cut
+#
+#sub _get_accession_version {
+#    my $id = shift;
+#
+#    # handle case when this is accidently called as a class method
+#    if ( ref($id) && $id->isa('Bio::SearchIO') ) {
+#        $id = shift;
+#    }
+#    return unless defined $id;
+#    my ( $acc, $version );
+#    if ( $id =~ /(gb|emb|dbj|sp|pdb|bbs|ref|lcl)\|(.*)\|(.*)/ ) {
+#        ( $acc, $version ) = split /\./, $2;
+#    }
+#    elsif ( $id =~ /(pir|prf|pat|gnl)\|(.*)\|(.*)/ ) {
+#        ( $acc, $version ) = split /\./, $3;
+#    }
+#    else {
+#
+#        #punt, not matching the db's at ftp://ftp.ncbi.nih.gov/blast/db/README
+#        #Database Name                     Identifier Syntax
+#        #============================      ========================
+#        #GenBank                           gb|accession|locus
+#        #EMBL Data Library                 emb|accession|locus
+#        #DDBJ, DNA Database of Japan       dbj|accession|locus
+#        #NBRF PIR                          pir||entry
+#        #Protein Research Foundation       prf||name
+#        #SWISS-PROT                        sp|accession|entry name
+#        #Brookhaven Protein Data Bank      pdb|entry|chain
+#        #Patents                           pat|country|number
+#        #GenInfo Backbone Id               bbs|number
+#        #General database identifier           gnl|database|identifier
+#        #NCBI Reference Sequence           ref|accession|locus
+#        #Local Sequence identifier         lcl|identifier
+#        $acc = $id;
+#    }
+#    return ( $acc, $version );
+#}
 
- Title   : _get_accession_version
- Usage   : my ($acc,$ver) = &_get_accession_version($id)
- Function:Private function to get an accession,version pair
-           for an ID (if it is in NCBI format)
- Returns : 2-pule of accession, version
- Args    : ID string to process
+# general private method used to make minimal hits from leftover
+# data in the hit table
 
-
-=cut
-
-sub _get_accession_version {
-    my $id = shift;
-
-    # handle case when this is accidently called as a class method
-    if ( ref($id) && $id->isa('Bio::SearchIO') ) {
-        $id = shift;
+sub _cleanup_hits {
+    my ($self, $hits) = @_;
+    while ( my $v = shift @{ $hits }) {
+        next unless defined $v;
+        $self->start_element( { 'Name' => 'Hit' } );
+        my $id   = $v->[2];
+        my $desc = $v->[3];
+        $self->element(
+            {
+                'Name' => 'Hit_id',
+                'Data' => $id
+            }
+        );
+        my ($gi, $acc, $version ) = $self->_get_seq_identifiers($id);
+        $self->element(
+            {
+                'Name' => 'Hit_accession',
+                'Data' => $acc
+            }
+        );
+        if ( defined $v ) {
+            $self->element(
+                {
+                    'Name' => 'Hit_signif',
+                    'Data' => $v->[0]
+                }
+            );
+            if (exists $self->{'_wublast'}) {
+                $self->element(
+                    {
+                        'Name' => 'Hit_score',
+                        'Data' => $v->[1]
+                    }
+                );
+            } else {
+                $self->element(
+                    {
+                        'Name' => 'Hit_bits',
+                        'Data' => $v->[1]
+                    }
+                );
+            }
+            
+        }
+        $self->element(
+            {
+                'Name' => 'Hit_def',
+                'Data' => $desc
+            }
+        );
+        $self->end_element( { 'Name' => 'Hit' } );
     }
-    return unless defined $id;
-    my ( $acc, $version );
-    if ( $id =~ /(gb|emb|dbj|sp|pdb|bbs|ref|lcl)\|(.*)\|(.*)/ ) {
-        ( $acc, $version ) = split /\./, $2;
-    }
-    elsif ( $id =~ /(pir|prf|pat|gnl)\|(.*)\|(.*)/ ) {
-        ( $acc, $version ) = split /\./, $3;
-    }
-    else {
-
-        #punt, not matching the db's at ftp://ftp.ncbi.nih.gov/blast/db/README
-        #Database Name                     Identifier Syntax
-        #============================      ========================
-        #GenBank                           gb|accession|locus
-        #EMBL Data Library                 emb|accession|locus
-        #DDBJ, DNA Database of Japan       dbj|accession|locus
-        #NBRF PIR                          pir||entry
-        #Protein Research Foundation       prf||name
-        #SWISS-PROT                        sp|accession|entry name
-        #Brookhaven Protein Data Bank      pdb|entry|chain
-        #Patents                           pat|country|number
-        #GenInfo Backbone Id               bbs|number
-        #General database identifier           gnl|database|identifier
-        #NCBI Reference Sequence           ref|accession|locus
-        #Local Sequence identifier         lcl|identifier
-        $acc = $id;
-    }
-    return ( $acc, $version );
 }
+
 
 1;
 

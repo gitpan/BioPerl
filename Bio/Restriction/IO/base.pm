@@ -1,4 +1,5 @@
-# $Id: base.pm,v 1.11.4.1 2006/10/02 23:10:23 sendu Exp $
+# $Id: base.pm 14708 2008-06-10 00:08:17Z heikki $
+#
 # BioPerl module for Bio::Restriction::IO::base
 #
 # Cared for by Rob Edwards <redwards@utmem.edu>
@@ -76,14 +77,46 @@ my $offset; # class variable
 
 sub new {
     my($class, @args) = @_;
+    $class = ref $class ? ref $class : $class;
     my $self = bless {}, $class;
     $self->_initialize(@args);
     return $self;
 }
 
+
+{
+    
+my %FILE_FORMAT = (
+            #'itype2'    => 'itype2', # itype2 format doesn't work with 'current'
+            #'8'         => 'itype2',
+            'withrefm'  => 'withrefm',
+            '31'        => 'withrefm',
+            #'bairoch'   => 'bairoch', # bairoch format doesn't work with 'current'
+            #'19'        => 'bairoch',
+            #'macvector' => 'bairoch',
+            #'vectorNTI' => 'bairoch',
+            'neo'       => 'neos',
+            'prototype' => 'proto'
+);
+
 sub _initialize {
     my($self,@args) = @_;
+    my ($current, $url, $file, $fh, $format, $verbose) =
+        $self->_rearrange([qw(CURRENT URL FILE FH FORMAT VERBOSE)],@args);
+    $verbose || 0;
+    $self->verbose($verbose);
+    if ($current && $format) {
+        $self->throw("Can't use -current with file, fh, or url set")  if ($url || $file || $fh);
+        $self->throw("Format $format not retrievable using 'current'") if (!exists $FILE_FORMAT{$format});
+        my $io = $self->new(-url => 'ftp://ftp.neb.com/pub/rebase/VERSION');
+        chomp (my $version = $io->_readline);
+        push @args, (-url => "ftp://ftp.neb.com/pub/rebase/$FILE_FORMAT{$format}.$version");
+    }
+
+    $self->_companies;
     return unless $self->SUPER::_initialize(@args);
+}
+
 }
 
 =head2 read
@@ -101,7 +134,7 @@ sub _initialize {
 sub read {
     my $self = shift;
 
-    my $renzs = new Bio::Restriction::EnzymeCollection(-empty => 1);
+    my $renzs = Bio::Restriction::EnzymeCollection->new(-empty => 1);
     seek DATA,($offset||=tell DATA), 0;
     while (<DATA>) {
         chomp;
@@ -109,7 +142,7 @@ sub read {
         my ($name, $site, $cut) = split /\s+/;
         #foreach my $key (keys %{$res}) {
         #my ($site, $cut) = split /\s+/, $res->{$key};
-        my $re = new Bio::Restriction::Enzyme(-name => $name,
+        my $re = Bio::Restriction::Enzyme->new(-name => $name,
                                               -site => $site,
                                               -cut => $cut);
         $renzs->enzymes($re);
@@ -141,6 +174,43 @@ sub write {
     }
 }
 
+=head2 verify_prototype
+
+ Title     : verify_prototype
+ Purpose   : checks enzyme against current prototype list (retrieved remotely)
+ Returns   : returns TRUE if enzyme is prototype
+ Argument  : Bio::Restriction::EnzymeI
+ Comments  : This is an auxiliary method to retrieve and check an enzyme
+             as a prototype.  It retrieves the current list, stores it
+             as a singleton instance, then uses it to check the prototype
+             and modify is_prototype() to true or false.  Use as follows:
+
+             my $col = $io->read;
+             for my $enz ($col->each_enzyme) {
+                 print $enz->name.":".$enz->site."\n";
+                 print "\t".$io->verify_prototype($enz)."\n";
+             }
+
+=cut
+
+my $protodb;
+
+sub verify_prototype {
+    my ($self, $enz) = @_;
+    $self->throw("Must pass a Bio::Restriction::EnzymeI") unless
+        $enz && ref $enz && $enz->isa("Bio::Restriction::EnzymeI");
+    if (!defined $protodb) {
+        my $io = Bio::Restriction::IO->new(-format => 'prototype',
+                      -current => 1);
+        $protodb = $io->read;
+    }
+    if ($protodb->get_enzyme($enz->name)) {
+        $enz->is_prototype(1);
+    } else {
+        $enz->is_prototype(0);
+    }
+    $enz->is_prototype;
+}
 
 =head2 Common REBASE parsing methods
 
@@ -365,7 +435,6 @@ sub _companies {
                    'X'=>'EURx Ltd. (1/03)');
     $self->{company}=\%companies;
 }
-
 
 1;
 

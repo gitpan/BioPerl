@@ -1,4 +1,4 @@
-# $Id: Position.pm,v 1.18.4.3 2006/10/17 09:35:22 sendu Exp $
+# $Id: Position.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Map::Position
 #
@@ -18,12 +18,12 @@ Bio::Map::Position - A single position of a Marker, or the range over which
 =head1 SYNOPSIS
 
     use Bio::Map::Position;
-    my $position = new Bio::Map::Position(-map => $map, 
+    my $position = Bio::Map::Position->new(-map => $map, 
 					  -element => $marker,
 					  -value => 100
 					  );
 
-	my $position_with_range = new Bio::Map::Position(-map => $map, 
+	my $position_with_range = Bio::Map::Position->new(-map => $map, 
 					  -element => $marker,
 					  -start => 100,
 					  -length => 10
@@ -94,7 +94,7 @@ use base qw(Bio::Root::Root Bio::Map::PositionI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Map::Position();
+ Usage   : my $obj = Bio::Map::Position->new();
  Function: Builds a new Bio::Map::Position object 
  Returns : Bio::Map::Position
  Args    : -map      => Bio::Map::MapI object

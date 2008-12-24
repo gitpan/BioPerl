@@ -1,4 +1,4 @@
-# $Id: TextResultWriter.pm,v 1.18.4.1 2006/10/02 23:10:27 sendu Exp $
+# $Id: TextResultWriter.pm 14480 2008-02-04 23:41:47Z cjfields $
 #
 # BioPerl module for Bio::SearchIO::Writer::TextResultWriter
 #
@@ -20,11 +20,11 @@ a Bio::Search::ResultI in Text.
   use Bio::SearchIO;
   use Bio::SearchIO::Writer::TextResultWriter;
 
-  my $in = new Bio::SearchIO(-format => 'blast',
+  my $in = Bio::SearchIO->new(-format => 'blast',
 			     -file   => shift @ARGV);
 
-  my $writer = new Bio::SearchIO::Writer::TextResultWriter();
-  my $out = new Bio::SearchIO(-writer => $writer);
+  my $writer = Bio::SearchIO::Writer::TextResultWriter->new();
+  my $out = Bio::SearchIO->new(-writer => $writer);
   $out->write_result($in->next_result);
 
 =head1 DESCRIPTION
@@ -52,7 +52,7 @@ Define a hit filter method
       return $hit->length E<gt> 100; # test if length of the hit sequence
                                      # long enough    
   }
-  my $writer = new Bio::SearchIO::Writer::TextResultWriter(
+  my $writer = Bio::SearchIO::Writer::TextResultWriter->new(
        -filters => { 'HIT' =E<gt> \&hit_filter }  
       );
 
@@ -63,7 +63,7 @@ only include HSPs which are 75% identical or better.
        my $hsp = shift;
        return $hsp->percent_identity E<gt> 75;
    }
-   my $writer = new Bio::SearchIO::Writer::TextResultWriter(
+   my $writer = Bio::SearchIO::Writer::TextResultWriter->new(
        -filters => { 'HSP' =E<gt> \&hsp_filter }  
       );
 
@@ -134,7 +134,7 @@ use base qw(Bio::Root::Root Bio::SearchIO::SearchWriterI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::SearchIO::Writer::TextResultWriter();
+ Usage   : my $obj = Bio::SearchIO::Writer::TextResultWriter->new();
  Function: Builds a new Bio::SearchIO::Writer::TextResultWriter object 
  Returns : Bio::SearchIO::Writer::TextResultWriter
  Args    : -filters => hashref with any or all of the keys (HSP HIT RESULT)
@@ -196,10 +196,12 @@ sub to_string {
 						  $self->filter('HIT'),
 						  $self->filter('HSP') );
     return '' if( defined $resultfilter && ! &{$resultfilter}($result) );    
-
+    
     my ($qtype,$dbtype,$dbseqtype,$type);
     my $alg = $result->algorithm;
-
+    
+    my $wublast = ($result->algorithm_version =~ /WashU/) ? 1 : 0;
+    
     # This is actually wrong for the FASTAs I think
     if(  $alg =~ /T(FAST|BLAST)([XY])/i ) {
 	$qtype      = $dbtype = 'translated';
@@ -264,11 +266,14 @@ Sequences producing significant alignments:                      (bits)    value
 	} else { 
 	    $descsub = sprintf($p,$desc);
 	}
-
-	$str .= sprintf("%s   %-4s  %s\n",
+	$str .= $wublast ? sprintf("%s   %-4s  %s\n",
 			$descsub,
 			defined $hit->raw_score ? $hit->raw_score : ' ',
-			defined $hit->significance ? $hit->significance : '?');
+			defined $hit->significance ? $hit->significance : '?') :
+                    sprintf("%s   %-4s  %s\n",
+			$descsub,
+			defined $hit->bits ? $hit->bits: ' ',
+			defined $hit->significance ? $hit->significance : '?');        
 	my @hsps = $hit->hsps;
 	if( @hsps ) { 
 	    $hspstr .= sprintf(">%s %s\n%9sLength = %d\n\n",
@@ -427,17 +432,17 @@ Sequences producing significant alignments:                      (bits)    value
     
     $str .= sprintf(qq{  Database: %s
     Posted date:  %s
-  Number of letters in database: %s
-  Number of sequences in database: %s
+	Number of letters in database: %s
+	Number of sequences in database: %s
 
-Matrix: %s
-}, 		   
-		    $result->database_name(),
-		    $result->get_statistic('posted_date') || 
-		    POSIX::strftime("%b %d, %Y %I:%M %p",localtime),
-		    &_numwithcommas($result->database_entries()), 
-		    &_numwithcommas($result->database_letters()),
-		    $result->get_parameter('matrix') || '');
+  Matrix: %s
+  },
+	        $result->database_name(),
+	        $result->get_statistic('posted_date') ||
+	        POSIX::strftime("%b %d, %Y %I:%M %p",localtime),
+	        &_numwithcommas($result->database_letters()),
+	        &_numwithcommas($result->database_entries()),
+	        $result->get_parameter('matrix') || '');
 
     if( defined (my $open = $result->get_parameter('gapopen')) ) {
 	$str .= sprintf("Gap Penalties Existence: %d, Extension: %d\n",

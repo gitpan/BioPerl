@@ -24,7 +24,7 @@
 #   Bio::SearchIO
 #
 # Author: Steve Chervitz <sac@bioperl.org>
-# Revision: $Id: htmlwriter.pl,v 1.5 2004/02/21 10:50:34 sac Exp $
+# Revision: $Id: htmlwriter.pl 15087 2008-12-04 02:48:00Z bosborne $
 
 
 use strict;

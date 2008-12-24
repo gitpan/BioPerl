@@ -1,4 +1,4 @@
-# $Id: BioFetch.pm,v 1.29.4.1 2006/10/02 23:10:14 sendu Exp $
+# $Id: BioFetch.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::DB::BioFetch
 #
@@ -23,12 +23,12 @@ Bio::DB::BioFetch - Database object interface to BioFetch retrieval
 
  use Bio::DB::BioFetch;
 
- $bf = new Bio::DB::BioFetch;
+ $bf = Bio::DB::BioFetch->new();
 
  $seq = $bf->get_Seq_by_id('BUM');  # EMBL or SWALL ID
 
  # change formats, storage procedures
- $bf = new Bio::DB::BioFetch(-format        => 'fasta',
+ $bf = Bio::DB::BioFetch->new(-format        => 'fasta',
  			     -retrievaltype => 'tempfile',
   			     -db            => 'EMBL');
 
@@ -139,6 +139,12 @@ BEGIN {
 	    genbank   => 'genbank',
 	    namespace => 'genpep',
 	},
+        'unisave' => {
+            default   => 'swiss',
+            swissprot => 'swiss',
+            fasta     => 'fasta',
+            namespace => 'unisave',
+        }
     );
 }
 
@@ -374,7 +380,8 @@ sub db {
   if (@_) {
 
       my $db = lc shift;
-      $FORMATMAP{$db} or $self->throw("invalid db [$db], must be one of [".
+      my $base = $self->url_base_address;
+      $FORMATMAP{$db} or $self->throw("invalid db [$db] at [$base], must be one of [".
 				     join(' ',keys %FORMATMAP).  "]");
       $self->{_db} = $db;
   }
@@ -501,7 +508,7 @@ sub _check_id {
     my ($self, $id) = @_;
 
     # NT contigs can not be retrieved
-    $self->throw("NT_ contigs are whole chromosome files which are not part of regular".
+    $self->throw("NT_ contigs are whole chromosome files which are not part of regular ".
 		 "database distributions. Go to ftp://ftp.ncbi.nih.gov/genomes/.") 
 	if $id =~ /NT_/;
 

@@ -1,4 +1,4 @@
-# $Id: Allele.pm,v 1.15.4.1 2006/10/02 23:10:38 sendu Exp $
+# $Id: Allele.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module for Bio::Variation::Allele
 #

@@ -1,4 +1,4 @@
-# $Id: pICalculator.pm,v 1.9.4.1 2006/10/02 23:10:32 sendu Exp $
+# $Id: pICalculator.pm 10577 2006-09-28 21:32:20Z mauricio $
 #
 # BioPerl module for Bio::Tools::pICalculator
 #

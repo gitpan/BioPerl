@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: remote_blast.PLS,v 1.8 2006/07/02 05:35:50 mauricio Exp $
+# $Id: remote_blast.PLS 15088 2008-12-04 02:49:09Z bosborne $
 #
 # BioPerl module for remote_blast.pl
 #

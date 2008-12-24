@@ -1,4 +1,4 @@
-# $Id: Result.pm,v 1.9.4.1 2006/10/02 23:10:34 sendu Exp $
+# $Id: Result.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Tools::Phylo::Molphy::Result
 #
@@ -19,7 +19,7 @@ Bio::Tools::Phylo::Molphy::Result - container for data parsed from a ProtML run
   # do not use this object directly, you will get it back as part of a 
   # Molphy parser
   use Bio::Tools::Phylo::Molphy;
-  my $parser = new Bio::Tools::Phylo::Molphy(-file => 'output.protml');
+  my $parser = Bio::Tools::Phylo::Molphy->new(-file => 'output.protml');
   while( my $r = $parser->next_result ) {
     # r is a Bio::Tools::Phylo::Molphy::Result object
 
@@ -57,7 +57,7 @@ Bio::Tools::Phylo::Molphy::Result - container for data parsed from a ProtML run
           "1st tree score is ", $trees[0]->score, "\n";
 
     # writing to STDOUT, use -file => '>filename' to specify a file
-    my $out = new Bio::TreeIO(-format => "newick");
+    my $out = Bio::TreeIO->new(-format => "newick");
     $out->write_tree($trees[0]); # writing only the 1st tree
   }
 
@@ -113,7 +113,7 @@ use base qw(Bio::Root::Root);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Tools::Phylo::Molphy::Result();
+ Usage   : my $obj = Bio::Tools::Phylo::Molphy::Result->new();
  Function: Builds a new Bio::Tools::Phylo::Molphy::Result object 
  Returns : Bio::Tools::Phylo::Molphy::Result
  Args    : 
@@ -133,7 +133,7 @@ sub new {
 
   if( $trees ) {
       if(ref($trees) !~ /ARRAY/i ) { 
-	  $self->warn("Must have provided a valid array reference to initialize trees");
+	  $self->warn("Must provide a valid array reference to initialize trees");
       } else {
 	  foreach my $t ( @$trees ) {
 	      $self->add_tree($t);

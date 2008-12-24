@@ -1,5 +1,5 @@
 #------------------------------------------------------------------
-# $Id: IteratedSearchResultEventBuilder.pm,v 1.10.4.2 2006/10/02 23:10:26 sendu Exp $
+# $Id: IteratedSearchResultEventBuilder.pm 11576 2007-07-15 21:40:03Z cjfields $
 #
 # BioPerl module for Bio::SearchIO::IteratedSearchResultEventBuilder
 #
@@ -90,7 +90,7 @@ $MAX_HSP_OVERLAP  = 2;  # Used when tiling multiple HSPs.
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::SearchIO::IteratedSearchResultEventBuilder();
+ Usage   : my $obj = Bio::SearchIO::IteratedSearchResultEventBuilder->new();
  Function: Builds a new Bio::SearchIO::IteratedSearchResultEventBuilder object 
  Returns : Bio::SearchIO::IteratedSearchResultEventBuilder
  Args    : -hsp_factory    => Bio::Factory::ObjectFactoryI
@@ -303,7 +303,6 @@ sub _add_hit {
     $self->{'_hit_names_below'}->{$hit_name}++ if $hit_signif <= $ithresh;
 }
 
-
 # Title   : _store_hit (private function for internal use only)
 # Purpose : Collects hit objects into defined sets that are useful for 
 #           analyzing PSI-blast results.
@@ -330,13 +329,21 @@ sub _add_hit {
 # However, it shouldn't matter where the hits get put for the first iteration
 # for non-PSI blast reports since they'll get flattened out in the
 # result and iteration search objects.
-#
+
+
 sub _store_hit {
     my ($self, $hit, $hit_name, $hit_signif) = @_;
 
     my $ithresh = $self->{'_inclusion_threshold'};
-
-    if (exists $self->{'_old_hit_names'}->{$hit_name}) {
+    
+    # This is the assumption leading to Bug 1986. The assumption here is that
+    # the hit name is unique (and thus new), therefore any subsequent encounters
+    # with a hit containing the same name are filed as old hits. This isn't
+    # always true (see the bug report for a few examples). Adding an explicit
+    # check for the presence of iterations, adding to new hits otherwise.
+    
+    if (exists $self->{'_old_hit_names'}->{$hit_name}
+        && scalar @{$self->{_iterations}}) {
         if (exists $self->{'_hit_names_below'}->{$hit_name}) {
             push @{$self->{'_oldhits_below'}}, $hit;
         } elsif ($hit_signif <= $ithresh) {

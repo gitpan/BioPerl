@@ -1,4 +1,4 @@
-# $Id: DBLink.pm,v 1.18.6.2 2006/10/19 17:52:51 jason Exp $
+# $Id: DBLink.pm 14708 2008-06-10 00:08:17Z heikki $
 #
 # BioPerl module for Bio::Annotation::DBLink
 #
@@ -16,13 +16,13 @@ Bio::Annotation::DBLink - untyped links between databases
 
 =head1 SYNOPSIS
 
-   $link1 = new Bio::Annotation::DBLink(-database => 'TSC',
+   $link1 = Bio::Annotation::DBLink->new(-database => 'TSC',
                                         -primary_id => 'TSC0000030'
 					);
 
    #or 
 
-   $link2 = new Bio::Annotation::DBLink();
+   $link2 = Bio::Annotation::DBLink->new();
    $link2->database('dbSNP');
    $link2->primary_id('2367');
 
@@ -55,9 +55,6 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::Annotation::DBLink;
 use strict;
-use overload '""' => sub { (($_[0]->database ? $_[0]->database . ':' : '' ) . ($_[0]->primary_id ? $_[0]->primary_id : '') . ($_[0]->version ? '.' . $_[0]->version : '')) || '' };
-use overload 'eq' => sub { "$_[0]" eq "$_[1]" };
-
 
 use base qw(Bio::Root::Root Bio::AnnotationI Bio::IdentifiableI);
 
@@ -143,6 +140,36 @@ sub as_text{
        .($self->version ? ".".$self->version : "")
        .($self->optional_id ? " (".$self->optional_id.")" : "")
        ." in database ".$self->database;
+}
+
+=head2 display_text
+
+ Title   : display_text
+ Usage   : my $str = $ann->display_text();
+ Function: returns a string. Unlike as_text(), this method returns a string
+           formatted as would be expected for te specific implementation.
+
+           One can pass a callback as an argument which allows custom text
+           generation; the callback is passed the current instance and any text
+           returned
+ Example :
+ Returns : a string
+ Args    : [optional] callback
+
+=cut
+
+{
+  my $DEFAULT_CB = sub { (($_[0]->database ? $_[0]->database . ':' : '' ) .
+                          ($_[0]->primary_id ? $_[0]->primary_id : '') .
+                          ($_[0]->version ? '.' . $_[0]->version : '')) || '' };
+
+  sub display_text {
+    my ($self, $cb) = @_;
+    $cb ||= $DEFAULT_CB;
+    $self->throw("Callback must be a code reference") if ref $cb ne 'CODE';
+    return $cb->($self);
+  }
+
 }
 
 =head2 hash_tree

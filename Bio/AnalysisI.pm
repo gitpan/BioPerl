@@ -1,4 +1,4 @@
-# $Id: AnalysisI.pm,v 1.10.4.1 2006/10/02 23:10:11 sendu Exp $
+# $Id: AnalysisI.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::AnalysisI
 #
@@ -18,7 +18,7 @@ This is an interface module - you do not instantiate it.
 Use C<Bio::Tools::Run::Analysis> module:
 
   use Bio::Tools::Run::Analysis;
-  my $tool = new Bio::Tools::Run::Analysis (@args);
+  my $tool = Bio::Tools::Run::Analysis->new(@args);
 
 =head1 DESCRIPTION
 
@@ -670,11 +670,11 @@ An example - both for unformatted and formatted times:
 
    use Data::Dumper;
    use Bio::Tools::Run::Analysis;
-   my $rh = new Bio::Tools::Run::Analysis (-name => 'nucleic_cpg_islands.cpgplot')
+   my $rh = Bio::Tools::Run::Analysis->new(-name => 'nucleic_cpg_islands.cpgplot')
              ->wait_for ( { 'sequence_usa' => 'embl:hsu52852' } )
 	     ->times (1);
    print Data::Dumper->Dump ( [$rh], ['Times']);
-   $rh = new Bio::Tools::Run::Analysis (-name => 'nucleic_cpg_islands.cpgplot')
+   $rh = Bio::Tools::Run::Analysis->new(-name => 'nucleic_cpg_islands.cpgplot')
              ->wait_for ( { 'sequence_usa' => 'embl:AL499624' } )
 	     ->times;
    print Data::Dumper->Dump ( [$rh], ['Times']);

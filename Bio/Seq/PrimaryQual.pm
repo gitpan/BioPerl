@@ -1,4 +1,4 @@
-# $Id: PrimaryQual.pm,v 1.24.4.1 2006/10/02 23:10:27 sendu Exp $
+# $Id: PrimaryQual.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # bioperl module for Bio::PrimaryQual
 #

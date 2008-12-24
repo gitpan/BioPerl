@@ -1,4 +1,4 @@
-# $Id: Species.pm,v 1.35.4.6 2006/12/05 20:54:39 sendu Exp $
+# $Id: Species.pm 14908 2008-09-26 13:39:18Z sendu $
 #
 # BioPerl module for Bio::Species
 #
@@ -118,7 +118,7 @@ sub new {
     }
     else {
         # store a tree on ourselves so we can use Tree methods
-        $self->{tree} = new Bio::Tree::Tree();
+        $self->{tree} = Bio::Tree::Tree->new();
         
         # some things want to freeze/thaw Bio::Species objects, but
         # _root_cleanup_methods contains a CODE ref, delete it.
@@ -163,7 +163,8 @@ sub classification {
         # make sure the lineage contains us as first or second element
         # (lineage may have subspecies, species, genus ...)
         my $name = $self->node_name;
-        if ($name && ($name ne $vals[0] && $name ne $vals[1]) && $name ne "$vals[1] $vals[0]") {
+        my ($genus, $species) = (quotemeta($vals[1]), quotemeta($vals[0]));
+        if ($name && ($name !~ m{$species}i && $name !~ m{$genus}i) && $name !~ m{$vals[1] $vals[0]}i) {
             if ($name =~ /^$vals[1] $vals[0]\s*(.+)/) {
                 # just assume the problem is someone tried to make a Bio::Species starting at subspecies
                 #*** no idea if this is appropriate! just a possible fix related to bug 2092
@@ -171,7 +172,7 @@ sub classification {
                 $name = $self->node_name("$vals[1] $vals[0]");
             }
             else {
-                $self->throw("The supplied lineage does not start near '$name' (I was supplied '".join(" | ", @vals)."')");
+                $self->warn("The supplied lineage does not start near '$name' (I was supplied '".join(" | ", @vals)."')");
             }
         }
         
@@ -265,7 +266,7 @@ sub species {
 		}
 		
 		$species = $species_taxon->scientific_name;
-		
+        
 		#
 		# munge it like the Bio::SeqIO modules used to do
 		# (more or less copy/pasted from old Bio::SeqIO::genbank, hence comments
@@ -274,9 +275,10 @@ sub species {
 		
 		my $root = $self->{tree}->get_root_node;
 		unless ($root) {
-            $self->{tree} = new Bio::Tree::Tree(-node => $species_taxon);
+            $self->{tree} = Bio::Tree::Tree->new(-node => $species_taxon);
             delete $self->{tree}->{_root_cleanup_methods};
             $root = $self->{tree}->get_root_node;
+            weaken($self->{tree}->{'_rootnode'}) unless isweak($self->{tree}->{'_rootnode'});
         }
         
 		my @spflds = split(' ', $species);
@@ -293,7 +295,7 @@ sub species {
 			else {
 				undef $genus;
 			}
-			
+            
 			my $sub_species;
 			if (@spflds) {
 				while (my $fld = shift @spflds) {
@@ -339,8 +341,7 @@ sub species {
 		}
 		
 		$self->{_species} = $species;
-	}
-	
+    }
 	return $self->{_species};
 }
 
@@ -394,6 +395,15 @@ sub sub_species {
         if ($ss_taxon) {
             if ($sub) {
                 $ss_taxon->scientific_name($sub);
+                
+                # *** weakening ref to our root node in species() to solve a
+                # memory leak means that we have a subspecies taxon to set
+                # during the first call to species(), but it has vanished by
+                # the time a user subsequently calls sub_species() to get the
+                # value. So we 'cheat' and just store the subspecies name in
+                # our self hash, instead of the tree. Is this a problem for
+                # a Species object? Can't decide --sendu
+                $self->{'_sub_species'} = $sub;
             }
             return $ss_taxon->scientific_name;
         }

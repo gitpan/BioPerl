@@ -1,4 +1,4 @@
-# $Id: Generic.pm,v 1.14.4.1 2006/10/02 23:10:21 sendu Exp $
+# $Id: Generic.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Matrix::Generic
 #
@@ -77,7 +77,7 @@ use base qw(Bio::Root::Root Bio::Matrix::MatrixI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Matrix::Generic();
+ Usage   : my $obj = Bio::Matrix::Generic->new();
  Function: Builds a new Bio::Matrix::Generic object 
  Returns : an instance of Bio::Matrix::Generic
  Args    : -values     => arrayref of arrayrefs of data initialization 

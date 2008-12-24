@@ -1,5 +1,5 @@
 package Bio::DB::SeqFeature::Store::DBI::mysql;
-# $Id: mysql.pm,v 1.20.4.4 2006/11/07 20:12:20 lstein Exp $
+# $Id: mysql.pm 15257 2008-12-24 05:27:05Z cjfields $
 
 =head1 NAME
 
@@ -81,6 +81,9 @@ Bio::DB::SeqFeature::Store::DBI::mysql -- Mysql implementation of Bio::DB::SeqFe
   $db->insert_sequence('Chr1','GATCCCCCGGGATTCCAAAA...');
   my $sequence = $db->fetch_sequence('Chr1',5000=>6000);
 
+  # what feature types are defined in the database?
+  my @types    = $db->types;
+
   # create a new feature in the database
   my $feature = $db->new_feature(-primary_tag => 'mRNA',
                                  -seq_id      => 'chr3',
@@ -154,6 +157,7 @@ use DBI;
 use Memoize;
 use Cwd 'abs_path';
 use Bio::DB::GFF::Util::Rearrange 'rearrange';
+use Bio::SeqFeature::Lite;
 use File::Spec;
 use constant DEBUG=>0;
 
@@ -205,7 +209,8 @@ sub init {
     $dbh = $dsn;
   } else {
     $dsn = "dbi:mysql:$dsn" unless $dsn =~ /^dbi:/;
-    $dbh = DBI->connect($dsn,$user,$pass,$dbi_options);
+    $dbh = DBI->connect($dsn,$user,$pass,$dbi_options) or $self->throw($DBI::errstr);
+    $dbh->{mysql_auto_reconnect} = 1;
   }
   $self->{dbh}       = $dbh;
   $self->{is_temp}   = $is_temporary;
@@ -277,8 +282,9 @@ END
   attribute_id     int(10)   not null,
   attribute_value  text,
   index(id),
-  index(attribute_id,attribute_value(10))
-)
+  index(attribute_id,attribute_value(10)),
+  FULLTEXT(attribute_value)
+) ENGINE=MYISAM
 END
 
 	  attributelist => <<END,
@@ -333,6 +339,13 @@ sub dbh {
   my $d    = $self->{dbh};
   $self->{dbh} = shift if @_;
   $d;
+}
+
+sub clone {
+    my $self = shift;
+    $self->{dbh}{InactiveDestroy} = 1;
+    $self->{dbh} = $self->{dbh}->clone
+	unless $self->is_temp;
 }
 
 ###
@@ -409,7 +422,7 @@ sub _init_database {
     next if $_ eq 'meta';      # don't get rid of meta data!
     my $table = $self->_qualify($_);
     $dbh->do("DROP table IF EXISTS $table") if $erase;
-    my $query = "CREATE TABLE IF NOT EXISTS $table $tables->{$_}";
+    my $query = "CREATE TABLE IF NOT EXISTS $table $tables->{$_} TYPE=MYISAM";
     $dbh->do($query) or $self->throw($dbh->errstr);
   }
   $self->subfeatures_are_indexed(1) if $erase;
@@ -421,7 +434,7 @@ sub maybe_create_meta {
   return unless $self->writeable;
   my $table = $self->_qualify('meta');
   my $tables = $self->table_definitions;
-  $self->dbh->do("CREATE TABLE IF NOT EXISTS $table $tables->{meta}");
+  $self->dbh->do("CREATE TABLE IF NOT EXISTS $table $tables->{meta} TYPE=MYISAM");
 }
 
 sub init_tmp_database {
@@ -430,7 +443,7 @@ sub init_tmp_database {
   my $tables = $self->table_definitions;
   for my $t (keys %$tables) {
     my $table = $self->_qualify($t);
-    my $query = "CREATE TEMPORARY TABLE $table $tables->{$t}";
+    my $query = "CREATE TEMPORARY TABLE $table $tables->{$t} TYPE=MYISAM";
     $dbh->do($query) or $self->throw($dbh->errstr);
   }
   1;
@@ -441,6 +454,13 @@ sub init_tmp_database {
 #
 sub is_temp {
   shift->{is_temp};
+}
+
+sub attributes {
+    my $self = shift;
+    my $dbh  = $self->dbh;
+    my $a    = $dbh->selectcol_arrayref('SELECT tag FROM attributelist');
+    return @$a;
 }
 
 sub _store {
@@ -507,7 +527,7 @@ sub _finish_bulk_update {
     my $path = $self->dump_path($table);
     $fh->close;
     my $qualified_table = $self->_qualify($table);
-    $dbh->do("LOAD DATA INFILE '$path' REPLACE INTO TABLE $qualified_table FIELDS OPTIONALLY ENCLOSED BY '\\''") 
+    $dbh->do("LOAD DATA LOCAL INFILE '$path' REPLACE INTO TABLE $qualified_table FIELDS OPTIONALLY ENCLOSED BY '\\''") 
       or $self->throw($dbh->errstr);
     unlink $path;
   }
@@ -720,7 +740,8 @@ sub _features {
       $attributes,
       $range_type,
       $fromtable,
-      $iterator
+      $iterator,
+      $sources
      ) = rearrange([['SEQID','SEQ_ID','REF'],'START',['STOP','END'],'STRAND',
 		    'NAME','CLASS','ALIASES',
 		    ['TYPES','TYPE','PRIMARY_TAG'],
@@ -728,6 +749,7 @@ sub _features {
 		    'RANGE_TYPE',
 		    'FROM_TABLE',
 		    'ITERATOR',
+            ['SOURCE','SOURCES']
 		   ],@_);
 
   my (@from,@where,@args,@group);
@@ -756,7 +778,30 @@ sub _features {
     push @group,$group if $group;
     push @args,@a;
   }
-
+  
+  if (defined($sources)) {
+    my @sources = ref($sources) eq 'ARRAY' ? @{$sources} : ($sources);
+    if (defined($types)) {
+        my @types = ref($types) eq 'ARRAY' ? @{$types} : ($types);
+        my @final_types;
+        foreach my $type (@types) {
+            # *** not sure what to do if user supplies both -source and -type
+            #     where the type includes a source!
+            if ($type =~ /:/) {
+                push(@final_types, $type);
+            }
+            else {
+                foreach my $source (@sources) {
+                    push(@final_types, $type.':'.$source);
+                }
+            }
+        }
+        $types = \@final_types;
+    }
+    else {
+        $types = [map { ':'.$_ } @sources];
+    }
+  }
   if (defined($types)) {
     # last argument is the name of the features table
     my ($from,$where,$group,@a) = $self->_types_sql($types,'f');
@@ -794,7 +839,7 @@ sub _features {
   $group    = "GROUP BY $group" if @group;
 
   my $query = <<END;
-SELECT f.id,f.object
+SELECT f.id,f.object,f.typeid,f.seqid,f.start,f.end,f.strand
   FROM $from
   WHERE $where
   $group
@@ -824,9 +869,13 @@ sub _search_attributes {
   my $self = shift;
   my ($search_string,$attribute_names,$limit) = @_;
   my @words               = map {quotemeta($_)} split /\s+/,$search_string;
+#  return unless @words;
+
   my $name_table          = $self->_name_table;
   my $attribute_table     = $self->_attribute_table;
   my $attributelist_table = $self->_attributelist_table;
+  my $type_table          = $self->_type_table;
+  my $typelist_table      = $self->_typelist_table;
 
   my @tags    = @$attribute_names;
   my $tag_sql = join ' OR ',("al.tag=?") x @tags;
@@ -835,10 +884,12 @@ sub _search_attributes {
 
   my $sql_regexp = join ' AND ',("a.attribute_value REGEXP ?")  x @words;
   my $sql = <<END;
-SELECT name,attribute_value
-  FROM $name_table as n,$attribute_table as a,$attributelist_table as al
+SELECT name,attribute_value,tl.tag,n.id
+  FROM $name_table as n,$attribute_table as a,$attributelist_table as al,$type_table as t,$typelist_table as tl
   WHERE n.id=a.id
     AND al.id=a.attribute_id
+    AND n.id=t.id
+    AND t.typeid=tl.id
     AND n.display_name=1
     AND ($tag_sql)
     AND ($sql_regexp)
@@ -849,11 +900,11 @@ END
   $sth->execute(@tags,@words) or $self->throw($sth->errstr);
 
   my @results;
-  while (my($name,$value) = $sth->fetchrow_array) {
+  while (my($name,$value,$type,$id) = $sth->fetchrow_array) {
     my (@hits) = $value =~ /$perl_regexp/ig;
     my @words_in_row = split /\b/,$value;
     my $score  = int(@hits*100/@words/@words_in_row);
-    push @results,[$name,$value,$score];
+    push @results,[$name,$value,$score,$type,$id];
   }
   $sth->finish;
   @results = sort {$b->[2]<=>$a->[2]} @results;
@@ -896,7 +947,7 @@ sub _attributes_sql {
   my $attribute_table       = $self->_attribute_table;
   my $attributelist_table   = $self->_attributelist_table;
 
-  my $from = "$attribute_table as a, $attributelist_table as al";
+  my $from = "$attribute_table as a use index(attribute_id), $attributelist_table as al";
 
   my $where = <<END;
   a.id=$join
@@ -935,8 +986,14 @@ sub _types_sql {
     }
 
     if (defined $source_tag) {
-      push @matches,"tl.tag=?";
-      push @args,"$primary_tag:$source_tag";
+      if (length($primary_tag)) {
+        push @matches,"tl.tag=?";
+        push @args,"$primary_tag:$source_tag";
+      }
+      else {
+        push @matches,"tl.tag LIKE ?";
+        push @args,"%:$source_tag";
+      }
     } else {
       push @matches,"tl.tag LIKE ?";
       push @args,"$primary_tag:%";
@@ -1112,9 +1169,26 @@ sub _deleteid {
   my $self = shift;
   my $key  = shift;
   my $dbh = $self->dbh;
-  for my $table ($self->all_tables) {
-    $dbh->do("DELETE FROM $table WHERE id=$key");
+  my $child_table = $self->_parent2child_table;
+  my $query = "SELECT child FROM $child_table WHERE id=?";
+  my $sth=$self->_prepare($query);
+  $sth->execute($key);
+  my $success = 0;
+  while (my ($cid) = $sth->fetchrow_array) {
+    # Backcheck looking for multiple parents, delete only if one is present. I'm
+    # sure there is a nice way to left join the parent2child table onto itself
+    # to get this in one query above, just haven't worked it out yet...
+    my $sth2 = $self->_prepare("SELECT count(id) FROM $child_table WHERE child=?");
+    $sth2->execute($cid);
+    my ($count) = $sth2->fetchrow_array;
+    if ($count == 1) {
+        $self->_deleteid($cid) || warn "An error occurred while removing subfeature id=$cid. Perhaps it was previously deleted?\n";
+    }
   }
+  for my $table ($self->all_tables) {
+    $success += $dbh->do("DELETE FROM $table WHERE id=$key") || 0;
+  }
+  return $success;
 }
 
 sub _clearall {
@@ -1203,12 +1277,47 @@ END
   $primary_tag    .= ":$source_tag";
   my $typeid   = $self->_typeid($primary_tag,1);
 
-  $sth->execute($id,$self->freeze($object),$index_flag||0,@location,$typeid) or $self->throw($sth->errstr);
+  my $frozen = $self->no_blobs() ? 0 : $self->freeze($object);
+
+  $sth->execute($id,$frozen,$index_flag||0,@location,$typeid) or $self->throw($sth->errstr);
 
   my $dbh = $self->dbh;
   $object->primary_id($dbh->{mysql_insertid}) unless defined $id;
 
   $self->flag_for_indexing($dbh->{mysql_insertid}) if $self->{bulk_update_in_progress};
+}
+
+# doesn't work with this schema, since we have to update name and attribute
+# tables which need object ids, which we can only know by replacing feats in
+# the feature table one by one
+sub bulk_replace {
+    my $self       = shift;
+    my $index_flag = shift || undef;
+    my @objects    = @_;
+    
+    my $features = $self->_feature_table;
+    
+    my @insert_values;
+    foreach my $object (@objects) {
+        my $id = $object->primary_id;
+        my @location = $index_flag ? $self->_get_location_and_bin($object) : (undef)x6;
+        my $primary_tag = $object->primary_tag;
+        my $source_tag  = $object->source_tag || '';
+        $primary_tag    .= ":$source_tag";
+        my $typeid   = $self->_typeid($primary_tag,1);
+        
+        push(@insert_values, ($id,0,$index_flag||0,@location,$typeid));
+    }
+    
+    my @value_blocks;
+    for (1..@objects) {
+        push(@value_blocks, '(?,?,?,?,?,?,?,?,?,?)');
+    }
+    my $value_blocks = join(',', @value_blocks);
+    my $sql = qq{REPLACE INTO $features (id,object,indexed,seqid,start,end,strand,tier,bin,typeid) VALUES $value_blocks};
+    
+    my $sth = $self->_prepare($sql);
+    $sth->execute(@insert_values) or $self->throw($sth->errstr);
 }
 
 ###
@@ -1230,6 +1339,38 @@ END
   my $dbh = $self->dbh;
   $object->primary_id($dbh->{mysql_insertid});
   $self->flag_for_indexing($dbh->{mysql_insertid}) if $self->{bulk_update_in_progress};
+}
+
+=head2 types
+
+ Title   : types
+ Usage   : @type_list = $db->types
+ Function: Get all the types in the database
+ Returns : array of Bio::DB::GFF::Typename objects
+ Args    : none
+ Status  : public
+
+=cut
+
+sub types {
+    my $self = shift;
+    eval "require Bio::DB::GFF::Typename" 
+	unless Bio::DB::GFF::Typename->can('new');
+    my $typelist_table      = $self->_typelist_table;
+    my $sql = <<END;
+SELECT tag from $typelist_table
+END
+;
+    $self->_print_query($sql) if DEBUG || $self->debug;
+    my $sth = $self->_prepare($sql);
+    $sth->execute() or $self->throw($sth->errstr);
+
+    my @results;
+    while (my($tag) = $sth->fetchrow_array) {
+	push @results,Bio::DB::GFF::Typename->new($tag);
+    }
+    $sth->finish;
+    return @results;
 }
 
 ###
@@ -1297,9 +1438,9 @@ sub _update_attribute_index {
   $self->_delete_index($attribute,$id);
 
   my $sth = $self->_prepare("INSERT INTO $attribute (id,attribute_id,attribute_value) VALUES (?,?,?)");
-  for my $tag ($obj->all_tags) {
+  for my $tag ($obj->get_all_tags) {
     my $tagid = $self->_attributeid($tag);
-    for my $value ($obj->each_tag_value($tag)) {
+    for my $value ($obj->get_tag_values($tag)) {
       $sth->execute($id,$tagid,$value) or $self->throw($sth->errstr);
     }
   }
@@ -1398,8 +1539,16 @@ sub _sth2objs {
   my $self = shift;
   my $sth  = shift;
   my @result;
-  while (my ($id,$o) = $sth->fetchrow_array) {
-    my $obj = $self->thaw($o,$id);
+  while (my ($id,$o,$typeid,$seqid,$start,$end,$strand) = $sth->fetchrow_array) {
+    my $obj;
+    if ($o eq '0') {
+        # rebuild a new feat object from the data stored in the db
+        $obj = $self->_rebuild_obj($id,$typeid,$seqid,$start,$end,$strand);
+    }
+    else {
+        $obj = $self->thaw($o,$id);
+    }
+    
     push @result,$obj;
   }
   $sth->finish;
@@ -1411,17 +1560,109 @@ sub _sth2objs {
 sub _sth2obj {
   my $self = shift;
   my $sth  = shift;
-  my ($id,$o) = $sth->fetchrow_array;
-  return unless $o;
-  my $obj = $self->thaw($o,$id);
+  my ($id,$o,$typeid,$seqid,$start,$end,$strand) = $sth->fetchrow_array;
+  return unless defined $o;
+  my $obj;
+  if ($o eq '0') {
+    # rebuild a new feat object from the data stored in the db
+    $obj = $self->_rebuild_obj($id,$typeid,$seqid,$start,$end,$strand);
+  }
+  else {
+    $obj = $self->thaw($o,$id);
+  }
+  
   $obj;
+}
+
+sub _rebuild_obj {
+    my ($self, $id, $typeid, $db_seqid, $start, $end, $strand) = @_;
+    my ($type, $source, $seqid);
+    
+    # convert typeid to type and source
+    if (exists $self->{_type_cache}->{$typeid}) {
+        ($type, $source) = @{$self->{_type_cache}->{$typeid}};
+    }
+    else {
+        my $sql = qq{ SELECT `tag` FROM typelist WHERE `id` = ? };
+        my $sth = $self->_prepare($sql) or $self->throw($self->dbh->errstr);
+        $sth->execute($typeid);
+        my $result;
+        $sth->bind_columns(\$result);
+        while ($sth->fetch()) {
+            # there should be only one row returned, but we ensure to get all rows
+        }
+        
+        ($type, $source) = split(':', $result);
+        $self->{_type_cache}->{$typeid} = [$type, $source];
+    }
+    
+    # convert the db seqid to the sequence name
+    if (exists $self->{_seqid_cache}->{$db_seqid}) {
+        $seqid = $self->{_seqid_cache}->{$db_seqid};
+    }
+    else {
+        my $sql = qq{ SELECT `seqname` FROM locationlist WHERE `id` = ? };
+        my $sth = $self->_prepare($sql) or $self->throw($self->dbh->errstr);
+        $sth->execute($db_seqid);
+        $sth->bind_columns(\$seqid);
+        while ($sth->fetch()) {
+            # there should be only one row returned, but we ensure to get all rows
+        }
+        
+        $self->{_seqid_cache}->{$db_seqid} = $seqid;
+    }
+    
+    # get the names from name table?
+    
+    # get the attributes and store those in obj
+    my $sql = qq{ SELECT attribute_id,attribute_value FROM attribute WHERE `id` = ? };
+    my $sth = $self->_prepare($sql) or $self->throw($self->dbh->errstr);
+    $sth->execute($id);
+    my ($attribute_id, $attribute_value);
+    $sth->bind_columns(\($attribute_id, $attribute_value));
+    my %attribs;
+    while ($sth->fetch()) {
+        # convert the attribute_id to its real name
+        my $attribute;
+        if (exists $self->{_attribute_cache}->{$attribute_id}) {
+            $attribute = $self->{_attribute_cache}->{$attribute_id};
+        }
+        else {
+            my $sql = qq{ SELECT `tag` FROM attributelist WHERE `id` = ? };
+            my $sth2 = $self->_prepare($sql) or $self->throw($self->dbh->errstr);
+            $sth2->execute($attribute_id);
+            $sth2->bind_columns(\$attribute);
+            while ($sth2->fetch()) {
+                # there should be only one row returned, but we ensure to get all rows
+            }
+            
+            $self->{_attribute_cache}->{$attribute_id} = $attribute;
+        }
+        
+        if ($source && $attribute eq 'source' && $attribute_value eq $source) {
+            next;
+        }
+        
+        $attribs{$attribute} = $attribute_value;
+    }
+    
+    my $obj = Bio::SeqFeature::Lite->new(-primary_id => $id,
+                                         $type ? (-type => $type) : (),
+                                         $source ? (-source => $source) : (),
+                                         $seqid ? (-seq_id => $seqid) : (),
+                                         defined $start ? (-start => $start) : (),
+                                         defined $end ? (-end => $end) : (),
+                                         defined $strand ? (-strand => $strand) : (),
+                                         keys %attribs ? (-attributes => \%attribs) : ());
+    
+    return $obj;
 }
 
 sub _prepare {
   my $self = shift;
   my $query = shift;
   my $dbh   = $self->dbh;
-  my $sth   = $dbh->prepare_cached($query) or $self->throw($dbh->errstr);
+  my $sth   = $dbh->prepare_cached($query, {}, 3) or $self->throw($dbh->errstr);
   $sth;
 }
 

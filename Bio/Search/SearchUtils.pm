@@ -183,7 +183,7 @@ sub tile_hsps {
 
 	($qstart, $qstop) = $hsp->range('query');
 	($sstart, $sstop) = $hsp->range('sbjct');
-	$frame = $hsp->frame;
+	$frame = $hsp->frame('hit');
 	$frame = -1 unless defined $frame;
 	
 	($qstrand, $sstrand) = ($hsp->query->strand,
@@ -451,8 +451,8 @@ sub _adjust_contigs {
                     # extending before $i_start
                     my ($ids, $cons) = (0, 0);
                     my $use_start = $i_start;
-                    foreach my $hsp (sort { $b->end <=> $a->end } @{${$contigs_ref}[$u]->{hsps}}) {
-                        my $hsp_start = $hsp->start;
+                    foreach my $hsp (sort { $b->end($seqType) <=> $a->end($seqType) } @{${$contigs_ref}[$u]->{hsps}}) {
+                        my $hsp_start = $hsp->start($seqType);
                         $hsp_start < $use_start || next;
                         
                         my ($these_ids, $these_cons);
@@ -480,8 +480,8 @@ sub _adjust_contigs {
                     # extending beyond $i_stop
                     my ($ids, $cons) = (0, 0);
                     my $use_stop = $i_stop;
-                    foreach my $hsp (sort { $a->start <=> $b->start } @{${$contigs_ref}[$u]->{hsps}}) {
-                        my $hsp_end = $hsp->end;
+                    foreach my $hsp (sort { $a->start($seqType) <=> $b->start($seqType) } @{${$contigs_ref}[$u]->{hsps}}) {
+                        my $hsp_end = $hsp->end($seqType);
                         $hsp_end > $use_stop || next;
                         
                         my ($these_ids, $these_cons);
@@ -502,6 +502,12 @@ sub _adjust_contigs {
                     ${$contigs_ref}[$i]->{'cons'} += $cons;
                     push(@{${$contigs_ref}[$i]->{hsps}}, @{${$contigs_ref}[$u]->{hsps}});
                     
+                    ${$contigs_ref}[$u] = undef;
+                }
+                elsif ($u_start >= $i_start && $u_stop <= $i_stop) {
+                    # nested, drop this contig
+                    #*** ideally we might do some magic to keep the stats of the
+                    #    better hsp...
                     ${$contigs_ref}[$u] = undef;
                 }
             }
@@ -599,6 +605,8 @@ sub collapse_nums {
     $consec = 0;
     for($i=0; $i < @a; $i++) {
 	not $from and do{ $from = $a[$i]; next; };
+    # pass repeated positions (gap inserts)
+    next if $a[$i] == $a[$i-1];
 	if($a[$i] == $a[$i-1]+1) {
 	    $to = $a[$i];
 	    $consec++;
@@ -684,6 +692,54 @@ sub strip_blast_html {
 
     $$string_ref = $str;
     $stripped;
+}
+
+=head2 result2hash
+
+ Title    : result2hash
+ Usage    : my %data = &Bio::Search::SearchUtils($result)
+ Function : converts ResultI data to simple hash
+ Returns  : hash
+ Args     : ResultI
+ Note     : used mainly as a utility for running SearchIO tests
+
+=cut
+
+sub result2hash {
+    my ($result) = @_;
+    my %hash;
+    $hash{'query_name'} = $result->query_name;
+    my $hitcount = 1;
+    my $hspcount = 1;
+    foreach my $hit ( $result->hits ) {
+	$hash{"hit$hitcount\_name"}   =  $hit->name;
+	# only going to test order of magnitude
+	# too hard as these don't always match
+#	$hash{"hit$hitcount\_signif"} =  
+#	    ( sprintf("%.0e",$hit->significance) =~ /e\-?(\d+)/ );
+	$hash{"hit$hitcount\_bits"}   =  sprintf("%d",$hit->bits);
+
+	foreach my $hsp ( $hit->hsps ) {
+	    $hash{"hsp$hspcount\_bits"}   = sprintf("%d",$hsp->bits);
+	    # only going to test order of magnitude
+ 	    # too hard as these don't always match
+#	    $hash{"hsp$hspcount\_evalue"} =  
+#		( sprintf("%.0e",$hsp->evalue) =~ /e\-?(\d+)/ );
+	    $hash{"hsp$hspcount\_qs"}     = $hsp->query->start;
+	    $hash{"hsp$hspcount\_qe"}     = $hsp->query->end;
+	    $hash{"hsp$hspcount\_qstr"}   = $hsp->query->strand;
+	    $hash{"hsp$hspcount\_hs"}     = $hsp->hit->start;
+	    $hash{"hsp$hspcount\_he"}     = $hsp->hit->end;
+	    $hash{"hsp$hspcount\_hstr"}   = $hsp->hit->strand;
+
+	    #$hash{"hsp$hspcount\_pid"}     = sprintf("%d",$hsp->percent_identity);
+	    #$hash{"hsp$hspcount\_fid"}     = sprintf("%.2f",$hsp->frac_identical);
+	    $hash{"hsp$hspcount\_gaps"}    = $hsp->gaps('total');
+	    $hspcount++;
+	}
+	$hitcount++;
+    }
+    return %hash;
 }
 
 sub _warn_about_no_hsps {

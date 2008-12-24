@@ -1,4 +1,4 @@
-# $Id: SequenceTrace.pm,v 1.14.4.1 2006/10/02 23:10:27 sendu Exp $
+# $Id: SequenceTrace.pm 15090 2008-12-04 10:52:31Z heikki $
 #
 # BioPerl module for Bio::Seq::SequenceTrace
 #
@@ -60,9 +60,6 @@ use Bio::Seq::QualI;
 use Bio::PrimarySeqI;
 use Bio::PrimarySeq;
 use Bio::Seq::PrimaryQual;
-use Dumpvalue();
-
-my $dumper = new Dumpvalue();
 
 use base qw(Bio::Root::Root Bio::Seq::Quality Bio::Seq::TraceI);
 
@@ -136,12 +133,13 @@ sub new {
           $self->trace('c',$trace_c);
           $self->peak_indices($peak_indices);
      }
-     $self->id($self->swq_obj()->id());
+     $self->id($self->seq_obj->id);
     return $self;
 }
 
 sub swq_obj {
      my $self = shift;
+     $self->warn('swq_obj() is deprecated: use seq_obj()');
      return $self->{swq};
 }
 
@@ -288,7 +286,7 @@ sub peak_index_at {
 
 sub alphabet {
 	my $self = shift;
-	return $self->{swq}->{seq_ref}->alphabet(@_);
+	return $self->{swq}->alphabet;
 }
 
 =head2 display_id()
@@ -501,8 +499,7 @@ sub qual {
 
 sub length {
     my $self = shift;
-     return $self->seq_obj()->length();
-
+    return $self->seq_obj->length;
 }
 
 
@@ -511,11 +508,13 @@ sub length {
  Title   : qual_obj($different_obj)
  Usage   : $qualobj = $seqWqual->qual_obj(); _or_
 	$qualobj = $seqWqual->qual_obj($ref_to_primaryqual_obj);
- Function: Get the PrimaryQual object that is imbedded in the
+ Function: Get the Qualilty object that is imbedded in the
 	Quality object or if a reference to a PrimaryQual object
 	is provided, set this as the PrimaryQual object imbedded in the
 	Quality object.
  Returns : A reference to a Bio::Seq::Quality object.
+
+Identical to L<seq_obj>.
 
 =cut
 
@@ -541,7 +540,6 @@ sub qual_obj {
 
 sub seq_obj {
     my ($self,$value) = @_;
-#    return $self->{swq}->seq_obj($value);
     return $self->{swq};
 }
 
@@ -566,7 +564,8 @@ sub seq_obj {
 
 sub _set_descriptors {
     my ($self,$qual,$seq,$id,$acc,$pid,$desc,$given_id,$alphabet) = @_;
-     $self->{swq}->_seq_descriptors($qual,$seq,$id,$acc,$pid,$desc,$given_id,$alphabet);
+    $self->{swq}->_seq_descriptors($qual,$seq,$id,$acc,$pid,
+				   $desc,$given_id,$alphabet);
 }
 
 =head2 subseq($start,$end)
@@ -761,8 +760,8 @@ sub sub_trace_object {
         my @subs = @{$self->sub_peak_index($start,$end)};
         $start2 = shift(@subs);
         $end2 =  pop(@subs);
-     my $new_object =  new Bio::Seq::SequenceTrace(
-               -swq =>   new Bio::Seq::Quality(
+     my $new_object =  Bio::Seq::SequenceTrace->new(
+               -swq =>   Bio::Seq::Quality->new(
                              -seq => $self->subseq($start,$end),
                              -qual     =>   $self->subqual($start,$end),
                              -id    =>   $self->id()
@@ -970,7 +969,7 @@ sub _deprecated_get_scf_version_3_base_structure {
  Title   : trace_value_at($channel,$position)
  Usage   : $value = $trace_object->trace_value_at($channel,$position);
  Function: What is the value of the trace for this base at this position?
- Returns : A scalar represnting the trace value here.
+ Returns : A scalar representing the trace value here.
  Args    : a base channel (a,t,g,c)
            a position ( < $trace_object->trace_length() )
 

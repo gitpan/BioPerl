@@ -1,4 +1,4 @@
-# $Id: GuessSeqFormat.pm,v 1.15.4.1 2006/10/02 23:10:32 sendu Exp $
+# $Id: GuessSeqFormat.pm 11480 2007-06-14 14:16:21Z sendu $
 #------------------------------------------------------------------
 #
 # BioPerl module Bio::Tools::GuessSeqFormat
@@ -17,29 +17,29 @@ filehandle.
 =head1 SYNOPSIS
 
     # To guess the format of a flat file, given a filename:
-    my $guesser = new Bio::Tools::GuessSeqFormat( -file => $filename );
+    my $guesser = Bio::Tools::GuessSeqFormat->new( -file => $filename );
     my $format  = $guesser->guess;
 
     # To guess the format from an already open filehandle:
-    my $guesser = new Bio::Tools::GuessSeqFormat( -fh => $filehandle );
+    my $guesser = Bio::Tools::GuessSeqFormat->new( -fh => $filehandle );
     my $format  = $guesser->guess;
     # If the filehandle is seekable (STDIN isn't), it will be
     # returned to its original position.
 
     # To guess the format of one or several lines of text (with
     # embedded newlines):
-    my $guesser = new Bio::Tools::GuessSeqFormat( -text => $linesoftext );
+    my $guesser = Bio::Tools::GuessSeqFormat->new( -text => $linesoftext );
     my $format = $guesser->guess;
 
     # To create a Bio::Tools::GuessSeqFormat object and set the
     # filename, filehandle, or line to parse afterwards:
-    my $guesser = new Bio::Tools::GuessSeqFormat;
+    my $guesser = Bio::Tools::GuessSeqFormat->new();
     $guesser->file($filename);
     $guesser->fh($filehandle);
     $guesser->text($linesoftext);
 
     # To guess in one go, given e.g. a filename:
-    my $format = new Bio::Tools::GuessSeqFormat( -file => $filename )->guess;
+    my $format = Bio::Tools::GuessSeqFormat->new( -file => $filename )->guess;
 
 =head1 DESCRIPTION
 
@@ -238,7 +238,7 @@ underscore are considered to be internal.
 =head2 new
 
  Title      : new
- Usage      : $guesser = new Bio::Tools::GuessSeqFormat( ... );
+ Usage      : $guesser = Bio::Tools::GuessSeqFormat->new( ... );
  Function   : Creates a new object.
  Example    : See SYNOPSIS.
  Returns    : A new object.
@@ -478,9 +478,6 @@ sub guess
             if ($fmt->{test}($line, $lineno)) {
                 ++$match;
                 $fmt_string = $fmt->{fmt_string};
-                # Debugging:
-                #FIXME#printf STDERR "%s: %s\n", $fmt_string, $line;
-                    #FIXME#if $self->verbose > 0;
             }
         }
 

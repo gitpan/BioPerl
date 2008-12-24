@@ -1,4 +1,4 @@
-# $Id: UniGene.pm,v 1.38.4.1 2006/10/02 23:10:13 sendu Exp $
+# $Id: UniGene.pm 11669 2007-08-29 21:39:51Z cjfields $
 #
 # BioPerl module for Bio::Cluster::UniGene.pm
 #
@@ -274,7 +274,7 @@ sub new {
     $self->authority($auth || 'NCBI');
     $self->version($v) if defined($v);
     if( ! defined $seqfact ) {
-	$seqfact = new Bio::Seq::SeqFactory
+	$seqfact = Bio::Seq::SeqFactory->new
 	    (-verbose => $self->verbose(), 
 	     -type => 'Bio::Seq::RichSeq');
     }
@@ -1318,12 +1318,12 @@ sub _annotation_value{
 	}
     }
     ($ann) = $self->annotation->get_Annotations($key);
-    if($ann && (! $val)) {
+    if(defined $ann && (! $val)) {
 	# get mode and exists
 	$val = $ann->value();
     } elsif($val) {
 	# set mode
-	if(! $ann) {
+	if(!defined $ann) {
 	    $ann = Bio::Annotation::SimpleValue->new(-tagname => $key);
 	    $self->annotation->add_Annotation($ann);
 	}

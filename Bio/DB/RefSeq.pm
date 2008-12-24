@@ -1,5 +1,5 @@
 #
-# $Id: RefSeq.pm,v 1.13.4.1 2006/10/02 23:10:15 sendu Exp $
+# $Id: RefSeq.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::DB::EMBL
 #
@@ -19,7 +19,7 @@ Bio::DB::RefSeq - Database object interface for RefSeq retrieval
 
   use Bio::DB::RefSeq;
 
-  $db = new Bio::DB::RefSeq;
+  $db = Bio::DB::RefSeq->new();
 
   # most of the time RefSeq_ID eq RefSeq acc
   $seq = $db->get_Seq_by_id('NM_006732'); # RefSeq ID
@@ -42,7 +42,7 @@ Bio::DB::RefSeq - Database object interface for RefSeq retrieval
 
   # also don't want features, just sequence so let's save bandwith
   # and request Fasta sequence
-  $db = new Bio::DB::RefSeq(-retrievaltype => 'tempfile' ,
+  $db = Bio::DB::RefSeq->new(-retrievaltype => 'tempfile' ,
  			       -format => 'fasta');
   my $seqio = $db->get_Stream_by_id(['NM_006732', 'NM_005252'] );
   while( my $seq  =  $seqio->next_seq ) {

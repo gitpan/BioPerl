@@ -1,6 +1,6 @@
 package Bio::DB::SeqFeature::Store::berkeleydb;
 
-# $Id: berkeleydb.pm,v 1.5.4.5 2006/11/22 20:27:47 lstein Exp $
+# $Id: berkeleydb.pm 14982 2008-11-11 16:03:45Z lstein $
 
 
 use strict;
@@ -109,6 +109,9 @@ Bio::DB::SeqFeature::Store::berkeleydb -- Storage and retrieval of sequence anno
   my $segment  = $db->segment('Chr1',5000=>6000);
   my @features = $segment->features(-type=>['mRNA','match']);
 
+  # what feature types are defined in the database?
+  my @types    = $db->types;
+
   # getting & storing sequence information
   # Warning: this returns a string, and not a PrimarySeq object
   $db->insert_sequence('Chr1','GATCCCCCGGGATTCCAAAA...');
@@ -136,7 +139,7 @@ files from scratch by creating a new database and calling
 new_feature() repeatedly, you can create the database and then bulk
 populate it using the GFF3 loader, or you can monitor a directory of
 preexisting GFF3 and FASTA files and rebuild the indexes whenever one
-or more of the fiels changes. The last mode is probably the most
+or more of the fields changes. The last mode is probably the most
 convenient.
 
 =over 4
@@ -317,7 +320,7 @@ sub post_init {
   my $timestamp_time  = _mtime($self->_mtime_path) || 0;
 
   if ($maxtime > $timestamp_time) {
-    warn "Reindexing... this may take a while.";
+    warn "Reindexing... this may take a while.\n";
     $self->_permissions(1,1);
     $self->_close_databases();
     $self->_open_databases(1,1);
@@ -444,7 +447,7 @@ sub _store {
   for my $obj (@_) {
     my $primary_id = $obj->primary_id;
     $self->_delete_indexes($obj,$primary_id)  if $indexed && $primary_id;
-    $primary_id    = $db->{'.next_id'}++ unless defined $primary_id;
+    $primary_id    = $db->{'.next_id'}++      unless defined $primary_id;
     $db->{$primary_id} = $self->freeze($obj);
     $obj->primary_id($primary_id);
     $self->_update_indexes($obj)              if $indexed;
@@ -456,6 +459,8 @@ sub _store {
 sub _delete_indexes {
   my $self = shift;
   my ($obj,$id) = @_;
+  warn $obj->display_name;
+
   # the additional "1" causes the index to be deleted
   $self->_update_name_index($obj,$id,1);
   $self->_update_type_index($obj,$id,1);
@@ -578,9 +583,9 @@ sub _update_attribute_index {
   my $db = $self->index_db('attributes')
     or $self->throw("Couldn't find 'attributes' index file");
 
-  for my $tag ($obj->all_tags) {
-    for my $value ($obj->each_tag_value($tag)) {
-      my $key = "\L${tag}:${value}\E";
+  for my $tag ($obj->get_all_tags) {
+    for my $value ($obj->get_tag_values($tag)) {
+      my $key = "${tag}:${value}";
       $self->update_or_delete($delete,$db,$key,$id);
     }
   }
@@ -910,6 +915,13 @@ sub filter_by_location {
   $self->update_filter($filter,\@results);
 }
 
+sub attributes {
+    my $self = shift;
+    my $index = $self->index_db('attributes');
+    my %a     = map {s/:.+$//; $_=> 1} keys %$index;
+    return keys %a;
+}
+
 sub filter_by_attribute {
   my $self = shift;
   my ($attributes,$filter) = @_;
@@ -976,7 +988,8 @@ sub _search_attributes {
     my $relevance = 10 * $hits;
     my $feature   = $self->fetch($id) or next;
     my $name      = $feature->display_name or next;
-    push @results,[$name,$note,$relevance];
+    my $type      = $feature->type;
+    push @results,[$name,$note,$relevance,$type,$id];
   }
 
   return @results;
@@ -1053,6 +1066,16 @@ sub update_filter {
     %$filter     = map {$_=>1} @$results;
   }
 
+}
+
+sub types {
+    my $self = shift;
+    eval "require Bio::DB::GFF::Typename" 
+	unless Bio::DB::GFF::Typename->can('new');
+
+    my $index = $self->index_db('types');
+    my $db    = tied(%$index);
+    return map {Bio::DB::GFF::Typename->new($_)} keys %$index;
 }
 
 # this is ugly

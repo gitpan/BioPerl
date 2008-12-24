@@ -1,7 +1,7 @@
 # Let the code begin...
 package Bio::Expression::FeatureSet::FeatureSetMas50;
 
-# $Id: FeatureSetMas50.pm,v 1.2.6.1 2006/10/02 23:10:18 sendu Exp $
+# $Id: FeatureSetMas50.pm 10475 2006-09-20 15:47:57Z cjfields $
 
 =head1 NAME
 

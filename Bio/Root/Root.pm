@@ -1,7 +1,7 @@
 package Bio::Root::Root;
 use strict;
 
-# $Id: Root.pm,v 1.35.6.2 2006/11/08 17:25:55 sendu Exp $
+# $Id: Root.pm 14710 2008-06-10 00:42:00Z heikki $
 
 =head1 NAME
 
@@ -32,14 +32,14 @@ Bio::Root::Root - Hash-based implementation of Bio::Root::RootI
                -value  => $file );
 
   # Want to see debug() outputs for this object
-  
+
   my $obj = Bio::Object->new(-verbose=>1);
 
   my $obj = Bio::Object->new(%args);
   $obj->verbose(2);
 
   # Print debug messages which honour current verbosity setting
-  
+
   $obj->debug("Boring output only to be seen if verbose > 0\n");
 
 =head1 DESCRIPTION
@@ -54,11 +54,11 @@ here.
 =head2 Throwing Exceptions
 
 One of the functionalities that L<Bio::Root::RootI> provides is the
-ability to L<throw()> exceptions with pretty stack traces. Bio::Root::Root
+ability to L<throw>() exceptions with pretty stack traces. Bio::Root::Root
 enhances this with the ability to use L<Error> (available from CPAN)
 if it has also been installed. 
 
-If L<Error> has been installed, L<throw()> will use it. This causes an
+If L<Error> has been installed, L<throw>() will use it. This causes an
 Error.pm-derived object to be thrown. This can be caught within a
 C<catch{}> block, from wich you can extract useful bits of
 information. If L<Error> is not installed, it will use the 
@@ -66,12 +66,12 @@ L<Bio::Root::RootI>-based exception throwing facilty.
 
 =head2 Typed Exception Syntax 
 
-The typed exception syntax of L<throw()> has the advantage of plainly
+The typed exception syntax of L<throw>() has the advantage of plainly
 indicating the nature of the trouble, since the name of the class
 is included in the title of the exception output.
 
 To take advantage of this capability, you must specify arguments
-as named parameters in the L<throw()> call. Here are the parameters:
+as named parameters in the L<throw>() call. Here are the parameters:
 
 =over 4
 
@@ -313,65 +313,60 @@ sub _cleanup_methods {
             $main::DONT_USE_ERROR (define it in your main script
             and you don't need the main:: part) and setting it to 
             a true value; you must do this within a BEGIN subroutine.
-            
-            Also note that if you use the string form, the string cannot
-            start with a dash, or the resulting throw message will be empty.
 
 =cut
 
-#'
-
-sub throw{
-   my ($self,@args) = @_;
-   
-   my ( $text, $class ) = $self->_rearrange( [qw(TEXT CLASS)], @args);
-
-   if( $ERRORLOADED ) {
-#       print STDERR "  Calling Error::throw\n\n";
-
-       # Enable re-throwing of Error objects.
-       # If the error is not derived from Bio::Root::Exception, 
-       # we can't guarantee that the Error's value was set properly
-       # and, ipso facto, that it will be catchable from an eval{}.
-       # But chances are, if you're re-throwing non-Bio::Root::Exceptions,
-       # you're probably using Error::try(), not eval{}.
-       # TODO: Fix the MSG: line of the re-thrown error. Has an extra line
-       # containing the '----- EXCEPTION -----' banner.
-       if( ref($args[0])) {
-           if( $args[0]->isa('Error')) {
-               my $class = ref $args[0];
-               $class->throw( @args );
-           } else {
-               my $text .= "\nWARNING: Attempt to throw a non-Error.pm object: " . ref$args[0];
-               my $class = "Bio::Root::Exception";
-               $class->throw( '-text' => $text, '-value' => $args[0] ); 
-           }
-       } else {
-           $class ||= "Bio::Root::Exception";
-
-   	   my %args;
-	   if( @args % 2 == 0 && $args[0] =~ /^-/ ) {
-	       %args = @args;
-	       $args{-text} = $text;
-	       $args{-object} = $self;
-	   }
-
-           $class->throw( scalar keys %args > 0 ? %args : @args ); # (%args || @args) puts %args in scalar context!
-       }
-   }
-   else {
-#       print STDERR "  Not calling Error::throw\n\n";
-       $class ||= '';
-       my $std = $self->stack_trace_dump();
-       my $title = "------------- EXCEPTION $class -------------";
-       my $footer = "\n" . '-' x CORE::length($title);
-       $text ||= '';
-
-       my $out = "\n$title\n" .
-           "MSG: $text\n". $std . $footer . "\n";
-
-       die $out;
-   }
+sub throw {
+    my ($self, @args) = @_;
+    
+    my ($text, $class, $value) = $self->_rearrange( [qw(TEXT
+                                                        CLASS
+                                                        VALUE)], @args);
+    $text ||= $args[0] if @args == 1;
+    
+    if ($ERRORLOADED) {
+        # Enable re-throwing of Error objects.
+        # If the error is not derived from Bio::Root::Exception, 
+        # we can't guarantee that the Error's value was set properly
+        # and, ipso facto, that it will be catchable from an eval{}.
+        # But chances are, if you're re-throwing non-Bio::Root::Exceptions,
+        # you're probably using Error::try(), not eval{}.
+        # TODO: Fix the MSG: line of the re-thrown error. Has an extra line
+        # containing the '----- EXCEPTION -----' banner.
+        if (ref($args[0])) {
+            if( $args[0]->isa('Error')) {
+                my $class = ref $args[0];
+                $class->throw( @args );
+            }
+            else {
+                my $text .= "\nWARNING: Attempt to throw a non-Error.pm object: " . ref$args[0];
+                my $class = "Bio::Root::Exception";
+                $class->throw( '-text' => $text, '-value' => $args[0] ); 
+            }
+        }
+        else {
+            $class ||= "Bio::Root::Exception";
+            
+            my %args;
+            if( @args % 2 == 0 && $args[0] =~ /^-/ ) {
+                %args = @args;
+                $args{-text} = $text;
+                $args{-object} = $self;
+            }
+            
+            $class->throw( scalar keys %args > 0 ? %args : @args ); # (%args || @args) puts %args in scalar context!
+        }
+    }
+    else {
+        $class ||= '';
+        $class = ' '.$class if $class;
+        my $std = $self->stack_trace_dump();
+        my $title = "------------- EXCEPTION$class -------------";
+        my $footer = ('-' x CORE::length($title))."\n";
+        $text ||= '';
+        
+        die "\n$title\n", "MSG: $text\n", $std, $footer, "\n";
+    }
 }
 
 =head2 debug
@@ -384,12 +379,12 @@ sub throw{
 
 =cut
 
-sub debug{
-   my ($self,@msgs) = @_;
-
-   if( defined $self->verbose && $self->verbose > 0 ) { 
-       print STDERR @msgs;
-   }   
+sub debug {
+    my ($self, @msgs) = @_;
+    
+    if (defined $self->verbose && $self->verbose > 0) {
+        CORE::warn @msgs;
+    }
 }
 
 =head2 _load_module

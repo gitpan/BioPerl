@@ -1,4 +1,4 @@
-# $Id: phylip.pm,v 1.36.4.3 2006/10/02 23:10:12 sendu Exp $
+# $Id: phylip.pm 14685 2008-05-29 09:55:29Z heikki $
 #
 # BioPerl module for Bio::AlignIO::phylip
 #
@@ -17,11 +17,11 @@ Bio::AlignIO::phylip - PHYLIP format sequence input/output stream
     use Bio::SimpleAlign;
     #you can set the name length to something other than the default 10
     #if you use a version of phylip (hacked) that accepts ids > 10
-    my $phylipstream = new Bio::AlignIO(-format  => 'phylip',
+    my $phylipstream = Bio::AlignIO->new(-format  => 'phylip',
                                         -fh      => \*STDOUT,
                                         -idlength=>30);
     # convert data from one format to another
-    my $gcgstream     =  new Bio::AlignIO(-format => 'msf',
+    my $gcgstream     =  Bio::AlignIO->new(-format => 'msf',
                                           -file   => 't/data/cysprot1a.msf');
 
     while( my $aln = $gcgstream->next_aln ) {
@@ -31,11 +31,11 @@ Bio::AlignIO::phylip - PHYLIP format sequence input/output stream
     # do it again with phylip sequential format format
     $phylipstream->interleaved(0);
     # can also initialize the object like this
-    $phylipstream = new Bio::AlignIO(-interleaved => 0,
+    $phylipstream = Bio::AlignIO->new(-interleaved => 0,
                                      -format => 'phylip',
                                      -fh   => \*STDOUT,
                                      -idlength=>10);
-    $gcgstream     =  new Bio::AlignIO(-format => 'msf',
+    $gcgstream     =  Bio::AlignIO->new(-format => 'msf',
                                        -file   => 't/data/cysprot1a.msf');
 
     while( my $aln = $gcgstream->next_aln ) {
@@ -45,11 +45,13 @@ Bio::AlignIO::phylip - PHYLIP format sequence input/output stream
 =head1 DESCRIPTION
 
 This object can transform Bio::SimpleAlign objects to and from PHYLIP
-interleaved format. It will not work with PHYLIP sequencial format.
+fotmat. By deafult it works with the interleaved format. By specifying
+the flag -interleaved =E<gt> 0 in the initialization the module can
+read or write data in sequential format.
 
-This module will output PHYLIP sequential format.  By specifying the
-flag -interleaved =E<gt> 0 in the initialization the module can output
-data in interleaved format.
+Long IDs up to 50 characters are supported by flag -longid =E<gt>
+1. ID strings can be surrounded by single quoted. They are mandatory
+only if the IDs contain spaces. 
 
 =head1 FEEDBACK
 
@@ -93,7 +95,7 @@ BEGIN {
 =head2 new
 
  Title   : new
- Usage   : my $alignio = new Bio::AlignIO(-format => 'phylip'
+ Usage   : my $alignio = Bio::AlignIO->new(-format => 'phylip'
 					  -file   => '>file',
 					  -idlength => 10,
 					  -idlinebreak => 1);
@@ -102,8 +104,8 @@ BEGIN {
  Args    : [specific for writing of phylip format files]
            -idlength => integer - length of the id (will pad w/
 						    spaces if needed)
-           -interleaved => boolean - whether or not write as interleaved
-                                     or sequential format
+           -interleaved => boolean - whether interleaved
+                                     or sequential format required
            -line_length  => integer of how long a sequence lines should be
            -idlinebreak => insert a line break after the sequence id
                            so that sequence starts on the next line
@@ -115,6 +117,7 @@ BEGIN {
            -wrap_sequential => boolean for whether or not sequential
                                    format should be broken up or a single line
                                    default is false (single line)
+           -longid => boolean for allowing arbitrary long IDs (default is false)
 
 =cut
 
@@ -123,21 +126,23 @@ sub _initialize {
   $self->SUPER::_initialize(@args);
 
   my ($interleave,$linelen,$idlinebreak,
-      $idlength, $flag_SI, $tag_length,$ws) =
+      $idlength, $flag_SI, $tag_length,$ws, $longid) =
           $self->_rearrange([qw(INTERLEAVED
                                 LINE_LENGTH
                                 IDLINEBREAK
                                 IDLENGTH
                                 FLAG_SI
                                 TAG_LENGTH
-				WRAP_SEQUENTIAL)],@args);
-  $self->interleaved(1) if( $interleave || ! defined $interleave);
+				WRAP_SEQUENTIAL
+                                LONGID)],@args);
+  $self->interleaved($interleave ? 1 : 0) if defined $interleave;
   $self->idlength($idlength || $DEFAULTIDLENGTH);
   $self->id_linebreak(1) if( $idlinebreak );
   $self->line_length($linelen) if defined $linelen && $linelen > 0;
   $self->flag_SI(1) if ( $flag_SI );
   $self->tag_length($tag_length) if ( $tag_length || $DEFAULTTAGLEN );
   $self->wrap_sequential($ws ? 1 : 0);
+  $self->longid($longid ? 1 : 0);
   1;
 }
 
@@ -162,7 +167,7 @@ sub next_aln {
     my $aln =  Bio::SimpleAlign->new(-source => 'phylip');
     $entry = $self->_readline and
         ($seqcount, $residuecount) = $entry =~ /\s*(\d+)\s+(\d+)/;
-    return 0 unless $seqcount and $residuecount;
+    return unless $seqcount and $residuecount;
 
     # first alignment section
     my $idlen = $self->idlength;
@@ -176,14 +181,31 @@ sub next_aln {
 	    $self->_pushback($entry);
 	    last;
 	}
-	if( $entry =~ /^\s+(.+)$/ ) {
+	if( $self->longid  && $entry =~ /\w/ ) {
+	    if ($entry =~ /'/) {
+		$entry =~ /^\s*'([^']+)'\s+(.+)$/;
+		$name = $1;
+		$str = $2;
+	    } else {
+		$entry =~ /^\s*([^\s]+)\s+(.+)$/;
+		$name = $1;
+		$str = $2;
+	    }
+#	    $name =~ s/[\s\/]/_/g; # not sure how wise is it to do this
+	    $name =~ s/_+$//; # remove any trailing _'s
+	    
+	    push @names, $name;
+	    $str =~ s/\s//g;
+	    $count = scalar @names;
+	    $hash{$count} = $str;
+
+	} elsif( $entry =~ /^\s+(.+)$/ ) {
 	    $interleaved = 0;
 	    $str = $1;
 	    $str =~ s/\s//g;
 	    $count = scalar @names;
 	    $hash{$count} .= $str;
-
-       	} elsif( $entry =~ /^(.{$idlen})\s+(.*)\s$/ ||
+	} elsif( $entry =~ /^(.{$idlen})\s+(.*)\s$/ ||
 		 $entry =~ /^(.{$idlen})(\S{$idlen}\s+.+)\s$/ # Handle weirdnes s when id is too long
 		 ) {
 	    $name = $1;
@@ -232,7 +254,7 @@ sub next_aln {
 	    $self->throw("Not a valid interleaved PHYLIP file! [$count,$seqcount] ($entry)") if $count > $seqcount;
 	}
     }
-    return 0 if scalar @names < 1;
+    return if scalar @names < 1;
 
     # sequence creation
     $count = 0;
@@ -253,7 +275,7 @@ sub next_aln {
 	$self->throw("Length of sequence [$seqname] is not [$residuecount] it is ".CORE::length($hash{$count})."! ")
 	    unless CORE::length($hash{$count}) == $residuecount;
 
-       $seq = new Bio::LocatableSeq('-seq'=>$hash{$count},
+       $seq = Bio::LocatableSeq->new('-seq'=>$hash{$count},
 				    '-id'=>$seqname,
 				    '-start'=>$start,
 				    '-end'=>$end,
@@ -310,14 +332,19 @@ sub write_aln {
 	$tag_length = $self->tag_length();
 	foreach $seq ( $aln->each_seq() ) {
 	    $name = $aln->displayname($seq->get_nse);
-	    $name = substr($name, 0, $idlength) if length($name) > $idlength;
-	    $name = sprintf("%-".$idlength."s",$name);
-	    if( $self->interleaved() ) {
-		$name .= '   ' ;
-	    } elsif( $self->id_linebreak) {
-		$name .= "\n";
+	    if ($self->longid) {
+		$self->warn("The lenght of the name is over 50 chars long [$name]") 
+		    if length($name) > 50; 
+		$name = "'$name'  "
+	    } else {
+		$name = substr($name, 0, $idlength) if length($name) > $idlength;
+		$name = sprintf("%-".$idlength."s",$name);
+		if( $self->interleaved() ) {
+		    $name .= '   ' ;
+		} elsif( $self->id_linebreak) {
+		    $name .= "\n";
+		}
 	    }
-
 	    #phylip needs dashes not dots
 	    my $seq = $seq->seq();
 	    $seq =~ s/\./-/g;
@@ -390,13 +417,14 @@ sub write_aln {
 
 =cut
 
-sub interleaved{
+sub interleaved {
    my ($self,$value) = @_;
-   my $previous = $self->{'_interleaved'};
    if( defined $value ) {
-       $self->{'_interleaved'} = $value;
+       if ($value) {$self->{'_interleaved'} = 1 }
+       else {$self->{'_interleaved'} = 0 }
    }
-   return $previous;
+   return 1 unless defined $self->{'_interleaved'};
+   return $self->{'_interleaved'};
 }
 
 =head2 flag_SI
@@ -518,6 +546,25 @@ sub wrap_sequential{
       $self->{'_wrap_sequential'} = $value;
     }
     return $self->{'_wrap_sequential'} || 0;
+}
+
+=head2 longid
+
+ Title   : longid
+ Usage   : $obj->longid($newval)
+ Function:
+ Returns : value of longid
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub longid{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'_longid'} = $value;
+    }
+    return $self->{'_longid'} || 0;
 }
 
 1;

@@ -1,4 +1,4 @@
-# $Id: hmmer.pm,v 1.34.4.1 2006/10/02 23:10:26 sendu Exp $
+# $Id: hmmer.pm 15005 2008-11-19 20:32:50Z dave_messina $
 #
 # BioPerl module for Bio::SearchIO::hmmer
 #
@@ -18,7 +18,7 @@ Bio::SearchIO::hmmer - A parser for HMMER output (hmmpfam, hmmsearch)
 
     # do not use this class directly it is available through Bio::SearchIO
     use Bio::SearchIO;
-    my $in = new Bio::SearchIO(-format => 'hmmer',
+    my $in = Bio::SearchIO->new(-format => 'hmmer',
                                -file   => 't/data/L77119.hmmer');
     while( my $result = $in->next_result ) {
         # this is a Bio::Search::Result::HMMERResult object
@@ -129,7 +129,7 @@ BEGIN {
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::SearchIO::hmmer();
+ Usage   : my $obj = Bio::SearchIO::hmmer->new();
  Function: Builds a new Bio::SearchIO::hmmer object 
  Returns : Bio::SearchIO::hmmer
  Args    : -fh/-file => HMMER filename
@@ -481,11 +481,17 @@ sub next_result {
                             $prelength = CORE::length($1);
                             $width     = 0;
 
-                            # $width = CORE::length($2);
+                            # deal with fact that start en stop is on same line
+                            my $data = $2;
+                            if ($data =~ s/\<\-?\*?\s*$//)
+                            {
+                                $width = CORE::length($data);
+                            }
+ 
                             $self->element(
                                 {
                                     'Name' => 'Hsp_qseq',
-                                    'Data' => $2
+                                    'Data' => $data
                                 }
                             );
                             $count       = 0;
@@ -535,9 +541,6 @@ sub next_result {
                                 );
                             }
                             else {
-                                $self->debug("midline is $_\n")
-                                  if ( $verbose > 0
-                                    && CORE::length($_) <= $prelength );
                                 $self->element(
                                     {
                                         'Name' => 'Hsp_midline',
@@ -725,7 +728,8 @@ sub next_result {
                         || ( $count != 1
                             && /^\s+RF\s+[x\s]+$/o )
                       );
-                    $self->debug("$count $_") if $verbose > 0;
+                    # fix for bug 2632
+                    next if ($_ =~ m/^\s+CS\s+/o && $count == 0);
                     if ( /^Histogram/o || m!^//!o || /^Query sequence/o ) {
                         if ( $self->in_element('hsp') ) {
                             $self->end_element( { 'Name' => 'Hsp' } );
@@ -795,7 +799,7 @@ sub next_result {
                                 'Name' => 'Hsp_identity',
                                 'Data' => 0
                             }
-                        );
+                        );                     
                         $self->element(
                             {
                                 'Name' => 'Hsp_positive',
@@ -855,11 +859,17 @@ sub next_result {
                             $prelength = CORE::length($1);
                             $width     = 0;
 
-                            # $width = CORE::length($2);
+                            # deal with fact that start en stop is on same line
+                            my $data = $2;
+                            if ($data =~ s/\<\-?\*?\s*$//)
+                            {
+                              $width = CORE::length($data);
+                            }
+ 
                             $self->element(
                                 {
                                     'Name' => 'Hsp_hseq',
-                                    'Data' => $2
+                                    'Data' => $data
                                 }
                             );
                             $count       = 0;
@@ -978,7 +988,7 @@ sub next_result {
                             'Name' => 'Hsp_query-from',
                             'Data' => shift @$HSPinfo
                         }
-                    );
+                    );                    
                     $self->element(
                         {
                             'Name' => 'Hsp_query-to',
@@ -1034,9 +1044,10 @@ sub next_result {
                 %hitinfo = ();
                 last;
             }
-            else {
-                $self->debug($_) if $verbose > 0;
-            }
+            # uncomment to see missed lines with verbose on
+            #else {
+            #    $self->debug($_);
+            #}
         }
         $last = $_;
     }
@@ -1103,10 +1114,15 @@ sub end_element {
     # object begins so have to detect this in end_element for now
     if ( $nm eq 'Hsp' ) {
         foreach (qw(Hsp_qseq Hsp_midline Hsp_hseq)) {
+            my $data = $self->{'_last_hspdata'}->{$_};
+            if ($data && $_ eq 'Hsp_hseq') {
+                # replace hmm '.' gap symbol by '-'
+                $data =~ s/\./-/g;
+            }
             $self->element(
                 {
                     'Name' => $_,
-                    'Data' => $self->{'_last_hspdata'}->{$_}
+                    'Data' => $data
                 }
             );
         }

@@ -1,4 +1,4 @@
-# $Id: RelationshipFactory.pm,v 1.5.4.1 2006/10/02 23:10:22 sendu Exp $
+# $Id: RelationshipFactory.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Ontology::RelationshipFactory
 #
@@ -34,7 +34,7 @@ Bio::Ontology::RelationshipI (or derived class) through a factory
     use Bio::Ontology::RelationshipFactory;
 
     # the default type is Bio::Ontology::Relationship
-    my $factory = new Bio::Ontology::RelationshipFactory(
+    my $factory = Bio::Ontology::RelationshipFactory->new(
                                  -type => 'Bio::Ontology::GOterm');
     my $clu = $factory->create_object(-name => 'peroxisome',
                                       -ontology => 'Gene Ontology',
@@ -90,7 +90,7 @@ use base qw(Bio::Factory::ObjectFactory);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Ontology::RelationshipFactory();
+ Usage   : my $obj = Bio::Ontology::RelationshipFactory->new();
  Function: Builds a new Bio::Ontology::RelationshipFactory object 
  Returns : Bio::Ontology::RelationshipFactory
  Args    : -type => string, name of a Bio::Ontology::RelationshipI

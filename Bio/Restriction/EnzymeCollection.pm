@@ -1,4 +1,4 @@
-# $Id: EnzymeCollection.pm,v 1.10.4.2 2006/11/08 17:25:54 sendu Exp $
+# $Id: EnzymeCollection.pm 14571 2008-02-29 01:31:59Z cjfields $
 #-------------------------------------------------------------------------------
 #
 # BioPerl module Bio::Restriction::EnzymeCollection
@@ -148,9 +148,7 @@ use Bio::Restriction::IO;
 
 use Data::Dumper;
 
-use vars qw ();
 use base qw(Bio::Root::Root);
-
 
 =head2 new
 
@@ -313,7 +311,7 @@ using the rich collection of methods in Bio::Restriction::Enzyme.
 
 sub blunt_enzymes {
     my $self=shift;
-    my $bs = new Bio::Restriction::EnzymeCollection(-empty => 1);
+    my $bs = Bio::Restriction::EnzymeCollection->new(-empty => 1);
     return $bs->enzymes(  grep { $_->overhang eq 'blunt' }  $self->each_enzyme );
 }
 
@@ -343,17 +341,18 @@ sub cutters {
 
     if (scalar @_ == 1 ) {
         my $size = shift;
-        $self->throw("Need a positive number [$size]")
-            unless $size =~ /[+]?[\d\.]+/;
-
-        my $bs = new Bio::Restriction::EnzymeCollection(-empty => 1);
-
-        foreach my $e ($self->each_enzyme) {
-            ##print $e->name, ": ", $e->cutter, "\n"  if $e->cutter == $size;
-            $bs->enzymes($e) if $e->cutter == $size;
+        my @sizes;
+        (ref $size eq 'ARRAY') ? push @sizes, @{$size} : push @sizes, $size;
+        my $bs = Bio::Restriction::EnzymeCollection->new(-empty => 1);
+        for my $size (@sizes) {
+            $self->throw("Need a positive number [$size]")
+                unless $size =~ /[+]?[\d\.]+/;
+            foreach my $e ($self->each_enzyme) {
+                ##print $e->name, ": ", $e->cutter, "\n"  if $e->cutter == $size;
+                $bs->enzymes($e) if $e->cutter == $size;
+            }
         }
         return $bs;
-        #return $bs->enzymes(  grep { ($_->cutter == $size) }  $self->each_enzyme );
 
     } else { # named arguments
 
@@ -374,7 +373,7 @@ sub cutters {
         $inclusive = 1 if $inclusive or not $exclusive;
         $inclusive = 0 if $exclusive;
 
-        my $bs = new Bio::Restriction::EnzymeCollection(-empty => 1);
+        my $bs = Bio::Restriction::EnzymeCollection->new(-empty => 1);
         if ($inclusive) {
             foreach my $e ($self->each_enzyme) {
                 $bs->enzymes($e) if $e->cutter >= $start and $e->cutter <= $end;

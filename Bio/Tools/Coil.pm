@@ -1,4 +1,4 @@
-# $Id: Coil.pm,v 1.6.4.1 2006/10/02 23:10:31 sendu Exp $
+# $Id: Coil.pm 11480 2007-06-14 14:16:21Z sendu $
 # Parser module for Coil Bio::Tools::Coil
 #
 # Based on the EnsEMBL module Bio::EnsEMBL::Pipeline::Runnable::Protein::Coil
@@ -17,7 +17,7 @@ Bio::Tools::Coil - parser for Coil output
 =head1 SYNOPSIS
 
  use Bio::Tools::Coil
- my $parser = new Bio::Tools::Coil();
+ my $parser = Bio::Tools::Coil->new();
  while( my $sp_feat = $parser->next_result($file) ) {
        #do something
        #eg

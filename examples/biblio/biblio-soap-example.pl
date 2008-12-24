@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: biblio-soap-example.pl,v 1.1 2005/09/24 01:05:28 bosborne Exp $
+# $Id: biblio-soap-example.pl 15087 2008-12-04 02:48:00Z bosborne $
 =head1 NAME
 
 biblio-soap-example.pl

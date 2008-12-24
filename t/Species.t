@@ -1,24 +1,17 @@
-# -*-Perl-*-
-## $Id: Species.t,v 1.11.4.3 2006/11/08 17:25:55 sendu Exp $
+# -*-Perl-*- Test Harness script for Bioperl
+# $Id: Species.t 15112 2008-12-08 18:12:38Z sendu $
 
 use strict;
-use vars qw($NUMTESTS $DEBUG);
 
 BEGIN {
-	$NUMTESTS = 20;
-	$DEBUG = $ENV{'BIOPERLDEBUG'} || 0;
-	
-	eval {require Test::More;};
-	if ($@) {
-		use lib 't/lib';
-	}
-	use Test::More;
+	use lib '.';
+    use Bio::Root::Test;
     
-	plan tests => $NUMTESTS;
+    test_begin(-tests => 21);
+	
+	use_ok('Bio::Species');
+	use_ok('Bio::DB::Taxonomy');
 }
-
-use_ok('Bio::Species');
-use_ok('Bio::DB::Taxonomy');
 
 ok my $sps = Bio::Species->new();
 $sps->classification(qw( sapiens Homo Hominidae
@@ -39,15 +32,17 @@ is $sps->binomial, 'Homo sapiens';
 
 
 # test cmd line initializtion
-ok my $species = new Bio::Species( -classification => 
+ok my $species = Bio::Species->new( -classification => 
 				[ qw( sapiens Homo Hominidae
 				      Catarrhini Primates Eutheria 
 				      Mammalia Vertebrata
-				      Chordata Metazoa Eukaryota) ] );
+				      Chordata Metazoa Eukaryota) ],
+				-common_name => 'human');
 is $species->binomial, 'Homo sapiens';
 is $species->species, 'sapiens';
 is $species->genus, 'Homo';
-
+# test -common_name parameter, bug 2549
+is $species->common_name, 'human';
 
 # A Bio::Species isa Bio::Taxon, so test some things from there briefly
 is $species->scientific_name, 'sapiens';
@@ -55,9 +50,10 @@ is $species->rank, 'species';
 
 # We can make a species object from just an id an db handle
 SKIP: {
-    skip "Skipping tests which require network access, set BIOPERLDEBUG=1 to test", 5 unless $DEBUG;
-    $species = new Bio::Species(-id => 51351);
-    my $taxdb = new Bio::DB::Taxonomy(-source => 'entrez');
+    test_skip(-tests => 5, -requires_networking => 1);
+	
+    $species = Bio::Species->new(-id => 51351);
+    my $taxdb = Bio::DB::Taxonomy->new(-source => 'entrez');
     eval {$species->db_handle($taxdb);};
     skip "Unable to connect to entrez database; no network or server busy?", 5 if $@;
     is $species->binomial, 'Brassica rapa subsp.';

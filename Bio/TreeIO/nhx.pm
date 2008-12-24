@@ -1,4 +1,4 @@
-# $Id: nhx.pm,v 1.18.4.1 2006/10/02 23:10:37 sendu Exp $
+# $Id: nhx.pm 11507 2007-06-23 01:37:45Z jason $
 #
 # BioPerl module for Bio::TreeIO::nhx
 #
@@ -19,7 +19,7 @@ Bio::TreeIO::nhx - TreeIO implementation for parsing
 
   # do not use this module directly
   use Bio::TreeIO;
-  my $treeio = new Bio::TreeIO(-format => 'nhx', -file => 'tree.dnd');
+  my $treeio = Bio::TreeIO->new(-format => 'nhx', -file => 'tree.dnd');
   my $tree = $treeio->next_tree;
 
 =head1 DESCRIPTION
@@ -178,7 +178,7 @@ sub next_tree{
 		    $self->_eventHandler->end_element( {'Name' => 'branch_length'});
 		    $lastevent = $prev_event;
 		} else { 
-		    $self->debug("id with no branchlength is $chars\n");
+		    $self->debug("id with no branchlength is $chars, last event was $lastevent\n");
 		    $self->_eventHandler->start_element( { 'Name' => 'node' } );
 		    $self->_eventHandler->start_element( { 'Name' => 'id' } );
 		    $self->_eventHandler->characters($chars);
@@ -201,7 +201,7 @@ sub next_tree{
 		    if ($chars eq '&&NHX') {
 			$chars = ''; # get rid of &&NHX:
 		    } else {
-			$self->throw("Unrecognized, non \&\&NHX string: >>$chars<<");
+			$self->throw("Unrecognized, non \&\&NHX string: >>$chars<<; lastevent is $lastevent");
 		    }
 		}
 	    } elsif ($lastevent ne ']') {
@@ -222,12 +222,20 @@ sub next_tree{
 		$chars .= $ch;
 	    }
 	} elsif ( $ch eq ']' ) {
-	    if ($self->_eventHandler->within_element('nhx_tag') && $lastevent eq '=') {
-		$self->_eventHandler->start_element( { Name => 'tag_value' } );
-		$self->_eventHandler->characters($chars);
-		$self->_eventHandler->end_element( { Name => 'tag_value' } );
-		$chars = '';
-		$self->_eventHandler->end_element( { Name => 'nhx_tag' } );
+	    if ($self->_eventHandler->within_element('nhx_tag') ) {
+		if( $lastevent eq '=' ) {
+		    $self->_eventHandler->start_element( { Name => 'tag_value' } );
+		    $self->_eventHandler->characters($chars);
+		    $self->_eventHandler->end_element( { Name => 'tag_value' } );		    
+		    $chars = '';
+		    $self->_eventHandler->end_element( { Name => 'nhx_tag' } );
+		} else {
+		    if ($chars ne '&&NHX') {
+			$self->throw("Unrecognized, non \&\&NHX string: >>$chars<<; lastevent is $lastevent");
+		    }
+		    $chars = '';
+		    $self->_eventHandler->end_element( { Name => 'nhx_tag' } );
+		}
 	    } else {
 		$chars .= $ch;
 		next;

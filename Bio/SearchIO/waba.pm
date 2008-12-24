@@ -1,4 +1,4 @@
-# $Id: waba.pm,v 1.16.4.1 2006/10/02 23:10:26 sendu Exp $
+# $Id: waba.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::SearchIO::waba
 #
@@ -20,7 +20,7 @@ alignment output
     # do not use this object directly, rather through Bio::SearchIO
 
     use Bio::SearchIO;
-    my $in = new Bio::SearchIO(-format => 'waba',
+    my $in = Bio::SearchIO->new(-format => 'waba',
 			       -file   => 'output.wab');
     while( my $result = $in->next_result ) {
 	while( my $hit = $result->next_hit ) {
@@ -115,7 +115,7 @@ use base qw(Bio::SearchIO);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::SearchIO::waba();
+ Usage   : my $obj = Bio::SearchIO::waba->new();
  Function: Builds a new Bio::SearchIO::waba object 
  Returns : Bio::SearchIO::waba
  Args    : see Bio::SearchIO

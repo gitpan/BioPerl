@@ -1,4 +1,4 @@
-# $Id: FeatureI.pm,v 1.9 2006/07/04 22:23:15 mauricio Exp $
+# $Id: FeatureI.pm 10084 2006-07-04 22:23:29Z mauricio $
 # BioPerl module for Bio::Expression::FeatureI
 #
 # Copyright Allen Day <allenday@ucla.edu>, Stan Nelson <snelson@ucla.edu>

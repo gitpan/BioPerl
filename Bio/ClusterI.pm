@@ -1,4 +1,4 @@
-# $Id: ClusterI.pm,v 1.6.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: ClusterI.pm 10619 2006-10-02 04:06:18Z tseemann $
 #
 # BioPerl module for Bio::ClusterI
 #

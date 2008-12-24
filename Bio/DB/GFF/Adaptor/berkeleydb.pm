@@ -1,6 +1,6 @@
 package Bio::DB::GFF::Adaptor::berkeleydb;
 
-# $Id: berkeleydb.pm,v 1.24.4.1 2006/10/02 23:10:16 sendu Exp $
+# $Id: berkeleydb.pm 14619 2008-03-19 04:02:25Z jason $
 
 =head1 NAME
 
@@ -308,7 +308,7 @@ sub _bump_feature_count {
   } else {
     my $index = ${db}->{__count__};
     delete $db->{__count__};
-    $db->{__count__} = $index + 1;
+    $db->{__count__} = ($index || 0) + 1;
     return $index;
   }
 }
@@ -319,7 +319,7 @@ sub _bump_class_count {
   $count ||= 1;
   my $db  = $self->{db};
   my $key = "__class__$class";
-  my $newcount = $db->{$key} + $count;
+  my $newcount = ($db->{$key} || 0) + $count;
   delete $db->{$key};
   $db->{$key} = $newcount;
 }
@@ -374,9 +374,9 @@ sub load_sequence {
 
   while (<$io_handle>) {
     $loaded++ if /^>/;
-    print F $_;
+    print $F $_;
   }
-  close F;
+  close $F;
   my $dna_db = Bio::DB::Fasta->new($file) or $self->throw("Can't reindex sequence file: $@");
   $self->dna_db($dna_db);
   $self->_touch_timestamp;
@@ -744,9 +744,10 @@ sub search_notes {
 
     my $relevance = 10 * $matches;
     my $featname = Bio::DB::GFF::Featname->new($feature->{gclass}=>$feature->{gname});
+    my $type     = Bio::DB::GFF::Typename->new($feature->{method}=>$feature->{source});
     my $note;
     $note   = join ' ',map {$_->[1]} grep {$_->[0] eq 'Note'}                @{$feature->{attributes}};
-    push @results,[$featname,$note,$relevance];
+    push @results,[$featname,$note,$relevance,$type];
   }
 
   return @results;

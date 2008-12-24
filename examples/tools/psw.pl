@@ -4,7 +4,7 @@
 # PURPOSE  : Simple driver for Bio::Tools::pSW
 # AUTHOR   : Ewan Birney birney@sanger.ac.uk 
 # CREATED  : Tue Oct 27 1998
-# REVISION : $Id: psw.pl,v 1.1 2003/07/07 18:20:59 bosborne Exp $
+# REVISION : $Id: psw.pl 15087 2008-12-04 02:48:00Z bosborne $
 #
 # INSTALLATION
 #  

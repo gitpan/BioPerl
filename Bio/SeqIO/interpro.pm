@@ -1,4 +1,4 @@
-# $Id: interpro.pm,v 1.9.4.2 2006/10/16 17:08:16 sendu Exp $
+# $Id: interpro.pm 14862 2008-09-09 15:51:03Z cjfields $
 #
 # BioPerl module for interpro
 # You may distribute this module under the same terms as perl itself
@@ -72,6 +72,7 @@ package Bio::SeqIO::interpro;
 use strict;
 use Bio::SeqFeature::Generic;
 use XML::DOM;
+use XML::DOM::XPath;
 use Bio::Seq::SeqFactory;
 use Bio::Annotation::Collection;
 use Bio::Annotation::DBLink;
@@ -143,7 +144,8 @@ sub next_seq {
 			my $matlevel = join "", "/protein/interpro[", $interpn+1, "]/match[", 
 			  $match+1, "]/location";
 			my @locNodes = $protein_node->findnodes($matlevel);
-
+                        my $class_level = join "", "/protein/interpro[",$interpn+1, "]/classification";
+                        my @goNodes = $protein_node->findnodes($class_level);
 			my @seqFeatures = map { Bio::SeqFeature::Generic->new(
                   -start => $_->getAttribute('start'), 
 						-end => $_->getAttribute('end'), 
@@ -172,6 +174,16 @@ sub next_seq {
   				$annotation3->primary_id($DBNodes[$interpn]->getAttribute('id'));
   				$annotation3->comment($DBNodes[$interpn]->getAttribute('name'));
   				$seqFeature->annotation->add_Annotation('dblink',$annotation3);
+                                # need to put in the go annotation here!
+                                 foreach my $g (@goNodes)
+                                 {
+                                     my $goid = $g->getAttribute('id');
+                                     my $go_annotation = Bio::Annotation::DBLink->new;
+                                     $go_annotation->database('GO');
+                                     $go_annotation->primary_id($goid);
+                                     $go_annotation->comment($goid);
+                                     $seqFeature->annotation->add_Annotation('dblink', $go_annotation);
+                                 }
 			}
 			$bioSeq->add_SeqFeature(@seqFeatures);
 		}
@@ -214,7 +226,7 @@ sub _initialize {
 
   $self->_xml_parser( XML::DOM::Parser->new() );
 
-  $self->_sequence_factory( new Bio::Seq::SeqFactory
+  $self->_sequence_factory( Bio::Seq::SeqFactory->new
                            ( -verbose => $self->verbose(),
                              -type => 'Bio::Seq::RichSeq'))
     if ( ! defined $self->sequence_factory );

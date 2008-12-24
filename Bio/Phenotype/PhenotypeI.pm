@@ -1,4 +1,4 @@
-# $Id: PhenotypeI.pm,v 1.11.4.1 2006/10/02 23:10:22 sendu Exp $
+# $Id: PhenotypeI.pm 11268 2007-03-08 16:02:51Z nathan $
 #
 # BioPerl module for Bio::Phenotype::PhenotypeI
 #
@@ -659,9 +659,9 @@ sub each_DBLink {
 }
 
 
-=head2 add_DBLink
+=head2 add_DBLinks
 
- Title   : add_DBLink
+ Title   : add_DBLinks
  Usage   : $obj->add_DBLinks( @dbls );
            or
            $obj->add_DBLinks( $dbl );                  

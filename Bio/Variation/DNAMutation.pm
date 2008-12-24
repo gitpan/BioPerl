@@ -1,4 +1,4 @@
-# $Id: DNAMutation.pm,v 1.18.4.1 2006/10/02 23:10:38 sendu Exp $
+# $Id: DNAMutation.pm 10577 2006-09-28 21:32:20Z mauricio $
 #
 # BioPerl module for Bio::Variation::DNAMutation
 #

@@ -1,4 +1,4 @@
-# $Id: Enzyme.pm,v 1.16.4.2 2006/11/17 09:32:41 sendu Exp $
+# $Id: Enzyme.pm 14574 2008-02-29 23:03:57Z cjfields $
 #------------------------------------------------------------------
 #
 # BioPerl module Bio::Restriction::Enzyme
@@ -24,7 +24,7 @@ Bio::Restriction::Enzyme - A single restriction endonuclease
   use Bio::Restriction::Enzyme;
 
   # define a new enzyme with the cut sequence
-  my $re=new Bio::Restriction::Enzyme
+  my $re=Bio::Restriction::Enzyme->new
       (-enzyme=>'EcoRI', -seq=>'G^AATTC');
 
   # once the sequence has been defined a bunch of stuff is calculated
@@ -306,7 +306,7 @@ sub new {
     my $self = $class->SUPER::new(@args);
 
     my ($name,$enzyme,$site,$seq,$cut,$complementary_cut, $is_prototype, $prototype,
-        $isoschizomers, $meth, $microbe, $source, $vendors, $references) =
+        $isoschizomers, $meth, $microbe, $source, $vendors, $references, $neo) =
             $self->_rearrange([qw(
                                   NAME
                                   ENZYME
@@ -322,10 +322,8 @@ sub new {
                                   SOURCE
                                   VENDORS
                                   REFERENCES
+                                  IS_NEOSCHIZOMER
                                  )], @args);
-
-
-
 
     $self->{_isoschizomers} = ();
     $self->{_methylation_sites} = {};
@@ -351,6 +349,7 @@ sub new {
     $source && $self->source($source);
     $vendors && $self->vendors($vendors);
     $references && $self->references($references);
+    $neo && $self->is_neoschizomer($neo);
 
     return $self;
 }
@@ -454,7 +453,7 @@ sub site {
 
         # now set the recognition site as a new Bio::PrimarySeq object
         # we need it before calling cut() and complementary_cut()
-        $self->{_seq} = new Bio::PrimarySeq(-id=>$self->name,
+        $self->{_seq} = Bio::PrimarySeq->new(-id=>$self->name,
                                             -seq=>$site,
                                             -verbose=>$self->verbose,
                                             -alphabet=>'dna');
@@ -570,10 +569,6 @@ sequence. The following diagram numbers the phosphodiester bonds
 
 =cut
 
-sub cuts_after {
-    shift->cut(@_);
-}
-
 sub cut {
      my ($self, $value) = @_;
      if (defined $value) {
@@ -595,7 +590,17 @@ sub cut {
      return $self->{'_cut'} || 0;
 }
 
+=head2 cuts_after
 
+ Title     : cuts_after
+ Usage     : Alias for cut()
+
+=cut
+
+sub cuts_after {
+	shift->cut(@_);
+}
+		
 
 =head2 complementary_cut
 
@@ -784,8 +789,6 @@ sub recognition_length {
  Returns  : integer or float number
  Args     : none
 
-
-
 Why is this better than just stripping the ambiguos codes? Think about
 it like this: You have a random sequence; all nucleotides are equally
 probable. You have a four nucleotide re site. The probability of that
@@ -798,6 +801,11 @@ the probability is one out of (2*4*4*4*4*2) which exactly the same as
 for a five cutter! Cutter, although it can have non-integer values
 turns out to be a useful and simple measure.
 
+From bug 2178: VHDB are ambiguity symbols that match three different
+nucleotides, so they contribute less to the effective recognition sequence
+length than e.g. Y which matches only two nucleotides. A symbol which matches n
+of the 4 nucleotides has an effective length of 1 - log(n) / log(4).
+
 =cut
 
 sub cutter {
@@ -808,7 +816,7 @@ sub cutter {
     my $count =  tr/[MRWSYK]//d;
     $cutter += $count/2;
     $count =  tr/[VHDB]//d;
-    $cutter += $count*3/4;
+    $cutter += $count * (1 - log(3) / log(4));
     return $cutter;
 }
 
@@ -1028,7 +1036,6 @@ sub is_ambiguous {
 
 =cut
 
-
 =head2 is_prototype
 
  Title    : is_prototype
@@ -1040,18 +1047,49 @@ sub is_ambiguous {
 
 Prototype enzymes are the most commonly available and usually first
 enzymes discoverd that have the same recognition site. Using only
-prototype enzymes in restriciton analysis avoids redundacy and
+prototype enzymes in restriction analysis avoids redundancy and
 speeds things up.
 
 =cut
 
 sub is_prototype {
-     my $self = shift;
-     if (@_) {
-         (shift) ? (return $self->{'_is_prototype'} = 1) :
-                   (return $self->{'_is_prototype'} = 0) ;
-     }
-     return $self->{'_is_prototype'} || 0;
+    my ($self, $value) = @_;
+    if (defined $value) {
+        return $self->{'_is_prototype'} = $value ;
+    }
+    if (defined $self->{'_is_prototype'}) {
+        return $self->{'_is_prototype'}
+    } else {
+        $self->warn("Can't unequivocally assign prototype based on input format alone");
+        return
+    }
+}
+
+=head2 is_neoschizomer
+
+ Title    : is_neoschizomer
+ Usage    : $re->is_neoschizomer
+ Function : Get/Set method for finding out if this enzyme is a neoschizomer
+ Example  : $re->is_neoschizomer(1)
+ Returns  : Boolean
+ Args     : none
+
+Neoschizomers are distinguishable from the prototype enzyme by having a
+different cleavage pattern. Note that not all formats report this
+
+=cut
+
+sub is_neoschizomer {
+    my ($self, $value) = @_;
+    if (defined $value) {
+        return $self->{'_is_neoschizomer'} = $value ;
+    }
+    if (defined $self->{'_is_neoschizomer'}) {
+        return $self->{'_is_neoschizomer'}
+    } else {
+        $self->warn("Can't unequivocally assign neoschizomer based on input format alone");
+        return
+    }
 }
 
 =head2 prototype_name
@@ -1064,7 +1102,7 @@ sub is_prototype {
  Returns  : prototype enzyme name string or an empty string
  Args     : optional prototype enzyme name string
 
-If the enzyme itself is the protype, its own name is returned.  Not to
+If the enzyme itself is the prototype, its own name is returned.  Not to
 confuse the negative result with an unset value, use method
 L<is_prototype|is_prototype>.
 
@@ -1074,11 +1112,11 @@ because it returns a string rather than on object.
 =cut
 
 sub prototype_name {
-     my $self = shift;
+    my $self = shift;
 
-     $self->{'_prototype'} = shift if @_;
-     return $self->name if $self->{'_is_prototype'};
-     return $self->{'_prototype'} || '';
+    $self->{'_prototype'} = shift if @_;
+    return $self->name if $self->{'_is_prototype'};
+    return $self->{'_prototype'} || '';
 }
 
 =head2 isoschizomers
@@ -1097,14 +1135,13 @@ REBASE
 
 =cut
 
-
 sub isoschizomers {
     my ($self) = shift;
     push @{$self->{_isoschizomers}}, @_ if @_;
-          # make sure that you don't dereference if null
-          # chad believes quite strongly that you should return
-          # a reference to an array anyway. don't bother dereferencing.
-          # i'll post that to the list.
+    # make sure that you don't dereference if null
+    # chad believes quite strongly that you should return
+    # a reference to an array anyway. don't bother dereferencing.
+    # i'll post that to the list.
      if ($self->{'_isoschizomers'}) {
          return @{$self->{_isoschizomers}};
      }
@@ -1127,7 +1164,6 @@ sub purge_isoschizomers {
     $self->{_isoschizomers} = [];
 
 }
-
 
 =head2 methylation_sites
 

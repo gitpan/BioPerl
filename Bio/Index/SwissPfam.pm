@@ -1,5 +1,5 @@
 #
-# $Id: SwissPfam.pm,v 1.24.4.1 2006/10/02 23:10:20 sendu Exp $
+# $Id: SwissPfam.pm 10530 2006-09-27 00:35:09Z tseemann $
 #
 # BioPerl module for Bio::Index::SwissPfam
 #

@@ -1,4 +1,4 @@
-# $Id: Population.pm,v 1.19.4.1 2006/10/02 23:10:23 sendu Exp $
+# $Id: Population.pm 14676 2008-05-11 06:41:28Z jason $
 #
 # BioPerl module for Bio::PopGen::Population
 #
@@ -93,13 +93,13 @@ use strict;
 
 use Bio::PopGen::Marker;
 use Bio::PopGen::Genotype;
-
+our $CheckISA = 1;
 use base qw(Bio::Root::Root Bio::PopGen::PopulationI);
 
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::PopGen::Population();
+ Usage   : my $obj = Bio::PopGen::Population->new();
  Function: Builds a new Bio::PopGen::Population object 
  Returns : an instance of Bio::PopGen::Population
  Args    : -individuals => array ref of individuals (optional)
@@ -115,10 +115,11 @@ sub new {
   my $self = $class->SUPER::new(@args);
   $self->{'_individuals'} = [];
   my ($name,$source,$description,
-      $inds) = $self->_rearrange([qw(NAME 
+      $inds,$checkisa) = $self->_rearrange([qw(NAME 
 				     SOURCE 
 				     DESCRIPTION
-				     INDIVIDUALS)], @args);
+				     INDIVIDUALS
+				     CHECKISA)], @args);
   if( defined $inds ) {
       if( ref($inds) !~ /ARRAY/i ) {
 	  $self->warn("Need to provide a value array ref for the -individuals initialization flag");
@@ -130,7 +131,7 @@ sub new {
   defined $name   && $self->name($name);
   defined $source && $self->source($source);
   defined $description && $self->description($description);
-
+  $self->{'_checkisa'} = defined $checkisa ? $checkisa : $CheckISA;
   return $self;
 }
 
@@ -218,7 +219,7 @@ sub set_Allele_Frequency {
 	   my ($markername,$alleles);
 	   while( ($markername,$alleles) = each %$frequencies ) {
 	       $self->{'_allele_freqs'}->{$markername} = 
-		   new Bio::PopGen::Marker(-name        => $markername,
+		   Bio::PopGen::Marker->new(-name        => $markername,
 					   -allele_freq => $alleles);
 	   }
        } else { 
@@ -227,7 +228,7 @@ sub set_Allele_Frequency {
    } else { 
        unless( defined $self->{'_allele_freqs'}->{$name} ) {
 	   $self->{'_allele_freqs'}->{$name} = 
-	       new Bio::PopGen::Marker(-name        => $name);
+	       Bio::PopGen::Marker->new(-name        => $name);
        }
        $self->{'_allele_freqs'}->{$name}->add_Allele_Frequency($allele,$frequency);
    }
@@ -250,12 +251,13 @@ sub add_Individual{
     my ($self,@inds) = @_;
     foreach my $i ( @inds ) {
 	next if ! defined $i;
-	unless(  $i->isa('Bio::PopGen::IndividualI') ) {
+	
+	unless( $self->{'_checkisa'} ? $i->isa('Bio::PopGen::IndividualI') : 1  ) {
 	    $self->warn("cannot add an individual ($i) which is not a Bio::PopGen::IndividualI");
 	    next;
 	}
-	push @{$self->{'_individuals'}}, $i;
     }
+    push @{$self->{'_individuals'}}, @inds;
     $self->{'_cached_markernames'} = undef;
     $self->{'_allele_freqs'} = {};
     return scalar @{$self->{'_individuals'} || []};
@@ -279,7 +281,7 @@ sub remove_Individuals {
     foreach my $n ( @names ) { $namehash{$n}++ }
     my @tosplice;
     foreach my $ind (  @{$self->{'_individuals'} || []} ) {
-	unshift @tosplice, $i if( $namehash{$ind->person_id} );
+	unshift @tosplice, $i if( $namehash{$ind->unique_id} );
 	$i++;
     }
     foreach my $index ( @tosplice ) {
@@ -356,7 +358,7 @@ sub get_Genotypes{
 
 =cut
 
-sub get_marker_names{
+sub get_marker_names {
     my ($self,$force) = @_;
     return @{$self->{'_cached_markernames'} || []} 
       if( ! $force && defined $self->{'_cached_markernames'});
@@ -364,7 +366,15 @@ sub get_marker_names{
     foreach my $n ( map { $_->get_marker_names } $self->get_Individuals() ) {
 	$unique{$n}++;
     }
-    $self->{'_cached_markernames'} = [ keys %unique ];
+    my @nms = keys %unique;
+    if( $nms[0] =~ /^(Site|Codon)/ ) {
+	# sort by site or codon number and do it in 
+	# a schwartzian transformation baby!
+	@nms = map { $_->[1] } 
+ 	       sort { $a->[0] <=> $b->[0] }
+	       map { [$_ =~ /^(?:Codon|Site)-(\d+)/, $_] } @nms;
+    }
+    $self->{'_cached_markernames'} = [ @nms ];
     return @{$self->{'_cached_markernames'} || []};
 }
 
@@ -389,14 +399,17 @@ sub get_Marker{
        # marker is now set to the stored value
    } else { 
        my @genotypes = $self->get_Genotypes(-marker => $markername);
-       $marker = new Bio::PopGen::Marker(-name   => $markername);
-       
+       $marker = Bio::PopGen::Marker->new(-name   => $markername);
+
        if( ! @genotypes ) {
 	   $self->warn("No genotypes for Marker $markername in the population");
        } else { 
 	   my %alleles;
 	   my $count;
-	   map { $count++; $alleles{$_}++ } map { $_->get_Alleles } @genotypes;
+	   for my $al ( map { $_->get_Alleles} @genotypes ) {
+	     $count++; 
+	     $alleles{$al}++
+	   }
 	   foreach my $allele ( keys %alleles ) {
 	       $marker->add_Allele_Frequency($allele, $alleles{$allele}/$count);
 	   }
@@ -477,7 +490,8 @@ sub get_Frequency_Homozygotes{
    return 0 if ! defined $marker || ! defined $allelename;
    $marker = $marker->name if( defined $marker && 
 			       ref($marker) &&
-			       $marker->isa('Bio::PopGen::MarkerI'));
+			       ( $self->{'_checkisa'} ? 
+				 $marker->isa('Bio::PopGen::MarkerI') : 1));
    my $total = $self->get_number_individuals($marker);
    foreach my $genotype ( $self->get_Genotypes($marker) ) {
        my %alleles = map { $_ => 1} $genotype->get_Alleles();
@@ -505,7 +519,8 @@ sub get_Frequency_Heterozygotes{
    my ($heterozygote_count) = 0;
    return 0 if ! defined $marker || ! defined $allelename;
    $marker = $marker->name if( defined $marker && ref($marker) &&
-			       $marker->isa('Bio::PopGen::MarkerI'));
+			       ($self->{'_checkisa'} ? 
+				$marker->isa('Bio::PopGen::MarkerI') : 1));
    if( ref($marker) ) {
        $self->warn("Passed in a ".ref($marker). " to has_Marker, expecting either a string or a Bio::PopGen::MarkerI");
        return 0;

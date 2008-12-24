@@ -1,4 +1,4 @@
-# $Id: QualI.pm,v 1.11.4.1 2006/10/02 23:10:27 sendu Exp $
+# $Id: QualI.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module for Bio::Seq::QualI
 #

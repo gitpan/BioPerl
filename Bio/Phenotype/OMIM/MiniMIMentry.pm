@@ -1,4 +1,4 @@
-# $Id: MiniMIMentry.pm,v 1.9.4.1 2006/10/02 23:10:22 sendu Exp $
+# $Id: MiniMIMentry.pm 10587 2006-09-29 01:47:33Z tseemann $
 #
 # BioPerl module for Bio::Phenotype::OMIM::MiniMIMentry
 #

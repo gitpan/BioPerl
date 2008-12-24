@@ -1,4 +1,4 @@
-# $Id: Split.pm,v 1.46.4.3 2006/10/31 22:26:31 cjfields Exp $
+# $Id: Split.pm 14964 2008-10-26 05:03:15Z cjfields $
 #
 # BioPerl module for Bio::Location::Split
 # Cared for by Jason Stajich <jason@bioperl.org>
@@ -17,11 +17,11 @@ which has multiple locations (start/end points)
 
     use Bio::Location::Split;
 
-    my $splitlocation = new Bio::Location::Split();
-    $splitlocation->add_sub_Location(new Bio::Location::Simple(-start=>1,
+    my $splitlocation = Bio::Location::Split->new();
+    $splitlocation->add_sub_Location(Bio::Location::Simple->new(-start=>1,
 							       -end=>30,
 							       -strand=>1));
-    $splitlocation->add_sub_Location(new Bio::Location::Simple(-start=>50,
+    $splitlocation->add_sub_Location(Bio::Location::Simple->new(-start=>50,
 							       -end=>61,
 							       -strand=>1));   
     my @sublocs = $splitlocation->sub_Location();
@@ -563,14 +563,14 @@ sub end_pos_type {
 =cut
 
 sub seq_id {
-    my ($self, $seqid) = @_;
+    my $self = shift;
 
-    if(! $self->is_remote()) {
+    if(@_ && !$self->is_remote()) {
 	foreach my $subloc ($self->sub_Location(0)) {
-	    $subloc->seq_id($seqid) if ! $subloc->is_remote();
+	    $subloc->seq_id(@_) if !$subloc->is_remote();
 	}
     }
-    return $self->SUPER::seq_id($seqid);
+    return $self->SUPER::seq_id(@_);
 }
 
 =head2 coordinate_policy
@@ -653,6 +653,17 @@ sub to_FTstring {
 
     return $str;
 }
+
+=head2 valid_Location
+
+ Title   : valid_Location
+ Usage   : if ($location->valid_location) {...};
+ Function: boolean method to determine whether location is considered valid
+           (has minimum requirements for Simple implementation)
+ Returns : Boolean value: true if location is valid, false otherwise
+ Args    : none
+
+=cut
 
 # we'll probably need to override the RangeI methods since our locations will
 # not be contiguous.

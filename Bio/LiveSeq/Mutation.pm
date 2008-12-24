@@ -1,4 +1,4 @@
-# $Id: Mutation.pm,v 1.13.4.1 2006/10/02 23:10:21 sendu Exp $
+# $Id: Mutation.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module for Bio::LiveSeq::Mutation
 #

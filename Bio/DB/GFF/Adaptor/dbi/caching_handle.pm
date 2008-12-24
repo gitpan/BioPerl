@@ -109,14 +109,10 @@ sub prepare {
 
   # find a non-busy dbh
   my $dbh = $self->dbh || $self->throw("Can't connect to database: " . DBI->errstr);
-  if (my $sth = $self->{$dbh}{$query}) {
-    warn "Using cached statement handler\n" if $self->debug;
-    return $sth;
-  } else {
-    warn "Creating new statement handler\n" if $self->debug;
-    $sth = $dbh->prepare($query) || $self->throw("Couldn't prepare query $query:\n ".DBI->errstr."\n");
-    return $self->{$dbh}{$query} = $sth;
-  }
+
+  warn "Using prepare_cache\n" if $self->debug;
+  my $sth = $dbh->prepare_cached($query, {}, 3) || $self->throw("Couldn't prepare query $query:\n ".DBI->errstr."\n");
+  return $sth;
 }
 
 sub do_query {
@@ -142,10 +138,22 @@ sub dbh {
   # for Oracle - to retrieve LOBs, need to define the length (Jul 15, 2002)
   $dbh->{LongReadLen} = 100*65535;
   $dbh->{LongTruncOk} = 0;
+  $dbh->{mysql_auto_reconnect} = 1;
 
   my $wrapper = Bio::DB::GFF::Adaptor::dbi::faux_dbh->new($dbh);
   push @{$self->{dbh}},$wrapper;
   $wrapper;
+}
+
+# The clone method should only be called in child processes after a fork().
+# It does two things: (1) it sets the "real" dbh's InactiveDestroy to 1,
+# thereby preventing the database connection from being destroyed in
+# the parent when the dbh's destructor is called; (2) it replaces the
+# "real" dbh with the result of dbh->clone(), so that we now have an
+# independent handle.
+sub clone {
+    my $self = shift;
+    foreach (@{$self->{dbh}}) { $_->clone };
 }
 
 =head2 attribute
@@ -215,6 +223,18 @@ sub prepare_delayed {
 
 sub inuse {
     shift->{dbh}->{ActiveKids};
+}
+
+# The clone method should only be called in child processes after a fork().
+# It does two things: (1) it sets the "real" dbh's InactiveDestroy to 1,
+# thereby preventing the database connection from being destroyed in
+# the parent when the dbh's destructor is called; (2) it replaces the
+# "real" dbh with the result of dbh->clone(), so that we now have an
+# independent handle.
+sub clone {
+    my $self = shift;
+    $self->{dbh}{InactiveDestroy} = 1;
+    $self->{dbh} = $self->{dbh}->clone;
 }
 
 sub DESTROY { }

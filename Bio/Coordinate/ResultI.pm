@@ -1,4 +1,4 @@
-# $Id: ResultI.pm,v 1.6.4.1 2006/10/02 23:10:14 sendu Exp $
+# $Id: ResultI.pm 10619 2006-10-02 04:06:18Z tseemann $
 #
 # bioperl module for Bio::Coordinate::ResultI
 #

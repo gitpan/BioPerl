@@ -1,4 +1,4 @@
-# $Id: PrimarySeq.pm,v 1.95.4.4 2006/10/02 23:10:12 sendu Exp $
+# $Id: PrimarySeq.pm 15064 2008-12-02 21:40:26Z cjfields $
 #
 # bioperl module for Bio::PrimarySeq
 #
@@ -110,12 +110,14 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::PrimarySeq;
-use vars qw($MATCHPATTERN);
+use vars qw($MATCHPATTERN $GAP_SYMBOLS);
 use strict;
 
 $MATCHPATTERN = 'A-Za-z\-\.\*\?=~';
+$GAP_SYMBOLS = '-~';
 
-use base qw(Bio::Root::Root Bio::PrimarySeqI Bio::IdentifiableI Bio::DescribableI);
+use base qw(Bio::Root::Root Bio::PrimarySeqI
+	    Bio::IdentifiableI Bio::DescribableI);
 
 #
 # setup the allowed values for alphabet()
@@ -144,6 +146,7 @@ my %valid_type = map {$_, 1} qw( dna rna protein );
            -display_id  => display id of the sequence (locus name)
            -accession_number => accession number
            -primary_id  => primary id (Genbank id)
+           -version     => version number
            -namespace   => the namespace for the accession
            -authority   => the authority for the namespace
            -description => description text
@@ -151,6 +154,9 @@ my %valid_type = map {$_, 1} qw( dna rna protein );
            -alphabet    => sequence type (alphabet) (dna|rna|protein)
            -id          => alias for display id
            -is_circular => boolean field for whether or not sequence is circular
+           -direct      => boolean field for directly setting sequence (requires alphabet also set)
+           -ref_to_seq  => boolean field indicating the sequence is a reference (?!?)
+           -nowarnonempty => boolean field for whether or not to warn when sequence is empty
 
 =cut
 
@@ -161,7 +167,7 @@ sub new {
 
     my($seq,$id,$acc,$pid,$ns,$auth,$v,$oid,
        $desc,$description,
-       $alphabet,$given_id,$is_circular,$direct,$ref_to_seq,$len) =
+       $alphabet,$given_id,$is_circular,$direct,$ref_to_seq,$len,$nowarnonempty) =
 	$self->_rearrange([qw(SEQ
 			      DISPLAY_ID
 			      ACCESSION_NUMBER
@@ -178,13 +184,18 @@ sub new {
 			      DIRECT
 			      REF_TO_SEQ
 			      LENGTH
+            NOWARNONEMPTY
 			      )],
 			  @args);
+  
+    # private var _nowarnonempty, need to be set before calling _guess_alphabet
+    $self->{'_nowarnonempty'} = $nowarnonempty; 
+
     if( defined $id && defined $given_id ) {
-		 if( $id ne $given_id ) {
-			 $self->throw("Provided both id and display_id constructor ".
-							  "functions. [$id] [$given_id]");
-		 }
+      if( $id ne $given_id ) {
+        $self->throw("Provided both id and display_id constructor ".
+            "functions. [$id] [$given_id]");
+      }
     }
     if( defined $given_id ) { $id = $given_id; }
 
@@ -196,14 +207,14 @@ sub new {
     # when the sequence is set
     $alphabet && $self->alphabet($alphabet);
 
-    # if there is an alphabet, and direct is passed in, assumme the alphabet
+    # if there is an alphabet, and direct is passed in, assume the alphabet
     # and sequence is ok
-
+    
     if( $direct && $ref_to_seq) {
-		 $self->{'seq'} = $$ref_to_seq;
-		 if( ! $alphabet ) {
-		     $self->_guess_alphabet();
-		 } # else it has been set already above
+      $self->{'seq'} = $$ref_to_seq;
+        if( ! $alphabet ) {
+          $self->_guess_alphabet();
+        } # else it has been set already above
     } else {
 		 #	print STDERR "DEBUG: setting sequence to [$seq]\n";
 		 # note: the sequence string may be empty
@@ -220,6 +231,7 @@ sub new {
     $auth        && $self->authority($auth);
     defined($v)  && $self->version($v);
     defined($oid) && $self->object_id($oid);
+
 
     return $self;
 }
@@ -323,27 +335,42 @@ sub validate_seq {
 
  Title   : subseq
  Usage   : $substring = $obj->subseq(10,40);
- Function: returns the subseq from start to end, where the first base
-           is 1 and the number is inclusive, ie 1-2 are the first two
-           bases of the sequence
+           $substring = $obj->subseq(10,40,NOGAP)
+           $substring = $obj->subseq(-START=>10,-END=>40,-REPLACE_WITH=>'tga')
+ Function: returns the subseq from start to end, where the first sequence
+           character has coordinate 1 number is inclusive, ie 1-2 are the 
+           first two characters of the sequence
  Returns : a string
  Args    : integer for start position
            integer for end position
                  OR
            Bio::LocationI location for subseq (strand honored)
+           Specify -NOGAP=>1 to return subseq with gap characters removed
+           Specify -REPLACE_WITH=>$new_subseq to replace the subseq returned
+           with $new_subseq in the sequence object
 
 =cut
 
 sub subseq {
-   my ($self,$start,$end,$replace) = @_;
+   my $self = shift;
+   my @args = @_;
+   my ($start,$end,$nogap,$replace) = $self->_rearrange([qw(START 
+                                                            END
+                                                            NOGAP
+                                                            REPLACE_WITH)],@args);
+   
+   # if $replace is specified, have the constructor validate it as seq
+   my $dummy = new Bio::PrimarySeq(-seq=>$replace, -alphabet=>$self->alphabet) if defined($replace);
 
    if( ref($start) && $start->isa('Bio::LocationI') ) {
        my $loc = $start;
-       $replace = $end; # do we really use this anywhere? scary. HL
        my $seq = "";
        foreach my $subloc ($loc->each_Location()) {
-	   my $piece = $self->subseq($subloc->start(),
-				     $subloc->end(), $replace);
+	   my $piece = $self->subseq(-START=>$subloc->start(),
+				     '-END'=>$subloc->end(), 
+				     -REPLACE_WITH=>$replace,
+	                             -NOGAP=>$nogap);
+	   $piece =~ s/[$GAP_SYMBOLS]//g if $nogap;
 	   if($subloc->strand() < 0) {
 	       $piece = Bio::PrimarySeq->new('-seq' => $piece)->revcom()->seq();
 	   }
@@ -364,13 +391,13 @@ sub subseq {
 
        # remove one from start, and then length is end-start
        $start--;
-       if( defined $replace ) {
-	   return substr( $self->seq(), $start, ($end-$start), $replace);
-       } else {
-	   return substr( $self->seq(), $start, ($end-$start));
-       }
+       my @ss_args = map { eval "defined $_"  ? $_ : () } qw( $self->{seq} $start $end-$start $replace);
+       my $seqstr = eval join( '', "substr(", join(',',@ss_args), ")");
+       $seqstr =~ s/[$GAP_SYMBOLS]//g if ($nogap);
+       return $seqstr;
+
    } else {
-       $self->warn("Incorrect parameters to subseq - must be two integers or a Bio::LocationI object");
+       $self->warn("Incorrect parameters to subseq - must be two integers or a Bio::LocationI object. Got:", $self,$start,$end,$replace,$nogap);
        return;
    }
 }
@@ -625,6 +652,7 @@ sub is_circular{
     return $self->{'is_circular'};
 }
 
+
 =head1 Methods for Bio::IdentifiableI compliance
 
 =cut
@@ -826,13 +854,15 @@ sub _guess_alphabet {
 
    my $str = $self->seq();
 	# Remove char's that clearly denote ambiguity
-   $str =~ s/[-.?x]//gi;
+   $str =~ s/[-.?]//gi;
 
    my $total = CORE::length($str);
    if( $total == 0 ) {
+     if (!$self->{'_nowarnonempty'}) {
        $self->warn("Got a sequence with no letters in it ".
-		   "cannot guess alphabet [$str]");
-       return '';
+           "cannot guess alphabet");
+     }
+     return '';
    }
 
    my $u = ($str =~ tr/Uu//);

@@ -1,4 +1,4 @@
-# $Id: sim4.pm,v 1.13.4.1 2006/10/02 23:10:26 sendu Exp $
+# $Id: sim4.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::SearchIO::sim4
 #
@@ -18,7 +18,7 @@ Bio::SearchIO::sim4 - parser for Sim4 alignments
 
   # do not use this module directly, it is a driver for SearchIO
   use Bio::SearchIO;
-  my $searchio = new Bio::SearchIO(-file => 'results.sim4',
+  my $searchio = Bio::SearchIO->new(-file => 'results.sim4',
                                    -format => 'sim4');
 
   while ( my $result = $searchio->next_result ) {
@@ -132,7 +132,7 @@ $DEFAULT_WRITER_CLASS = 'Bio::Search::Writer::HitTableWriter';
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::SearchIO::sim4();
+ Usage   : my $obj = Bio::SearchIO::sim4->new();
  Function: Builds a new Bio::SearchIO::sim4 object
  Returns : an instance of Bio::SearchIO::sim4
  Args    :

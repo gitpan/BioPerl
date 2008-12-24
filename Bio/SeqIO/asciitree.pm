@@ -1,4 +1,4 @@
-# $Id: asciitree.pm,v 1.4.4.1 2006/10/02 23:10:28 sendu Exp $
+# $Id: asciitree.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module for Bio::SeqIO::asciitree
 #

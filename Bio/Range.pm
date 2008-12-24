@@ -1,4 +1,4 @@
-# $Id: Range.pm,v 1.27.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: Range.pm 14929 2008-10-10 19:19:09Z cjfields $
 #
 # BioPerl module for Bio::Range
 #
@@ -17,8 +17,8 @@ Bio::Range - Pure perl RangeI implementation
 
 =head1 SYNOPSIS
 
-  $range = new Bio::Range(-start=>10, -end=>30, -strand=>+1);
-  $r2 = new Bio::Range(-start=>15, -end=>200, -strand=>+1);
+  $range = Bio::Range->new(-start=>10, -end=>30, -strand=>+1);
+  $r2 = Bio::Range->new(-start=>15, -end=>200, -strand=>+1);
 
   print join(', ', $range->union($r2)), "\n";
   print join(', ', $range->intersection($r2)), "\n";
@@ -226,7 +226,7 @@ sub end {
   Example  : $st = $range->strand(); $range->strand(-1);
   Returns  : the value of the strandedness (-1, 0 or 1)
   Args     : optionally, the new strand - (-1, 0, 1) or (-, ., +).
-  Overrides: Bio::RangeI::Strand
+  Overrides: Bio::RangeI::strand
 
 =cut
 
@@ -296,7 +296,7 @@ These methods return true or false.
 
   Title    : contains
   Usage    : if($r1->contains($r2) { do stuff }
-  Function : tests wether $r1 totally contains $r2
+  Function : tests whether $r1 totally contains $r2
   Args     : a range to test for being contained
   Returns  : true if the argument is totally contained within this range
   Inherited: Bio::RangeI

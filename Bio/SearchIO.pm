@@ -1,4 +1,4 @@
-# $Id: SearchIO.pm,v 1.39.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: SearchIO.pm 15257 2008-12-24 05:27:05Z cjfields $
 #
 # BioPerl module for Bio::SearchIO
 #
@@ -19,7 +19,7 @@ Bio::SearchIO - Driver for parsing Sequence Database Searches
 
    use Bio::SearchIO;
    # format can be 'fasta', 'blast', 'exonerate', ...
-   my $searchio = new Bio::SearchIO( -format => 'blastxml',
+   my $searchio = Bio::SearchIO->new( -format => 'blastxml',
                                      -file   => 'blastout.xml' );
    while ( my $result = $searchio->next_result() ) {
        while( my $hit = $result->next_hit ) {
@@ -108,14 +108,14 @@ use Bio::SearchIO::SearchResultEventBuilder;
 # For an example of usage, see blast.pm.
 @Bio::SearchIO::InternalParserError::ISA = qw(Bio::Root::Exception);
 
-use Symbol();
+use Symbol;
 
 use base qw(Bio::Root::IO Bio::Event::EventGeneratorI Bio::AnalysisParserI);
 
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::SearchIO();
+ Usage   : my $obj = Bio::SearchIO->new();
  Function: Builds a new Bio::SearchIO object 
  Returns : Bio::SearchIO initialized with the correct format
  Args    : -file           => $filename
@@ -268,7 +268,7 @@ sub _initialize {
 
     # initialize the IO part
     $self->_initialize_io(@args);
-    $self->attach_EventHandler(new Bio::SearchIO::SearchResultEventBuilder(@args));
+    $self->attach_EventHandler(Bio::SearchIO::SearchResultEventBuilder->new(@args));
     $self->{'_reporttype'} = '';
     $self->{_notfirsttime} = 0;
     my ( $writer ) = $self->_rearrange([qw(WRITER)], @args);
@@ -330,8 +330,42 @@ sub write_result {
 
    my $str = $self->writer->to_string( $result, @args);
    $self->{'_notfirsttime'} = 1;
-   # print "Got string: \n$str\n";
    $self->_print( "$str" ) if defined $str;
+   
+   $self->flush if $self->_flush_on_write && defined $self->_fh;
+   return 1;
+}
+
+=head2 write_report
+
+ Title   : write_report
+ Usage   : $stream->write_report(SearchIO stream, @other_args)
+ Function: Writes data directly from the SearchIO stream object into the
+         : writer.  This is mainly useful if one has multiple ResultI objects
+         : in a SearchIO stream and you don't want to reiterate header/footer
+         : between each call.
+ Returns : 1 for success and 0 for error
+ Args    : Bio::SearchIO stream object,
+         : plus any other arguments for the Writer
+ Throws  : Bio::Root::Exception if a Writer has not been set.
+
+See L<Bio::Root::Exception>
+
+=cut
+
+sub write_report {
+   my ($self, $result, @args) = @_;
+
+   if( not ref($self->{'_result_writer'}) ) {
+       $self->throw("ResultWriter not defined.");
+   }
+   @args = $self->{'_notfirsttime'} unless( @args );
+
+   my $str = $self->writer->to_string( $result, @args);
+   $self->{'_notfirsttime'} = 1;
+   $self->_print( "$str" ) if defined $str;
+   
+   $self->flush if $self->_flush_on_write && defined $self->_fh;
    return 1;
 }
 
@@ -364,7 +398,9 @@ sub writer {
 
  Title   : result_count
  Usage   : $num = $stream->result_count;
- Function: Gets the number of Blast results that have been parsed.
+ Function: Gets the number of Blast results that have been successfully parsed
+           at the point of the method call.  This is not the total # of results
+           in the file.
  Returns : integer
  Args    : none
  Throws  : none
@@ -408,6 +444,53 @@ END
   return $ok;
 }
 
+=head2 _get_seq_identifiers
+
+ Title   : _get_seq_identifiers
+ Usage   : my ($gi, $acc,$ver) = &_get_seq_identifiers($id)
+ Function: Private function to get the gi, accession, version data
+           for an ID (if it is in NCBI format)
+ Returns : 3-pule of gi, accession, version
+ Args    : ID string to process (NCBI format)
+
+
+=cut
+
+sub _get_seq_identifiers {
+    my ($self, $id) = @_;
+
+    return unless defined $id;
+    my ($gi, $acc, $version );
+    if ( $id =~ /^gi\|(\d+)\|/ ) {
+        $gi = $1;
+    }
+    if ( $id =~ /(gb|emb|dbj|sp|pdb|bbs|ref|lcl)\|(.*)\|(.*)/ ) {
+        ( $acc, $version ) = split /\./, $2;
+    }
+    elsif ( $id =~ /(pir|prf|pat|gnl)\|(.*)\|(.*)/ ) {
+        ( $acc, $version ) = split /\./, $3;
+    }
+    else {
+
+        #punt, not matching the db's at ftp://ftp.ncbi.nih.gov/blast/db/README
+        #Database Name                     Identifier Syntax
+        #============================      ========================
+        #GenBank                           gb|accession|locus
+        #EMBL Data Library                 emb|accession|locus
+        #DDBJ, DNA Database of Japan       dbj|accession|locus
+        #NBRF PIR                          pir||entry
+        #Protein Research Foundation       prf||name
+        #SWISS-PROT                        sp|accession|entry name
+        #Brookhaven Protein Data Bank      pdb|entry|chain
+        #Patents                           pat|country|number
+        #GenInfo Backbone Id               bbs|number
+        #General database identifier           gnl|database|identifier
+        #NCBI Reference Sequence           ref|accession|locus
+        #Local Sequence identifier         lcl|identifier
+        $acc = $id;
+    }
+    return ($gi, $acc, $version );
+}
 
 =head2 _guess_format
 

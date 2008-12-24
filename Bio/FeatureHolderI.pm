@@ -1,4 +1,4 @@
-# $Id: FeatureHolderI.pm,v 1.10.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: FeatureHolderI.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module for Bio::FeatureHolderI
 #

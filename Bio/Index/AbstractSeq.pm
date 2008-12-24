@@ -1,4 +1,4 @@
-# $Id: AbstractSeq.pm,v 1.24.4.3 2006/11/27 15:46:48 sendu Exp $
+# $Id: AbstractSeq.pm 10976 2006-11-25 21:10:51Z jason $
 #
 # BioPerl module for Bio::Index::AbstractSeq
 #

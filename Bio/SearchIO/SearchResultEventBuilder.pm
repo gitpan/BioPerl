@@ -1,4 +1,4 @@
-# $Id: SearchResultEventBuilder.pm,v 1.41.4.2 2006/10/02 23:10:26 sendu Exp $
+# $Id: SearchResultEventBuilder.pm 11782 2007-11-28 21:21:36Z cjfields $
 #
 # BioPerl module for Bio::SearchIO::SearchResultEventBuilder
 #
@@ -73,7 +73,7 @@ use base qw(Bio::Root::Root Bio::SearchIO::EventHandlerI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::SearchIO::SearchResultEventBuilder();
+ Usage   : my $obj = Bio::SearchIO::SearchResultEventBuilder->new();
  Function: Builds a new Bio::SearchIO::SearchResultEventBuilder object 
  Returns : Bio::SearchIO::SearchResultEventBuilder
  Args    : -hsp_factory    => Bio::Factory::ObjectFactoryI
@@ -340,23 +340,23 @@ sub start_hit{
 sub end_hit{
     my ($self,$type,$data) = @_;   
     my %args = map { my $v = $data->{$_}; s/HIT//; ($_ => $v); } grep { /^HIT/ } keys %{$data};
-    #print STDERR "SREB: end_hit\n";
 
     # I hate special cases, but this is here because NCBI BLAST XML
     # doesn't play nice and is undergoing mutation -jason
-    if( $args{'-name'} =~ /BL_ORD_ID/ ) {
+    if(exists $args{'-name'} && $args{'-name'} =~ /BL_ORD_ID/ ) {
         ($args{'-name'}, $args{'-description'}) = split(/\s+/,$args{'-description'},2);
-    }    
+    }
     $args{'-algorithm'} =  uc( $args{'-algorithm_name'} || 
                                $data->{'RESULT-algorithm_name'} || $type);
     $args{'-hsps'}      = $self->{'_hsps'};
     $args{'-query_len'} =  $data->{'RESULT-query_length'};
     $args{'-rank'}      = $self->{'_hitcount'} + 1;
     unless( defined $args{'-significance'} ) {
-	if( defined $args{'-hsps'} && 
-	    $args{'-hsps'}->[0] ) {
-	    $args{'-significance'} = $args{'-hsps'}->[0]->{'-evalue'};
-	}
+        if( defined $args{'-hsps'} && 
+            $args{'-hsps'}->[0] ) {
+            # use pvalue if present (WU-BLAST), otherwise evalue (NCBI BLAST)
+            $args{'-significance'} = $args{'-hsps'}->[0]->{'-pvalue'} || $args{'-hsps'}->[0]->{'-evalue'};
+        }
     }
     my $hit = \%args;
     $hit->{'-hsp_factory'} = $self->factory('hsp');

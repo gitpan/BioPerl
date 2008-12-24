@@ -1,4 +1,4 @@
-# $Id: Node.pm,v 1.49.4.3 2006/11/27 15:46:48 sendu Exp $
+# $Id: Node.pm 15170 2008-12-16 03:25:40Z cjfields $
 #
 # BioPerl module for Bio::Tree::Node
 #
@@ -17,11 +17,11 @@ Bio::Tree::Node - A Simple Tree Node
 =head1 SYNOPSIS
 
     use Bio::Tree::Node;
-    my $nodeA = new Bio::Tree::Node();
-    my $nodeL = new Bio::Tree::Node();
-    my $nodeR = new Bio::Tree::Node();
+    my $nodeA = Bio::Tree::Node->new();
+    my $nodeL = Bio::Tree::Node->new();
+    my $nodeR = Bio::Tree::Node->new();
 
-    my $node = new Bio::Tree::Node();
+    my $node = Bio::Tree::Node->new();
     $node->add_Descendent($nodeL);
     $node->add_Descendent($nodeR);
 
@@ -77,14 +77,14 @@ use Scalar::Util qw(weaken isweak);
 
 use base qw(Bio::Root::Root Bio::Tree::NodeI);
 
-BEGIN { 
-    $CREATIONORDER = 0;
+BEGIN {
+    $CREATIONORDER = 1;
 }
 
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Tree::Node();
+ Usage   : my $obj = Bio::Tree::Node->new();
  Function: Builds a new Bio::Tree::Node object
  Returns : Bio::Tree::Node
  Args    : -descendents   => arrayref of descendents (they will be
@@ -138,7 +138,7 @@ sub new {
 =head2 add_Descendent
 
  Title   : add_Descendent
- Usage   : $node->add_Descendant($node);
+ Usage   : $node->add_Descendent($node);
  Function: Adds a descendent to a node
  Returns : number of current descendents for this node
  Args    : Bio::Node::NodeI
@@ -583,6 +583,29 @@ sub invalidate_height {
     }
 }
 
+=head2 set_tag_value
+
+ Title   : set_tag_value
+ Usage   : $node->set_tag_value($tag,$value)
+           $node->set_tag_value($tag,@values)
+ Function: Sets a tag value(s) to a node. Replaces old values.
+ Returns : number of values stored for this tag
+ Args    : $tag   - tag name
+           $value - value to store for the tag
+
+=cut
+
+sub set_tag_value{
+    my ($self,$tag,@values) = @_;
+    if( ! defined $tag || ! scalar @values ) {
+	$self->warn("cannot call set_tag_value with an undefined value");
+    }
+    $self->remove_tag ($tag);
+    map { push @{$self->{'_tags'}->{$tag}}, $_ } @values;
+    return scalar @{$self->{'_tags'}->{$tag}};
+}
+
+
 =head2 add_tag_value
 
  Title   : add_tag_value
@@ -597,7 +620,8 @@ sub invalidate_height {
 sub add_tag_value{
     my ($self,$tag,$value) = @_;
     if( ! defined $tag || ! defined $value ) {
-	$self->warn("cannot call add_tag_value with an undefined value");
+	$self->warn("cannot call add_tag_value with an undefined value".($tag ? " ($tag)" : ''));
+	$self->warn($self->stack_trace_dump,"\n");
     }
     push @{$self->{'_tags'}->{$tag}}, $value;
     return scalar @{$self->{'_tags'}->{$tag}};
@@ -628,7 +652,7 @@ sub remove_tag {
 
  Title   : remove_all_tags
  Usage   : $node->remove_all_tags()
- Function: Removes all tags 
+ Function: Removes all tags
  Returns : None
  Args    : None
 
@@ -659,9 +683,11 @@ sub get_all_tags{
 =head2 get_tag_values
 
  Title   : get_tag_values
- Usage   : my @values = $node->get_tag_value($tag)
+ Usage   : my @values = $node->get_tag_values($tag)
  Function: Gets the values for given tag ($tag)
- Returns : Array of values or empty list if tag does not exist
+ Returns : In array context returns an array of values
+           or an empty list if tag does not exist.
+           In scalar context returns the first value or undef.
  Args    : $tag - tag name
 
 =cut
@@ -694,7 +720,7 @@ sub node_cleanup {
     #*** below is wrong, cleanup doesn't actually occur. Will replace with:
     # $self->remove_all_Descendents; once further fixes in place..
     if( defined $self->{'_desc'} &&
-        ref($self->{'_desc'}) =~ /ARRAY/i ) {
+        ref($self->{'_desc'}) =~ /HASH/i ) {
         while( my ($nodeid,$node) = each %{ $self->{'_desc'} } ) {
             $node->ancestor(undef); # insure no circular references
             $node = undef;

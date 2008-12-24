@@ -1,4 +1,4 @@
-# $Id: PubmedBookArticle.pm,v 1.9.4.3 2006/10/02 23:10:12 sendu Exp $
+# $Id: PubmedBookArticle.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Biblio::PubmedBookArticle
 #
@@ -13,14 +13,14 @@ Bio::Biblio::PubmedBookArticle - Representation of a PUBMED book article
 
 =head1 SYNOPSIS
 
-    $obj = new Bio::Biblio::PubmedBookArticle
+    $obj = Bio::Biblio::PubmedBookArticle->new
                   (-title => 'Still getting started'.
-                   -book => new Bio::Biblio::MedlineBook);
+                   -book => Bio::Biblio::MedlineBook->new());
     # note that there is no specialised class PubmedBook
 
   #--- OR ---
 
-    $obj = new Bio::Biblio::PubmedBookArticle;
+    $obj = Bio::Biblio::PubmedBookArticle->new();
     $obj->title ('Still getting started');
 
 =head1 DESCRIPTION

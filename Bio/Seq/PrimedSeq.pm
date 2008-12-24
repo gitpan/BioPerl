@@ -1,4 +1,4 @@
-# $Id: PrimedSeq.pm,v 1.23.4.1 2006/10/02 23:10:27 sendu Exp $
+# $Id: PrimedSeq.pm 15052 2008-12-01 08:47:39Z heikki $
 #
 # This is the original copyright statement. I have relied on Chad's module
 # extensively for this module.
@@ -31,9 +31,9 @@ flanking a target region
 
 =head1 SYNOPSIS
 
-The easiest way to use this is probably either, (i), get the output 
-from Bio::Tools::Run::Primer3, Bio::Tools::Primer3, or 
-Bio::Tools::PCRSimulation:
+  # The easiest way to use this is probably either, (i), get the
+  # output from Bio::Tools::Run::Primer3, Bio::Tools::Primer3, or 
+  # Bio::Tools::PCRSimulation:
 
       # For example, start with a fasta file
       use Bio::SeqIO;
@@ -56,7 +56,8 @@ Bio::Tools::PCRSimulation:
          $seqout->write_seq($results->annotated_seq);
       }
 
-Or, (ii), to create a genbank file for a sequence and its cognate primers:
+  # Or, (ii), to create a genbank file for a sequence and its cognate
+  # primers:
 
      use Bio::SeqIO;
      use Bio::Seq::PrimedSeq;
@@ -65,7 +66,7 @@ Or, (ii), to create a genbank file for a sequence and its cognate primers:
      # that match it, in fasta format
 
      my $file = shift || die "$0 <file>";
-     my $seqin = new Bio::SeqIO(-file => $file);
+     my $seqin = Bio::SeqIO->new(-file => $file);
 
      # read three sequences
      my ($template, $leftprimer, $rightprimer) =
@@ -80,7 +81,7 @@ Or, (ii), to create a genbank file for a sequence and its cognate primers:
      # print the sequence out
      $seqout->write_seq($primedseq->annotated_sequence);
 
-This should output a genbank file with the two primers labeled.
+  # This should output a genbank file with the two primers labeled.
 
 =head1 DESCRIPTION
 
@@ -169,7 +170,7 @@ sub AUTOLOAD {
 =head2 new
 
  Title   : new()
- Usage   : $primed_sequence = new Bio::SeqFeature::Primer( 
+ Usage   : $primed_sequence = Bio::SeqFeature::Primer->new( 
                                      -seq => $sequence,
                                      -left_primer => $left_primer,
                                      -right_primer => $right_primer);
@@ -442,7 +443,7 @@ sub _set_seqfeature {
 	my ($start, $length) = split /,/, $self->{'left_primer'}->{'PRIMER_LEFT'};
 	my $tm=$self->{'left_primer'}->{'PRIMER_LEFT_TM'} || $self->{'left_primer'}->Tm || 0;
 
-	my $seqfeatureL=new Bio::SeqFeature::Generic(
+	my $seqfeatureL=Bio::SeqFeature::Generic->new(
 						  -start => $start+1, -end => $start+$length, -strand => 1,
                     -primary_tag => 'left_primer', -source => 'primer3',
                     -tag    => {new => 1, author => 'Bio::Seq::PrimedSeq', Tm => $tm}
@@ -451,7 +452,7 @@ sub _set_seqfeature {
 	($start, $length) = split /,/, $self->{'right_primer'}->{'PRIMER_RIGHT'};
 	$tm=$self->{'right_primer'}->{'PRIMER_RIGHT_TM'} || $self->{'right_primer'}->Tm || 0;
  
-	my $seqfeatureR=new Bio::SeqFeature::Generic(
+	my $seqfeatureR=Bio::SeqFeature::Generic->new(
    -start => $start-$length+2, -end => $start+1, -strand => -1,
    -primary_tag => 'right_primer', -source => 'primer3',
    -tag    => {new => 1, author => 'Bio::Seq::PrimedSeq', Tm => $tm}

@@ -1,4 +1,4 @@
-# $Id: SeqAnalysisParserFactory.pm,v 1.15.4.1 2006/10/02 23:10:18 sendu Exp $
+# $Id: SeqAnalysisParserFactory.pm 15231 2008-12-22 21:51:02Z cjfields $
 #
 # BioPerl module for Bio::Factory::SeqAnalysisParserFactory
 #
@@ -93,8 +93,6 @@ BEGIN {
 	 "genscan"   => "Bio::Tools::Genscan",
 	 "mzef"      => "Bio::Tools::MZEF",
 	 "estscan"   => "Bio::Tools::ESTScan",
-	 "bplite"    => "Bio::Tools::BPlite",
-	 "blast"     => "Bio::Tools::BPlite",
 	 "hmmer"     => "Bio::Tools::HMMER::Result",
 	 "gff"       => "Bio::Tools::GFF",
 	 "sim4"      => "Bio::Tools::Sim4::Results",

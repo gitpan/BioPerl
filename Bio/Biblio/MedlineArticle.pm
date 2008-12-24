@@ -1,4 +1,4 @@
-# $Id: MedlineArticle.pm,v 1.12.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: MedlineArticle.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Biblio::MedlineArticle
 #
@@ -13,7 +13,7 @@ Bio::Biblio::MedlineArticle - Representation of a MEDLINE article
 
 =head1 SYNOPSIS
 
-  $obj = new Bio::Biblio::MedlineArticle (-mesh_headings =>
+  $obj = Bio::Biblio::MedlineArticle->new(-mesh_headings =>
                                             #array ref of hashes
                                          );
 

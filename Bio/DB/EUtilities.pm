@@ -1,4 +1,4 @@
-# $Id: EUtilities.pm,v 1.24.4.3 2006/11/23 12:36:14 sendu Exp $
+# $Id: EUtilities.pm 15160 2008-12-15 18:09:38Z cjfields $
 #
 # BioPerl module for Bio::DB::EUtilities
 #
@@ -10,132 +10,21 @@
 #
 # POD documentation - main docs before the code
 # 
-# Interfaces with new GenericWebDBI interface 
+# EUtil-based extension of GenericWebDBI interface 
 
 =head1 NAME
 
-Bio::DB::EUtilities - interface for handling web queries and data
-retrieval from Entrez Utilities at NCBI.
+Bio::DB::EUtilities - webagent which interacts with and retrieves data from
+NCBI's eUtils
 
 =head1 SYNOPSIS
 
-use Bio::DB::EUtilities;
-
-  my $esearch = Bio::DB::EUtilities->new(-eutil      => 'esearch',
-                                         -db         => 'pubmed',
-                                         -term       => 'hutP',
-                                         -usehistory => 'y');
-
-  $esearch->get_response; # parse the response, fetch a cookie
-
-  my $elink = Bio::DB::EUtilities->new(-eutil        => 'elink',
-                                       -db           => 'protein',
-                                       -dbfrom       => 'pubmed',
-                                       -cookie       => $esearch->next_cookie,
-                                       -cmd          => 'neighbor_history');
-
-  $elink->get_response; # parse the response, fetch the next cookie
-
-  my $efetch = Bio::DB::EUtilities->new(-cookie       => $elink->next_cookie,
-                                        -retmax       => 10,
-                                        -rettype      => 'fasta');
-
-  print $efetch->get_response->content;
+  # ...To be added!
 
 =head1 DESCRIPTION
 
-WARNING: Please do B<NOT> spam the Entrez web server with multiple requests.
-NCBI offers Batch Entrez for this purpose, now accessible here via epost!
-
-This is a test interface to the Entrez Utilities at NCBI.  The main purpose of this
-is to enable access to all of the NCBI databases available through Entrez and
-allow for more complex queries.  It is likely that the API for this module as
-well as the documentation will change dramatically over time. So, novice users
-and neophytes beware!
-
-The experimental base class is L<Bio::DB::GenericWebDBI|Bio::DB::GenericWebDBI>,
-which as the name implies enables access to any web database which will accept
-parameters.  This was originally born from an idea to replace
-WebDBSeqI/NCBIHelper with a more general web database accession tool so one
-could access sequence information, taxonomy, SNP, PubMed, and so on.
-However, this may ultimately prove to be better used as a replacement for
-L<LWP::UserAgent|LWP::UserAgent> when ccessing NCBI-related web tools
-(Entrez Utilitites, or EUtilities).  Using the base class GenericWebDBI,
-one could also build web interfaces to other databases to access anything
-via CGI parameters.
-
-Currently, you can access any database available through the NCBI interface:
-
-  http://eutils.ncbi.nlm.nih.gov/
-
-At this point, Bio::DB::EUtilities uses the EUtilities plugin modules somewhat
-like Bio::SeqIO.  So, one would call the particular EUtility (epost, efetch,
-and so forth) upon instantiating the object using a set of parameters:
-
-  my $esearch = Bio::DB::EUtilities->new(-eutil      => 'esearch',
-                                         -db         => 'pubmed',
-                                         -term       => 'dihydroorotase',
-                                         -usehistory => 'y');
-
-The default EUtility (when C<eutil> is left out) is 'efetch'.  For specifics on
-each EUtility, see their respective POD (**these are incomplete**) or
-the NCBI Entrez Utilities page:
-
-  http://eutils.ncbi.nlm.nih.gov/entrez/query/static/eutils_help.html
-
-At this time, retrieving the response is accomplished by using the method
-get_response (which also parses for cookies and other information, see below).
-This method returns an HTTP::Response object.  The raw data is accessed by using
-the object method C<content>, like so:
-
-  my $efetch = Bio::DB::EUtilities->new(-cookie       => $elink->next_cookie,
-                                        -retmax       => 10,
-                                        -rettype      => 'fasta');
-
-  print $efetch->get_response->content;
-
-Based on this, if one wanted to retrieve sequences or other raw data
-but was not interested in directly using Bio* objects (such as if
-genome sequences were to be retrieved) one could do so by using the
-proper EUtility object(s) and query(ies) and get the raw response back
-from NCBI through 'efetch'.  
-
-A great deal of the documentation here will likely end up in the form
-of a HOWTO at some future point, focusing on getting data into Bioperl
-objects.
-
-=head2 Cookies
-
-Some EUtilities (C<epost>, C<esearch>, or C<elink>) retain information on
-the NCBI server under certain settings.  This information can be retrieved by
-using a B<cookie>.  Here, the idea of the 'cookie' is similar to the
-'cookie' set on a your computer when browsing the Web.  XML data returned
-by these EUtilities, when applicable, is parsed for the cookie information
-(the 'WebEnv' and 'query_key' tags to be specific)  The information along
-with other identifying data, such as the calling eutility, description
-of query, etc.) is stored as a
-L<Bio::DB::EUtilities::Cookie|Bio::DB::EUtilities::Cookie> object
-in an internal queue.  These can be retrieved one at a time by using
-the next_cookie method or all at once in an array using get_all_cookies.
-Each cookie can then be 'fed', one at a time, to another EUtility object,
-thus enabling chained queries as demonstrated in the synopsis.
-
-For more information, see the POD documentation for
-L<Bio::DB::EUtilities::Cookie|Bio::DB::EUtilities::Cookie>.
-
-=head1 TODO
-
-Resetting internal parameters is planned so one could feasibly reuse
-the objects once instantiated, such as if one were to use this as a
-replacement for LWP::UserAgent when retrieving responses i.e. when
-using many of the Bio::DB* NCBI-related modules.
-
-File and filehandle support to be added.
-
-Switch over XML parsing in most EUtilities to XML::SAX (currently
-use XML::Simple)
-
-Any feedback is welcome.
+This is a general webagent which posts and retrieves data to NCBI's eUtilities
+service using their CGI interface.
 
 =head1 FEEDBACK
 
@@ -174,352 +63,107 @@ preceded with a _
 
 package Bio::DB::EUtilities;
 use strict;
+use Bio::Tools::EUtilities::EUtilParameters;
+use Bio::Tools::EUtilities;
 
-use vars qw($HOSTBASE %CGILOCATION $MAX_ENTRIES %DATABASE @PARAMS
-            $DEFAULT_TOOL @COOKIE_PARAMS @METHODS);
-use URI;
-#use Data::Dumper;
-
-use base qw(Bio::DB::GenericWebDBI);
-
-our $DEFAULT_TOOL = 'bioperl';
-    # default host base
-our $HOSTBASE = 'http://eutils.ncbi.nlm.nih.gov';
-    # map eutility to location
-our %CGILOCATION = (
-            'einfo'     => ['get'  => '/entrez/eutils/einfo.fcgi', 'xml'],
-            'epost'     => ['post' => '/entrez/eutils/epost.fcgi', 'xml'],
-            'efetch'    => ['get'  => '/entrez/eutils/efetch.fcgi', 'dbspec'],
-            'esearch'   => ['get'  => '/entrez/eutils/esearch.fcgi', 'xml'],
-            'esummary'  => ['get'  => '/entrez/eutils/esummary.fcgi', 'xml'],
-            'elink'     => ['get'  => '/entrez/eutils/elink.fcgi', 'xml'],
-            'egquery'   => ['get'  => '/entrez/eutils/egquery.fcgi', 'xml']
-             );
-    # map database to return mode
-our %DATABASE = ('pubmed'           => 'xml',
-                 'protein'          => 'text',
-                 'nucleotide'       => 'text',
-                 'nuccore'          => 'text',
-                 'nucgss'           => 'text',
-                 'nucest'           => 'text',
-                 'structure'        => 'text',
-                 'genome'           => 'text',
-                 'books'            => 'xml',
-                 'cancerchromosomes'=> 'xml',
-                 'cdd'              => 'xml',
-                 'domains'          => 'xml',
-                 'gene'             => 'asn1',
-                 'genomeprj'        => 'xml',
-                 'gensat'           => 'xml',
-                 'geo'              => 'xml',
-                 'gds'              => 'xml',
-                 'homologene'       => 'xml',
-                 'journals'         => 'text',
-                 'mesh'             => 'xml',
-                 'ncbisearch'       => 'xml',
-                 'nlmcatalog'       => 'xml',
-                 'omia'             => 'xml',
-                 'omim'             => 'xml',
-                 'pmc'              => 'xml',
-                 'popset'           => 'xml',
-                 'probe'            => 'xml',
-                 'pcassay'          => 'xml',
-                 'pccompound'       => 'xml',
-                 'pcsubstance'      => 'xml',
-                 'snp'              => 'xml',
-                 'taxonomy'         => 'xml',
-                 'unigene'          => 'xml',
-                 'unists'           => 'xml',
-                 );
-
-    our @PARAMS = qw(rettype usehistory term field tool reldate mindate
-            maxdate datetype retstart retmax sort seq_start seq_stop strand
-            complexity report dbfrom cmd holding version linkname retmode);
-    our @COOKIE_PARAMS = qw(db sort seq_start seq_stop strand complexity rettype
-            retstart retmax cmd linkname retmode);
-BEGIN {
-    our @METHODS = qw(rettype usehistory term field tool reldate mindate
-        maxdate datetype retstart retmax sort seq_start seq_stop strand
-        complexity report dbfrom cmd holding version linkname);
-    for my $method (@METHODS) {
-        eval <<END;
-sub $method {
-    my \$self = shift;
-    return \$self->{'_$method'} = shift if \@_;
-    return \$self->{'_$method'};
-}
-END
-    }
-}
+use base qw(Bio::DB::GenericWebAgent);
 
 sub new {
     my($class,@args) = @_;
-    if( $class =~ /Bio::DB::EUtilities::(\S+)/ ) {
-        my ($self) = $class->SUPER::new(@args);
-        $self->_initialize(@args);
-        return $self;
-    } else { 
-        my %param = @args;
-        @param{ map { lc $_ } keys %param } = values %param; # lowercase keys
-        my $eutil = $param{'-eutil'} || 'efetch';
-        return unless ($class->_load_eutil_module($eutil));
-        return "Bio::DB::EUtilities::$eutil"->new(@args);
-    }
+    my $self = $class->SUPER::new(@args);
+    my $params = Bio::Tools::EUtilities::EUtilParameters->new(-verbose => $self->verbose,
+                                               @args);
+    # cache parameters
+    $self->parameter_base($params);
+    return $self;
 }
 
-sub _initialize {
-    my ($self, @args) = @_;
-    my ( $tool, $ids, $retmode, $verbose, $cookie, $keep_cookies) =
-      $self->_rearrange([qw(TOOL ID RETMODE VERBOSE COOKIE KEEP_COOKIES)],  @args);
-        # hard code the base address
-    $self->url_base_address($HOSTBASE);
-    $tool ||= $DEFAULT_TOOL;
-    $self->tool($tool);
-    $ids            && $self->id($ids);
-    $verbose        && $self->verbose($verbose);
-    $retmode        && $self->retmode($retmode);
-    $keep_cookies   && $self->keep_cookies($keep_cookies);
-    if ($cookie && ref($cookie) =~ m{cookie}i) {
-        $self->db($cookie->database) if !($self->db);
-        $self->add_cookie($cookie);
-    }
-    $self->{'_cookieindex'} = 0;
-    $self->{'_cookiecount'} = 0;
-    $self->{'_authentication'} = [];
-}
-
-=head2 add_cookie
-
- Title   : cookie
- Usage   : $db->add_cookie($cookie)
- Function: adds an NCBI query cookie to the internal cookie queue
- Returns : none
- Args    : a Bio::DB::EUtilities::Cookie object
+=head1 Bio::DB::GenericWebAgent methods
 
 =cut
 
-sub add_cookie {
-    my $self = shift;
-    if (@_) {
-        my $cookie = shift;
-        $self->throw("Expecting a Bio::DB::EUtilities::Cookie, got $cookie.")
-          unless $cookie->isa("Bio::DB::EUtilities::Cookie");
-        push @{$self->{'_cookie'}}, $cookie;
-    }
-    $self->{'_cookiecount'}++;
-}
+=head1 GenericWebDBI methods
 
-=head2 next_cookie
+=head2 parameter_base
 
- Title   : next_cookie
- Usage   : $cookie = $db->next_cookie
- Function: return a cookie from the internal cookie queue
- Returns : a Bio::DB::EUtilities::Cookie object
- Args    : none
+ Title   : parameter_base
+ Usage   : $dbi->parameter_base($pobj);
+ Function: Get/Set Bio::ParameterBaseI.
+ Returns : Bio::ParameterBaseI object
+ Args    : Bio::ParameterBaseI object
 
 =cut
 
-sub next_cookie {
-    my $self = shift;
-    my $index = $self->_next_cookie_index;
-    if ($self->{'_cookie'}) {
-        return $self->{'_cookie'}->[$index];
-    } else {
-        $self->warn("No cookies left in the jar!");
-    }
-}
+=head2 ua
 
-=head2 reset_cookies
-
- Title   : reset_cookies
- Usage   : $db->reset_cookies
- Function: resets (empties) the internal cookie queue
- Returns : none
- Args    : none
+ Title   : ua
+ Usage   : $dbi->ua;
+ Function: Get/Set LWP::UserAgent.
+ Returns : LWP::UserAgent
+ Args    : LWP::UserAgent
 
 =cut
 
-sub reset_cookies {
-    my $self = shift;
-    $self->{'_cookie'} = [];
-    $self->{'_cookieindex'} = 0;
-    $self->{'_cookiecount'} = 0;
-}
+=head2 get_Response
 
-=head2 get_all_cookies
+ Title   : get_Response
+ Usage   : $agent->get_Response;
+ Function: Get the HTTP::Response object by passing it an HTTP::Request (generated from
+           Bio::ParameterBaseI implementation).
+ Returns : HTTP::Response object or data if callback is used
+ Args    : (optional)
 
- Title   : get_all_cookies
- Usage   : @cookies = $db->get_all_cookies
- Function: retrieves all cookies from the internal cookie queue; this leaves
-           the cookies in the queue intact 
- Returns : array of cookies (if wantarray) of first cookie
- Args    : none
+           -cache_response - flag to cache HTTP::Response object;
+                             Default is 1 (TRUE, caching ON)
 
-=cut
+           These are passed on to LWP::UserAgent::request() if stipulated
 
-sub get_all_cookies {
-    my $self = shift;
-    return @{ $self->{'_cookie'} } if $self->{'_cookie'} && wantarray;
-    return $self->{'_cookie'}->[0] if $self->{'_cookie'} 
-}
-
-=head2 get_cookie_count
-
- Title   : get_cookie_count
- Usage   : $ct = $db->get_cookie_count
- Function: returns # cookies in internal queue
- Returns : integer 
- Args    : none
+           -file   - use a LWP::UserAgent-compliant callback
+           -cb     - dumps the response to a file (handy for large responses)
+                     Note: can't use file and callback at the same time
+           -read_size_hint - bytes of content to read in at a time to pass to callback
+ Note    : Caching and parameter checking are set
 
 =cut
 
-sub get_cookie_count {
-    my $self = shift;
-    return $self->{'_cookiecount'};
-}
+=head2 delay
 
-=head2 rewind_cookies
+ Title   : delay
+ Usage   : $secs = $self->delay([$secs])
+ Function: get/set number of seconds to delay between fetches
+ Returns : number of seconds to delay
+ Args    : new value
 
- Title   : rewind_cookies
- Usage   : $elink->rewind_cookies;
- Function: resets cookie index to 0 (starts over)
- Returns : None
- Args    : None
+NOTE: the default is to use the value specified by delay_policy().
+This can be overridden by calling this method.
 
 =cut
 
-sub rewind_cookies {
-    my $self = shift;
-    $self->{'_cookieindex'} = 0;
-}
+=head1 LWP::UserAgent related methods
 
+=head2 proxy
 
-=head2 keep_cookies
-
- Title   : keep_cookies
- Usage   : $db->keep_cookie(1)
- Function: Flag to retain the internal cookie queue;
-           this is normally emptied upon using get_response
- Returns : none
- Args    : Boolean - value that evaluates to TRUE or FALSE
-
-=cut
-
-sub keep_cookies {
-    my $self = shift;
-    return $self->{'_keep_cookies'} = shift if @_;
-    return $self->{'_keep_cookies'};
-}
-
-=head2 parse_response
-
- Title   : parse_response
- Usage   : $db->_parse_response($content)
- Function: parse out response for cookies and other goodies
- Returns : empty
- Args    : none
- Throws  : Not implemented (implemented in plugin classes)
+ Title   : proxy
+ Usage   : $httpproxy = $db->proxy('http')  or
+           $db->proxy(['http','ftp'], 'http://myproxy' )
+ Function: Get/Set a proxy for use of proxy
+ Returns : a string indicating the proxy
+ Args    : $protocol : an array ref of the protocol(s) to set/get
+           $proxyurl : url of the proxy to use for the specified protocol
+           $username : username (if proxy requires authentication)
+           $password : password (if proxy requires authentication)
 
 =cut
 
-sub parse_response {
-  my $self = shift;
-  $self->throw_not_implemented;
-}
+=head2 authentication
 
-=head2 get_response
-
- Title   : get_response
- Usage   : $db->get_response($content)
- Function: main method to submit request and retrieves a response
- Returns : HTTP::Response object
- Args    : None
+ Title   : authentication
+ Usage   : $db->authentication($user,$pass)
+ Function: Get/Set authentication credentials
+ Returns : Array of user/pass
+ Args    : Array or user/pass
 
 =cut
-
-sub get_response {
-    my $self = shift;
-    $self->_sleep; # institute delay policy
-    my $request = $self->_submit_request;
-	if ($self->authentication) {
-        $request->proxy_authorization_basic($self->authentication)
-    }
-    if (!$request->is_success) {
-        $self->throw(ref($self)." Request Error:".$request->as_string);
-    }
-    $self->reset_cookies if !($self->keep_cookies);
-    $self->parse_response($request);  # grab cookies and what not
-    return $request;
-}
-
-# not implemented yet
-#=head2 reset_parameters
-#
-# Title   : reset_parameters
-# Usage   : $db->reset_parameters(@args);
-# Function: resets the parameters for a EUtility with args (in @args)
-# Returns : none
-# Args    : array of arguments (arg1 => value, arg2 => value)
-#
-#=cut
-
-#sub reset_parameters {
-#    my $self = shift;
-#    my @args = @_;
-#    $self->reset_cookies; # no baggage allowed
-#    if ($self->can('next_linkset')) {
-#        $self->reset_linksets;
-#    }
-#    # resetting the EUtility will not occur even if added as a parameter;
-#    $self->_initialize(@args); 
-#}
-
-=head2 get_ids
-
- Title   : get_ids
- Usage   : $count = $elink->get_ids($db); # array ref of specific db ids
-           @ids   = $esearch->get_ids(); # array
-           $ids   = $esearch->get_ids(); # array ref
- Function: returns an array or array ref of unique IDs.
- Returns : array or array ref of ids 
- Args    : Optional : database string if elink used (required arg if searching
-           multiple databases for related IDs)
-           Currently implemented only for elink object with single linksets
-
-=cut
-
-sub get_ids {
-    my $self = shift;
-    my $user_db = shift if @_;
-    if ($self->can('get_all_linksets')) {
-        my $querydb = $self->db;
-        if (!$user_db && ($querydb eq 'all' || $querydb =~ m{,}) ) {
-            $self->throw(q(Multiple databases searched; must use a specific ).
-                         q(database as an argument.) );
-        }
-        
-        my $count = $self->get_linkset_count;
-        if ($count == 0) {
-            $self->throw( q(No linksets!) );
-        }
-        elsif ($count == 1) {
-            my ($linkset) = $self->get_all_linksets;
-            my ($db) = $user_db ? $user_db : $linkset->get_all_linkdbs;
-            $self->_add_db_ids( scalar( $linkset->get_LinkIds_by_db($db) ) );
-        }
-        else {
-            $self->throw( q(Multiple linkset objects present; can't use get_ids.).
-                 qq(\nUse get_all_linksets/get_databases/get_LinkIds_by_db ).
-                 qq(\n$count total linksets ));
-        }
-    }
-    if ($self->{'_db_ids'}) {
-        return @{$self->{'_db_ids'}} if wantarray;
-        return $self->{'_db_ids'};
-    }
-}
-
-# carried over from NCBIHelper/WebDBSeqI
 
 =head2 delay_policy
 
@@ -530,7 +174,7 @@ sub get_ids {
   Args    : none
 
   NOTE: NCBI requests a delay of 3 seconds between requests.  This method
-        implements that policy.
+        implements that policy.  This may change to check time of day for lengthening delays if needed
 
 =cut
 
@@ -539,192 +183,1002 @@ sub delay_policy {
   return 3;
 }
 
-=head2 get_entrezdbs
+=head2 get_Parser
 
-  Title   : get_entrezdbs
-  Usage   : @dbs = $self->get_entrezdbs;
-  Function: return list of all Entrez databases; convenience method
-  Returns : array or array ref (based on wantarray) of databases 
-  Args    : none
-
-=cut
-
-sub get_entrezdbs {
-    my $self = shift;
-    my $info = Bio::DB::EUtilities->new(-eutil => 'einfo');
-    $info->get_response;
-    # copy list, not ref of list (so einfo obj doesn't stick around)
-    my @databases = $info->einfo_dbs;
-    return @databases;
-}
-
-=head1 Private methods
+ Title   : get_Parser
+ Usage   : $agent->get_Parser;
+ Function: Retrieve the parser used for last agent request
+ Returns : The Bio::Tools::EUtilities parser used to parse the HTTP::Response
+           content
+ Args    : None
+ Note    : Abstract method; defined by implementation
 
 =cut
 
-#=head2 _add_db_ids
-#
-# Title   : _add_db_ids
-# Usage   : $self->add_db_ids($db, $ids);
-# Function: sets internal hash of databases with reference to array of IDs
-# Returns : none
-# Args    : String (name of database) and ref to array of ID's 
-#
-#=cut
-
-# used by esearch and elink, hence here
-
-sub _add_db_ids {
-    my ($self, $ids) = @_;
-    $self->throw ("IDs must be an ARRAY reference") unless ref($ids) =~ m{ARRAY}i;
-    my @ids = @{ $ids}; # deep copy
-    $self->{'_db_ids'} = \@ids; 
+sub get_Parser {
+    my ($self) = @_;
+    my $pobj = $self->parameter_base;
+    if ($pobj->parameters_changed || !$self->{'_parser'}) {
+        my $eutil = $pobj->eutil ;
+        if ($eutil eq 'efetch') {
+            $self->throw("No parser defined for efetch; use get_Response() directly");
+        };
+        # if we are to add pipe/tempfile support this would probably be the
+        # place to add it....
+        my $parser = Bio::Tools::EUtilities->new(
+                            -eutil => $eutil,
+                            -response => $self->get_Response,
+                            -parameters => $pobj,
+                            -verbose => $self->verbose);
+        return $self->{'_parser'} = $parser;
+    }
+    return $self->{'_parser'};
 }
 
-=head2 _eutil
+=head1 Bio::Tools::EUtilities::EUtilParameters-delegating methods
 
- Title   : _eutil
- Usage   : $db->_eutil;
- Function: sets eutil 
- Returns : eutil
- Args    : eutil
+This is only a subset of parameters available from Bio::Tools::EUtilities::EUtilParameters (the
+ones deemed absolutely necessary).  All others are available by calling
+'parameter_base-E<gt>method' when needed.
 
 =cut
 
-sub _eutil   {
-    my $self = shift;
-    return $self->{'_eutil'} = shift if @_;
-    return $self->{'_eutil'};
+=head2 set_parameters
+
+ Title   : set_parameters
+ Usage   : $pobj->set_parameters(@params);
+ Function: sets the NCBI parameters listed in the hash or array
+ Returns : None
+ Args    : [optional] hash or array of parameter/values.
+ Note    : This sets any parameter (i.e. doesn't screen them).  In addition to
+           regular eutil-specific parameters, you can set the following:
+
+           -eutil    - the eUtil to be used (default 'efetch')
+           -history  - pass a HistoryI-implementing object, which
+                       sets the WebEnv, query_key, and possibly db and linkname
+                       (the latter two only for LinkSets)
+           -correspondence - Boolean flag, set to TRUE or FALSE; indicates how
+                       IDs are to be added together for elink request where
+                       ID correspondence might be needed
+                       (default 0)
+
+=cut
+
+sub set_parameters {
+    my ($self, @args) = @_;
+    # just ensures that parser instance isn't reused
+    delete $self->{'_parser'};
+    $self->parameter_base->set_parameters(@args);
 }
 
-# _submit_request
+=head2 reset_parameters
 
- #Title   : _submit_request
- #Usage   : my $url = $self->_submit_request
- #Function: builds request object based on set parameters
- #Returns : HTTP::Request
- #Args    : None
+ Title   : reset_parameters
+ Usage   : resets values
+ Function: resets parameters to either undef or value in passed hash
+ Returns : none
+ Args    : [optional] hash of parameter-value pairs
+ Note    : this also resets eutil(), correspondence(), and the history and request
+           cache
 
-#
-# as the name implies....
+=cut
 
-sub _submit_request {
-    my $self = shift;
-    my %params = $self->_get_params;
-    my $eutil = $self->_eutil;
-    if ($self->id) {
-        # this is in case multiple id groups are present
-        if ($self->can('multi_id') && $self->multi_id) {
-            # multiple id groups if groups are together in an array reference
-            # ids and arrays are flattened into individual groups
-            for my $id_group (@{ $self->id }) {
-                if (ref($id_group) eq 'ARRAY') {
-                    push @{ $params{'id'} }, (join q(,), @{ $id_group });
-                }
-                elsif (!ref($id_group)) {
-                    push @{ $params{'id'} }, $id_group;
-                }
-                else {
-                    $self->throw("Unknown ID type: $id_group");
-                }
-            }
-        }
-        else {
-            my @ids = @{ $self->id };
-            $params{'id'} = join ',', @ids;
-        }
-    }
-    my $url = URI->new($HOSTBASE . $CGILOCATION{$eutil}[1]);
-    $url->query_form(%params);
-    $self->debug("The web address:\n".$url->as_string."\n");
-    if ($CGILOCATION{$eutil}[0] eq 'post') {    # epost request
-        return $self->post($url);
-    } else {                                    # all other requests
-        return $self->get($url);
-    }
+sub reset_parameters {
+    my ($self, @args) = @_;
+    # just ensures that parser instance isn't reused
+    delete $self->{'_parser'};
+    $self->parameter_base->reset_parameters(@args);
 }
 
-# _get_params
+=head2 available_parameters
 
-# Title   : _get_params
-# Usage   : my $url = $self->_get_params
-# Function: builds parameter list for web request
-# Returns : hash of parameter-value paris
-# Args    : None
+ Title   : available_parameters
+ Usage   : @params = $pobj->available_parameters()
+ Function: Returns a list of the available parameters
+ Returns : Array of available parameters (no values)
+ Args    : [optional] A string; either eutil name (for returning eutil-specific
+           parameters) or 'history' (for those parameters allowed when retrieving
+           data stored on the remote server using a 'History' object).
 
-# these get sorted out in a hash originally but end up in an array to
-# deal with multiple id parameters (hash values would kill that)
+=cut
 
-sub _get_params {
-    my $self = shift;
-    my $cookie = $self->get_all_cookies ? $self->get_all_cookies : 0;
-    my @final;  # final parameter list; this changes dep. on presence of cookie
-    my $eutil = $self->_eutil;
-    my %params;
-    @final =  ($cookie && $cookie->isa("Bio::DB::EUtilities::Cookie")) ?
-              @COOKIE_PARAMS : @PARAMS;
-              
-    # build parameter hash based on final parameter list
-    for my $method (@final) {
-        if ($self->$method) {
-            $params{$method} = $self->$method;
-        }
-    }
-    
-    if ($cookie) {
-        my ($webenv, $qkey) = @{$cookie->cookie};
-        $self->debug("WebEnv:$webenv\tQKey:$qkey\n");
-        ($params{'WebEnv'}, $params{'query_key'}) = ($webenv, $qkey);
-        $params{'dbfrom'} = $cookie->database if $eutil eq 'elink';
-    }
-    
-    my $db = $self->db;
-    
-    # elink cannot set the db from a cookie (it is actually dbfrom)
-    $params{'db'} = $db                                   ? $db               : 
-                    ($cookie && $eutil ne 'elink') ? $cookie->database :
-                    'nucleotide';
-    # einfo db exception (db is optional)
-    if (!$db && ($eutil eq 'einfo' || $eutil eq 'egquery')) {
-        delete $params{'db'};
-    }
-    unless (exists $params{'retmode'}) { # set by user
-        my $format = $CGILOCATION{ $eutil }[2];  # set by eutil 
-        if ($format eq 'dbspec') {  # database-specific
-            $format = $DATABASE{$params{'db'}} ?
-                      $DATABASE{$params{'db'}} : 'xml'; # have xml as a fallback
-        }
-        $params{'retmode'} = $format;
-    }
-    $self->debug("Param: $_\tValue: $params{$_}\n") for keys %params;
-    return %params;
+sub available_parameters {
+    my ($self, @args) = @_;
+    return $self->parameter_base->available_parameters(@args);
 }
 
-# enable dynamic loading of proper module at run time
+=head2 get_parameters
 
-sub _load_eutil_module {
-  my ($self,$eutil) = @_;
-  my $module = "Bio::DB::EUtilities::" . $eutil;
-  my $ok;
-  
-  eval {
-      $ok = $self->_load_module($module);
-  };
-  if ( $@ ) {
-      print STDERR <<END;
-$self: $eutil cannot be found
-Exception $@
-For more information about the EUtilities system please see the EUtilities docs.
-This includes ways of checking for formats at compile time, not run time
-END
-  ;
-  }
-  return $ok;
+ Title   : get_parameters
+ Usage   : @params = $pobj->get_parameters;
+           %params = $pobj->get_parameters;
+ Function: Returns list of key/value pairs, parameter => value
+ Returns : Flattened list of key-value pairs. All key-value pairs returned,
+           though subsets can be returned based on the '-type' parameter.
+           Data passed as an array ref are returned based on whether the
+           '-join_id' flag is set (default is the same array ref).
+ Args    : -type : the eutil name or 'history', for returning a subset of
+                parameters (Default: returns all)
+           -join_ids : Boolean; join IDs based on correspondence (Default: no join)
+
+=cut
+
+sub get_parameters {
+    my ($self, @args) = @_;
+    return $self->parameter_base->get_parameters(@args);
 }
 
-sub _next_cookie_index {
-    my $self = shift;
-    return $self->{'_cookieindex'}++;
+=head2 get_parameter_values
+
+ Title   : get_parameter_values
+ Usage   : @vals = $factory->get_parameter_value('id'); # always get array
+ Function: Returns the specific parameter values.
+ Returns : For consistency returns a list of values for this parameter.  If only
+           one is expected, use:
+
+           ($val) = $factory->get_parameter_value('id');
+
+ Args    : parameter expected
+
+=cut
+
+sub get_parameter_values {
+    my ($self, $p) = @_;
+    my %params = $self->parameter_base->get_parameters(-list => [$p]);
+    if (exists $params{$p}) {
+        return ref $params{$p} eq 'ARRAY' ? @{$params{$p}} : $params{$p};
+    }
+    return;
+}
+
+=head1 Bio::Tools::EUtilities-delegating methods
+
+=cut
+
+=head1 Bio::Tools::EUtilities::EUtilDataI methods
+
+=head2 eutil
+
+ Title    : eutil
+ Usage    : $eutil->$foo->eutil
+ Function : Get/Set eutil
+ Returns  : string
+ Args     : string (eutil)
+ Throws   : on invalid eutil
+
+=cut
+
+sub eutil {
+    my ($self, @args) = @_;
+    return $self->get_Parser->eutil(@args);
+}
+
+=head2 datatype
+
+ Title    : datatype
+ Usage    : $type = $foo->datatype;
+ Function : Get/Set data object type
+ Returns  : string
+ Args     : string
+
+=cut
+
+sub datatype {
+    my ($self, @args) = @_;
+    return $self->get_Parser->datatype(@args);
+}
+
+=head2 to_string
+
+ Title    : to_string
+ Usage    : $foo->to_string()
+ Function : converts current object to string
+ Returns  : none
+ Args     : (optional) simple data for text formatting
+ Note     : Implemented in plugins
+
+=cut
+
+sub to_string {
+    my ($self, @args) = @_;
+    return $self->get_Parser->to_string(@args);
+}
+
+=head2 print_all
+
+ Title    : print_all
+ Usage    : $info->print_all();
+            $info->print_all(-fh => $fh, -cb => $coderef);
+ Function : prints (dumps) all data in parser.  Unless a coderef is supplied,
+            this just dumps the parser-specific to_string method to either a
+            file/fh or STDOUT
+ Returns  : none
+ Args     : [optional]
+           -file : file to print to
+           -fh   : filehandle to print to (cannot be used concurrently with file)
+           -cb   : coderef to use in place of default print method.  This is passed
+                   in a LinkSet object
+           -wrap : number of columns to wrap default text output to (def = 80)
+ Notes    : only applicable for einfo.  If -file or -fh are not defined,
+            prints to STDOUT
+
+=cut
+
+sub print_all {
+    my ($self, @args) = @_;
+    return $self->get_Parser->print_all(@args);
+}
+
+=head1 Methods useful for multiple eutils
+
+=head2 get_ids
+
+ Title    : get_ids
+ Usage    : my @ids = $parser->get_ids
+ Function : returns array of requested IDs (see Notes for more specifics)
+ Returns  : array
+ Args     : [conditional] not required except when running elink queries against
+            multiple databases. In case of the latter, the database name is
+            optional but recommended when retrieving IDs as the ID list will
+            be globbed together. In such cases, if a db name isn't provided a
+            warning is issued as a reminder.
+ Notes    : esearch    : returned ID list
+            elink      : returned ID list (see Args above for caveats)
+            all others : from parameter_base->id or undef
+
+=cut
+
+sub get_ids {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_ids(@args);
+}
+
+=head2 get_database
+
+ Title    : get_database
+ Usage    : my $db = $info->get_database;
+ Function : returns single database name (eutil-compatible).  This is the queried
+            database.  For most eutils this is straightforward.  For elinks
+            (which have 'db' and 'dbfrom') this is dbto, for egquery, it is the first
+            db in the list (you probably want get_databases instead)
+ Returns  : string
+ Args     : none
+ Notes    : egquery    : first db in the query (you probably want get_databases)
+            einfo      : the queried database
+            espell     : the queried database
+            elink      : from parameter_base->dbfrom or undef
+            all others : from parameter_base->db or undef
+
+=cut
+
+sub get_database {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_database(@args);
+}
+
+=head2 get_db (alias for get_database)
+
+=cut
+
+sub get_db {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_db(@args);
+}
+
+=head2 get_databases
+
+ Title    : get_databases
+ Usage    : my @dbs = $parser->get_databases
+ Function : returns list of databases 
+ Returns  : array of strings
+ Args     : none
+ Notes    : This is guaranteed to return a list of databases. For a single
+            database use the convenience method get_db/get_database
+            
+            egquery    : list of all databases in the query
+            einfo      : the queried database
+            espell     : the queried database
+            all others : from parameter_base->db or undef
+
+=cut
+
+sub get_databases {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_databases(@args);
+}
+
+=head2 get_dbs (alias for get_databases)
+
+=cut
+
+sub get_dbs {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_databases(@args);
+}
+
+=head2 next_History
+
+ Title    : next_History
+ Usage    : while (my $hist=$parser->next_History) {...}
+ Function : returns next HistoryI (if present).
+ Returns  : Bio::Tools::EUtilities::HistoryI (Cookie or LinkSet)
+ Args     : none
+ Note     : esearch, epost, and elink are all capable of returning data which
+            indicates search results (in the form of UIDs) is stored on the
+            remote server. Access to this data is wrapped up in simple interface
+            (HistoryI), which is implemented in two classes:
+            Bio::DB::EUtilities::History (the simplest) and
+            Bio::DB::EUtilities::LinkSet. In general, calls to epost and esearch
+            will only return a single HistoryI object (formerly known as a
+            Cookie), but calls to elink can generate many depending on the
+            number of IDs, the correspondence, etc. Hence this iterator, which
+            allows one to retrieve said data one piece at a time.
+
+=cut
+
+sub next_History {
+    my ($self, @args) = @_;
+    return $self->get_Parser->next_History(@args);
+}
+
+=head2 next_cookie (alias for next_History)
+
+=cut 
+
+sub next_cookie {
+    my ($self, @args) = @_;
+    return $self->get_Parser->next_History(@args);
+}
+
+=head2 get_Histories
+
+ Title    : get_Histories
+ Usage    : my @hists = $parser->get_Histories
+ Function : returns list of HistoryI objects.
+ Returns  : list of Bio::Tools::EUtilities::HistoryI (Cookie or LinkSet)
+ Args     : none
+
+=cut
+
+sub get_Histories {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_Histories(@args);
+}
+
+=head1 Query-related methods
+
+=head2 get_count
+
+ Title    : get_count
+ Usage    : my $ct = $parser->get_count
+ Function : returns the count (hits for a search)
+ Returns  : integer
+ Args     : [CONDITIONAL] string with database name - used to retrieve
+            count from specific database when using egquery
+ Notes    : egquery    : count for specified database (specified above)
+            esearch    : count for last search
+            all others : undef
+
+=cut
+
+sub get_count {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_count(@args);
+}
+
+=head2 get_term
+
+ Title    : get_term
+ Usage    : $st = $qd->get_term;
+ Function : retrieve the term for the global search
+ Returns  : string
+ Args     : none
+ Notes    : egquery    : search term
+            espell     : search term
+            esearch    : from parameter_base->term or undef
+            all others : undef
+
+=cut
+
+sub get_term {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_term(@args);
+}
+
+=head2 get_translation_from
+
+ Title   : get_translation_from
+ Usage   : $string = $qd->get_translation_from();
+ Function: portion of the original query replaced with translated_to()
+ Returns : string
+ Args    : none
+ Note    : only applicable for esearch
+
+=cut
+
+sub get_translation_from {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_translation_from(@args);
+}
+
+=head2 get_translation_to
+
+ Title   : get_translation_to
+ Usage   : $string = $qd->get_translation_to();
+ Function: replaced string used in place of the original query term in translation_from()
+ Returns : string
+ Args    : none
+ Note    : only applicable for esearch 
+
+=cut
+
+sub get_translation_to {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_translation_to(@args);
+}
+
+=head2 get_retstart
+
+ Title    : get_retstart
+ Usage    : $start = $qd->get_retstart();
+ Function : retstart setting for the query (either set or NCBI default)
+ Returns  : Integer
+ Args     : none
+ Notes    : esearch    : retstart
+            esummary   : retstart
+            all others : from parameter_base->retstart or undef
+
+=cut
+
+sub get_retstart {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_retstart(@args);
+}
+
+=head2 get_retmax
+
+ Title    : get_retmax
+ Usage    : $max = $qd->get_retmax();
+ Function : retmax setting for the query (either set or NCBI default)
+ Returns  : Integer
+ Args     : none
+ Notes    : esearch    : retmax
+            esummary   : retmax
+            all others : from parameter_base->retmax or undef
+            
+=cut
+
+sub get_retmax {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_retmax(@args);
+}
+
+=head2 get_query_translation
+
+ Title   : get_query_translation
+ Usage   : $string = $qd->get_query_translation();
+ Function: returns the translated query used for the search (if any)
+ Returns : string
+ Args    : none
+ Notes   : only applicable for esearch.  This is the actual term used for
+           esearch.
+
+=cut
+
+sub get_query_translation {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_query_translation(@args);
+}
+
+=head2 get_corrected_query
+
+ Title    : get_corrected_query
+ Usage    : my $cor = $eutil->get_corrected_query;
+ Function : retrieves the corrected query when using espell
+ Returns  : string
+ Args     : none
+ Notes    : only applicable for espell.
+
+=cut
+
+sub get_corrected_query {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_corrected_query(@args);
+}
+
+=head2 get_replaced_terms
+
+ Title    : get_replaced_terms
+ Usage    : my $term = $eutil->get_replaced_term
+ Function : returns array of strings replaced in the query
+ Returns  : string 
+ Args     : none
+ Notes    : only applicable for espell
+
+=cut
+
+sub get_replaced_terms {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_replaced_terms(@args);
+}
+
+=head2 next_GlobalQuery
+
+ Title    : next_GlobalQuery
+ Usage    : while (my $query = $eutil->next_GlobalQuery) {...}
+ Function : iterates through the queries returned from an egquery search
+ Returns  : GlobalQuery object
+ Args     : none
+ Notes    : only applicable for egquery
+
+=cut
+
+sub next_GlobalQuery {
+    my ($self, @args) = @_;
+    return $self->get_Parser->next_GlobalQuery(@args);
+}
+
+=head2 get_GlobalQueries
+
+ Title    : get_GlobalQueries
+ Usage    : @queries = $eutil->get_GlobalQueries
+ Function : returns list of GlobalQuery objects
+ Returns  : array of GlobalQuery objects
+ Args     : none
+ Notes    : only applicable for egquery
+ 
+=cut
+
+sub get_GlobalQueries {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_GlobalQueries(@args);
+}
+
+=head2 print_GlobalQueries
+
+ Title    : print_GlobalQueries
+ Usage    : $docsum->print_GlobalQueries();
+            $docsum->print_GlobalQueries(-fh => $fh, -cb => $coderef);
+ Function : prints item data for all global queries.  The default printing
+            method is each item per DocSum is printed with relevant values if
+            present in a simple table using Text::Wrap. 
+ Returns  : none
+ Args     : [optional]
+           -file : file to print to
+           -fh   : filehandle to print to (cannot be used concurrently with file)
+           -cb   : coderef to use in place of default print method.  This is passed
+                   in a GlobalQuery object;
+           -wrap : number of columns to wrap default text output to (def = 80)
+ Notes    : only applicable for esummary.  If -file or -fh are not defined,
+            prints to STDOUT
+
+=cut
+
+sub print_GlobalQueries {
+    my ($self, @args) = @_;
+    return $self->get_Parser->print_GlobalQueries(@args);
+}
+
+=head1 Summary-related methods
+
+=head2 next_DocSum
+
+ Title    : next_DocSum
+ Usage    : while (my $ds = $esum->next_DocSum) {...}
+ Function : iterate through DocSum instances
+ Returns  : single Bio::Tools::EUtilities::Summary::DocSum
+ Args     : none yet
+ Notes    : only applicable for esummary
+ 
+=cut
+
+sub next_DocSum {
+    my ($self, @args) = @_;
+    return $self->get_Parser->next_DocSum(@args);
+}
+
+=head2 get_DocSums
+
+ Title    : get_DocSums
+ Usage    : my @docsums = $esum->get_DocSums
+ Function : retrieve a list of DocSum instances
+ Returns  : array of Bio::Tools::EUtilities::Summary::DocSum
+ Args     : none
+ Notes    : only applicable for esummary
+
+=cut
+
+sub get_DocSums {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_DocSums(@args);
+}
+
+=head2 print_DocSums
+
+ Title    : print_DocSums
+ Usage    : $docsum->print_DocSums();
+            $docsum->print_DocSums(-fh => $fh, -cb => $coderef);
+ Function : prints item data for all docsums.  The default printing method is
+            each item per DocSum is printed with relevant values if present
+            in a simple table using Text::Wrap.  
+ Returns  : none
+ Args     : [optional]
+           -file : file to print to
+           -fh   : filehandle to print to (cannot be used concurrently with file)
+           -cb   : coderef to use in place of default print method.  This is passed
+                   in a DocSum object;
+           -wrap : number of columns to wrap default text output to (def = 80)
+ Notes    : only applicable for esummary.  If -file or -fh are not defined,
+            prints to STDOUT
+
+=cut
+
+sub print_DocSums {
+    my ($self, @args) = @_;
+    return $self->get_Parser->print_DocSums(@args);
+}
+
+=head1 Info-related methods
+
+=head2 get_available_databases
+
+ Title    : get_available_databases
+ Usage    : my @dbs = $info->get_available_databases
+ Function : returns list of available eutil-compatible database names
+ Returns  : Array of strings 
+ Args     : none
+ Notes    : only applicable for einfo. 
+
+=cut
+
+sub get_available_databases {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_available_databases(@args);
+}
+
+=head2 get_record_count
+
+ Title    : get_record_count
+ Usage    : my $ct = $eutil->get_record_count;
+ Function : returns database record count
+ Returns  : integer
+ Args     : none
+ Notes    : only applicable for einfo.  
+
+=cut
+
+sub get_record_count {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_record_count(@args);
+}
+
+=head2 get_last_update
+
+ Title    : get_last_update
+ Usage    : my $time = $info->get_last_update;
+ Function : returns string containing time/date stamp for last database update
+ Returns  : integer
+ Args     : none
+ Notes    : only applicable for einfo. 
+
+=cut
+
+sub get_last_update {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_last_update(@args);
+}
+
+=head2 get_menu_name
+
+ Title    : get_menu_name
+ Usage    : my $nm = $info->get_menu_name;
+ Function : returns string of database menu name
+ Returns  : string
+ Args     : none
+ Notes    : only applicable for einfo. 
+
+=cut
+
+sub get_menu_name {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_menu_name(@args);
+}
+
+=head2 get_description
+
+ Title    : get_description
+ Usage    : my $desc = $info->get_description;
+ Function : returns database description
+ Returns  : string
+ Args     : none
+ Notes    : only applicable for einfo. 
+
+=cut
+
+sub get_description {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_description(@args);
+}
+
+=head2 next_FieldInfo
+
+ Title    : next_FieldInfo
+ Usage    : while (my $field = $info->next_FieldInfo) {...}
+ Function : iterate through FieldInfo objects
+ Returns  : Field object
+ Args     : none
+ Notes    : only applicable for einfo. Uses callback() for filtering if defined
+            for 'fields'
+
+=cut
+
+sub next_FieldInfo {
+    my ($self, @args) = @_;
+    return $self->get_Parser->next_FieldInfo(@args);
+}
+
+=head2 get_FieldInfo
+
+ Title    : get_FieldInfo
+ Usage    : my @fields = $info->get_FieldInfo;
+ Function : returns list of FieldInfo objects
+ Returns  : array (FieldInfo objects)
+ Args     : none
+ Notes    : only applicable for einfo. 
+
+=cut
+
+sub get_FieldInfo {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_FieldInfo(@args);
+}
+
+*get_FieldInfos = \&get_FieldInfo;
+
+=head2 next_LinkInfo
+
+ Title    : next_LinkInfo
+ Usage    : while (my $link = $info->next_LinkInfo) {...}
+ Function : iterate through LinkInfo objects
+ Returns  : LinkInfo object
+ Args     : none
+ Notes    : only applicable for einfo.  Uses callback() for filtering if defined
+            for 'linkinfo'
+
+=cut
+
+sub next_LinkInfo {
+    my ($self, @args) = @_;
+    return $self->get_Parser->next_LinkInfo(@args);
+}
+
+=head2 get_LinkInfo
+
+ Title    : get_LinkInfo
+ Usage    : my @links = $info->get_LinkInfo;
+ Function : returns list of LinkInfo objects
+ Returns  : array (LinkInfo objects)
+ Args     : none
+ Notes    : only applicable for einfo.  
+
+=cut
+
+sub get_LinkInfo {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_LinkInfo(@args);
+}
+
+*get_LinkInfos = \&get_LinkInfo;
+
+=head2 print_FieldInfo
+
+ Title    : print_FieldInfo
+ Usage    : $info->print_FieldInfo();
+            $info->print_FieldInfo(-fh => $fh, -cb => $coderef);
+ Function : prints field data for each FieldInfo object. The default method
+            prints data from each FieldInfo in a simple table using Text::Wrap.  
+ Returns  : none
+ Args     : [optional]
+           -file : file to print to
+           -fh   : filehandle to print to (cannot be used concurrently with file)
+           -cb   : coderef to use in place of default print method.  
+           -wrap : number of columns to wrap default text output to (def = 80)
+ Note     : if -file or -fh are not defined, prints to STDOUT
+
+=cut
+
+sub print_FieldInfo {
+    my ($self, @args) = @_;
+    return $self->get_Parser->print_FieldInfo(@args);
+}
+
+=head2 print_LinkInfo
+
+ Title    : print_LinkInfo
+ Usage    : $info->print_LinkInfo();
+            $info->print_LinkInfo(-fh => $fh, -cb => $coderef);
+ Function : prints link data for each LinkInfo object. The default is generated
+            via LinkInfo::to_string
+ Returns  : none
+ Args     : [optional]
+           -file : file to print to
+           -fh   : filehandle to print to (cannot be used concurrently with file)
+           -cb   : coderef to use in place of default print method.  This is passed
+                   in a LinkInfo object;
+           -wrap : number of columns to wrap default text output to (def = 80)
+ Notes    : only applicable for einfo.  If -file or -fh are not defined,
+            prints to STDOUT
+
+=cut
+
+sub print_LinkInfo {
+    my ($self, @args) = @_;
+    return $self->get_Parser->print_LinkInfo(@args);
+}
+
+=head1 Bio::Tools::EUtilities::Link-related methods
+
+=head2 next_LinkSet
+
+ Title    : next_LinkSet
+ Usage    : while (my $ls = $eutil->next_LinkSet {...}
+ Function : iterate through LinkSet objects
+ Returns  : LinkSet object
+ Args     : none
+ Notes    : only applicable for elink.  Uses callback() for filtering if defined
+            for 'linksets'
+
+=cut
+
+sub next_LinkSet {
+    my ($self, @args) = @_;
+    return $self->get_Parser->next_LinkSet(@args);
+}
+
+=head2 get_LinkSets
+
+ Title    : get_LinkSets
+ Usage    : my @links = $info->get_LinkSets;
+ Function : returns list of LinkSets objects
+ Returns  : array (LinkSet objects)
+ Args     : none
+ Notes    : only applicable for elink.  
+
+=cut
+
+# add support for retrieval of data if lazy parsing is enacted
+
+sub get_LinkSets {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_LinkSets(@args);
+}
+
+=head2 print_LinkSets
+
+ Title    : print_LinkSets
+ Usage    : $info->print_LinkSets();
+            $info->print_LinkSets(-fh => $fh, -cb => $coderef);
+ Function : prints link data for each LinkSet object. The default is generated
+            via LinkSet::to_string
+ Returns  : none
+ Args     : [optional]
+           -file : file to print to
+           -fh   : filehandle to print to (cannot be used concurrently with file)
+           -cb   : coderef to use in place of default print method.  This is passed
+                   in a LinkSet object
+           -wrap : number of columns to wrap default text output to (def = 80)
+ Notes    : only applicable for einfo.  If -file or -fh are not defined,
+            prints to STDOUT
+
+=cut
+
+sub print_LinkSets {
+    my ($self, @args) = @_;
+    return $self->get_Parser->print_LinkSets(@args);
+}
+
+=head2 get_linked_databases
+
+ Title    : get_linked_databases
+ Usage    : my @dbs = $eutil->get_linked_databases
+ Function : returns list of databases linked to in linksets
+ Returns  : array of databases
+ Args     : none
+ Notes    : only applicable for elink.
+
+=cut
+
+sub get_linked_databases {
+    my ($self, @args) = @_;
+    return $self->get_Parser->get_linked_databases(@args);
+}
+
+=head1 Iterator- and callback-related methods
+
+=cut
+
+=head2 rewind
+
+ Title    : rewind
+ Usage    : $esum->rewind()
+            $esum->rewind('recursive')
+ Function : retrieve a list of DocSum instances
+ Returns  : array of Bio::Tools::EUtilities::Summary::DocSum
+ Args     : [optional] Scalar; string ('all') to reset all iterators, or string 
+            describing the specific main object iterator to reset. The following
+            are recognized (case-insensitive):
+
+            'all' - rewind all objects and also recursively resets nested object
+                    interators (such as LinkSets and DocSums).
+            'globalqueries'
+            'fieldinfo' or 'fieldinfos'
+            'linkinfo' or 'linkinfos'
+            'linksets'
+            'docsums'
+
+=cut
+
+sub rewind {
+    my ($self, $string) = @_;
+    return $self->get_Parser->rewind($string);
+}
+
+=head2 generate_iterator
+
+ Title    : generate_iterator
+ Usage    : my $coderef = $esum->generate_iterator('linkinfo')
+ Function : generates an iterator (code reference) which iterates through
+            the relevant object indicated by the args
+ Returns  : code reference
+ Args     : [REQUIRED] Scalar; string describing the specific object to iterate.
+            The following are currently recognized (case-insensitive):
+
+            'globalqueries'
+            'fieldinfo' or 'fieldinfos'
+            'linkinfo' or 'linkinfos'
+            'linksets'
+            'docsums'
+
+            A second argument can also be passed to generate a 'lazy' iterator,
+            which loops through and returns objects as they are created (instead
+            of creating all data instances up front, then iterating through,
+            which is the default). Use of these iterators precludes use of
+            rewind() for the time being as we can't guarantee you can rewind(),
+            as this depends on whether the data source is seek()able and thus
+            'rewindable'. We will add rewind() support at a later time which
+            will work for 'seekable' data.
+
+            A callback specified using callback() will be used to filter objects
+            for any generated iterator. This behaviour is implemented for both
+            normal and lazy iterator types and is the default. If you don't want
+            this, make sure to reset any previously set callbacks via
+            reset_callback() (which just deletes the code ref).
+ TODO     : generate seekable iterators ala HOP for seekable fh data
+
+=cut
+
+sub generate_iterator {
+    my ($self, @args) = @_;
+    return $self->get_Parser->generate_iterator(@args);
+}
+
+=head2 callback
+
+ Title    : callback
+ Usage    : $parser->callback(sub {$_[0]->get_database eq 'protein'});
+ Function : Get/set callback code ref used to filter returned data objects
+ Returns  : code ref if previously set
+ Args     : single argument:
+            code ref - evaluates a passed object and returns true or false value
+                       (used in iterators)
+            'reset' - string, resets the iterator.
+            returns upon any other args
+
+=cut
+
+sub callback {
+    my ($self, @args) = @_;
+    return $self->get_Parser->callback(@args);
 }
 
 1;

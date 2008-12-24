@@ -1,4 +1,4 @@
-# $Id: medlinexml.pm,v 1.9.4.1 2006/10/02 23:10:13 sendu Exp $
+# $Id: medlinexml.pm 14768 2008-07-29 03:48:41Z cjfields $
 #
 # BioPerl module Bio::Biblio::IO::medlinexml.pm
 #
@@ -17,7 +17,7 @@ Do not use this object directly, it is recommended to access it and use
 it through the I<Bio::Biblio::IO> module:
 
   use Bio::Biblio::IO;
-  my $io = new Bio::Biblio::IO (-format => 'medlinexml');
+  my $io = Bio::Biblio::IO->new(-format => 'medlinexml');
 
 =head1 DESCRIPTION
 
@@ -460,7 +460,7 @@ sub handle_start {
     if ($e eq 'QualifierName' or
 	$e eq 'SubHeading') {
 	my %p = ();
-	$p{'majorTopic'} = "Y" if $attrs{'MajorTopicYN'};
+	$p{'majorTopic'} = $attrs{'MajorTopicYN'} if $attrs{'MajorTopicYN'};
 	push (@ObjectStack, \%p);
     }
 

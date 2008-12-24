@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: SearchWriterI.pm,v 1.10.4.1 2006/10/02 23:10:26 sendu Exp $
+# $Id: SearchWriterI.pm 10594 2006-09-29 04:06:13Z tseemann $
 #
 # BioPerl module Bio::SearchIO::SearchWriterI
 #

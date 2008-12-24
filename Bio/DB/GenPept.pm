@@ -1,4 +1,4 @@
-# $Id: GenPept.pm,v 1.31.4.1 2006/10/02 23:10:15 sendu Exp $
+# $Id: GenPept.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::DB::GenPept
 #
@@ -18,7 +18,7 @@ Bio::DB::GenPept - Database object interface to GenPept
 
 =head1 SYNOPSIS
 
-    $gb = new Bio::DB::GenPept;
+    $gb = Bio::DB::GenPept->new();
 
     $seq = $gb->get_Seq_by_id('195055'); # Unique ID
 

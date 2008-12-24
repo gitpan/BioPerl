@@ -1,4 +1,4 @@
-# $Id: MedlineJournal.pm,v 1.10.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: MedlineJournal.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Biblio::MedlineJournal
 #
@@ -13,11 +13,11 @@ Bio::Biblio::MedlineJournal - Representation of a MEDLINE journal
 
 =head1 SYNOPSIS
 
-    $obj = new Bio::Biblio::MedlineJournal
+    $obj = Bio::Biblio::MedlineJournal->new
                (-medline_ta => 'J Vasc Interv Radiol');
   #--- OR ---
 
-    $obj = new Bio::Biblio::MedlineJournal;
+    $obj = Bio::Biblio::MedlineJournal->new();
     $obj->medline_ta ('J Vasc Interv Radiol');
 
 =head1 DESCRIPTION

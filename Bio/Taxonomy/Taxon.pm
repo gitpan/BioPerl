@@ -1,4 +1,4 @@
-# $Id: Taxon.pm,v 1.5.4.1 2006/10/02 23:10:31 sendu Exp $
+# $Id: Taxon.pm 15052 2008-12-01 08:47:39Z heikki $
 #
 # BioPerl module for Bio::Taxonomy::Taxon
 #
@@ -15,14 +15,14 @@ Bio::Taxonomy::Taxon - Generic Taxonomic Entity object
 
 =head1 SYNOPSIS
 
-    NB: This module is deprecated. Use Bio::Taxon instead.
+    # NB: This module is deprecated. Use Bio::Taxon instead.
 
     use Bio::Taxonomy::Taxon;
-    my $taxonA = new Bio::Taxonomy::Taxon();
-    my $taxonL = new Bio::Taxonomy::Taxon();
-    my $taxonR = new Bio::Taxonomy::Taxon();
+    my $taxonA = Bio::Taxonomy::Taxon->new();
+    my $taxonL = Bio::Taxonomy::Taxon->new();
+    my $taxonR = Bio::Taxonomy::Taxon->new();
 
-    my $taxon = new Bio::Taxonomy::Taxon();
+    my $taxon = Bio::Taxonomy::Taxon->new();
     $taxon->add_Descendents($taxonL);
     $taxon->add_Descendents($taxonR);
 
@@ -64,7 +64,7 @@ BEGIN {
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Taxonomy::Taxon();
+ Usage   : my $obj = Bio::Taxonomy::Taxon->new();
  Function: Builds a new Bio::Taxonomy::Taxon object
  Returns : Bio::Taxonomy::Taxon
  Args    : -descendents   => array pointer to descendents (optional)
@@ -74,6 +74,8 @@ BEGIN {
            -rank  => the taxonomic level of the node (also from NCBI)
 
 =cut
+
+#' for emacs
 
 sub new {
   my($class,@args) = @_;
@@ -112,7 +114,7 @@ sub new {
 =head2 add_Descendent
 
  Title   : add_Descendent
- Usage   : $taxon->add_Descendant($taxon);
+ Usage   : $taxon->add_Descendent($taxon);
  Function: Adds a descendent to a taxon
  Returns : number of current descendents for this taxon
  Args    : Bio::Taxonomy::Taxon

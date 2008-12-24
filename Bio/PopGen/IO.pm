@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.6.4.1 2006/10/02 23:10:23 sendu Exp $
+# $Id: IO.pm 11705 2007-09-26 14:06:36Z jason $
 #
 # BioPerl module for Bio::PopGen::IO
 #
@@ -17,7 +17,7 @@ Bio::PopGen::IO - Input individual,marker,allele information
 =head1 SYNOPSIS
 
   use Bio::PopGen::IO;
-  my $io = new Bio::PopGen::IO(-format => 'csv',
+  my $io = Bio::PopGen::IO->new(-format => 'csv',
                                -file   => 'data.csv');
 
   # Some IO might support reading in a population at a time
@@ -85,7 +85,7 @@ use base qw(Bio::Root::IO);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::PopGen::IO();
+ Usage   : my $obj = Bio::PopGen::IO->new();
  Function: Builds a new Bio::PopGen::IO object 
  Returns : an instance of Bio::PopGen::IO
  Args    :
@@ -242,7 +242,7 @@ sub fh {
 =head2 _load_format_module
 
  Title   : _load_format_module
- Usage   : *INTERNAL SearchIO stuff*
+ Usage   : *INTERNAL Bio::PopGen::IO stuff*
  Function: Loads up (like use) a module at run time on demand
  Example : 
  Returns : 

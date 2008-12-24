@@ -1,4 +1,4 @@
-# $Id: IO.pm,v 1.12.4.1 2006/10/02 23:10:31 sendu Exp $
+# $Id: IO.pm 15257 2008-12-24 05:27:05Z cjfields $
 #
 # BioPerl module for Bio::Structure::IO
 #
@@ -205,7 +205,7 @@ package Bio::Structure::IO;
 use strict;
 
 use Bio::PrimarySeq;
-use Symbol();
+use Symbol;
 
 use base qw(Bio::Root::Root Bio::Root::IO);
 

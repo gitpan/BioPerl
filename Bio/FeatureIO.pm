@@ -1,4 +1,4 @@
-# $Id: FeatureIO.pm,v 1.15.4.3 2006/10/10 03:40:09 jason Exp $
+# $Id: FeatureIO.pm 15257 2008-12-24 05:27:05Z cjfields $
 #
 # BioPerl module for Bio::FeatureIO
 #
@@ -151,9 +151,9 @@ improve the efficiency of writing multiple sequences to the same file
 (or filehandle), pass the -flush option '0' or any other value that
 evaluates as defined but false:
 
-  my $f1 = new Bio::FeatureIO -file   => "<a.f1",
+  my $f1 = Bio::FeatureIO->new -file   => "<a.f1",
                               -format => "f1";
-  my $f2 = new Bio::FeatureIO -file   => ">a.f2",
+  my $f2 = Bio::FeatureIO->new -file   => ">a.f2",
                               -format => "f2",
                               -flush  => 0; # go as fast as we can!
 
@@ -232,7 +232,7 @@ package Bio::FeatureIO;
 
 use strict;
 
-use Symbol();
+use Symbol;
 
 use base qw(Bio::Root::Root Bio::Root::IO);
 

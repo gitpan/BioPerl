@@ -1,4 +1,4 @@
-# $Id: flatfile.pm,v 1.15.4.2 2006/11/08 17:25:54 sendu Exp $
+# $Id: flatfile.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::DB::Taxonomy::flatfile
 #
@@ -19,7 +19,7 @@ which uses local flat files
 
   use Bio::DB::Taxonomy;
 
-  my $db = new Bio::DB::Taxonomy(-source => 'flatfile'
+  my $db = Bio::DB::Taxonomy->new(-source => 'flatfile'
                                  -nodesfile => $nodesfile,
                                  -namesfile => $namefile);
 
@@ -106,7 +106,7 @@ use base qw(Bio::DB::Taxonomy);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::DB::Taxonomy::flatfile();
+ Usage   : my $obj = Bio::DB::Taxonomy::flatfile->new();
  Function: Builds a new Bio::DB::Taxonomy::flatfile object 
  Returns : an instance of Bio::DB::Taxonomy::flatfile
  Args    : -directory => name of directory where index files should be created
@@ -173,7 +173,7 @@ sub get_taxon {
     my ($taxon_names) = $self->{'_id2name'}->[$taxid];
     my ($sci_name, @common_names) = split(SEPARATOR, $taxon_names);
     
-    my $taxon = new Bio::Taxon(
+    my $taxon = Bio::Taxon->new(
                         -name         => $sci_name,
                         -common_names => [@common_names],
                         -ncbi_taxid   => $taxid, # since this is a real ncbi taxid, explicitly set it as one
@@ -206,7 +206,15 @@ sub get_taxon {
 
 sub get_taxonids {
     my ($self, $query) = @_;
-    my $ids = $self->{'_name2id'}->{lc($query)} || return;
+    my $ids = $self->{'_name2id'}->{lc($query)};
+    unless ($ids) {
+        if ($query =~ /_/) {
+            # try again converting underscores to spaces
+            $query =~ s/_/ /g;
+            $ids = $self->{'_name2id'}->{lc($query)};
+        }
+        $ids || return;
+    }
     my @ids = split(SEPARATOR, $ids);
     return wantarray() ? @ids : shift @ids;
 }

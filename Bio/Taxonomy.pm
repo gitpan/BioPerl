@@ -1,4 +1,4 @@
-# $Id: Taxonomy.pm,v 1.8.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: Taxonomy.pm 15052 2008-12-01 08:47:39Z heikki $
 #
 # BioPerl module for Bio::Taxonomy
 #
@@ -14,8 +14,8 @@ Bio::Taxonomy - representing Taxonomy.
 
 =head1 SYNOPSIS
 
-  NB: This module is deprecated. Use Bio::Taxon in combination with
-  Bio::Tree::Tree methods instead.
+  # NB: This module is deprecated. Use Bio::Taxon in combination with
+  # Bio::Tree::Tree methods instead.
 
   use Bio::Taxonomy;
 
@@ -158,7 +158,7 @@ use base qw(Bio::Root::Root);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Taxonomy();
+ Usage   : my $obj = Bio::Taxonomy->new();
  Function: Builds a new Bio::Taxonomy object
  Returns : Bio::Taxonomy
  Args    : -method  -> method used to decide classification

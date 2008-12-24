@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: classify_hits_kingdom.PLS,v 1.2 2005/08/25 07:21:26 heikki Exp $
+# $Id: classify_hits_kingdom.PLS 15088 2008-12-04 02:49:09Z bosborne $
 
 =head1 NAME
 

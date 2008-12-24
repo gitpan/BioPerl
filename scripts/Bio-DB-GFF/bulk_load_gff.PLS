@@ -1,16 +1,16 @@
 #!/usr/bin/perl
-# $Id: bulk_load_gff.PLS,v 1.43 2006/06/26 17:40:27 lstein Exp $
-
+# $Id: bulk_load_gff.PLS 15088 2008-12-04 02:49:09Z bosborne $
 
 use strict;
 # use lib './blib/lib';
 use DBI;
 use IO::File;
+use File::Spec;
 use Getopt::Long;
 use Bio::DB::GFF;
 use Bio::DB::GFF::Util::Binning 'bin';
-use constant MYSQL => 'mysql';
 
+use constant MYSQL => 'mysql';
 use constant FDATA      => 'fdata';
 use constant FTYPE      => 'ftype';
 use constant FGROUP     => 'fgroup';
@@ -90,8 +90,9 @@ e.g. -d instead of --database.
    --long_list           Directory containing a very large number of 
                          GFF and/or FASTA files
    --password            Password to use for authentication
-                           (Doesn't work with Postgres, password must be
-                           supplied interactively)
+                           (Does not work with Postgres, password must be
+                           supplied interactively or be left empty for
+                           ident authentication)
    --maxbin              Set the value of the maximum bin size
    --local               Flag to indicate that the data source is local
    --maxfeature          Set the value of the maximum feature size (power of 10)
@@ -207,10 +208,11 @@ GetOptions ('database:s'    => \$DSN,
 
 # If called as pg_bulk_load_gff.pl behave as that did.
 if ($0 =~/pg_bulk_load_gff.pl/){
-    $ADAPTOR ||= 'pg';
+    $ADAPTOR ||= 'Pg';
     $DSN     ||= 'test';
 }
 $DSN     ||= 'dbi:mysql:test';
+$MAX_BIN ||= 1_000_000_000; # to accomodate human-sized chromosomes
 
 
 if ($bWINDOWS && not $FORCE) {
@@ -226,7 +228,13 @@ unless ($FORCE) {
   die "Aborted\n" unless $f =~ /^[yY]/;
   close TTY;
 }
+# postgres DBD::Pg allows 'database', but also 'dbname', and 'db':
+# and it must be Pg (not pg)
+$DSN=~s/pg:database=/Pg:/i;
+$DSN=~s/pg:dbname=/Pg:/i;
+$DSN=~s/pg:db=/Pg:/i;
 
+# leave these lines for mysql
 $DSN=~s/database=//i;
 $DSN=~s/;host=/:/i; #cater for dsn in the form of "dbi:mysql:database=$dbname;host=$host"
 
@@ -236,6 +244,12 @@ $DBNAME=$DSN unless $DSN=~/:/;
 $ADAPTOR ||= $DBD; 
 $ADAPTOR ||= 'mysql';
 
+if ($DBD eq 'Pg') {
+        # rebuild DSN, DBD::Pg requires full dbname=<name> format
+        $DSN = "dbi:Pg:dbname=$DBNAME";
+        if ($HOST) { $DSN .= ";host=$HOST"; }
+}
+
 my ($use_mysql,$use_mysqlcmap,$use_pg) = (0,0,0);
 if ( $ADAPTOR eq 'mysqlcmap' ) {
   $use_mysqlcmap = 1;
@@ -243,7 +257,7 @@ if ( $ADAPTOR eq 'mysqlcmap' ) {
 elsif ( $ADAPTOR =~ /^mysql/ ) {
   $use_mysql = 1;
 }
-elsif ( $ADAPTOR eq "pg" ) {
+elsif ( $ADAPTOR eq "Pg" ) {
   $use_pg = 1;
 }
 else{
@@ -341,7 +355,7 @@ push @fasta,$FASTA if defined $FASTA;
 
 # drop everything that was there before
 my %FH;
-my $tmpdir = $TMPDIR || $ENV{TMPDIR} || $ENV{TMP} || '/usr/tmp';
+my $tmpdir = File::Spec->tmpdir() || '/tmp';
 $tmpdir =~ s!\\!\\\\!g if $bWINDOWS; #eliminates backslash mis-interpretation
 -d $tmpdir or die <<END;
 I could not find a suitable temporary directory to write scratch files into ($tmpdir by default).
@@ -574,8 +588,8 @@ if ($use_pg){
   foreach (@files) {
     my $file = "$tmpdir/$_.$$";
 
-    $AUTH ? system("psql $AUTH -f $file $DSN")
-          : system('psql','-f', $file, $DSN);
+    $AUTH ? system("psql $AUTH -f $file $DBNAME")
+          : system('psql','-f', $file, $DBNAME);
 
     unlink $file;
   }

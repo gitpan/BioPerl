@@ -1,4 +1,4 @@
-# $Id: kegg.pm,v 1.18.4.1 2006/10/02 23:10:29 sendu Exp $
+# $Id: kegg.pm 14708 2008-06-10 00:08:17Z heikki $
 #
 # BioPerl module for Bio::SeqIO::kegg
 #
@@ -141,7 +141,7 @@ sub _initialize {
 	# hash for functions for decoding keys.
 	$self->{'_func_ftunit_hash'} = {};
 	if( ! defined $self->sequence_factory ) {
-		$self->sequence_factory(new Bio::Seq::SeqFactory
+		$self->sequence_factory(Bio::Seq::SeqFactory->new
 										(-verbose => $self->verbose(),
 										 -type => 'Bio::Seq::RichSeq'));
 	}
@@ -257,6 +257,12 @@ sub next_seq {
      }
   }
 
+  if($FIELDS{POSITION}) {
+    $FIELDS{POSITION} =~ s/^POSITION\s+//;
+    $annotation->add_Annotation('position',
+      Bio::Annotation::Comment->new(-text => $FIELDS{POSITION}));
+  }
+  
   if ($FIELDS{CLASS}) {
       $FIELDS{CLASS} =~ s/^CLASS\s+//;
       $FIELDS{'CLASS'} =~ s/\n//g;
@@ -293,6 +299,17 @@ sub next_seq {
   $seq = $builder->make_object();
 
   return $seq;
+}
+
+=head2 write_seq
+
+ Title   : write_seq
+ Note    : write_seq() is not implemented for KEGG format output.
+
+=cut
+
+sub write_seq {
+    shift->throw("write_seq() not implemented for KEGG format output.");
 }
 
 1;

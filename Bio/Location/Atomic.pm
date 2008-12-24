@@ -1,4 +1,4 @@
-# $Id: Atomic.pm,v 1.16.4.1 2006/10/02 23:10:21 sendu Exp $
+# $Id: Atomic.pm 14963 2008-10-26 04:54:36Z cjfields $
 #
 # BioPerl module for Bio::Location::Atomic
 # Cared for by Jason Stajich <jason@bioperl.org>
@@ -16,7 +16,7 @@ Bio::Location::Atomic - Implementation of a Atomic Location on a Sequence
 
     use Bio::Location::Atomic;
 
-    my $location = new Bio::Location::Atomic(-start => 1, -end => 100,
+    my $location = Bio::Location::Atomic->new(-start => 1, -end => 100,
 					     -strand => 1 );
 
     if( $location->strand == -1 ) {
@@ -422,6 +422,22 @@ sub to_FTstring {
     return $str;
 }
 
+=head2 valid_Location
+
+ Title   : valid_Location
+ Usage   : if ($location->valid_location) {...};
+ Function: boolean method to determine whether location is considered valid
+           (has minimum requirements for Simple implementation)
+ Returns : Boolean value: true if location is valid, false otherwise
+ Args    : none
+
+=cut
+
+sub valid_Location {
+    my ($self) = @_;
+    return 1 if $self->{'_start'} && $self->{'_end'};
+    return 0;
+}
 
 =head2 coordinate_policy
 
@@ -473,18 +489,22 @@ sub coordinate_policy {
 	    $self->{'_coordpolicy'} : $coord_policy);
 }
 
+=head2 trunc
 
-# comments, not function added by jason 
-#
-# trunc is untested, and as of now unannounced method for truncating a
-# location.  This is to eventually be part of the procedure to
-# truncate a sequence with annotatioin and properly remap the location
-# of all the features contained within the truncated segment.
+  Title   : trunc
+	Usage   : $trunc_location = $location->trunc($start, $end, $relative_ori);
+	Function: To truncate a location and keep annotations and features
+	          within the truncated segment intact.
 
-# presumably this might do things a little differently for the case 
-# where the truncation splits the location in half
-# 
-# in short- you probably don't want to use  this method.
+						This might do things differently where the truncation
+						splits the location in half.
+	CAVEAT  : As yet, this is an untested and unannounced method. Use
+	          with caution!
+	Returns : A L<Bio::Location::Atomic> object.
+	Args    : The start and end position for the trunction, and the relative
+	          orientation.
+
+=cut
 
 sub trunc {
   my ($self,$start,$end,$relative_ori) = @_;

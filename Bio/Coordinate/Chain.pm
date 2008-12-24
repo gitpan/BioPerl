@@ -1,4 +1,4 @@
-# $Id: Chain.pm,v 1.7.4.1 2006/10/02 23:10:13 sendu Exp $
+# $Id: Chain.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # bioperl module for Bio::Coordinate::Chain
 #
@@ -120,7 +120,7 @@ sub map {
     $self->throw("No coordinate mappers!")
 	unless $self->each_mapper;
 
-    my $res = new Bio::Coordinate::Result;
+    my $res = Bio::Coordinate::Result->new();
 
     foreach my $mapper ($self->each_mapper) {
 

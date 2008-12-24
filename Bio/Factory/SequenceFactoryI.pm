@@ -1,4 +1,4 @@
-# $Id: SequenceFactoryI.pm,v 1.10.4.1 2006/10/02 23:10:18 sendu Exp $
+# $Id: SequenceFactoryI.pm 14655 2008-04-11 23:19:31Z lapp $
 #
 # BioPerl module for Bio::Factory::SequenceFactoryI
 #
@@ -20,7 +20,7 @@ Bio::Factory::SequenceFactoryI - This interface allows for generic building of s
 # get a Bio::Factory::SequenceFactoryI object like
 
     use Bio::Seq::SeqFactory;
-    my $seqbuilder = new Bio::Seq::SeqFactory('type' => 'Bio::PrimarySeq');
+    my $seqbuilder = Bio::Seq::SeqFactory->new('-type' => 'Bio::PrimarySeq');
 
     my $seq = $seqbuilder->create(-seq => 'ACTGAT',
 				  -display_id => 'exampleseq');

@@ -1,4 +1,4 @@
-# $Id: HmmpfamHSP.pm,v 1.1.2.2 2006/10/02 23:10:24 sendu Exp $
+# $Id: HmmpfamHSP.pm 15142 2008-12-11 18:58:29Z cjfields $
 #
 # BioPerl module for Bio::Search::HSP::HmmpfamHSP
 #
@@ -18,7 +18,7 @@ Bio::Search::HSP::HmmpfamHSP - A parser and HSP object for hmmpfam hsps
 
     # generally we use Bio::SearchIO to build these objects
     use Bio::SearchIO;
-    my $in = new Bio::SearchIO(-format => 'hmmer_pull',
+    my $in = Bio::SearchIO->new(-format => 'hmmer_pull',
 							   -file   => 'result.hmmer');
 
     while (my $result = $in->next_result) {
@@ -78,7 +78,7 @@ use base qw(Bio::Search::HSP::PullHSPI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Search::HSP::HmmpfamHSP();
+ Usage   : my $obj = Bio::Search::HSP::HmmpfamHSP->new();
  Function: Builds a new Bio::Search::HSP::HmmpfamHSP object.
  Returns : Bio::Search::HSP::HmmpfamHSP
  Args    : -chunk  => [Bio::Root::IO, $start, $end] (required if no -parent)
@@ -137,13 +137,14 @@ sub _discover_alignment {
     my $alignments_hash = $self->get_field('alignments');
 	
     my $identifier = $self->get_field('name').'~~~~'.$self->get_field('rank');
+	
     while (! defined $alignments_hash->{$identifier}) {
-        last unless $self->parent->parent->_next_alignment;
+		last unless $self->parent->parent->_next_alignment;
     }
     my $alignment = $alignments_hash->{$identifier};
-    
+	
     if ($alignment) {
-        # work out query, hit and homology strings, and some stats
+		# work out query, hit and homology strings, and some stats
         # (quicker to do this all at once instead of each method working on
         # $alignment string itself)
         
@@ -283,6 +284,13 @@ sub query {
 sub hit {
     my $self = shift;
     unless ($self->{_created_hit}) {
+		# the full length isn't always known (given in the report), but don't
+		# warn about the missing info all the time
+		my $verbose = $self->parent->parent->parent->verbose;
+		$self->parent->parent->parent->verbose(-1);
+		my $seq_length = $self->get_field('length');
+		$self->parent->parent->parent->verbose($verbose);
+		
         $self->SUPER::hit( new  Bio::SeqFeature::Similarity
                   ('-primary'  => $self->primary_tag,
                    '-start'    => $self->get_field('hit_start'),
@@ -291,7 +299,7 @@ sub hit {
                    '-score'    => $self->get_field('score'),
                    '-strand'   => 1,
                    '-seq_id'   => $self->get_field('name'),
-                   '-seqlength'=> $self->get_field('length'),
+                   $seq_length ? ('-seqlength' => $seq_length) : (),
                    '-source'   => $self->get_field('algorithm'),
                    '-seqdesc'  => $self->get_field('description')
                    ) );
@@ -335,8 +343,7 @@ sub gaps {
 
 =cut
 
-sub pvalue {
-	return undef;
-}
+# noop
+sub pvalue {  }
 
 1;

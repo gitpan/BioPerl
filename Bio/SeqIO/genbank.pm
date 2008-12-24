@@ -1,6 +1,6 @@
-# $Id: genbank.pm,v 1.140.2.6 2006/11/23 18:58:19 cjfields Exp $
+# $Id: genbank.pm 14816 2008-08-21 16:00:12Z cjfields $
 #
-# BioPerl module for Bio::SeqIO::GenBank
+# BioPerl module for Bio::SeqIO::genbank
 #
 # Cared for by Bioperl project bioperl-l(at)bioperl.org
 #
@@ -153,6 +153,7 @@ Hilmar Lapp, hlapp at gmx.net
 Donald G. Jackson, donald.jackson at bms.com
 James Wasmuth, james.wasmuth at ed.ac.uk
 Brian Osborne, bosborne at alum.mit.edu
+Chris Fields, cjfields at uiuc dot edu
 
 =head1 APPENDIX
 
@@ -164,7 +165,6 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::SeqIO::genbank;
-use vars qw(%FTQUAL_NO_QUOTE);
 use strict;
 
 use Bio::SeqIO::FTHelper;
@@ -178,36 +178,49 @@ use Bio::Annotation::DBLink;
 
 use base qw(Bio::SeqIO);
 
-%FTQUAL_NO_QUOTE=(
-		  'anticodon'    => 1,
-		  'citation'     => 1,
-		  'codon'        => 1,
-		  'codon_start'  => 1,
-		  'cons_splice'  => 1,
-		  'direction'    => 1,
-		  'evidence'     => 1,
-		  'label'        => 1,
-		  'mod_base'     => 1,
-		  'number'       => 1,
-		  'rpt_type'     => 1,
-		  'rpt_unit'     => 1,
-		  'transl_except'=> 1,
-		  'transl_table' => 1,
-		  'usedin'       => 1,
-		  );
+our %FTQUAL_NO_QUOTE = map {$_ => 1} qw(
+    anticodon           citation
+    codon               codon_start
+    cons_splice         direction
+    evidence            label
+    mod_base            number
+    rpt_type            rpt_unit
+    transl_except       transl_table
+    usedin
+    );
+
+our %DBSOURCE = map {$_ => 1} qw(
+    EchoBASE     IntAct    SWISS-2DPAGE    ECO2DBASE    ECOGENE    TIGRFAMs
+    TIGR    GO    InterPro    Pfam    PROSITE    SGD    GermOnline
+    HSSP    PhosSite    Ensembl    RGD    AGD    ArrayExpress    KEGG
+    H-InvDB    HGNC    LinkHub    PANTHER    PRINTS    SMART    SMR
+    MGI    MIM    RZPD-ProtExp    ProDom    MEROPS    TRANSFAC    Reactome
+    UniGene    GlycoSuiteDB    PIRSF    HSC-2DPAGE    PHCI-2DPAGE
+    PMMA-2DPAGE    Siena-2DPAGE    Rat-heart-2DPAGE    Aarhus/Ghent-2DPAGE
+    Biocyc    MetaCyc    Biocyc:Metacyc    GenomeReviews    FlyBase
+    TMHOBP    COMPLUYEAST-2DPAGE    OGP    DictyBase    HAMAP
+    PhotoList    Gramene    WormBase    WormPep    Genew    ZFIN
+    PeroxiBase    MaizeDB    TAIR    DrugBank    REBASE    HPA
+    swissprot    GenBank    GenPept    REFSEQ    embl    PDB);
+
+our %VALID_ALPHABET = (
+    'bp' => 'dna',
+    'aa' => 'protein',
+    'rc' => '' # rc = release candidate; file has no sequences
+);
 
 sub _initialize {
-	my($self,@args) = @_;
+    my($self,@args) = @_;
 
-	$self->SUPER::_initialize(@args);
-	# hash for functions for decoding keys.
-	$self->{'_func_ftunit_hash'} = {};
-	$self->_show_dna(1); # sets this to one by default. People can change it
-	if( ! defined $self->sequence_factory ) {
-		$self->sequence_factory(new Bio::Seq::SeqFactory
-										(-verbose => $self->verbose(),
-										 -type => 'Bio::Seq::RichSeq'));
-	}
+    $self->SUPER::_initialize(@args);
+    # hash for functions for decoding keys.
+    $self->{'_func_ftunit_hash'} = {};
+    $self->_show_dna(1); # sets this to one by default. People can change it
+    if( ! defined $self->sequence_factory ) {
+            $self->sequence_factory(Bio::Seq::SeqFactory->new
+                            (-verbose => $self->verbose(),
+                             -type => 'Bio::Seq::RichSeq'));
+    }
 }
 
 =head2 next_seq
@@ -248,26 +261,39 @@ sub next_seq {
 	    $self->throw("GenBank stream with bad LOCUS line. Not GenBank in my book. Got '$buffer'");
 
 	my @tokens = split(' ', $1);
-
+    
 	# this is important to have the id for display in e.g. FTHelper,
 	# otherwise you won't know which entry caused an error
 	$display_id = shift(@tokens);
 	$params{'-display_id'} = $display_id;
 	# may still be useful if we don't want the seq
-	$params{'-length'} = shift(@tokens);
+    my $seqlength = shift(@tokens);
+    if (exists $VALID_ALPHABET{$seqlength}) {
+        # moved one token too far.  No locus name?
+        $self->warn("Bad LOCUS name?  Changing [$params{'-display_id'}] to 'unknown' and length to $display_id");
+        $params{'-display_id'} = 'unknown';
+        $params{'-length'} = $display_id;
+        # add token back...
+        unshift @tokens, $seqlength;
+    } else {
+    	$params{'-length'} = $seqlength;
+    }
 	# the alphabet of the entry
-	$params{'-alphabet'} = (lc(shift @tokens) eq 'bp') ? 'dna' : 'protein';
+    # shouldn't assign alphabet unless one is specifically designated (such as for rc files)
+    my $alphabet = lc(shift @tokens);
+	$params{'-alphabet'} = (exists $VALID_ALPHABET{$alphabet}) ? $VALID_ALPHABET{$alphabet} :
+                           $self->warn("Unknown alphabet: $alphabet");
 	# for aa there is usually no 'molecule' (mRNA etc)
 	if (($params{'-alphabet'} eq 'dna') || (@tokens > 2)) {
 	    $params{'-molecule'} = shift(@tokens);
 	    my $circ = shift(@tokens);
 	    if ($circ eq 'circular') {
-		$params{'-is_circular'} = 1;
-		$params{'-division'} = shift(@tokens);
+            $params{'-is_circular'} = 1;
+            $params{'-division'} = shift(@tokens);
 	    } else {
-				# 'linear' or 'circular' may actually be omitted altogether
-		$params{'-division'} =
-		    (CORE::length($circ) == 3 ) ? $circ : shift(@tokens);
+			# 'linear' or 'circular' may actually be omitted altogether
+            $params{'-division'} =
+                (CORE::length($circ) == 3 ) ? $circ : shift(@tokens);
 	    }
 	} else {
 	    $params{'-molecule'} = 'PRT' if($params{'-alphabet'} eq 'aa');
@@ -283,24 +309,24 @@ sub next_seq {
 	# 09-10-03
 	if($date =~ s/\s*((\d{1,2})-(\w{3})-(\d{2,4})).*/$1/) {
 	    if( length($date) < 11 ) {
-		# improperly formatted date
-		# But we'll be nice and fix it for them
-		my ($d,$m,$y) = ($2,$3,$4);
-		if( length($d) == 1 ) {
-		    $d = "0$d";
-		}
-		# guess the century here
-		if( length($y) == 2 ) {
-		    if( $y > 60 ) { # arbitrarily guess that '60' means 1960
-			$y = "19$y";
-		    } else {
-			$y = "20$y";
-		    }
-		    $self->warn("Date was malformed, guessing the century for $date to be $y\n");
-		}
-		$params{'-dates'} = [join('-',$d,$m,$y)];
-	    } else {
-		$params{'-dates'} = [$date];
+            # improperly formatted date
+            # But we'll be nice and fix it for them
+            my ($d,$m,$y) = ($2,$3,$4);
+            if( length($d) == 1 ) {
+                $d = "0$d";
+            }
+            # guess the century here
+            if( length($y) == 2 ) {
+                if( $y > 60 ) { # arbitrarily guess that '60' means 1960
+                    $y = "19$y";
+                } else {
+                    $y = "20$y";
+                }
+                $self->warn("Date was malformed, guessing the century for $date to be $y\n");
+            }
+            $params{'-dates'} = [join('-',$d,$m,$y)];
+        } else {
+            $params{'-dates'} = [$date];
 	    }
 	}
 	# set them all at once
@@ -315,7 +341,7 @@ sub next_seq {
 
 	# set up annotation depending on what the builder wants
 	if($builder->want_slot('annotation')) {
-	    $annotation = new Bio::Annotation::Collection;
+	    $annotation = Bio::Annotation::Collection->new();
 	}
 	$buffer = $self->_readline();
 	until( !defined ($buffer) ) {
@@ -347,7 +373,7 @@ sub next_seq {
 		$params{'-pid'} = $1;
 	    }
 	    # Version number
-	    elsif( /^VERSION\s+(.+)$/ ) {
+	    elsif( /^VERSION\s+(\S.+)$/ ) {
 		my ($acc,$gi) = split(' ',$1);
 		if($acc =~ /^\w+\.(\d+)/) {
 		    $params{'-version'} = $1;
@@ -358,7 +384,7 @@ sub next_seq {
 		}
 	    }
 	    # Keywords
-	    elsif( /^KEYWORDS\s+(.*)/ ) {
+	    elsif( /^KEYWORDS\s+(\S.*)/ ) {
 		my @kw = split(/\s*\;\s*/,$1);
 		while( defined($_ = $self->_readline) ) {
 		    chomp;
@@ -372,7 +398,7 @@ sub next_seq {
 		next;
 	    }
 	    # Organism name and phylogenetic information
-	    elsif (/^SOURCE/) {
+	    elsif (/^SOURCE\s+\S/) {
 		if($builder->want_slot('species')) {
 		    $species = $self->_read_GenBank_Species(\$buffer);
 		    $builder->add_slot_value(-species => $species);
@@ -384,7 +410,7 @@ sub next_seq {
 		next;
 	    }
 	    # References
-	    elsif (/^REFERENCE/) {
+	    elsif (/^REFERENCE\s+\S/) {
 		if($annotation) {
 		    my @refs = $self->_read_GenBank_References(\$buffer);
 		    foreach my $ref ( @refs ) {
@@ -397,8 +423,15 @@ sub next_seq {
 		}
 		next;
 	    }
+		# Project
+		elsif (/^PROJECT\s+(\S.*)/) {
+			if ($annotation) {
+				my $project = new Bio::Annotation::SimpleValue->new(-value => $1);
+				$annotation->add_Annotation('project',$project);
+			}
+		}
 	    # Comments
-	    elsif (/^COMMENT\s+(.*)/) {
+	    elsif (/^COMMENT\s+(\S.*)/) {
 		if($annotation) {
 		    my $comment = $1;
 		    while (defined($_ = $self->_readline)) {
@@ -419,7 +452,7 @@ sub next_seq {
 		next;
 	    }
 	    # Corresponding Genbank nucleotide id, Genpept only
-	    elsif( /^DBSOURCE\s+(.+)/ ) {
+	    elsif( /^DBSOURCE\s+(\S.+)/ ) {
 		if ($annotation) {
 		    my $dbsource = $1;
 		    while (defined($_ = $self->_readline)) {
@@ -504,9 +537,14 @@ sub next_seq {
 				my $db;
 				# this is because GenBank dropped the spaces!!!
 				# I'm sure we're not going to get this right
-				if( $id =~ s/^(EchoBASE|IntAct|SWISS-2DPAGE|ECO2DBASE|ECOGENE|TIGRFAMs|TIGR|GO|InterPro|Pfam|PROSITE|SGD|GermOnline|HSSP|PhosSite)://i ) {
-				    $db = $1;
+				##if( $id =~ s/^://i ) {
+				##    $db = $1;
+				##}
+                                $db = substr($id,0,index($id,':'));
+                                if (! exists $DBSOURCE{ $db }) {
+                                      $db = '';   # do we want 'GenBank' here?
 				}
+                                $id = substr($id,index($id,':')+1);
 				$annotation->add_Annotation
 				    ('dblink',
 				     Bio::Annotation::DBLink->new
@@ -517,16 +555,27 @@ sub next_seq {
 			}
 
 		    } else {
-			if( $dbsource =~ /(\S+)\.(\d+)/ ) {
-			    my ($id,$version) = ($1,$2);
-			    $annotation->add_Annotation
-				('dblink',
-				 Bio::Annotation::DBLink->new
-				 (-primary_id => $id,
-				  -version => $version,
-				  -database => 'GenBank',
-				  -tagname => 'dblink'));
-			}
+                if( $dbsource =~ /^(\S*?):?\s*accession\s+(\S+)\.(\d+)/ ) {
+                    my ($db,$id,$version) = ($1,$2,$3);
+                    $annotation->add_Annotation
+                    ('dblink',
+                     Bio::Annotation::DBLink->new
+                     (-primary_id => $id,
+                      -version => $version,
+                      -database => $db || 'GenBank',
+                      -tagname => 'dblink'));
+                } elsif ( $dbsource =~ /(\S+)\.(\d+)/ ) {
+                    my ($id,$version) = ($1,$2);
+                    $annotation->add_Annotation
+                    ('dblink',
+                     Bio::Annotation::DBLink->new
+                     (-primary_id => $id,
+                      -version => $version,
+                      -database => 'GenBank',
+                      -tagname => 'dblink'));
+                } else {
+                    $self->warn("Unrecognized DBSOURCE data: $dbsource\n");
+                }
 		    }
 
 		    $buffer = $_;
@@ -614,7 +663,7 @@ sub next_seq {
 		    $_ =~ /^(?:CONTIG)?\s+(.*)/;
 		    $annotation->add_Annotation(
 						Bio::Annotation::SimpleValue->new(-value   => $1,
-										  -tagname => 'CONTIG'));
+										  -tagname => 'contig'));
 		    $_ = $self->_readline;
 		}
 		$self->_pushback($_);
@@ -623,7 +672,7 @@ sub next_seq {
 		    chomp;
 		    $annotation->add_Annotation(
 						Bio::Annotation::SimpleValue->new(-value => $_,
-										  -tagname => $1));
+										  -tagname => lc($1)));
 		    $_ = $self->_readline;
 		}
 	    } elsif(! m{^(ORIGIN|//)} ) { # advance to the sequence, if any
@@ -653,7 +702,7 @@ sub next_seq {
 		    s/[^A-Za-z]//g;
 		    $seqc .= $_;
 		}
-		$self->debug("sequence length is ". length($seqc) ."\n");
+		#$self->debug("sequence length is ". length($seqc) ."\n");
 		$builder->add_slot_value(-seq => $seqc);
 	    }
 	} elsif ( defined($_) && (substr($_,0,2) ne '//')) {
@@ -772,12 +821,19 @@ sub write_seq {
 			      "\n");
 	    }
 	}
+    
+    # if there, write the PROJECT line    
+	for my $proj ( $seq->annotation->get_Annotations('project') ) {
+		$self->_print("PROJECT     ".$proj->value."\n");
+    }
 
 	# if there, write the DBSOURCE line
 	foreach my $ref ( $seq->annotation->get_Annotations('dblink') ) {
 	    # if ($ref->comment eq 'DBSOURCE') {
-	    $self->_print('DBSOURCE    accession ',
-			  $ref->primary_id, "\n");
+        my $text = $ref->display_text(
+            sub{($ref->database eq 'GenBank' ? '' : $_[0]->database.' ').
+                'accession '.$_[0]->primary_id});
+	    $self->_print("DBSOURCE    $text\n");
 	    # }
 	}
 
@@ -801,19 +857,31 @@ sub write_seq {
 
 	# Organism lines
 	if (my $spec = $seq->species) {
-	    my ($on, $sn, $cn) = ($spec->organelle,
+	    my ($on, $sn, $cn) = ($spec->can('organelle') ? $spec->organelle : '',
 				  $spec->scientific_name,
 				  $spec->common_name);
-
+	    my @classification;
+        if ($spec->isa('Bio::Species')) {
+            @classification = $spec->classification;
+    	    shift(@classification);
+        } else {
+            # Bio::Taxon should have a DB handle of some type attached, so
+            # derive the classification from that
+            my $node = $spec;
+            while ($node) {
+                $node = $node->ancestor || last;
+                unshift(@classification, $node->node_name);
+                #$node eq $root && last;
+            }
+            @classification = reverse @classification;
+        }
 	    my $abname = $spec->name('abbreviated') ? # from genbank file
 		$spec->name('abbreviated')->[0] : $sn;
 	    my $sl = $on ? "$on "            : '';
-	    $sl   .= $cn ? $abname." ($cn)." : "$abname.";
+	    $sl   .= $cn ? $abname." ($cn)" : "$abname";
 
 	    $self->_write_line_GenBank_regex("SOURCE      ", ' 'x12, $sl, "\\s\+\|\$",80);
 	    $self->_print("  ORGANISM  ", $spec->scientific_name, "\n");
-	    my @classification = $spec->classification;
-	    shift(@classification);
 	    my $OC = join('; ', (reverse(@classification))) .'.';
 	    $self->_write_line_GenBank_regex(' 'x12,' 'x12,
 					     $OC,"\\s\+\|\$",80);
@@ -898,20 +966,20 @@ sub write_seq {
 	}
 
 	# deal with WGS; WGS_SCAFLD present only if WGS is also present
-	if($seq->annotation->get_Annotations('WGS')) {
+	if($seq->annotation->get_Annotations('wgs')) {
 	    foreach my $wgs
-		(map {$seq->annotation->get_Annotations($_)} qw(WGS WGS_SCAFLD)) {
-		    $self->_print(sprintf ("%-11s %s\n",$wgs->tagname,
+		(map {$seq->annotation->get_Annotations($_)} qw(wgs wgs_scaffold)) {
+		    $self->_print(sprintf ("%-11s %s\n",uc($wgs->tagname),
 					   $wgs->value));
 		}
 	    $self->_show_dna(0);
 	}
-	if($seq->annotation->get_Annotations('CONTIG')) {
+	if($seq->annotation->get_Annotations('contig')) {
 	    my $ct = 0;
 	    my $cline;
-	    foreach my $contig ($seq->annotation->get_Annotations('CONTIG')) {
+	    foreach my $contig ($seq->annotation->get_Annotations('contig')) {
 		unless ($ct) {
-		    $cline = $contig->tagname."      ".$contig->value."\n";
+		    $cline = uc($contig->tagname)."      ".$contig->value."\n";
 		} else {
 		    $cline = "            ".$contig->value."\n";
 		}
@@ -930,25 +998,6 @@ sub write_seq {
 	# finished printing features.
 
 	$str =~ tr/A-Z/a-z/;
-
-	# Count each nucleotide
-	unless(  $mol eq 'protein' ) {
-	    my $alen = $str =~ tr/a/a/;
-	    my $clen = $str =~ tr/c/c/;
-	    my $glen = $str =~ tr/g/g/;
-	    my $tlen = $str =~ tr/t/t/;
-
-	    my $olen = $len - ($alen + $tlen + $clen + $glen);
-	    if( $olen < 0 ) {
-		$self->warn("Weird. More atgc than bases. Problem!");
-	    }
-
-	    my $base_count = sprintf("BASE COUNT %8s a %6s c %6s g %6s t%s\n",
-				     $alen,$clen,$glen,$tlen,
-				     ( $olen > 0 ) ?
-				     sprintf("%6s others",$olen) : '');
-	    $self->_print($base_count);
-	}
 
 	my ($o) = $seq->annotation->get_Annotations('origin');
 	$self->_print(sprintf("%-12s%s\n",
@@ -1009,7 +1058,8 @@ sub _print_GenBank_FTHelper {
     if( ! ref $fth || ! $fth->isa('Bio::SeqIO::FTHelper') ) {
 	$fth->warn("$fth is not a FTHelper class. Attempting to print, but there could be tears!");
     }
-    $self->_write_line_GenBank_regex(sprintf("     %-16s",$fth->key),
+    my $spacer = (length $fth->key >= 15) ? ' ' : '';
+    $self->_write_line_GenBank_regex(sprintf("     %-16s%s",$fth->key,$spacer),
 				     " "x21,
 				     $fth->loc,"\,\|\$",80);
     foreach my $tag ( keys %{$fth->field} ) {
@@ -1035,9 +1085,7 @@ sub _print_GenBank_FTHelper {
 	    }
 	}
     }
-
 }
-
 
 =head2 _read_GenBank_References
 
@@ -1046,7 +1094,6 @@ sub _print_GenBank_FTHelper {
  Function: Reads references from GenBank format. Internal function really
  Returns :
  Args    :
-
 
 =cut
 
@@ -1142,7 +1189,7 @@ sub _read_GenBank_References {
 
       /^REFERENCE/o && do {
 	  # store current reference
-	  $self->_add_ref_to_array(\@refs,$ref) if $ref;
+	  $self->_add_ref_to_array(\@refs,$ref) if defined $ref;
 	  # reset
 	  @authors = ();
 	  @title = ();
@@ -1167,7 +1214,7 @@ sub _read_GenBank_References {
   }
 
     # store last reference
-    $self->_add_ref_to_array(\@refs,$ref) if $ref;
+    $self->_add_ref_to_array(\@refs,$ref) if defined $ref;
 
     $$buffer = $_;
 
@@ -1244,45 +1291,36 @@ sub _read_GenBank_Species {
     my @unkn_genus = ('unknown','unclassified','uncultured','unidentified');
     # all above can be part of valid species name
 
-    $_ = $$buffer;
+    my $line = $$buffer;
 
     my( $sub_species, $species, $genus, $sci_name, $common, $class_lines,
         $source_flag, $abbr_name, $organelle, $sl );
+    my %source = map { $_ => 1 } qw(SOURCE ORGANISM CLASSIFICATION);
     # upon first entering the loop, we must not read a new line -- the SOURCE
     # line is already in the buffer (HL 05/10/2000)
-    while (defined($_) || defined($_ = $self->_readline())) {
-	# de-HTMLify (links that may be encountered here don't contain
-	# escaped '>', so a simple-minded approach suffices)
-	s/<[^>]+>//g;
-	if ( /^SOURCE\s+(.*)/o ) {
-	    $sl = $1;
-	    $sl =~ s/\.$//;	# remove trailing dot
-	    $source_flag = 1;
-	} elsif ( /^\s{2}ORGANISM/o ) {
-	    $source_flag = 0;
-	    ($sci_name) = $_ =~ /\w+\s+(.*)/o;
-	} elsif ($source_flag) {
-	    $sl .= $_;
-	    $sl =~ s/\n//g;
-	    $sl =~ s/\s+/ /g;
-	    $source_flag = 0;
-	} elsif ( /^\s+(.+)/o ) {
-	    my $line = $1;
-            # if first line doesn't end in ; or ., it is part of a long
-            # organism line
-            if ($line !~ /[;\.]$/) {
-                $sci_name .= ' '.$line;
-            }
-            else {
-                $class_lines .= $line;
-            }
-	} else {
-	    last;
-	}
-
-	$_ = undef;	       # Empty $_ to trigger read of next line
+    my ($ann, $tag, $data);
+    while (defined($line) || defined($line = $self->_readline())) {
+        # de-HTMLify (links that may be encountered here don't contain
+        # escaped '>', so a simple-minded approach suffices)
+        $line =~ s{<[^>]+>}{}g;
+        if ($line =~ m{^(?:\s{0,2})(\w+)\s+(.+)?$}ox) {
+            ($tag, $data) = ($1, $2 || '');
+            last if ($tag && !exists $source{$tag});            
+        } else {
+            return unless $tag;
+            ($data = $line) =~ s{^\s+}{};
+            chomp $data;
+            $tag = 'CLASSIFICATION' if ($tag ne 'CLASSIFICATION' && $tag eq 'ORGANISM' &&  $line =~ m{[;\.]+});
+        }
+        (exists $ann->{$tag}) ? ($ann->{$tag} .= ' '.$data) : ($ann->{$tag} .= $data);
+        $line = undef;        
     }
-    $$buffer = $_;
+    
+    ($sl, $class_lines, $sci_name) = ($ann->{SOURCE}, $ann->{CLASSIFICATION}, $ann->{ORGANISM});
+    
+    $$buffer = $line;
+
+    $sci_name || return;
 
     # parse out organelle, common name, abbreviated name if present;
     # this should catch everything, but falls back to
@@ -1298,16 +1336,14 @@ sub _read_GenBank_Species {
         $abbr_name = $sl;	# nothing caught; this is a backup!
     }
 
-    $sci_name || return;
-
     # Convert data in classification lines into classification array.
     # only split on ';' or '.' so that classification that is 2 or more words will
     # still get matched, use map() to remove trailing/leading/intervening spaces
-    my @class = map { s/^\s+//; s/\s+$//; s/\s{2,}/ /g; $_; } split /[;\.]+/, $class_lines;
+    my @class = map { s/^\s+//; s/\s+$//; s/\s{2,}/ /g; $_; } split /(?<!subgen)[;\.]+/, $class_lines;
 
     # do we have a genus?
-    my $possible_genus = $class[-1];
-    $possible_genus .= "|$class[-2]" if $class[-2];
+    my $possible_genus =  quotemeta($class[-1])
+       . ($class[-2] ? "|" . quotemeta($class[-2]) : '');
     if ($sci_name =~ /^($possible_genus)/) {
 	$genus = $1;
 	($species) = $sci_name =~ /^$genus\s+(.+)/;
@@ -1320,7 +1356,7 @@ sub _read_GenBank_Species {
     # (we don't catch everything lower than species, but it doesn't matter -
     # this is just so we abide by previous behaviour whilst not calling a
     # species a subspecies)
-    if ($species =~ /subsp\.|var\./) {
+    if ($species && $species =~ /subsp\.|var\./) {
 	($species, $sub_species) = $species =~ /(.+)\s+((?:subsp\.|var\.).+)/;
     }
 
@@ -1346,7 +1382,7 @@ sub _read_GenBank_Species {
 }
 
 =head2 _read_FTHelper_GenBank
-    
+
  Title   : _read_FTHelper_GenBank
  Usage   : _read_FTHelper_GenBank($buffer)
  Function: reads the next FT key line
@@ -1405,7 +1441,7 @@ sub _read_FTHelper_GenBank {
     $$buffer = $_;
 
     # Make the new FTHelper object
-    my $out = new Bio::SeqIO::FTHelper();
+    my $out = Bio::SeqIO::FTHelper->new();
     $out->verbose($self->verbose());
     $out->key($key);
     $out->loc($loc);
@@ -1584,7 +1620,7 @@ sub _post_sort {
     return $obj->{'_post_sort'};
 }
 
-    
+
 =head2 _show_dna
 
  Title   : _show_dna
@@ -1623,7 +1659,7 @@ sub _id_generation_func {
     return $obj->{'_id_generation_func'};
 }
 
-    
+
 =head2 _ac_generation_func
 
  Title   : _ac_generation_func
@@ -1642,7 +1678,7 @@ sub _ac_generation_func {
     return $obj->{'_ac_generation_func'};
 }
 
-    
+
 =head2 _sv_generation_func
 
  Title   : _sv_generation_func
@@ -1663,7 +1699,7 @@ sub _sv_generation_func {
 
 }
 
-    
+
 =head2 _kw_generation_func
 
  Title   : _kw_generation_func

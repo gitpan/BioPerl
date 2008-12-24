@@ -1,4 +1,4 @@
-# $Id: RichSeq.pm,v 1.19.4.1 2006/10/02 23:10:27 sendu Exp $
+# $Id: RichSeq.pm 10554 2006-09-28 04:09:02Z tseemann $
 #
 # BioPerl module for Bio::Seq::RichSeq
 #

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: fast_load_gff.PLS,v 1.30.4.1 2006/11/08 17:25:55 sendu Exp $
+# $Id: fast_load_gff.PLS 15088 2008-12-04 02:49:09Z bosborne $
 
 use strict;
 # use lib './blib/lib';
@@ -156,6 +156,7 @@ GetOptions ('database:s'    => \$DSN,
 	   ) or (system('pod2text',$0), exit -1);
 
 $DSN ||= 'test';
+$MAX_BIN ||= 1_000_000_000; # to accomodate human-sized chromosomes
 
 my (@args,$AUTH);
 if (defined $USER) {
@@ -377,7 +378,7 @@ while (<>) {
 
     foreach (@$attributes) {
       my ($key,$value) = @$_;
-      my $attributeid = $ATTRIBUTEID{$key}   ||= $ATTRIBUTEID++;
+      my $attributeid = $ATTRIBUTEID{lc $key}   ||= $ATTRIBUTEID++;
       $FH{ FATTRIBUTE() }->print( join("\t",$attributeid,$key),"\n"                       ) unless $DONE{"fattribute$;$attributeid"}++;
       $FH{ FATTRIBUTE_TO_FEATURE() }->print( join("\t",$fid,$attributeid,$value),"\n");
     }
@@ -476,7 +477,7 @@ sub get_ids {
   my $sth = $dbh->prepare($sql) or die $dbh->errstr;
   $sth->execute or die $dbh->errstr;
   while (my($id,@cols) = $sth->fetchrow_array) {
-    my $key = join $;,@cols;
+    my $key = lc join $;,@cols;
     $idhash->{$key} = $id;
     $done->{$table,$id}++;
   }

@@ -1,4 +1,4 @@
-# $Id: pubmed2ref.pm,v 1.6.4.1 2006/10/02 23:10:13 sendu Exp $
+# $Id: pubmed2ref.pm 10622 2006-10-02 04:34:53Z tseemann $
 #
 # BioPerl module Bio::Biblio::IO::pubmed2ref.pm
 #

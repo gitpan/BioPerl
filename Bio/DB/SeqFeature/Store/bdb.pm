@@ -1,6 +1,6 @@
 package Bio::DB::SeqFeature::Store::bdb;
 
-# $Id: bdb.pm,v 1.3.4.1 2006/10/02 23:10:17 sendu Exp $
+# $Id: bdb.pm 10484 2006-09-21 14:51:39Z dave_messina $
 
 =head1 NAME
 

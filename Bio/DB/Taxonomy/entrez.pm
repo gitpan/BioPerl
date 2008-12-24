@@ -1,4 +1,4 @@
-# $Id: entrez.pm,v 1.18.4.3 2006/11/08 17:25:54 sendu Exp $
+# $Id: entrez.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::DB::Taxonomy::entrez
 #
@@ -21,7 +21,7 @@ Bio::DB::Taxonomy::entrez - Taxonomy Entrez driver
 
   use Bio::DB::Taxonomy;
 
-  my $db = new Bio::DB::Taxonomy(-source => 'entrez');
+  my $db = Bio::DB::Taxonomy->new(-source => 'entrez');
 
   my $taxonid = $db->get_taxonid('Homo sapiens');
   my $node   = $db->get_Taxonomy_Node(-taxonid => $taxonid);
@@ -128,7 +128,7 @@ $UrlParamSeparatorValue = '&';
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::DB::Taxonomy::entrez();
+ Usage   : my $obj = Bio::DB::Taxonomy::entrez->new();
  Function: Builds a new Bio::DB::Taxonomy::entrez object
  Returns : an instance of Bio::DB::Taxonomy::entrez
  Args    : -location => URL to Entrez (if you want to override the default)
@@ -417,7 +417,12 @@ sub get_taxonids {
                 my $parent_node = $self->ancestor($node) || next ID;
                 my $parent_sci_name = $parent_node->scientific_name || next ID;
                 my @parent_common_names = $parent_node->common_names;
-                
+                unless (@parent_common_names) {
+					# ensure we're not using a minimal-info cached version
+					$parent_node = $self->get_taxon(-taxonid => $parent_node->id, -full => 1);
+					@parent_common_names = $parent_node->common_names;
+				}
+				
                 foreach my $name ($parent_sci_name, @parent_common_names) {
                     if (lc($name) eq $desired_parent_name) {
                         return wantarray() ? ($start_id) : $start_id;
@@ -604,7 +609,7 @@ sub entrez_params{
 sub _make_taxon {
     my ($self, $data) = @_;
     
-    my $taxon = new Bio::Taxon();
+    my $taxon = Bio::Taxon->new();
     
     my $taxid;
     while (my ($method, $value) = each %{$data}) {

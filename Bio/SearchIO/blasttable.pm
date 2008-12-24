@@ -1,4 +1,4 @@
-# $Id: blasttable.pm,v 1.7.4.1 2006/10/02 23:10:26 sendu Exp $
+# $Id: blasttable.pm 14786 2008-08-05 22:00:00Z cjfields $
 #
 # BioPerl module for Bio::SearchIO::blasttable
 #
@@ -18,7 +18,7 @@ Bio::SearchIO::blasttable - Driver module for SearchIO for parsing NCBI -m 8/9 f
 
   # do not use this module directly
   use Bio::SearchIO;
-  my $parser = new Bio::SearchIO(-file   => $file,
+  my $parser = Bio::SearchIO->new(-file   => $file,
                                  -format => 'blasttable');
 
   while( my $result = $parser->next_result ) {
@@ -26,7 +26,8 @@ Bio::SearchIO::blasttable - Driver module for SearchIO for parsing NCBI -m 8/9 f
 
 =head1 DESCRIPTION
 
-This module will support parsing NCBI -m 8 or -m 9 tabular output.
+This module will support parsing NCBI -m 8 or -m 9 tabular output
+and WU-BLAST -mformat 2 or -mformat 3 tabular output.
 
 =head1 FEEDBACK
 
@@ -122,7 +123,7 @@ use base qw(Bio::SearchIO);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::SearchIO::blasttable();
+ Usage   : my $obj = Bio::SearchIO::blasttable->new();
  Function: Builds a new Bio::SearchIO::blasttable object 
  Returns : an instance of Bio::SearchIO::blasttable
  Args    :
@@ -159,12 +160,53 @@ sub next_result{
    my ($lastquery,$lasthit);
    local $/ = "\n";
    local $_;
-
+   my ($alg, $ver);
    while( defined ($_ = $self->_readline) ) {
-       next if /^\#/ || /^\s+$/;
-       my ($qname,$hname, $percent_id, $hsp_len, $mismatches,$gapsm,
-            $qstart,$qend,$hstart,$hend,$evalue,$bits) = split;
-       
+	  # WU-BLAST -mformat 3 only
+	  if(m{^#\s((?:\S+?)?BLAST[NPX])\s(\d+\.\d+.+\d{4}\])}) {
+            ($alg, $ver) = ($1, $2);
+			# only one header for whole file with WU-BLAST
+			# so $alg and $ver won't get set properly for
+			# each result
+			$self->program_name($alg) if $alg;
+			$self->element({'Name' => 'Result_version',
+					   		'Data' => $ver}) if $ver;
+            next;
+	  }
+      # -m 9 only
+      elsif(m{^#\s+((?:\S+?)?BLAST[NPX])\s+(.+)}) {
+            ($alg, $ver) = ($1, $2);
+            next;
+       }
+       next if /^#/ || /^\s*$/;
+
+	  my @fields = split;
+      next if @fields == 1;
+	  my ($qname,$hname, $percent_id, $hsp_len, $mismatches,$gapsm,
+	      $qstart,$qend,$hstart,$hend,$evalue,$bits);
+	  # WU-BLAST-specific
+	  my ($num_scores, $raw_score, $identities, $positives, $percent_pos,
+	      $qgap_blocks,$qgaps, $sgap_blocks, $sgaps, $qframe,
+	      $sframe);
+	  # NCBI -m8 and -m9
+	  if (@fields == 12) {
+	      ($qname,$hname, $percent_id, $hsp_len, $mismatches,$gapsm,
+	       $qstart,$qend,$hstart,$hend,$evalue,$bits) = @fields;
+	  # NCBI -m8 and -m9, v 2.2.18+
+	  } elsif (@fields == 13) {
+          ($qname, $hname, $percent_id, $percent_pos, $hsp_len, $mismatches, $gapsm,
+	       $qstart,$qend,$hstart,$hend,$evalue,$bits) = @fields;
+      }
+	  # WU-BLAST -mformat 2 and 3
+	  elsif ((@fields == 22) or (@fields == 24)) {
+	      ($qname,$hname,$evalue,$num_scores, $bits, $raw_score, $hsp_len,
+	       $identities, $positives,$mismatches, $percent_id, $percent_pos,
+	       $qgap_blocks, $qgaps, $sgap_blocks, $sgaps, $qframe, $qstart,
+	       $qend, $sframe, $hstart,$hend,) = @fields;
+	      # we need total gaps in the alignment
+	      $gapsm=$qgaps+$sgaps;
+	  }
+
        # Remember Jim's code is 0 based
        if( defined $lastquery && 
 	   $lastquery ne $qname ) {
@@ -176,7 +218,9 @@ sub next_result{
 	   $self->{'_result_count'}++;
 	   $self->start_element({'Name' => 'Result'});
 	   $self->element({'Name' => 'Result_program',
-			   'Data' => $self->program_name});
+			   'Data' => $alg || $self->program_name});
+       $self->element({'Name' => 'Result_version',
+			   'Data' => $ver}) if $ver;
 	   $self->element({'Name' => 'Result_query-def',
 			   'Data' => $qname});
 	   $self->start_element({'Name' => 'Hit'});
@@ -212,7 +256,7 @@ sub next_result{
        $self->element({'Name' => 'Hsp_identity',
 		       'Data' => $identical});
        $self->element({'Name' => 'Hsp_positive',
-		       'Data' => $identical});
+		       'Data' => $positives});
        $self->element({'Name' => 'Hsp_gaps',
 		       'Data' => $gapsm});
        $self->element({'Name' => 'Hsp_query-from',

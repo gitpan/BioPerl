@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: prosite2perl.pl,v 1.1 2003/07/07 18:20:58 bosborne Exp $
+# $Id: prosite2perl.pl 15087 2008-12-04 02:48:00Z bosborne $
 # prosite2perl -- convert Prosite patterns to Perl regular expressions
 #
 # Jordan Dimov (jdimov@cis.clarion.edu)

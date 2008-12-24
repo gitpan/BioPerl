@@ -1,4 +1,4 @@
-# $Id: QueryI.pm,v 1.5.4.1 2006/10/02 23:10:15 sendu Exp $
+# $Id: QueryI.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::DB::QueryI.pm
 #
@@ -25,7 +25,7 @@ Bio::DB::QueryI - Object Interface to queryable sequence databases
    my @ids   = $query->ids;
 
    # get a genbank database handle
-   $gb = new Bio::DB::GenBank;
+   $gb = Bio::DB::GenBank->new();
    my $stream = $db->get_Stream_by_query($query);
    while (my $seq = $stream->next_seq) {
       ...

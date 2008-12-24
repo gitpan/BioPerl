@@ -1,4 +1,4 @@
-# $Id: SimpleMap.pm,v 1.17.4.2 2006/10/02 23:10:21 sendu Exp $
+# $Id: SimpleMap.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Map::SimpleMap
 #
@@ -18,7 +18,7 @@ Bio::Map::SimpleMap - A MapI implementation handling the basics of a Map
 
     use Bio::Map::SimpleMap;
 
-    my $map = new Bio::Map::SimpleMap(-name => 'genethon',
+    my $map = Bio::Map::SimpleMap->new(-name => 'genethon',
 				      -type => 'Genetic',
 				      -units=> 'cM',
 				      -species => $human);
@@ -91,7 +91,7 @@ BEGIN { $MAPCOUNT = 1; }
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Map::SimpleMap();
+ Usage   : my $obj = Bio::Map::SimpleMap->new();
  Function: Builds a new Bio::Map::SimpleMap object
  Returns : Bio::Map::SimpleMap
  Args    : -name    => name of map (string)

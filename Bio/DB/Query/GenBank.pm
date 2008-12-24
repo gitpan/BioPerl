@@ -1,4 +1,4 @@
-# $Id: GenBank.pm,v 1.18.2.1 2006/10/02 23:10:17 sendu Exp $
+# $Id: GenBank.pm 15052 2008-12-01 08:47:39Z heikki $
 #
 # BioPerl module for Bio::DB::Query::GenBank.pm
 #
@@ -17,16 +17,19 @@ Bio::DB::Query::GenBank - Build a GenBank Entrez Query
 
 =head1 SYNOPSIS
 
-   my $query_string = 'Oryza[Organism] AND EST[Keyword]';
-   my $query = Bio::DB::Query::GenBank->new(-db=>'nucleotide',
-                                            -query=>$query_string,
-					    -mindate => '2001',
-					    -maxdate => '2002');
-   my $count = $query->count;
-   my @ids   = $query->ids;
+   use Bio::DB::Query::GenBank;
+   use Bio::DB::GenBank;
 
-   # get a genbank database handle
-   my $gb = new Bio::DB::GenBank;
+   my $query_string = 'Oryza[Organism] AND EST[Keyword]';
+   my $query = Bio::DB::Query::GenBank->new(-db => 'nucleotide',
+                                            -query => $query_string,
+                                            -mindate => '2001',
+                                            -maxdate => '2002');
+
+   print $query->count,"\n";
+
+   # get a Genbank database handle
+   my $gb = Bio::DB::GenBank->new();
    my $stream = $gb->get_Stream_by_query($query);
    while (my $seq = $stream->next_seq) {
       # do something with the sequence object
@@ -295,6 +298,25 @@ sub _parse_response {
   my ($cookie)    = $content =~ m!<WebEnv>(\S+)</WebEnv>!;
   my ($querykey)  = $content =~ m!<QueryKey>(\d+)!;
   $self->cookie(uri_unescape($cookie),$querykey);
+}
+
+=head2 _generate_id_string
+
+ Title   : _generate_id_string
+ Usage   : $string = $db->_generate_id_string
+ Function: joins IDs together in string (possibly implementation-dependent)
+ Returns : string of concatenated IDs
+ Args    : array ref of ids (normally passed into the constructor)
+
+=cut
+
+sub _generate_id_string {
+    my ($self, $ids) = @_;
+    # this attempts to separate out accs (alphanumeric) from UIDs (numeric only)
+    # recent changes to esearch has wrought this upon us.. cjf 4/19/07
+    return sprintf('%s',join('|',map {
+      ($_ =~ m{^\d+$}) ? $_.'[UID]' : $_.'[PACC]'
+    } @$ids));
 }
 
 1;

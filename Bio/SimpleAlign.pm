@@ -1,4 +1,4 @@
-# $Id: SimpleAlign.pm,v 1.108.2.6 2006/11/17 09:32:42 sendu Exp $
+# $Id: SimpleAlign.pm 15143 2008-12-11 19:15:57Z cjfields $
 # BioPerl module for SimpleAlign
 #
 # Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
@@ -54,10 +54,10 @@ Bio::SimpleAlign - Multiple alignments held as a set of sequences
   # Analyze
   $str = $aln->consensus_string($threshold_percent);
   $str = $aln->match_line();
-  $str = $aln->cigar_line()
+  $str = $aln->cigar_line();
   $id = $aln->percentage_identity;
 
-See the module documentation for details and more methods.
+  # See the module documentation for details and more methods.
 
 =head1 DESCRIPTION
 
@@ -117,6 +117,8 @@ Jason Stajich, jason-at-bioperl.org,
 Anthony Underwood, aunderwood-at-phls.org.uk,
 Xintao Wei & Giri Narasimhan, giri-at-cs.fiu.edu
 Brian Osborne, bosborne at alum.mit.edu
+Weigang Qiu, Weigang at GENECTR-HUNTER-CUNY-EDU
+Hongyu Zhang, forward at hongyu.org
 
 =head1 SEE ALSO
 
@@ -172,16 +174,22 @@ BEGIN {
 					       HFY )],);
 }
 
-use base qw(Bio::Root::Root Bio::Align::AlignI Bio::AnnotatableI);
+use base qw(Bio::Root::Root Bio::Align::AlignI Bio::AnnotatableI 
+	    Bio::FeatureHolderI);
 
 =head2 new
 
  Title     : new
- Usage     : my $aln = new Bio::SimpleAlign();
+ Usage     : my $aln = Bio::SimpleAlign->new();
  Function  : Creates a new simple align object
  Returns   : Bio::SimpleAlign
- Args      : -source => string representing the source program
-                        where this alignment came from
+ Args      : -source     => string representing the source program
+                            where this alignment came from
+             -annotation => Bio::AnnotationCollectionI
+             -seq_annotation => Bio::AnnotationCollectionI for sequences (requires -annotation also be set)
+             -seqs       => array ref containing Bio::LocatableSeq or Bio::Seq::Meta
+             -consensus  => consensus string
+             -consensus_meta  => Bio::Seq::Meta object containing consensus met information (kludge)
 
 =cut
 
@@ -191,7 +199,19 @@ sub new {
 
   my $self = $class->SUPER::new(@args);
 
-  my ($src,$score) = $self->_rearrange([qw(SOURCE SCORE)], @args);
+  my ($src, $score, $id, $acc, $desc, $seqs, $feats, $coll, $sa, $con, $cmeta) = $self->_rearrange([qw(
+                                            SOURCE
+                                            SCORE
+                                            ID
+                                            ACCESSION
+                                            DESCRIPTION
+                                            SEQS
+                                            FEATURES
+                                            ANNOTATION
+                                            SEQ_ANNOTATION
+                                            CONSENSUS
+                                            CONSENSUS_META
+                                            )], @args);
   $src && $self->source($src);
   defined $score && $self->score($score);
   # we need to set up internal hashs first!
@@ -201,8 +221,31 @@ sub new {
   $self->{'_start_end_lists'} = {};
   $self->{'_dis_name'} = {};
   $self->{'_id'} = 'NoName';
-  $self->{'_symbols'} = {};
   # maybe we should automatically read in from args. Hmmm...
+  $id  && $self->id($id);
+  $acc && $self->accession($acc);
+  $desc && $self->description($desc);
+  $coll && $self->annotation($coll);
+  # sequence annotation is layered into a provided annotation collection (or dies)
+  if ($sa) {
+    $self->throw("Must supply an alignment-based annotation collection (-annotation) ".
+                 "with a sequence annotation collection")
+        if !$coll;
+    $coll->add_Annotation('seq_annotation', $sa);
+  }
+  if ($feats && ref $feats eq 'ARRAY') {
+    for my $feat (@$feats) {
+        $self->add_SeqFeature($feat);
+    }
+  }
+  $con && $self->consensus($con);
+  $cmeta && $self->consensus_meta($cmeta);
+  # assumes these are in correct alignment order
+  if ($seqs && ref($seqs) eq 'ARRAY') {
+    for my $seq (@$seqs) {
+        $self->add_seq($seq);
+    }
+  }
 
   return $self; # success - we hope!
 }
@@ -243,19 +286,17 @@ sub add_seq {
     }
 
     $id = $seq->id() ||$seq->display_id || $seq->primary_id;
-    $start = $seq->start();
-    $end  = $seq->end();
 
     # build the symbol list for this sequence,
     # will prune out the gap and missing/match chars
     # when actually asked for the symbol list in the
     # symbol_chars
-    map { $self->{'_symbols'}->{$_} = 1; } split(//,$seq->seq) if $seq->seq;
+    # map { $self->{'_symbols'}->{$_} = 1; } split(//,$seq->seq) if $seq->seq;
 
     if( !defined $order ) {
 	$order = keys %{$self->{'_seq'}};
     }
-    $name = sprintf("%s/%d-%d",$id,$start,$end);
+    $name = $seq->get_nse;
 
     if( $self->{'_seq'}->{$name} ) {
 	$self->warn("Replacing one sequence [$name]\n") unless $self->verbose < 0;
@@ -416,7 +457,7 @@ sub purge {
 
  Title     : sort_alphabetically
  Usage     : $ali->sort_alphabetically
- Function  : Changes the order of the alignemnt to alphabetical on name
+ Function  : Changes the order of the alignment to alphabetical on name
              followed by numerical by number.
  Returns   :
  Argument  :
@@ -442,6 +483,42 @@ sub sort_alphabetically {
 	$count++;
     }
     1;
+}
+
+=head2 sort_by_list
+
+ Title     : sort_by_list
+ Usage     : $aln_ordered=$aln->sort_by_list($list_file)
+ Function  : Arbitrarily order sequences in an alignment
+ Returns   : A new Bio::SimpleAlign object
+ Argument  : a file listing sequence names in intended order (one name per line)
+
+=cut
+
+sub sort_by_list {
+    my ($self, $list) = @_;
+    my (@seq, @ids, %order);
+
+    foreach my $seq ( $self->each_seq() ) {
+        push @seq, $seq;
+        push @ids, $seq->display_id;
+    }
+
+    my $ct=1;
+    open(my $listfh, '<', $list) || $self->throw("can't open file for reading: $list");
+    while (<$listfh>) {
+      chomp;
+      my $name=$_;
+      $self->throw("Not found in alignment: $name") unless &_in_aln($name, \@ids);
+      $order{$name}=$ct++;
+    }
+    close($listfh);
+    
+    # use the map-sort-map idiom:
+    my @sorted= map { $_->[1] } sort { $a->[0] <=> $b->[0] } map { [$order{$_->id()}, $_] } @seq;
+    my $aln = $self->new;
+    foreach (@sorted) { $aln->add_seq($_) }
+    return $aln;
 }
 
 =head2 set_new_reference
@@ -522,14 +599,21 @@ sub uniq_seq {
 # it's necessary to ignore "n", "N", leading gaps and ending gaps in
 # comparing two sequence strings
 
-# 1st, convert "n", "N" to "?" (for DNA sequence only):
+    # 1st, convert "n", "N" to "?" (for DNA sequence only):
 	$str =~ s/n/\?/gi if $str =~ /^[atcgn-]+$/i;
-# 2nd, convert leading and ending gaps to "?":
+    # 2nd, convert leading and ending gaps to "?":
 	$str = &_convert_leading_ending_gaps($str, '-', '?');
-	my $new = new Bio::LocatableSeq(-id=>$seq->id(),
-					-seq=>$str,
-					-start=>1,
-					-end=>$len);
+    # Note that '?' also can mean unknown residue.
+    # I don't like making global class member changes like this, too
+    # prone to errors... -- cjfields 08-11-18
+    local $Bio::LocatableSeq::GAP_SYMBOLS = '-\?';
+	my $new = Bio::LocatableSeq->new(
+                     -id      => $seq->id(),
+					 -alphabet=> $seq->alphabet,
+					 -seq     => $str,
+					 -start   => $seq->start,
+					 -end     => $seq->end
+					 );
 	push @seq, $new;
     }
 
@@ -553,10 +637,14 @@ sub uniq_seq {
 	my $str2 = &_convert_leading_ending_gaps($str, '?', '-');
 # convert middle "?" back into "N" ("?" throws errors by SimpleAlign):
 	$str2 =~ s/\?/N/g if $str2 =~ /^[atcg\-\?]+$/i;
-	my $new = new Bio::LocatableSeq(-id=>"ST".$order{$str},
-					-seq=>$str2,
-					-start=>1,
-					-end=>length($str));
+	my $gap='-';
+	my $end=length($str2);
+	$end -= length($1) while $str2 =~ m/($gap+)/g;
+	my $new = Bio::LocatableSeq->new(-id   =>"ST".$order{$str},
+					 -seq  =>$str2,
+					 -start=>1,
+					 -end  =>$end
+					 );
 	$aln->add_seq($new);
 #	print STDERR "ST".$order{$str}, "\t=>";
 	foreach (@{$member{$str}}) {
@@ -719,7 +807,7 @@ sub each_seq_with_id {
              Numbering starts from 1.  Sequence positions larger than
              no_sequences() will thow an error.
  Returns   : a Bio::LocatableSeq object
- Args      : positive integer for the sequence osition
+ Args      : positive integer for the sequence position
 
 =cut
 
@@ -735,6 +823,31 @@ sub get_seq_by_pos {
 
     my $nse = $self->{'_order'}->{--$pos};
     return $self->{'_seq'}->{$nse};
+}
+
+=head2 get_seq_by_id
+
+ Title     : get_seq_by_id
+ Usage     : $seq = $aln->get_seq_by_id($name) # seq named $name
+ Function  : Gets a sequence based on its name.
+             Sequences that do not exist will warn and return undef
+ Returns   : a Bio::LocatableSeq object
+ Args      : string for sequence name
+
+=cut
+
+sub get_seq_by_id {
+    my ($self,$name) = @_;
+    unless( defined $name ) {
+      $self->warn("Must provide a sequence name");
+      return;
+    }
+    for my $seq ( values %{$self->{'_seq'}} ) {
+      if ( $seq->id eq $name) {
+	return $seq;
+      }
+    }
+    return;
 }
 
 =head2 seq_with_features
@@ -853,35 +966,60 @@ sub select {
 	$aln->add_seq($self->get_seq_by_pos($pos));
     }
     $aln->id($self->id);
+    # fix for meta, sf, ann    
     return $aln;
 }
 
 =head2 select_noncont
 
  Title     : select_noncont
- Usage     : $aln2 = $aln->select_noncont(1, 3) # 1st and 3rd sequences
- Function  : Creates a new alignment from a subset of
-             sequences.  Numbering starts from 1.  Sequence positions
-             larger than no_sequences() will thow an error.
+ Usage     : # 1st and 3rd sequences, sorted
+             $aln2 = $aln->select_noncont(1, 3)
+
+             # 1st and 3rd sequences, sorted (same as first)
+             $aln2 = $aln->select_noncont(3, 1)
+
+             # 1st and 3rd sequences, unsorted
+             $aln2 = $aln->select_noncont('nosort',3, 1)
+
+ Function  : Creates a new alignment from a subset of sequences.  Numbering
+             starts from 1.  Sequence positions larger than no_sequences() will
+             throw an error.  Sorts the order added to new alignment by default,
+             to prevent sorting pass 'nosort' as the first argument in the list.
  Returns   : a Bio::SimpleAlign object
- Args      : array of integers for the sequences
+ Args      : array of integers for the sequences.  If the string 'nosort' is
+             passed as the first argument, the sequences will not be sorted
+             in the new alignment but will appear in the order listed.
 
 =cut
 
 sub select_noncont {
 	my $self = shift;
+    my $nosort = 0;
 	my (@pos) = @_;
-	my $end = $self->no_sequences;
-	@pos = sort @pos;
-	foreach ( @pos ) {
+    if ($pos[0] !~ m{^\d+$}) {
+        my $sortcmd = shift @pos;
+        if ($sortcmd eq 'nosort') {
+            $nosort = 1;
+        } else {
+            $self->throw("Command not recognized: $sortcmd.  Only 'nosort' implemented at this time.");
+        }
+    }
+	
+    my $end = $self->no_sequences;
+    foreach ( @pos ) {
 		$self->throw("position must be a positive integer, > 0 and <= $end not [$_]")
 		  unless( /^\d+$/ && $_ > 0 && $_ <= $end );
 	}
+    
+	@pos = sort {$a <=> $b} @pos unless $nosort;
+	
 	my $aln = $self->new;
 	foreach my $p (@pos) {
 		$aln->add_seq($self->get_seq_by_pos($p));
 	}
 	$aln->id($self->id);
+    # fix for meta, sf, ann    
 	return $aln;
 }
 
@@ -911,54 +1049,76 @@ sub slice {
 	  unless $start =~ /^\d+$/ and $start > 0;
 	$self->throw("Slice end has to be a positive integer, not [$end]")
 	  unless $end =~ /^\d+$/ and $end > 0;
-	$self->throw("Slice $start [$start] has to be smaller than or equal to end [$end]")
+	$self->throw("Slice start [$start] has to be smaller than or equal to end [$end]")
 	  unless $start <= $end;
 	$self->throw("This alignment has only ". $self->length . " residues. Slice start " .
 					 "[$start] is too big.") if $start > $self->length;
-
+    my $cons_meta = $self->consensus_meta;
 	my $aln = $self->new;
 	$aln->id($self->id);
 	foreach my $seq ( $self->each_seq() ) {
-		my $new_seq = Bio::LocatableSeq->new(-id      => $seq->id,
-														 -strand  => $seq->strand,
-														 -verbose => $self->verbose);
-		# seq
-		my $seq_end = $end;
-		$seq_end = $seq->length if( $end > $seq->length );
+	    my $new_seq = $seq->isa('Bio::Seq::MetaI') ?
+            Bio::Seq::Meta->new
+        (-id      => $seq->id,
+		 -alphabet => $seq->alphabet,
+		 -strand  => $seq->strand,
+		 -verbose => $self->verbose) :
+            Bio::LocatableSeq->new
+        (-id      => $seq->id,
+		 -alphabet => $seq->alphabet,
+		 -strand  => $seq->strand,
+		 -verbose => $self->verbose);
+        
+	    # seq
+	    my $seq_end = $end;
+	    $seq_end = $seq->length if( $end > $seq->length );
 
-		my $slice_seq = $seq->subseq($start, $seq_end);
-		$new_seq->seq( $slice_seq );
+	    my $slice_seq = $seq->subseq($start, $seq_end);
+	    $new_seq->seq( $slice_seq );
 
-		$slice_seq =~ s/\W//g;
-		
-		if ($start > 1) {
-			my $pre_start_seq = $seq->subseq(1, $start - 1);
-			$pre_start_seq =~ s/\W//g;
-			if (!defined($seq->strand)) {
-				$new_seq->start( $seq->start + CORE::length($pre_start_seq) );
-			} elsif ($seq->strand < 0){
-				$new_seq->start( $seq->end - CORE::length($pre_start_seq) - CORE::length($slice_seq) + 1);
-			} else {
-			$new_seq->start( $seq->start + CORE::length($pre_start_seq)  );
-			}
-		} else {
-			$new_seq->start( $seq->start);
-		}
-		$new_seq->end( $new_seq->start + CORE::length($slice_seq) - 1 );
+	    $slice_seq =~ s/\W//g;
 
-		if ($new_seq->start and $new_seq->end >= $new_seq->start) {
-			$aln->add_seq($new_seq);
-		} else {
-			if( $keep_gap_only ) {
-				$aln->add_seq($new_seq);
-			} else {
-				my $nse = $seq->get_nse();
-				$self->warn("Slice [$start-$end] of sequence [$nse] contains no residues.".
-								" Sequence excluded from the new alignment.");
-			}
-		}
+	    if ($start > 1) {
+            my $pre_start_seq = $seq->subseq(1, $start - 1);
+            $pre_start_seq =~ s/\W//g;
+            if (!defined($seq->strand)) {
+                $new_seq->start( $seq->start + CORE::length($pre_start_seq) );
+            } elsif ($seq->strand < 0){
+                $new_seq->start( $seq->end - CORE::length($pre_start_seq) - CORE::length($slice_seq) + 1);
+            } else {
+                $new_seq->start( $seq->start + CORE::length($pre_start_seq)  );
+            }
+	    } else {
+            $new_seq->start( $seq->start);
+	    }
+        if ($new_seq->isa('Bio::Seq::MetaI')) {
+            for my $meta_name ($seq->meta_names) {
+                $new_seq->named_meta($meta_name, $seq->named_submeta($meta_name, $start, $end));
+            }
+        }
+	    $new_seq->end( $new_seq->start + CORE::length($slice_seq) - 1 );
+
+	    if ($new_seq->start and $new_seq->end >= $new_seq->start) {
+            $aln->add_seq($new_seq);
+	    } else {
+            if( $keep_gap_only ) {
+                $aln->add_seq($new_seq);
+            } else {
+                my $nse = $seq->get_nse();
+                $self->warn("Slice [$start-$end] of sequence [$nse] contains no residues.".
+                    " Sequence excluded from the new alignment.");
+            }
+	    }
 	}
-
+    if ($cons_meta) {
+        my $new = Bio::Seq::Meta->new();
+        for my $meta_name ($cons_meta->meta_names) {
+            $new->named_meta($meta_name, $cons_meta->named_submeta($meta_name, $start, $end));
+        }
+        $aln->consensus_meta($new);
+    }
+    $aln->annotation($self->annotation);
+    # fix for meta, sf, ann
 	return $aln;
 }
 
@@ -982,13 +1142,14 @@ sub remove_columns {
 	@args || return $self;
    my $aln;
 
-	if ($args[0][0] =~ /^[a-z]+$/i) {
+	if ($args[0][0] =~ /^[a-z_]+$/i) {
 		 $aln = $self->_remove_columns_by_type($args[0]);
 	} elsif ($args[0][0] =~ /^\d+$/) {
        $aln = $self->_remove_columns_by_num(\@args);
 	} else {
 		 $self->throw("You must pass array references to remove_columns(), not @args");
 	}
+    # fix for meta, sf, ann
    $aln;
 }
 
@@ -1037,6 +1198,7 @@ sub remove_gaps {
 
     #remove the segments
     $aln = $#remove >= 0 ? $self->_remove_col($aln,\@remove) : $self;
+    # fix for meta, sf, ann        
     return $aln;
 }
 
@@ -1044,43 +1206,64 @@ sub remove_gaps {
 sub _remove_col {
     my ($self,$aln,$remove) = @_;
     my @new;
-
+    
+    my $gap = $self->gap_char;
+    
     # splice out the segments and create new seq
     foreach my $seq($self->each_seq){
-        my $new_seq = new Bio::LocatableSeq(
-						 -id      => $seq->id,
-					    -strand  => $seq->strand,
-					    -verbose => $self->verbose);
+        my $new_seq = Bio::LocatableSeq->new(
+					     -id      => $seq->id,
+					     -alphabet=> $seq->alphabet,
+					     -strand  => $seq->strand,
+					     -verbose => $self->verbose);
         my $sequence = $seq->seq;
         foreach my $pair(@{$remove}){
             my $start = $pair->[0];
             my $end   = $pair->[1];
             $sequence = $seq->seq unless $sequence;
-            my $spliced;
-            $spliced .= $start > 0 ? substr($sequence,0,$start) : '';
-            $spliced .= substr($sequence,$end+1,$seq->length-$end+1);
-            $sequence = $spliced;
-            if ($start == 1) {
-              $new_seq->start($end);
-            }
-            else {
-              $new_seq->start( $seq->start);
+            my $orig = $sequence;
+            my $head =  $start > 0 ? substr($sequence, 0, $start) : '';
+            my $tail = ($end + 1) >= length($sequence) ? '' : substr($sequence, $end + 1);
+            $sequence = $head.$tail;
+            # start
+            unless (defined $new_seq->start) {
+                if ($start == 0) {
+                    my $start_adjust = () = substr($orig, 0, $end + 1) =~ /$gap/g;
+                    $new_seq->start($seq->start + $end + 1 - $start_adjust);
+                }
+                else {
+                    my $start_adjust = $orig =~ /^$gap+/;
+                    if ($start_adjust) {
+                        $start_adjust = $+[0] == $start;
+                    }
+                    $new_seq->start($seq->start + $start_adjust);
+                }
             }
             # end
-            if($end >= $seq->end){
-             $new_seq->end( $start);
+            if (($end + 1) >= length($orig)) {
+                my $end_adjust = () = substr($orig, $start) =~ /$gap/g;
+                $new_seq->end($seq->end - (length($orig) - $start) + $end_adjust);
             }
             else {
-             $new_seq->end($seq->end);
+                $new_seq->end($seq->end);
             }
         }
+        
+        if ($new_seq->end < $new_seq->start) {
+            # we removed all columns except for gaps: set to 0 to indicate no
+            # sequence
+            $new_seq->start(0);
+            $new_seq->end(0);
+        }
+        
         $new_seq->seq($sequence) if $sequence;
-		  push @new, $new_seq;
+		push @new, $new_seq;
     }
     # add the new seqs to the alignment
     foreach my $new(@new){
         $aln->add_seq($new);
     }
+    # fix for meta, sf, ann    
     return $aln;
 }
 
@@ -1125,7 +1308,7 @@ sub _remove_columns_by_type {
 	$aln = $#remove >= 0 ? $self->_remove_col($aln,\@remove) : $self;
 	$aln = $aln->remove_gaps() if $gap;
 	$aln = $aln->remove_gaps('', 1) if $all_gaps_columns;
-
+    # fix for meta, sf, ann    
 	$aln;
 }
 
@@ -1134,9 +1317,24 @@ sub _remove_columns_by_num {
 	my ($self,$positions) = @_;
 	my $aln = $self->new;
 
-	# sort the positions to remove columns at the end 1st
-	@$positions = sort { $b->[0] <=> $a->[0] } @$positions;
-	$aln = $self->_remove_col($aln,$positions);
+	# sort the positions
+	@$positions = sort { $a->[0] <=> $b->[0] } @$positions;
+    
+    my @remove;
+    my $length = 0;
+    foreach my $pos (@{$positions}) {
+        my ($start, $end) = @{$pos};
+        
+        #have to offset the start and end for subsequent removes
+        $start-=$length;
+        $end  -=$length;
+        $length += ($end-$start+1);
+        push @remove, [$start,$end];
+    }
+
+    #remove the segments
+    $aln = $#remove >= 0 ? $self->_remove_col($aln,\@remove) : $self;
+    # fix for meta, sf, ann    
 	$aln;
 }
 
@@ -1251,16 +1449,17 @@ sub uppercase {
             "1,60" or "5,10:12,58", where the numbers refer to conserved
             positions within the alignment. The keys of the hash are the
             NSEs (name/start/end) assigned to each sequence.
- Args     : none
+ Args     : threshold (optional, defaults to 100)
  Returns  : Hash of strings (cigar lines)
 
 =cut
 
 sub cigar_line {
 	my $self = shift;
+	my $thr=shift||100;
 	my %cigars;
 
-	my @consensus = split "",($self->consensus_string(100));
+	my @consensus = split "",($self->consensus_string($thr));
 	my $len = $self->length;
 	my $gapchar = $self->gap_char;
 
@@ -1582,7 +1781,7 @@ sub unmatch {
     return 1;
 }
 
-=head1 MSA attibutes
+=head1 MSA attributes
 
 Methods for setting and reading the MSA attributes.
 
@@ -1961,7 +2160,7 @@ sub _consensus_iupac {
 
 sub consensus_meta {
     my ($self, $meta) = @_;
-    if ($meta and !$meta->isa('Bio::Seq::MetaI')) {
+    if ($meta && (!ref $meta || !$meta->isa('Bio::Seq::MetaI'))) {
         $self->throw('Not a Bio::Seq::MetaI object');
     }
     return $self->{'_aln_meta'} = $meta if $meta;
@@ -2026,18 +2225,14 @@ sub length_aln {
 sub length {
     my $self = shift;
     my $seq;
-    my $length = (-1);
-    my ($temp,$len);
-
+    my $length = -1;
+    my $temp;
+    
     foreach $seq ( $self->each_seq() ) {
-        if ($self->isa("Bio::Seq::LargeSeqI")) {
-            $temp = $seq->length();
-        } else {
-	    $temp = $seq->length;
+        $temp = $seq->length();
+        if( $temp > $length ) {
+            $length = $temp;
         }
-	if( $temp > $length ) {
-	    $length = $temp;
-	}
     }
 
     return $length;
@@ -2247,22 +2442,33 @@ sub percentage_identity {
 
 =head2 overall_percentage_identity
 
- Title   : percentage_identity
- Usage   : $id = $align->percentage_identity
+ Title   : overall_percentage_identity
+ Usage   : $id = $align->overall_percentage_identity
+           $id = $align->overall_percentage_identity('short')
  Function: The function calculates the percentage identity of
            the conserved columns
  Returns : The percentage identity of the conserved columns
- Args    : None
+ Args    : length value to use, optional defaults to alignment length
+                 possible values: 'align', 'short', 'long'
+
+The argument values 'short' and 'long' refer to shortest and longest
+sequence in the alignment. Method modification code by Hongyu Zhang.
 
 =cut
 
 sub overall_percentage_identity{
-   my ($self,@args) = @_;
+   my ($self, $length_measure) = @_;
 
    my @alphabet = ('A','B','C','D','E','F','G','H','I','J','K','L','M',
                    'N','O','P','Q','R','S','T','U','V','W','X','Y','Z');
 
    my ($len, $total, @seqs, @countHashes);
+
+   my %enum = map {$_ => 1} qw (align short long);
+
+   $self->throw("Unknown argument [$length_measure]") 
+       if $length_measure and not $enum{$length_measure};
+   $length_measure ||= 'align';
 
    if (! $self->is_flush()) {
        $self->throw("All sequences in the alignment must be the same length");
@@ -2296,8 +2502,36 @@ sub overall_percentage_identity{
 	   last;
        }
    }
+
+   if ($length_measure eq 'short') {
+       ## find the shortest length
+       $len = 0;
+       foreach my $seq ($self->each_seq) {
+           my $count = $seq->seq =~ tr/[A-Za-z]//;
+           if ($len) {
+               $len = $count if $count < $len;
+           } else {
+               $len = $count;
+           }
+       }
+   }
+   elsif ($length_measure eq 'long') {
+       ## find the longest length
+       $len = 0;
+       foreach my $seq ($self->each_seq) {
+           my $count = $seq->seq =~ tr/[A-Za-z]//;
+           if ($len) {
+               $len = $count if $count > $len;
+           } else {
+               $len = $count;
+           }
+       }
+   }
+
    return ($total / $len ) * 100.0;
 }
+
+
 
 =head1 Alignment positions
 
@@ -2310,7 +2544,6 @@ L<Bio::LocatableSeq::location_from_column>:
     my $seq = $aln->get_seq_by_pos(1);
     #$loc is undef or Bio::LocationI object
     my $loc = $seq->location_from_column(5);
-
 
 =head2 column_from_residue_number
 
@@ -2510,6 +2743,332 @@ sub source{
     return $self->{'_source'};
 }
 
+=head2 set_displayname_safe
+
+ Title     : set_displayname_safe
+ Usage     : ($new_aln, $ref_name)=$ali->set_displayname_safe(4)
+ Function  : Assign machine-generated serial names to sequences in input order.
+             Designed to protect names during PHYLIP runs. Assign 10-char string
+             in the form of "S000000001" to "S999999999". Restore the original
+             names using "restore_displayname".
+ Returns   : 1. a new $aln with system names;
+             2. a hash ref for restoring names
+ Argument  : Number for id length (default 10)
+
+=cut
+
+sub set_displayname_safe {
+    my $self = shift;
+    my $idlength = shift || 10;
+    my ($seq, %phylip_name);
+    my $ct=0;
+    my $new=Bio::SimpleAlign->new();
+    foreach $seq ( $self->each_seq() ) {
+	$ct++;
+	my $pname="S". sprintf "%0" . ($idlength-1) . "s", $ct;
+	$phylip_name{$pname}=$seq->id();
+	my $new_seq= Bio::LocatableSeq->new(-id       => $pname,
+					    -seq      => $seq->seq(),
+					    -alphabet => $seq->alphabet,
+					    -start    => $seq->{_start},
+					    -end      => $seq->{_end}
+					    );
+	$new->add_seq($new_seq);
+    }
+
+    $self->debug("$ct seq names changed. Restore names by using restore_displayname.");
+    return ($new, \%phylip_name);
+}
+
+=head2 restore_displayname
+
+ Title     : restore_displayname
+ Usage     : $aln_name_restored=$ali->restore_displayname($hash_ref)
+ Function  : Restore original sequence names (after running
+             $ali->set_displayname_safe)
+ Returns   : a new $aln with names restored.
+ Argument  : a hash reference of names from "set_displayname_safe".
+
+=cut
+
+sub restore_displayname {
+    my $self = shift;
+    my $ref=shift;
+    my %name=%$ref;
+    my $new=Bio::SimpleAlign->new();
+    foreach my $seq ( $self->each_seq() ) {
+      $self->throw("No sequence with name") unless defined $name{$seq->id()};
+      my $new_seq= Bio::LocatableSeq->new(-id       => $name{$seq->id()},
+					  -seq      => $seq->seq(),
+					  -alphabet => $seq->alphabet,
+					  -start    => $seq->{_start},
+					  -end      => $seq->{_end}
+					  );
+      $new->add_seq($new_seq);
+    }
+    return $new;
+}
+
+=head2 sort_by_start
+
+ Title     : sort_by_start
+ Usage     : $ali->sort_by_start
+ Function  : Changes the order of the alignment to the start position of each
+             subalignment    
+ Returns   :
+ Argument  :
+
+=cut
+
+sub sort_by_start {
+    my $self = shift;
+    my ($seq,$nse,@arr,%hash,$count);
+    foreach $seq ( $self->each_seq() ) {
+        $nse = $seq->get_nse;
+        $hash{$nse} = $seq;
+    }
+    $count = 0;
+    %{$self->{'_order'}} = (); # reset the hash;
+    foreach $nse ( sort _startend keys %hash) {
+        $self->{'_order'}->{$count} = $nse;
+        $count++;
+    }
+    1;
+}
+
+sub _startend
+{
+    my ($aname,$arange) = split (/[\/]/,$a);
+    my ($bname,$brange) = split (/[\/]/,$b);
+    my ($astart,$aend) = split(/\-/,$arange);
+    my ($bstart,$bend) = split(/\-/,$brange);
+    return $astart <=> $bstart;
+}
+
+=head2 bracket_string
+
+ Title     : bracket_string
+ Usage     : my @params = (-refseq     => 'testseq',
+                           -allele1    => 'allele1',
+                           -allele2    => 'allele2',
+                           -delimiters => '{}',
+                           -separator  => '/');
+             $str = $aln->bracket_string(@params)
+
+ Function :  When supplied with a list of parameters (see below), returns a
+             string in BIC format. This is used for allelic comparisons.
+             Briefly, if either allele contains a base change when compared to
+             the refseq, the base or gap for each allele is represented in
+             brackets in the order present in the 'alleles' parameter.
+
+             For the following data:
+
+             >testseq
+             GGATCCATTGCTACT
+             >allele1
+             GGATCCATTCCTACT
+             >allele2
+             GGAT--ATTCCTCCT
+
+             the returned string with parameters 'refseq => testseq' and
+             'alleles => [qw(allele1 allele2)]' would be:
+
+             GGAT[C/-][C/-]ATT[C/C]CT[A/C]CT
+ Returns   : BIC-formatted string
+ Argument  : Required args
+                refseq    : string (ID) of the reference sequence used
+                            as basis for comparison
+                allele1   : string (ID) of the first allele
+                allele2   : string (ID) of the second allele
+             Optional args
+                delimiters: two symbol string of left and right delimiters.
+                            Only the first two symbols are used
+                            default = '[]'
+                separator : string used as a separator.  Only the first
+                            symbol is used
+                            default = '/'
+ Throws    : On no refseq/alleles, or invalid refseq/alleles.
+
+=cut
+
+sub bracket_string {
+    my ($self, @args) = @_;
+    my ($ref, $a1, $a2, $delim, $sep) =
+        $self->_rearrange([qw(refseq allele1 allele2 delimiters separator)], @args);
+    $self->throw('Missing refseq/allele1/allele2') if (!$a1 || !$a2 || !$ref);
+    my ($ld, $rd);
+    ($ld, $rd) = split('', $delim, 2) if $delim;
+    $ld ||= '[';
+    $rd ||= ']';
+    $sep ||= '/';
+    my ($refseq, $allele1, $allele2) =
+        map {( $self->each_seq_with_id($_) )} ($ref, $a1, $a2);
+    if (!$refseq || !$allele1 || !$allele2) {
+        $self->throw("One of your refseq/allele IDs is invalid!");
+    }
+    my $len = $self->length-1;
+    my $bic = '';
+    # loop over the alignment columns
+    for my $column ( 0 .. $len ) {
+        my $string;
+        my ($compres, $res1, $res2) =
+            map{substr($_->seq, $column, 1)} ($refseq, $allele1, $allele2);
+        # are any of the allele symbols different from the refseq?
+        $string = ($compres eq $res1 && $compres eq $res2) ? $compres :
+                $ld.$res1.$sep.$res2.$rd;
+        $bic .= $string;
+    }
+    return $bic;
+}
+
+
+=head2 methods for Bio::FeatureHolder
+
+FeatureHolder implementation to support labeled character sets like one
+would get from NEXUS represented data.
+
+=head2 get_SeqFeatures
+
+ Usage   :
+ Function: Get the feature objects held by this feature holder.
+ Example :
+ Returns : an array of Bio::SeqFeatureI implementing objects
+ Args    : none
+
+At some day we may want to expand this method to allow for a feature
+filter to be passed in.
+
+=cut
+
+sub get_SeqFeatures {
+    my $self = shift;
+
+    if( !defined $self->{'_as_feat'} ) {
+	$self->{'_as_feat'} = [];
+    }
+    return @{$self->{'_as_feat'}};
+}
+
+=head2 add_SeqFeature
+
+ Usage   : $feat->add_SeqFeature($subfeat);
+           $feat->add_SeqFeature($subfeat,'EXPAND')
+ Function: adds a SeqFeature into the subSeqFeature array.
+           with no 'EXPAND' qualifer, subfeat will be tested
+           as to whether it lies inside the parent, and throw
+           an exception if not.
+
+           If EXPAND is used, the parent''s start/end/strand will
+           be adjusted so that it grows to accommodate the new
+           subFeature
+ Example :
+ Returns : nothing
+ Args    : a Bio::SeqFeatureI object
+
+=cut
+
+sub add_SeqFeature {
+   my ($self,@feat) = @_;
+
+   $self->{'_as_feat'} = [] unless $self->{'_as_feat'};
+
+   foreach my $feat ( @feat ) {
+       if( !$feat->isa("Bio::SeqFeatureI") ) {
+           $self->throw("$feat is not a SeqFeatureI and that's what we expect...");
+       }
+
+       push(@{$self->{'_as_feat'}},$feat);
+   }
+   return 1;
+}
+
+
+=head2 remove_SeqFeatures
+
+ Usage   : $obj->remove_SeqFeatures
+ Function: Removes all sub SeqFeatures.  If you want to remove only a subset,
+           remove that subset from the returned array, and add back the rest.
+ Returns : The array of Bio::SeqFeatureI implementing sub-features that was
+           deleted from this feature.
+ Args    : none
+
+=cut
+
+sub remove_SeqFeatures {
+    my $self = shift;
+
+    return () unless $self->{'_as_feat'};
+    my @feats = @{$self->{'_as_feat'}};
+    $self->{'_as_feat'} = [];
+    return @feats;
+}
+
+=head2 feature_count
+
+ Title   : feature_count
+ Usage   : $obj->feature_count()
+ Function: Return the number of SeqFeatures attached to a feature holder.
+
+           This is before flattening a possible sub-feature tree.
+
+           We provide a default implementation here that just counts
+           the number of objects returned by get_SeqFeatures().
+           Implementors may want to override this with a more
+           efficient implementation.
+
+ Returns : integer representing the number of SeqFeatures
+ Args    : None
+
+At some day we may want to expand this method to allow for a feature
+filter to be passed in.
+
+Our default implementation allows for any number of additional
+arguments and will pass them on to get_SeqFeatures(). I.e., in order to
+support filter arguments, just support them in get_SeqFeatures().
+
+=cut
+
+sub feature_count {
+    my ($self) = @_;
+
+    if (defined($self->{'_as_feat'})) {
+        return ($#{$self->{'_as_feat'}} + 1);
+    } else {
+        return 0;
+    }
+}
+
+=head2 get_all_SeqFeatures
+
+ Title   : get_all_SeqFeatures
+ Usage   :
+ Function: Get the flattened tree of feature objects held by this
+           feature holder. The difference to get_SeqFeatures is that
+           the entire tree of sub-features will be flattened out.
+
+           We provide a default implementation here, so implementors
+           don''t necessarily need to implement this method.
+
+ Example :
+ Returns : an array of Bio::SeqFeatureI implementing objects
+ Args    : none
+
+At some day we may want to expand this method to allow for a feature
+filter to be passed in.
+
+Our default implementation allows for any number of additional
+arguments and will pass them on to any invocation of
+get_SeqFeatures(), wherever a component of the tree implements
+FeatureHolderI. I.e., in order to support filter arguments, just
+support them in get_SeqFeatures().
+
+=cut
+
+=head2 methods for Bio::AnnotatableI
+
+AnnotatableI implementation to support sequence alignments which
+contain annotation (NEXUS, Stockholm).
+
 =head2 annotation
 
  Title   : annotation
@@ -2536,5 +3095,6 @@ sub annotation {
     }
     return $obj->{'_annotation'};
 }
+
 
 1;

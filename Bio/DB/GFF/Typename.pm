@@ -52,7 +52,7 @@ sub new    {
   my ($method,$source) = @_;
   $method ||= '';
   $source ||= '';
-  if ($source eq '' && $method =~ /^(\w+):(\w+)$/) {
+  if ($source eq '' && $method =~ /^([\w-]+):([\w-]*)$/) {
     $method = $1;
     $source = $2;
   }
@@ -150,11 +150,14 @@ sub match {
   my $self   = shift;
   my $target = shift;
   my ($method,$source);
+
   if (UNIVERSAL::isa($target,'Bio::DB::GFF::Typename')) {
     ($method,$source) = ($target->method,$target->source);
   } else {
     ($method,$source) = split /:/,$target;
   }
+
+  $source ||= ''; # quash uninit variable warnings
 
   return if $method ne '' && $self->method ne '' && $method ne $self->method;
   return if $source ne '' && $self->source ne '' && $source ne $self->source;

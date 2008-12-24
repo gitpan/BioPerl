@@ -1,4 +1,4 @@
-# $Id: ExtrapolatingPair.pm,v 1.16.4.1 2006/10/02 23:10:14 sendu Exp $
+# $Id: ExtrapolatingPair.pm 14851 2008-09-03 22:57:54Z hartzell $
 #
 # bioperl module for Bio::Coordinate::ExtrapolatingPair
 #
@@ -46,7 +46,7 @@ is directed and reversible. It implements methods to ensure internal
 consistency, and map continuous and split locations from one
 coordinate system to another.
 
-This class is an elaboration of Bio::Coordoinate::Pair. The map
+This class is an elaboration of Bio::Coordinate::Pair. The map
 function returns only matches which is the mode needed most of
 tehtime. By default the matching regions between coordinate systems
 are boundless, so that you can say e.g. that gene starts from here in

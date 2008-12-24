@@ -1,6 +1,6 @@
 #!perl -w
 use strict;
-# $Id: translate_seq.PLS,v 1.7 2006/07/04 22:23:29 mauricio Exp $
+# $Id: translate_seq.PLS 15088 2008-12-04 02:49:09Z bosborne $
 
 =head1 NAME
 

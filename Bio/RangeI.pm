@@ -1,4 +1,4 @@
-# $Id: RangeI.pm,v 1.49.4.1 2006/10/02 23:10:12 sendu Exp $
+# $Id: RangeI.pm 15142 2008-12-11 18:58:29Z cjfields $
 #
 # BioPerl module for Bio::RangeI
 #
@@ -64,6 +64,8 @@ Email:  heikki-at-bioperl-dot-org
 
 Juha Muilu (muilu@ebi.ac.uk)
 Sendu Bala (bix@sendu.me.uk)
+Malcolm Cook (mec@stowers-institute.org)
+Stephen Montgomery (sm8 at sanger.ac.uk)
 
 =head1 APPENDIX
 
@@ -556,5 +558,82 @@ sub disconnected_ranges {
     return @outranges;
 }
 
+=head2 offsetStranded
+
+    Title    : offsetStranded
+    Usage    : $rnge->ofsetStranded($fiveprime_offset, $threeprime_offset)
+    Function : destructively modifies RangeI implementing object to
+               offset its start and stop coordinates by values $fiveprime_offset and
+               $threeprime_offset (positive values being in the strand direction).
+    Args     : two integer offsets: $fiveprime_offset and $threeprime_offset
+    Returns  : $self, offset accordingly.
+
+=cut
+
+sub offsetStranded {
+  my ($self, $offset_fiveprime, $offset_threeprime) = @_;
+  my ($offset_start, $offset_end) = $self->strand() eq -1 ? (- $offset_threeprime, - $offset_fiveprime) : ($offset_fiveprime, $offset_threeprime);
+  $self->start($self->start + $offset_start);
+  $self->end($self->end + $offset_end);
+  return $self;
+};
+
+=head2 subtract
+
+  Title   : subtract
+  Usage   : my @subtracted = $r1->subtract($r2)
+  Function: Subtract range r2 from range r1
+  Args    : arg #1 = a range to subtract from this one (mandatory)
+            arg #2 = strand option ('strong', 'weak', 'ignore') (optional)
+  Returns : undef if they do not overlap or r2 contains this RangeI,
+            or an arrayref of Range objects (this is an array since some
+            instances where the subtract range is enclosed within this range
+            will result in the creation of two new disjoint ranges)
+
+=cut
+
+sub subtract() {
+   my ($self, $range, $so) = @_;
+    $self->throw("missing arg: you need to pass in another feature")
+      unless $range;
+    return unless $self->_testStrand($range, $so);
+
+    if ($self eq "Bio::RangeI") {
+	$self = "Bio::Range";
+	$self->warn("calling static methods of an interface is
+deprecated; use $self instead");
+    }
+    $range->throw("Input a Bio::RangeI object") unless
+$range->isa('Bio::RangeI');
+
+    if (!$self->overlaps($range)) {
+        return;
+    }
+
+    ##Subtracts everything
+    if ($range->contains($self)) {
+        return;   
+    }
+
+    my ($start, $end, $strand) = $self->intersection($range, $so);
+    ##Subtract intersection from $self range
+
+    my @outranges = ();
+    if ($self->start < $start) {
+        push(@outranges, 
+		 $self->new('-start'=>$self->start,
+			    '-end'=>$start - 1,
+			    '-strand'=>$self->strand,
+			   ));   
+    }
+    if ($self->end > $end) {
+        push(@outranges, 
+		 $self->new('-start'=>$end + 1,
+			    '-end'=>$self->end,
+			    '-strand'=>$self->strand,
+			   ));   
+    }
+    return \@outranges;
+}
 
 1;

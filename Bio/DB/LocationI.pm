@@ -1,4 +1,4 @@
-# $Id: LocationI.pm,v 1.1.2.2 2006/10/02 23:10:15 sendu Exp $
+# $Id: LocationI.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module for Bio::DB::LocationI
 #

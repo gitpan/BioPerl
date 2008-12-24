@@ -228,7 +228,7 @@ foreach my $arg ( @ARGV ) {
 	    $_ = $meta;
 	    /^net$/ && do {
 		if( $db =~ /genbank/i ) {
-		    $dbobj = Bio::DB::GenBank->new();
+		    $dbobj = Bio::DB::GenBank->new(-format => $fmt);
 		}
 		elsif( $db =~ /genpept/i ) {
 		    $dbobj = Bio::DB::GenPept->new();
@@ -309,10 +309,3 @@ foreach my $arg ( @ARGV ) {
 
     $out->write_seq($seq);
 }
-
-
-	
-
-
-
-

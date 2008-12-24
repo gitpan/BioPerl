@@ -1,4 +1,4 @@
-# $Id: dbi.pm,v 1.60.4.1 2006/10/02 23:10:16 sendu Exp $
+# $Id: dbi.pm 14716 2008-06-11 06:48:28Z heikki $
 
 =head1 NAME
 
@@ -31,10 +31,10 @@ use base qw(Bio::DB::GFF);
 
 # constants for choosing
 
-use constant MAX_SEGMENT => 100_000_000;  # the largest a segment can get
+use constant MAX_SEGMENT => 1_000_000_000;  # the largest a segment can get
 
 # this is the largest that any reference sequence can be (100 megabases)
-use constant MAX_BIN    => 100_000_000;
+use constant MAX_BIN    => 1_000_000_000;
 
 # this is the smallest bin (1 K)
 use constant MIN_BIN    => 1000;
@@ -795,6 +795,7 @@ Each row of the returned array is a arrayref containing the following fields:
   column 1     A Bio::DB::GFF::Featname object, suitable for passing to segment()
   column 2     The text of the note
   column 3     A relevance score.
+  column 4     A Bio::DB::GFF::Typename object
 
 =cut
 
@@ -810,22 +811,24 @@ sub search_notes {
   my $search   = join(' OR ',@searches);
 
   my $query = <<END;
-SELECT distinct gclass,gname,fattribute_value 
-  FROM fgroup,fattribute_to_feature,fdata
+SELECT distinct gclass,gname,fattribute_value,fmethod,fsource
+  FROM fgroup,fattribute_to_feature,fdata,ftype
   WHERE fgroup.gid=fdata.gid
      AND fdata.fid=fattribute_to_feature.fid
+     AND fdata.ftypeid=ftype.ftypeid
      AND ($search)
 END
 ;
 
   my $sth = $self->dbh->do_query($query);
   my @results;
-  while (my ($class,$name,$note) = $sth->fetchrow_array) {
+  while (my ($class,$name,$note,$method,$source) = $sth->fetchrow_array) {
      next unless $class && $name;    # sorry, ignore NULL objects
      my @matches = $note =~ /($regex)/g;
      my $relevance = 10*@matches;
      my $featname = Bio::DB::GFF::Featname->new($class=>$name);
-     push @results,[$featname,$note,$relevance];
+     my $type     = Bio::DB::GFF::Typename->new($method,$source);
+     push @results,[$featname,$note,$relevance,$type];
      last if $limit && @results >= $limit;
   }
   @results;
@@ -1142,6 +1145,25 @@ sub drop_all {
     #$self->drop_other_schema_objects($_);
     
   }
+}
+
+=head2 clone
+
+The clone() method should be used when you want to pass the
+Bio::DB::GFF object to a child process across a fork(). The child must
+call clone() before making any queries.
+
+This method does two things: (1) it sets the underlying database
+handle's InactiveDestroy parameter to 1, thereby preventing the
+database connection from being destroyed in the parent when the dbh's
+destructor is called; (2) it replaces the dbh with the result of
+dbh-E<gt>clone(), so that we now have an independent handle.
+
+=cut
+
+sub clone {
+    my $self = shift;
+    $self->features_db->clone;
 }
 
 
@@ -1945,6 +1967,20 @@ sub getaliascoords_query {
 sub bin_query {
   my $self = shift;
   my ($start,$stop,$minbin,$maxbin) = @_;
+  if ($start < 0 && $stop > 0) {  # split the queries
+    my ($lower_query,@lower_args) = $self->_bin_query($start,0,$minbin,$maxbin);
+    my ($upper_query,@upper_args) = $self->_bin_query(0,$stop,$minbin,$maxbin);
+    my $query = "$lower_query\n\t OR $upper_query";
+    my @args  = (@lower_args,@upper_args);
+    return wantarray ? ($query,@args) : $self->dbh->dbi_quote($query,@args);
+  } else {
+    return $self->_bin_query($start,$stop,$minbin,$maxbin);
+  }
+}
+
+sub _bin_query {
+  my $self = shift;
+  my ($start,$stop,$minbin,$maxbin) = @_;
   my ($query,@args);
 
   $start = 0               unless defined($start);
@@ -1956,6 +1992,7 @@ sub bin_query {
   my $tier = $maxbin;
   while ($tier >= $minbin) {
     my ($tier_start,$tier_stop) = (bin_bot($tier,$start)-EPSILON(),bin_top($tier,$stop)+EPSILON());
+    ($tier_start,$tier_stop)    = ($tier_stop,$tier_start) if $tier_start > $tier_stop;  # can happen when working with negative coordinates
     if ($tier_start == $tier_stop) {
       push @bins,'fbin=?';
       push @args,$tier_start;
@@ -2012,12 +2049,30 @@ sub contained_in_query {
   return wantarray ? ($query,@args) : $self->dbh->dbi_quote($query,@args);
 }
 
+# implement the _delete_fattribute_to_feature() method
+sub _delete_fattribute_to_feature {
+  my $self         = shift;
+  my @feature_ids  = @_;
+  my $dbh          = $self->features_db;
+  my $fields       = join ',',map{$dbh->quote($_)} @feature_ids;
+
+  my $query = "delete from fattribute_to_feature where fid in ($fields)";
+  warn "$query\n" if $self->debug;
+  my $result = $dbh->do($query);
+  defined $result or $self->throw($dbh->errstr);
+  $result;
+}
+
 # implement the _delete_features() method
 sub _delete_features {
   my $self = shift;
   my @feature_ids = @_;
   my $dbh          = $self->features_db;
   my $fields       = join ',',map{$dbh->quote($_)} @feature_ids;
+
+  # delete from fattribute_to_feature
+  $self->_delete_fattribute_to_feature(@feature_ids);
+
   my $query = "delete from fdata where fid in ($fields)";
   warn "$query\n" if $self->debug;
   my $result = $dbh->do($query);
@@ -2032,14 +2087,14 @@ sub _delete_groups {
   my $dbh          = $self->features_db;
   my $fields       = join ',',map{$dbh->quote($_)} @group_ids;
 
-  my $query = "delete from fdata  where gid in ($fields)";
+  foreach my $gid (@group_ids){
+      my @features = $self->get_feature_by_gid($gid);
+      $self->delete_features(@features);
+  }
+
+  my $query  = "delete from fgroup where gid in ($fields)";
   warn "$query\n" if $self->debug;
   my $result = $dbh->do($query);
-  defined $result or $self->throw($dbh->errstr);
-
-  $query  = "delete from fgroup where gid in ($fields)";
-  warn "$query\n" if $self->debug;
-  $result = $dbh->do($query);
   defined $result or $self->throw($dbh->errstr);
   $result;
 }

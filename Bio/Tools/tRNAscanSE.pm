@@ -1,4 +1,4 @@
-# $Id: tRNAscanSE.pm,v 1.5.2.1 2006/10/02 23:10:32 sendu Exp $
+# $Id: tRNAscanSE.pm 11692 2007-09-17 06:47:21Z jason $
 #
 # BioPerl module for Bio::Tools::tRNAscanSE
 #
@@ -23,7 +23,7 @@ Bio::Tools::tRNAscanSE - A parser for tRNAscan-SE output
    # parse the results
    while( my $gene = $parser->next_prediction ) {
 
-       @exon_arr = $gene->get_seqFeatures();
+       @exon_arr = $gene->get_SeqFeatures();
 
    }
 
@@ -79,7 +79,7 @@ use vars qw($GeneTag $SrcTag $ExonTag);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Tools::tRNAscanSE();
+ Usage   : my $obj = Bio::Tools::tRNAscanSE->new();
  Function: Builds a new Bio::Tools::tRNAscanSE object 
  Returns : an instance of Bio::Tools::tRNAscanSE
  Args    : -fh/-file for input filename

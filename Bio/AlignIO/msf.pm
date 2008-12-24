@@ -1,4 +1,4 @@
-# $Id: msf.pm,v 1.22.4.3 2006/10/02 23:10:12 sendu Exp $
+# $Id: msf.pm 14883 2008-09-16 18:27:31Z jason $
 #
 # BioPerl module for Bio::AlignIO::msf
 #   based on the Bio::SeqIO::msf module
@@ -126,14 +126,15 @@ sub next_aln {
 			$seqname = $name;
 			$start = 1;
 			$str = $hash{$name};
-			$str =~ s/[^A-Za-z]//g;
+			$str =~ s/[^0-9A-Za-z$Bio::LocatableSeq::OTHER_SYMBOLS]//g;
+
 			$end = length($str);
 		}
 
-		$seq = new Bio::LocatableSeq(-seq   => $hash{$name},
-											  -id    => $seqname,
-											  -start => $start,
-											  -end   => $end,
+		$seq = Bio::LocatableSeq->new(-seq   => $hash{$name},
+					      -id    => $seqname,
+					      -start => $start,
+					      -end   => $end,
 											 );
 		$aln->add_seq($seq);
 
@@ -184,6 +185,9 @@ sub write_aln {
 		$self->_print (sprintf("\n%s   MSF: %d  Type: %s  %s  Check: 00 ..\n\n",
 			       $name,  $aln->no_sequences, $type, $date));
 
+    my $seqCountFormat = "%".($maxname > 20 ? $maxname + 2: 22)."s%-27d%27d\n";
+    my $seqNameFormat  = "%-".($maxname > 20 ? $maxname : 20)."s  ";
+        
 		foreach $seq ( $aln->each_seq() ) {
 			$name = $aln->displayname($seq->get_nse());
 			$miss = $maxname - length ($name);
@@ -201,9 +205,9 @@ sub write_aln {
 
     	while( $count < $length ) {
 			# there is another block to go!
-			$self->_print (sprintf("%22s%-27d%27d\n",' ',$count+1,$count+50));
+			$self->_print (sprintf($seqCountFormat,' ',$count+1,$count+50));
 			foreach $name  ( @arr ) {
-				$self->_print (sprintf("%-20s  ",$name));
+				$self->_print (sprintf($seqNameFormat,$name));
 
 				$tempcount = $count;
 				$index = 0;

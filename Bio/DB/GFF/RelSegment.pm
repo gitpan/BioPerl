@@ -241,12 +241,12 @@ sub new {
     $start = 1;
   }
 
-  if ($force_absolute && defined($start)) { # absolute position is given to us
-    @abscoords = ([$name,$class,$start,$stop,'+']);
-  } else {
+#  if ($force_absolute && defined($start)) { # absolute position is given to us
+#    @abscoords = ([$name,$class,$start,$stop,'+']);
+#  } else {
     my $result = $factory->abscoords($name,$class,$force_absolute ? $name : ()) or return;
     @abscoords = @$result;
-  }
+#  }
 
   foreach (@abscoords) {
     my ($absref,$absclass,$absstart,$absstop,$absstrand,$sname) = @$_;
@@ -284,7 +284,7 @@ sub new {
 
     # now offset to correct subsegment based on desired start and stop
     if ($force_absolute) {
-      ($this_start,$this_stop) = ($absstart,$absstop);
+#      ($this_start,$this_stop) = ($absstart,$absstop);
       $self->absolute(1);
     } elsif ($absstrand eq '+') {
       $this_start =  $absstart   + $this_start - 1;
@@ -520,6 +520,13 @@ sub asString {
   }
   return "$label:$start,$stop";
 }
+
+=head2 name
+
+ Title   : name
+ Usage   : Alias for asString()
+
+=cut
 
 sub name { shift->asString }
 

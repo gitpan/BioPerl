@@ -1,4 +1,4 @@
-# $Id: CodonTable.pm,v 1.37.2.1 2006/10/02 23:10:31 sendu Exp $
+# $Id: CodonTable.pm 15074 2008-12-03 04:57:49Z bosborne $
 #
 # bioperl module for Bio::Tools::CodonTable
 #
@@ -12,15 +12,14 @@
 
 =head1 NAME
 
-Bio::Tools::CodonTable - Bioperl codon table object
+Bio::Tools::CodonTable - Codon table object
 
 =head1 SYNOPSIS
 
   # This is a read-only class for all known codon tables.  The IDs are
   # the ones used by nucleotide sequence databases.  All common IUPAC
-  # ambiguity codes for DNA, RNA and animo acids are recognized.
+  # ambiguity codes for DNA, RNA and amino acids are recognized.
 
-  # to use
   use Bio::Tools::CodonTable;
 
   # defaults to ID 1 "Standard"
@@ -57,9 +56,9 @@ Bio::Tools::CodonTable - Bioperl codon table object
   my $seqobj    = Bio::PrimarySeq->new(-seq => 'FHGERHEL');
   my $iupac_str = $myCodonTable->reverse_translate_all($seqobj);
 
-  #boolean tests
+  # boolean tests
   print "Is a start\n"       if $myCodonTable->is_start_codon('ATG');
-  print "Is a termianator\n" if $myCodonTable->is_ter_codon('tar');
+  print "Is a terminator\n" if $myCodonTable->is_ter_codon('tar');
   print "Is a unknown\n"     if $myCodonTable->is_unknown_codon('JTG');
 
 =head1 DESCRIPTION
@@ -108,8 +107,8 @@ The amino acid codes are IUPAC recommendations for common amino acids:
           M           Met            Methionine
           F           Phe            Phenylalanine
           P           Pro            Proline
-		  O           Pyl            Pyrrolysine (22nd amino acid)
-		  U           Sec            Selenocysteine (21st amino acid)
+	  O           Pyl            Pyrrolysine (22nd amino acid)
+	  U           Sec            Selenocysteine (21st amino acid)
           S           Ser            Serine
           T           Thr            Threonine
           W           Trp            Tryptophan
@@ -117,7 +116,7 @@ The amino acid codes are IUPAC recommendations for common amino acids:
           V           Val            Valine
           B           Asx            Aspartic acid or Asparagine
           Z           Glx            Glutamine or Glutamic acid
-		  J           Xle            Isoleucine or Valine (mass spec ambiguity)
+	  J           Xle            Isoleucine or Valine (mass spec ambiguity)
           X           Xaa            Any or unknown amino acid
 
 
@@ -172,8 +171,8 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 package Bio::Tools::CodonTable;
-use vars qw(@NAMES @TABLES @STARTS $TRCOL $CODONS %IUPAC_DNA 	    $CODONGAP $GAP
-	    %IUPAC_AA %THREELETTERSYMBOLS $VALID_PROTEIN $TERMINATOR);
+use vars qw(@NAMES @TABLES @STARTS $TRCOL $CODONS %IUPAC_DNA $CODONGAP $GAP
+				%IUPAC_AA %THREELETTERSYMBOLS $VALID_PROTEIN $TERMINATOR);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Root
@@ -298,14 +297,10 @@ sub new {
 
  Title   : id
  Usage   : $obj->id(3); $id_integer = $obj->id();
- Function:
-
-           Sets or returns the id of the translation table.  IDs are
+ Function: Sets or returns the id of the translation table.  IDs are
            integers from 1 to 15, excluding 7 and 8 which have been
            removed as redundant. If an invalid ID is given the method
            returns 0, false.
-
-
  Example :
  Returns : value of id, a scalar, 0 if not a valid
  Args    : newvalue (optional)
@@ -365,7 +360,7 @@ sub tables{
   }
   return \%tables;
 }
-                
+
 =head2 translate
 
  Title   : translate
@@ -537,38 +532,39 @@ sub translate_strict{
 =cut
 
 sub revtranslate {
-    my ($self, $value, $coding) = @_;
-    my ($id) = $self->{'id'};
-    my (@aas,  $p);
-    my (@codons) = ();
+	my ($self, $value, $coding) = @_;
+	my ($id) = $self->{'id'};
+	my (@aas,  $p);
+	my (@codons) = ();
 
-    if (length($value) == 3 ) {
-	$value = lc $value;
-	$value = ucfirst $value;
-	$value = $THREELETTERSYMBOLS{$value};
-    }
-    if ( defined $value and $value =~ /$VALID_PROTEIN/ 
-	 and length($value) == 1 ) {
-	$value = uc $value;
-	@aas = @{$IUPAC_AA{$value}};	
-	foreach my $aa (@aas) {
-	    #print $aa, " -2\n";
-	    $aa = '\*' if $aa eq '*';
-	    while ($TABLES[$id-1] =~ m/$aa/g) {
-		$p = pos $TABLES[$id-1];
-		push (@codons, $TRCOL->{--$p});
+	if (length($value) == 3 ) {
+		$value = lc $value;
+		$value = ucfirst $value;
+		$value = $THREELETTERSYMBOLS{$value};
+	}
+	if ( defined $value and $value =~ /$VALID_PROTEIN/ 
+		  and length($value) == 1 ) {
+		$value = uc $value;
+		@aas = @{$IUPAC_AA{$value}};	
+		foreach my $aa (@aas) {
+			#print $aa, " -2\n";
+			$aa = '\*' if $aa eq '*';
+	      while ($TABLES[$id-1] =~ m/$aa/g) {
+		      $p = pos $TABLES[$id-1];
+		      push (@codons, $TRCOL->{--$p});
+	      }
 	    }
-	}
     }
 
-    if ($coding and uc ($coding) eq 'RNA') {
-	for my $i (0..$#codons)  {
-	    $codons[$i] =~ tr/t/u/;
-	}
-    }
-
-    return @codons;
+   if ($coding and uc ($coding) eq 'RNA') {
+	   for my $i (0..$#codons)  {
+	      $codons[$i] =~ tr/t/u/;
+	   }
+   }
+    
+   return @codons;
 }
+
 =head2 reverse_translate_all
 
  Title   : reverse_translate_all
@@ -583,16 +579,14 @@ sub revtranslate {
  Args    : a Bio::PrimarySeqI compatible object (mandatory)
            a Bio::CodonUsage::Table object and a threshold if only
              codons with a relative frequency above the threshold are
-             to be considered. 
-
-
+             to be considered.
 =cut
 
 sub reverse_translate_all {
 	
 	my ($self, $obj, $cut, $threshold) = @_;
 
-    ## check args are OK
+	## check args are OK
 
 	if (!$obj || !$obj->isa('Bio::PrimarySeqI')){
 		$self->throw(" I need a Bio::PrimarySeqI object, not a [".
@@ -637,6 +631,53 @@ sub reverse_translate_all {
 
 }
 
+=head2 reverse_translate_best
+
+ Title   : reverse_translate_best
+ Usage   : my $str = $cttable->reverse_translate_best($seq_object,$cutable);
+ Function: Reverse translates a protein sequence into plain nucleotide
+           sequence (GATC), uses the most common codon for each amino acid
+ Returns : A string
+ Args    : A Bio::PrimarySeqI compatible object and a Bio::CodonUsage::Table object
+
+=cut
+
+sub reverse_translate_best {
+
+	my ($self, $obj, $cut) = @_;
+
+	if (!$obj || !$obj->isa('Bio::PrimarySeqI')){
+		$self->throw(" I need a Bio::PrimarySeqI object, not a [".
+						 ref($obj) . "]");
+	}
+	if ($obj->alphabet ne 'protein')	{
+		$self->throw("Cannot reverse translate, need an amino acid sequence .".
+						 "This sequence is of type [" . $obj->alphabet ."]");
+	}
+	if ( !$cut | !$cut->isa('Bio::CodonUsage::Table'))	{
+		$self->throw("I need a Bio::CodonUsage::Table object, not a [".
+						 ref($cut). "].");
+	}
+
+	my $str = '';
+	my @seq = split '', $obj->seq;
+
+	my $cod_ref = $cut->most_common_codons();
+
+	for my $aa ( @seq ) {
+		if ($aa =~ /x/i) {
+			$str .= 'NNN';
+			next;
+		}
+		if ( defined $cod_ref->{$aa} ) {
+			$str .= $cod_ref->{$aa};
+		} else {
+			$self->throw("Input sequence contains invalid character: $aa");			
+		}
+	}
+   $str;
+}
+
 =head2 is_start_codon
 
  Title   : is_start_codon
@@ -646,7 +687,6 @@ sub reverse_translate_all {
  Example : $myCodonTable->is_start_codon('ATG')
  Returns : boolean
  Args    : codon
-
 
 =cut
 
@@ -681,7 +721,6 @@ sub is_start_codon{
  Example : $myCodonTable->is_ter_codon('ATG')
  Returns : boolean
  Args    : codon
-
 
 =cut
 

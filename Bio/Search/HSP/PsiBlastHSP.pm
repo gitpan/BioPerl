@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------
-# $Id: PsiBlastHSP.pm,v 1.7.4.1 2006/10/02 23:10:24 sendu Exp $
+# $Id: PsiBlastHSP.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module Bio::Search::HSP::PsiBlastHSP
 #
@@ -407,8 +407,8 @@ sub length {
 =head2 gaps
 
  Usage     : $hsp->gaps( [seq_type] )
- Purpose   : Get the number of gaps in the query, sbjct, or total alignment.
-           : Also can return query gaps and sbjct gaps as a two-element list
+ Purpose   : Get the number of gap characters in the query, sbjct, or total alignment.
+           : Also can return query gap chars and sbjct gap chars as a two-element list
            : when in array context.
  Example   : $total_gaps      = $hsp->gaps();
            : ($qgaps, $sgaps) = $hsp->gaps();
@@ -1494,7 +1494,7 @@ sub seq {
 
     require Bio::Seq;
 
-    new Bio::Seq (-ID   => $self->to_string,
+    Bio::Seq->new(-ID   => $self->to_string,
                   -SEQ  => $str,
                   -DESC => "$seqType sequence",
                   );
@@ -1635,13 +1635,13 @@ sub get_aln {
     my $sseq = $self->seq('sbjct');
 
     my $type = $self->algorithm =~ /P$|^T/ ? 'amino' : 'dna';
-    my $aln = new Bio::SimpleAlign();
-    $aln->add_seq(new Bio::LocatableSeq(-seq => $qseq->seq(),
+    my $aln = Bio::SimpleAlign->new();
+    $aln->add_seq(Bio::LocatableSeq->new(-seq => $qseq->seq(),
                                         -id  => 'query_'.$qseq->display_id(),
                                         -start => 1,
                                         -end   => CORE::length($qseq)));
 
-    $aln->add_seq(new Bio::LocatableSeq(-seq => $sseq->seq(),
+    $aln->add_seq(Bio::LocatableSeq->new(-seq => $sseq->seq(),
                                         -id  => 'hit_'.$sseq->display_id(),
                                         -start => 1,
                                         -end   => CORE::length($sseq)));

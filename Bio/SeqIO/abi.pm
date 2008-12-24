@@ -1,4 +1,4 @@
-# $Id: abi.pm,v 1.14.4.1 2006/10/02 23:10:28 sendu Exp $
+# $Id: abi.pm 14501 2008-02-12 05:11:04Z cjfields $
 # BioPerl module for Bio::SeqIO::abi
 #
 # Cared for by Aaron Mackey <amackey@virginia.edu>
@@ -20,7 +20,10 @@ Do not use this module directly.  Use it via the Bio::SeqIO class.
 =head1 DESCRIPTION
 
 This object can transform Bio::Seq objects to and from abi trace
-files.
+files.  To optionally read the trace graph data (which can be used
+to draw chromatographs, for instance), set the optional
+'-read_graph_data' flag or the read_graph_data method to a value
+evaluating to TRUE.
 
 =head1 FEEDBACK
 
@@ -75,9 +78,11 @@ sub BEGIN {
 
 sub _initialize {
   my($self,@args) = @_;
-  $self->SUPER::_initialize(@args);  
+  $self->SUPER::_initialize(@args);
+  my ($get_trace) = $self->_rearrange([qw(get_trace_data)],@args);
+  $get_trace && $self->get_trace_data(1);
   if( ! defined $self->sequence_factory ) {
-      $self->sequence_factory(new Bio::Seq::SeqFactory(-verbose => $self->verbose(), -type => 'Bio::Seq::Quality'));
+      $self->sequence_factory(Bio::Seq::SeqFactory->new(-verbose => $self->verbose(), -type => 'Bio::Seq::Quality'));
   }
   unless ($READ_AVAIL) {
       Bio::Root::Root->throw( -class => 'Bio::Root::SystemException',
@@ -103,12 +108,27 @@ sub next_seq {
     my ($seq, $id, $desc, $qual) = $self->read_trace($self->_fh, 'abi');
 
     # create the seq object
+	my ($base_locs, $a_trace, $c_trace, $g_trace, $t_trace, $points, $max_height);
+	if ($self->get_trace_data) {
+		($base_locs, $a_trace, $c_trace, $g_trace, $t_trace, $points, $max_height) = $self->read_trace_with_graph($self->_fh, 'abi');
+	} else {
+		$base_locs = [];
+	}
+
+    # create the seq object
     $seq = $self->sequence_factory->create(-seq        => $seq,
 					   -id         => $id,
 					   -primary_id => $id,
 					   -desc       => $desc,
 					   -alphabet   => 'DNA',
-					   -qual       => $qual
+					   -qual       => $qual,
+					   -trace      => join (" ", @{$base_locs}),
+					   -trace_data => { a_trace => $a_trace,
+									   c_trace => $c_trace,
+									   g_trace => $g_trace,
+									   t_trace => $t_trace, 
+					   		    max_height => $max_height,
+								num_points => $points }
 					   );
     return $seq;
 }
@@ -134,6 +154,23 @@ sub write_seq {
 
     $self->flush if $self->_flush_on_write && defined $self->_fh;
     return 1;
+}
+
+=head2 get_trace_data
+
+ Title   : get_trace_data
+ Usage   : $stream->get_trace_data(1)
+ Function: set boolean flag to retrieve the trace data (possibly for
+           output)
+ Returns : bool value, TRUE = retrieve trace data (default FALSE)
+ Args    : bool value
+
+=cut
+
+sub get_trace_data {
+	my ($self, $val) = @_;
+	$self->{_get_trace_data} = $val ? 1 : 0;
+	$self->{_get_trace_data};
 }
 
 1;

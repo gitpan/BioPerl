@@ -1,4 +1,4 @@
-# $Id: Gap.pm,v 1.9.4.1 2006/10/02 23:10:14 sendu Exp $
+# $Id: Gap.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Coordinate::Result::Gap
 #
@@ -17,7 +17,7 @@ Bio::Coordinate::Result::Gap - Another name for Bio::Location::Simple
 
 =head1 SYNOPSIS
 
-  $loc = new Bio::Coordinate::Result::Gap(-start=>10,
+  $loc = Bio::Coordinate::Result::Gap->new(-start=>10,
                                           -end=>30,
                                           -strand=>1);
 

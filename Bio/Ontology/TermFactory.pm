@@ -1,4 +1,4 @@
-# $Id: TermFactory.pm,v 1.7.4.1 2006/10/02 23:10:22 sendu Exp $
+# $Id: TermFactory.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Ontology::TermFactory
 #
@@ -34,7 +34,7 @@ Bio::Ontology::TermI (or derived class) through a factory
     use Bio::Ontology::TermFactory;
 
     # the default type is Bio::Ontology::Term
-    my $factory = new Bio::Ontology::TermFactory(
+    my $factory = Bio::Ontology::TermFactory->new(
                         -type => 'Bio::Ontology::GOterm');
     my $term = $factory->create_object(-name => 'peroxisome',
                                        -ontology => 'Gene Ontology',
@@ -90,7 +90,7 @@ use base qw(Bio::Factory::ObjectFactory);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Ontology::TermFactory();
+ Usage   : my $obj = Bio::Ontology::TermFactory->new();
  Function: Builds a new Bio::Ontology::TermFactory object 
  Returns : Bio::Ontology::TermFactory
  Args    : -type => string, name of a Bio::Ontology::TermI derived class.

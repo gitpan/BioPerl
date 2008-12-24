@@ -1,0 +1,586 @@
+Copying scripts/utilities/bp_sreformat.PLS -> blib/script/bp_sreformat.PLS
+Deleting blib/script/bp_sreformat.PLS.bak
+blib/script/bp_sreformat.PLS -> blib/script/bp_sreformat.pl
+Copying scripts/seq/seqconvert.PLS -> blib/script/seqconvert.PLS
+Deleting blib/script/seqconvert.PLS.bak
+blib/script/seqconvert.PLS -> blib/script/bp_seqconvert.pl
+Copying scripts/searchio/parse_hmmsearch.PLS -> blib/script/parse_hmmsearch.PLS
+Deleting blib/script/parse_hmmsearch.PLS.bak
+blib/script/parse_hmmsearch.PLS -> blib/script/bp_parse_hmmsearch.pl
+Copying scripts/index/bp_seqret.PLS -> blib/script/bp_seqret.PLS
+Deleting blib/script/bp_seqret.PLS.bak
+blib/script/bp_seqret.PLS -> blib/script/bp_seqret.pl
+Copying scripts/tree/tree2pag.PLS -> blib/script/tree2pag.PLS
+Deleting blib/script/tree2pag.PLS.bak
+blib/script/tree2pag.PLS -> blib/script/bp_tree2pag.pl
+Copying scripts/Bio-DB-GFF/meta_gff.PLS -> blib/script/meta_gff.PLS
+Deleting blib/script/meta_gff.PLS.bak
+blib/script/meta_gff.PLS -> blib/script/bp_meta_gff.pl
+Copying scripts/tree/nexus2nh.PLS -> blib/script/nexus2nh.PLS
+Deleting blib/script/nexus2nh.PLS.bak
+blib/script/nexus2nh.PLS -> blib/script/bp_nexus2nh.pl
+Copying scripts/searchio/filter_search.PLS -> blib/script/filter_search.PLS
+Deleting blib/script/filter_search.PLS.bak
+blib/script/filter_search.PLS -> blib/script/bp_filter_search.pl
+Copying scripts/Bio-SeqFeature-Store/bp_seqfeature_gff3.PLS -> blib/script/bp_seqfeature_gff3.PLS
+blib/script/bp_seqfeature_gff3.PLS -> blib/script/bp_seqfeature_gff3.pl
+Copying scripts/Bio-DB-GFF/generate_histogram.PLS -> blib/script/generate_histogram.PLS
+Deleting blib/script/generate_histogram.PLS.bak
+blib/script/generate_histogram.PLS -> blib/script/bp_generate_histogram.pl
+Copying scripts/popgen/heterogeneity_test.PLS -> blib/script/heterogeneity_test.PLS
+Deleting blib/script/heterogeneity_test.PLS.bak
+blib/script/heterogeneity_test.PLS -> blib/script/bp_heterogeneity_test.pl
+Copying scripts/DB/flanks.PLS -> blib/script/flanks.PLS
+Deleting blib/script/flanks.PLS.bak
+blib/script/flanks.PLS -> blib/script/bp_flanks.pl
+Copying scripts/seq/split_seq.PLS -> blib/script/split_seq.PLS
+Deleting blib/script/split_seq.PLS.bak
+blib/script/split_seq.PLS -> blib/script/bp_split_seq.pl
+Copying scripts/Bio-DB-GFF/load_gff.PLS -> blib/script/load_gff.PLS
+Deleting blib/script/load_gff.PLS.bak
+blib/script/load_gff.PLS -> blib/script/bp_load_gff.pl
+Copying scripts/DB/biogetseq.PLS -> blib/script/biogetseq.PLS
+Deleting blib/script/biogetseq.PLS.bak
+blib/script/biogetseq.PLS -> blib/script/bp_biogetseq.pl
+Copying scripts/index/bp_fetch.PLS -> blib/script/bp_fetch.PLS
+Deleting blib/script/bp_fetch.PLS.bak
+blib/script/bp_fetch.PLS -> blib/script/bp_fetch.pl
+Copying scripts/utilities/mutate.PLS -> blib/script/mutate.PLS
+Deleting blib/script/mutate.PLS.bak
+blib/script/mutate.PLS -> blib/script/bp_mutate.pl
+Copying scripts/Bio-DB-GFF/process_sgd.PLS -> blib/script/process_sgd.PLS
+Deleting blib/script/process_sgd.PLS.bak
+blib/script/process_sgd.PLS -> blib/script/bp_process_sgd.pl
+Copying scripts/index/bp_index.PLS -> blib/script/bp_index.PLS
+Deleting blib/script/bp_index.PLS.bak
+blib/script/bp_index.PLS -> blib/script/bp_index.pl
+Copying scripts/utilities/dbsplit.PLS -> blib/script/dbsplit.PLS
+Deleting blib/script/dbsplit.PLS.bak
+blib/script/dbsplit.PLS -> blib/script/bp_dbsplit.pl
+Copying scripts/seqstats/oligo_count.PLS -> blib/script/oligo_count.PLS
+Deleting blib/script/oligo_count.PLS.bak
+blib/script/oligo_count.PLS -> blib/script/bp_oligo_count.pl
+Copying scripts/searchio/hmmer_to_table.PLS -> blib/script/hmmer_to_table.PLS
+Deleting blib/script/hmmer_to_table.PLS.bak
+blib/script/hmmer_to_table.PLS -> blib/script/bp_hmmer_to_table.pl
+Copying scripts/Bio-DB-GFF/process_gadfly.PLS -> blib/script/process_gadfly.PLS
+Deleting blib/script/process_gadfly.PLS.bak
+blib/script/process_gadfly.PLS -> blib/script/bp_process_gadfly.pl
+Copying scripts/Bio-SeqFeature-Store/bp_seqfeature_load.PLS -> blib/script/bp_seqfeature_load.PLS
+Deleting blib/script/bp_seqfeature_load.PLS.bak
+blib/script/bp_seqfeature_load.PLS -> blib/script/bp_seqfeature_load.pl
+Copying scripts/searchio/fastam9_to_table.PLS -> blib/script/fastam9_to_table.PLS
+Deleting blib/script/fastam9_to_table.PLS.bak
+blib/script/fastam9_to_table.PLS -> blib/script/bp_fastam9_to_table.pl
+Copying scripts/DB/biofetch_genbank_proxy.PLS -> blib/script/biofetch_genbank_proxy.PLS
+Deleting blib/script/biofetch_genbank_proxy.PLS.bak
+blib/script/biofetch_genbank_proxy.PLS -> blib/script/bp_biofetch_genbank_proxy.pl
+Copying scripts/utilities/seq_length.PLS -> blib/script/seq_length.PLS
+Deleting blib/script/seq_length.PLS.bak
+blib/script/seq_length.PLS -> blib/script/bp_seq_length.pl
+Copying scripts/seq/extract_feature_seq.PLS -> blib/script/extract_feature_seq.PLS
+Deleting blib/script/extract_feature_seq.PLS.bak
+blib/script/extract_feature_seq.PLS -> blib/script/bp_extract_feature_seq.pl
+Copying scripts/Bio-DB-GFF/genbank2gff.PLS -> blib/script/genbank2gff.PLS
+Deleting blib/script/genbank2gff.PLS.bak
+blib/script/genbank2gff.PLS -> blib/script/bp_genbank2gff.pl
+Copying scripts/Bio-DB-GFF/bulk_load_gff.PLS -> blib/script/bulk_load_gff.PLS
+Deleting blib/script/bulk_load_gff.PLS.bak
+blib/script/bulk_load_gff.PLS -> blib/script/bp_bulk_load_gff.pl
+Copying scripts/taxa/taxid4species.PLS -> blib/script/taxid4species.PLS
+Deleting blib/script/taxid4species.PLS.bak
+blib/script/taxid4species.PLS -> blib/script/bp_taxid4species.pl
+Copying scripts/utilities/search2gff.PLS -> blib/script/search2gff.PLS
+Deleting blib/script/search2gff.PLS.bak
+blib/script/search2gff.PLS -> blib/script/bp_search2gff.pl
+Copying scripts/tree/blast2tree.PLS -> blib/script/blast2tree.PLS
+Deleting blib/script/blast2tree.PLS.bak
+blib/script/blast2tree.PLS -> blib/script/bp_blast2tree.pl
+Copying scripts/biographics/bp_glyphs1-demo.PLS -> blib/script/bp_glyphs1-demo.PLS
+Deleting blib/script/bp_glyphs1-demo.PLS.bak
+blib/script/bp_glyphs1-demo.PLS -> blib/script/bp_glyphs1-demo.pl
+Copying scripts/seq/unflatten_seq.PLS -> blib/script/unflatten_seq.PLS
+Deleting blib/script/unflatten_seq.PLS.bak
+blib/script/unflatten_seq.PLS -> blib/script/bp_unflatten_seq.pl
+Copying scripts/seq/make_mrna_protein.PLS -> blib/script/make_mrna_protein.PLS
+Deleting blib/script/make_mrna_protein.PLS.bak
+blib/script/make_mrna_protein.PLS -> blib/script/bp_make_mrna_protein.pl
+Copying scripts/utilities/search2tribe.PLS -> blib/script/search2tribe.PLS
+Deleting blib/script/search2tribe.PLS.bak
+blib/script/search2tribe.PLS -> blib/script/bp_search2tribe.pl
+Copying scripts/DB/bioflat_index.PLS -> blib/script/bioflat_index.PLS
+Deleting blib/script/bioflat_index.PLS.bak
+blib/script/bioflat_index.PLS -> blib/script/bp_bioflat_index.pl
+Copying scripts/utilities/pairwise_kaks.PLS -> blib/script/pairwise_kaks.PLS
+Deleting blib/script/pairwise_kaks.PLS.bak
+blib/script/pairwise_kaks.PLS -> blib/script/bp_pairwise_kaks.pl
+Copying scripts/taxa/query_entrez_taxa.PLS -> blib/script/query_entrez_taxa.PLS
+Deleting blib/script/query_entrez_taxa.PLS.bak
+blib/script/query_entrez_taxa.PLS -> blib/script/bp_query_entrez_taxa.pl
+Copying scripts/Bio-SeqFeature-Store/bp_seqfeature_delete.PLS -> blib/script/bp_seqfeature_delete.PLS
+Deleting blib/script/bp_seqfeature_delete.PLS.bak
+blib/script/bp_seqfeature_delete.PLS -> blib/script/bp_seqfeature_delete.pl
+Copying scripts/Bio-DB-GFF/fast_load_gff.PLS -> blib/script/fast_load_gff.PLS
+Deleting blib/script/fast_load_gff.PLS.bak
+blib/script/fast_load_gff.PLS -> blib/script/bp_fast_load_gff.pl
+Copying scripts/biographics/bp_glyphs2-demo.PLS -> blib/script/bp_glyphs2-demo.PLS
+Deleting blib/script/bp_glyphs2-demo.PLS.bak
+blib/script/bp_glyphs2-demo.PLS -> blib/script/bp_glyphs2-demo.pl
+Copying scripts/seqstats/chaos_plot.PLS -> blib/script/chaos_plot.PLS
+Deleting blib/script/chaos_plot.PLS.bak
+blib/script/chaos_plot.PLS -> blib/script/bp_chaos_plot.pl
+Copying scripts/utilities/bp_mrtrans.PLS -> blib/script/bp_mrtrans.PLS
+Deleting blib/script/bp_mrtrans.PLS.bak
+blib/script/bp_mrtrans.PLS -> blib/script/bp_mrtrans.pl
+Copying scripts/utilities/search2alnblocks.PLS -> blib/script/search2alnblocks.PLS
+Deleting blib/script/search2alnblocks.PLS.bak
+blib/script/search2alnblocks.PLS -> blib/script/bp_search2alnblocks.pl
+Copying scripts/taxa/taxonomy2tree.PLS -> blib/script/taxonomy2tree.PLS
+Deleting blib/script/taxonomy2tree.PLS.bak
+blib/script/taxonomy2tree.PLS -> blib/script/bp_taxonomy2tree.pl
+Copying scripts/utilities/download_query_genbank.PLS -> blib/script/download_query_genbank.PLS
+Deleting blib/script/download_query_genbank.PLS.bak
+blib/script/download_query_genbank.PLS -> blib/script/bp_download_query_genbank.pl
+Copying scripts/utilities/bp_nrdb.PLS -> blib/script/bp_nrdb.PLS
+Deleting blib/script/bp_nrdb.PLS.bak
+blib/script/bp_nrdb.PLS -> blib/script/bp_nrdb.pl
+Copying scripts/utilities/mask_by_search.PLS -> blib/script/mask_by_search.PLS
+Deleting blib/script/mask_by_search.PLS.bak
+blib/script/mask_by_search.PLS -> blib/script/bp_mask_by_search.pl
+Copying scripts/seqstats/gccalc.PLS -> blib/script/gccalc.PLS
+Deleting blib/script/gccalc.PLS.bak
+blib/script/gccalc.PLS -> blib/script/bp_gccalc.pl
+Copying scripts/taxa/classify_hits_kingdom.PLS -> blib/script/classify_hits_kingdom.PLS
+Deleting blib/script/classify_hits_kingdom.PLS.bak
+blib/script/classify_hits_kingdom.PLS -> blib/script/bp_classify_hits_kingdom.pl
+Copying scripts/popgen/composite_LD.PLS -> blib/script/composite_LD.PLS
+Deleting blib/script/composite_LD.PLS.bak
+blib/script/composite_LD.PLS -> blib/script/bp_composite_LD.pl
+Copying scripts/seqstats/aacomp.PLS -> blib/script/aacomp.PLS
+Deleting blib/script/aacomp.PLS.bak
+blib/script/aacomp.PLS -> blib/script/bp_aacomp.pl
+Copying scripts/Bio-DB-GFF/process_wormbase.PLS -> blib/script/process_wormbase.PLS
+Deleting blib/script/process_wormbase.PLS.bak
+blib/script/process_wormbase.PLS -> blib/script/bp_process_wormbase.pl
+Copying scripts/taxa/local_taxonomydb_query.PLS -> blib/script/local_taxonomydb_query.PLS
+Deleting blib/script/local_taxonomydb_query.PLS.bak
+blib/script/local_taxonomydb_query.PLS -> blib/script/bp_local_taxonomydb_query.pl
+Copying scripts/biographics/bp_embl2picture.PLS -> blib/script/bp_embl2picture.PLS
+Deleting blib/script/bp_embl2picture.PLS.bak
+blib/script/bp_embl2picture.PLS -> blib/script/bp_embl2picture.pl
+Copying scripts/biblio/biblio.PLS -> blib/script/biblio.PLS
+Deleting blib/script/biblio.PLS.bak
+blib/script/biblio.PLS -> blib/script/bp_biblio.pl
+Copying scripts/utilities/remote_blast.PLS -> blib/script/remote_blast.PLS
+Deleting blib/script/remote_blast.PLS.bak
+blib/script/remote_blast.PLS -> blib/script/bp_remote_blast.pl
+Copying scripts/seq/seqretsplit.PLS -> blib/script/seqretsplit.PLS
+Deleting blib/script/seqretsplit.PLS.bak
+blib/script/seqretsplit.PLS -> blib/script/bp_seqretsplit.pl
+Copying scripts/Bio-DB-GFF/genbank2gff3.PLS -> blib/script/genbank2gff3.PLS
+Deleting blib/script/genbank2gff3.PLS.bak
+blib/script/genbank2gff3.PLS -> blib/script/bp_genbank2gff3.pl
+Copying scripts/searchio/search2table.PLS -> blib/script/search2table.PLS
+Deleting blib/script/search2table.PLS.bak
+blib/script/search2table.PLS -> blib/script/bp_search2table.pl
+Copying scripts/utilities/search2BSML.PLS -> blib/script/search2BSML.PLS
+Deleting blib/script/search2BSML.PLS.bak
+blib/script/search2BSML.PLS -> blib/script/bp_search2BSML.pl
+Copying scripts/seq/translate_seq.PLS -> blib/script/translate_seq.PLS
+Deleting blib/script/translate_seq.PLS.bak
+blib/script/translate_seq.PLS -> blib/script/bp_translate_seq.pl
+t/Align/AlignStats.............................ok
+t/Align/AlignUtil..............................ok
+t/Align/SimpleAlign............................ok
+t/Align/TreeBuild..............................ok
+t/Align/Utilities..............................ok
+t/AlignIO/AlignIO..............................ok
+t/AlignIO/arp..................................ok
+t/AlignIO/bl2seq...............................ok
+t/AlignIO/clustalw.............................ok
+t/AlignIO/emboss...............................ok
+t/AlignIO/fasta................................ok
+t/AlignIO/largemultifasta......................ok
+t/AlignIO/maf..................................ok
+t/AlignIO/mase.................................ok
+t/AlignIO/mega.................................ok
+t/AlignIO/meme.................................ok
+t/AlignIO/metafasta............................ok
+t/AlignIO/msf..................................ok
+t/AlignIO/nexus................................ok
+t/AlignIO/pfam.................................ok
+t/AlignIO/phylip...............................ok
+t/AlignIO/po...................................ok
+t/AlignIO/prodom...............................ok
+t/AlignIO/psi..................................ok
+t/AlignIO/selex................................ok
+t/AlignIO/stockholm............................ok
+t/AlignIO/xmfa.................................ok
+t/Alphabet.....................................ok
+t/Annotation/Annotation........................ok
+t/Annotation/AnnotationAdaptor.................ok
+t/Assembly/Assembly............................
+--------------------- WARNING ---------------------
+MSG: Adding non-nucleotidic sequence ML4922R
+---------------------------------------------------
+
+--------------------- WARNING ---------------------
+MSG: Adding non-nucleotidic sequence ML4947F
+---------------------------------------------------
+ok
+t/Assembly/ContigSpectrum......................ok
+t/Biblio/Biblio................................Subroutine LWP::UserAgent::redirect_ok redefined at /opt/perl/lib/site_perl/5.10.0/SOAP/Transport/HTTP.pm line 41.
+Subroutine LWP::Protocol::collect redefined at /opt/perl/lib/site_perl/5.10.0/SOAP/Transport/HTTP.pm line 59.
+ok
+t/Biblio/References............................ok
+t/Biblio/biofetch..............................ok
+t/Biblio/eutils................................ok
+t/ClusterIO/ClusterIO..........................ok
+t/ClusterIO/SequenceFamily.....................ok
+t/ClusterIO/unigene............................ok
+t/Coordinate/CoordinateGraph...................ok
+t/Coordinate/CoordinateMapper..................ok
+t/Coordinate/GeneCoordinateMapper..............ok
+t/Graphics/Pictogram...........................skipped: The optional module Bio::Graphics::Pictogram (or dependencies thereof) was not installed
+t/LiveSeq/Chain................................ok
+t/LiveSeq/LiveSeq..............................ok
+t/LiveSeq/Mutation.............................ok
+t/LiveSeq/Mutator..............................ok
+t/LocalDB/BioDBGFF.............................ok
+t/LocalDB/BlastIndex...........................ok
+t/LocalDB/DBFasta..............................ok
+t/LocalDB/DBQual...............................ok
+t/LocalDB/Flat.................................ok
+t/LocalDB/Index................................ok
+t/LocalDB/Registry.............................ok
+t/LocalDB/SeqFeature...........................ok
+t/LocalDB/SeqFeature_BDB.......................ok
+t/LocalDB/SeqFeature_mysql.....................ok
+t/LocalDB/transfac_pro.........................ok
+t/Map/Cyto.....................................ok
+t/Map/Linkage..................................ok
+t/Map/Map......................................ok
+t/Map/MapIO....................................ok
+t/Map/MicrosatelliteMarker.....................ok
+t/Map/Physical.................................ok
+t/Matrix/IO/masta..............................ok
+t/Matrix/IO/psm................................ok
+t/Matrix/InstanceSite..........................ok
+t/Matrix/Matrix................................ok
+t/Matrix/ProtMatrix............................ok
+t/Matrix/ProtPsm...............................ok
+t/Matrix/SiteMatrix............................ok
+t/Ontology/GOterm..............................ok
+t/Ontology/GraphAdaptor........................ok
+t/Ontology/IO/go...............................ok
+t/Ontology/IO/interpro.........................ok
+t/Ontology/IO/obo..............................ok
+t/Ontology/Ontology............................ok
+t/Ontology/OntologyEngine......................ok
+t/Ontology/OntologyStore.......................ok
+t/Ontology/Relationship........................ok
+t/Ontology/RelationshipType....................ok
+t/Ontology/Term................................ok
+t/Perl.........................................ok
+t/Phenotype/Correlate..........................ok
+t/Phenotype/MeSH...............................ok
+t/Phenotype/Measure............................ok
+t/Phenotype/MiniMIMentry.......................ok
+t/Phenotype/OMIMentry..........................ok
+t/Phenotype/OMIMentryAllelicVariant............ok
+t/Phenotype/OMIMparser.........................ok
+t/Phenotype/Phenotype..........................ok
+t/PodSyntax....................................skipped: Test::Pod 1.00 required for testing POD
+t/PopGen/Coalescent............................ok
+t/PopGen/HtSNP.................................ok
+t/PopGen/MK....................................ok
+t/PopGen/PopGen................................ok
+t/PopGen/PopGenSims............................ok
+t/PopGen/TagHaplotype..........................ok
+t/RemoteDB/BioFetch............................ok
+t/RemoteDB/CUTG................................ok
+t/RemoteDB/DB.................................. All 116 subtests passed 
+	(less 8 skipped subtests: 108 okay)
+t/RemoteDB/EMBL................................ok
+t/RemoteDB/EUtilities..........................ok
+t/RemoteDB/GDB.................................ok
+t/RemoteDB/HIV/HIV.............................# Error: 
+# ------------- EXCEPTION: Bio::WebError::Exception -------------
+# MSG: Connect failed at /Users/cjfields/bioperl/branch-1-6/blib/lib/Bio/DB/HIV.pm line 258.
+# 
+# VALUE: An empty string ("")
+# STACK: Error::throw
+# STACK: Bio::Root::Root::throw /Users/cjfields/bioperl/branch-1-6/blib/lib/Bio/Root/Root.pm:357
+# STACK: Bio::DB::HIV::get_request /Users/cjfields/bioperl/branch-1-6/blib/lib/Bio/DB/HIV.pm:277
+# STACK: t/RemoteDB/HIV/HIV.t:60
+# ---------------------------------------------------------------
+ok
+t/RemoteDB/HIV/HIVAnnotProcessor...............ok
+t/RemoteDB/HIV/HIVQuery........................
+------------- EXCEPTION: Bio::WebError::Exception -------------
+MSG: Interface request failed (1) at /Users/cjfields/bioperl/branch-1-6/blib/lib/Bio/DB/HIV.pm line 268.
+
+VALUE: An empty string ("")
+STACK: Error::throw
+STACK: Bio::Root::Root::throw /Users/cjfields/bioperl/branch-1-6/blib/lib/Bio/Root/Root.pm:357
+STACK: Bio::DB::HIV::get_request /Users/cjfields/bioperl/branch-1-6/blib/lib/Bio/DB/HIV.pm:277
+STACK: Bio::DB::HIV::get_seq_stream /Users/cjfields/bioperl/branch-1-6/blib/lib/Bio/DB/HIV.pm:396
+STACK: Bio::DB::HIV::get_Stream_by_query /Users/cjfields/bioperl/branch-1-6/blib/lib/Bio/DB/HIV.pm:508
+STACK: t/RemoteDB/HIV/HIVQuery.t:149
+---------------------------------------------------------------
+# Looks like you planned 41 tests but ran 34.
+# Looks like your test exited with 255 just after 34.
+ Dubious, test returned 255 (wstat 65280, 0xff00)
+ Failed 7/41 subtests 
+t/RemoteDB/HIV/HIVQueryHelper..................ok
+t/RemoteDB/RefSeq..............................ok
+t/RemoteDB/SeqHound............................ok
+t/RemoteDB/SeqRead_fail........................ok
+t/RemoteDB/SeqVersion..........................ok
+t/RemoteDB/Taxonomy............................ok
+t/Restriction/Analysis.........................ok
+t/Restriction/Gel..............................ok
+t/Restriction/IO...............................ok
+t/Root/Exception...............................ok
+t/Root/RootI...................................ok
+t/Root/RootIO..................................ok
+t/Root/Storable................................ok
+t/Root/Tempfile................................ok
+t/Root/Utilities...............................ok
+t/SearchDist...................................ok
+t/SearchIO/CigarString.........................ok
+t/SearchIO/GbrowseGFF..........................ok
+t/SearchIO/SearchIO............................ok
+t/SearchIO/SimilarityPair......................ok
+t/SearchIO/Writer/HTMLWriter...................ok
+t/SearchIO/Writer/HitTableWriter...............ok
+t/SearchIO/blast...............................ok
+t/SearchIO/blast_pull..........................ok
+t/SearchIO/blasttable..........................ok
+t/SearchIO/blastxml............................ok
+t/SearchIO/cross_match.........................ok
+t/SearchIO/erpin...............................ok
+t/SearchIO/exonerate...........................ok
+t/SearchIO/fasta...............................ok
+t/SearchIO/hmmer...............................ok
+t/SearchIO/hmmer_pull..........................ok
+t/SearchIO/infernal............................ok
+t/SearchIO/megablast...........................ok
+t/SearchIO/psl.................................ok
+t/SearchIO/rnamotif............................ok
+t/SearchIO/sim4................................ok
+t/SearchIO/waba................................ok
+t/SearchIO/wise................................ok
+t/Seq/DBLink...................................ok
+t/Seq/EncodedSeq...............................ok
+t/Seq/LargeLocatableSeq........................ok
+t/Seq/LargePSeq................................ok
+t/Seq/LocatableSeq.............................ok
+t/Seq/MetaSeq..................................ok
+t/Seq/PrimaryQual..............................ok
+t/Seq/PrimarySeq...............................ok
+t/Seq/PrimedSeq................................ok
+t/Seq/Quality..................................ok
+t/Seq/Seq......................................ok
+t/Seq/WithQuality..............................ok
+t/SeqEvolution.................................ok
+t/SeqFeature/FeatureIO.........................ok
+t/SeqFeature/Location..........................ok
+t/SeqFeature/LocationFactory...................ok
+t/SeqFeature/Primer............................ok
+t/SeqFeature/Range.............................ok
+t/SeqFeature/RangeI............................ok
+t/SeqFeature/SeqAnalysisParser.................ok
+t/SeqFeature/SeqFeatAnnotated..................ok
+t/SeqFeature/SeqFeatCollection.................ok
+t/SeqFeature/SeqFeature........................ok
+t/SeqFeature/SeqFeaturePrimer..................ok
+t/SeqFeature/Unflattener.......................ok
+t/SeqFeature/Unflattener2......................ok
+t/SeqIO........................................ok
+t/SeqIO/Handler................................ok
+t/SeqIO/MultiFile..............................ok
+t/SeqIO/Multiple_fasta.........................ok
+t/SeqIO/SeqBuilder.............................ok
+t/SeqIO/Splicedseq.............................ok
+t/SeqIO/abi....................................
+#   Failed test at t/SeqIO/abi.t line 24.
+#          got: undef
+#     expected: 'GCNTATGACGTGGATTNCGAATTCTNNNNNCGGTAGNNGAAAATCCCCGGNCAAGNTTNNCCCTGCAAANGGAANAANNTGGCCGAGCGCTACGGGCTGATCTGGGTGTGCCTGTTTCCCCCGGCCGGGGGGAGNGATGCAGGACATCCAAGTATCCCGCCNATGGNGGGCTGAGGACGAGGACGGCTTCCATCAGATCAGTGTGCCCGGNCTTCGACATCGGCGGCAGCGCCGCGCGCCAACTGGAAGGCTTCATCGACGTGNAGCATTTTGNCTTCNTGCGCACCGCTACCTTCACCCANCCGGACAAGCGCNAANTGCNGNCCTACACCACCACNGAAACACCGACCGGNTTNAATGCCGATTACCTGAGNNGCGTGGCAAATTATTCGGNGGACNTGCCGCTGNCGGACGTGGACCCGAACTTCCAATGGCTGCGTCATTNCTAGGTGAATCTGCCTTTCACCGCCACGCTCACCATCCACTTCCCGGTGCCGGGCAAGCGGTTGGTGATNATGAATGCCGCCAGACCGGTGTCCAAGCACACCANCCGCCTGNTGGTGCCGATCGNCCGCTAATTTCGACACCCATCTGCCNGNGGGAAGACGTACATGNGTTCAACCTTGCACNTNGTTCNAAAAAAACCNTGCCATGGTGGNAANCGCAAGCGGNCCGGAAATATCNGCCGGNTTGACCCGCNTGNTTGGAAAGTGCATATTCCCCNCCGATNCNCAATTTCGAT'
+
+#   Failed test at t/SeqIO/abi.t line 26.
+#          got: '0'
+#     expected: '8793'
+
+#   Failed test at t/SeqIO/abi.t line 27.
+#          got: '0'
+#     expected: '8793'
+
+#   Failed test at t/SeqIO/abi.t line 28.
+#          got: '0'
+#     expected: '8793'
+
+#   Failed test at t/SeqIO/abi.t line 29.
+#          got: '0'
+#     expected: '8793'
+# Looks like you failed 5 tests of 7.
+ Dubious, test returned 5 (wstat 1280, 0x500)
+ Failed 5/7 subtests 
+t/SeqIO/ace....................................ok
+t/SeqIO/agave..................................ok
+t/SeqIO/alf....................................ok
+t/SeqIO/asciitree..............................ok
+t/SeqIO/bsml...................................ok
+t/SeqIO/bsml_sax...............................ok
+t/SeqIO/chadoxml...............................ok
+t/SeqIO/chaos..................................ok
+t/SeqIO/chaosxml...............................ok
+t/SeqIO/ctf....................................ok
+t/SeqIO/embl...................................ok
+t/SeqIO/entrezgene.............................ok
+t/SeqIO/excel..................................ok
+t/SeqIO/exp....................................ok
+t/SeqIO/fasta..................................ok
+t/SeqIO/fastq..................................ok
+t/SeqIO/flybase_chadoxml.......................ok
+t/SeqIO/game...................................ok
+t/SeqIO/gcg....................................ok
+t/SeqIO/genbank................................ok
+t/SeqIO/interpro...............................ok
+t/SeqIO/kegg...................................ok
+t/SeqIO/largefasta.............................ok
+t/SeqIO/lasergene..............................ok
+t/SeqIO/locuslink..............................ok
+t/SeqIO/metafasta..............................ok
+t/SeqIO/phd....................................ok
+t/SeqIO/pir....................................ok
+t/SeqIO/pln....................................ok
+t/SeqIO/qual...................................ok
+t/SeqIO/raw....................................ok
+t/SeqIO/scf....................................ok
+t/SeqIO/strider................................ok
+t/SeqIO/swiss..................................ok
+t/SeqIO/tab....................................ok
+t/SeqIO/table..................................ok
+t/SeqIO/tigr...................................ok
+t/SeqIO/tigrxml................................ok
+t/SeqIO/tinyseq................................ok
+t/SeqIO/ztr....................................
+#   Failed test at t/SeqIO/ztr.t line 22.
+#          got: undef
+#     expected: 'GATGATTCCGGCTTCGGACGACTCTAGAGGATCCCCATTTTTATAGTTTTTATCTTGTAATAGATGTTTAGATTTTTCGTTGTAATTATTTTCTTTATTGTTGAAATTAGTATCTCTGGGTAATTTATCATATTCTCTGGAAAATGATTTACTATCACTAGATACTTCATAAGATTTATAATCTTTATTATGAAAATCATCTCTATTTTTCAAATTATTATTATATCTATCAAAGTTTCTGTCTTCATTATATCTATTAGCATATCTATCTTTATCTTTATCCCTATCACTATATCTATCATATGGTTCATCTTGTTCAACCGATCAGACTCGATTCGCCATCGCCTCTAACGGATGGCCGCTCCCCCTCTCATACCTCGCTCCCCTCGACATCCCCCGTCTCGCCACCCTATCCGCCCCCTTCATCACCCCCCCTTATCCACACCCTCACCCCCCGCATCGCGCACCCACGACCACCCGAAGAACCGCCCTTACTCCCAAGTACGCCCCGACCTCCATCACCCTATGCGGTACCACTCCCACCACACCCAGTCCTACTTTCGCCCGCACATCGGCCCCGCTTCAGACAGCTCCCAACTACGCAACCCACGCTTGTTCTTGTTCACACTCGAATACTCGAATCTCTCATTACTCCGCGGACTCCGCCGCACCTGTGCACCATTAACTGTGTAGCGCCTGAACCGGCACCTCTGATTACCACTTCCTCCACCAGCACAGTCCTATTACCGCATGTCGCTCTGCTAAGACAGTGCAAGACTCTGCGGTCGCTCTGACCCGCATCCGCCAGGGCACCTCTCACCCTCGCTGGCCACCCCGCCCCCCTCTCCCTGCCCCTTCATTCCCCCAAACCGCTTTCAACGGGACACACCCCTCCGCGGCGGACCACAACTCGCCGTCGGCCACCACTCACACCTTCCCTCCTCCTTCCCCCACATCACGCCAACCCCGTGGGACGGCTCTCCCGCGGCTACGACGCGCAACCCCCCCTCGCCGCTTCCCCCCCAACTTCCCACGGGCTCCCCTCCGCCCCTTACCCGCGAGGAGCTTCACCCGCGAACCACCTCCCCCCTTTCCCAACAGCACCG'
+# Looks like you failed 1 test of 3.
+ Dubious, test returned 1 (wstat 256, 0x100)
+ Failed 1/3 subtests 
+t/SeqTools/CodonTable..........................ok
+t/SeqTools/ECnumber............................ok
+t/SeqTools/GuessSeqFormat......................ok
+t/SeqTools/OddCodes............................ok
+t/SeqTools/SeqPattern..........................ok
+t/SeqTools/SeqStats............................ok
+t/SeqTools/SeqUtils............................ok
+t/SeqTools/SeqWords............................ok
+t/Species......................................ok
+t/Structure/IO.................................ok
+t/Structure/Structure..........................ok
+t/Symbol.......................................ok
+t/TaxonTree....................................skipped: All tests are being skipped, probably because the module(s) being tested here are now deprecated
+t/Tools/Alignment/Consed.......................ok
+t/Tools/Analysis/DNA/ESEfinder.................ok
+t/Tools/Analysis/Protein/Domcut................ok
+t/Tools/Analysis/Protein/ELM...................ok
+t/Tools/Analysis/Protein/GOR4..................ok
+t/Tools/Analysis/Protein/HNN...................ok
+t/Tools/Analysis/Protein/Mitoprot..............ok
+t/Tools/Analysis/Protein/NetPhos...............ok
+t/Tools/Analysis/Protein/Scansite..............ok
+t/Tools/Analysis/Protein/Sopma.................ok
+t/Tools/EMBOSS/Palindrome......................ok
+t/Tools/EUtilities/EUtilParameters.............ok
+t/Tools/EUtilities/egquery.....................ok
+t/Tools/EUtilities/einfo.......................ok
+t/Tools/EUtilities/elink_acheck................ok
+t/Tools/EUtilities/elink_lcheck................ok
+t/Tools/EUtilities/elink_llinks................ok
+t/Tools/EUtilities/elink_ncheck................ok
+t/Tools/EUtilities/elink_neighbor..............ok
+t/Tools/EUtilities/elink_neighbor_history......ok
+t/Tools/EUtilities/elink_scores................ok
+t/Tools/EUtilities/epost.......................ok
+t/Tools/EUtilities/esearch.....................ok
+t/Tools/EUtilities/espell......................ok
+t/Tools/EUtilities/esummary....................ok
+t/Tools/Est2Genome.............................ok
+t/Tools/FootPrinter............................ok
+t/Tools/GFF....................................ok
+t/Tools/Geneid.................................ok
+t/Tools/Genewise...............................ok
+t/Tools/Genomewise.............................ok
+t/Tools/Genpred................................ok
+t/Tools/Hmmer..................................ok
+t/Tools/IUPAC..................................ok
+t/Tools/Lucy...................................ok
+t/Tools/Match..................................ok
+t/Tools/Phylo/Gerp.............................ok
+t/Tools/Phylo/Molphy...........................ok
+t/Tools/Phylo/PAML.............................ok
+t/Tools/Phylo/Phylip/ProtDist..................ok
+t/Tools/Primer3................................ok
+t/Tools/Promoterwise...........................ok
+t/Tools/Pseudowise.............................ok
+t/Tools/QRNA...................................ok
+t/Tools/RandDistFunctions......................ok
+t/Tools/RepeatMasker...........................ok
+t/Tools/Run/RemoteBlast........................ok
+t/Tools/Run/StandAloneBlast....................ok
+t/Tools/Run/WrapperBase........................ok
+t/Tools/Seg....................................ok
+t/Tools/SiRNA..................................ok
+t/Tools/Sigcleave..............................ok
+t/Tools/Signalp................................ok
+t/Tools/Signalp/ExtendedSignalp................ok
+t/Tools/Sim4...................................ok
+t/Tools/Spidey/Spidey..........................ok
+t/Tools/TandemRepeatsFinder....................ok
+t/Tools/TargetP................................ok
+t/Tools/Tmhmm..................................ok
+t/Tools/ePCR...................................ok
+t/Tools/pICalculator...........................ok
+t/Tools/rnamotif...............................skipped: All tests are being skipped, probably because the module(s) being tested here are now deprecated
+t/Tools/tRNAscanSE.............................ok
+t/Tree/Compatible..............................ok
+t/Tree/Node....................................ok
+t/Tree/PhyloNetwork/Factory....................ok
+t/Tree/PhyloNetwork/GraphViz...................ok
+t/Tree/PhyloNetwork/MuVector...................ok
+t/Tree/PhyloNetwork/PhyloNetwork...............ok
+t/Tree/PhyloNetwork/RandomFactory..............ok
+t/Tree/PhyloNetwork/TreeFactory................ok
+t/Tree/RandomTreeFactory.......................ok
+t/Tree/Tree....................................ok
+t/Tree/TreeIO..................................ok
+t/Tree/TreeIO/lintree..........................ok
+t/Tree/TreeIO/newick...........................ok
+t/Tree/TreeIO/nexus............................ok
+t/Tree/TreeIO/nhx..............................ok
+t/Tree/TreeIO/phyloxml.........................ok
+t/Tree/TreeIO/svggraph.........................Use of uninitialized value $txt[0] in join or string at /opt/perl/lib/site_perl/5.10.0/SVG/Element.pm line 1194, <GEN0> line 1.
+ok
+t/Tree/TreeIO/tabtree..........................ok
+t/Tree/TreeStatistics..........................ok
+t/Variation/AAChange...........................ok
+t/Variation/AAReverseMutate....................ok
+t/Variation/Allele.............................ok
+t/Variation/DNAMutation........................ok
+t/Variation/RNAChange..........................ok
+t/Variation/SNP................................ok
+t/Variation/SeqDiff............................ok
+t/Variation/Variation_IO.......................ok
+
+Test Summary Report
+-------------------
+
+
+Files=322, Tests=18302, 1305 wallclock secs ( 3.84 usr  2.20 sys + 154.05 cusr 20.19 csys = 180.28 CPU)
+Result: FAIL
+Failed 4/322 test programs. 74/18302 subtests failed.

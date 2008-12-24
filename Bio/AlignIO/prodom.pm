@@ -1,4 +1,4 @@
-# $Id: prodom.pm,v 1.10.4.3 2006/10/02 23:10:12 sendu Exp $
+# $Id: prodom.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::AlignIO::prodom
 
@@ -89,7 +89,7 @@ sub next_aln {
 
 	   $names{'fake_id'} = $fake_id;
 
-	   $add = new Bio::LocatableSeq('-seq'=>$seq,
+	   $add = Bio::LocatableSeq->new('-seq'=>$seq,
 			       '-id'=>$acc,
 			       '-start'=>$start,
 			       '-end'=>$end,

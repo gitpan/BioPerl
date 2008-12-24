@@ -1,6 +1,6 @@
 package Bio::DB::SeqFeature::Store;
 
-# $Id: Store.pm,v 1.21.4.4 2006/10/07 12:54:33 lstein Exp $
+# $Id: Store.pm 15137 2008-12-10 18:26:31Z lstein $
 
 =head1 NAME
 
@@ -13,7 +13,7 @@ Bio::DB::SeqFeature::Store -- Storage and retrieval of sequence annotation data
   # Open the feature database
   my $db      = Bio::DB::SeqFeature::Store->new( -adaptor => 'DBI::mysql',
                                                  -dsn     => 'dbi:mysql:test',
-                                                 -write   => 1 );
+                                                 -create  => 1 );
 
   # get a feature from somewhere
   my $feature = Bio::SeqFeature::Generic->new(...);
@@ -43,13 +43,16 @@ Bio::DB::SeqFeature::Store -- Storage and retrieval of sequence annotation data
   @features = $db->get_features_by_alias('sma-3');
 
   # ...by type
-  @features = $db->get_features_by_name('gene');
+  @features = $db->get_features_by_type('gene');
 
   # ...by location
   @features = $db->get_features_by_location(-seq_id=>'Chr1',-start=>4000,-end=>600000);
 
   # ...by attribute
   @features = $db->get_features_by_attribute({description => 'protein kinase'})
+
+  # ...by primary id
+  @features = $db->get_feature_by_primary_id(42); # note no plural!!!
 
   # ...by the GFF "Note" field
   @result_list = $db->search_notes('kinase');
@@ -82,6 +85,9 @@ Bio::DB::SeqFeature::Store -- Storage and retrieval of sequence annotation data
   # Warning: this returns a string, and not a PrimarySeq object
   $db->insert_sequence('Chr1','GATCCCCCGGGATTCCAAAA...');
   my $sequence = $db->fetch_sequence('Chr1',5000=>6000);
+
+  # what feature types are defined in the database?
+  my @types    = $db->types;
 
   # create a new feature in the database
   my $feature = $db->new_feature(-primary_tag => 'mRNA',
@@ -148,16 +154,22 @@ number of adaptors is quite limited, but the number will grow soon.
 
 =over 4
 
+=item memory
+
+An implementation that stores all data in memory. This is useful for
+small data sets of no more than 10,000 features (more or less,
+depending on system memory).
+
 =item DBI::mysql
 
 A full-featured implementation on top of the MySQL relational database
 system.
 
-=item bdb
+=item berkeleydb
 
-A partial implementation that runs on top of the BerkeleyDB
-database. The fetch() and store() methods are implemented, but the
-various search functions (e.g. get_features_by_name()) are not.
+A full-feature implementation that runs on top of the BerkeleyDB
+database. See L<Bio::DB::SeqFeature::Store::berkeleydb>.
+
 
 =back
 
@@ -227,6 +239,9 @@ use Bio::DB::SeqFeature;
 *dna = *get_dna = *get_sequence = \&fetch_sequence;
 *get_SeqFeatures = \&fetch_SeqFeatures;
 
+# local version
+sub api_version { 1.2 }
+
 =head1 Methods for Connecting and Initializating a Database
 
 =head2 new
@@ -249,12 +264,14 @@ This class method creates a new database connection. The following
  -serializer        The name of the serializer class (default Storable)
 
  -index_subfeatures Whether or not to make subfeatures searchable
-                    (default true)
+                    (default false)
 
  -cache             Activate LRU caching feature -- size of cache
 
  -compress          Compresses features before storing them in database
                     using Compress::Zlib
+
+ -create            (Re)initialize the database.
 
 The B<-index_subfeatures> argument, if true, tells the module to
 create indexes for a feature and all its subfeatures (and its
@@ -280,6 +297,10 @@ The B<-compress> argument, if true, will cause the feature data to be
 compressed before storing it. This will make the database somewhat
 smaller at the cost of decreasing performance.
 
+The B<-create> argument, if true, will either initialize or
+reinitialize the database. It is needed the first time a database is
+used.
+
 The new() method of individual adaptors recognize additional
 arguments. The default DBI::mysql adaptor recognizes the following
 ones:
@@ -303,6 +324,7 @@ ones:
 		    L<Bio::DB::SeqFeature::Store::GFF3Loader> for a
 		    description of this. Default is the current
                     directory.
+ -write             Make the database writeable (implied by -create)
 
 =cut
 
@@ -354,11 +376,11 @@ sub new {
  Args    : (optional) flag to erase current data
  Status  : public
 
-Call this after Bio::DB::SeqFeature::Store-E<gt>new() to initialize a new
-database. In the case of a DBI database, this method installs the
+Call this after Bio::DB::SeqFeature::Store-E<gt>new() to initialize a
+new database. In the case of a DBI database, this method installs the
 schema but does B<not> create the database. You have to do this
 offline using the appropriate command-line tool. In the case of the
-"bdb" BerkeleyDB adaptor, this creates an empty BTREE database.
+"berkeleydb" adaptor, this creates an empty BTREE database.
 
 If there is any data already in the database, init_database() called
 with no arguments will have no effect. To permanently erase the data
@@ -462,6 +484,30 @@ sub store_noindex {
   $self->store_and_cache(0,@_);
 }
 
+=head2 no_blobs
+
+ Title   : no_blobs
+ Usage   : $db->no_blobs(1);
+ Function: decide if objects should be stored in the database as blobs.
+ Returns : boolean (default false)
+ Args    : boolean (true to no longer store objects; when the corresponding
+           feature is retrieved it will instead be a minimal representation of
+           the object that was stored, as some simple Bio::SeqFeatureI object)
+ Status  : dubious (new)
+
+This method saves lots of space in the database, which may in turn lead to large
+performance increases in extreme cases (over 7 million features in the db).
+
+Currently only applies to the mysql implementation.
+
+=cut
+
+sub no_blobs {
+    my $self = shift;
+    if (@_) { $self->{no_blobs} = shift }
+    return $self->{no_blobs} || 0;
+}
+
 =head2 new_feature
 
  Title   : new_feature
@@ -555,6 +601,25 @@ sub delete {
   $success;
 }
 
+=head2 get_feature_by_id
+
+ Title   : get_feature_by_id
+ Usage   : $feature = $db->get_feature_by_id($primary_id)
+ Function: fetch a feature from the database using its primary ID
+ Returns : a feature
+ Args    : primary ID of desired feature
+ Status  : public
+
+This method returns a previously-stored feature from the database
+using its primary ID. If the primary ID is invalid, it returns undef.
+
+=cut
+
+sub get_feature_by_id {
+    my $self = shift;
+    $self->fetch(@_);
+}
+
 =head2 fetch
 
  Title   : fetch
@@ -564,8 +629,7 @@ sub delete {
  Args    : primary ID of desired feature
  Status  : public
 
-This method returns a previously-stored feature from the database
-using its primary ID. If the primary ID is invalid, it returns undef.
+This is an alias for get_feature_by_id().
 
 =cut
 
@@ -585,6 +649,25 @@ sub fetch {
   else {
     return $self->_fetch($primary_id);
   }
+}
+
+=head2 get_feature_by_primary_id
+
+ Title   : get_feature_by_primary_id
+ Usage   : $feature = $db->get_feature_by_primary_id($primary_id)
+ Function: fetch a feature from the database using its primary ID
+ Returns : a feature
+ Args    : primary ID of desired feature
+ Status  : public
+
+This method returns a previously-stored feature from the database
+using its primary ID. If the primary ID is invalid, it returns
+undef. This method is identical to fetch().
+
+=cut
+
+sub get_feature_by_primary_id {
+    shift->fetch(@_);
 }
 
 =head2 fetch_many
@@ -667,9 +750,6 @@ get_feature_by_name().
 
 =cut
 
-# backward compatibility for gbrowse
-sub get_feature_by_name { shift->get_features_by_name(@_) }
-
 ###
 # get_feature_by_name() return 0 or more features using a name lookup
 # uses the Bio::DB::GFF API
@@ -689,6 +769,21 @@ sub get_features_by_name {
 
   $self->_features(-name=>$name,-class=>$class,-aliases=>$allow_alias,-type=>$types);
 }
+
+=head2 get_feature_by_name
+
+ Title   : get_feature_by_name
+ Usage   : @features = $db->get_feature_by_name($name)
+ Function: looks up features by their display_name
+ Returns : a list of matching features
+ Args    : the desired name
+ Status  : Use get_features_by_name instead.
+
+This method is provided for backward compatibility with gbrowse.
+
+=cut
+
+sub get_feature_by_name { shift->get_features_by_name(@_) }
 
 =head2 get_features_by_alias
 
@@ -1007,8 +1102,13 @@ returned array is a arrayref containing the following fields:
   column 1     The display name of the feature
   column 2     The text of the note
   column 3     A relevance score.
+  column 4     The feature type
+  column 5     The unique ID of the feature
 
 NOTE: This search will fail to find features that do not have a display name!
+
+You can use fetch() or fetch_many() with the returned IDs to get to
+the features themselves.
 
 =cut
 
@@ -1036,6 +1136,7 @@ returned array is a arrayref containing the following fields:
   column 1     The display_name of the feature, suitable for passing to get_feature_by_name()
   column 2     The text of the note
   column 3     A relevance score.
+  column 4     The type
 
 NOTE: This is equivalent to $db-E<gt>search_attributes('full text search
 string','Note',$limit). This search will fail to find features that do
@@ -1050,6 +1151,21 @@ sub search_notes {
   my $self = shift;
   my ($search_string,$limit) = @_;
   return $self->_search_attributes($search_string,['Note'],$limit);
+}
+
+=head2 types
+
+ Title   : types
+ Usage   : @type_list = $db->types
+ Function: Get all the types in the database
+ Returns : array of Bio::DB::GFF::Typename objects
+ Args    : none
+ Status  : public
+
+=cut
+
+sub types {
+    shift->throw_not_implemented;
 }
 
 =head2 insert_sequence
@@ -1120,7 +1236,8 @@ You can call fetch_sequence using the following shortcuts:
 #
 sub fetch_sequence {
   my $self = shift;
-  my ($seqid,$start,$end,$class,$bioseq) = rearrange([['NAME','SEQID','SEQ_ID'],'START',['END','STOP'],'CLASS','BIOSEQ'],@_);
+  my ($seqid,$start,$end,$class,$bioseq) = rearrange([['NAME','SEQID','SEQ_ID'],
+						      'START',['END','STOP'],'CLASS','BIOSEQ'],@_);
   $seqid = "$seqid:$class" if defined $class;
   my $seq = $self->_fetch_sequence($seqid,$start,$end);
   return $seq unless $bioseq;
@@ -1133,7 +1250,7 @@ sub fetch_sequence {
 =head2 segment
 
  Title   : segment
- Usage   : $segment = $db->segment($seq_id [,$start] [,$end])
+ Usage   : $segment = $db->segment($seq_id [,$start] [,$end] [,$absolute])
  Function: restrict the database to a sequence range
  Returns : a Bio::DB::SeqFeature::Segment object
  Args    : sequence id, start and end ranges (optional)
@@ -1158,6 +1275,9 @@ in the database as the sequence ID. The segment() method will perform
 a get_features_by_name() internally and then transform the feature
 into the appropriate coordinates.
 
+If $absolute is a true value, then the specified coordinates are
+relative to the reference (absolute) coordinates.
+
 =cut
 
 ###
@@ -1181,7 +1301,7 @@ segment() called in a scalar context but multiple features match.
 Either call in a list context or narrow your search using the -types or -class arguments
 END
   }
-  my ($rel_start,$rel_end) = rearrange(['START',['STOP','END']],@args);
+  my ($rel_start,$rel_end,$abs) = rearrange(['START',['STOP','END'],'ABSOLUTE'],@args);
   $rel_start = 1 unless defined $rel_start;
 
   my @segments;
@@ -1189,15 +1309,21 @@ END
     my $seqid  = $f->seq_id;
     my $strand = $f->strand;
     my ($start,$end);
-    my $re = defined $rel_end ? $rel_end : $f->end - $f->start + 1;
-
-    if ($strand >= 0) {
-      $start = $f->start + $rel_start - 1;
-      $end   = $f->start + $re   - 1;
+    if ($abs) {
+      $start = $rel_start;
+      $end   = defined $rel_end ? $rel_end : $start + $f->length - 1;
     }
     else {
-      $start = $f->end - $re   + 1;
-      $end   = $f->end - $rel_start + 1;
+      my $re = defined $rel_end ? $rel_end : $f->end - $f->start + 1;
+
+      if ($strand >= 0) {
+	$start = $f->start + $rel_start - 1;
+	$end   = $f->start + $re   - 1;
+      }
+      else {
+	$start = $f->end - $re   + 1;
+	$end   = $f->end - $rel_start + 1;
+      }
     }
     push @segments,Bio::DB::SeqFeature::Segment->new($self,$seqid,$start,$end,$strand);
   }
@@ -1269,6 +1395,23 @@ sub reindex {
 
   $self->_end_reindexing;
 }
+
+=head2 attributes
+
+ Title   : attributes
+ Usage   : @a = $db->attributes
+ Function: Returns list of all known attributes
+ Returns : Returns list of all known attributes
+ Args    : nothing
+ Status  : public
+
+=cut
+
+sub attributes {
+    my $self = shift;
+    shift->throw_not_implemented;
+}
+
 
 =head2 start_bulk_update,finish_bulk_update
 
@@ -1446,6 +1589,20 @@ sub index_subfeatures {
   $self->setting('index_subfeatures'=>shift) if @_;
   $d;
 }
+
+=head2 clone
+
+The clone() method should be used when you want to pass the
+Bio::DB::SeqFeature::Store object to a child process across a
+fork(). The child must call clone() before making any queries.
+
+The default behavior is to do nothing, but adaptors that use the DBI
+interface may need to implement this in order to avoid database handle
+errors. See the dbi adaptor for an example.
+
+=cut
+
+sub clone { }
 
 ################################# TIE interface ####################
 
@@ -2338,7 +2495,8 @@ L<Bio::DB::SeqFeature>,
 L<Bio::DB::SeqFeature::Store::GFF3Loader>,
 L<Bio::DB::SeqFeature::Segment>,
 L<Bio::DB::SeqFeature::Store::DBI::mysql>,
-L<Bio::DB::SeqFeature::Store::bdb>
+L<Bio::DB::SeqFeature::Store::berkeleydb>
+L<Bio::DB::SeqFeature::Store::memory>
 
 =head1 AUTHOR
 

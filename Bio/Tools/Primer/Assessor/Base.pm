@@ -1,4 +1,4 @@
-# $Id: Base.pm,v 1.4.4.1 2006/10/02 23:10:36 sendu Exp $
+# $Id: Base.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module for Bio::Tools::Primer::Assessor::Base
 #

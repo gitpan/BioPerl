@@ -1,4 +1,4 @@
-# $Id: exp.pm,v 1.15.4.1 2006/10/02 23:10:29 sendu Exp $
+# $Id: exp.pm 11480 2007-06-14 14:16:21Z sendu $
 # BioPerl module for Bio::SeqIO::exp
 #
 # Cared for by Aaron Mackey <amackey@virginia.edu>
@@ -77,7 +77,7 @@ sub _initialize {
   my($self,@args) = @_;
   $self->SUPER::_initialize(@args);  
   if( ! defined $self->sequence_factory ) {
-      $self->sequence_factory(new Bio::Seq::SeqFactory(-verbose => $self->verbose(), -type => 'Bio::Seq::Quality'));
+      $self->sequence_factory(Bio::Seq::SeqFactory->new(-verbose => $self->verbose(), -type => 'Bio::Seq::Quality'));
   }
   unless ($READ_AVAIL) {
       Bio::Root::Root->throw( -class => 'Bio::Root::SystemException',

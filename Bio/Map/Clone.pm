@@ -1,4 +1,4 @@
-# $Id: Clone.pm,v 1.6.4.1 2006/10/02 23:10:21 sendu Exp $
+# $Id: Clone.pm 11274 2007-03-08 16:53:04Z nathan $
 #
 # BioPerl module for Bio::Map::clone
 #
@@ -368,9 +368,9 @@ sub fpc_remark {
     return $self->{'_fpcremark'};
 }
 
-=head2 band
+=head2 bands
 
- Title   : band
+ Title   : bands
  Usage   : @clonebands = $cloneobj->bands();
  Function: Get/set the bands for this clone
  Returns : liat representing the band of this clone, if 

@@ -1,4 +1,4 @@
-# $Id: GFF.pm,v 1.58.4.1 2006/10/02 23:10:32 sendu Exp $
+# $Id: GFF.pm 15008 2008-11-21 21:33:42Z scain $
 #
 # BioPerl module for Bio::Tools::GFF
 #
@@ -121,6 +121,7 @@ Email mrp-at-sanger.ac.uk
 Jason Stajich, jason-at-biperl-dot-org
 Chris Mungall, cjm-at-fruitfly-dot-org
 Steffen Grossmann [SG], grossman at molgen.mpg.de
+Malcolm Cook, mec-at-stowers-institute.org
 
 =head1 APPENDIX
 
@@ -141,13 +142,16 @@ use Bio::SeqFeature::Generic;
 
 use base qw(Bio::Root::Root Bio::SeqAnalysisParserI Bio::Root::IO);
 
+my $i = 0;
+my %GFF3_ID_Tags = map { $_ => $i++ } qw(ID Parent Target);
+
 =head2 new
 
  Title   : new
- Usage   : my $parser = new Bio::Tools::GFF(-gff_version => 2,
+ Usage   : my $parser = Bio::Tools::GFF->new(-gff_version => 2,
 					    -file        => "filename.gff");
            or
-           my $writer = new Bio::Tools::GFF(-gff_version => 3,
+           my $writer = Bio::Tools::GFF->new(-gff_version => 3,
 					    -file        => ">filename.gff3");
  Function: Creates a new instance. Recognized named parameters are -file, -fh,
            and -gff_version.
@@ -490,11 +494,15 @@ sub _from_gff2_string {
    # text-translated tab symbols but no "real" tabs, so splitting on
    # \t is safe, and $attribs gets the entire attributes field to be
    # parsed later
+   
+   # sendu: but the tag value pair can (should?) be separated by a tab. The
+   # 'no tabs' thing seems to apply only to the free text that is allowed for
+   # the value
 
    my ($seqname, $source, $primary, $start, 
        $end, $score, $strand, $frame, @attribs) = split(/\t+/, $string);
-   my $attribs = join '', @attribs;  # just in case the rule 
-                                     # against tab characters has been broken
+   my $attribs = join ' ', @attribs;
+   
    if ( !defined $frame ) {
        $feat->throw("[$string] does not look like GFF2 to me");
    }
@@ -529,7 +537,6 @@ sub _from_gff2_string {
    # run through each character one at a time and check it
    # NOTE: changed to foreach loop which is more efficient in perl
    # --jasons
-
    for my $a ( split //, $attribs ) { 
        # flag up on entering quoted text, down on leaving it
        if( $a eq '"') { $flag = ( $flag == 0 ) ? 1:0 }
@@ -732,7 +739,7 @@ sub _gff1_string{
 
    foreach my $tag ( $feat->all_tags ) {
        foreach my $value ( $feat->each_tag_value($tag) ) {
-	   $str .= " $tag=$value";
+	   $str .= " $tag=$value" if $value;
        }
    }
 
@@ -1002,52 +1009,67 @@ sub _gff3_string {
     my @groups;
 
     # force leading ID and Parent tags
-    my @all_tags =  grep { !/ID/ && !/Parent/ } $feat->all_tags;
-    unshift @all_tags, 'Parent' if $feat->has_tag('Parent');
-    unshift @all_tags, 'ID' if $feat->has_tag('ID');
+    my @all_tags =  grep { ! exists $GFF3_ID_Tags{$_} } $feat->all_tags;
+    for my $t ( sort { $GFF3_ID_Tags{$b} <=> $GFF3_ID_Tags{$a} }
+		keys %GFF3_ID_Tags ) {
+	unshift @all_tags, $t if $feat->has_tag($t);
+    }
 
     for my $tag ( @all_tags ) {
-        next if $tag eq 'Target';
-	my $valuestr;	# a string which will hold one or more values 
-                        # for this tag, with quoted free text and 
-                        # space-separated individual values.
+	# next if $tag eq 'Target';
+	if ($tag eq 'Target' && ! $origfeat->isa('Bio::SeqFeature::FeaturePair')){  
+	    # simple Target,start,stop
+	    my($target_id, $b,$e,$strand) = $feat->get_tag_values($tag); 
+	    next unless(defined($e) && defined($b) && $target_id);			
+	    ($b,$e)= ($e,$b) if(defined $strand && $strand<0);
+	    $target_id =~ s/([\t\n\r%&\=;,])/sprintf("%%%X",ord($1))/ge;    
+	    push @groups, sprintf("Target=%s %d %d", $target_id,$b,$e);
+	    next;
+	}
+
+	my $valuestr;	
+	# a string which will hold one or more values 
+	# for this tag, with quoted free text and 
+	# space-separated individual values.
 	my @v;
 	for my $value ( $feat->each_tag_value($tag) ) {	    
 	    if(  defined $value && length($value) ) { 
-		#$value =~ tr/ /+/;  #spaces are allowed now
+				#$value =~ tr/ /+/;  #spaces are allowed now
+                if ( ref $value eq 'Bio::Annotation::Comment') {
+                    $value = $value->text;
+                }
 
 		if ($value =~ /[^a-zA-Z0-9\,\;\=\.:\%\^\*\$\@\!\+\_\?\-]/) {
-		    $value =~ s/\t/\\t/g;	# substitute tab and newline 
-                                                # characters
-		    $value =~ s/\n/\\n/g;	# to their UNIX equivalents
+		    $value =~ s/\t/\\t/g; # substitute tab and newline 
+		    # characters
+		    $value =~ s/\n/\\n/g; # to their UNIX equivalents
 
-# Unescaped quotes are not allowed in GFF3
-#		    $value = '"' . $value . '"';
+		    # Unescaped quotes are not allowed in GFF3
+		    #		    $value = '"' . $value . '"';
 		}
 		$value =~ s/([\t\n\r%&\=;,])/sprintf("%%%X",ord($1))/ge;
 	    } else {
-		# if it is completely empty, 
-		# then just make empty double 
-		# quotes
+				# if it is completely empty, 
+				# then just make empty double 
+				# quotes
 		$value = '""';
 	    }
 	    push @v, $value;
 	}
+	# can we figure out how to improve this?
 	$tag= lcfirst($tag) unless ($tag 
-          =~ /
-     ^ID|Name|Alias|Parent|Gap|Target|Derives_from|Note|Dbxref|Ontology_term$
-             /);
+				    =~ /^(ID|Name|Alias|Parent|Gap|Target|Derives_from|Note|Dbxref|Ontology_term)$/);
 
 	push @groups, "$tag=".join(",",@v);
     }
-# Add Target information for Feature Pairs
+    # Add Target information for Feature Pairs
     if( $feat->has_tag('Target') && 
 	! $feat->has_tag('Group') &&
 	$origfeat->isa('Bio::SeqFeature::FeaturePair') ) {
 
-        my $target_id = $origfeat->feature1->seq_id;
-        $target_id =~ s/([\t\n\r%&\=;,])/sprintf("%%%X",ord($1))/ge;    
-     
+	my $target_id = $origfeat->feature1->seq_id;
+	$target_id =~ s/([\t\n\r%&\=;,])/sprintf("%%%X",ord($1))/ge;    
+
 	push @groups, sprintf("Target=%s %d %d", 
 			      $target_id,
 			      ( $origfeat->feature1->strand < 0 ? 
@@ -1055,11 +1077,15 @@ sub _gff3_string {
 				  $origfeat->feature1->start) :
 				( $origfeat->feature1->start,
 				  $origfeat->feature1->end) 
-			      ));
+				));
     }
-    
-# unshift @groups, "ID=autogenerated$ID" unless ($feat->has_tag('ID'));
-    
+
+    # unshift @groups, "ID=autogenerated$ID" unless ($feat->has_tag('ID'));
+    if ( $feat->can('name') && defined($feat->name) ) {
+	# such as might be for Bio::DB::SeqFeature
+	unshift @groups, 'Name=' . $feat->name;
+    }
+
     my $gff_string = "";
     if ($feat->location->isa("Bio::Location::SplitLocationI")) {
 	my @locs = $feat->location->each_Location;

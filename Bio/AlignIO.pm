@@ -1,4 +1,4 @@
-# $Id: AlignIO.pm,v 1.46.4.4 2006/10/02 23:10:11 sendu Exp $
+# $Id: AlignIO.pm 14710 2008-06-10 00:42:00Z heikki $
 #
 # BioPerl module for Bio::AlignIO
 #
@@ -97,7 +97,7 @@ multiple sequences is a common requirement, simultaneous handling of
 multiple alignments is not. The only current exception is format
 C<bl2seq> which parses results of the BLAST C<bl2seq> program and which
 may produce several alignment pairs.  This set of alignment pairs can
-be read using multiple calls to L<next_aln()>.
+be read using multiple calls to L<next_aln>.
 
 =head1 CONSTRUCTORS
 
@@ -108,9 +108,9 @@ be read using multiple calls to L<next_aln()>.
    $seqIO = Bio::AlignIO->new(-format => $format);
    $seqIO = Bio::AlignIO->new(-fh => \*STDOUT, -format => $format);
 
-The L<new()> class method constructs a new L<Bio::AlignIO> object.  
+The L<new> class method constructs a new L<Bio::AlignIO> object.  
 The returned object can be used to retrieve or print alignment
-objects. L<new()> accepts the following parameters:
+objects. L<new> accepts the following parameters:
 
 =over 4
 
@@ -180,10 +180,10 @@ all treated equivalently.
    # read from STDIN or use @ARGV:
    $fh = Bio::AlignIO->newFh(-format => $format);
 
-This constructor behaves like L<new()>, but returns a tied filehandle
+This constructor behaves like L<new>, but returns a tied filehandle
 rather than a L<Bio::AlignIO> object.  You can read sequences from this
 object using the familiar E<lt>E<gt> operator, and write to it using
-L<print()>. The usual array and $_ semantics work.  For example, you can
+L<print>. The usual array and $_ semantics work.  For example, you can
 read all sequence objects into an array like this:
 
   @sequences = <$fh>;
@@ -452,19 +452,21 @@ sub write_aln {
 sub _guess_format {
 my $class = shift;
    return unless $_ = shift;
-   return 'clustalw' if /\.aln$/i;
-   return 'emboss'   if /\.(water|needle)$/i;
-   return 'metafasta'if /\.metafasta$/;
-   return 'fasta'    if /\.(fasta|fast|seq|fa|fsa|nt|aa)$/i;
-   return 'maf'      if /\.maf/i;
-   return 'mega'     if /\.(meg|mega)$/i;
-   return 'meme'     if /\.meme$/i;
-   return 'msf'      if /\.(msf|pileup|gcg)$/i;
-   return 'nexus'    if /\.(nexus|nex)$/i;
-   return 'pfam'     if /\.(pfam|pfm)$/i;
-   return 'phylip'   if /\.(phylip|phlp|phyl|phy|ph)$/i;
-   return 'psi'      if /\.psi$/i;
-   return 'selex'    if /\.(selex|slx|selx|slex|sx)$/i;
+   return 'clustalw'    if /\.aln$/i;
+   return 'emboss'      if /\.(water|needle)$/i;
+   return 'metafasta'   if /\.metafasta$/;
+   return 'fasta'       if /\.(fasta|fast|seq|fa|fsa|nt|aa)$/i;
+   return 'maf'         if /\.maf/i;
+   return 'mega'        if /\.(meg|mega)$/i;
+   return 'meme'        if /\.meme$/i;
+   return 'msf'         if /\.(msf|pileup|gcg)$/i;
+   return 'nexus'       if /\.(nexus|nex)$/i;
+   return 'pfam'        if /\.(pfam|pfm)$/i;
+   return 'phylip'      if /\.(phylip|phlp|phyl|phy|ph)$/i;
+   return 'psi'         if /\.psi$/i;
+   return 'stockholm'   if /\.stk$/i;
+   return 'selex'       if /\.(selex|slx|selx|slex|sx)$/i;
+   return 'xmfa'        if /\.xmfa$/i;
 }
 
 sub DESTROY {

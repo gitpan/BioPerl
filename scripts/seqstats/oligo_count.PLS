@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: oligo_count.PLS,v 1.4 2006/07/04 22:23:29 mauricio Exp $
+# $Id: oligo_count.PLS 15088 2008-12-04 02:49:09Z bosborne $
 #
 # oligomer_freq.pl
 # We use this to determine what primers are useful for frequent priming of

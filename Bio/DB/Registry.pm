@@ -1,4 +1,4 @@
-# $Id: Registry.pm,v 1.32.4.4 2006/11/30 09:24:00 sendu Exp $
+# $Id: Registry.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # POD documentation - main docs before the code
 
@@ -10,7 +10,7 @@ Bio::DB::Registry - Access to the Open Bio Database Access registry scheme
 
     use Bio::DB::Registry();
 
-    $registry = new Bio::DB::Registry();
+    $registry = Bio::DB::Registry->new();
 
     @available_services = $registry->services;
 

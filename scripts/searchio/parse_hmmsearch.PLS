@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: parse_hmmsearch.PLS,v 1.3 2006/07/04 22:23:29 mauricio Exp $
+# $Id: parse_hmmsearch.PLS 15120 2008-12-09 03:11:13Z cjfields $
 
 use strict;
 
@@ -49,7 +49,7 @@ web:
 
 =head1 AUTHOR
 
-  Mauricio Herrera Cuadra <arareko-at-campus.iztacala.unam.mx>
+  Mauricio Herrera Cuadra <mauricio at open-bio.org>
 
 =cut
 

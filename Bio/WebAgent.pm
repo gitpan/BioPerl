@@ -1,4 +1,4 @@
-# $Id: WebAgent.pm,v 1.12.4.3 2006/11/08 17:25:54 sendu Exp $
+# $Id: WebAgent.pm 10834 2006-11-08 13:28:43Z sendu $
 #
 # BioPerl module for Bio::WebAgent
 #

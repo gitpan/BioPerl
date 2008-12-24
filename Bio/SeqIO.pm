@@ -1,4 +1,4 @@
-# $Id: SeqIO.pm,v 1.92.4.5 2006/12/05 20:54:39 sendu Exp $
+# $Id: SeqIO.pm 15257 2008-12-24 05:27:05Z cjfields $
 #
 # BioPerl module for Bio::SeqIO
 #
@@ -170,12 +170,12 @@ some HTML tags:
   use Bio::SeqIO;
   use IO::String;
   my $in  = Bio::SeqIO->new(-file => "emblfile",
-  			                   -format => 'EMBL');
+  		            -format => 'EMBL');
   while ( my $seq = $in->next_seq() ) {
       # the output handle is reset for every file
       my $stringio = IO::String->new($string);
       my $out = Bio::SeqIO->new(-fh => $stringio,
-  			                       -format => 'fasta');
+  			        -format => 'fasta');
       # output goes into $string
       $out->write_seq($seq);
       # modify $string
@@ -191,11 +191,11 @@ genbank, embl, swiss (SwissProt), Entrez Gene and tracefile formats
 such as abi (ABI) and scf. There are many more, for a complete listing
 see the SeqIO HOWTO (L<http://bioperl.open-bio.org/wiki/HOWTO:SeqIO>).
 
-If no format is specified and a filename is given then the module
-will attempt to deduce the format from the filename suffix. If
-there is no suffix that Bioperl understands then it will attempt
-to guess the format based on file content. If this is unsuccessful
-then Fasta format is assumed.
+If no format is specified and a filename is given then the module will
+attempt to deduce the format from the filename suffix. If there is no
+suffix that Bioperl understands then it will attempt to guess the
+format based on file content. If this is unsuccessful then Fasta
+format is assumed.
 
 The format name is case-insensitive: 'FASTA', 'Fasta' and 'fasta' are
 all valid.
@@ -220,11 +220,11 @@ improve the efficiency of writing multiple sequences to the same file
 (or filehandle), pass the -flush option '0' or any other value that
 evaluates as defined but false:
 
-  my $gb = new Bio::SeqIO -file   => "<gball.gbk",
-                          -format => "gb";
-  my $fa = new Bio::SeqIO -file   => ">gball.fa",
-                          -format => "fasta",
-                          -flush  => 0; # go as fast as we can!
+  my $gb = Bio::SeqIO->new(-file   => "<gball.gbk",
+                           -format => "gb");
+  my $fa = Bio::SeqIO->new(-file   => ">gball.fa",
+                           -format => "fasta",
+                           -flush  => 0); # go as fast as we can!
   while($seq = $gb->next_seq) { $fa->write_seq($seq) }
 
 
@@ -267,9 +267,9 @@ These provide the tie interface.  See L<perltie> for more details.
 
 =head2 Mailing Lists
 
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
-to one of the Bioperl mailing lists.
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.
 
 Your participation is much appreciated.
 
@@ -305,13 +305,9 @@ use strict;
 use Bio::Factory::FTLocationFactory;
 use Bio::Seq::SeqBuilder;
 use Bio::Tools::GuessSeqFormat;
-use Symbol();
+use Symbol;
 
 use base qw(Bio::Root::Root Bio::Root::IO Bio::Factory::SequenceStreamI);
-
-sub BEGIN {
-    eval { require Bio::SeqIO::staden::read; };
-}
 
 my %valid_alphabet_cache;
 

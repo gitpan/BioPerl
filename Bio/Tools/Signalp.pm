@@ -1,4 +1,4 @@
-# $Id: Signalp.pm,v 1.8.4.2 2006/10/19 18:44:40 jason Exp $
+# $Id: Signalp.pm 11480 2007-06-14 14:16:21Z sendu $
 # Parser module for Signalp Bio::Tools::Signalp
 #
 # 
@@ -89,7 +89,7 @@ use base qw(Bio::Root::Root Bio::Root::IO);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::Tools::Signalp();
+ Usage   : my $obj = Bio::Tools::Signalp->new();
  Function: Builds a new Bio::Tools::Signalp object
  Returns : Bio::Tools::Signalp
  Args    : -fh/-file => $val, # for initing input, see Bio::Root::IO
@@ -133,7 +133,19 @@ sub next_result {
               if ($fact2 eq 'YES' and $self->_fact1 eq 'YES') {
                   
                   my $line = $self->_readline();
-		  my $end;
+                  
+                  ###########################################
+                  # modification to suit new SignalP output
+                  ###########################################
+					chomp $line;
+					#print STDERR "********** <$line>\n";
+					if ($line =~ /\s+D\s+.*/) {
+				  		$line = $self->_readline();
+					}
+					#print STDERR "********** <$line>\n";
+		  			my $end;
+		  		  ###########################################
+		  
               
                   if ($line =~ /Most likely cleavage site between pos\.\s+(\d+)/) {
                       my $end = $1;

@@ -1,4 +1,4 @@
-# $Id: chadoxml.pm,v 1.19.4.1 2006/10/02 23:10:28 sendu Exp $
+# $Id: chadoxml.pm 15044 2008-11-28 05:47:14Z cjfields $
 #
 # BioPerl module for Bio::SeqIO::chadoxml
 #
@@ -20,8 +20,13 @@ rather go through the SeqIO handler system:
     $writer = Bio::SeqIO->new(-file => ">chado.xml",
                               -format => 'chadoxml');
 
-    # assume you already have a Sequence object
+    # assume you already have Sequence or SeqFeature objects
     $writer->write_seq($seq_obj);
+
+    #after writing all seqs
+    $writer->close_chadoxml();
+
+
 
 =head1 DESCRIPTION
 
@@ -32,7 +37,10 @@ http://gmod.cvs.sourceforge.net/gmod/schema/chado/dat/chado.dtd).
 This is currently a write-only module.
 
     $seqio = Bio::SeqIO->new(-file => '>outfile.xml',
-                             -format => 'chadoxml');
+                             -format => 'chadoxml'
+                             -suppress_residues => 1,
+                             -allow_residues => 'chromosome',
+                             );
 
     # we have a Bio::Seq object $seq which is a gene located on
     # chromosome arm 'X', to be written out to chadoxml
@@ -42,6 +50,8 @@ This is currently a write-only module.
     # -- chromosome arm X in the example below.
 
     $seqio->write_seq(-seq=>$seq,
+                      -genus   => 'Homo',
+                      -species => 'sapiens',
                       -seq_so_type=>'gene',
                       -src_feature=>'X',
                       -src_feat_type=>'chromosome_arm',
@@ -201,7 +211,8 @@ package Bio::SeqIO::chadoxml;
 use strict;
 use English;
 
-use lib $ENV{CodeBase};
+use Carp;
+use Data::Dumper;
 use XML::Writer;
 use IO::File;
 use IO::Handle;
@@ -222,10 +233,11 @@ use Bio::SeqFeature::Tools::Unflattener;
 undef(my %finaldatahash); #data from Bio::Seq object stored in a hash
 undef(my %datahash); #data from Bio::Seq object stored in a hash
 
-my $chadotables = 'feature featureprop feature_relationship featureloc feature_cvterm cvterm cv feature_pub pub pub_dbxref pub_author author pub_relationship pubprop feature_dbxref dbxref db';
+my $chadotables = 'feature featureprop feature_relationship featureloc feature_cvterm cvterm cv feature_pub pub pub_dbxref pub_author author pub_relationship pubprop feature_dbxref dbxref db synonym feature_synonym';
 
 my %fkey = (
 	"cvterm.cv_id"			=> "cv",
+        "cvterm.dbxref_id"              => "dbxref",
 	"dbxref.db_id"			=> "db",
 	"feature.type_id" 		=> "cvterm",
 	"feature.organism_id" 		=> "organism",
@@ -234,6 +246,7 @@ my %fkey = (
 	"feature_pub.pub_id" 		=> "pub",
 	"feature_cvterm.cvterm_id"	=> "cvterm",
 	"feature_cvterm.pub_id"		=> "pub",
+        "feature_cvterm.feature_id"     => "feature",
 	"feature_dbxref.dbxref_id"	=> "dbxref",
 	"feature_relationship.object_id"	=> "feature",
 	"feature_relationship.subject_id"	=> "feature",
@@ -246,6 +259,16 @@ my %fkey = (
 	"pub_relationship.subj_pub_id"	=> "pub",
 	"pub_relationship.type_id"	=> "cvterm",
 	"pubprop.type_id"		=> "cvterm",
+        "feature_synonym.feature_id"    => "feature",
+        "feature_synonym.synonym_id"    => "synonym",
+        "feature_synonym.pub_id"        => "pub",
+        "synonym.type_id"               => "cvterm",
+);
+
+my %cv_name = (
+        'relationship'                  => 'relationship',
+        'sequence'                      => 'sequence',
+        'feature_property'              => 'feature_property',
 );
 
 my %feattype_args2so = (
@@ -260,7 +283,7 @@ my %feattype_args2so = (
 	"protein_bind"			=> "protein_binding_site",
 	"misc_feature"			=> "region",
 #	"prim_transcript"		=> "primary_transcript",
-	"CDS"				=> "protein",
+	"CDS"				=> "polypeptide",
 	"reg_element"			=> "regulatory_region",
 	"seq_variant"			=> "sequence_variant",
 	"mat_peptide"			=> "mature_peptide",
@@ -273,15 +296,21 @@ use base qw(Bio::SeqIO);
 
 sub _initialize {
 
-    my($self,@args) = @_;
+    my($self,%args) = @_;
 
-    $self->SUPER::_initialize(@args);
+    $self->SUPER::_initialize(%args);
     unless( defined $self->sequence_factory ) {
-        $self->sequence_factory(new Bio::Seq::SeqFactory
+        $self->sequence_factory(Bio::Seq::SeqFactory->new
                                 (-verbose => $self->verbose(),
                                  -type => 'Bio::Seq::RichSeq'));
     }
+    #optional arguments that can be passed in
+    $self->suppress_residues($args{'-suppress_residues'})
+        if defined $args{'-suppress_residues'};
 
+    $self->allow_residues($args{'-allow_residues'})
+        if defined $args{'-allow_residues'};
+    return;
 }
 
 =head2 write_seq
@@ -360,7 +389,7 @@ EOUSAGE
 
 	my ($self,@args) = @_;
 
-	my ($seq, $seq_so_type, $srcfeature, $srcfeattype, $nounflatten, $isanalysis, $datasource) =
+	my ($seq, $seq_so_type, $srcfeature, $srcfeattype, $nounflatten, $isanalysis, $datasource, $genus, $species) =
 	   $self->_rearrange([qw(SEQ
 				 SEQ_SO_TYPE
 				 SRC_FEATURE
@@ -368,6 +397,8 @@ EOUSAGE
 				 NOUNFLATTEN
 				 IS_ANALYSIS
 				 DATA_SOURCE
+                                 GENUS
+                                 SPECIES
 				 )],
 			      @args);
 	#print "$seq_so_type, $srcfeature, $srcfeattype\n";
@@ -377,8 +408,16 @@ EOUSAGE
 	}
 
 	if( ! ref $seq || ! $seq->isa('Bio::Seq::RichSeqI') ) {
-	    $self->warn(" $seq is not a RichSeqI compliant module. Attempting to dump, but may fail!");
+	   ## FIXME $self->warn(" $seq is not a RichSeqI compliant module. Attempting to dump, but may fail!");
 	}
+
+        # try to get the srcfeature from the seqFeature object
+        # for this to work, the user has to pass in the srcfeature type
+        if (!$srcfeature) {
+            if ($seq->can('seq_id')) {
+                $srcfeature=$seq->seq_id if ($seq->seq_id ne $seq->display_name);
+            }    
+        }
 
 	#$srcfeature, when provided, should contain at least one alphabetical letter
 	if (defined $srcfeature)
@@ -408,7 +447,10 @@ EOUSAGE
         my $div = undef;
 	my $hkey = undef;
 	undef(my @top_featureprops);
-	my $name = $seq->display_id;
+        undef(my @featuresyns);
+        undef(my @top_featurecvterms);
+	my $name = $seq->display_id if $seq->can('display_id');
+        $name = $seq->display_name  if $seq->can('display_name');
 	undef(my @feature_cvterms);
 	undef(my %sthash);
 	undef(my %dvhash);
@@ -441,11 +483,17 @@ EOUSAGE
 
 	local($^W) = 0; # supressing warnings about uninitialized fields.
 
+        if (!$name && $seq->can('attributes') ) {
+            ($name) = $seq->attributes('Alias'); 
+        }
+
 	if ($seq->can('accession_number') && defined $seq->accession_number && $seq->accession_number ne 'unknown') {
 		$uniquename = $seq->accession_number;
 	} elsif ($seq->can('accession') && defined $seq->accession && $seq->accession ne 'unknown') {
 		$uniquename = $seq->accession;
-	} else {
+	} elsif ($seq->can('attributes')) {
+                ($uniquename) = $seq->attributes('load_id');
+        } else {
 		$uniquename = $name;
 	}
         my $len = $seq->length();
@@ -455,7 +503,7 @@ EOUSAGE
 
 	undef(my $gb_type);
 	if (!$seq->can('molecule') || ! defined ($gb_type = $seq->molecule()) ) {
-		$gb_type = $seq->alphabet || 'DNA';
+		$gb_type = $seq->can('alphabet') ? $seq->alphabet : 'DNA';
 	}
 	$gb_type = 'DNA' if $ftype eq 'dna';
 	$gb_type = 'RNA' if $ftype eq 'rna';
@@ -463,24 +511,43 @@ EOUSAGE
 	if (defined $seq_so_type) {
 		$ftype = $seq_so_type;
 	}
+        elsif ($seq->type) {
+                $ftype = ($seq->type =~ /(.*):/)
+                         ? $1
+                         : $seq->type;
+        }
 	else {
 		$ftype = $gb_type;
 	}
 
-	my %ftype_hash = ( "name" => $ftype, "cv_id" => {"name" => 'SO'});
+	my %ftype_hash = $self->return_ftype_hash($ftype);
 
-	my $spec = $seq->species();
-	if (!defined $spec) {
+        if ($species) {
+            %organism = ("genus"=>$genus, "species" => $species);
+        }
+        else {
+	    my $spec = $seq->species();
+	    if (!defined $spec) {
 		$self->throw("$seq does not know what organism it is from, which is required by chado. cannot proceed!\n");
-	} else {
+	    } else {
 		%organism = ("genus"=>$spec->genus(), "species" => $spec->species());
-	}
+	    }
+        }
 
-        my $residues = $seq->seq || '';
+        my $residues;
+        if (!$self->suppress_residues ||
+            ($self->suppress_residues && $self->allow_residues eq $ftype)) {
+            $residues = $seq->seq->isa('Bio::PrimarySeq') 
+                        ? $seq->seq->seq 
+                        : $seq->seq;
+        }
+        else {
+            $residues = '';
+        }
 
 	#set is_analysis flag for gene model features
 	undef(my $isanal);
-	if ($ftype eq 'gene' || $ftype eq 'mRNA' || $ftype eq 'exon' || $ftype eq 'protein') {
+	if ($ftype eq 'gene' || $ftype eq 'mRNA' || $ftype eq 'exon' || $ftype eq 'protein' || $ftype eq 'polypeptide') {
 		$isanal = $isanalysis;
 		$isanal = 'false' if !defined $isanal;
 	}
@@ -492,8 +559,34 @@ EOUSAGE
 		"residues"	=> $residues,
 		"type_id"	=> \%ftype_hash,
 		"organism_id"	=> \%organism,
-		"is_analysis"	=> $isanal,
+		"is_analysis"	=> $isanal || 'false',
 		);
+
+        if (defined $srcfeature) {
+                %srcfhash = $self->_srcf_hash($srcfeature,
+                                              $srcfeattype,
+                                              \%organism);
+              
+                my ($phase,$strand);
+                if ($seq->can('phase')) {
+                    $phase = $seq->phase;
+                } 
+
+                if ($seq->can('strand')) {
+                    $strand = $seq->strand;
+                }
+                my %fl = (
+                                "srcfeature_id" => \%srcfhash,
+                                "fmin"          => $seq->start - 1,
+                                "fmax"          => $seq->end,
+                                "strand"        => $strand,
+                                "phase"         => $phase,
+                                );
+
+                $datahash{'featureloc'} = \%fl;
+ 
+        }
+
 
 	#if $srcfeature is not given, use the Bio::Seq object itself as the srcfeature for featureloc's
 	if (!defined $srcfeature) {
@@ -508,7 +601,7 @@ EOUSAGE
 
 	if ($datasource =~ /GenBank/i) {
 		#sequence topology as feature_cvterm
-		if ($seq->is_circular) {
+		if ($seq->can('is_circular') && $seq->is_circular) {
 			%sthash = (
 				"cvterm_id"	=> {'name' => 'circular',
 						    'cv_id' => {
@@ -561,7 +654,7 @@ EOUSAGE
 		}
 
 		$datahash{'feature_cvterm'} = \@feature_cvterms;
-	}
+	} # closes if GenBank
 
 	#featureprop's
 	#DEFINITION
@@ -571,7 +664,10 @@ EOUSAGE
 		my %prophash = (
 			"type_id" 	=> {'name' => 'description',
 					    'cv_id' => {
-						'name' => 'property type'}},
+						'name' => 
+                                                 $cv_name{'feature_property'} 
+                                                       },
+                                           },
 			"value"		=> $temp,
 			);
 
@@ -584,11 +680,13 @@ EOUSAGE
 
 	    if (defined $temp && $temp ne '.' && $temp ne '') {
 		my %prophash = (
-				"type_id"       => {'name' => 'keywords',
-						    'cv_id' =>
-						    {'name' => 'property type'}
+				"type_id"   => {'name' => 'keywords',
+					        'cv_id' => {
+                                                  'name' => 
+                                                   $cv_name{'feature_property'}
+                                                           }
 						},
-				"value"          => $temp,
+				"value"     => $temp,
                         	);
 
 		push(@top_featureprops, \%prophash);
@@ -596,24 +694,59 @@ EOUSAGE
         }
 
 	#COMMENT
-	if ($seq->can('annotation')) {
+	if ($seq->can('annotation')) { 
 		$ann = $seq->annotation();
 		foreach my $comment ($ann->get_Annotations('comment')) {
 			$temp = $comment->as_text();
 			#print "fcomment: $temp\n";
 			my %prophash = (
-				"type_id"	=> {'name' => 'comment',
-						    'cv_id' =>
-						    {'name' => 'property type'}},
-				"value"		=> $temp,
+				"type_id"   => {'name' => 'comment',
+					        'cv_id' => {
+                                                  'name' => 
+                                                   $cv_name{'feature_property'}
+                                                           }
+                                               },
+				"value"     => $temp,
 				);
 
 			push(@top_featureprops, \%prophash);
 		}
 	}
 
+        my @top_dbxrefs = ();
+        #feature object from Bio::DB::SeqFeature::Store
+        if ($seq->can('attributes')) {
+                my %attributes = $seq->attributes;
+                for my $key (keys %attributes) {
+                    next if ($key eq 'parent_id');
+                    next if ($key eq 'load_id');
+
+                    if ($key eq 'Alias') {
+                        @featuresyns = $self->handle_Alias_tag($seq,@featuresyns);
+                    }
+
+                    ###FIXME deal with Dbxref, Ontology_term,source, 
+                    elsif ($key eq 'Ontology_term') {
+                        @top_featurecvterms = $self->handle_Ontology_tag($seq,@top_featurecvterms);
+                    }
+
+                    elsif ($key eq 'dbxref' or $key eq 'Dbxref') {
+                        @top_dbxrefs = $self->handle_dbxref($seq, $key, @top_dbxrefs);
+                    }
+
+                    elsif ($key =~ /^[a-z]/) {
+                        @top_featureprops 
+                             = $self->handle_unreserved_tags($seq,$key,@top_featureprops);
+                    }
+                }
+        }
+        $datahash{'feature_synonym'} = \@featuresyns;
+
+        if ($seq->can('source')) {
+                @top_dbxrefs = $self->handle_source($seq,@top_dbxrefs);
+        }
+
 	#accession and version as feature_dbxref
-	my @top_dbxrefs = ();
 	if ($seq->can('accession_number') && defined $seq->accession_number && $seq->accession_number ne 'unknown') {
 	    my $db = $self->_guess_acc_db($seq, $seq->accession_number);
 	    my %acchash = (
@@ -847,7 +980,7 @@ EOUSAGE
 		    my %parf = (
 				'uniquename'	=> $uniquename . ':' . $ref->start . "\.\." . $ref->end,
 				'organism_id'	=>\%organism,
-				'type_id'	=>{'name' =>'region', 'cv_id' => {'name' => 'SO'}},
+				'type_id'	=>{'name' =>'region', 'cv_id' => {'name' => $cv_name{'sequence'} }},
 				);
 		    my %parfsrcf = (
 				    'uniquename'	=> $uniquename,
@@ -862,7 +995,7 @@ EOUSAGE
 		    $parf{'feature_pub'} = {'pub_id' => \%pubhash};
 		    my %ffr = (
 			       'subject_id'	=> \%parf,
-			       'type_id'		=> { 'name' => 'partof', 'cv_id' => { 'name' => 'relationship type'}},
+			       'type_id'		=> { 'name' => 'partof', 'cv_id' => { 'name' => $cv_name{'relationship'}}},
 			       );
 		    push(@top_featrels, \%ffr);
 		}
@@ -872,11 +1005,9 @@ EOUSAGE
 
 	##construct srcfeature hash for use in featureloc
 	if (defined $srcfeature) {
-		%srcfhash = ('uniquename' 	=> $srcfeature,
-				'organism_id'   => \%organism,
-				'type_id' 	=> {'name' => $srcfeattype, 'cv_id' => {'name' => 'SO'}},
-			);
-
+                %srcfhash = $self->_srcf_hash($srcfeature, 
+                                              $srcfeattype, 
+                                              \%organism);
 	#	my %fr = (
 	#		"object_id"	=> \%srcfhash,
 	#		"type_id"	=> { 'name' => 'partof', 'cv_id' => { 'name' => 'relationship type'}},
@@ -900,9 +1031,9 @@ EOUSAGE
 	if ($datasource =~ /GenBank/i) {
 		$tag_cv = 'GenBank feature qualifier';
 	} elsif ($datasource =~ /GFF/i) {
-		$tag_cv = 'GFF tag';
+		$tag_cv = 'feature_property';
 	} else {
-		$tag_cv = 'property type';
+		$tag_cv = $cv_name{'feature_property'};
 	}
 
 	my $si = 0;
@@ -916,12 +1047,17 @@ EOUSAGE
 		if ($prim_tag eq 'source') {
 			foreach $tag ($feat->all_tags()) {
 				#db_xref
-				if ($tag eq 'db_xref')   {
+				if ($tag eq 'db_xref' 
+                                 or $tag eq 'Dbxref'
+                                 or $tag eq 'dbxref')   {
 					my @t1 = $feat->each_tag_value($tag);
 					foreach $temp (@t1) {
-					   $temp =~ /:/;
-					   my $db = $PREMATCH;
-					   my $xref = $POSTMATCH;
+					   $temp =~ /([^:]*?):(.*)/;
+                                           my $db = $1; 
+                                           my $xref = $2;
+                                           #PRE/POST very inefficent
+					   #my $db = $PREMATCH;
+					   #my $xref = $POSTMATCH;
 					   my %acchash = (
 						"db_id"		=> {'name' => $db},
 						"accession"	=> $xref,
@@ -929,7 +1065,13 @@ EOUSAGE
 					   my %fdbx = ('dbxref_id' => \%acchash);
 					   push (@top_dbxrefs, \%fdbx);
 					}
-				#other tags as featureprops
+                                #Ontology_term
+                                } elsif ($tag eq 'Ontology_term') {
+                                        my @t1 = $feat->each_tag_value($tag);
+                                        foreach $temp (@t1) {
+                                            ###FIXME
+                                        }
+				#other tags as featureprop
 				} elsif ($tag ne 'gene') {
 					my %prophash = undef;
 					%prophash = (
@@ -940,21 +1082,32 @@ EOUSAGE
 				}
 			}
 
+                        if ($feat->can('source')) {
+                            my $source = $feat->source();
+                            @top_dbxrefs = $self->handle_source($feat, @top_dbxrefs);
+                        }
+
 			#featureloc for the top-level feature
 			my $fmin = undef;
 			my $fmax = undef;
 			my $strand = undef;
+                        my $phase = undef;
 			my %fl = undef;
 
 			$fmin = $feat->start - 1;
 			$fmax = $feat->end;
 			$strand = $feat->strand;
 
+                        if ($feat->can('phase')) {
+                            $phase = $feat->phase;
+                        }
+
 			%fl = (
 				"srcfeature_id"	=> \%srcfhash,
 				"fmin"		=> $fmin,
 				"fmax"		=> $fmax,
 				"strand"	=> $strand,
+                                "phase"         => $phase,
 				);
 
 			$datahash{'featureloc'} = \%fl;
@@ -992,10 +1145,14 @@ EOUSAGE
 		$datahash{'feature_relationship'} = \@top_featrels;
 	}
 
+        if (@top_featurecvterms) {
+                $datahash{'feature_cvterm'} = \@top_featurecvterms;
+        }
+
 	if ($ftype eq 'mRNA' && %finaldatahash) {
 		$finaldatahash{'feature_relationship'} = {
 						'subject_id'	=> \%datahash,
-						'type_id'	=> { 'name' => 'partof', 'cv_id' => { 'name' => 'relationship type'}},
+						'type_id'	=> { 'name' => 'partof', 'cv_id' => { 'name' => $cv_name{'relationship'} }},
 							 };
 	} else {
 		%finaldatahash = %datahash;
@@ -1014,8 +1171,6 @@ sub _hash2xml {
     my $ult = shift;
     my $ref = shift;
     my %mh = %$ref;
-    undef(my $writer);
-    $writer = shift if (@_);
     my $key;
     my $v;
     my $sh;
@@ -1026,18 +1181,9 @@ sub _hash2xml {
     my $output;
     my $root = shift if (@_);
     #print "ult: $ult\n";
-    if (!defined $writer) {
+    if (!defined $self->{'writer'}) {
 	$root = 1;
-	$writer = new XML::Writer(OUTPUT => $self->_fh,
-				  DATA_MODE => 1,
-				  DATA_INDENT => 3);
-
-	#print header
-	$writer->xmlDecl("UTF-8");
-	$writer->comment("created by Peili Zhang, Flybase, Harvard University");
-
-	#start chadoxml
-	$writer->startTag('chado');
+        $self->_create_writer();
     }
     my $temp;
     my %subh = undef;
@@ -1047,28 +1193,28 @@ sub _hash2xml {
     #requires that the journal name itself is also stored as a pubprop record for the journal with value equal
     #to the journal name and type of 'abbreviation'.
     if ($ult eq 'pub' && $mh{'type_id'}->{'name'} eq 'journal') {
-	$writer->startTag($ult, 'ref' => $mh{'title'} . ':journal:abbreviation');
+	$self->{'writer'}->startTag($ult, 'ref' => $mh{'title'} . ':journal:abbreviation');
     }
 
     #special pub match if pub uniquename not known
     elsif ($ult eq 'pub' && !defined $mh{'uniquename'}) {
-	$writer->startTag($ult, 'op' => 'match');
+	$self->{'writer'}->startTag($ult, 'op' => 'match');
 	#set the match flag, all the sub tags should also have "op"="match"
 	$isMatch = 1;
     }
 
     #if cvterm or cv, lookup only
     elsif (($ult eq 'cvterm') || ($ult eq 'cv')) {
-	$writer->startTag($ult, 'op' => 'lookup');
+	$self->{'writer'}->startTag($ult, 'op' => 'lookup');
     }
 
     #if nested tables of match table, match too
     elsif ($isMatch) {
-	$writer->startTag($ult, 'op' => 'match');
+	$self->{'writer'}->startTag($ult, 'op' => 'match');
     }
 
     else {
-	$writer->startTag($ult);
+	$self->{'writer'}->startTag($ult);
     }
 
     #first loop to produce xml for all the table columns
@@ -1080,9 +1226,9 @@ sub _hash2xml {
 	if (index($chadotables, $xx) < 0 && index($chadotables, $yy) < 0)
 	{
 	    if ($isMatch) {
-		$writer->startTag($key, 'op' => 'match');
+		$self->{'writer'}->startTag($key, 'op' => 'match');
 	    } else {
-		$writer->startTag($key);
+		$self->{'writer'}->startTag($key);
 	    }
 
 	    my $x = $ult . '.' . $key;
@@ -1091,13 +1237,13 @@ sub _hash2xml {
 	    {
 		$nt = $fkey{$x};
 		$sh = $mh{$key};
-		$self->_hash2xml($isMatch, $nt, $sh, $writer, 0);
+		$self->_hash2xml($isMatch, $nt, $sh, 0);
 	    } else
 	    {
 		#print "$key: $mh{$key}\n";
-		$writer->characters($mh{$key});
+		$self->{'writer'}->characters($mh{$key});
 	    }
-	    $writer->endTag($key);
+	    $self->{'writer'}->endTag($key);
 	}
     }
 
@@ -1114,12 +1260,12 @@ sub _hash2xml {
 	    $ntref = $mh{$key};
 	    #print "$key: ", ref($ntref), "\n";
 	    if (ref($ntref) =~ 'HASH') {
-		$self->_hash2xml($isMatch, $key, $ntref, $writer, 0);
+		$self->_hash2xml($isMatch, $key, $ntref, 0);
 	    } elsif (ref($ntref) =~ 'ARRAY') {
 		#print "array dim: ", $#$ntref, "\n";
 		foreach $ref (@$ntref) {
 				#print "\n";
-		    $self->_hash2xml($isMatch, $key, $ref, $writer, 0);
+		    $self->_hash2xml($isMatch, $key, $ref, 0);
 		}
 	    }
 	    #$writer->endTag($key);
@@ -1127,11 +1273,11 @@ sub _hash2xml {
     }
 
     #end tag
-    $writer->endTag($ult);
+    $self->{'writer'}->endTag($ult);
 
-    if ($root == 1) {
-	$writer->endTag('chado');
-    }
+    #if ($root == 1) {
+#	$self->{'writer'}->endTag('chado');
+#    }
 }
 
 sub _guess_acc_db {
@@ -1206,7 +1352,7 @@ sub _subfeat2featrelhash {
 
 	#set is_analysis flag for gene model features
 	undef(my $isanal);
-	if ($sftype eq 'gene' || $sftype eq 'mRNA' || $sftype eq 'exon' || $sftype eq 'protein') {
+	if ($sftype eq 'gene' || $sftype eq 'mRNA' || $sftype eq 'exon' || $sftype eq 'protein' || $sftype eq 'polypeptide') {
 		$isanal = $isanalysis;
 	}
 
@@ -1214,8 +1360,8 @@ sub _subfeat2featrelhash {
 		"name"			=> $sfname,
 		"uniquename"		=> $sfunique,
 		"organism_id"		=> \%organism,
-		"type_id"		=> { 'name' => $sftype, 'cv_id' => { 'name' => 'SO'}},
-		"is_analysis"           => $isanal,
+		"type_id"		=> { 'name' => $sftype, 'cv_id' => { 'name' => $cv_name{'sequence'} }},
+		"is_analysis"           => $isanal || 'false',
 		);
 
 	#make a copy of %sfhash for passing to this method when recursively called
@@ -1232,9 +1378,14 @@ sub _subfeat2featrelhash {
 	undef(my $is_sfmin_partial);
 	undef(my $is_sfmax_partial);
 	undef(my $sfstrand);
+        undef(my $sfphase);
 	$sfmin = $feat->start - 1;
 	$sfmax = $feat->end;
 	$sfstrand = $feat->strand();
+
+        if ($feat->can('phase')) {
+            $sfphase = $feat->phase;
+        }
 
 	#if the gene feature in an mRNA record, cannot use its coordinates, omit featureloc
 	if ($seqtype eq 'mRNA' && $sftype eq 'gene') {
@@ -1251,10 +1402,11 @@ sub _subfeat2featrelhash {
 		my %sfl = (
 			"srcfeature_id"	=> \%srcf,
 			"fmin"		=> $sfmin,
-			"is_fmin_partial" => $is_sfmin_partial || '',
+			"is_fmin_partial" => $is_sfmin_partial || 'false',
 			"fmax"		=> $sfmax,
-			"is_fmax_partial" => $is_sfmax_partial || '',
+			"is_fmax_partial" => $is_sfmax_partial || 'false',
 			"strand"	=> $sfstrand,
+                        "phase"         => $sfphase,
 			);
 
 		$sfhash{'featureloc'} = \%sfl;
@@ -1264,9 +1416,11 @@ sub _subfeat2featrelhash {
 	#subfeature tags
 	undef(my @sfdbxrefs);		#subfeature dbxrefs
 	undef(my @sub_featureprops);	#subfeature props
+        undef(my @sub_featuresyns);     #subfeature synonyms
+        undef(my @sub_featurecvterms);  #subfeature cvterms
 	foreach my $tag ($feat->all_tags()) {
 		#feature_dbxref for features
-		if ($tag eq 'db_xref')   {
+		if ($tag eq 'db_xref' or $tag eq 'dbxref' or $tag eq 'Dbxref')   {
 			my @t1 = $feat->each_tag_value($tag);
 			#print "# of dbxref: @t1\n";
 			for my $temp (@t1) {
@@ -1281,8 +1435,15 @@ sub _subfeat2featrelhash {
 			   my %sfdbx = ('dbxref_id' => \%acchash);
 			   push (@sfdbxrefs, \%sfdbx);
 			}
+                #Alias tags
+                } elsif ($tag eq 'Alias') {
+                        @sub_featuresyns = $self->handle_Alias_tag($feat, @sub_featuresyns);
+                } elsif ($tag eq 'Ontology_term') {
+                        @sub_featurecvterms = $self->handle_Ontology_tag($feat, @sub_featurecvterms);
 		#featureprop for features, excluding GFF Name & Parent tags
 		} elsif ($tag ne 'gene' && $tag ne 'symbol' && $tag ne 'Name' && $tag ne 'Parent') {
+                        next if ($tag eq 'parent_id');
+                        next if ($tag eq 'load_id');
 			foreach my $val ($feat->each_tag_value($tag)) {
 				my %prophash = undef;
 				%prophash = (
@@ -1293,12 +1454,23 @@ sub _subfeat2featrelhash {
 			}
 		}
 	}
+
+        if ($feat->can('source')) {
+                @sfdbxrefs = $self->handle_source($feat,@sfdbxrefs);
+        }
+
 	if (@sub_featureprops) {
 		$sfhash{'featureprop'} = \@sub_featureprops;
 	}
 	if (@sfdbxrefs) {
 		$sfhash{'feature_dbxref'} = \@sfdbxrefs;
 	}
+        if (@sub_featuresyns) {
+                $sfhash{'feature_synonym'} = \@sub_featuresyns;
+        }
+        if (@sub_featurecvterms) {
+                $sfhash{'feature_cvterm'} = \@sub_featurecvterms;
+        }
 
 	undef(my @ssfeatrel);
 	if ($feat->has_tag('locus_tag')) {
@@ -1321,15 +1493,12 @@ sub _subfeat2featrelhash {
 
 	#subj-obj relationship type
 	undef(my $reltypename);
-	if ($sftype eq 'protein') {
-		$reltypename = 'producedby';
-	} else {
-		$reltypename = 'partof';
-	}
+        $reltypename = return_reltypename($sftype);
 
 	my %fr = (
 		"subject_id"	=> \%sfhash,
-		"type_id"		=> { 'name' => $reltypename, 'cv_id' => { 'name' => 'relationship type'}},
+		"type_id"		=> { 'name' => $reltypename, 
+                                             'cv_id' => { 'name' => $cv_name{'relationship'} }},
 		);
 
 	if ($seqtype eq 'mRNA' && $sftype eq 'gene') {
@@ -1466,5 +1635,532 @@ sub _getSubmitAddr {
 	}
     }
 }
+
+
+=head2 suppress_residues
+
+=over
+
+=item Usage
+
+  $obj->suppress_residues()        #get existing value
+  $obj->suppress_residues($newval) #set new value
+
+=item Function
+
+Keep track of the flag to suppress printing of residues in the chadoxml file.
+The default it to allow all residues to go into the file.
+
+=item Returns
+
+value of suppress_residues (a scalar)
+
+=item Arguments
+
+new value of suppress_residues (to set)
+
+=back
+
+=cut
+
+sub suppress_residues {
+    my $self = shift;
+    my $suppress_residues = shift if defined(@_);
+    return $self->{'suppress_residues'} = $suppress_residues if defined($suppress_residues);
+    return $self->{'suppress_residues'};
+}
+
+=head2 allow_residues
+
+=over
+
+=item Usage
+
+  $obj->allow_residues()        #get existing value
+  $obj->allow_residues($feature_type) #set new value
+
+=item Function
+
+Track the allow_residues type.  This can be used in conjunction with the
+suppress_residues flag to only allow residues from a specific feature type
+to be printed in the xml file, for example, only printing chromosome
+residues.  When suppress_residues is set to true, then only chromosome
+features would would go into the xml file.  If suppress_residues is not
+set, this function has no effect (since the default is to put all residues
+in the xml file).
+
+=item Returns
+
+value of allow_residues (a string that corresponds to a feature type)
+
+=item Arguments
+
+new value of allow_residues (to set)
+
+=back
+
+=cut
+
+sub allow_residues {
+    my $self = shift;
+    my $allow_residues = shift if defined(@_);
+    return $self->{'allow_residues'} = $allow_residues if defined($allow_residues);
+    return $self->{'allow_residues'};
+}
+
+=head2 return_ftype_hash
+
+=over
+
+=item Usage
+
+  $obj->return_ftype_hash()
+
+=item Function
+
+A simple hash where returning it has be factored out of the main
+code to allow subclasses to override it.
+
+=item Returns
+
+A hash that indicates what the name of the SO term is and what
+the name of the Sequence Ontology is in the cv table.
+
+=item Arguments
+
+The string that represents the SO term.
+
+=back
+
+=cut
+
+sub return_ftype_hash {
+    my $self  = shift;
+    my $ftype = shift;
+    my %ftype_hash = ( "name" => $ftype,
+                       "cv_id" => {"name" => $cv_name{'sequence'} });
+    return %ftype_hash;
+}
+
+=head2 return_reltypename
+
+=over
+
+=item Usage
+
+  $obj->return_reltypename()
+
+=item Function
+
+Return the appropriate relationship type name depending on the
+feature type (typically part_of, but derives_from for polypeptide).
+
+=item Returns
+
+A relationship type name.
+
+=item Arguments
+
+A SO type name.
+
+=back
+
+=cut
+
+sub return_reltypename {
+    my $self   = shift;
+    my $sftype = shift;
+
+    my $reltypename;
+    if ($sftype eq 'protein' || $sftype eq 'polypeptide') {
+        $reltypename = 'derives_from';
+    } else {
+        $reltypename = 'part_of';
+    }
+
+    return $reltypename;
+}
+
+=head2 next_seq
+
+=over
+
+=item Usage
+
+  $obj->next_seq()
+
+=item Function
+
+Not implemented--this is a write-only adapter.
+
+=item Returns
+
+=item Arguments
+
+=back
+
+=cut
+
+sub next_seq {
+    my ($self, %argv) = @_;
+
+    $self->throw('next_seq is not implemented; this is a write-only adapter.');
+
+}
+
+
+=head2 _create_writer
+
+=over
+
+=item Usage
+
+  $obj->_create_writer()
+
+=item Function
+
+Creates XML::Writer object and writes start tag
+
+=item Returns
+
+Nothing, though the writer persists as part of the chadoxml object
+
+=item Arguments
+
+None
+
+=back
+
+=cut
+
+sub _create_writer {
+    my $self = shift;
+
+    $self->{'writer'} = new XML::Writer(OUTPUT => $self->_fh,
+                                        DATA_MODE => 1,
+                                        DATA_INDENT => 3);
+
+    #print header
+    $self->{'writer'}->xmlDecl("UTF-8");
+    $self->{'writer'}->comment("created by Peili Zhang, Flybase, Harvard University\n".
+                               "and Scott Cain, GMOD, Cold Spring Harbor Laboratory");
+
+    #start chadoxml
+    $self->{'writer'}->startTag('chado');
+
+    return;
+}
+
+=head2 close_chadoxml
+
+=over
+
+=item Usage
+
+  $obj->close_chadoxml()
+
+=item Function
+
+Writes the closing xml tag
+
+=item Returns
+
+Nothing
+
+=item Arguments
+
+None
+
+=back
+
+=cut
+
+sub close_chadoxml {
+    my $self = shift;
+
+    $self->{'writer'}->endTag('chado');
+    return;
+}
+
+=head2 handle_unreserved_tags
+
+=over
+
+=item Usage
+
+  $obj->handle_unreserved_tags()
+
+=item Function
+
+Converts tag value pairs to xml-ready hashrefs
+
+=item Returns
+
+The array containing the hashrefs
+
+=item Arguments
+
+In order: the Seq or SeqFeature object, the key, and the hasharray
+
+=back
+
+=cut
+
+sub handle_unreserved_tags {
+    my $self = shift;
+    my $seq  = shift;
+    my $key  = shift;
+    my @arr  = @_;
+
+    my @values = $seq->attributes($key);
+    for my $value (@values) {
+        my %prophash = (
+           "type_id"     => {'name' => $key,
+                             'cv_id' => { 'name' => $cv_name{'feature_property'} }
+                            },
+                            "value"       => $value,
+                       );
+        push(@arr, \%prophash);
+    }
+
+    return @arr;
+}
+
+=head2 handle_Alias_tag
+
+=over
+
+=item Usage
+
+  $obj->handle_Alias_tag()
+
+=item Function
+
+Convert Alias values to synonym hash refs
+
+=item Returns
+
+An array of synonym hash tags
+
+=item Arguments
+
+The seq or seqFeature object and the synonym hash array
+
+=back
+
+=cut
+
+sub handle_Alias_tag {
+    my $self = shift;
+    my $seq  = shift;
+    my @arr  = @_;
+
+    my @Aliases = $seq->attributes('Alias');
+    for my $Alias (@Aliases) {
+        my %synhash = (
+                  "type_id"   => { 'name' => 'exact',
+                                  'cv_id' => { 'name'  => 'synonym_type' } },
+                                 "name"         => $Alias,
+                                 "synonym_sgml" => $Alias,
+                      );
+        push(@arr, {'synonym_id' => \%synhash,
+                    'pub_id'     => {'uniquename' => 'null',
+                                     'type_id'    => { 'name' => 'null',
+                                                       'cv_id' => {
+                                                            'name' => 'null', 
+                                                                  },
+                                                     },
+                                    },
+                   });
+    }
+
+    return @arr;
+}
+
+=head2 handle_Ontology_tag 
+
+=over
+
+=item Usage
+
+  $obj->handle_Ontology_tag ()
+
+=item Function
+
+Convert Ontology_term values to ontology term hash refs
+
+=item Returns
+
+An array of ontology term hash refs
+
+=item Arguments
+
+The seq or seqFeature object and the ontology term array
+
+=back
+
+=cut
+
+sub handle_Ontology_tag  {
+    my $self = shift;
+    my $seq  = shift;
+    my @arr  = @_;
+
+    my @terms = $seq->attributes('Ontology_term');
+    for my $term (@terms) {
+        my $hashref;
+        if ($term =~ /(\S+):(\S+)/) {
+            my $db  = $1;
+            my $acc = $2;
+            $hashref = {
+                    'cvterm_id' => {
+                        'dbxref_id' => {
+                           'db_id' => { 'name' => $db },
+                           'accession' => $acc
+                                      },
+                                   },
+                       };
+        }
+        push(@arr, {cvterm_id => $hashref});
+    }
+
+    return @arr;
+}
+
+=head2 handle_dbxref
+
+=over
+
+=item Usage
+
+  $obj->handle_dbxref()
+
+=item Function
+
+Convert Dbxref values to dbxref hashref
+
+=item Returns
+
+An array of dbxref hashrefs
+
+=item Arguments
+
+A seq or seqFeature object and the dbxref array 
+
+=back
+
+=cut
+
+sub handle_dbxref {
+    my $self = shift;
+    my $seq  = shift;
+    my $tag  = shift;
+    my @arr  = @_;
+
+    my @terms = $seq->attributes($tag);
+    for my $term (@terms) {
+        my $hashref;
+        if ($term =~ /(\S+):(\S+)/) {
+            my $db = $1;
+            my $acc= $2;
+            my $version = 1;
+            if ($acc =~ /(\S+)\.(\S+)/) {
+                $acc = $1;
+                $version = $2;
+            }
+            $hashref = {
+                         'dbxref_id' => {
+                               'db_id' => { 'name' => $db },
+                               'accession' => $acc,
+                               'version'   => $version,
+                                        },
+                       };
+        }
+        else {
+            $self->throw("I don't know how to handle a dbxref like $term");
+        }
+        push(@arr, {'dbxref_id' => $hashref});
+    }
+    return @arr;
+}
+
+=head2 handle_source
+
+=over
+
+=item Usage
+
+  $obj->handle_source()
+
+=item Function
+
+=item Returns
+
+=item Arguments
+
+=back
+
+=cut
+
+sub handle_source {
+    my $self = shift;
+    my $seq  = shift;
+    my @arr  = @_;
+
+    my $source = $seq->source();
+    return @arr unless $source;
+
+    my $hashref = {
+               'dbxref_id' => {
+                       'db_id' => {'name' => 'GFF_source'},
+                       'accession' => $source,
+                              }
+                  };
+
+    push(@arr, {'dbxref_id' => $hashref});
+    return @arr;
+}
+
+=head2 _srcf_hash
+
+=over
+
+=item Usage
+
+  $obj->_srcf_hash()
+
+=item Function
+
+Creates the srcfeature hash for use in featureloc hashes
+
+=item Returns
+
+The srcfeature hash
+
+=item Arguments
+
+The srcfeature name, the srcfeature type and a reference to the
+organism hash.
+
+=back
+
+=cut
+
+sub _srcf_hash {
+    my $self = shift;
+    my $srcf = shift;
+    my $stype= shift;
+    my $orgref = shift;
+
+    my %hash = ('uniquename'    => $srcf,
+                'organism_id'   => $orgref,
+                'type_id'       => {'name' => $stype, 
+                                    'cv_id' =>
+                                       {'name' => $cv_name{'sequence'} }},
+               );
+
+    return %hash;
+}
+
 
 1;

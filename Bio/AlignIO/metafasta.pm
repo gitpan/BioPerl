@@ -1,4 +1,4 @@
-# $Id: metafasta.pm,v 1.6.4.2 2006/11/08 17:25:54 sendu Exp $
+# $Id: metafasta.pm 11113 2007-01-16 19:31:05Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::metafasta
 #
@@ -153,9 +153,9 @@ sub next_aln {
 		}
 	}
     }
-    return $aln;
+    return $aln if $aln->no_sequences;
+	return;
 }
-
 
 =head2 write_aln
 

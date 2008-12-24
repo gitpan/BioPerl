@@ -1,4 +1,4 @@
-# $Id: AnalysisResult.pm,v 1.17.4.1 2006/10/02 23:10:31 sendu Exp $
+# $Id: AnalysisResult.pm 10525 2006-09-26 22:03:22Z sendu $
 #
 # BioPerl module for Bio::Tools::AnalysisResult
 #

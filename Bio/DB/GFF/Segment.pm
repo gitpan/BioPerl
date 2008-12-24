@@ -308,6 +308,7 @@ sub seq {
   my $self = shift;
   my $dna = $self->dna;
   require Bio::PrimarySeq unless Bio::PrimarySeq->can('new');
+  return Bio::PrimarySeq->new(-id => $self->display_name) unless $dna;
   return Bio::PrimarySeq->new(-seq => $dna,
 			      -id  => $self->display_name);
 }
@@ -833,7 +834,7 @@ See L<Bio::Annotation> for more information
 sub annotation {
    my ($obj,$value) = @_;
    if( defined $value || ! defined $obj->{'annotation'} ) {
-       $value = new Bio::Annotation::Collection() unless defined $value;
+       $value = Bio::Annotation::Collection->new() unless defined $value;
       $obj->{'annotation'} = $value;
     }
     return $obj->{'annotation'};

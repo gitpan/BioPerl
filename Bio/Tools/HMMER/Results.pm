@@ -1,4 +1,4 @@
-# $Id: Results.pm,v 1.28.4.1 2006/10/02 23:10:33 sendu Exp $
+# $Id: Results.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # Perl Module for HMMResults
 #
@@ -13,7 +13,7 @@ Bio::Tools::HMMER::Results - Object representing HMMER output results
 =head1 SYNOPSIS
 
    # parse a hmmsearch file (can also parse a hmmpfam file)
-   $res = new Bio::Tools::HMMER::Results( -file => 'output.hmm' ,
+   $res = Bio::Tools::HMMER::Results->new( -file => 'output.hmm' ,
                                           -type => 'hmmsearch');
 
    # print out the results for each sequence

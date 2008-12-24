@@ -1,4 +1,4 @@
-# $Id: SequenceFamily.pm,v 1.10.4.1 2006/10/02 23:10:13 sendu Exp $
+# $Id: SequenceFamily.pm 14708 2008-06-10 00:08:17Z heikki $
 #
 # BioPerl module for Bio::Cluster::SequenceFamily
 #
@@ -20,9 +20,10 @@ Bio::Cluster::SequenceFamily - Sequence Family object
 
   use Bio::SeqIO;
   use Bio::Cluster::SequenceFamily;
+  use File::Spec;
 
-  my $file =  Bio::Root::IO->catfile('t','data','swiss.dat');
-  my $seqio= new Bio::SeqIO(-format => 'swiss',
+  my $file =  File::Spec->catfile('t','data','swiss.dat');
+  my $seqio= Bio::SeqIO->new(-format => 'swiss',
                             -file => $file);
   my @mem;
   while(my $seq = $seqio->next_seq){
@@ -93,7 +94,6 @@ methods. Internal methods are usually preceded with a "_".
 package Bio::Cluster::SequenceFamily;
 
 use strict;
-
 
 use base qw(Bio::Root::Root Bio::Cluster::FamilyI);
 
@@ -394,14 +394,15 @@ sub cluster_score{
 sub add_members{
     my ($self,@mems) = @_;
 
-    my $mem = shift(@mems);
-    if(ref($mem) eq "ARRAY"){
-	push @{$self->{'_members'}},@{$mem};
-    } else {
-	push @{$self->{'_members'}},$mem;
+    if (@mems) {
+        my $mem = shift(@mems);
+        if(ref($mem) eq "ARRAY"){
+            push @{$self->{'_members'}},@{$mem};
+        } else {
+            push @{$self->{'_members'}},$mem;
+        }
+        push @{$self->{'_members'}}, @mems;
     }
-    push @{$self->{'_members'}}, @mems;
-
     return 1;
 }
 
@@ -428,6 +429,14 @@ sub remove_members{
 
 *flush_members = \&remove_members;
 *add_member = \&add_members;
+
+=head2 members
+
+ Title   : members
+ Usage   : $members = $fam->members([$seq1,$seq1]);
+ Function: Deprecated. Use add_members() or get_members() instead
+
+=cut
 
 sub members{
     my $self = shift;

@@ -1,4 +1,4 @@
-# $Id: Fasta.pm,v 1.10.4.1 2006/10/02 23:10:24 sendu Exp $
+# $Id: Fasta.pm 10581 2006-09-29 01:23:40Z tseemann $
 #
 # BioPerl module for Bio::Search::Hit::Fasta
 #

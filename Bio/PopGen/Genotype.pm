@@ -1,4 +1,4 @@
-# $Id: Genotype.pm,v 1.10.4.1 2006/10/02 23:10:23 sendu Exp $
+# $Id: Genotype.pm 11649 2007-08-26 22:29:45Z jason $
 #
 # BioPerl module for Bio::PopGen::Genotype
 #
@@ -17,7 +17,7 @@ Bio::PopGen::Genotype - An implementation of GenotypeI which is just an allele c
 =head1 SYNOPSIS
 
   use Bio::PopGen::Genotype;
-  my $genotype = new Bio::PopGen::Genotype(-marker_name   => $name,
+  my $genotype = Bio::PopGen::Genotype->new(-marker_name   => $name,
                                            -individual_id => $indid,
                                            -alleles       => \@alleles);
 
@@ -75,7 +75,7 @@ package Bio::PopGen::Genotype;
 use vars qw($BlankAlleles);
 use strict;
 
-$BlankAlleles = '[\s\-N\?]';
+$BlankAlleles = '[\s\-Nn\?]';
 
 
 # Object preamble - inherits from Bio::Root::Root
@@ -87,7 +87,7 @@ use base qw(Bio::Root::Root Bio::PopGen::GenotypeI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::PopGen::Genotype();
+ Usage   : my $obj = Bio::PopGen::Genotype->new();
  Function: Builds a new Bio::PopGen::Genotype object 
  Returns : an instance of Bio::PopGen::Genotype
  Args    : -marker_name   => string representing name of the marker
@@ -168,15 +168,16 @@ sub individual_id {
 =cut
 
 sub get_Alleles{
-    my ($self,$showblank) = @_;
-    if( $showblank ) {
+    my ($self) = shift;
+    
+     if( @_ && $_[0] ) {
 	return @{$self->{'_alleles'} || []};
     } else {
-	return @{$self->{'_cached_noblank'}} 
-	   if( defined $self->{'_cached_noblank'} );
-	    
+	if( defined $self->{'_cached_noblank'} ) {
+	    return @{$self->{'_cached_noblank'}} 
+	}
 	# one liners - woo hoo.
-	$self->{'_cached_noblank'} = [ grep { ! /^\s*$BlankAlleles\s*$/oi } 
+	$self->{'_cached_noblank'} = [ grep { ! /^\s*$BlankAlleles\s*$/o } 
 				       @{$self->{'_alleles'} || []}];
 	return @{$self->{'_cached_noblank'}};
     }
@@ -197,9 +198,9 @@ sub get_Alleles{
 =cut
 
 sub add_Allele {
-    my ($self,@alleles) = @_;
-    $self->{'_cached_noblank'} = undef;
-    push @{$self->{'_alleles'}}, @alleles;
+    my ($self) = shift;
+    $self->{'_cached_noblank'} = undef;    
+    push @{$self->{'_alleles'}}, @_;
     return scalar @{$self->{'_alleles'}};
 }
 

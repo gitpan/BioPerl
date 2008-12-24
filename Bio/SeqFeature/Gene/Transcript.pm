@@ -1,4 +1,4 @@
-# $Id: Transcript.pm,v 1.38.4.1 2006/10/02 23:10:28 sendu Exp $
+# $Id: Transcript.pm 10554 2006-09-28 04:09:02Z tseemann $
 #
 # BioPerl module for Bio::SeqFeature::Gene::Transcript
 #

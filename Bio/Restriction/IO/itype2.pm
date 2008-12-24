@@ -1,4 +1,4 @@
-# $Id: itype2.pm,v 1.6.4.1 2006/10/02 23:10:23 sendu Exp $
+# $Id: itype2.pm 14575 2008-03-01 02:32:01Z cjfields $
 # BioPerl module for Bio::Restriction::IO::itype2
 #
 # Cared for by Rob Edwards <redwards@utmem.edu>
@@ -69,30 +69,6 @@ use Data::Dumper;
 
 use base qw(Bio::Restriction::IO::base);
 
-
-
-sub new {
-    my($class, @args) = @_;
-    my $self = bless {}, $class;
-
-    $self->_initialize(@args);
-    return $self;
-}
-
-sub _initialize {
-    my($self,@args) = @_;
-
-    my ($verbose) =
-            $self->_rearrange([qw(
-                                  VERBOSE
-                                 )], @args);
-    $verbose || 0;
-    $self->verbose($verbose);
-
-    $self->_companies;
-    return unless $self->SUPER::_initialize(@args);
-}
-
 =head2 read
 
  Title   : read
@@ -110,7 +86,7 @@ L<Bio::Restriction::IO::base::_create_enzyme>.
 sub read {
     my $self = shift;
 
-    my $renzs = new Bio::Restriction::EnzymeCollection(-empty => 1);
+    my $renzs = Bio::Restriction::EnzymeCollection->new(-empty => 1);
 
     # read until start of data
     while (defined( my $line = $self->_readline()) ) {
@@ -153,7 +129,7 @@ sub read {
         ($site, $cut, $comp_cut) = $self->_cuts_from_site($site);
 
 
-        my $re = new Bio::Restriction::Enzyme(-name=>$name,
+        my $re = Bio::Restriction::Enzyme->new(-name=>$name,
                                               -site => $site
                                              );
         $renzs->enzymes($re);
@@ -167,8 +143,11 @@ sub read {
         #
         # prototype 
         #
+        
+        # presence of a name means the prototype isoschizomer, absence means
+        # this enzyme is the prototype
 
-        $prototype ? $re->prototype_name($prototype) : $re->is_prototype;
+        $prototype ? $re->prototype_name($prototype) : $re->is_prototype(1);
 
 
         #

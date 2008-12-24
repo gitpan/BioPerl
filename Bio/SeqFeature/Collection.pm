@@ -1,4 +1,4 @@
-# $Id: Collection.pm,v 1.18.4.1 2006/10/02 23:10:28 sendu Exp $
+# $Id: Collection.pm 14840 2008-08-29 16:45:38Z cjfields $
 #
 # BioPerl module for Bio::SeqFeature::Collection
 #
@@ -22,8 +22,9 @@ range, that match a certain feature type, etc.
   use Bio::Location::Simple;
   use Bio::Tools::GFF;
   use Bio::Root::IO;
+  use File::Spec;
   # let's first input some features
-  my $gffio = Bio::Tools::GFF->new(-file => Bio::Root::IO->catfile
+  my $gffio = Bio::Tools::GFF->new(-file => File::Spec->catfile
   				 ("t","data","myco_sites.gff"),
   				 -gff_version => 2);
   my @features = ();
@@ -34,7 +35,7 @@ range, that match a certain feature type, etc.
   }
   $gffio->close();
   # build the Collection object
-  my $col = new Bio::SeqFeature::Collection();
+  my $col = Bio::SeqFeature::Collection->new();
   # add these features to the object
   my $totaladded = $col->add_features(\@features);
 
@@ -71,14 +72,14 @@ easily quering for subsets of a large range set.
 Collections can be made persistant by keeping the indexfile and
 passing in the -keep flag like this:
 
-  my $collection = new Bio::SeqFeature::Collection(-keep => 1,
+  my $collection = Bio::SeqFeature::Collection->new(-keep => 1,
                                                    -file => 'col.idx');
   $collaction->add_features(\@features);
   undef $collection;
 
   # To reuse this collection, next time you initialize a Collection object
   # specify the filename and the index will be reused.
-  $collection = new Bio::SeqFeature::Collection(-keep => 1,
+  $collection = Bio::SeqFeature::Collection->new(-keep => 1,
                                                 -file => 'col.idx');
 
 
@@ -135,7 +136,7 @@ use Bio::Location::Simple;
 use Bio::SeqFeature::Generic;
 use Storable qw(freeze thaw);
 
-use base qw(Bio::Root::Root);
+use base qw(Bio::Root::Root Bio::SeqFeature::CollectionI);
 
 
 # This may need to get re-optimized for BDB usage as these
@@ -151,7 +152,7 @@ use constant MIN_BIN    => 1_000;
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::SeqFeature::Collection();
+ Usage   : my $obj = Bio::SeqFeature::Collection->new();
  Function: Builds a new Bio::SeqFeature::Collection object
  Returns : Bio::SeqFeature::Collection
  Args    :
@@ -191,6 +192,7 @@ sub new {
   $self->keep($keep);
   $self->{'_btree'} = tie %{$self->{'_btreehash'}},
   'DB_File', $self->indexfile, O_RDWR|O_CREAT, 0640, $DB_BTREE;
+  $self->{'_btree'} || $self->throw("Unable to tie DB_File handle");
   return $self;
 }
 
@@ -287,7 +289,7 @@ sub features_in_range{
        }
        ($start,$end,$strand) = ($range->start,$range->end,$range->strand);
    }
-   my $r = new Bio::Location::Simple(-start => $start,
+   my $r = Bio::Location::Simple->new(-start => $start,
 				     -end   => $end,
 				     -strand => $strand);
 

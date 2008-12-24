@@ -1,6 +1,6 @@
 package Bio::DB::SeqFeature::NormalizedFeature;
 
-# $Id: NormalizedFeature.pm,v 1.13.4.5 2006/11/08 17:25:54 sendu Exp $
+# $Id: NormalizedFeature.pm 15119 2008-12-09 02:08:10Z lstein $
 
 =head1 NAME
 
@@ -58,7 +58,7 @@ loader, pass Bio::DB::SeqFeature::Store::GFF3Loader-E<gt>new() the
 
 use strict;
 use Carp 'croak';
-use base 'Bio::Graphics::FeatureBase';
+use base 'Bio::SeqFeature::Lite';
 use base 'Bio::DB::SeqFeature::NormalizedFeatureI';
 use overload '""' => \&as_string,
               eq  => \&eq,
@@ -176,7 +176,7 @@ sub seq {
     return Bio::PrimarySeq->new(-seq => $store->fetch_sequence($self->seq_id,$start,$end) || '',
 				-id  => $self->display_name);
   } else {
-    return $self->SUPER::seq($self->seq_id,$start,$end);
+      return $self->SUPER::seq($self->seq_id,$start,$end);
   }
 }
 
@@ -409,17 +409,24 @@ sub _add_segment {
   my @segments   = $self->_create_subfeatures($normalized,@_);
 
   # fix boundaries
-  $self->_fix_boundaries(\@segments,$normalized);
+  $self->_fix_boundaries(\@segments);
 
   # freakish fixing of our non-standard Target attribute
   $self->_fix_target(\@segments);
+
+  for my $seg (@segments) {
+    my $id  = $normalized ? $seg->primary_id : $seg;
+    defined $id or $self->throw("No primary ID when there should be");
+    push @{$self->{segments}},$id;
+  };
 
   $self->update if $self->primary_id; # write us back to disk
 }
 
 sub _fix_boundaries {
-  my $self     = shift;
-  my ($segments,$normalized) = @_;
+  my $self       = shift;
+  my $segments   = shift;
+  my $normalized = shift;
 
   my $min_start = $self->start ||  999_999_999_999;
   my $max_stop  = $self->end   || -999_999_999_999;
@@ -427,9 +434,6 @@ sub _fix_boundaries {
   for my $seg (@$segments) {
     $min_start     = $seg->start if $seg->start < $min_start;
     $max_stop      = $seg->end   if $seg->end   > $max_stop;
-    my $id_or_seg  = $normalized ? $seg->primary_id : $seg;
-    defined $id_or_seg or $self->throw("No primary ID when there should be");
-    push @{$self->{segments}},$id_or_seg;
   }
 
   # adjust our boundaries, etc.
@@ -442,20 +446,24 @@ sub _fix_boundaries {
 sub _fix_target {
   my $self = shift;
   my $segs = shift;
+  my $normalized = shift;  # ignored for now
 
   # freakish fixing of our non-standard Target attribute
   if (my $t = ($self->attributes('Target'))[0]) {
     my ($seqid,$tstart,$tend,$strand) = split /\s+/,$t;
-    my $min_tstart = $tstart;
-    my $max_tend   = $tend;
-    for my $seg (@$segs) {
-      my $st = ($seg->attributes('Target'))[0] or next;
-      (undef,$tstart,$tend) = split /\s+/,$st;
-      $min_tstart     = $tstart if $tstart < $min_tstart;
-      $max_tend       = $tend   if $tend   > $max_tend;
-    }
-    if ($min_tstart < $tstart or $max_tend > $tend) {
-      $self->{attributes}{Target}[0] = join ' ',($seqid,$min_tstart,$max_tend,$strand||'');
+    if (defined $tstart && defined $tend) {
+	my $min_tstart = $tstart;
+	my $max_tend   = $tend;
+	for my $seg (@$segs) {
+	    my $st = ($seg->attributes('Target'))[0] or next;
+	    (undef,$tstart,$tend) = split /\s+/,$st;
+	    next unless defined $tstart && defined $tend;
+	    $min_tstart     = $tstart if $tstart < $min_tstart;
+	    $max_tend       = $tend   if $tend   > $max_tend;
+	}
+	if ($min_tstart < $tstart or $max_tend > $tend) {
+	    $self->{attributes}{Target}[0] = join ' ',($seqid,$min_tstart,$max_tend,$strand||'');
+	}
     }
   }
 }
@@ -465,25 +473,29 @@ sub format_attributes {
   my $self   = shift;
   my $parent = shift;
   my $load_id   = $self->load_id || '';
-  my ($target)  = split /\s+/,($self->attributes('Target'))[0];
-  $target ||= '';
+  my $targobj = ($self->attributes('Target'))[0];
+  # was getting an 'Use of uninitialized value with split' here, changed to cooperate -cjf 7/10/07
+  my ($target)  = $targobj ? split /\s+/,($self->attributes('Target'))[0] : ('');
   my @tags = $self->all_tags;
   my @result;
   for my $t (@tags) {
     my @values = $self->each_tag_value($t);
-    @values = grep {$_ ne $load_id && $_ ne $target} @values if $t eq 'Alias';
+
+    # This line prevents Alias from showing up if it matches the load id, but this is not good
+    # @values = grep {$_ ne $load_id && $_ ne $target} @values if $t eq 'Alias';
+
     # these are hacks, which we don't want to appear in the file
     next if $t eq 'load_id';
     next if $t eq 'parent_id';
-    foreach (@values) { s/\s+$// } # get rid of trailing whitespace
 
-    push @result,join '=',$self->escape($t),$self->escape($_) foreach @values;
+    foreach (@values) { s/\s+$// } # get rid of trailing whitespace
+    push @result,join '=',$self->escape($t),join(',', map {$self->escape($_)} @values) if @values;
   }
   my $id   = $self->primary_id;
   my $name = $self->display_name;
-  push @result,"ID=".$self->escape($id)                     if defined $id;
-  push @result,"Parent=".$self->escape($parent->primary_id) if defined $parent;
-  push @result,"Name=".$self->escape($name)                   if defined $name;
+  unshift @result,"ID=".$self->escape($id)                     if defined $id;
+  unshift @result,"Parent=".$self->escape($parent->primary_id) if defined $parent;
+  unshift @result,"Name=".$self->escape($name)                   if defined $name;
   return join ';',@result;
 }
 
@@ -495,10 +507,14 @@ sub _create_subfeatures {
   my $ref   = $self->seq_id;
   my $name  = $self->name;
   my $class = $self->class;
-  my $store = $self->object_store
-    or $self->throw("Feature must be associated with a Bio::DB::SeqFeature::Store database before attempting to add subfeatures");
+  my $store = $self->object_store;
+  my $source = $self->source;
 
-  my $index_subfeatures_policy = $store->index_subfeatures;
+  if ($normalized) {
+    $store or $self->throw("Feature must be associated with a Bio::DB::SeqFeature::Store database before attempting to add subfeatures to a normalized object");
+  }
+
+  my $index_subfeatures_policy = eval{$store->index_subfeatures};
 
   my @segments;
 
@@ -529,6 +545,7 @@ sub _create_subfeatures {
 				-type   => $type,
 			        -name   => $name,
 			        -class  => $class,
+				-source => $source,
 			       );
     }
 
@@ -543,6 +560,7 @@ sub _create_subfeatures {
 			 -primary_tag => $seg->primary_tag,
 			 -source_tag  => $seg->source,
 			 -score       => $score,
+			 -source => $source,
 			);
       for my $tag ($seg->get_all_tags) {
 	my @values = $seg->get_tag_values($tag);
@@ -693,7 +711,9 @@ format) provided.
 sub as_string {
   my $self = shift;
   return overload::StrVal($self) unless $self->overloaded_names;
-  my $name   = $self->display_name || $self->load_id || "id=".$self->primary_id;
+  my $name   = $self->display_name || $self->load_id;
+  $name    ||= "id=".$self->primary_id if $self->primary_id;
+  $name    ||= "<unnamed>";
   my $method = $self->primary_tag;
   my $source= $self->source_tag;
   my $type  = $source ? "$method:$source" : $method;

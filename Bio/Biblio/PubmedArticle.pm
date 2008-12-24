@@ -1,4 +1,4 @@
-# $Id: PubmedArticle.pm,v 1.9.4.3 2006/10/02 23:10:12 sendu Exp $
+# $Id: PubmedArticle.pm 11480 2007-06-14 14:16:21Z sendu $
 #
 # BioPerl module for Bio::Biblio::PubmedArticle
 #
@@ -13,7 +13,7 @@ Bio::Biblio::PubmedArticle - Representation of a PUBMED article
 
 =head1 SYNOPSIS
 
-    $obj = new Bio::Biblio::PubmedArticle
+    $obj = Bio::Biblio::PubmedArticle->new
                   (-pubmed_history_list =>
                        [ { 'pub_status' => 'pubmed',
                            'date' => '2001-12-1T10:0:00Z' },
@@ -22,7 +22,7 @@ Bio::Biblio::PubmedArticle - Representation of a PUBMED article
                    -pubmed_status => 'ppublish');
   #--- OR ---
 
-    $obj = new Bio::Biblio::PubmedArticle;
+    $obj = Bio::Biblio::PubmedArticle->new();
     $obj->pubmed_status ('ppublish');
 
 =head1 DESCRIPTION

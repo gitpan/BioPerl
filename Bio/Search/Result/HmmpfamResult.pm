@@ -1,4 +1,4 @@
-# $Id: HmmpfamResult.pm,v 1.1.2.4 2006/10/02 23:10:24 sendu Exp $
+# $Id: HmmpfamResult.pm 14984 2008-11-11 18:39:20Z sendu $
 #
 # BioPerl module for Bio::Search::Result::HmmpfamResult
 #
@@ -19,7 +19,7 @@ Bio::Search::Result::HmmpfamResult - A parser and result object for hmmpfam
 
     # generally we use Bio::SearchIO to build these objects
     use Bio::SearchIO;
-    my $in = new Bio::SearchIO(-format => 'hmmer_pull',
+    my $in = Bio::SearchIO->new(-format => 'hmmer_pull',
 							   -file   => 'result.hmmer');
 
     while (my $result = $in->next_result) {
@@ -74,7 +74,7 @@ use base qw(Bio::Root::Root Bio::Search::Result::PullResultI);
 =head2 new
 
  Title   : new
- Usage   : my $obj = new Bio::SearchIO::Result::hmmpfam();
+ Usage   : my $obj = Bio::SearchIO::Result::hmmpfam->new();
  Function: Builds a new Bio::SearchIO::Result::hmmpfam object 
  Returns : Bio::SearchIO::Result::hmmpfam
  Args    : -chunk  => [Bio::Root::IO, $start, $end] (required if no -parent)
@@ -207,8 +207,7 @@ sub _next_alignment {
 		
 		$self->{_after_previous_alignment} = $self->_chunk_tell;
 		$self->{_next_alignment_start_text} = $chunk;
-		$self->_next_alignment;
-		return;
+		return $self->_next_alignment;
 	}
 	
 	$self->_chunk_seek($self->{_after_previous_alignment});
@@ -228,6 +227,7 @@ sub _next_alignment {
 	if (defined $self->{_next_alignment_start_text}) {
 		$chunk = $self->{_next_alignment_start_text}.$chunk;
 	}
+	
 	$chunk =~ s/(\S+: domain)$//;
 	$self->{_next_alignment_start_text} = $1;
 	
@@ -244,7 +244,7 @@ sub _discover_next_hit {
 	#[name description score significance num_hsps rank]
 	my @hit_data = (@{$hit_table[$self->{_next_hit_index}++]}, $self->{_next_hit_index});
 	
-	$self->_fields->{next_hit} = new Bio::Search::Hit::HmmpfamHit(-parent => $self,
+	$self->_fields->{next_hit} = Bio::Search::Hit::HmmpfamHit->new(-parent => $self,
 																  -hit_data => \@hit_data);
 	
 	if ($self->{_next_hit_index} > $#hit_table) {
