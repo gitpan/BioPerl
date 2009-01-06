@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: strider.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: strider.t 15268 2008-12-26 03:18:50Z cjfields $
 
 use strict;
 
@@ -8,7 +8,7 @@ BEGIN {
     use Bio::Root::Test;
     
     test_begin(-tests               => 8,
-			   -requires_modules    => [],
+			   -requires_module    => 'Convert::Binary::C',
 			   -requires_networking => 0,
 			  );
 	

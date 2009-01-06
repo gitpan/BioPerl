@@ -858,8 +858,6 @@ Bio/Variation/VariantI.pm
 Bio/WebAgent.pm
 BUGS
 Build.PL
-Bundle-BioPerl-Core-1.5.9_001-ppm.tar.gz
-ChangeLog
 Changes
 DEPENDENCIES
 DEPRECATED
@@ -889,12 +887,6 @@ examples/biblio/biblio-eutils-example.pl
 examples/biblio/biblio-soap-example.pl
 examples/biblio/biblio_soap.pl
 examples/Bio-DB-GFF/load_ucsc.pl
-examples/biographics/all_glyphs.pl
-examples/biographics/dynamic_glyphs.pl
-examples/biographics/feature_data.gff
-examples/biographics/feature_data.txt
-examples/biographics/lots_of_glyphs.pl
-examples/biographics/render_sequence.pl
 examples/bioperl.pl
 examples/cluster/dbsnp.pl
 examples/contributed/nmrpdb_parse.pl
@@ -972,7 +964,6 @@ maintenance/symlink_script.pl
 maintenance/version.pl
 Makefile.PL
 MANIFEST			This list of files
-META.yml
 models/biblio.dia
 models/bio_liveseq_variation.dia
 models/bio_map.dia
@@ -1002,9 +993,6 @@ scripts/Bio-DB-GFF/README
 scripts/Bio-SeqFeature-Store/bp_seqfeature_delete.PLS
 scripts/Bio-SeqFeature-Store/bp_seqfeature_gff3.PLS
 scripts/Bio-SeqFeature-Store/bp_seqfeature_load.PLS
-scripts/biographics/bp_embl2picture.PLS
-scripts/biographics/bp_glyphs1-demo.PLS
-scripts/biographics/bp_glyphs2-demo.PLS
 scripts/das/README
 scripts/das/TAG
 scripts/DB/biofetch_genbank_proxy.PLS
@@ -1720,7 +1708,6 @@ t/data/worm_fam_2785.cdna
 t/data/X98338_Adh-mRNA.gb
 t/data/yeast.tRNAscanSE
 t/data/yn00.mlc
-t/Graphics/Pictogram.t
 t/lib/Array/Compare.pm
 t/lib/Error.pm
 t/lib/Sub/Uplevel.pm
@@ -2019,4 +2006,4 @@ t/Variation/RNAChange.t
 t/Variation/SeqDiff.t
 t/Variation/SNP.t
 t/Variation/Variation_IO.t
-test.txt
+META.yml

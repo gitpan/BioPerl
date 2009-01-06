@@ -1,4 +1,4 @@
-# $Id: PAML.pm 15231 2008-12-22 21:51:02Z cjfields $
+# $Id: PAML.pm 15287 2009-01-02 22:55:15Z cjfields $
 #
 # BioPerl module for Bio::Tools::Phylo::PAML
 #
@@ -1014,9 +1014,12 @@ sub _parse_NSsitesBatch {
                 }
                 if ( /^site class/ ) {
                     $self->_readline;
-                    my @p = $self->_readline =~ /(\d+\.\d{5})/g;
-                    my @b_w = $self->_readline =~ /(\d+\.\d{5})/g;
-                    my @f_w = $self->_readline =~ /(\d+\.\d{5})/g;
+                    my $tmp = $self->_readline;
+                    my @p = $tmp =~ /(\d+\.\d{5})/g;
+                    $tmp = $self->_readline;                    
+                    my @b_w = $tmp =~ /(\d+\.\d{5})/g;
+                    $tmp = $self->_readline;                    
+                    my @f_w = $tmp =~ /(\d+\.\d{5})/g;
                     my @w;
                     foreach my $i (0..$#b_w) {
                         push @w, { q/background/ => $b_w[$i],
@@ -1025,8 +1028,10 @@ sub _parse_NSsitesBatch {
                     $data{'-dnds_site_classes'} = { q/p/ => \@p,
                                                     q/w/ => \@w };
                 } else {
-		my @p = $self->_readline =~ /(\d+\.\d{5})/g;
-		my @w = $self->_readline =~ /(\d+\.\d{5})/g;
+                    my $tmp = $self->_readline;                    
+		my @p = $tmp =~ /(\d+\.\d{5})/g;
+                    $tmp = $self->_readline;                            
+		my @w = $tmp =~ /(\d+\.\d{5})/g;
 		$data{'-dnds_site_classes'} = { 'p' => \@p,
 						'w' => \@w};
                 }

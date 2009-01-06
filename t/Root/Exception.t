@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: Exception.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: Exception.t 15283 2009-01-02 22:16:55Z cjfields $
 
 use strict;
 
@@ -9,7 +9,8 @@ BEGIN {
 	use lib '.';
 	use Bio::Root::Test;
 	
-	test_begin(-tests => 8);
+	test_begin(-tests => 8,
+			   -requires_module => 'Error');
 	
 	use lib './examples/root/lib';
 	use_ok('TestObject');

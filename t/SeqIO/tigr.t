@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: tigr.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: tigr.t 15283 2009-01-02 22:16:55Z cjfields $
 
 use strict;
 
@@ -8,7 +8,7 @@ BEGIN {
     use Bio::Root::Test;
     
     test_begin(-tests               => 8,
-			   -requires_modules    => [],
+			   -requires_module     => 'Error',
 			   -requires_networking => 0,
 			  );
 	

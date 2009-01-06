@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: excel.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: excel.t 15283 2009-01-02 22:16:55Z cjfields $
 
 use strict;
 
@@ -8,7 +8,7 @@ BEGIN {
     use Bio::Root::Test;
     
     test_begin(-tests               => 4,
-			   -requires_modules    => [],
+			   -requires_module     => 'Spreadsheet::ParseExcel',
 			   -requires_networking => 0,
 			  );
 	

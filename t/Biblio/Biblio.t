@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: Biblio.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: Biblio.t 15283 2009-01-02 22:16:55Z cjfields $
 
 use strict;
 
@@ -40,21 +40,23 @@ SKIP: {
     is ($io->next_bibref->{'medlineID'}, 'Text495', 'citation 3');
 }
 
-
-print "Getting citations using callback...\n" if $verbose;
-my (@ids) = ('Text1', 'Text248', 'Text495');
-my $callback_used = 'no';
-$io = Bio::Biblio::IO->new('-format'   => 'medlinexml',
-			   '-file'     => $testfile,
-			  #'-result'   => 'medline2ref',  # this is default
-			   '-callback' => \&callback);
-
-is ( $callback_used, 'yes', 'calling callback');
-
-sub callback {
-	my $citation = shift;
-	$callback_used = 'yes';
-	is ($citation->{'_identifier'}, shift @ids);
+SKIP: {
+	test_skip(-tests => 1, -requires_module => 'XML::Parser');	
+	print "Getting citations using callback...\n" if $verbose;
+	my (@ids) = ('Text1', 'Text248', 'Text495');
+	my $callback_used = 'no';
+	$io = Bio::Biblio::IO->new('-format'   => 'medlinexml',
+				   '-file'     => $testfile,
+				  #'-result'   => 'medline2ref',  # this is default
+				   '-callback' => \&callback);
+	
+	is ( $callback_used, 'yes', 'calling callback');
+	
+	sub callback {
+		my $citation = shift;
+		$callback_used = 'yes';
+		is ($citation->{'_identifier'}, shift @ids);
+	}
 }
 
 SKIP: {

@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: abi.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: abi.t 15300 2009-01-06 01:00:43Z cjfields $
 
 use strict;
 
@@ -8,7 +8,7 @@ BEGIN {
     use Bio::Root::Test;
     
     test_begin(-tests => 7,
-			   -requires_module => 'Bio::SeqIO::staden::read 1.52');
+			   -requires_module => 'Bio::SeqIO::staden::read 1.006');
 	
 	use_ok('Bio::SeqIO');
 }
