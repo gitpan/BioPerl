@@ -1,4 +1,4 @@
-# $Id: phrap.pm 14938 2008-10-20 03:56:54Z fangly $
+# $Id: phrap.pm 15364 2009-01-13 17:18:10Z cjfields $
 #
 # BioPerl driver for phrap.out file
 #
@@ -192,10 +192,11 @@ sub next_assembly {
         if (/^\s+(\S+)\s+(\d+)\s+\((\d+)\)/) {
           my ($singletID, $length, $nof_trimmed_nonX) = ($1, $2, $3);
           # Create singlet object, and add it to scaffold
-          my $seq = Bio::Seq->new(
+          my $seq = Bio::LocatableSeq->new(
             -start      => 1,
             -end        => $length,
             -strand     => 1,
+            -nowarnonempty => 1,
             -id         => $singletID,
             -primary_id => $singletID,
             -alphabet   => 'dna');
@@ -236,6 +237,7 @@ sub next_assembly {
       my $seq = Bio::LocatableSeq->new(
         -start      => $start,
         -end        => $end,
+        -nowarnonempty => 1,
         -strand     => $strand,
         -id         => $readID,
         -primary_id => $readID,

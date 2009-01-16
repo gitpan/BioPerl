@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: DB.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: DB.t 15383 2009-01-16 16:45:08Z cjfields $
 
 use strict;
 
@@ -7,7 +7,7 @@ BEGIN {
 	use lib '.';
 	use Bio::Root::Test;
 	
-	test_begin(-tests => 116,
+	test_begin(-tests => 113,
 			   -requires_modules => [qw(IO::String
 									    LWP::UserAgent
 										HTTP::Request::Common)],
@@ -16,7 +16,6 @@ BEGIN {
 	use_ok('Bio::DB::GenBank');
 	use_ok('Bio::DB::GenPept');
 	use_ok('Bio::DB::SwissProt');
-    use_ok('Bio::DB::GDB');
     use_ok('Bio::DB::MeSH');
 }
 
@@ -340,17 +339,6 @@ SKIP: {
 }
 
 $seq = $seqio = undef;
-
-#
-# Bio::DB::GDB
-#
-ok my $gdb = Bio::DB::GDB->new();
-SKIP: {
-    my $info; 
-    eval {$info = $gdb->get_info(-type => 'marker', -id => 'D1S243');};
-    skip "Couldn't connect to GDB with Bio::DB::GDB.pm. Skipping those tests", 1 if $@;
-    is $info->{gdbid}, 'GDB:188393';
-}
 
 #
 # Bio::DB::EntrezGene

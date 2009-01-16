@@ -53,7 +53,7 @@ my $build = Bio::Root::Build->new(
                             'Graph'                     => '0/ontology engine implementation for the GO parser/Bio::PhyloNetwork',
                             'GraphViz'                  => '0/Phylogenetic Network Visulization/Bio::PhyloNetwork::GraphViz',
                             'HTML::Entities'            => '0/remote analysis POST submissions/Bio::SearchIO::blastxml',
-                            'HTML::Parser'              => '3/screen scraping www.gdb.org/Bio::DB::GDB',
+                            'HTML::HeadParser'          => '3/parsing <HEAD> section of HTML docs/Bio::Tools::Analysis::DNA::ESEfinder',
                             'HTTP::Request::Common'     => '0/GenBank+GenPept sequence retrieval, remote http Blast jobs/Bio::DB::*,Bio::Tools::Run::RemoteBlast,Bio::Tools::Analysis::Protein*,Bio::Tools::Analysis::DNA*',
                             'LWP::UserAgent'            => '0/remote access/Bio::DB::*,Bio::Tools::Run::RemoteBlast,Bio::WebAgent',
                             'Math::Random'              => '0/Random Phylogenetic Networks/Bio::PhyloNetwork::RandomFactory',
@@ -79,7 +79,7 @@ my $build = Bio::Root::Build->new(
     auto_features       => {
                             BioDBSeqFeature_BDB   => {
                                                         description      => "BDB tests for Bio::DB::SeqFeature::Store",
-                                                        feature_requires => { 'DB_File' => 0 } # feature_requires is like requires, execpt that it doesn't trigger installation
+                                                        feature_requires => { 'DB_File' => 0 } # feature_requires is like requires, except that it doesn't trigger installation
                                                      },
                             BioDBGFF              => {
                                                         description      => "BioDBGFF database tests (will need to answer questions before really enabling)",
@@ -115,15 +115,15 @@ my $build = Bio::Root::Build->new(
 
 my $accept = $build->args->{accept};
 
-prompt_for_biodb($accept) if $build->feature('BioDBGFF') || $build->feature('BioDBSeqFeature_mysql');
+my $proceed = prompt_for_biodb($accept) if $build->feature('BioDBGFF') || $build->feature('BioDBSeqFeature_mysql');
 
 # Handle auto features
-if ($build->feature('BioDBSeqFeature_BDB')) {
+if ($proceed && $build->feature('BioDBSeqFeature_BDB')) {
     # will return without doing anything if user chose not to run tests during
     # prompt_for_biodb() above
     make_bdb_test();
 }
-if ($build->feature('BioDBSeqFeature_mysql') or $build->feature('BioDBSeqFeature_Pg')) {
+if ($proceed && ($build->feature('BioDBSeqFeature_mysql') or $build->feature('BioDBSeqFeature_Pg'))) {
     make_dbi_test();
 }
 
@@ -170,7 +170,7 @@ sub make_bdb_test {
     unlink($path) if (-e $path); 
     open(my $F, ">", $path) || die "Can't create test file\n";
     print $F <<END;
-system 'perl $path0 -adaptor berkeleydb -create 1 -temp 1';
+system '$^X $path0 -adaptor berkeleydb -create 1 -temp 1';
 END
     close $F;
     $build->add_to_cleanup($path);
@@ -203,7 +203,7 @@ sub make_dbi_test {
     $str .= " -user $user" if $user;
     $str .= " -password $pass" if $pass;
     print $F <<END;
-    system 'perl $str';
+system '$^X $str';
 END
     close $F;
     $build->add_to_cleanup($path);
@@ -299,4 +299,5 @@ sub prompt_for_biodb {
     }
     
     $build->log_info("\n");
+    return $proceed;
 }

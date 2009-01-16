@@ -1,4 +1,4 @@
-# $Id: Fasta.pm 14950 2008-10-22 23:24:04Z jason $
+# $Id: Fasta.pm 15364 2009-01-13 17:18:10Z cjfields $
 #
 # BioPerl module for Bio::DB::Fasta
 #
@@ -1135,7 +1135,9 @@ sub revcom {
 
 sub length {
   my $self = shift;
-  return $self->{db}->length($self->{id});
+  #return $self->{db}->length($self->{id}); # wrong because ignores sequence start and stop values
+  return length($self->seq);
+
 }
 
 sub description  { 

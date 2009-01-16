@@ -1,4 +1,4 @@
-# $Id: blast.pm 15084 2008-12-03 22:31:23Z cjfields $
+# $Id: blast.pm 15383 2009-01-16 16:45:08Z cjfields $
 #
 # BioPerl module for Bio::SearchIO::blast
 #
@@ -449,8 +449,8 @@ sub next_result {
         next if (/CPU time:/);
         next if (/^>\s*$/);
         if (
-               /^((?:\S+?)?BLAST[NPX])\s+(.+)$/i  # NCBI BLAST, PSIBLAST
-                                                 # RPSBLAST, MEGABLAST
+               /^((?:\S+?)?BLAST[NPX]?)\s+(.+)$/i  # NCBI BLAST, PSIBLAST
+                                                   # RPSBLAST, MEGABLAST
             || /^(P?GENEWISE|HFRAME|SWN|TSWN)\s+(.+)/i    #Paracel BTK
           )
         {
@@ -1198,7 +1198,7 @@ sub next_result {
             );
             while ( defined( $_ = $self->_readline ) ) {
                 if (
-                    /^((?:\S+)?BLAST[NPX])\s+(.+)$/i  # NCBI BLAST, PSIBLAST
+                    /^((?:\S+)?BLAST[NPX]?)\s+(.+)$/i  # NCBI BLAST, PSIBLAST
                                                       # RPSBLAST, MEGABLAST
                     || /^(P?GENEWISE|HFRAME|SWN|TSWN)\s+(.+)/i    #Paracel BTK
                   )

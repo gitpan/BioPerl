@@ -1,26 +1,38 @@
-$Id: Changes 15261 2008-12-24 19:01:52Z cjfields $
+$Id: Changes 15383 2009-01-16 16:45:08Z cjfields $
   
 Revision history for Bioperl core modules
 
 Main trunk
 
-1.6.0  (currently Release Candidate 1)
+1.6 series
+
     The 1.6 series is derived from subversion HEAD and exists as a separate
     release branch.  This will represent the last of the alternating
-    developer/stable releases.  Code in svn HEAD will be divided up into
+    developer/stable releases.  Code in Subversion HEAD will be divided up into
     several smaller packages, including a developer subdistribution for
     code considered experimental, unstable, or untested.
     
     Full detail of changes included since the 1.5.2 release are online at:
     http://www.bioperl.org/wiki/Change_log.  Bugs remaining to be addressed
-    are online at http://bugzilla.open-bio.org, with specific bugs highlighted
-    in 
+    are online at http://bugzilla.open-bio.org, with specific bugs intended
+    for this release series highlighted in BUGS.
     
     The following represent the most important changes:
+    
+    1.6.0 Winter 2009
+    
+    o Feature/Annotation rollback
+      - Problematic changes introduced prior to the 1.5 release have been rolled
+        back.  These changes led to subtle bugs involving operator overloading
+        and interface methods.
+      - Behavior is very similar to that for BioPerl 1.4, with tag values being
+        stored generically as simple scalars.  Results in a modest speedup.
     
     o Bio::Graphics
       - Split into a separate distribution on CPAN, primarily so development
         isn't reliant on a complete BioPerl release.
+      - Bio::Graphics::Pictogram has been renamed to Bio::Draw::Pictogram but
+        is only available via Subversion (via bioperl-live main trunk)
 
     o Bio::Root::Test
       - Common test bed for all BioPerl modules
@@ -44,6 +56,7 @@ Main trunk
         and adequate test coverage.
 
 1.5.2 Developer release
+
     Full details of changes since 1.5.1 are available online at:
     http://www.bioperl.org/wiki/Change_log
     The following represents a brief overview of the most important changes.

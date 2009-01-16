@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: alf.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: alf.t 15383 2009-01-16 16:45:08Z cjfields $
 
 use strict;
 
@@ -8,9 +8,7 @@ BEGIN {
     use Bio::Root::Test;
     
     test_begin(-tests               => 8,
-			   -requires_modules    => [],
-			   -requires_networking => 0,
-			  );
+			   -requires_module     => 'Bio::SeqIO::staden::read');
 	
 	use_ok('Bio::SeqIO::alf');
 }
@@ -34,7 +32,7 @@ TODO: {
 	
 	# checking the first sequence object
 	my $seq_obj = $seqio_obj->next_seq();
-	isa_ok($seq_obj, 'Bio::Seq');
+	isa_ok($seq_obj, 'Bio::Seq::Quality');
 	my %expected = ('seq'         => '' .
 					'length'      => '',
 					'primary_id'  => '',

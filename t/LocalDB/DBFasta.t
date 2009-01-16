@@ -1,12 +1,12 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: DBFasta.t 15178 2008-12-16 12:48:21Z sendu $
+# $Id: DBFasta.t 15364 2009-01-13 17:18:10Z cjfields $
 
 
 BEGIN {     
     use lib '.';
 	use Bio::Root::Test;
 	
-	test_begin(-tests => 14,
+	test_begin(-tests => 15,
 			   -requires_module => 'Bio::DB::Fasta');
 	
 	use_ok('Bio::Root::IO');
@@ -41,6 +41,7 @@ is(length $db->seq('AW057119',1,10), 10);
 my $primary_seq = $db->get_Seq_by_id('AW057119');
 ok($primary_seq);
 cmp_ok(length($primary_seq->seq), '>', 0);
+is($primary_seq->trunc(1,10)->length, 10);
 ok(!defined $db->get_Seq_by_id('foobarbaz'));
 undef $db;
 undef $primary_seq;

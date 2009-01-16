@@ -1,4 +1,4 @@
-# $Id: Quality.pm 14531 2008-02-21 20:18:58Z cjfields $
+# $Id: Quality.pm 15383 2009-01-16 16:45:08Z cjfields $
 #
 # BioPerl module for Bio::Seq::Quality
 #
@@ -474,7 +474,7 @@ sub get_trace_graph
 }	
 
 
-################## deprecated methdods ##################
+################## deprecated methods ##################
 
 
 sub trace_indices {

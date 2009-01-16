@@ -1,4 +1,4 @@
-# $Id: MeSH.pm 11480 2007-06-14 14:16:21Z sendu $
+# $Id: MeSH.pm 15388 2009-01-16 17:39:19Z cjfields $
 #
 # BioPerl module for Bio::DB::MeSH
 #
@@ -264,8 +264,9 @@ sub result {
     my ($id) = m|Unique ID</TH><TD>(.*?)</TD>|i;
     my ($name) = m|MeSH Heading</TH><TD>([^<]+)|i;
     my ($desc) = m|Scope Note</TH><TD>(.*?)</TD>|is;
+    $self->throw("No description returned: $_") unless defined $desc;
     $desc =~ s/<.*?>//sg;
-	 $desc =~ s/\n/ /g;
+	$desc =~ s/\n/ /g;
 
     my $term = Bio::Phenotype::MeSH::Term->new(-id => $id,
                                                -name => $name,

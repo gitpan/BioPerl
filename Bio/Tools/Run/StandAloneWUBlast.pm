@@ -1,4 +1,4 @@
-# $Id: StandAloneWUBlast.pm 15231 2008-12-22 21:51:02Z cjfields $
+# $Id: StandAloneWUBlast.pm 15383 2009-01-16 16:45:08Z cjfields $
 #
 # BioPerl module for Bio::Tools::Run::StandAloneBlast
 #
@@ -264,15 +264,16 @@ sub _setparams {
     push(@execparams, 'o');
     
     # workaround for problems with shell metacharacters [bug 2707]
-    # simply quoting does not always work!    
+    # simply quoting does not always work!
+    # Fixed so Windows files are not quotemeta'd
     my $tmp = $self->o;
-    $self->o(quotemeta($tmp)) if $tmp;
+    $self->o(quotemeta($tmp)) if ($tmp && $^O !~ /^MSWin/);
     
     my $param_string = $self->SUPER::_setparams(-params => [@execparams],
                                                 -switches => \@WUBLAST_SWITCH,
                                                 -dash => 1);
     
-    $self->o($tmp) if $tmp;
+    $self->o($tmp) if ($tmp && $^O !~ /^MSWin/);
     
     if ($self->quiet()) { 
         $param_string .= ' 2> '.File::Spec->devnull;

@@ -137,7 +137,6 @@ Bio/DB/Flat/BDB/fasta.pm
 Bio/DB/Flat/BDB/genbank.pm
 Bio/DB/Flat/BDB/swiss.pm
 Bio/DB/Flat/BinarySearch.pm
-Bio/DB/GDB.pm
 Bio/DB/GenBank.pm
 Bio/DB/GenericWebAgent.pm
 Bio/DB/GenPept.pm
@@ -962,7 +961,6 @@ maintenance/pod.pl
 maintenance/README
 maintenance/symlink_script.pl
 maintenance/version.pl
-Makefile.PL
 MANIFEST			This list of files
 models/biblio.dia
 models/bio_liveseq_variation.dia
@@ -1787,7 +1785,6 @@ t/RemoteDB/CUTG.t
 t/RemoteDB/DB.t
 t/RemoteDB/EMBL.t
 t/RemoteDB/EUtilities.t
-t/RemoteDB/GDB.t
 t/RemoteDB/HIV/HIV.t
 t/RemoteDB/HIV/HIVAnnotProcessor.t
 t/RemoteDB/HIV/HIVQuery.t
@@ -2006,4 +2003,5 @@ t/Variation/RNAChange.t
 t/Variation/SeqDiff.t
 t/Variation/SNP.t
 t/Variation/Variation_IO.t
+Makefile.PL
 META.yml

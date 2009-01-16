@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: Biblio.t 15283 2009-01-02 22:16:55Z cjfields $
+# $Id: Biblio.t 15364 2009-01-13 17:18:10Z cjfields $
 
 use strict;
 
@@ -41,7 +41,7 @@ SKIP: {
 }
 
 SKIP: {
-	test_skip(-tests => 1, -requires_module => 'XML::Parser');	
+	test_skip(-tests => 4, -requires_module => 'XML::Parser');	
 	print "Getting citations using callback...\n" if $verbose;
 	my (@ids) = ('Text1', 'Text248', 'Text495');
 	my $callback_used = 'no';
@@ -55,7 +55,7 @@ SKIP: {
 	sub callback {
 		my $citation = shift;
 		$callback_used = 'yes';
-		is ($citation->{'_identifier'}, shift @ids);
+		is ($citation->{'_identifier'}, shift @ids, 'in callback');
 	}
 }
 
@@ -130,7 +130,7 @@ SKIP: {
                       '-file'   => $testfile2,
                       '-result' => 'pubmed2ref');
         while(<$fh>) {
-            is($_->identifier,shift @expvals);
+            is($_->identifier,shift @expvals, 'filehandle test');
         }
     };
     if( $@) {

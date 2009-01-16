@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: flybase_chadoxml.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: flybase_chadoxml.t 15364 2009-01-13 17:18:10Z cjfields $
 
 use strict;
 
@@ -8,7 +8,7 @@ BEGIN {
     use Bio::Root::Test;
     
     test_begin(-tests               => 8,
-			   -requires_modules    => [],
+			   -requires_module     => 'XML::Writer',
 			   -requires_networking => 0,
 			  );
 	
