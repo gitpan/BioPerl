@@ -1,4 +1,4 @@
-# $Id: Collection.pm 14840 2008-08-29 16:45:38Z cjfields $
+# $Id: Collection.pm 15418 2009-01-21 17:10:34Z cjfields $
 #
 # BioPerl module for Bio::SeqFeature::Collection
 #
@@ -525,14 +525,15 @@ sub feature_thaw {
 
 sub DESTROY {
     my $self = shift;
-    $self->SUPER::DESTROY();
     $self->{'_btree'} = undef;
     untie(%{$self->{'_btreehash'}});
-
     if( ! $self->keep && $self->indexfile ) {
-	$self->debug( "unlinking ".$self->indexfile. "\n");
-	unlink($self->indexfile);
+        my $f = $self->indexfile;
+        $self->debug( "unlinking ".$f. "\n");
+        close($f);
+        unlink($f);
     }
+    $self->SUPER::DESTROY();    
 }
 
 1;

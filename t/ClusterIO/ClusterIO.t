@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: ClusterIO.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: ClusterIO.t 15416 2009-01-21 16:46:12Z cjfields $
 
 use strict;
 
@@ -7,7 +7,8 @@ BEGIN {
     use lib '.';
 	use Bio::Root::Test;
 	
-	test_begin(-tests => 12);
+	test_begin(-tests => 12,
+			   -requires_module => 'Time::HiRes');
     
 	use_ok('Bio::ClusterIO');
 	use_ok('Bio::Cluster::ClusterFactory');

@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: BioFetch.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: BioFetch.t 15418 2009-01-21 17:10:34Z cjfields $
 
 use strict;
 
@@ -56,7 +56,7 @@ SKIP: {
 	$seq = $seqio->next_seq();
 	isa_ok($seqio, 'Bio::SeqIO');
 	isa_ok($seq, 'Bio::SeqI');
-	is( $seq->length, 200);
+	cmp_ok( $seq->length, '>=', 200);
 }
 
 SKIP: {

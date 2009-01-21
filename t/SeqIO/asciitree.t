@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: asciitree.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: asciitree.t 15407 2009-01-20 05:18:29Z cjfields $
 
 # `make test'. After `make install' it should work as `perl test.t'
 
@@ -23,8 +23,8 @@ my $in = Bio::SeqIO->new(-format => 'genbank',
 my $seq = $in->next_seq;
 
 my $out_file = test_output_file();
-my $out = Bio::SeqIO->new(-file => ">$out_file",
-								  -verbose => $verbose,
-								  -format => 'asciitree');
+my $out = Bio::SeqIO->new(-file => ">".$out_file,
+						-verbose => $verbose,
+						-format => 'asciitree');
 $out->write_seq($seq);
 ok (-s $out_file);

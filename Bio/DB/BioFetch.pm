@@ -1,4 +1,4 @@
-# $Id: BioFetch.pm 11480 2007-06-14 14:16:21Z sendu $
+# $Id: BioFetch.pm 15423 2009-01-21 17:35:21Z cjfields $
 #
 # BioPerl module for Bio::DB::BioFetch
 #
@@ -422,7 +422,7 @@ sub postprocess_data {
     open (F,$args{'location'}) or $self->throw("Couldn't open $args{location}: $!");
     # this is dumb, but the error may be anywhere on the first three lines because the
     # CGI headers are sometimes printed out by the server...
-    my @data = (scalar <F>,scalar <F>,scalar <F>);
+    my @data = grep {defined $_} (scalar <F>,scalar <F>,scalar <F>);
     if (join('',@data) =~ /^ERROR (\d+) (.+)/m) {
       $self->throw("BioFetch Error $1: $2");
     }

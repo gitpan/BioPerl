@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: eutils.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: eutils.t 15416 2009-01-21 16:46:12Z cjfields $
 
 use strict;
 
@@ -8,7 +8,7 @@ BEGIN {
 	use Bio::Root::Test;
 	
 	test_begin(-tests => 4,
-			   -requires_modules => [qw(IO::String LWP::Simple)],
+			   -requires_modules => [qw(IO::String LWP::Simple XML::Twig)],
 			   -requires_networking => 1);
 	
 	use_ok('Bio::Biblio');

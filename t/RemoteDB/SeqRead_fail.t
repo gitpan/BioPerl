@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: SeqRead_fail.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: SeqRead_fail.t 15407 2009-01-20 05:18:29Z cjfields $
 
 use strict;
 
@@ -27,9 +27,11 @@ sub fetch {
     my ($id, $class) = @_;
     print "###################### $class  ####################################\n" if $verbose;
     my $seq;
-    ok defined ( my $gb = new $class('-verbose'=>$verbose,'-delay'=>0) ), "defined for $class";
+    ok defined( my $gb = $class->new('-verbose'=>$verbose,
+									 '-delay'=>0,
+									 '-retrievaltype' => 'tempfile') ), "defined for $class";
     eval { $seq = $gb->get_Seq_by_id($id) };
-    if ($@ or not defined $seq) {
+    if ($@ || !defined $seq) {
 		ok 1, "error or undef for $class";
 		return;
     }

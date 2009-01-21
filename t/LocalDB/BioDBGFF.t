@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: BioDBGFF.t 15141 2008-12-11 05:34:55Z cjfields $
+# $Id: BioDBGFF.t 15407 2009-01-20 05:18:29Z cjfields $
 
 use strict;
 use Module::Build;
@@ -419,16 +419,20 @@ SKIP: {
     }
   }
   
-  # test ability to pass adaptors across a fork
-  if (my $child = open(F,"-|")) { # parent reads from child
-      ok(scalar <F>);
-      close F;
-  }
-  else { # in child
-      $db->clone;
-      my @f = $db->features();
-      print @f>0;
-      exit 0;
+  SKIP: {
+	test_skip(-tests => 1, -excludes_os => 'mswin');
+	
+	# test ability to pass adaptors across a fork
+	if (my $child = open(F,"-|")) { # parent reads from child
+		ok(scalar <F>);
+		close F;
+	}
+	else { # in child
+		$db->clone;
+		my @f = $db->features();
+		print @f>0;
+		exit 0;
+	}
   }
 
   ok(!defined eval{$db->delete()});

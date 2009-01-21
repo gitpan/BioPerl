@@ -1,4 +1,4 @@
-# $Id: Version.pm 15391 2009-01-16 18:31:30Z cjfields $
+# $Id: Version.pm 15416 2009-01-21 16:46:12Z cjfields $
 #
 # BioPerl module for Bio::Root::Version
 #
@@ -85,7 +85,7 @@ methods. Internal methods are usually preceded with a _
 package Bio::Root::Version;
 use strict;
 
-our $VERSION = '1.005009_003';
+our $VERSION = '1.005009_004';
 $VERSION = eval $VERSION;
 
 sub import {

@@ -215,7 +215,6 @@ Bio/DB/SeqFeature/Store/bdb.pm
 Bio/DB/SeqFeature/Store/berkeleydb.pm
 Bio/DB/SeqFeature/Store/DBI/Iterator.pm
 Bio/DB/SeqFeature/Store/DBI/mysql.pm
-Bio/DB/SeqFeature/Store/DBI/Pg.pm
 Bio/DB/SeqFeature/Store/FeatureFileLoader.pm
 Bio/DB/SeqFeature/Store/GFF2Loader.pm
 Bio/DB/SeqFeature/Store/GFF3Loader.pm
