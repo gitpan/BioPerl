@@ -1,6 +1,8 @@
-# $Id: InterPro_BioSQL_Handler.pm 11671 2007-08-30 18:46:39Z cjfields $
+# $Id: InterPro_BioSQL_Handler.pm 15635 2009-04-14 19:11:13Z cjfields $
 #
 # BioPerl module for InterPro_BioSQL_Handler
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Juguang Xiao, juguang@tll.org.sg
 #

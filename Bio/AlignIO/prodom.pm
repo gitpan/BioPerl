@@ -1,4 +1,4 @@
-# $Id: prodom.pm 11480 2007-06-14 14:16:21Z sendu $
+# $Id: prodom.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::prodom
 
@@ -29,6 +29,17 @@ This object can transform L<Bio::Align::AlignI> objects to and from prodom flat
 file databases.
 
 =head1 FEEDBACK
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -101,15 +112,10 @@ sub next_aln {
 	   # the consensus line marks the end of the alignment part of the entry
 	   last;
        }
-   }
-
-#  If $end <= 0, we have either reached the end of
-#  file in <> or we have encountered some other error
-#
-   if ($end <= 0) { undef $aln;}
-
-
-   return $aln;
+	}
+	
+   return $aln if $aln->num_sequences;
+   return;
 }
 
 

@@ -1,6 +1,8 @@
-# $Id: IO.pm 15257 2008-12-24 05:27:05Z cjfields $
+# $Id: IO.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Root::IO
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Hilmar Lapp <hlapp@gmx.net>
 #
@@ -72,6 +74,17 @@ Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -311,6 +324,9 @@ sub _initialize_io {
 	    $self->throw("Could not open $file: $!");
 	$self->file($file);
     }
+    if ( defined($fh) && !(ref($fh) && ((ref($fh) eq "GLOB") || $fh->isa('IO::Handle') || $fh->isa('IO::String')))  ) {
+        $self->throw("file handle $fh doesn't appear to be a handle");
+    }
     $self->_fh($fh) if $fh; # if not provided, defaults to STDIN and STDOUT
 
     $self->_flush_on_write(defined $flush ? $flush : 1);
@@ -474,9 +490,12 @@ sub _readline {
  Usage   : $obj->_pushback($newvalue)
  Function: puts a line previously read with _readline back into a buffer.
            buffer can hold as many lines as system memory permits.
- Example :
- Returns :
+ Example : $obj->_pushback($newvalue)
+ Returns : none
  Args    : newvalue
+ Note    : This is only supported for pushing back data ending with the
+		   current, localized value of $/. Using this method to push modified
+		   data back onto the buffer stack is not supported; see bug 843.
 
 =cut
 
@@ -610,9 +629,10 @@ sub _io_cleanup {
 
 sub exists_exe {
     my ($self, $exe) = @_;
-    $exe = $self if(!(ref($self) || $exe));
+	$self->throw("Must pass a defined value to exists_exe") unless defined $exe;
+    $exe = $self if (!(ref($self) || $exe));
     $exe .= '.exe' if(($^O =~ /mswin/i) && ($exe !~ /\.(exe|com|bat|cmd)$/i));
-    return $exe if(-e $exe); # full path and exists
+    return $exe if (-e $exe); # full path and exists
 
     # Ewan's comment. I don't think we need this. People should not be
     # asking for a program with a pathseparator starting it

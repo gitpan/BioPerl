@@ -1,4 +1,4 @@
-# $Id: xmfa.pm 15023 2008-11-25 23:52:55Z cjfields $
+# $Id: xmfa.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::xmfa
 #
@@ -21,7 +21,7 @@ class.
 This object can transform L<Bio::SimpleAlign> objects from
 XMFA flat file databases.  For more information, see:
 
-  http://gel.ahabs.wisc.edu/docserver/mauve/files.stx
+  http://asap.ahabs.wisc.edu/mauve-aligner/mauve-user-guide/mauve-output-file-formats.html
 
 This module is based on the AlignIO::fasta parser written by
 Peter Schattner
@@ -32,6 +32,17 @@ Finish write_aln(), clean up code, allow LargeLocatableSeq (ie for
 very large sequences a'la Mauve)
 
 =head1 FEEDBACK
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -113,7 +124,7 @@ sub next_aln {
         my $seq = $self->_process_seq($name, $seqchar);
         $aln->add_seq($seq);
     }
-    $aln->no_sequences ? return $aln : return;
+    $aln->num_sequences ? return $aln : return;
 }
 
 =head2 write_aln

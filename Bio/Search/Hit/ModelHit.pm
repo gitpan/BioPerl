@@ -1,8 +1,10 @@
-# $Id: ModelHit.pm 15002 2008-11-18 02:43:47Z cjfields $
+# $Id: ModelHit.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Search::Hit::ModelHit
 #
-# Cared for by Chris Fields <cjfields at uiuc dot edu>
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
+#
+# Cared for by Chris Fields <cjfields at bioperl dot org>
 #
 # Copyright Chris Fields
 #
@@ -56,6 +58,17 @@ the Bioperl mailing list.  Your participation is much appreciated.
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
@@ -66,7 +79,7 @@ web:
 
 =head1 AUTHOR - Chris Fields
 
-Email cjfields at uiuc dot edu
+Email cjfields at bioperl dot org
 
 =head1 APPENDIX
 
@@ -382,28 +395,6 @@ sub n {
 See Also   : L<expect()|expect>, L<signif()|signif>, L<Bio::Search::SearchUtils::get_exponent()|Bio::Search::SearchUtils>
 
 =cut
-
-sub p {
-    # Some duplication of logic for p(), expect() and signif() for the sake of performance.
-    my ($self, $fmt) = @_;
-
-    my $val = $self->{'_p'};
-
-    # $val can be zero.
-    if(not defined $val) {
-        # Use expect instead.
-        $self->warn( "P-value not defined. Using expect() instead.");
-        $val = $self->{'_expect'};
-    }
-
-    return $val if not $fmt or $fmt =~ /^raw/i;
-    ## Special formats: exponent-only or as list.
-    return &Bio::Search::SearchUtils::get_exponent($val) if $fmt =~ /^exp/i;
-    return (split (/eE/, $val)) if $fmt =~ /^parts/i;
-
-    ## Default: return the raw P-value.
-    return $val;
-}
 
 =head2 hsp
 

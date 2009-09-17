@@ -1,6 +1,6 @@
 package Bio::DB::SeqFeature;
 
-# $Id: SeqFeature.pm 14807 2008-08-17 03:32:19Z jason $
+# $Id: SeqFeature.pm 16091 2009-09-15 22:11:15Z cjfields $
 
 =head1 NAME
 
@@ -34,7 +34,7 @@ Bio::DB::SeqFeature -- Normalized feature for use with Bio::DB::SeqFeature::Stor
 The Bio::DB::SeqFeature object is the default SeqFeature class stored
 in Bio::DB::SeqFeature databases. It implements both the
 Bio::DB::SeqFeature::NormalizedFeatureI and
-Bio::DB::SeqFeature::TableFeatureI interfaces, which means that its
+Bio::DB::SeqFeature::NormalizedTableFeatureI interfaces, which means that its
 subfeatures, if any, are stored in the database in a normalized
 fashion, and that the parent/child hierarchy of features and
 subfeatures are also stored in the database as set of tuples. This
@@ -386,6 +386,10 @@ sub is_remote { return }
 
 # for Bio::LocationI compatibility
 sub location_type { return 'EXACT' }
+
+# for Bio::DB::GFF compatibility
+
+sub feature_id {shift->primary_id}
 
 1;
 

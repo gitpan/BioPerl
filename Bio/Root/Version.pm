@@ -1,6 +1,8 @@
-# $Id: Version.pm 15443 2009-01-24 21:31:23Z cjfields $
+# $Id: Version.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Root::Version
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Aaron Mackey <amackey@virginia.edu>
 #
@@ -59,6 +61,17 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
@@ -85,7 +98,7 @@ methods. Internal methods are usually preceded with a _
 package Bio::Root::Version;
 use strict;
 
-our $VERSION = '1.006000';
+our $VERSION = '1.006000_001';
 $VERSION = eval $VERSION;
 
 sub import {

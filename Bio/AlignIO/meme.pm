@@ -1,4 +1,4 @@
-# $Id: meme.pm 15104 2008-12-08 13:41:52Z sendu $
+# $Id: meme.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 #  BioPerl module for Bio::AlignIO::meme
 #   Based on the Bio::SeqIO modules
@@ -42,6 +42,17 @@ correctly.  If the meme output file is not version 3.0 or greater,
 we signal an error.
 
 =head1 FEEDBACK
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 

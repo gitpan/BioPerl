@@ -1,6 +1,8 @@
-# $Id: TypeMapper.pm 11333 2007-03-28 22:39:13Z bosborne $
+# $Id: TypeMapper.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # bioperl module for Bio::SeqFeature::Tools::TypeMapper
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Chris Mungall <cjm@fruitfly.org>
 #
@@ -59,6 +61,17 @@ Bioperl mailing lists  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                         - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -208,11 +221,11 @@ Please see the actual code for the mappings
 
 Taken from
 
-L<http://song.sourceforge.net/FT_SO_map.txt>
+L<http://sequenceontology.org/resources/mapping/FT_SO.txt>
 
 dgg: separated out FT_SO_map for caller changes. Update with:
 
-  open(FTSO,"curl -s http://sequenceontology.org/mappings/FT_SO_map.txt|");
+  open(FTSO,"curl -s http://sequenceontology.org/resources/mapping/FT_SO.txt|");
   while(<FTSO>){
     chomp; ($ft,$so,$sid,$ftdef,$sodef)= split"\t";
     print "     '$ft' => '$so',\n" if($ft && $so && $ftdef);             
@@ -256,7 +269,8 @@ sub FT_SO_map  {
      "iDNA" => "iDNA",
      "intron" => "intron",
      "mRNA" => "mRNA",
-     "mat_peptide" => "mature_peptide",
+     "mat_peptide" => "mature_protein_region",
+     "mature_peptide" => "mature_protein_region",
 #                     "misc_RNA" => "transcript",
      "misc_binding" => "binding_site",
      "misc_difference" => "sequence_difference",
@@ -294,6 +308,7 @@ sub FT_SO_map  {
       "pseudomRNA" => "pseudogenic_transcript", ## has parent = pseudogene ; dgg
       "pseudotranscript" => "pseudogenic_transcript", ## from Unflattener misc_RNA ; dgg
       "pseudoexon" => "pseudogenic_exon",
+      "pseudoCDS"  => "pseudogenic_exon",
       "pseudomisc_feature" => "pseudogenic_region",
       "pseudointron" => "pseudogenic_region",
       

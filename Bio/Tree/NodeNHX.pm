@@ -1,6 +1,8 @@
-# $Id: NodeNHX.pm 11508 2007-06-23 01:38:32Z jason $
+# $Id: NodeNHX.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Tree::NodeNHX
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Aaron Mackey <amackey@virginia.edu>
 #
@@ -43,6 +45,17 @@ the Bioperl mailing list.  Your participation is much appreciated.
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
@@ -60,7 +73,7 @@ Email amackey@virginia.edu
 The NHX (New Hampshire eXtended) format was created by Chris Zmasek,
 and is described at:
 
-  http://www.genetics.wustl.edu/eddy/forester/NHX.html
+  http://sourceforge.net/projects/forester-atv/
 
 =head1 APPENDIX
 

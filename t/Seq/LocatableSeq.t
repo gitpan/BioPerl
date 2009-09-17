@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: LocatableSeq.t 15207 2008-12-18 05:42:51Z cjfields $
+# $Id: LocatableSeq.t 16091 2009-09-15 22:11:15Z cjfields $
 
 use strict;
 
@@ -7,7 +7,7 @@ BEGIN {
     use lib '.';
     use Bio::Root::Test;
     
-    test_begin(-tests => 116);
+    test_begin(-tests => 118);
 	
 	use_ok('Bio::LocatableSeq');
 	use_ok('Bio::AlignIO');
@@ -24,7 +24,7 @@ is $seq->alphabet, 'dna';
 is $seq->start, 1;
 is $seq->end, 6;
 is $seq->strand, 1;
-is $seq->no_gaps, 1;
+is $seq->num_gaps, 1;
 is $seq->column_from_residue_number(4), 9;
 is $seq->column_from_residue_number(3), 5;
 
@@ -119,7 +119,7 @@ is $seq->alphabet, 'dna';
 is $seq->start, 1;
 is $seq->end, 6;
 is $seq->strand, -1;
-is $seq->no_gaps, 1;
+is $seq->num_gaps, 1;
 is $seq->column_from_residue_number(4), 5;
 
 
@@ -236,9 +236,26 @@ eval { $seq->end(554);};
 ok $@;
 like $@, qr/Overriding value \[554\] with value 552/;
 
+lives_ok { $seq = Bio::LocatableSeq->new(
+			     -seq => 'LSYC*',
+			     -strand => 0,
+                 -start => 1,
+                 -end => 5,
+				 -verbose => 2
+			     );} '* is counted in length';
+
+throws_ok { $seq = Bio::LocatableSeq->new(
+			     -seq => 'LSYC*',
+			     -strand => 0,
+                 -start => 1,
+                 -end => 6,
+				 -verbose => 2
+			     );} qr/Overriding value \[6\] with value 5/, '* is counted in length, but end is wrong';
+
 # setting symbols (class variables) - demonstrate scoping issues when using
 # globals with and w/o localization.  To be fixed in a future BioPerl version
 
+# see bug 2715
 my $temp;
 
 {

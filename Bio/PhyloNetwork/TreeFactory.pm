@@ -1,6 +1,8 @@
-# $Id: TreeFactory.pm 14716 2008-06-11 06:48:28Z heikki $
+# $Id: TreeFactory.pm 15635 2009-04-14 19:11:13Z cjfields $
 #
 # Module for Bio::PhyloNetwork::TreeFactory
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Gabriel Cardona <gabriel(dot)cardona(at)uib(dot)es>
 #

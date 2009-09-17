@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: SeqPattern.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: SeqPattern.t 16090 2009-09-15 21:57:56Z cjfields $
 
 use strict;
 
@@ -7,7 +7,7 @@ BEGIN {
     use lib '.';
     use Bio::Root::Test;
     
-    test_begin(-tests => 9);
+    test_begin(-tests => 28);
 	
 	use_ok('Bio::Tools::SeqPattern');
 }
@@ -36,3 +36,40 @@ $pattern = 'ABZH';
 $pattern_obj2 = Bio::Tools::SeqPattern->new(-SEQ =>$pattern, 
 					   -TYPE =>'amino');
 is $pattern_obj2->expand, 'A[EQ][DN]H';
+
+# Test reverse complement
+my $rev_pattern = $pattern_obj2->backtranslate;
+isa_ok $rev_pattern, 'Bio::Tools::SeqPattern';
+is $rev_pattern->str, 'GCNRAYSARCAY';
+
+# Test exceptions.
+throws_ok { $pattern_obj2->revcom  } qr/revcom for .+ sequence types/;
+throws_ok { $rev_pattern->backtranslate } qr/backtranslate for .+ sequence types/;
+
+# Test reverse translation more thoroughly
+
+my @data;
+while (<DATA>) {
+   chomp;
+   push @data, [ split ];
+}
+
+foreach my $line (@data) {
+    my $pattern_obj = Bio::Tools::SeqPattern->new(
+        -SEQ  => $line->[0],
+        -TYPE => 'amino',
+    );
+
+    isa_ok $pattern_obj, 'Bio::Tools::SeqPattern';
+
+    my $backtranslate = $pattern_obj->backtranslate;
+    isa_ok $backtranslate, 'Bio::Tools::SeqPattern';
+    is $backtranslate->str, $line->[1],
+}
+
+__DATA__
+MAEELKAVAP ATGGCNGARGARYTNAARGCNGTNGCNCCN
+LKGHB[WhYq]Q YTNAARGGNCAYRAYYRNCAR
+(LK){2,3}[^GHB][WHYQ]Q (YTNAAR){2,3}HBNYRNCAR
+LK[^GHB][WHYQ]Q YTNAARHBNYRNCAR
+(LK){2,3}[^GHB][WHYQ]QX.X (YTNAAR){2,3}HBNYRNCARNNNNNNNNN

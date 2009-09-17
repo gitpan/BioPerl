@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: pICalculator.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: pICalculator.t 15505 2009-02-05 18:22:58Z cjfields $
 
 use strict;
 
@@ -23,6 +23,6 @@ ok my $calc = Bio::Tools::pICalculator->new(-places => 2);
 ok $calc->seq($seq);
 ok my $iep = $calc->iep;
 for ( my $x = 0 ; $x <= 14 ; $x += .5 ) {
-   is ($calc->charge_at_pH($x),$results[(2 * $x)]);
+   float_is($calc->charge_at_pH($x), $results[(2 * $x)]);
 }
 is ($calc->iep,8.54);

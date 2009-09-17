@@ -1,6 +1,8 @@
-## $Id: dpAlign.pm 14780 2008-08-02 03:56:53Z ymc $
+## $Id: dpAlign.pm 16123 2009-09-17 12:57:27Z cjfields $
 
 # BioPerl module for Bio::Tools::dpAlign
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Yee Man Chan <ymc@yahoo.com>
 #
@@ -130,6 +132,11 @@ cost and gap extension cost. For protein alignment, it is using
 BLOSUM62 by default. Currently the substitution matrix is not
 configurable.
 
+Note: If you supply LocatableSeq objects to pairwise_alignment,
+pairwise_alignment_score, align_and_show or sequence_profile and
+the sequence supplied contains gaps, these functions will treat 
+these sequences as if they are without gaps.
+
 =head1 DEPENDENCIES
 
 This package comes with the main bioperl distribution. You also need
@@ -166,6 +173,17 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -324,6 +342,11 @@ sub sequence_profile {
         $self->warn("cannot create sequence profile with length less than 2");
         return;
     }
+    if ($seq1->isa('Bio::LocatableSeq')) {
+       my $seqstr = $seq1->seq;
+       $seqstr =~ s/\-//g;
+       $seq1 = Bio::Seq->new(-id => $seq1->id, -seq => $seqstr, -alphabet => $seq1->alphabet);
+    }
     # create engine objects
     $seq1->display_id('seq1') unless ( defined $seq1->id() );
 
@@ -368,6 +391,11 @@ sub pairwise_alignment_score {
         $self->warn("cannot align sequences with length less than 2");
         return;
     }
+    if ($seq2->isa('Bio::LocatableSeq')) {
+       my $seqstr = $seq2->seq;
+       $seqstr =~ s/\-//g;
+       $seq2 = Bio::Seq->new(-id => $seq2->id, -seq => $seqstr, -alphabet => $seq2->alphabet);
+    }
     $self->set_memory_and_report();
     # create engine objects
     $seq2->display_id('seq2') unless ( defined $seq2->id() );
@@ -410,6 +438,16 @@ sub pairwise_alignment {
         $seq2->length() < 2 ) {
         $self->warn("cannot align sequences with length less than 2");
         return;
+    }
+    if ($seq1->isa('Bio::LocatableSeq')) {
+       my $seqstr = $seq1->seq;
+       $seqstr =~ s/\-//g;
+       $seq1 = Bio::Seq->new(-id => $seq1->id, -seq => $seqstr, -alphabet => $seq1->alphabet);
+    }
+    if ($seq2->isa('Bio::LocatableSeq')) {
+       my $seqstr = $seq2->seq;
+       $seqstr =~ s/\-//g;
+       $seq2 = Bio::Seq->new(-id => $seq2->id, -seq => $seqstr, -alphabet => $seq2->alphabet);
     }
     $self->set_memory_and_report();
     # create engine objects
@@ -470,6 +508,16 @@ sub align_and_show {
         $seq2->length() < 2 ) {
         $self->warn("cannot align sequences with length less than 2");
         return;
+    }
+    if ($seq1->isa('Bio::LocatableSeq')) {
+       my $seqstr = $seq1->seq;
+       $seqstr =~ s/\-//g;
+       $seq1 = Bio::Seq->new(-id => $seq1->id, -seq => $seqstr, -alphabet => $seq1->alphabet);
+    }
+    if ($seq2->isa('Bio::LocatableSeq')) {
+       my $seqstr = $seq2->seq;
+       $seqstr =~ s/\-//g;
+       $seq2 = Bio::Seq->new(-id => $seq2->id, -seq => $seqstr, -alphabet => $seq2->alphabet);
     }
     $self->set_memory_and_report();
     # create engine objects

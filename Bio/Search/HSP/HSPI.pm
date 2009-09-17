@@ -1,7 +1,9 @@
 #-----------------------------------------------------------------
-# $Id: HSPI.pm 15084 2008-12-03 22:31:23Z cjfields $
+# $Id: HSPI.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Search::HSP::HSPI
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Steve Chervitz <sac@bioperl.org>
 # and Jason Stajich <jason@bioperl.org>
@@ -74,6 +76,17 @@ the Bioperl mailing list.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -235,7 +248,7 @@ sub num_conserved{
 
  Title    : gaps
  Usage    : my $gaps = $hsp->gaps( ['query'|'hit'|'total'] );
- Function : Get the number of gap charcters in the query, hit, or total alignment.
+ Function : Get the number of gap characters in the query, hit, or total alignment.
  Returns  : Integer, number of gap characters or 0 if none
  Args     : 'query' = num conserved / length of query seq (without gaps)
             'hit'   = num conserved / length of hit seq (without gaps)
@@ -549,7 +562,7 @@ sub end {
            : to the strings in the original format of the Blast alignment.
            : (i.e., same spacing).
 
-See Also   : L<seq_str()|seq_str>, L<seq_inds()|seq_inds>, L<Bio::Seq>
+See Also   : L</seq_str>, L</seq_inds>, L<Bio::Seq>
 
 =cut
 
@@ -586,7 +599,7 @@ sub seq {
  Throws    : Exception if the argument does not match an accepted seq_type.
  Comments  : 
 
-See Also   : L<seq()|seq>, L<seq_inds()|seq_inds>, L<_set_match_seq()>
+See Also   : L</seq>, L</seq_inds>, C<_set_match_seq>
 
 =cut
 
@@ -640,7 +653,7 @@ sub rank { shift->throw_not_implemented }
            : between the query and sbjct lines which are used for determining
            : the number of identical and conservative matches.
 
-See Also   : L<length()|length>, L<gaps()|gaps>, L<seq_str()|seq_str>, L<Bio::Search::Hit::BlastHit::_adjust_contigs()|Bio::Search::Hit::BlastHit>
+See Also   : L</length>, L</gaps>, L</seq_str>, L<Bio::Search::Hit::BlastHit::_adjust_contigs()|Bio::Search::Hit::BlastHit>
 
 =cut
 
@@ -659,6 +672,7 @@ sub matches {
         ## Get data for the whole alignment.
         push @data, ($self->num_identical, $self->num_conserved);
     } else {
+
         ## Get the substring representing the desired sub-section of aln.
         $beg ||= 0;
         $end ||= 0;
@@ -668,20 +682,34 @@ sub matches {
         
         if($end > $stop) { $end = $stop; }
         if($beg < $start) { $beg = $start; }
+
+	# now with gap handling! /maj
+	my $match_str = $self->seq_str('match');
+	if ($self->gaps) {
+	    # strip the homology string of gap positions relative
+	    # to the target type
+	    $match_str = $self->seq_str('match');
+	    my $tgt   = $self->seq_str($seqType);
+	    my $encode = $match_str ^ $tgt;
+	    my $zap = '-'^' ';
+	    $encode =~ s/$zap//g;
+	    $tgt =~ s/-//g;
+	    $match_str = $tgt ^ $encode;
+	}
         
         ## ML: START fix for substr out of range error ------------------
         my $seq = "";
         if (($self->algorithm =~ /TBLAST[NX]/) && ($seqType eq 'sbjct'))
         {
-            $seq = substr($self->seq_str('match'),
+            $seq = substr($match_str,
                           int(($beg-$start)/3), 
                           int(($end-$beg+1)/3));
 
         } elsif (($self->algorithm =~ /T?BLASTX/) && ($seqType eq 'query')) {
-            $seq = substr($self->seq_str('match'),
+            $seq = substr($match_str,
                           int(($beg-$start)/3), int(($end-$beg+1)/3));
         } else {
-            $seq = substr($self->seq_str('match'), 
+            $seq = substr($match_str, 
                           $beg-$start, ($end-$beg+1));
         }
         ## ML: End of fix for  substr out of range error -----------------

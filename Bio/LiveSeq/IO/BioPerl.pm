@@ -1,6 +1,8 @@
-# $Id: BioPerl.pm 11480 2007-06-14 14:16:21Z sendu $
+# $Id: BioPerl.pm 15635 2009-04-14 19:11:13Z cjfields $
 #
 # bioperl module for Bio::LiveSeq::IO::BioPerl
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Joseph Insana <insana@ebi.ac.uk> <jinsana@gmx.net>
 #

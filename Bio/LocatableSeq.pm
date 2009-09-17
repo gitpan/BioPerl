@@ -1,6 +1,8 @@
-# $Id: LocatableSeq.pm 15084 2008-12-03 22:31:23Z cjfields $
+# $Id: LocatableSeq.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::LocatableSeq
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
@@ -65,6 +67,17 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -339,10 +352,10 @@ sub force_nse {
     return $self->{'_force_nse'};
 }
 
-=head2 no_gap
+=head2 num_gaps
 
- Title   : no_gaps
- Usage   :$self->no_gaps('.')
+ Title   : num_gaps
+ Usage   :$self->num_gaps('.')
  Function:Gets number of gaps in the sequence. The count excludes
            leading or trailing gap characters.
 
@@ -352,10 +365,12 @@ sub force_nse {
 
  Returns : number of internal gaps in the sequence.
  Args    : a gap character (optional)
+ Status  : Stable
+ Note    : replaces no_gaps
 
 =cut
 
-sub no_gaps {
+sub num_gaps {
     my ($self,$char) = @_;
     my ($seq, $count) = (undef, 0);
 
@@ -410,27 +425,47 @@ sub column_from_residue_number {
     unless $resnumber =~ /^\d+$/ and $resnumber > 0;
 
     if ($resnumber >= $self->start() and $resnumber <= $self->end()) {
-    my @residues = split //, $self->seq;
-    my $count = $self->start();
-    my $i;
-    my ($start,$end,$inc,$test);
-        my $strand = $self->strand || 0;
-    # the following bit of "magic" allows the main loop logic to be the
-    # same regardless of the strand of the sequence
-    ($start,$end,$inc,$test)= ($strand == -1)?
-            (scalar(@residues-1),0,-1,sub{$i >= $end}) :
-                (0,scalar(@residues-1),1,sub{$i <= $end});
+	my @chunks;
+	my $column_incr;
+	my $current_column;
+	my $current_residue = $self->start - 1;
+	my $seq = $self->seq;
+	my $strand = $self->strand || 0;
 
-    for ($i=$start; $test->(); $i+= $inc) {
-        if ($residues[$i] ne '.' and $residues[$i] ne '-') {
-        $count == $resnumber and last;
-        $count++;
-        }
-    }
-    # $i now holds the index of the column.
-        # The actual column number is this index + 1
+	if ($strand == -1) {
+#	    @chunks = reverse $seq =~ m/[^\.\-]+|[\.\-]+/go;
+	    @chunks = reverse $seq =~ m/[$RESIDUE_SYMBOLS]+|[$GAP_SYMBOLS]+/go;
+	    $column_incr = -1;
+	    $current_column = (CORE::length $seq) + 1;
+	}
+	else {
+#	    @chunks = $seq =~ m/[^\.\-]+|[\.\-]+/go;
+	    @chunks = $seq =~ m/[$RESIDUE_SYMBOLS]+|[$GAP_SYMBOLS]+/go;
+	    $column_incr = 1;
+	    $current_column = 0;
+	}
 
-    return $i+1;
+	while (my $chunk = shift @chunks) {
+#	    if ($chunk =~ m|^[\.\-]|o) {
+	    if ($chunk =~ m|^[$GAP_SYMBOLS]|o) {
+		$current_column += $column_incr * CORE::length($chunk);
+	    }
+	    else {
+		if ($current_residue + CORE::length($chunk) < $resnumber) {
+		    $current_column += $column_incr * CORE::length($chunk);
+		    $current_residue += CORE::length($chunk);
+		}
+		else {
+		    if ($strand == -1) {
+			$current_column -= $resnumber - $current_residue;
+		    }
+		    else {
+			$current_column += $resnumber - $current_residue;
+		    }
+		    return $current_column;
+		}
+	    }
+	}
     }
 
     $self->throw("Could not find residue number $resnumber");
@@ -446,8 +481,8 @@ sub column_from_residue_number {
            This function gives the residue number for a given position
            in the alignment (i.e. column number) of the given. Gaps
            complicate this process and force the output to be a
-           L<Bio::Range> where values can be undefined. For example,
-           for the sequence:
+           L<Bio::Location::Simple> where values can be undefined. 
+           For example, for the sequence:
 
          Seq/91-96 .AC..DEF.G.
 
@@ -610,6 +645,52 @@ sub validate_seq {
         return 0;
     }
     return 1;
+}
+
+################## DEPRECATED METHODS ##################
+
+=head2 no_gap
+
+ Title     : no_gaps
+ Usage     : $self->no_gaps('.')
+ Function  : Gets number of gaps in the sequence. The count excludes
+             leading or trailing gap characters.
+
+             Valid bioperl sequence characters are [A-Za-z\-\.\*]. Of
+             these, '.' and '-' are counted as gap characters unless an
+             optional argument specifies one of them.
+
+ Returns   : number of internal gaps in the sequence.
+ Args      : a gap character (optional)
+ Status    : Deprecated (in favor of num_gaps()) 
+
+=cut
+
+sub no_gaps {
+	my $self = shift;
+	$self->deprecated(-warn_version => 1.0069,
+					  -throw_version => 1.0075,
+                      -message => 'Use of method no_gaps() is deprecated, use num_gaps() instead');
+    $self->num_gaps(@_);
+}
+
+=head2 no_sequences
+
+ Title     : no_sequences
+ Usage     : $gaps = $seq->no_sequences
+ Function  : number of sequence in the sequence alignment
+ Returns   : integer
+ Argument  :
+ Status    : Deprecated (in favor of num_sequences())
+
+=cut
+
+sub no_sequences {
+	my $self = shift;
+	$self->deprecated(-warn_version => 1.0069,
+					  -throw_version => 1.0075,
+                      -message => 'Use of method no_sequences() is deprecated, use num_sequences() instead');
+    $self->num_sequences(@_);
 }
 
 1;

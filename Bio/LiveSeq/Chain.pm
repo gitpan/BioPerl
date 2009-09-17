@@ -1,7 +1,9 @@
 #!/usr/bin/perl
-# $Id: Chain.pm 9456 2005-11-17 09:54:54Z heikki $
+# $Id: Chain.pm 15635 2009-04-14 19:11:13Z cjfields $
 #
 # bioperl module for Bio::LiveSeq::Chain
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Joseph Insana <insana@ebi.ac.uk> <jinsana@gmx.net>
 #

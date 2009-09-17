@@ -1,8 +1,10 @@
-# $Id: EUtilities.pm 15160 2008-12-15 18:09:38Z cjfields $
+# $Id: EUtilities.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::DB::EUtilities
 #
-# Cared for by Chris Fields <cjfields at uiuc dot edu>
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
+#
+# Cared for by Chris Fields <cjfields at bioperl dot org>
 #
 # Copyright Chris Fields
 #
@@ -39,6 +41,17 @@ is much appreciated.
   bioperl-l@lists.open-bio.org               - General discussion
   http://www.bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to
@@ -49,7 +62,7 @@ Bug reports can be submitted via the web.
 
 =head1 AUTHOR 
 
-Email cjfields at uiuc dot edu
+Email cjfields at bioperl dot org
 
 =head1 APPENDIX
 
@@ -118,8 +131,8 @@ sub new {
 
            These are passed on to LWP::UserAgent::request() if stipulated
 
-           -file   - use a LWP::UserAgent-compliant callback
-           -cb     - dumps the response to a file (handy for large responses)
+           -cb     - use a LWP::UserAgent-compliant callback
+           -file   - dumps the response to a file (handy for large responses)
                      Note: can't use file and callback at the same time
            -read_size_hint - bytes of content to read in at a time to pass to callback
  Note    : Caching and parameter checking are set
@@ -173,14 +186,15 @@ This can be overridden by calling this method.
   Returns : number of seconds to delay
   Args    : none
 
-  NOTE: NCBI requests a delay of 3 seconds between requests.  This method
-        implements that policy.  This may change to check time of day for lengthening delays if needed
+  NOTE: NCBI requests a delay of 3 requests per second. This method implements
+  that policy. This will likely change to check time of day or number of
+  requests for lengthening delays.
 
 =cut
 
 sub delay_policy {
-  my $self = shift;
-  return 3;
+    my $self = shift;
+    return 1/3;
 }
 
 =head2 get_Parser
@@ -645,7 +659,7 @@ sub get_retstart {
  Notes    : esearch    : retmax
             esummary   : retmax
             all others : from parameter_base->retmax or undef
-            
+
 =cut
 
 sub get_retmax {
@@ -726,7 +740,7 @@ sub next_GlobalQuery {
  Returns  : array of GlobalQuery objects
  Args     : none
  Notes    : only applicable for egquery
- 
+
 =cut
 
 sub get_GlobalQueries {
@@ -769,7 +783,7 @@ sub print_GlobalQueries {
  Returns  : single Bio::Tools::EUtilities::Summary::DocSum
  Args     : none yet
  Notes    : only applicable for esummary
- 
+
 =cut
 
 sub next_DocSum {

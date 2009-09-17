@@ -1,7 +1,9 @@
-# $Id: EnzymeCollection.pm 14571 2008-02-29 01:31:59Z cjfields $
+# $Id: EnzymeCollection.pm 16123 2009-09-17 12:57:27Z cjfields $
 #-------------------------------------------------------------------------------
 #
 # BioPerl module Bio::Restriction::EnzymeCollection
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Rob Edwards <redwards@utmem.edu>
 #
@@ -104,6 +106,17 @@ of the Bioperl mailing lists. Your participation is much appreciated.
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
@@ -145,6 +158,7 @@ use strict;
 
 use Bio::Restriction::Enzyme;
 use Bio::Restriction::IO;
+use UNIVERSAL qw(isa);
 
 use Data::Dumper;
 
@@ -168,9 +182,10 @@ sub new {
     my($class, @args) = @_;
     my $self = $class->SUPER::new(@args);
 
-    my ($empty) =
+    my ($empty, $enzymes) =
             $self->_rearrange([qw(
                                   EMPTY
+                                  ENZYMES
                                  )], @args);
 
     $self->{'_all_enzymes'} = [];
@@ -178,10 +193,18 @@ sub new {
 
     return $self if $empty;
 
-    # the default set of enzymes
-    my $in  = Bio::Restriction::IO->new(-verbose => $self->verbose);
-    return $in->read;
 
+    if ($enzymes) {
+	# as advertised in pod/maj
+	$self->throw( "Arg to -enzymes must be an arrayref to Bio::Restriction::Enzyme objects") unless ref($enzymes) eq 'ARRAY';
+	$self->enzymes(@$enzymes);
+	return $self;
+    }
+    else {
+	# the default set of enzymes
+	my $in  = Bio::Restriction::IO->new(-verbose => $self->verbose);
+	return $in->read;
+    }
 }
 
 =head2 Manipulate the enzymes within the collection

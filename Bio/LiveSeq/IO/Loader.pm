@@ -1,6 +1,8 @@
-# $Id: Loader.pm 15257 2008-12-24 05:27:05Z cjfields $
+# $Id: Loader.pm 15635 2009-04-14 19:11:13Z cjfields $
 #
 # bioperl module for Bio::LiveSeq::IO::Loader
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Joseph Insana <insana@ebi.ac.uk> <jinsana@gmx.net>
 #

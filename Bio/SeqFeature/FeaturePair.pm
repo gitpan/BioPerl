@@ -1,6 +1,8 @@
-# $Id: FeaturePair.pm 11480 2007-06-14 14:16:21Z sendu $
+# $Id: FeaturePair.pm 15635 2009-04-14 19:11:13Z cjfields $
 #
 # BioPerl module for Bio::SeqFeature::FeaturePair
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Ewan Birney <birney@sanger.ac.uk>
 #

@@ -1,6 +1,8 @@
-# $Id: fasta.pm 15164 2008-12-15 19:30:46Z cjfields $
+# $Id: fasta.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::SearchIO::fasta
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Jason Stajich <jason-at-bioperl.org>
 #
@@ -46,6 +48,17 @@ the Bioperl mailing list.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -553,7 +566,21 @@ sub next_result {
                 }
             );
         }
-        elsif (/^>>(.+?)\s+\((\d+)\s*(aa|nt)\)$/) {
+        elsif (/^>>(?!>)(.+?)\s+(?:\((\d+)\s*(aa|nt)\))?$/) {
+            my ($hit_id, $len, $alphabet) = ($1, $2, $3);
+            if (!$len || !$alphabet) {
+                WRAPPED:
+                while (defined($_ = $self->_readline)) {
+                    if (/(.*?)\s+\((\d+)\s*(aa|nt)\)/) {
+                        ($len, $alphabet) = ($2, $3);
+                        $hit_id .= $1 ? " ".$1 : '';
+                        last WRAPPED;
+                    }
+                    if (/^>>(?!>)/) { # too far, throw
+                        $self->throw("Couldn't find length, bailing");
+                    }
+                }
+            }
             if ( $self->in_element('hsp') ) {
                 $self->end_element( { 'Name' => 'Hsp' } );
             }
@@ -565,10 +592,10 @@ sub next_result {
             $self->element(
                 {
                     'Name' => 'Hit_len',
-                    'Data' => $2
+                    'Data' => $len
                 }
             );
-            my ( $id, $desc ) = split( /\s+/, $1, 2 );
+            my ( $id, $desc ) = split( /\s+/, $hit_id, 2 );
             $self->element(
                 {
                     'Name' => 'Hit_id',
@@ -576,7 +603,7 @@ sub next_result {
                 }
             );
 
-            #$self->debug("Hit ID is $id\n") if $self->verbose > 0;
+            #$self->debug("Hit ID is $id\n");
             my @pieces = split( /\|/, $id );
             my $acc = pop @pieces;
             $acc =~ s/\.\d+$//;
@@ -1303,7 +1330,7 @@ sub next_result {
                         # going to skip these
                     }
                     else {
-                        $self->warn(
+                        $self->throw(
                             "Unrecognized alignment line ($count) '$_'");
                     }
                 }

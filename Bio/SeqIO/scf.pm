@@ -1,4 +1,4 @@
-# $Id: scf.pm 15257 2008-12-24 05:27:05Z cjfields $
+# $Id: scf.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # Copyright (c) 1997-2001 bioperl, Chad Matsalla. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or
@@ -36,6 +36,17 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
@@ -70,6 +81,7 @@ use vars qw($DEFAULT_QUALITY);
 use strict;
 use Bio::Seq::SeqFactory;
 use Bio::Seq::SequenceTrace;
+use Bio::Annotation::Comment;
 use Dumpvalue;
 
 my $dumper = new Dumpvalue();
@@ -567,7 +579,7 @@ sub _dump_traces_incoming_deprecated_use_the_sequencetrace_object {
 
 =head2 write_seq
 
- Title   : write_seq(-Quality => $swq, <comments>)
+ Title   : write_seq(-target => $swq, <comments>)
  Usage   : $obj->write_seq(
                -target => $swq,
 			-version => 2,
@@ -590,7 +602,7 @@ sub _dump_traces_incoming_deprecated_use_the_sequencetrace_object {
           c) peak indices
           d) traces
           - You _can_ write an scf with just a and b by passing in a
-               SequenceWithQuality object- false traces will be synthesized
+               Bio::Seq::Quality object- false traces will be synthesized
                for you.
 
 =cut
@@ -605,12 +617,9 @@ sub write_seq {
                if (ref($swq) eq "Bio::Seq::Quality") {
                          # this means that the object *has no trace data*
                          # we might as well synthesize some now, ok?
-                    my $swq2 = Bio::Seq::SequenceTrace->new(
+                    $swq = Bio::Seq::SequenceTrace->new(
                          -swq     =>   $swq
                     );
-                    $swq2->_synthesize_traces();
-                    $swq2->set_accuracies();
-                    $swq = $swq2;
                }
      }
     else  {
@@ -747,6 +756,7 @@ sub write_seq {
     $self->flush if $self->_flush_on_write && defined $self->_fh;
 
     $self->close();
+	return 1;
 }
 
 
@@ -896,7 +906,7 @@ sub _get_binary_bases {
           $returner->{sequence} = $trace->seq();
           $length = scalar(@accuracies);
                # this really is "c" for samplesize == 2
-          $returner->{accuracies}->{binary} = pack "c${length}",@accuracies;
+          $returner->{accuracies}->{binary} = pack "C${length}",@accuracies;
           $returner->{accuracies}->{length} =
                CORE::length($returner->{accuracies}->{binary});
           $length = $trace->seq_obj()->length();

@@ -1,6 +1,6 @@
 # POD documentation - main docs before the code
 #
-# $Id: RandomAccessI.pm 10525 2006-09-26 22:03:22Z sendu $
+# $Id: RandomAccessI.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 
 =head1 NAME
@@ -31,6 +31,17 @@ from a name (id) or a accession number.
 =head1 CONTACT
 
 Ewan Birney E<lt>birney@ebi.ac.ukE<gt> originally wrote this class.
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 

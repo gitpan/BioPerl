@@ -1,7 +1,9 @@
 #-----------------------------------------------------------------
-# $Id: SearchWriterI.pm 10594 2006-09-29 04:06:13Z tseemann $
+# $Id: SearchWriterI.pm 15635 2009-04-14 19:11:13Z cjfields $
 #
 # BioPerl module Bio::SearchIO::SearchWriterI
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Steve Chervitz <sac@bioperl.org>
 #

@@ -1,4 +1,4 @@
-# $Id: EUtilDataI.pm 15160 2008-12-15 18:09:38Z cjfields $
+# $Id: EUtilDataI.pm 16123 2009-09-17 12:57:27Z cjfields $
 
 =head1 NAME
 
@@ -53,6 +53,35 @@ the object and sets internal parameters for the various data objects. Methods
 corresponding to the data type simply return the set data or iterate through the
 data sets if the values are more complex. Data can alternatively be passed
 through the object constructor.
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
+=head2 Reporting Bugs
+
+Report bugs to the Bioperl bug tracking system to
+help us keep track the bugs and their resolution.
+Bug reports can be submitted via the web.
+
+  http://bugzilla.open-bio.org/
+
+=head1 AUTHOR 
+
+Email cjfields at bioperl dot org
+
+=head1 APPENDIX
+
+The rest of the documentation details each of the
+object methods. Internal methods are usually
+preceded with a _
 
 =cut
 

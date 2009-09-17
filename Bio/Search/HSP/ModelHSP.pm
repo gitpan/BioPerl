@@ -1,8 +1,10 @@
-# $Id: ModelHSP.pm 15003 2008-11-18 02:58:02Z cjfields $
+# $Id: ModelHSP.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Search::HSP::ModelHSP
 #
-# Cared for by Chris Fields <cjfields at uiuc dot edu>
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
+#
+# Cared for by Chris Fields <cjfields at bioperl dot org>
 #
 # Copyright Chris Fields
 #
@@ -39,6 +41,17 @@ the Bioperl mailing list.  Your participation is much appreciated.
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
@@ -49,7 +62,7 @@ web:
 
 =head1 AUTHOR - Chris Fields
 
-Email cjfields at uiuc dot edu
+Email cjfields at bioperl dot org
 
 =head1 APPENDIX
 
@@ -213,6 +226,8 @@ sub seq {
     }
     require Bio::LocatableSeq;
     my $id = $seqType =~ /^q/i ? $self->query->seq_id : $self->hit->seq_id;
+    $str =~ s{\*\[\s*(\d+)\s*\]\*}{'N' x $1}ge;
+    $str =~ s{\s+}{}g;
     my $seq = Bio::LocatableSeq->new (-ID    => $id,
                            -START => $self->start($seqType),
                            -END   => $self->end($seqType),
@@ -342,13 +357,22 @@ sub get_aln {
     require Bio::LocatableSeq;
     require Bio::SimpleAlign;
     my $aln = Bio::SimpleAlign->new;
-    my $hs = $self->hit_string();
-    my $qs = $self->query_string();
-    if (!$qs) {
+    my %hsp = (hit =>  $self->hit_string,
+               midline => $self->homology_string,
+               query => $self->query_string,
+               meta  => $self->meta);
+    
+    # this takes care of infernal issues
+    if ($hsp{meta} && $hsp{meta} =~ m{~+}) {
+        $self->_postprocess_hsp(\%hsp);
+    }
+    
+    if (!$hsp{query}) {
         $self->warn("Missing query string, can't build alignment");
         return;
     }
-    my $seqonly = $qs;
+    
+    my $seqonly = $hsp{query};
     $seqonly =~ s/[\-\s]//g;
     my ($q_nm,$s_nm) = ($self->query->seq_id(),
                         $self->hit->seq_id());
@@ -358,23 +382,23 @@ sub get_aln {
     unless( defined $s_nm && CORE::length ($s_nm) ) {
         $s_nm = 'hit';
     }
-    my $query = Bio::LocatableSeq->new('-seq'   => $qs,
+    my $query = Bio::LocatableSeq->new('-seq'   => $hsp{query},
                                       '-id'    => $q_nm,
                                       '-start' => $self->query->start,
                                       '-end'   => $self->query->end,
                                       );
-    $seqonly = $hs;
+    $seqonly = $hsp{hit};
     $seqonly =~ s/[\-\s]//g;
-    my $hit =  Bio::LocatableSeq->new('-seq'    => $hs,
+    my $hit =  Bio::LocatableSeq->new('-seq'    => $hsp{hit},
                                       '-id'    => $s_nm,
                                       '-start' => $self->hit->start,
                                       '-end'   => $self->hit->end,
                                       );
     $aln->add_seq($query);
     $aln->add_seq($hit);
-    if ($self->meta) {
+    if ($hsp{meta}) {
         my $meta_obj = Bio::Seq::Meta->new();
-        $meta_obj->named_meta('ss_cons', $self->meta);
+        $meta_obj->named_meta('ss_cons', $hsp{meta});
         $aln->consensus_meta($meta_obj);
     }
     return $aln;
@@ -553,6 +577,46 @@ sub percent_identity {
     my $self = shift;
     $self->warn('$hsp->percent_identity not implemented for Model-based searches');
     return;
+}
+
+############## PRIVATE ##############
+
+# the following method postprocesses HSP data in cases where the sequences
+# aren't complete (which can trigger a validation error)
+
+{
+	my $SEQ_REGEX = qr/\*\[\s*(\d+)\s*\]\*/;
+    my $META_REGEX = qr/(~+)/;
+
+sub _postprocess_hsp {
+	my ($self, $hsp) = @_;
+	$self->throw('Must pass a hash ref for HSP processing') unless ref($hsp) eq 'HASH';
+	my @ins;
+	for my $type (qw(query hit meta)) {
+        $hsp->{$type} =~ s{\s+$}{};
+		my $str = $hsp->{$type};
+		my $regex = $type eq 'meta' ? $META_REGEX : $SEQ_REGEX;
+		my $ind = 0;		
+		while ($str =~ m{$regex}g) {
+			$ins[$ind]->{$type} = {pos => pos($str) - length($1), str => $1};
+            $ind++;
+		}
+	}
+	for my $chunk (reverse @ins) {
+        my ($max, $min) = ($chunk->{hit}->{str} >= $chunk->{query}->{str}) ?
+            ('hit', 'query') : ('query', 'hit');
+        my %rep;
+        $rep{$max} = 'N' x $chunk->{$max}->{str};
+        $rep{$min} = 'N' x $chunk->{$min}->{str}.
+            ('-'x($chunk->{$max}->{str}-$chunk->{$min}->{str}));
+        $rep{'meta'} = '~' x $chunk->{$max}->{str};
+        $rep{'midline'} = ' ' x $chunk->{$max}->{str};
+        for my $t (qw(hit query meta midline)) {
+            substr($hsp->{$t}, $chunk->{meta}->{pos}, length($chunk->{meta}->{str}) , $rep{$t});
+        }
+	}
+}
+
 }
 
 1;

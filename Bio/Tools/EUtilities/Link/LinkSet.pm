@@ -1,6 +1,8 @@
-# $Id: LinkSet.pm 15163 2008-12-15 18:39:09Z cjfields $
+# $Id: LinkSet.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Tools::EUtilities::Link::LinkSet
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Chris Fields
 #
@@ -14,7 +16,7 @@
 
 =head1 NAME
 
-Bio::Tools::EUtilities::Link::LinkSet
+Bio::Tools::EUtilities::Link::LinkSet - class for EUtils LinkSets
 
 =head1 SYNOPSIS
 
@@ -37,6 +39,17 @@ is much appreciated.
   bioperl-l@lists.open-bio.org               - General discussion
   http://www.bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to
@@ -47,7 +60,7 @@ Bug reports can be submitted via the web.
 
 =head1 AUTHOR 
 
-Email cjfields at uiuc dot edu
+Email cjfields at bioperl dot org
 
 =head1 APPENDIX
 
@@ -220,7 +233,7 @@ sub get_link_names {
 =cut
 
 sub get_link_name {
-    return ($_[0]->get_linknames)[0];
+    return ($_[0]->get_link_names)[0];
 }
 
 =head2 get_submitted_ids
@@ -467,7 +480,9 @@ sub _add_data {
 
 sub _add_submitted_ids {
     my ($self, $data) = @_;
-    @{$self->{'_submitted_ids'}} = @{$data->{IdList}->{Id}} ;
+    if (exists $data->{IdList}->{Id}) {
+        @{$self->{'_submitted_ids'}} = @{$data->{IdList}->{Id}} ;
+    }
 }
 
 sub _add_retrieved_ids {

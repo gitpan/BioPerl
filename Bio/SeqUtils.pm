@@ -1,6 +1,8 @@
-# $Id: SeqUtils.pm 15115 2008-12-08 20:00:49Z cjfields $
+# $Id: SeqUtils.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::SeqUtils
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
@@ -93,6 +95,17 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
@@ -107,7 +120,7 @@ Email:  heikki-at-bioperl-dot-org
 
 =head1 CONTRIBUTORS
 
-Roy R. Chaudhuri <roy.chaudhuri at gmail.com>
+Roy R. Chaudhuri - roy.chaudhuri at gmail.com
 
 =head1 APPENDIX
 
@@ -533,6 +546,9 @@ sub _coord_adjust {
 	    $newfeat->annotation->add_Annotation($key, $value);
 	}
     } 
+    foreach my $key ( $feat->get_all_tags() ) {
+	    $newfeat->add_tag_value($key, $feat->get_tag_values($key));
+    } 
     if (@loc==1) {
         $newfeat->location($loc[0])
     } else {
@@ -632,6 +648,9 @@ sub _feature_revcom {
 	foreach my $value ( $feat->annotation->get_Annotations($key) ) {
 	    $newfeat->annotation->add_Annotation($key, $value);
 	}
+    } 
+    foreach my $key ( $feat->get_all_tags() ) {
+	    $newfeat->add_tag_value($key, $feat->get_tag_values($key));
     } 
     if (@loc==1) {
         $newfeat->location($loc[0])

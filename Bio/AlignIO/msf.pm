@@ -1,4 +1,4 @@
-# $Id: msf.pm 14883 2008-09-16 18:27:31Z jason $
+# $Id: msf.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::msf
 #   based on the Bio::SeqIO::msf module
@@ -28,6 +28,17 @@ This object can transform L<Bio::Align::AlignI> objects to and from msf
 flat file databases.
 
 =head1 FEEDBACK
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -140,11 +151,10 @@ sub next_aln {
 
 #  If $end <= 0, we have either reached the end of
 #  file in <> or we have encountered some other error
-#
-#   if ($end <= 0) { undef $aln;}
 
    }
-   return $aln;
+   return $aln if $aln->num_sequences;
+   return;
 }
 
 
@@ -183,7 +193,7 @@ sub write_aln {
 		}
 
 		$self->_print (sprintf("\n%s   MSF: %d  Type: %s  %s  Check: 00 ..\n\n",
-			       $name,  $aln->no_sequences, $type, $date));
+			       $name,  $aln->num_sequences, $type, $date));
 
     my $seqCountFormat = "%".($maxname > 20 ? $maxname + 2: 22)."s%-27d%27d\n";
     my $seqNameFormat  = "%-".($maxname > 20 ? $maxname : 20)."s  ";

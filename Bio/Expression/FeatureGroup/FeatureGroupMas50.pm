@@ -1,11 +1,11 @@
 # Let the code begin...
 package Bio::Expression::FeatureGroup::FeatureGroupMas50;
 
-# $Id: FeatureGroupMas50.pm 10475 2006-09-20 15:47:57Z cjfields $
+# $Id: FeatureGroupMas50.pm 15515 2009-02-10 13:41:46Z dave_messina $
 
 =head1 NAME
 
-Bio::Expression::FeatureGroup::FeatureGroupMas50
+Bio::Expression::FeatureGroup::FeatureGroupMas50 - utility class for Mas50 FeatureGroup
 
 =cut
 

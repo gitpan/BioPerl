@@ -1,4 +1,4 @@
-# $Id: fasta.pm 11603 2007-07-31 15:32:43Z sendu $
+# $Id: fasta.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::fasta
 #
@@ -24,6 +24,17 @@ for the FastA sequence analysis program.  To process the alignments from
 FastA (FastX, FastN, FastP, tFastA, etc) use the Bio::SearchIO module.
 
 =head1 FEEDBACK
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -51,6 +62,7 @@ use strict;
 
 use base qw(Bio::AlignIO);
 our $WIDTH = 60;
+use Bio::LocatableSeq;
 
 =head2 next_aln
 
@@ -130,13 +142,6 @@ sub next_aln {
 		$start = 1;
 		$end = $self->_get_len($seqchar);
 	}
-
-	#  If $end <= 0, we have either reached the end of
-	#  file in <> or we have encountered some other error
-	if ( $end <= 0 ) { 
-		undef $aln; 
-		return $aln;
-	}
 	
 	# This logic now also reads empty lines at the 
 	# end of the file. Skip this is seqchar and seqname is null
@@ -157,7 +162,9 @@ sub next_aln {
 		$seq->seq( $seq->seq() . "-" x $diff);
 	    }
 	}
-	return $aln;
+
+    # no sequences means empty alignment (possible EOF)
+	return $aln if $aln->num_sequences;
 }
 
 =head2 write_aln
@@ -217,7 +224,8 @@ sub write_aln {
 
 sub _get_len {
 	my ($self,$seq) = @_;
-	$seq =~ s/[^A-Z]//gi;
+	my $chars = $Bio::LocatableSeq::RESIDUE_SYMBOLS;
+	$seq =~ s{[^$chars]+}{}gi;
 	return CORE::length($seq);
 }
 

@@ -1,4 +1,4 @@
-# $Id: Primer3.pm 14772 2008-07-30 19:01:52Z cjfields $
+# $Id: Primer3.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Tools::Primer3
 #
@@ -80,6 +80,17 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -298,7 +309,7 @@ sub next_primer {
 	  if (! $self->number_of_results);
 
 	$self->{'next_to_return'} = 0 unless ($self->{'next_to_return'});
-	return if ($self->{'next_to_return'} >= $self->{'maximum_primers_returned'});
+	return if ($self->{'next_to_return'} >= $self->number_of_results);
 	my $results = $self->primer_results($self->{'next_to_return'});
 
 	$self->throw("No left primer sequence") unless (${$results}{'PRIMER_LEFT_SEQUENCE'});

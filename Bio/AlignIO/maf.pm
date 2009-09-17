@@ -1,4 +1,4 @@
-# $Id: maf.pm 14522 2008-02-20 21:51:27Z cjfields $
+# $Id: maf.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::maf
 #
@@ -23,9 +23,9 @@ Bio::AlignIO::maf - Multiple Alignment Format sequence input stream
    print $aln, "\n";
 
    print $aln->length, "\n";
-   print $aln->no_residues, "\n";
+   print $aln->num_residues, "\n";
    print $aln->is_flush, "\n";
-   print $aln->no_sequences, "\n";
+   print $aln->num_sequences, "\n";
 
    $aln->splice_by_seq_pos(1);
 
@@ -47,6 +47,17 @@ Spec of MAF format is here:
   http://genome.ucsc.edu/FAQ/FAQformat
 
 =head1 FEEDBACK
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -168,7 +179,8 @@ sub next_aln {
 	$aln->add_seq($seq);
     }
 
-    return $aln;
+    return $aln if $aln->num_sequences;
+	return;
 }
 
 sub write_aln {

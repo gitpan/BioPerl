@@ -1,6 +1,8 @@
-# $Id: GraphViz.pm 15052 2008-12-01 08:47:39Z heikki $
+# $Id: GraphViz.pm 15635 2009-04-14 19:11:13Z cjfields $
 #
 # Module for Bio::PhyloNetwork::GraphViz
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Gabriel Cardona <gabriel(dot)cardona(at)uib(dot)es>
 #

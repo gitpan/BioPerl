@@ -1,6 +1,8 @@
-# $Id: TreeFunctionsI.pm 14904 2008-09-19 16:17:32Z heikki $
+# $Id: TreeFunctionsI.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Tree::TreeFunctionsI
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Jason Stajich <jason-at-bioperl-dot-org>
 #
@@ -42,6 +44,17 @@ the Bioperl mailing list.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -226,12 +239,17 @@ sub get_lineage_nodes {
            (-keep_id => [2]) will remove all nodes unless they have an id() of
            '2' (note, no -remove_*).
 
+           -preserve_lengths => 1 : setting this argument will splice out
+           intermediate nodes, preserving the original total length between
+           the ancestor and the descendants of the spliced node. Undef 
+           by default.
+
 =cut
 
 sub splice {
     my ($self, @args) = @_;
     $self->throw("Must supply some arguments") unless @args > 0;
-
+    my $preserve_lengths = 0;
     my @nodes_to_remove;
     if (ref($args[0])) {
         $self->throw("When supplying just a list of Nodes, they must be Bio::Tree::NodeI objects") unless $args[0]->isa('Bio::Tree::NodeI');
@@ -257,6 +275,9 @@ sub splice {
                     push(@keep_nodes, $self->find_node($key => $value));
                 }
             }
+	    elsif ($key =~ /preserve/) {
+		$preserve_lengths = $value;
+	    }
         }
 
         if ($remove_all) {
@@ -305,6 +326,7 @@ sub splice {
         # no ancestor of our own to remove us from the tree
         foreach my $desc (@descs) {
             $desc->ancestor($ancestor);
+	    $desc->branch_length($desc->branch_length + $node->branch_length) if $preserve_lengths;
         }
         $node->ancestor(undef);
     }
@@ -694,7 +716,21 @@ sub simplify_to_leaves_string {
 }
 
 # safe tree clone that doesn't seg fault
-sub _clone {
+
+=head2 clone()
+
+ Title   : clone
+ Alias   : _clone
+ Usage   : $tree_copy = $tree->clone();
+           $subtree_copy = $tree->clone($internal_node);
+ Function: Safe tree clone that doesn't segfault
+           (of Sendu)
+ Returns : Bio::Tree::Tree object
+ Args    : [optional] $start_node, Bio::Tree::Node object
+
+=cut
+
+sub clone {
     my ($self, $parent, $parent_clone) = @_;
     $parent ||= $self->get_root_node;
     $parent_clone ||= $self->_clone_node($parent);
@@ -709,6 +745,9 @@ sub _clone {
     my $tree = $self->new(-root => $parent_clone);
     return $tree;
 }
+
+# alias
+sub _clone { shift->clone(@_) }
 
 # safe node clone that doesn't seg fault, but deliberately loses ancestors and
 # descendents
@@ -926,54 +965,72 @@ sub reroot {
         return 0;
     }
 
-    {
+	my $old_root = $self->get_root_node;
+	if( $new_root == $old_root ) {
+	    $self->warn("Node requested for reroot is already the root node!");
+	    return 0;
+	}
         my $anc = $new_root->ancestor;
         unless( $anc ) {
-            return 0;
+	    # this is already the root
+	    $self->warn("Node requested for reroot is already the root node!");            return 0;
         }
-        my $blen;
-        if( $new_root->is_Leaf() ) {
-            $blen = $new_root->branch_length;
-        } else {
-            $blen = ($new_root->branch_length() || 0) / 2;
-        }
-        my $node = $anc->new(-branch_length => $blen);
-        $new_root->branch_length($blen);
-        $anc->add_Descendent($node);
-        $anc->remove_Descendent($new_root);
-        $node->add_Descendent($new_root);
-        $new_root = $node;
-    }
-
-    my $old_root = $self->get_root_node;
-    if( $new_root == $old_root ) {
-        $self->warn("Node requested for reroot is already the root node!");
-        return 0;
-    }
-
+        my $tmp_node = $new_root->create_node_on_branch(-position=>0,-force=>1);
     # reverse the ancestor & children pointers
-    my @path_from_oldroot = ($self->get_lineage_nodes($new_root), $new_root);
-    for (my $i = 0; $i < @path_from_oldroot - 1; $i++) {
+    my $former_anc = $tmp_node->ancestor;
+    my @path_from_oldroot = ($self->get_lineage_nodes($tmp_node), $tmp_node);
+    for (my $i = 0; $i < $#path_from_oldroot; $i++) {
         my $current = $path_from_oldroot[$i];
         my $next = $path_from_oldroot[$i + 1];
         $current->remove_Descendent($next);
         $current->branch_length($next->branch_length);
+        $current->bootstrap($next->bootstrap) if defined $next->bootstrap;
+	$next->remove_tag('B');
         $next->add_Descendent($current);
     }
-    # root node can be an artifical node which needs to be removed here
-    # when we are re-rooting.  We can only get its ancestor
-    # after we've reversed the path
-    my $anc = $old_root->ancestor;
-    my @d = $old_root->each_Descendent;
-    if( @d == 1 ) {
-    	$anc->add_Descendent(shift @d);
-        $anc->remove_Descendent($old_root);
-    }
+
+    $new_root->add_Descendent($former_anc);
+    $tmp_node->remove_Descendent($former_anc);
+    
+    $tmp_node = undef;
     $new_root->branch_length(undef);
+    $new_root->remove_tag('B');
+
     $old_root = undef;
     $self->set_root_node($new_root);
 
     return 1;
+}
+
+=head2 reroot_at_midpoint
+
+ Title   : reroot_at_midpoint
+ Usage   : $tree->reroot_at_midpoint($node, $new_root_id);
+ Function: Reroots a tree on a new node created halfway between the 
+           argument and its ancestor
+ Returns : the new midpoint Bio::Tree::NodeIon success, 0 on failure
+ Args    : non-root Bio::Tree::NodeI currently in $tree
+           scalar string, id for new node (optional)
+
+=cut
+
+sub reroot_at_midpoint {
+    my $self = shift;
+    my $node = shift;
+    my $id = shift;
+
+    unless (defined $node && $node->isa("Bio::Tree::NodeI")) {
+        $self->warn("Must provide a valid Bio::Tree::NodeI when rerooting");
+        return 0;
+    }
+
+    my $midpt = $node->create_node_on_branch(-FRACTION=>0.5);
+    if (defined $id) {
+	$self->warn("ID argument is not a scalar") if (ref $id);
+	$midpt->id($id) if defined($id) && !ref($id);
+    }
+    $self->reroot($midpt);
+    return $midpt;
 }
 
 =head2 findnode_by_id
@@ -1068,7 +1125,6 @@ sub _read_trait_file {
     }
     return $traits;
 }
-
 
 sub add_trait {
     my $self = shift;

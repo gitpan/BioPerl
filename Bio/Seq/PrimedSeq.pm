@@ -1,4 +1,4 @@
-# $Id: PrimedSeq.pm 15052 2008-12-01 08:47:39Z heikki $
+# $Id: PrimedSeq.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # This is the original copyright statement. I have relied on Chad's module
 # extensively for this module.
@@ -116,6 +116,17 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 

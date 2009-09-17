@@ -1,7 +1,9 @@
 #
-# $Id: SwissProt.pm 11480 2007-06-14 14:16:21Z sendu $
+# $Id: SwissProt.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::DB::SwissProt
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Jason Stajich <jason@bioperl.org>
 #
@@ -67,6 +69,17 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
@@ -97,19 +110,19 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::DB::SwissProt;
 use strict;
-use vars qw($MODVERSION %HOSTS $DEFAULTFORMAT $DEFAULTSERVERTYPE);
 
-$MODVERSION = '0.8.1';
 use HTTP::Request::Common;
+our $MODVERSION = '0.8.1';
 
 use base qw(Bio::DB::WebDBSeqI);
 
 # global vars
-$DEFAULTSERVERTYPE = 'ebi';
-$DEFAULTFORMAT = 'swissprot';
+our $DEFAULTSERVERTYPE = 'ebi';
+our $DEFAULTFORMAT = 'swissprot';
+our $DEFAULTIDTRACKER = 'http://www.expasy.ch';
 
 # you can add your own here theoretically.
-%HOSTS = ( 
+our %HOSTS = ( 
 	   'expasy' => { 
 	       'default' => 'us',
 	       'baseurl' => 'http://%s/cgi-bin/sprot-retrieve-list.pl',
@@ -441,6 +454,40 @@ sub request_format {
 	}
     }
     return @{$self->{'_format'}};
+}
+
+=head2 idtracker
+
+ Title   : idtracker
+ Usage   : my ($newid) = $self->idtracker($oldid);
+ Function: Retrieve new ID using old ID. 
+ Returns : single ID if one is found
+ Args    : ID to look for 
+
+=cut
+
+sub idtracker {
+    my ($self, $id) = @_;
+    return unless defined $id;
+    my $st = $self->servertype;
+    my $base = ($st eq 'expasy') ? "http://".$HOSTS{$st}->{'hosts'}->{$self->hostlocation}
+        : $DEFAULTIDTRACKER;
+    my $url = $base.'/cgi-bin/idtracker?id='.$id;
+    my $response;
+    eval {$response = $self->ua->get($url)};
+    if ($@ || $response->is_error) {
+        my $error = $@ || $response->error_as_HTML;
+        $self->throw("Error:\n".$error);
+    }
+    if ($response->content =~ /was renamed to <b>(.*?)<\/b>/) {
+        return $1;
+    } elsif ($response->content =~ /<tr><th>Entry name<\/th><th>Accession number<\/th><th>Release created<\/th><\/tr>/){
+        # output indicates no mapping needed, return original ID
+        return $id;
+    } else {
+        $self->warn("Unknown response:\n".$response->content);
+        return
+    }
 }
 
 1;

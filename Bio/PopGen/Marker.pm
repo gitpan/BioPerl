@@ -1,6 +1,8 @@
-# $Id: Marker.pm 14676 2008-05-11 06:41:28Z jason $
+# $Id: Marker.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::PopGen::Marker
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Jason Stajich <jason@bioperl.org>
 #
@@ -41,6 +43,17 @@ the Bioperl mailing list.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -200,6 +213,25 @@ sub unique_id{
 
     return $self->{'_uniqueid'} = shift if @_;
     return $self->{'_uniqueid'};
+}
+
+
+=head2 annotation
+
+ Title   : annotation
+ Usage   : my $annotation_collection = $marker->annotation;
+ Function: Get/set a Bio::AnnotationCollectionI for this marker
+ Returns : Bio::AnnotationCollectionI object
+ Args    : [optional set] Bio::AnnotationCollectionI object
+
+=cut
+
+sub annotation{
+   my ($self, $arg) = @_;
+   return $self->{_annotation} unless $arg;
+   $self->throw("Bio::AnnotationCollectionI required for argument") unless
+       ref($arg) && $arg->isa('Bio::AnnotationCollectionI');
+   return $self->{_annotation} = $arg;
 }
 
 =head2 get_Alleles

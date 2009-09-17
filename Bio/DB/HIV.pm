@@ -2,6 +2,8 @@
 #
 # BioPerl module for Bio::DB::HIV
 #
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
+#
 # Cared for by Mark A. Jensen <maj@fortinbras.us>
 #
 # Copyright Mark A. Jensen
@@ -52,6 +54,17 @@ the Bioperl mailing list.  Your participation is much appreciated.
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
@@ -66,6 +79,8 @@ Email maj@fortinbras.us
 
 =head1 CONTRIBUTORS
 
+Mark A. Jensen
+
 =head1 APPENDIX
 
 The rest of the documentation details each of the object methods.
@@ -78,6 +93,7 @@ Internal methods are usually preceded with a _
 
 package Bio::DB::HIV;
 use strict;
+use warnings;
 use vars qw( $LANL_BASE $LANL_MAP_DB $LANL_MAKE_SEARCH_IF $LANL_SEARCH );
 
 # Object preamble - inherits from Bio::DB::WebDBSeqI
@@ -367,15 +383,18 @@ sub postprocess_data {
 	$self->throw(-class=>'Bio::Root::BadParameter',
 		     -text=>'No data found in repsonse',
 		     -value=>%args) unless (@data);
-	shift @data; # number-returned line
+	my $l;
+	do {
+	    $l = shift @data;
+	} while  ( $l !~ /Number/ ); # number-returned line
 	@cols = split( /\t/, shift @data);
 
 	# if Accession column is present, get_Stream_by_acc was called
 	# otherwise, return lanl ids
-	($idkey) = grep /SE.id/, @cols unless ($idkey) = grep /Accession/, @cols;
+	($idkey) = grep /SE.id/i, @cols unless ($idkey) = grep /Accession/i, @cols;
 	$self->throw(-class=>"Bio::ResponseProblem::Exception",
 		     -text=>"Trouble with column headers in LANL response",
-		     -value=>\@cols) unless $idkey;
+		     -value=>join(' ',@cols)) unless $idkey;
 	
  	foreach (@data) {
 	    chop;

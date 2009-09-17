@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: StandAloneBlast.t 15231 2008-12-22 21:51:02Z cjfields $
+# $Id: StandAloneBlast.t 16089 2009-09-15 21:34:07Z cjfields $
 
 use strict;
 use File::Spec;
@@ -71,11 +71,11 @@ like $param_string, qr/-F 'm D'/;
 # dashed parameters should work
 my $outfile = test_output_file();
 ok my $factory = Bio::Tools::Run::StandAloneBlast->new(-verbose     => $verbose,
-													   -program     => 'blastn',
-													   -database    => $nt_database , 
-													   -_READMETHOD => 'SearchIO', 
-													   -output      => $outfile,
-													   -verbose     => 0);
+		-program     => 'blastn',
+		-database    => $nt_database , 
+		-_READMETHOD => 'SearchIO', 
+		-output      => $outfile,
+		-verbose     => 0);
 is $factory->database, $nt_database;
 
 # Setup and then do tests that actually run blast

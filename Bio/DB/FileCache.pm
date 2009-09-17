@@ -1,4 +1,4 @@
-# $Id: FileCache.pm 10525 2006-09-26 22:03:22Z sendu $
+# $Id: FileCache.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # POD documentation - main docs before the code
 #
@@ -42,6 +42,17 @@ This module requires DB_File and Storable.
 =head1 CONTACT
 
 Lincoln Stein E<lt>lstein@cshl.orgE<gt>
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 

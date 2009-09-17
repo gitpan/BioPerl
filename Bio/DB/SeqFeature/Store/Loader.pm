@@ -12,8 +12,8 @@ Bio::DB::SeqFeature::Store::Loader -- Loader
 
 =head1 DESCRIPTION
 
-This is the base class for Bio::DB::SeqFeature::GFF3Loader,
-Bio::DB::SeqFeature::GFFLoader, and
+This is the base class for Bio::DB::SeqFeature::Loader::GFF3Loader,
+Bio::DB::SeqFeature::Loader::GFFLoader, and
 Bio::DB::SeqFeature::FeatureFileLoader. Please see the manual pages
 for these modules.
 
@@ -73,7 +73,7 @@ pairs as described in this table:
  -map_coords        A code ref that will transform a list of ($ref,[$start1,$end1]...)
                        coordinates into a list of ($newref,[$newstart1,$newend1]...)
 
- -index_subfeatures Indicate true if subfeatures should be indexed. Default is false.
+ -index_subfeatures Indicate true if subfeatures should be indexed. Default is true.
 
 When you call new(), a connection to a Bio::DB::SeqFeature::Store
 database should already have been established and the database
@@ -145,14 +145,17 @@ END
   eval "require Time::HiRes";
 
   $tmpdir ||= File::Spec->tmpdir();
-  my $dsn = tempdir(DIR=>$tmpdir,CLEANUP=>1);
 
   my $tmp_store = Bio::DB::SeqFeature::Store->new(-adaptor  => 'berkeleydb',
 						  -temporary=> 1,
-						  -dsn      => $dsn,
+						  -dsn      => tempdir(
+						       'BioDBSeqFeature_XXXXXXX',
+						       DIR=>$tmpdir,
+						       CLEANUP=>1
+						  ),
 						  -cache    => 1,
 						  -write    => 1)
-    unless $normalized;
+      unless $normalized;
 
   $index_subfeatures = 1 unless defined $index_subfeatures;
 
@@ -364,7 +367,9 @@ sub finish_load {
   }
   eval {$self->store->commit};
   $self->msg(sprintf "%5.2fs\n",$self->time()-$self->{load_data}{start_time});
-  $self->delete_load_data;
+
+  # don't delete load data so that caller can ask for the loaded IDs
+  # $self->delete_load_data;
 }
 
 =item do_load
@@ -467,7 +472,6 @@ This method is called to store the currently active feature in the
 database. It uses a data structure stored in $self-E<gt>{load_data}.
 
 =cut
-
 
 sub store_current_feature {
   my $self    = shift;
@@ -608,6 +612,40 @@ sub msg {
   print STDERR @msg;
 }
 
+=item loaded_ids
+
+ my $ids    = $loader->loaded_ids;
+ my $id_cnt = @$ids;
+
+After performing a load, this returns an array ref containing all the
+feature primary ids that were created during the load.
+
+=cut
+
+sub loaded_ids {
+    my $self = shift;
+    my @ids  = values %{$self->{load_data}{Local2GlobalID}}
+                     if $self->{load_data};
+    return \@ids;
+}
+
+=item local_ids
+
+ my $ids    = $self->local_ids;
+ my $id_cnt = @$ids;
+
+After performing a load, this returns an array ref containing all the
+load file IDs that were contained within the file just loaded.
+
+=cut
+
+sub local_ids {
+    my $self = shift;
+    my @ids  = keys %{$self->{load_data}{Local2GlobalID}}
+                   if $self->{load_data};
+    return \@ids;
+}
+
 =item time
 
  my $time = $loader->time
@@ -653,7 +691,7 @@ L<bioperl>,
 L<Bio::DB::SeqFeature::Store>,
 L<Bio::DB::SeqFeature::Segment>,
 L<Bio::DB::SeqFeature::NormalizedFeature>,
-L<Bio::DB::SeqFeature::GFF3Loader>,
+L<Bio::DB::SeqFeature::Store::GFF3Loader>,
 L<Bio::DB::SeqFeature::Store::DBI::mysql>,
 L<Bio::DB::SeqFeature::Store::berkeleydb>
 

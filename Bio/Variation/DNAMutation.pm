@@ -1,6 +1,8 @@
-# $Id: DNAMutation.pm 10577 2006-09-28 21:32:20Z mauricio $
+# $Id: DNAMutation.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Variation::DNAMutation
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
 #
@@ -60,6 +62,17 @@ Bioperl mailing lists  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -324,7 +337,7 @@ sub _point_type_label {
            'systematic name' of the mutation. Systematic name is
            specified in Antonorakis & MDI Nomenclature Working Group:
            Human Mutation 11:1-3, 1998. 
-           http://www3.interscience.wiley.com/cgi-bin/abstract/5001291/ABSTRACT
+           
  Returns : string
 
 =cut

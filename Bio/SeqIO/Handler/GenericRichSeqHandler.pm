@@ -1,6 +1,8 @@
-# $Id: GenericRichSeqHandler.pm 15212 2008-12-19 05:47:58Z cjfields $
+# $Id: GenericRichSeqHandler.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::SeqIO::Handler::GenericRichSeqHandler
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Chris Fields
 #
@@ -105,6 +107,17 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
@@ -113,9 +126,9 @@ web:
 
   http://bugzilla.open-bio.org/
 
-=head1 AUTHOR - Ewan Birney
+=head1 AUTHOR - Chris Fields
 
-Email cjfields at uiuc dot edu
+Email cjfields at bioperl dot org
 
 =head1 APPENDIX
 
@@ -213,7 +226,7 @@ my %DBSOURCE = map {$_ => 1} qw(
     TMHOBP    COMPLUYEAST-2DPAGE    OGP    DictyBase    HAMAP
     PhotoList    Gramene    WormBase    WormPep    Genew    ZFIN
     PeroxiBase    MaizeDB    TAIR    DrugBank    REBASE    HPA
-    swissprot    GenBank    GenPept    REFSEQ    embl    PDB);
+    swissprot    GenBank    GenPept    REFSEQ    embl    PDB    UniProtKB);
 
 my %NOPROCESS = map {$_ => 1} qw(DBSOURCE ORGANISM FEATURES);
 
@@ -861,12 +874,12 @@ sub _genbank_dbsource {
     my $annotation = $self->annotation_collection;
     # deal with swissprot dbsources
     # we could possibly parcel these out to subhandlers...
-    if( $dbsource =~ s/swissprot:\s+locus\s+(\S+)\,.+\n// ) {
+    if( $dbsource =~ s/(UniProt(?:KB)|swissprot):\s+locus\s+(\S+)\,.+\n// ) {
         $annotation->add_Annotation
-            ('d blink',
+            ('dblink',
              Bio::Annotation::DBLink->new
-             (-primary_id => $1,
-              -database => 'swissprot',
+             (-primary_id => $2,
+              -database => $1,
               -tagname => 'dblink'));
         if( $dbsource =~ s/\s*created:\s+([^\.]+)\.\n// ) {
             $annotation->add_Annotation

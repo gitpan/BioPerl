@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: Primer3.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: Primer3.t 16091 2009-09-15 22:11:15Z cjfields $
 
 
 use strict;
@@ -8,7 +8,7 @@ BEGIN {
     use lib '.';
     use Bio::Root::Test;
     
-    test_begin(-tests => 12,
+    test_begin(-tests => 14,
                -requires_module => 'Clone');
 	
     use_ok('Bio::Tools::Primer3');
@@ -46,3 +46,9 @@ ok $primer = $p3->next_primer;
 # get the left primer
 my $left_primer_seq = $primer->get_primer('left')->seq;
 is $left_primer_seq->seq, "GAGGGTAACACGCTGGTCAT";
+
+# bug 2862
+ok $p3 = Bio::Tools::Primer3->new(-file=>test_input_file('bug2862.pmr'));
+$num=0;
+while ($p3->next_primer) { $num++ };
+is $p3->number_of_results, $num, 'bug 2862';

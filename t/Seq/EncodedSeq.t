@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: EncodedSeq.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: EncodedSeq.t 16091 2009-09-15 22:11:15Z cjfields $
 
 use strict;
 
@@ -25,7 +25,7 @@ is $seq->alphabet, 'dna';
 is $seq->start, 1;
 is $seq->end, 6;
 is $seq->strand, 1;
-is $seq->no_gaps, 1;
+is $seq->num_gaps, 1;
 is $seq->column_from_residue_number(4), 9;
 
 # this should fail
@@ -60,7 +60,7 @@ is $seq->seq, 'atcg---ta';
 is $seq->column_from_residue_number(14), 2;
 is $seq->encoding('3C2GCG'), 'CCCGGCGCC';
 is $seq->seq, 'at-c--gta';
-is $seq->no_gaps, 2;
+is $seq->num_gaps, 2;
 is $seq->location_from_column(2)->to_FTstring, 14;
 is $seq->location_from_column(5)->to_FTstring, "12^13";
 is $seq->encoding("B", Bio::Location::Simple->new(-start => 10, -end => 11,

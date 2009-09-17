@@ -1,6 +1,6 @@
 package Bio::DB::SeqFeature::Segment;
 
-# $Id: Segment.pm 14598 2008-03-05 05:42:57Z lstein $
+# $Id: Segment.pm 15635 2009-04-14 19:11:13Z cjfields $
 
 =head1 NAME
 
@@ -414,6 +414,7 @@ sub end     { shift->{end}    }
 sub seq_id  { shift->{seqid}  }
 sub strand  { shift->{strand} }
 sub ref     { shift->seq_id   }
+*refseq = \&ref;
 
 sub length  {
   my $self = shift;

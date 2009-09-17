@@ -9,7 +9,7 @@
 
 =head1 NAME
 
-Bio::Assembly::Tools::ContigSpectrum
+Bio::Assembly::Tools::ContigSpectrum - create and manipulate contig spectra
 
 =head1 SYNOPSIS
 
@@ -74,6 +74,9 @@ Bio::Assembly::Tools::ContigSpectrum
     -cross => $mixed_csp );
   print "The cross contig spectrum is ".$cross_csp->to_string."\n";
 
+  # Score a contig spectrum (the more abundant the contigs and the larger their
+  # size, the larger the score)
+
 
 =head1 DESCRIPTION
 
@@ -106,7 +109,7 @@ excluded. Additionally, the total number of singletons (1-contigs)
 from each region that assembles with any fragments from other regions
 is the number of 1-contigs in the cross contig spectrum.
 
-=head2 Implemention
+=head2 Implementation
 
 The simplest representation of a contig spectrum is as a hash
 representation where the key is the contig size (number of sequences
@@ -152,11 +155,23 @@ E<gt>metagenome2|seq1, ...
 =head2 Mailing Lists
 
 User feedback is an integral part of the evolution of this and other
-BioPerl modules. Send your comments and suggestions preferably to the
-BioPerl mailing lists. Your participation is much appreciated.
+Bioperl modules. Send your comments and suggestions preferably to the
+Bioperl mailing lists  Your participation is much appreciated.
 
-  bioperl-l@bioperl.org                 - General discussion
-  http://bio.perl.org/MailList.html     - About the mailing lists
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -234,7 +249,7 @@ sub new {
   $self->{'_eff_asm_params'} = 0;
   $self->{'_spectrum'}       = {1 => 0};  # contig spectrum hash representation
   $self->{'_assembly'}       = []; # list of assembly objects used
-  
+
   # Then, according to user desires, override defaults
   $self->{'_id'}             = $id             if (defined $id);
   $self->{'_nof_seq'}        = $nof_seq        if (defined $nof_seq);
@@ -247,7 +262,7 @@ sub new {
   $self->{'_avg_identity'}   = $avg_identity   if (defined $avg_identity);
   $self->{'_avg_seq_len'}    = $avg_seq_len    if (defined $avg_seq_len);
   $self->{'_eff_asm_params'} = $eff_asm_params if (defined $eff_asm_params);
-  
+
   # Finally get stuff that can be gotten in an automated way
   $self->_import_spectrum($spectrum) if defined($spectrum);
   $self->_import_assembly($assembly) if defined($assembly);
@@ -255,8 +270,8 @@ sub new {
     my ($mixed_csp, $header) = (@$dissolve[0], @$dissolve[1]);
     $self->_import_dissolved_csp($mixed_csp, $header);
   }
-  $self->_import_cross_csp($cross) if defined($cross);
-  
+  $self->_import_cross_csp($cross)   if defined($cross);
+
   return $self;
 }
 
@@ -770,6 +785,55 @@ sub average {
 }
 
 
+=head2 average
+
+  Title   : score
+  Usage   : my $score = $csp->score();
+  Function: Score a contig spectrum (or cross-contig spectrum) such that the
+             higher the number of contigs (or cross-contigs) and the larger their 
+             size, the higher the score.
+             Let n   : total number of sequences
+                 c_q : number of contigs of size q
+                 q   : number of sequence in a contig
+             We define: score = n/(n-1) * (X - 1/n)
+                  where X = sum ( c_q * q^2 ) / n**2
+             The score ranges from 0 (singlets only) to 1 (a single large contig)
+             It is possible to specify a value for the number of sequences to
+              assume in the contig spectrum.
+  Returns : contig score
+  Args    : number of total sequences to assume [optional]
+
+=cut
+
+sub score {
+  my ($self, $nof_seqs) = @_;
+  # Main
+  my $score = 0;
+  my $n = $self->nof_seq;
+  if ( $n > 0 ) {
+    # Contig spectrum info
+    my $q_max = $self->max_size;
+    my $spec  = $self->spectrum;
+    # Adjust number of 1-contigs
+    if ( $nof_seqs ) {
+      $spec->{'1'} += $nof_seqs - $n;
+      $n = $nof_seqs;
+    }
+    # Calculate X
+    for my $q ( 1 .. $q_max ) {
+      if ( $spec->{$q} ) {
+        my $c_q = $spec->{$q};
+        $score += $c_q * $q ** 2;
+      }
+    }
+    $score /= $n ** 2; 
+  }
+  # Rescale X to obtain the score
+  $score = $n/($n-1) * ($score - 1/$n);
+  return $score;
+}
+
+
 =head2 _naive_assembler
 
   Title   : _naive_assembler
@@ -906,7 +970,7 @@ sub _new_from_assembly {
   $csp->{'_nof_seq'}     = $nseq;
   # 4: Set the spectrum: spectrum and max_size
   for my $contigobj ($assemblyobj->all_contigs) {
-    my $size = $contigobj->no_sequences;
+    my $size = $contigobj->num_sequences;
     if (defined $csp->{'_spectrum'}{$size}) {
       $csp->{'_spectrum'}{$size}++;
     } else {
@@ -1131,9 +1195,9 @@ sub _new_cross_csp {
         }
         # update number of cross q-contigs in spectrum
         if (defined $spectrum{$qsize}) {
-          $spectrum{$qsize} = 1;
-        } else {
           $spectrum{$qsize}++;
+        } else {
+          $spectrum{$qsize} = 1;
         }
       }
       # Update number of cross 1-contigs
@@ -1196,8 +1260,8 @@ sub _new_cross_csp {
 sub _import_assembly {
   my ($self, $assemblyobj) = @_;
   # Sanity check
-  if( !ref $assemblyobj || ! $assemblyobj->isa('Bio::Assembly::Scaffold') ) {
-        $self->throw("Unable to process non Bio::Assembly::Scaffold assembly ".
+  if( !ref $assemblyobj || ! $assemblyobj->isa('Bio::Assembly::ScaffoldI') ) {
+        $self->throw("Unable to process non Bio::Assembly::ScaffoldI assembly ".
         "object [".ref($assemblyobj)."]");
   }
   # Create new object from assembly
@@ -1295,13 +1359,13 @@ sub _import_cross_csp {
   if (not defined $mixed_csp) {
     $self->throw("Expecting a contig spectrum reference as argument");
   }
-  
+
   # Create new object from assembly
   my $cross_csp = $self->_new_cross_csp($mixed_csp);
-  
+
   # Update current contig spectrum object with new one
   $self->add($cross_csp);
-  
+
   return 1;
 }
 
@@ -1324,7 +1388,7 @@ sub _get_seq_stats {
 
   # sanity check
   $self->throw("Must provide a Bio::Assembly::Scaffold object")
-    if (!defined $assemblyobj || !$assemblyobj->isa("Bio::Assembly::Scaffold"));
+    if (!defined $assemblyobj || !$assemblyobj->isa("Bio::Assembly::ScaffoldI"));
   $self->throw("Expecting a hash reference. Got [".ref($seq_hash)."]")
     if (defined $seq_hash && ! ref($seq_hash) eq 'HASH');
 
@@ -1373,8 +1437,8 @@ sub _get_overlap_stats {
   my ($self, $assembly_obj, $seq_hash) = @_;
 
   # sanity check
-  $self->throw("Must provide a Bio::Assembly::Scaffold object")
-    if (!defined $assembly_obj || !$assembly_obj->isa("Bio::Assembly::Scaffold"));
+  $self->throw("Must provide a Bio::Assembly::ScaffoldI object")
+    if (!defined $assembly_obj || !$assembly_obj->isa("Bio::Assembly::ScaffoldI"));
   $self->throw("Expecting a hash reference. Got [".ref($seq_hash)."]")
     if (defined $seq_hash && ! ref($seq_hash) eq 'HASH');
   

@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: AlignIO.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: AlignIO.t 16090 2009-09-15 21:57:56Z cjfields $
 
 use strict;
 
@@ -49,7 +49,7 @@ while (my ($file, $fdata) = each %files) {
            '-file' => ">".test_output_file(), 
                         '-format' => 'clustalw');
         while ( $aln = <$fhin>) {
-            cmp_ok($aln->no_sequences, '>=', 2, "input filehandle method test : $format");
+            cmp_ok($aln->num_sequences, '>=', 2, "input filehandle method test : $format");
             last;
         }
     }

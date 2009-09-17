@@ -1,5 +1,5 @@
 package Bio::DB::SeqFeature::Store::DBI::mysql;
-# $Id: mysql.pm 15257 2008-12-24 05:27:05Z cjfields $
+# $Id: mysql.pm 16090 2009-09-15 21:57:56Z cjfields $
 
 =head1 NAME
 
@@ -254,7 +254,7 @@ END
 	  locationlist => <<END,
 (
   id         int(10)       auto_increment primary key,
-  seqname    varchar(50)   not null,
+  seqname    varchar(256)   not null,
   index(seqname)
 )
 END
@@ -262,14 +262,14 @@ END
 	  typelist => <<END,
 (
   id       int(10) auto_increment primary key,
-  tag      varchar(40)  not null,
+  tag      varchar(256)  not null,
   index(tag)
 )
 END
 	  name => <<END,
 (
   id           int(10)       not null,
-  name         varchar(128)  not null,
+  name         varchar(256)  not null,
   display_name tinyint       default 0,
   index(id),
   index(name)
@@ -282,15 +282,14 @@ END
   attribute_id     int(10)   not null,
   attribute_value  text,
   index(id),
-  index(attribute_id,attribute_value(10)),
-  FULLTEXT(attribute_value)
-) ENGINE=MYISAM
+  index(attribute_id,attribute_value(10))
+) 
 END
 
 	  attributelist => <<END,
 (
   id       int(10) auto_increment primary key,
-  tag      varchar(50)  not null,
+  tag      varchar(256)  not null,
   index(tag)
 )
 END
@@ -422,19 +421,11 @@ sub _init_database {
     next if $_ eq 'meta';      # don't get rid of meta data!
     my $table = $self->_qualify($_);
     $dbh->do("DROP table IF EXISTS $table") if $erase;
-    my $query = "CREATE TABLE IF NOT EXISTS $table $tables->{$_} TYPE=MYISAM";
-    $dbh->do($query) or $self->throw($dbh->errstr);
+    my $query = "CREATE TABLE IF NOT EXISTS $table $tables->{$_}";
+    $self->_create_table($dbh,$query);
   }
   $self->subfeatures_are_indexed(1) if $erase;
   1;
-}
-
-sub maybe_create_meta {
-  my $self = shift;
-  return unless $self->writeable;
-  my $table = $self->_qualify('meta');
-  my $tables = $self->table_definitions;
-  $self->dbh->do("CREATE TABLE IF NOT EXISTS $table $tables->{meta} TYPE=MYISAM");
 }
 
 sub init_tmp_database {
@@ -442,11 +433,31 @@ sub init_tmp_database {
   my $dbh    = $self->dbh;
   my $tables = $self->table_definitions;
   for my $t (keys %$tables) {
-    my $table = $self->_qualify($t);
-    my $query = "CREATE TEMPORARY TABLE $table $tables->{$t} TYPE=MYISAM";
-    $dbh->do($query) or $self->throw($dbh->errstr);
+      next if $t eq 'meta';  # done earlier
+      my $table = $self->_qualify($t);
+      my $query = "CREATE TEMPORARY TABLE $table $tables->{$t}";
+      $self->_create_table($dbh,$query);
   }
   1;
+}
+
+sub _create_table {
+    my $self         = shift;
+    my ($dbh,$query) = @_;
+    for my $q (split ';',$query) {
+	chomp($q);
+	next unless $q =~ /\S/;
+	$dbh->do("$q;\n") or $self->throw($dbh->errstr);
+    }
+}
+
+sub maybe_create_meta {
+  my $self = shift;
+  return unless $self->writeable;
+  my $table  = $self->_qualify('meta');
+  my $tables = $self->table_definitions;
+  my $temporary = $self->is_temp ? 'TEMPORARY' : '';
+  $self->dbh->do("CREATE $temporary TABLE IF NOT EXISTS $table $tables->{meta}");
 }
 
 ###
@@ -459,7 +470,10 @@ sub is_temp {
 sub attributes {
     my $self = shift;
     my $dbh  = $self->dbh;
-    my $a    = $dbh->selectcol_arrayref('SELECT tag FROM attributelist');
+    my $attributelist_table = $self->_attributelist_table;
+    
+    my $a    = $dbh->selectcol_arrayref("SELECT tag FROM $attributelist_table")
+       or $self->throw($dbh->errstr);
     return @$a;
 }
 
@@ -749,7 +763,7 @@ sub _features {
 		    'RANGE_TYPE',
 		    'FROM_TABLE',
 		    'ITERATOR',
-            ['SOURCE','SOURCES']
+		    ['SOURCE','SOURCES']
 		   ],@_);
 
   my (@from,@where,@args,@group);
@@ -847,7 +861,7 @@ END
 
   $self->_print_query($query,@args) if DEBUG || $self->debug;
 
-  my $sth = $self->_prepare($query);
+  my $sth = $self->_prepare($query) or $self->throw($self->dbh->errstr);
   $sth->execute(@args) or $self->throw($sth->errstr);
   return $iterator ? Bio::DB::SeqFeature::Store::DBI::Iterator->new($sth,$self) : $self->_sth2objs($sth);
 }
@@ -869,7 +883,6 @@ sub _search_attributes {
   my $self = shift;
   my ($search_string,$attribute_names,$limit) = @_;
   my @words               = map {quotemeta($_)} split /\s+/,$search_string;
-#  return unless @words;
 
   my $name_table          = $self->_name_table;
   my $attribute_table     = $self->_attribute_table;
@@ -882,7 +895,7 @@ sub _search_attributes {
 
   my $perl_regexp = join '|',@words;
 
-  my $sql_regexp = join ' AND ',("a.attribute_value REGEXP ?")  x @words;
+  my $sql_regexp = join ' OR ',("a.attribute_value REGEXP ?")  x @words;
   my $sql = <<END;
 SELECT name,attribute_value,tl.tag,n.id
   FROM $name_table as n,$attribute_table as a,$attributelist_table as al,$type_table as t,$typelist_table as tl
@@ -903,7 +916,7 @@ END
   while (my($name,$value,$type,$id) = $sth->fetchrow_array) {
     my (@hits) = $value =~ /$perl_regexp/ig;
     my @words_in_row = split /\b/,$value;
-    my $score  = int(@hits*100/@words/@words_in_row);
+    my $score   = int(@hits * 10);
     push @results,[$name,$value,$score,$type,$id];
   }
   $sth->finish;
@@ -1563,7 +1576,7 @@ sub _sth2obj {
   my ($id,$o,$typeid,$seqid,$start,$end,$strand) = $sth->fetchrow_array;
   return unless defined $o;
   my $obj;
-  if ($o eq '0') {
+  if ($o eq '0') {  # I don't understand why an object ever needs to be rebuilt!
     # rebuild a new feat object from the data stored in the db
     $obj = $self->_rebuild_obj($id,$typeid,$seqid,$start,$end,$strand);
   }
@@ -1710,7 +1723,7 @@ sub _make_attribute_group {
   my $self                     = shift;
   my ($table_name,$attributes) = @_;
   my $key_count = keys %$attributes or return;
-  return "f.id HAVING count(f.id)>?",$key_count-1;
+  return "f.id,f.object,f.typeid,f.seqid,f.start,f.end,f.strand HAVING count(f.id)>?",$key_count-1;
 }
 
 sub _print_query {

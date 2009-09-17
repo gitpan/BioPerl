@@ -1,5 +1,9 @@
 #!/usr/bin/perl -w
-#$Id: download_query_genbank.PLS 14879 2008-09-16 02:22:07Z bosborne $
+#$Id: download_query_genbank.PLS 15515 2009-02-10 13:41:46Z dave_messina $
+
+=head1 NAME
+
+download_query_genbank - script to query Genbank and retrieve records
 
 =head1 USAGE
 

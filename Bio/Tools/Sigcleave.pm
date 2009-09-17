@@ -2,7 +2,7 @@
 # PACKAGE : Bio::Tools::Sigcleave
 # AUTHOR  : Chris Dagdigian, dag@sonsorol.org
 # CREATED : Jan 28 1999
-# REVISION: $Id: Sigcleave.pm 11480 2007-06-14 14:16:21Z sendu $
+# REVISION: $Id: Sigcleave.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # Copyright (c) 1997-9 bioperl, Chris Dagdigian and others. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or 
@@ -126,6 +126,17 @@ When updating and maintaining a module, it helps to know that people
 are actually using it. Let us know if you find a bug, think this code
 is useful or have any improvements/features to suggest.
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
@@ -144,7 +155,7 @@ Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 
 =head1 VERSION
 
-Bio::Tools::Sigcleave, $Id: Sigcleave.pm 11480 2007-06-14 14:16:21Z sendu $
+Bio::Tools::Sigcleave, $Id: Sigcleave.pm 16123 2009-09-17 12:57:27Z cjfields $
 
 =head1 COPYRIGHT
 

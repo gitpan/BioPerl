@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: ClusterIO.t 15416 2009-01-21 16:46:12Z cjfields $
+# $Id: ClusterIO.t 16089 2009-09-15 21:34:07Z cjfields $
 
 use strict;
 
@@ -15,7 +15,7 @@ BEGIN {
 }
 
 SKIP: {
-	test_skip(-tests => 8, -requires_module => 'XML::Parser::PerlSAX');
+	test_skip(-tests => 8, -requires_module => 'XML::SAX');
     
 	my ($clusterio, $result,$hit,$hsp);
 	$clusterio = Bio::ClusterIO->new('-tempfile' => 0,

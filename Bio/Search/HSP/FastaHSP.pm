@@ -1,6 +1,8 @@
-# $Id: FastaHSP.pm 15014 2008-11-24 05:02:31Z cjfields $
+# $Id: FastaHSP.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Search::HSP::FastaHSP
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Jason Stajich <jason@bioperl.org>
 #
@@ -42,6 +44,17 @@ the Bioperl mailing list.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -165,7 +178,7 @@ sub get_aln {
                       '-frameshifts' => (exists $self->{seqinds}{_frameshiftRes_query}) ?
                             $self->{seqinds}{_frameshiftRes_query} : undef,
                       '-mapping' => [1, $self->{_query_mapping}],
-                      -verbose => 1
+                      -verbose => $self->verbose
 				      );
     $seqonly = $hs;
     $seqonly =~ s/\s+//g;
@@ -176,7 +189,7 @@ sub get_aln {
                       '-frameshifts' => exists $self->{seqinds}{_frameshiftRes_sbjct} ?
                             $self->{seqinds}{_frameshiftRes_sbjct} : undef,
                       '-mapping' => [1, $self->{_hit_mapping}],
-                      -verbose => 1
+                      -verbose => $self->verbose
 				      );
     $aln->add_seq($query);
     $aln->add_seq($hit);

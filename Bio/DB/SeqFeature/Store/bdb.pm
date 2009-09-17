@@ -1,6 +1,6 @@
 package Bio::DB::SeqFeature::Store::bdb;
 
-# $Id: bdb.pm 10484 2006-09-21 14:51:39Z dave_messina $
+# $Id: bdb.pm 15635 2009-04-14 19:11:13Z cjfields $
 
 =head1 NAME
 
@@ -101,7 +101,6 @@ sub path {
 sub DESTROY {
   my $self = shift;
   my $db   = $self->db;
-  warn "CLEANING UP";
   untie %$db;
   rmtree($self->directory,0,1) if $self->temporary;
 }

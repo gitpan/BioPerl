@@ -1,7 +1,9 @@
 #
-# $Id: Fasta.pm 11345 2007-04-02 00:47:04Z cjfields $
+# $Id: Fasta.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Index::Fasta
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by James Gilbert <jgrg@sanger.ac.uk>
 #
@@ -37,7 +39,7 @@ Bio::Index::Fasta - Interface for indexing (multiple) fasta files
 
     foreach my $id (@ARGV) {
         my $seq = $inx->fetch($id); # Returns Bio::Seq object
-	     $out->write_seq($seq);
+         $out->write_seq($seq);
     }
 
     # or, alternatively
@@ -87,6 +89,17 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
@@ -113,6 +126,7 @@ methods. Internal methods are usually preceded with a _
 package Bio::Index::Fasta;
 
 use strict;
+use warnings;
 
 use Bio::Seq;
 
@@ -154,35 +168,41 @@ sub _file_format {
 =cut
 
 sub _index_file {
-	my( $self,
-		 $file, # File name
-		 $i,    # Index-number of file being indexed
-	  ) = @_;
+    my( $self,
+         $file, # File name
+         $i,    # Index-number of file being indexed
+      ) = @_;
 
-	my( $begin,     # Offset from start of file of the start
-		             # of the last found record.
-	  );
+    my( $begin,     # Offset from start of file of the start
+                     # of the last found record.
+    );
 
-	$begin = 0;
+    $begin = 0;
 
-	my $id_parser = $self->id_parser;
+    my $id_parser = $self->id_parser;
 
-	open my $FASTA, '<', $file or $self->throw("Can't open file for read : $file");
+    open my $FASTA, '<', $file or $self->throw("Can't open file for read : $file");
 
-	# Main indexing loop
-	while (<$FASTA>) {
-		if (/^>/) {
-			# $begin is the position of the first character after the '>'
-                        my $offset = ( $^O =~ /mswin/i ) ? 0 : 1;
-			my $begin = tell($FASTA) - length( $_ ) + $offset;
+    # Main indexing loop
+    while (<$FASTA>) {
+        if (/^>/) {
+            
+            # the following was commented out 9/7/2009 b/c this
+            # breaks FASTA validation - cjfields
+            
+            # $begin is the position of the first character after the '>'
+            #my $offset = ( $^O =~ /mswin/i ) ? 0 : 1;
+            #my $begin = tell($FASTA) - length( $_ ) + $offset;
+            
+            my $begin = tell($FASTA) - length( $_ );
 
-			foreach my $id (&$id_parser($_)) {
-				$self->add_record($id, $i, $begin);
-			}
-		}
-	}
-	close $FASTA;
-	return 1;
+            foreach my $id (&$id_parser($_)) {
+                $self->add_record($id, $i, $begin);
+            }
+        }
+    }
+    close $FASTA;
+    return 1;
 }
 
 =head2 id_parser
@@ -205,12 +225,12 @@ sub _index_file {
 =cut
 
 sub id_parser {
-	my( $self, $code ) = @_;
+    my( $self, $code ) = @_;
 
-	if ($code) {
-		$self->{'_id_parser'} = $code;
-	}
-	return $self->{'_id_parser'} || \&default_id_parser;
+    if ($code) {
+        $self->{'_id_parser'} = $code;
+    }
+    return $self->{'_id_parser'} || \&default_id_parser;
 }
 
 =head2 default_id_parser
@@ -226,11 +246,11 @@ sub id_parser {
 =cut
 
 sub default_id_parser {
-	if ($_[0] =~ /^>\s*(\S+)/) {
-		return $1;
-	} else {
-		return;
-	}
+    if ($_[0] =~ /^>\s*(\S+)/) {
+        return $1;
+    } else {
+        return;
+    }
 }
 
 1;

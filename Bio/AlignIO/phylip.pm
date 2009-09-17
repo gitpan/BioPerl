@@ -1,4 +1,4 @@
-# $Id: phylip.pm 14685 2008-05-29 09:55:29Z heikki $
+# $Id: phylip.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::phylip
 #
@@ -54,6 +54,17 @@ Long IDs up to 50 characters are supported by flag -longid =E<gt>
 only if the IDs contain spaces. 
 
 =head1 FEEDBACK
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -283,7 +294,8 @@ sub next_aln {
 	$aln->add_seq($seq);
 
    }
-   return $aln;
+   return $aln if $aln->num_sequences;
+   return;
 }
 
 
@@ -319,12 +331,12 @@ sub write_aln {
 	$length  = $aln->length();
         if ($flag_SI) {
             if ($self->interleaved() ) {
-                $self->_print (sprintf(" %s %s I\n", $aln->no_sequences, $aln->length));
+                $self->_print (sprintf(" %s %s I\n", $aln->num_sequences, $aln->length));
             } else {
-                $self->_print (sprintf(" %s %s S\n", $aln->no_sequences, $aln->length));
+                $self->_print (sprintf(" %s %s S\n", $aln->num_sequences, $aln->length));
             }
         } else {
-            $self->_print (sprintf(" %s %s\n", $aln->no_sequences, $aln->length));
+            $self->_print (sprintf(" %s %s\n", $aln->num_sequences, $aln->length));
         }
 
 	$idlength = $self->idlength();

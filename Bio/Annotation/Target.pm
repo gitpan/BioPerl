@@ -1,6 +1,8 @@
-# $Id: Target.pm 15093 2008-12-05 02:46:40Z cjfields $
+# $Id: Target.pm 15635 2009-04-14 19:11:13Z cjfields $
 #
 # BioPerl module for Bio::Annotation::Target
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Scott Cain <cain@cshl.org>
 #

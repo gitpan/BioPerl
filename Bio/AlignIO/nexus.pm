@@ -1,4 +1,4 @@
-# $Id: nexus.pm 14891 2008-09-16 20:22:53Z cjfields $
+# $Id: nexus.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::nexus
 #
@@ -32,6 +32,17 @@ Will Fisher has written an excellent standalone NEXUS format parser in
 Perl, readnexus. A number of tricks were adapted from it.
 
 =head1 FEEDBACK
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -326,7 +337,7 @@ sub next_aln {
         $entry = $self->_readline;
     }
 
-    return $aln if $aln->no_sequences;
+    return $aln if $aln->num_sequences;
 	return;
 }
 
@@ -377,7 +388,7 @@ sub write_aln {
 	$length  = $aln->length();
 
 	$self->_print (sprintf("#NEXUS\n[TITLE: %s]\n\nbegin data;\ndimensions ntax=%s nchar=%s;\n",
-			       $aln->id, $aln->no_sequences, $length));
+			       $aln->id, $aln->num_sequences, $length));
 	$match = "match=". $aln->match_char if $aln->match_char;
 	$missing = "missing=". $aln->missing_char if $aln->missing_char;
 	$gap = "gap=". $aln->gap_char if $aln->gap_char;

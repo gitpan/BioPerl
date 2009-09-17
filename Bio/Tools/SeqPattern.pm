@@ -1,6 +1,8 @@
-# $Id: SeqPattern.pm 14710 2008-06-10 00:42:00Z heikki $
+# $Id: SeqPattern.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # bioperl module for Bio::Tools::SeqPattern
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by  Steve Chervitz  (sac-at-bioperl.org)
 #
@@ -159,6 +161,17 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
@@ -195,6 +208,8 @@ use base qw(Bio::Root::Root);
 use strict;
 use vars qw ($ID);
 $ID  = 'Bio::Tools::SeqPattern';
+
+require Bio::Tools::SeqPattern::Backtranslate;
 
 ## These constants may be more appropriate in a Bio::Dictionary.pm
 ## type of class.
@@ -454,7 +469,7 @@ sub _expand_nuc {
            : Overrides Bio::Seq::revcom() and calls it first thing.
            : The order of _fixpat() calls is critical.
 
-See Also   : L<Bio::Seq::revcom()>, L<_fixpat_1>(), L<_fixpat_2>(), L<_fixpat_3>(), L<_fixpat_4>(), L<_fixpat_5>()
+See Also   : L<Bio::Seq::revcom>, L</_fixpat_1>, L</_fixpat_2>, L</_fixpat_3>, L</_fixpat_4>, L</_fixpat_5>
 
 =cut
 
@@ -506,7 +521,34 @@ sub revcom {
      return new Bio::Tools::SeqPattern(-seq =>$fixrev, -type =>$self->type);
 }
 
+=head1 backtranslate
 
+ Title     : backtranslate
+ Usage     : backtranslate();
+ Purpose   : Produce a degenerate oligonucleotide whose translation would produce
+           : the original protein motif.
+ Example   : $pattern_object->backtranslate();
+ Returns   : Object reference for a new Bio::Tools::SeqPattern containing
+           : the reverse translation of the current pattern as its sequence.
+ Throws    : Exception if called for nucleotide sequence pattern.
+
+=cut
+
+sub backtranslate {
+    my $self = shift;
+    Bio::Tools::SeqPattern::Backtranslate->import("_reverse_translate_motif");
+
+    if ($self->type ne 'Amino') {
+        $self->throw(
+            "Can't get backtranslate for ${\$self->type} sequence types.\n"
+        );
+    }
+
+    return __PACKAGE__->new(
+        -SEQ  => _reverse_translate_motif($self->str),
+        -TYPE => 'Dna',
+    );
+}
 
 =head1 _fixpat_1
 

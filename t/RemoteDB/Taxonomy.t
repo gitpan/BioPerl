@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: Taxonomy.t 15178 2008-12-16 12:48:21Z sendu $
+# $Id: Taxonomy.t 15635 2009-04-14 19:11:13Z cjfields $
 
 use strict;
 
@@ -106,7 +106,7 @@ foreach my $db ($db_entrez, $db_flatfile) {
         is $id, 32061;
         
         @ids = $db->get_taxonids('Rhodotorula');
-        is @ids, 8;
+        cmp_ok @ids, '>=' , 8;
         @ids = $db->get_taxonids('Rhodotorula <Microbotryomycetidae>');
         is @ids, 1;
         is $ids[0], 231509;

@@ -1,5 +1,5 @@
-# $Id: chaos.pm 11480 2007-06-14 14:16:21Z sendu $
-# $Date: 2007-06-14 09:16:21 -0500 (Thu, 14 Jun 2007) $
+# $Id: chaos.pm 16123 2009-09-17 12:57:27Z cjfields $
+# $Date: 2009-09-17 07:57:27 -0500 (Thu, 17 Sep 2009) $
 #
 # BioPerl module for Bio::SeqIO::chaos
 #
@@ -96,6 +96,17 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
@@ -168,7 +179,7 @@ sub _initialize {
                                         [export_perl5lib=>$ENV{PERL5LIB}],
                                         [export_program=>$0],
                                         [export_module=>'Bio::SeqIO::chaos'],
-                                        [export_module_cvs_id=>'$Id: chaos.pm 11480 2007-06-14 14:16:21Z sendu $'],
+                                        [export_module_cvs_id=>'$Id: chaos.pm 16123 2009-09-17 12:57:27Z cjfields $'],
                                        ]);
 
     return;

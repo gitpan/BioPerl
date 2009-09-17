@@ -1,6 +1,8 @@
-# $Id: BaseSAXHandler.pm 10525 2006-09-26 22:03:22Z sendu $
+# $Id: BaseSAXHandler.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for BaseSAXHandler
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Juguang Xiao, juguang@tll.org.sg
 #
@@ -12,7 +14,11 @@
 
 =head1 NAME
 
-Bio::OntologyIO::Handlers::BaseSAXHandler
+Bio::OntologyIO::Handlers::BaseSAXHandler base class for SAX Handlers
+
+=head1 SYNOPSIS
+
+See description.
 
 =head1 DESCRIPTION
 
@@ -61,6 +67,38 @@ stack or count
  $count = $self->_visited_count('myTag');
  $tag = $self->_top_tag;
 
+
+=head1 FEEDBACK
+
+=head2 Mailing Lists
+
+User feedback is an integral part of the evolution of this and other
+Bioperl modules. Send your comments and suggestions preferably to one
+of the Bioperl mailing lists.
+
+Your participation is much appreciated.
+
+  bioperl-l@bioperl.org                  - General discussion
+  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
+=head2 Reporting Bugs
+
+Report bugs to the Bioperl bug tracking system to help us keep track
+the bugs and their resolution.  Bug reports can be submitted via the
+web:
+
+  http://bugzilla.open-bio.org/
 
 =head1 AUTHOR
 

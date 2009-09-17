@@ -1,13 +1,14 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: SeqUtils.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: SeqUtils.t 16090 2009-09-15 21:57:56Z cjfields $
 
 use strict;
 
 BEGIN {
     use lib '.';
+#    use List::MoreUtils qw(uniq);
     use Bio::Root::Test;
     
-    test_begin(-tests => 41);
+    test_begin(-tests => 51);
 	
 	use_ok('Bio::PrimarySeq');
 	use_ok('Bio::SeqUtils');
@@ -185,6 +186,7 @@ my $ft2 = Bio::SeqFeature::Generic->new( -start => 1,
                                       -end => 4,
                                       -strand => 1,
                                       -primary => 'source',
+                                      -tag     => {note => 'note2'},
 				       );
 
 
@@ -192,6 +194,8 @@ my $ft3 = Bio::SeqFeature::Generic->new( -start => 3,
                                       -end => 3,
                                       -strand => 1,
                                       -primary => 'hotspot',
+                                      -tag     => {note => ['note3a','note3b'], 
+                                                   comment => 'c1'},
 				       );
 
 $seq2->add_SeqFeature($ft2);
@@ -201,14 +205,19 @@ $seq2->add_SeqFeature($ft3);
 ok (Bio::SeqUtils->cat($seq1, $seq2));
 is $seq1->seq, 'aaaattttcccctttt';
 is scalar $seq1->annotation->get_Annotations, 5;
-
+is_deeply([uniq_sort(map{$_->get_all_tags}$seq1->get_SeqFeatures)], [sort qw(note comment)], 'cat - has expected tags');
+is_deeply([sort map{$_->get_tagset_values('note')}$seq1->get_SeqFeatures], [sort qw(note2 note3a note3b)], 'cat - has expected tag values');
+my @tags;
+lives_ok {
+  @tags = map{$_->get_tag_values(q(note))}$seq1->get_SeqFeatures ;
+} 'cat - note tag transfered (no throw)';
+cmp_ok(scalar(@tags),'==',3, 'cat - note tag values transfered (correct count)') ;
 
 my $protseq = Bio::PrimarySeq->new(-id => 2, -seq => 'MVTF'); # protein seq
 
-eval {
+throws_ok {
     Bio::SeqUtils->cat($seq1, $protseq);
-};
-ok $@;
+} qr/different alphabets:/, 'different alphabets' ;
 
 
 #
@@ -237,6 +246,7 @@ $ft2 = Bio::SeqFeature::Generic->new( -start => 1,
                                       -end => 4,
                                       -strand => 1,
                                       -primary => 'source',
+                                      -tag     => {note => 'note2'},
                                        );
 
 
@@ -244,6 +254,8 @@ $ft3 = Bio::SeqFeature::Generic->new( -start => 5,
                                       -end => 8,
                                       -strand => -1,
                                       -primary => 'hotspot',
+                                      -tag     => {note => ['note3a','note3b'], 
+                                                   comment => 'c1'},
                                        );
 $seq2->add_SeqFeature($ft2);
 $seq2->add_SeqFeature($ft3);
@@ -253,9 +265,25 @@ is $trunc->seq, 'gttaaa';
 my @feat=$trunc->get_SeqFeatures;
 is $feat[0]->location->to_FTstring, '<1..3';
 is $feat[1]->location->to_FTstring, 'complement(4..>6)';
+is_deeply([uniq_sort(map{$_->get_all_tags}$trunc->get_SeqFeatures)], [sort qw(note comment)], 'trunc_with_features - has expected tags');
+is_deeply([sort map{$_->get_tagset_values('note')}$trunc->get_SeqFeatures], [sort qw(note2 note3a note3b)], 'trunc_with_features - has expected tag values');
 
 my $revcom=Bio::SeqUtils->revcom_with_features($seq2);
 is $revcom->seq, 'ttttaacc';
 my @revfeat=$revcom->get_SeqFeatures;
 is $revfeat[0]->location->to_FTstring, 'complement(5..8)';
 is $revfeat[1]->location->to_FTstring, '1..4';
+is_deeply([uniq_sort(map{$_->get_all_tags}$revcom->get_SeqFeatures)], [sort qw(note comment)], 'revcom_with_features - has expected tags');
+is_deeply([sort map{$_->get_tagset_values('note')}$revcom->get_SeqFeatures], [sort qw(note2 note3a note3b)], 'revcom_with_features - has expected tag values');
+# check circularity
+isnt($revcom->is_circular, 1, 'still not circular');
+$seq3 = Bio::Seq->new(-id => 3, -seq => 'ggttaaaa', -description => 'third', -is_circular => 1);
+is(Bio::SeqUtils->revcom_with_features($seq3)->is_circular, 1, 'still circular');
+
+sub uniq_sort {
+    my @args = @_;
+    my %uniq;
+    @args = sort @args;
+    @uniq{@args} = (0..$#args);
+    return sort {$uniq{$a} <=> $uniq{$b}} keys %uniq;
+}

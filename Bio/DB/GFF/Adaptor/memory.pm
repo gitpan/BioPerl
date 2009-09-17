@@ -71,7 +71,7 @@ it under the same terms as Perl itself.
 =cut
 
 use strict;
-# $Id: memory.pm 14926 2008-10-09 09:48:26Z lstein $
+# $Id: memory.pm 15635 2009-04-14 19:11:13Z cjfields $
 # AUTHOR: Shulamit Avraham
 # This module needs to be cleaned up and documented
 
@@ -549,7 +549,7 @@ sub get_features_iterator {
 sub get_types {
   my $self = shift;
   my ($srcseq,$class,$start,$stop,$want_count,$typelist) = @_;
-	  
+
   my(%result,%obj);
 
   for my $feature (@{$self->{data}}) {

@@ -1,7 +1,7 @@
 package	Bio::Root::Utilities;
 use strict;
 
-# $Id: Utilities.pm 14716 2008-06-11 06:48:28Z heikki $
+# $Id: Utilities.pm 16123 2009-09-17 12:57:27Z cjfields $
 
 =head1 NAME
 
@@ -79,6 +79,17 @@ Your participation is much appreciated.
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
@@ -97,7 +108,7 @@ See L<the FEEDBACK section | FEEDBACK> for where to send bug reports and comment
 =head1 ACKNOWLEDGEMENTS
 
 This module was originally developed under the auspices of the
-Saccharomyces Genome Database: http://genome-www.stanford.edu/Saccharomyces
+Saccharomyces Genome Database: http://www.yeastgenome.org/
 
 =head1 COPYRIGHT
 
@@ -442,9 +453,9 @@ sub compress {
         }
 
         if ($exe =~ /gzip|bzip2|compress/) {
-            @cmd = ("$exe -f < $fileName > $compressed");
+            @cmd = ("$exe -f < \"$fileName\" > \"$compressed\"");
         } elsif ($exe eq 'zip') {
-            @cmd = ("$exe -r $fileName.zip $fileName");
+            @cmd = ("$exe -r \"$fileName.zip\" \"$fileName\"");
         }
 	not $tmp and
 	    $self->warn("Not owner of file $fileName. Compressing to temp file $compressed.");
@@ -563,9 +574,9 @@ sub uncompress {
         }
 
         if ($exe =~ /gunzip|bunzip2|uncompress/) {
-            @cmd = ("$exe -f < $fileName > $uncompressed");
+            @cmd = ("$exe -f < \"$fileName\" > \"$uncompressed\"");
         } elsif ($exe eq 'unzip') {
-            @cmd = ("$exe -p $fileName > $uncompressed");
+            @cmd = ("$exe -p \"$fileName\" > \"$uncompressed\"");
         }
 	not $tmp and
 	    $self->warn("Not owner of file $fileName. Uncompressing to temp file $uncompressed.");
@@ -1234,7 +1245,7 @@ sub find_exe {
         if (scalar @exes) {
             $exe = $exes[0];
             if (defined $exes[1]) {
-                $self->warn("find_exe: Multiple paths to '$name' found. Using first.");
+                $self->warn("find_exe: Multiple paths to '$name' found. Using $exe.");
             }
         }
     }

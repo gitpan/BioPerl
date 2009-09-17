@@ -1,6 +1,8 @@
-# $Id: WrapperBase.pm 14708 2008-06-10 00:08:17Z heikki $
+# $Id: WrapperBase.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Tools::Run::WrapperBase
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Jason Stajich <jason@bioperl.org>
 #
@@ -44,6 +46,17 @@ the Bioperl mailing list.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -333,12 +346,11 @@ sub executable {
 =cut
 
 sub program_path {
-    my ($self) = @_;
-    my @path;
-    push @path, $self->program_dir if $self->program_dir;
-    push @path, $self->program_name.($^O =~ /mswin/i ?'.exe':'');
-
-    return File::Spec->catfile(@path);
+   my ($self) = @_;
+   my @path;
+   push @path, $self->program_dir if $self->program_dir;
+   push @path, $self->program_name.($^O =~ /mswin/i ? '.exe' : '') if $self->program_name;
+   return File::Spec->catfile(@path);
 }
 
 =head2 program_dir

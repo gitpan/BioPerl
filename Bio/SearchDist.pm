@@ -1,7 +1,9 @@
-# $Id: SearchDist.pm 10525 2006-09-26 22:03:22Z sendu $
+# $Id: SearchDist.pm 16123 2009-09-17 12:57:27Z cjfields $
 
 #
 # BioPerl module for Bio::SearchDist
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
@@ -43,7 +45,7 @@ get out the evalue for each score (or a new score) using
 evalue($score).
 
 The fitting procedure is better described in Sean Eddy's own code
-(available from http://hmmer.wustl.edu, or in the histogram.h header
+(available from http://hmmer.janelia.org/, or in the histogram.h header
 file in Compile/SW). Bascially it fits a EVD via a maximum likelhood
 method with pruning of the top end of the distribution so that real
 positives are discarded in the fitting procedure. This comes from
@@ -61,7 +63,7 @@ designed for).
 =head1 CONTACT
 
 The original code this was based on comes from the histogram module as
-part of the HMMer2 package. Look at http://hmmer.wustl.edu/
+part of the HMMer2 package. Look at http://hmmer.janelia.org/
 
 Its use in Bioperl is via the Compiled XS extension which is cared for
 by Ewan Birney (birney@ebi.ac.uk). Please contact Ewan first about
@@ -77,6 +79,17 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 

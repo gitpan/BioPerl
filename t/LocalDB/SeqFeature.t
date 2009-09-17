@@ -1,19 +1,20 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: SeqFeature.t 15416 2009-01-21 16:46:12Z cjfields $
+# $Id: SeqFeature.t 16091 2009-09-15 22:11:15Z cjfields $
 
 use strict;
-use constant TEST_COUNT => 59;
+use constant TEST_COUNT => 69;
 
 BEGIN {
+    use lib '/home/lstein/projects/bioperl-live';
     use lib '.';
-	use Bio::Root::Test;
+    use Bio::Root::Test;
 	
-	test_begin(-tests => TEST_COUNT);
+    test_begin(-tests => TEST_COUNT);
     
     $ENV{ORACLE_HOME} ||= '/home/oracle/Home';
 	
-	use_ok('Bio::DB::SeqFeature::Store');
-	use_ok('Bio::DB::SeqFeature::Store::GFF3Loader');
+    use_ok('Bio::DB::SeqFeature::Store');
+    use_ok('Bio::DB::SeqFeature::Store::GFF3Loader');
 }
 
 my $gff_file = test_input_file('seqfeaturedb','test.gff3');
@@ -54,7 +55,11 @@ is(length $seq1, $f->length);
 
 # if we pull out abc-1 again we should get the same object
 ($s) = $db->get_features_by_name('abc-1');
-is($f, $s);
+is($s, $f);
+
+# test case-sensitivity
+($s) = $db->get_features_by_name('Abc-1');
+is($s, $f, 'feature names should be case insensitive');
 
 # we should get two objects when we ask for abc-1 using get_features_by_alias
 # this also depends on selective subfeature indexing
@@ -134,6 +139,10 @@ is(@f, 2);
 @f = $db->get_features_by_location(-seq_id=>'Contig3');
 is(@f, 2);
 
+# find all top-level features on Contig3 that overlap a range -- only one
+@f = $db->get_features_by_location(-seq_id=>'Contig3',-start=>40000,-end=>50000);
+is(@f,1);
+
 # find all top-level features on Contig3 of type 'assembly_component'
 @f = $db->features(-seq_id=>'Contig3',-type=>'assembly_component');
 is(@f, 1);
@@ -170,6 +179,18 @@ is (@lines, 2);
 ok("@lines" !~ /Parent=/s);
 ok("@lines" =~ /ID=/s);
 
+# regress on multiple parentage
+my ($gp)     = $db->get_features_by_name('gparent1');
+my ($p1,$p2) = $gp->get_SeqFeatures;
+my @c    = sort {$a->start<=>$b->start} $p1->get_SeqFeatures;
+is(scalar @c,2);
+is($c[0]->phase,0);
+is($c[1]->phase,1);
+@c    = sort {$a->start<=>$b->start} $p2->get_SeqFeatures;
+is(scalar @c,2);
+is($c[0]->phase,0);
+is($c[1]->phase,1);
+
 SKIP: {
 	test_skip(-tests => 2, -excludes_os => 'mswin');
 	
@@ -190,6 +211,7 @@ SKIP: {
 	}
 }
 
+
 # test the -ignore_seqregion flag
 
 # the original should have a single feature named 'Contig1'
@@ -203,5 +225,12 @@ $loader = eval { Bio::DB::SeqFeature::Store::GFF3Loader->new(-store=>$db,
 $loader->load($gff_file);
 @f      = $db->get_features_by_name('Contig1');
 is(scalar @f,0);
+
+# test keyword search
+my @results = $db->search_notes('interesting');
+is(scalar @results,2,'keyword search; 1 term');
+
+@results = $db->search_notes('terribly interesting');
+is(scalar @results,2,'keyword search; 2 terms');
 
 }

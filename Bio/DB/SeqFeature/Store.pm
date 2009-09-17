@@ -1,6 +1,6 @@
 package Bio::DB::SeqFeature::Store;
 
-# $Id: Store.pm 15137 2008-12-10 18:26:31Z lstein $
+# $Id: Store.pm 16123 2009-09-17 12:57:27Z cjfields $
 
 =head1 NAME
 
@@ -244,6 +244,8 @@ sub api_version { 1.2 }
 
 =head1 Methods for Connecting and Initializating a Database
 
+## TODO: http://iowg.brcdevel.org/gff3.html#a_fasta is a dead link
+
 =head2 new
 
  Title   : new
@@ -254,7 +256,7 @@ sub api_version { 1.2 }
  Status  : public
 
 This class method creates a new database connection. The following
--name=E<gt>$value arguments are accepted:http://iowg.brcdevel.org/gff3.html#a_fasta
+-name=E<gt>$value arguments are accepted:
 
  Name               Value
  ----               -----
@@ -1275,8 +1277,22 @@ in the database as the sequence ID. The segment() method will perform
 a get_features_by_name() internally and then transform the feature
 into the appropriate coordinates.
 
-If $absolute is a true value, then the specified coordinates are
-relative to the reference (absolute) coordinates.
+The named feature should exist once and only once in the database. If
+it exists multiple times in the database and you attempt to call
+segment() in a scalar context, you will get an exception. A workaround
+is to call the method in a list context, as in:
+
+  my ($segment) = $db->segment('contig23',1,1000);
+
+or
+
+  my @segments  = $db->segment('contig23',1,1000);
+
+However, having multiple same-named features in the database is often
+an indication of underlying data problems.
+
+If the optional $absolute argument is a true value, then the specified
+coordinates are relative to the reference (absolute) coordinates.
 
 =cut
 

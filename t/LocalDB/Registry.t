@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: Registry.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: Registry.t 15505 2009-02-05 18:22:58Z cjfields $
 
 use strict;
 
@@ -45,7 +45,7 @@ SKIP: {
 	
 	SKIP: {
 		test_skip(-tests => 9,
-                  -requires_modules => [qw(LWP::UserAgent HTTP::Request::Common)],
+                  -requires_modules => [qw(LWP::UserAgent HTTP::Request::Common BerkeleyDB)],
                   -requires_networking => 1);
 		
 		my $registry = Bio::DB::Registry->new();

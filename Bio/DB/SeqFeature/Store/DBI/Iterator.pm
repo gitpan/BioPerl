@@ -1,10 +1,10 @@
 package Bio::DB::SeqFeature::Store::DBI::Iterator;
 
-# $Id: Iterator.pm 10476 2006-09-20 16:15:36Z cjfields $
+# $Id: Iterator.pm 15635 2009-04-14 19:11:13Z cjfields $
 
 =head1 NAME
 
-Bio::DB::SeqFeature::Store::DBI::Iterator
+Bio::DB::SeqFeature::Store::DBI::Iterator - utility methods for creating and iterating over SeqFeature records
 
 =cut
 
@@ -22,6 +22,7 @@ sub next_seq {
   my $store = $self->{store} or return;
   my $obj   = $store->_sth2obj($sth);
   if (!$obj) {
+    $self->{sth}->finish;
     undef $self->{sth};
     undef $self->{store};
     return;

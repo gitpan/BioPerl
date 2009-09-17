@@ -1,6 +1,8 @@
-# $Id: EUtilities.pm 15160 2008-12-15 18:09:38Z cjfields $
+# $Id: EUtilities.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Tools::EUtilities
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Chris Fields
 #
@@ -132,6 +134,17 @@ is much appreciated.
   bioperl-l@lists.open-bio.org               - General discussion
   http://www.bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to
@@ -142,7 +155,7 @@ Bug reports can be submitted via the web.
 
 =head1 AUTHOR 
 
-Email cjfields at uiuc dot edu
+Email cjfields at bioperl dot org
 
 =head1 APPENDIX
 
@@ -812,7 +825,7 @@ sub get_retstart {
  Notes    : esearch    : retmax
             esummary   : retmax
             all others : from parameter_base->retmax or undef
-            
+
 =cut
 
 sub get_retmax {
@@ -903,7 +916,7 @@ sub next_GlobalQuery {
  Returns  : array of GlobalQuery objects
  Args     : none
  Notes    : only applicable for egquery
- 
+
 =cut
 
 sub get_GlobalQueries {
@@ -947,7 +960,7 @@ sub print_GlobalQueries {
  Returns  : single Bio::Tools::EUtilities::Summary::DocSum
  Args     : none yet
  Notes    : only applicable for esummary
- 
+
 =cut
 
 sub next_DocSum {

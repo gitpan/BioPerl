@@ -2,6 +2,8 @@
 #
 # bioperl module for Bio::Structure::SecStr::STRIDE::Res.pm
 #
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
+#
 # Cared for by Ed Green <ed@compbio.berkeley.edu>
 #
 # Copyright Univ. of California
@@ -38,7 +40,7 @@ individual residues of a pdb structure file.
     PROTEINS: Structure, Function, and Genetics 23:566-579 (1995) )
 
 STRIDE is available here:
-http://www.embl-heidelberg.de/argos/stride/down_stride.html
+http://webclu.bio.wzw.tum.de/stride/
 
 Methods are then available for extracting all of the infomation
 present within the output or convenient subsets of it.
@@ -99,6 +101,17 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 

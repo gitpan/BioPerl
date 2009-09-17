@@ -1,7 +1,9 @@
-# $Id: MultiCut.pm 10525 2006-09-26 22:03:22Z sendu $
+# $Id: MultiCut.pm 16123 2009-09-17 12:57:27Z cjfields $
 #------------------------------------------------------------------
 #
 # BioPerl module Bio::Restriction::Enzyme::MultiCut
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Heikki Lehvaslaiho, heikki-at-bioperl-dot-org
 #
@@ -54,6 +56,17 @@ of the Bioperl mailing lists. Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -128,13 +141,11 @@ sub new {
 =head2 others
 
  Title     : others
- Usage     : $re->vendor(@list_of_companies);
- Function  : Gets/Sets the a list of companies that you can get the enzyme from.
-             Also sets the commercially_available boolean
- Arguments : A reference to an array containing the names of companies
-             that you can get the enzyme from
- Returns   : A reference to an array containing the names of companies
-             that you can get the enzyme from
+ Usage     : $re->others(@enz_obj_array);
+ Function  : Stores auxiliary Enzyme::MultiCut objects for multicutting enzymes
+ Arguments : optional array of Enzyme::MultiCut objects
+ Returns   : array of Enzyme objects
+
 
 Added for compatibility to REBASE
 
@@ -143,6 +154,7 @@ Added for compatibility to REBASE
 sub others {
     my $self = shift;
     push @{$self->{_others}}, @_ if @_;
+    return unless $self->{_others};
     return @{$self->{'_others'}};
 }
 

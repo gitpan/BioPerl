@@ -1,6 +1,8 @@
-# $Id: PairwiseStatistics.pm 11730 2007-10-23 16:50:05Z cjfields $
+# $Id: PairwiseStatistics.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Align::PairwiseStatistics
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Jason Stajich <jason@bioperl.org>
 #
@@ -39,6 +41,17 @@ the Bioperl mailing list.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -90,9 +103,9 @@ sub number_of_comparable_bases{
     $self->throw("Must provide a Bio::Align::AlignI compliant object to ".
       "Bio::Align::PairwiseStatistics");
        return 0;
-  } elsif ( $aln->no_sequences != 2 ) { 
+  } elsif ( $aln->num_sequences != 2 ) { 
     $self->throw("Only pairwise calculations supported. Found ".
-      $aln->no_sequences." sequences in alignment\n");
+      $aln->num_sequences." sequences in alignment\n");
    }
    my $L = $aln->length - $self->number_of_gaps($aln);
    return $L;
@@ -114,9 +127,9 @@ sub number_of_differences{
     if( ! defined $aln || ! $aln->isa('Bio::Align::AlignI') ) {
     $self->throw("Must provide a Bio::Align::AlignI compliant object to ".
       "Bio::Align::PairwiseStatistics");
-  } elsif ( $aln->no_sequences != 2 ) { 
+  } elsif ( $aln->num_sequences != 2 ) { 
     $self->throw("Only pairwise calculations supported. Found ".
-      $aln->no_sequences." sequences in alignment\n");
+      $aln->num_sequences." sequences in alignment\n");
     }
    my (@seqs);
   foreach my $seq ( $aln->each_seq ) {
@@ -153,9 +166,9 @@ sub number_of_gaps{
   if ( ! defined $aln || ! $aln->isa('Bio::Align::AlignI') ) {
     $self->throw("Must provide a Bio::Align::AlignI compliant object to ".
       "Bio::Align::PairwiseStatistics");
-  } elsif ( $aln->no_sequences != 2 ) { 
+  } elsif ( $aln->num_sequences != 2 ) { 
     $self->throw("Only pairwise calculations supported. Found ".
-      $aln->no_sequences." sequences in alignment\n");
+      $aln->num_sequences." sequences in alignment\n");
     }
    my $gapline = $aln->gap_line;
    # this will count the number of '-' characters
@@ -195,9 +208,9 @@ sub score_nuc {
   if ( ! defined $aln || ! $aln->isa('Bio::Align::AlignI') ) {
     $self->throw("Must provide a Bio::Align::AlignI compliant object to ".
       "Bio::Align::PairwiseStatistics");
-  } elsif ( $aln->no_sequences != 2 ) { 
+  } elsif ( $aln->num_sequences != 2 ) { 
     $self->throw("Only pairwise calculations supported. Found ".
-      $aln->no_sequences." sequences in alignment\n");
+      $aln->num_sequences." sequences in alignment\n");
   }
   my $seq1 = $aln->get_seq_by_pos(1);
   my $seq2 = $aln->get_seq_by_pos(2);

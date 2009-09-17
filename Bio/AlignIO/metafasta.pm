@@ -1,4 +1,4 @@
-# $Id: metafasta.pm 11113 2007-01-16 19:31:05Z cjfields $
+# $Id: metafasta.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::metafasta
 #
@@ -41,6 +41,17 @@ characters, except new line, are important in meta data.
 L<Bio::SeqIO::metafasta>
 
 =head1 FEEDBACK
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -153,7 +164,7 @@ sub next_aln {
 		}
 	}
     }
-    return $aln if $aln->no_sequences;
+    return $aln if $aln->num_sequences;
 	return;
 }
 

@@ -1,6 +1,8 @@
-# $Id: eutils.pm 11480 2007-06-14 14:16:21Z sendu $
+# $Id: eutils.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module Bio::DB::Biblio::eutils.pm
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Allen Day <allenday@ucla.edu>
 # For copyright and disclaimer see below.
@@ -45,6 +47,17 @@ the Bioperl mailing list.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -123,8 +136,8 @@ use XML::Twig;
 use URI::Escape;
 use base qw(Bio::Biblio Bio::DB::BiblioI);
 
-our $EFETCH      = 'http://www.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi';
-our $ESEARCH     = 'http://www.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
+our $EFETCH      = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi';
+our $ESEARCH     = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
 our $MAX_RECORDS = 100_000;
 
 # -----------------------------------------------------------------------------

@@ -197,13 +197,13 @@ sub tile_hsps {
 	$hit_len_aln += $hsp->length;
 
 	## Collect contigs in the query sequence.
- 	$qoverlap = &_adjust_contigs('query', $hsp, $qstart, $qstop, 
+ 	$qoverlap += &_adjust_contigs('query', $hsp, $qstart, $qstop, 
 				     \@qcontigs, $max_overlap, $frame, 
 				     $qstrand);
 
 	## Collect contigs in the sbjct sequence 
 	#  (needed for domain data and gapped Blast).
-	$soverlap = &_adjust_contigs('sbjct', $hsp, $sstart, $sstop, 
+	$soverlap += &_adjust_contigs('sbjct', $hsp, $sstart, $sstop, 
 				     \@scontigs, $max_overlap, $frame, 
 				     $sstrand);
 
@@ -372,8 +372,9 @@ sub logical_length {
 # Throws    : Exceptions propagated from Bio::Search::Hit::BlastHSP::matches()
 #           : for invalid sub-sequence ranges.
 # Status    : Experimental
-# Comments  : This method does not currently support gapped alignments.
-#           : Also, it does not keep track of the number of HSPs that
+# Comments  : This method supports gapped alignments through a patch by maj
+#           : to B:S:HSP:HSPI::matches().
+#           : It does not keep track of the number of HSPs that
 #           : overlap within the amount specified by overlap().
 #           : This will lead to significant tracking errors for large
 #           : overlap values.
@@ -404,6 +405,14 @@ sub _adjust_contigs {
                 ($numID, $numCons) = $hsp->matches(-SEQ   =>$seqType, 
                                -START => $start, 
                                -STOP  => $_->{'start'} - 1); 
+		if ($numID eq '') {
+		    $hsp->warn("\$hsp->matches() returned '' for number identical; setting to 0");
+		    $numID = 0;
+		}
+		if ($numCons eq '') {
+		    $hsp->warn("\$hsp->matches() returned '' for number conserved; setting to 0");
+		    $numCons = 0;
+		}
             };
             if($@) { warn "\a\n$@\n"; }
             else {
@@ -421,7 +430,15 @@ sub _adjust_contigs {
                 ($numID,$numCons) = $hsp->matches(-SEQ   =>$seqType, 
                               -START => $_->{'stop'} + 1, 
                               -STOP  => $stop); 
-            };
+		if ($numID eq '') {
+		    $hsp->warn("\$hsp->matches() returned '' for number identical; setting to 0");
+		    $numID = 0;
+		}
+		if ($numCons eq '') {
+		    $hsp->warn("\$hsp->matches() returned '' for number conserved; setting to 0");
+		    $numCons = 0;
+		}
+	    };
             if($@) { warn "\a\n$@\n"; }
             else {
                 $_->{'stop'}  = $stop; # Assign a new stop coordinate to the contig
@@ -458,7 +475,15 @@ sub _adjust_contigs {
                         my ($these_ids, $these_cons);
                         eval {
                             ($these_ids, $these_cons) = $hsp->matches(-SEQ => $seqType, -START => $hsp_start, -STOP => $use_start - 1);
-                        };
+			    if ($these_ids eq '') {
+				$hsp->warn("\$hsp->matches() returned '' for number identical; setting to 0");
+				$these_ids = 0;
+			    }
+			    if ($these_cons eq '') {
+				$hsp->warn("\$hsp->matches() returned '' for number conserved; setting to 0");
+				$these_cons = 0;
+			    }
+			};
                         if($@) { warn "\a\n$@\n"; }
                         else {
                             $ids  += $these_ids;
@@ -487,6 +512,14 @@ sub _adjust_contigs {
                         my ($these_ids, $these_cons);
                         eval {
                             ($these_ids, $these_cons) = $hsp->matches(-SEQ => $seqType, -START => $use_stop + 1, -STOP => $hsp_end);
+			    if ($these_ids eq '') {
+				$hsp->warn("\$hsp->matches() returned '' for number identical; setting to 0");
+				$these_ids = 0;
+			    }
+			    if ($these_cons eq '') {
+				$hsp->warn("\$hsp->matches() returned '' for number conserved; setting to 0");
+				$these_cons = 0;
+			    }
                         };
                         if($@) { warn "\a\n$@\n"; }
                         else {
@@ -522,6 +555,15 @@ sub _adjust_contigs {
     elsif (! $overlap) {
         ## If there is no overlap, add the complete HSP data.
         ($numID,$numCons) = $hsp->matches(-SEQ=>$seqType);
+	if ($numID eq '') {
+	    $hsp->warn("\$hsp->matches() returned '' for number identical; setting to 0");
+	    $numID = 0;
+	}
+	if ($numCons eq '') {
+	    $hsp->warn("\$hsp->matches() returned '' for number conserved; setting to 0");
+	    $numCons = 0;
+	}
+
         push @$contigs_ref, {'start' =>$start, 'stop' =>$stop,
 			     'iden'  =>$numID, 'cons' =>$numCons,
 			     'strand'=>$strand,'frame'=>$frame,'hsps'=>[$hsp]};

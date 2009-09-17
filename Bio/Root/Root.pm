@@ -1,7 +1,7 @@
 package Bio::Root::Root;
 use strict;
 
-# $Id: Root.pm 14710 2008-06-10 00:42:00Z heikki $
+# $Id: Root.pm 16123 2009-09-17 12:57:27Z cjfields $
 
 =head1 NAME
 
@@ -140,6 +140,17 @@ Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -382,7 +393,15 @@ sub throw {
 sub debug {
     my ($self, @msgs) = @_;
     
+	# using CORE::warn doesn't give correct backtrace information; we want the
+	# line from the previous call in the call stack, not this call (similar to
+	# cluck).  For now, just add a stack trace dump and simple comment under the
+	# correct conditions.
     if (defined $self->verbose && $self->verbose > 0) {
+		if (!@msgs || $msgs[-1] !~ /\n$/) {
+			push @msgs, "Debugging comment:" if !@msgs;
+			push @msgs, sprintf("%s %s:%s", @{($self->stack_trace)[2]}[3,1,2])."\n";
+		}
         CORE::warn @msgs;
     }
 }
@@ -425,7 +444,6 @@ sub _load_module {
     return 1;
 }
 
-
 sub DESTROY {
     my $self = shift;
     my @cleanup_methods = $self->_cleanup_methods or return;
@@ -433,8 +451,6 @@ sub DESTROY {
       $method->($self);
     }
 }
-
-
 
 1;
 

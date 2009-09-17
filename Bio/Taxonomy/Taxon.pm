@@ -1,6 +1,8 @@
-# $Id: Taxon.pm 15052 2008-12-01 08:47:39Z heikki $
+# $Id: Taxon.pm 15635 2009-04-14 19:11:13Z cjfields $
 #
 # BioPerl module for Bio::Taxonomy::Taxon
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Dan Kortschak but pilfered extensively from 
 # the Bio::Tree::Node code of Jason Stajich

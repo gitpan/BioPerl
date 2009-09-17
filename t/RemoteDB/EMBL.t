@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: EMBL.t 15418 2009-01-21 17:10:34Z cjfields $
+# $Id: EMBL.t 16091 2009-09-15 22:11:15Z cjfields $
 
 use strict;
 
@@ -37,7 +37,7 @@ SKIP: {
 	skip('could not connect to embl',2) if $@;
     undef $db; # testing to see if we can remove gb
     ok( defined($seq = $seqio->next_seq()));
-    cmp_ok( $seq->length, '>=', 200);
+    cmp_ok( $seq->length, '>=', 1);
 }
 
 $seq = $seqio = undef;

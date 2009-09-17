@@ -1,6 +1,8 @@
-# $Id: Tree.pm 15052 2008-12-01 08:47:39Z heikki $
+# $Id: Tree.pm 15635 2009-04-14 19:11:13Z cjfields $
 #
 # BioPerl module for Bio::Taxonomy::Tree
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Dan Kortschak but pilfered extensively from Bio::Tree::Tree by Jason Stajich
 #

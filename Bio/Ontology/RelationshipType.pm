@@ -1,10 +1,12 @@
-# $Id: RelationshipType.pm 14729 2008-06-14 04:52:01Z cjfields $
+# $Id: RelationshipType.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Ontology::RelationshipType  
 #
-# Cared for by Christian M. Zmasek <czmasek@gnf.org> or <cmzmasek@yahoo.com>
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
-# (c) Christian M. Zmasek, czmasek@gnf.org, 2002.
+# Cared for by Christian M. Zmasek <czmasek-at-burnham.org> or <cmzmasek@yahoo.com>
+#
+# (c) Christian M. Zmasek, czmasek-at-burnham.org, 2002.
 # (c) GNF, Genomics Institute of the Novartis Research Foundation, 2002.
 #
 # You may distribute this module under the same terms as perl itself.
@@ -48,6 +50,17 @@ Bioperl mailing lists  Your participation is much appreciated.
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
+
 =head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
@@ -60,9 +73,9 @@ the web:
 
 Christian M. Zmasek
 
-Email: czmasek@gnf.org  or  cmzmasek@yahoo.com
+Email: czmasek-at-burnham.org  or  cmzmasek@yahoo.com
 
-WWW:   http://www.genetics.wustl.edu/eddy/people/zmasek/
+WWW:   http://monochrome-effect.net/
 
 Address:
 

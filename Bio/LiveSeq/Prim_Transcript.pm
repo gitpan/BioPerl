@@ -1,6 +1,8 @@
-# $Id: Prim_Transcript.pm 10525 2006-09-26 22:03:22Z sendu $
+# $Id: Prim_Transcript.pm 15635 2009-04-14 19:11:13Z cjfields $
 #
 # bioperl module for Bio::LiveSeq::Prim_Transcript
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Joseph Insana <insana@ebi.ac.uk> <jinsana@gmx.net>
 #

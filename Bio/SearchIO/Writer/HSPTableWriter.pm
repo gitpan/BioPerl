@@ -1,4 +1,4 @@
-# $Id: HSPTableWriter.pm 14672 2008-04-22 21:42:50Z cjfields $
+# $Id: HSPTableWriter.pm 16123 2009-09-17 12:57:27Z cjfields $
 
 =head1 NAME
 
@@ -103,6 +103,8 @@ is not specified, this list, in this order, will be used as the default.
     frame                  # Reading frame of the aligned query sequence 
     hit_description        # Full description of the hit sequence
     query_description      # Full description of the query sequence
+    frac_identical_total   # fraction of total identical substitutions
+    frac_conserved_total   # fraction of total conserved substitutions
 
 For more details about these columns, see the documentation for the
 corresponding method in Bio::Search::HSP::HSPI.
@@ -123,6 +125,17 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -202,6 +215,8 @@ my %column_map = (
                   'frame_query'           => ['26', 'hsp', 'frame/query', 's', 'FRAME_Q'],
                   'hit_description'       => ['27', 'hit', 'hit_description', 's', 'DESC_H'],
                   'query_description'     => ['28', 'result', 'query_description', 's', 'DESC_Q'],
+                  'frac_identical_total'  => ['29', 'hsp', 'frac_identical/total', '.2f', 'FR_IDT'],
+                  'frac_conserved_total'  => ['30', 'hsp', 'frac_conserved/total', '.2f', 'FR_CNT'],
                  );
 
 sub column_map { return %column_map }
@@ -246,7 +261,7 @@ sub to_string {
 	    while(my $hsp = $hit->next_hsp) {
             next if ( defined $hspfilter && ! &{$hspfilter}($hsp));
             my @row_data  = &{$func_ref}($result, $hit, $hsp);
-            $str .= sprintf "$printf_fmt\n", @row_data;
+            $str .= sprintf("$printf_fmt\n", map {$_ || ($printf_fmt eq 's' ? '' : 0)} @row_data);
 	    }
 	}
     }

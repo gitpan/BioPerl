@@ -1,6 +1,8 @@
-# $Id: AlignI.pm 11268 2007-03-08 16:02:51Z nathan $
+# $Id: AlignI.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Align::AlignI
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 # Cared for by Jason Stajich <jason@bioperl.org>
 #
@@ -19,9 +21,9 @@ Bio::Align::AlignI - An interface for describing sequence alignments.
   # get a Bio::Align::AlignI somehow - typically using Bio::AlignIO system
   # some descriptors
   print $aln->length, "\n";
-  print $aln->no_residues, "\n";
+  print $aln->num_residues, "\n";
   print $aln->is_flush, "\n";
-  print $aln->no_sequences, "\n";
+  print $aln->num_sequences, "\n";
   print $aln->percentage_identity, "\n";
   print $aln->consensus_string(50), "\n";
 
@@ -51,6 +53,17 @@ the Bioperl mailing list.  Your participation is much appreciated.
 
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
+
+=head2 Support 
+
+Please direct usage questions or support issues to the mailing list:
+
+I<bioperl-l@bioperl.org>
+
+rather than to the module maintainer directly. Many experienced and 
+reponsive experts will be able look at the problem and quickly 
+address it. Please include a thorough description of the problem 
+with code and data examples if at all possible.
 
 =head2 Reporting Bugs
 
@@ -234,7 +247,7 @@ sub each_seq_with_id {
 
              Gets a sequence based on its position in the alignment.
              Numbering starts from 1.  Sequence positions larger than
-             no_sequences() will throw an error.
+             num_sequences() will throw an error.
 
  Returns   : a Bio::LocatableSeq object
  Argument  : positive integer for the sequence position
@@ -259,7 +272,7 @@ current MSE.
 
              Creates a new alignment from a continuous subset of
              sequences.  Numbering starts from 1.  Sequence positions
-             larger than no_sequences() will throw an error.
+             larger than num_sequences() will throw an error.
 
  Returns   : a Bio::SimpleAlign object
  Argument  : positive integer for the first sequence
@@ -281,7 +294,7 @@ sub select {
 
              Creates a new alignment from a subset of
              sequences.  Numbering starts from 1.  Sequence positions
-             larger than no_sequences() will throw an error.
+             larger than num_sequences() will throw an error.
 
  Returns   : a Bio::SimpleAlign object
  Args      : array of integers for the sequences
@@ -613,32 +626,34 @@ sub maxname_length {
     $self->throw_not_implemented();
 }
 
-=head2 no_residues
+=head2 num_residues
 
- Title     : no_residues
- Usage     : $no = $ali->no_residues
+ Title     : num_residues
+ Usage     : $no = $ali->num_residues
  Function  : number of residues in total in the alignment
  Returns   : integer
- Argument  : 
+ Argument  :
+ Note      : replaces no_residues
 
 =cut
 
-sub no_residues {
+sub num_residues {
     my ($self) = @_;
     $self->throw_not_implemented();
 }
 
-=head2 no_sequences
+=head2 num_sequences
 
- Title     : no_sequences
- Usage     : $depth = $ali->no_sequences
+ Title     : num_sequences
+ Usage     : $depth = $ali->num_sequences
  Function  : number of sequence in the sequence alignment
  Returns   : integer
  Argument  : None
+ Note      : replaces no_sequences
 
 =cut
 
-sub no_sequences {
+sub num_sequences {
     my ($self) = @_;
     $self->throw_not_implemented();
 }
@@ -720,7 +735,7 @@ L<Bio::LocatableSeq::location_from_column>:
   	     Seq2/24-30 ACGG.RTY..
   	     Seq3/43-51 AC.DDEFGHI
 
-           column_from_residue_number( "Seq1", 94 ) returns 5.
+           column_from_residue_number( "Seq1", 94 ) returns 6.
            column_from_residue_number( "Seq2", 25 ) returns 2.
            column_from_residue_number( "Seq3", 50 ) returns 9.
 
@@ -816,6 +831,40 @@ sub set_displayname_flat {
 sub set_displayname_normal {
     my ($self) = @_;
     $self->throw_not_implemented();
+}
+
+=head1 Deprecated methods
+
+=head2 no_residues
+
+ Title     : no_residues
+ Usage     : $no = $ali->no_residues
+ Function  : number of residues in total in the alignment
+ Returns   : integer
+ Argument  : 
+ Note      : deprecated in favor of num_residues()
+
+=cut
+
+sub no_residues {
+    # immediate deprecation
+    shift->deprecated();
+}
+
+=head2 no_sequences
+
+ Title     : no_sequences
+ Usage     : $depth = $ali->no_sequences
+ Function  : number of sequence in the sequence alignment
+ Returns   : integer
+ Argument  : None
+ Note      : deprecated in favor of num_sequences() 
+
+=cut
+
+sub no_sequences {
+    # immediate deprecation
+    shift->deprecated();
 }
 
 1;

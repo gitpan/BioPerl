@@ -1,7 +1,10 @@
-# $Id: HTTPget.pm 11480 2007-06-14 14:16:21Z sendu $
+# $Id: HTTPget.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for fallback HTTP get operations.
+#
 # Module is proxy-aware 
+#
+# Please direct questions and support issues to <bioperl-l@bioperl.org> 
 #
 #  Cared for by Chris Dagdigian <dag@sonsorol.org>
 #  but all of the good stuff was written by
@@ -60,7 +63,7 @@ Your participation is much appreciated.
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
- =head2 Reporting Bugs
+=head2 Reporting Bugs
 
 Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
@@ -69,6 +72,8 @@ web:
   http://bugzilla.open-bio.org/
 
 =head1 AUTHOR - Lincoln Stein
+
+# Please direct questions and support issues to I<bioperl-l@bioperl.org>
 
  Cared for by Chris Dagdigian <dag@sonsorol.org>
 

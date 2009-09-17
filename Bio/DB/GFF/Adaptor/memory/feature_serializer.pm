@@ -1,10 +1,10 @@
 package Bio::DB::GFF::Adaptor::memory::feature_serializer;
 
-# $Id: feature_serializer.pm 10525 2006-09-26 22:03:22Z sendu $
+# $Id: feature_serializer.pm 15515 2009-02-10 13:41:46Z dave_messina $
 
 =head1 NAME
 
-Bio::DB::GFF::Adaptor::memory::feature_serializer
+Bio::DB::GFF::Adaptor::memory::feature_serializer - utility methods for serializing and deserializing GFF features
 
 =cut
 
