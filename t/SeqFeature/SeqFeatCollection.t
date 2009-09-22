@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: SeqFeatCollection.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: SeqFeatCollection.t 16151 2009-09-22 16:52:29Z cjfields $
 
 use strict;
 
@@ -118,6 +118,10 @@ foreach my $f ( @features ) {
 }
 is($col->feature_count, 0);
 
+# explicitly destroy old instances above (should clear out any open filehandles
+# w/o -keep flag set)
+undef $col; 
+
 my $filename = test_output_file();
 my $newcollection = Bio::SeqFeature::Collection->new(-verbose => $verbose,
 						    -keep    => 1,
@@ -132,7 +136,7 @@ is($newcollection->feature_count, 54);
 undef $newcollection;
 ok( ! -e $filename);
 # without -keep => 1, $filename was deleted as expected.
-# to stop BioperlTest complaining that the temp file was already deleted,
+# to stop Bio::Root::Test complaining that the temp file was already deleted,
 # we'll just create it again
 open(TMP, ">", $filename);
 print TMP "temp\n";

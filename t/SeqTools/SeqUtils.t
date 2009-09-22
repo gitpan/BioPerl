@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: SeqUtils.t 16090 2009-09-15 21:57:56Z cjfields $
+# $Id: SeqUtils.t 16151 2009-09-22 16:52:29Z cjfields $
 
 use strict;
 
@@ -212,6 +212,7 @@ lives_ok {
   @tags = map{$_->get_tag_values(q(note))}$seq1->get_SeqFeatures ;
 } 'cat - note tag transfered (no throw)';
 cmp_ok(scalar(@tags),'==',3, 'cat - note tag values transfered (correct count)') ;
+
 
 my $protseq = Bio::PrimarySeq->new(-id => 2, -seq => 'MVTF'); # protein seq
 

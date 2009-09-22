@@ -952,6 +952,8 @@ examples/tools/run_primer3.pl
 examples/tools/seq_pattern.pl
 examples/tools/standaloneblast.pl
 examples/tree/paup2phylip.pl
+ide/bioperl-mode/dist/bioperl-mode-xemacs.tar
+ide/bioperl-mode/dist/bioperl-mode-xemacs.tar.md5
 ide/bioperl-mode/dist/bioperl-mode.tar
 ide/bioperl-mode/dist/bioperl-mode.tar.md5
 ide/bioperl-mode/dist/package-me
@@ -1815,7 +1817,6 @@ t/LocalDB/Flat.t
 t/LocalDB/Index.t
 t/LocalDB/Registry.t
 t/LocalDB/SeqFeature.t
-t/LocalDB/SeqFeature_SQLite.t
 t/LocalDB/transfac_pro.t
 t/Map/Cyto.t
 t/Map/Linkage.t
