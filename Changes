@@ -1,4 +1,4 @@
-$Id: Changes 16103 2009-09-16 04:27:51Z cjfields $
+$Id: Changes 16128 2009-09-18 04:44:20Z cjfields $
   
 Revision history for Bioperl core modules
 
@@ -16,6 +16,10 @@ Full detail of changes included since the 1.5.2 release are online at:
 http://www.bioperl.org/wiki/Change_log.  Bugs remaining to be addressed
 are online at http://bugzilla.open-bio.org, with specific bugs intended
 for this release series highlighted in BUGS.
+
+1.6.0_2 ?????????????? (second 1.6.1 alpha)
+    * Bio::Root::Build
+        - fix YAML meta data generation [cjfields]
 
 1.6.0_1 Sept. 15, 2009 (first 1.6.1 alpha)
     * Bio::Align::DNAStatistics
@@ -160,7 +164,8 @@ for this release series highlighted in BUGS.
         - fastam9_to_table - fix for MPI output [jason]
         - gccalc - total stats [jason]
     * General Stuff
-        - POD cleanup re: FEEDBACK section [maj]
+        - POD cleanup re: FEEDBACK section [maj, cjfields]
+        - cleanup or fix dead links [cjfields]
         - Use of no_* methods (indicating 'number of something') is deprecated
           in favor of num_* [cjfields]
         - lots of new tests for the above bugs and refactors [everyone!]

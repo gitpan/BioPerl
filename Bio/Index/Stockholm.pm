@@ -1,4 +1,4 @@
-# $Id: Stockholm.pm 16123 2009-09-17 12:57:27Z cjfields $
+# $Id: Stockholm.pm 16147 2009-09-22 01:26:32Z cjfields $
 #
 # BioPerl module for Bio::Index::Stockholm
 #
@@ -172,10 +172,10 @@ sub fetch_report{
 	return $report->next_aln;
 }
 
-=head2 fetch_report
+=head2 fetch_aln
 
- Title   : fetch_report
- Usage   : my $align = $idx->fetch_report($id);
+ Title   : fetch_aln
+ Usage   : my $align = $idx->fetch_aln($id);
  Function: Returns a Bio::SimpleAlign object 
            for a specific alignment
  Returns : Bio::SimpleAlign

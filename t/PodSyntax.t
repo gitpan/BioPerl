@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: PodSyntax.t 11525 2007-06-27 10:16:38Z sendu $
+# $Id: PodSyntax.t 16147 2009-09-22 01:26:32Z cjfields $
 
 use strict;
 
@@ -10,4 +10,4 @@ BEGIN {
 }
 
 # check pod is syntactically correct
-all_pod_files_ok( all_pod_files('.') )
+all_pod_files_ok( all_pod_files(qw(Bio scripts examples maintenance)) )

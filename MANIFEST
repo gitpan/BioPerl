@@ -998,6 +998,7 @@ models/README
 README
 scripts/biblio/biblio.PLS
 scripts/biblio/TAG
+scripts/Bio-DB-EUtilities/einfo.PLS
 scripts/Bio-DB-GFF/bulk_load_gff.PLS
 scripts/Bio-DB-GFF/fast_load_gff.PLS
 scripts/Bio-DB-GFF/genbank2gff.PLS
@@ -1781,7 +1782,6 @@ t/data/worm_fam_2785.cdna
 t/data/X98338_Adh-mRNA.gb
 t/data/yeast.tRNAscanSE
 t/data/yn00.mlc
-t/gmap_f9-searchio.t
 t/lib/Array/Compare.pm
 t/lib/Error.pm
 t/lib/Sub/Uplevel.pm
@@ -1815,6 +1815,7 @@ t/LocalDB/Flat.t
 t/LocalDB/Index.t
 t/LocalDB/Registry.t
 t/LocalDB/SeqFeature.t
+t/LocalDB/SeqFeature_SQLite.t
 t/LocalDB/transfac_pro.t
 t/Map/Cyto.t
 t/Map/Linkage.t
@@ -1895,6 +1896,7 @@ t/SearchIO/cross_match.t
 t/SearchIO/erpin.t
 t/SearchIO/exonerate.t
 t/SearchIO/fasta.t
+t/SearchIO/gmap_f9.t
 t/SearchIO/hmmer.t
 t/SearchIO/hmmer_pull.t
 t/SearchIO/infernal.t

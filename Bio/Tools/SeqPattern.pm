@@ -1,4 +1,4 @@
-# $Id: SeqPattern.pm 16123 2009-09-17 12:57:27Z cjfields $
+# $Id: SeqPattern.pm 16139 2009-09-18 21:11:23Z cjfields $
 #
 # bioperl module for Bio::Tools::SeqPattern
 #
@@ -209,8 +209,6 @@ use strict;
 use vars qw ($ID);
 $ID  = 'Bio::Tools::SeqPattern';
 
-require Bio::Tools::SeqPattern::Backtranslate;
-
 ## These constants may be more appropriate in a Bio::Dictionary.pm
 ## type of class.
 my $PURINES      = 'AG';
@@ -225,7 +223,6 @@ my (%Processed_braces, %Processed_asterics);
 #####################################################################################
 ##                                 CONSTRUCTOR                                     ##
 #####################################################################################
-
 
 =head1 new
 
@@ -536,6 +533,9 @@ sub revcom {
 
 sub backtranslate {
     my $self = shift;
+    
+    # _load_module loads dynamically, caches call if successful
+    $self->_load_module('Bio::Tools::SeqPattern::Backtranslate');
     Bio::Tools::SeqPattern::Backtranslate->import("_reverse_translate_motif");
 
     if ($self->type ne 'Amino') {

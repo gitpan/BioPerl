@@ -48,5 +48,3 @@
 
 # Avoid additional run-time generated things
 bioperl.lisp
-t/LocalDB/SeqFeature_BDB.t
-t/LocalDB/SeqFeature_mysql.t

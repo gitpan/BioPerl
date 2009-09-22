@@ -1,4 +1,4 @@
-# $Id: TargetP.pm 16123 2009-09-17 12:57:27Z cjfields $
+# $Id: TargetP.pm 16147 2009-09-22 01:26:32Z cjfields $
 #
 # Bioperl module for TargetP
 #
@@ -87,7 +87,7 @@ of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
   http://bugzilla.open-bio.org/
-  
+
 =head1 AUTHORS - Emmanuel Quevillon
 
 Email emmanuel.quevillon@versailles.inra.fr
