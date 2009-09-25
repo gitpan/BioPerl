@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: Build.pm 16153 2009-09-22 17:42:10Z cjfields $
+# $Id: Build.pm 16169 2009-09-25 21:12:48Z cjfields $
 #
 # BioPerl module for Bio::Root::Build
 #
@@ -87,7 +87,7 @@ BEGIN {
 use strict;
 use warnings;
 
-our $VERSION = '1.006000_003';
+our $VERSION = '1.006000_004';
 our @extra_types = qw(options excludes_os feature_requires test); # test must always be last in the list!
 our $checking_types = "requires|conflicts|".join("|", @extra_types);
 

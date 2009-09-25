@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: Utilities.t 15505 2009-02-05 18:22:58Z cjfields $
+# $Id: Utilities.t 16168 2009-09-25 21:07:32Z cjfields $
 
 
 use strict;
@@ -75,7 +75,7 @@ ok ! defined $exe ;
 # compress() and uncompress() using gzip.
 SKIP: {
     my $gzip = $u->find_exe('gzip');
-    skip "gzip not found, skipping gzip tests", 6 unless $gzip;
+    skip "gzip not found, skipping gzip tests", 12 unless $gzip;
     ok -x $gzip;
     
     # test compression/decompression of a simple file

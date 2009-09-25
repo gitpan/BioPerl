@@ -1,4 +1,4 @@
-# $Id: SequenceFamily.pm 16123 2009-09-17 12:57:27Z cjfields $
+# $Id: SequenceFamily.pm 16168 2009-09-25 21:07:32Z cjfields $
 #
 # BioPerl module for Bio::Cluster::SequenceFamily
 #
@@ -17,8 +17,6 @@
 Bio::Cluster::SequenceFamily - Sequence Family object
 
 =head1 SYNOPSIS
-
-  use Bio::Cluster::SequenceFamily;
 
   use Bio::SeqIO;
   use Bio::Cluster::SequenceFamily;

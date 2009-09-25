@@ -1,5 +1,5 @@
 #
-# $Id: Qual.pm 15505 2009-02-05 18:22:58Z cjfields $
+# $Id: Qual.pm 16168 2009-09-25 21:07:32Z cjfields $
 #
 # BioPerl module for Bio::DB::Qual
 #
@@ -363,10 +363,6 @@ is to make sure the your quality scores fit on no more than 2 lines. Another
 solution could be to padd them with blank spaces so that each line has the same
 number of characters (maybe this padding should be implemented in
 Bio::SeqIO::qual?).
-
-=head1 SEE ALSO
-
-L<bioperl>
 
 =head1 AUTHOR
 

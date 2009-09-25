@@ -1,4 +1,4 @@
-# $Id: phylip.pm 16123 2009-09-17 12:57:27Z cjfields $
+# $Id: phylip.pm 16168 2009-09-25 21:07:32Z cjfields $
 #
 # BioPerl module for Bio::Matrix::IO::phylip
 #
@@ -19,7 +19,7 @@ Bio::Matrix::IO::phylip - A parser for PHYLIP distance matricies
 =head1 SYNOPSIS
 
   use Bio::Matrix::IO;
-  my $parser = Bio::Matrix::IO->new(-format   => 'phylip'
+  my $parser = Bio::Matrix::IO->new(-format   => 'phylip',
                                    -file     => 't/data/phylipdist.out');
   my $matrix = $parser->next_matrix;
 

@@ -1,6 +1,6 @@
 package Bio::DB::SeqFeature::Store::GFF3Loader;
 
-# $Id: GFF3Loader.pm 16090 2009-09-15 21:57:56Z cjfields $
+# $Id: GFF3Loader.pm 16168 2009-09-25 21:07:32Z cjfields $
 
 =head1 NAME
 
@@ -992,7 +992,6 @@ use the BioPerl bug tracking system to report bugs.
 
 =head1 SEE ALSO
 
-L<bioperl>,
 L<Bio::DB::SeqFeature::Store>,
 L<Bio::DB::SeqFeature::Segment>,
 L<Bio::DB::SeqFeature::NormalizedFeature>,
