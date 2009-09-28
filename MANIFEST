@@ -862,7 +862,7 @@ Bio/Variation/SeqDiff.pm
 Bio/Variation/SNP.pm
 Bio/Variation/VariantI.pm
 Bio/WebAgent.pm
-BioPerl.pod
+BioPerl.pm
 BUGS
 Build.PL
 Changes
