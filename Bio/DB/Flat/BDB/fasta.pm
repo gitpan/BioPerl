@@ -1,5 +1,5 @@
 #
-# $Id: fasta.pm 16123 2009-09-17 12:57:27Z cjfields $
+# $Id: fasta.pm 16191 2009-09-28 15:44:43Z cjfields $
 #
 # BioPerl module for Bio::DB::Flat::BDB
 #
@@ -81,5 +81,19 @@ sub seq_to_ids {
   \%ids;
 }
 
+sub parse_one_record {
+    my $self  = shift;
+    my $fh    = shift;
+    
+    # fasta parses by changing $/ to '\n>', need to adjust accordingly
+    my $adj = ( $^O =~ /mswin/i ) ? -2 : -1; 
+    my $parser =
+      $self->{cached_parsers}{fileno($fh)}
+        ||= Bio::SeqIO->new(-fh=>$fh,-format=>$self->default_file_format);
+    my $seq = $parser->next_seq or return;
+    $self->{flat_alphabet} ||= $seq->alphabet;
+    my $ids = $self->seq_to_ids($seq);
+    return ($ids, $adj);
+}
 
 1;

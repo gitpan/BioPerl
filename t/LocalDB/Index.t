@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: Index.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id: Index.t 16191 2009-09-28 15:44:43Z cjfields $
 
 use strict;
 
@@ -95,7 +95,7 @@ is ($seq->display_id(), 'ROA1_HUMAN');
 
 # test id_parser
 $ind = Bio::Index::Swissprot->new(-filename   => 'Wibbl4',
-											 -write_flag => 1);
+								-write_flag => 1);
 $ind->id_parser(\&get_id);
 $ind->make_index(test_input_file('roa1.swiss'));
 ok ( -e "Wibbl4" || -e "Wibbl4.pag" );
