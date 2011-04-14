@@ -118,11 +118,13 @@ NB: This list of packages is not authoritative. See the 'requires',
 | Distribution              | Module used - Description            | Min. ver. |
 |---------------------------+--------------------------------------+-----------|
 | Graph                     | * Graph::Directed - NA               |   None    |
+|                           | * Graph::Undirected - NA             |   None    |
 |==============================================================================|
 | Used by:                                                                     |
 |------------------------------------------------------------------------------|
 | * Bio::PhyloNetwork - Graph::Directed                                        |
 | * Bio::Ontology::SimpleGOEngine::GraphAdaptor - Graph::Directed              |
+| * Bio::Assembly::Tools::ContigSpectrum - Graph::Undirected                   |
  ==============================================================================
  ==============================================================================
 | Distribution              | Module used - Description            | Min. ver. |
@@ -215,6 +217,16 @@ NB: This list of packages is not authoritative. See the 'requires',
  ==============================================================================
 | Distribution              | Module used - Description            | Min. ver. |
 |---------------------------+--------------------------------------+-----------|
+| SVG                       | * SVG - Generate SVG images and      |   2.26    |
+|                           |   files                              |           |
+|==============================================================================|
+| Used by:                                                                     |
+|------------------------------------------------------------------------------|
+| * Bio::Draw::Pictogram - SVG                                                 |
+ ==============================================================================
+ ==============================================================================
+| Distribution              | Module used - Description            | Min. ver. |
+|---------------------------+--------------------------------------+-----------|
 | SVG-Graph                 | * SVG::Graph - Series of Modules to  |   None    |
 |                           |   produce SVG graphs                 |           |
 |                           | * SVG::Graph::Data - NA              |           |
@@ -246,7 +258,28 @@ NB: This list of packages is not authoritative. See the 'requires',
 |==============================================================================|
 | Used by:                                                                     |
 |------------------------------------------------------------------------------|
+| * Bio::Microarray::Tools::MitoChipV2Parser - Spreadsheet::ParseExcel         |
+| * Bio::Microarray::Tools::ReseqChip - Spreadsheet::ParseExcel                |
 | * Bio::SeqIO::excel - Spreadsheet::ParseExcel                                |
+ ==============================================================================
+ ==============================================================================
+| Distribution              | Module used - Description            | Min. ver. |
+|---------------------------+--------------------------------------+-----------|
+| Spreadsheet-WriteExcel    | * Spreadsheet::WriteExcel - Write    |   None    |
+|                           |   cross-platform Excel binary file.  |           |
+|==============================================================================|
+| Used by:                                                                     |
+|------------------------------------------------------------------------------|
+| * Bio::Microarray::Tools::ReseqChip - Spreadsheet::WriteExcel                |
+ ==============================================================================
+ ==============================================================================
+| Distribution              | Module used - Description            | Min. ver. |
+|---------------------------+--------------------------------------+-----------|
+| Statistics-Frequency      | * Statistics::Frequency - NA         |   None    |
+|==============================================================================|
+| Used by:                                                                     |
+|------------------------------------------------------------------------------|
+| * Bio::Microarray::Tools::ReseqChip - Statistics::Frequency                  |
  ==============================================================================
  ==============================================================================
 | Distribution              | Module used - Description            | Min. ver. |

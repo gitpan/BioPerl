@@ -7,7 +7,6 @@
 #           nucleotide or peptide sequences).
 # AUTHOR  : Steve Chervitz (sac@bioperl.org)
 # CREATED : 28 Aug 1997
-# REVISION: $Id: seq_pattern.pl 15087 2008-12-04 02:48:00Z bosborne $
 # USAGE   : seq_pattern.pl -h
 # COMMENTS: 
 #    This is a driver script for the Bio::Tools::SeqPattern.pm Bioperl module

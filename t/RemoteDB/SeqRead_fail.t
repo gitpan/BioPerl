@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: SeqRead_fail.t 15407 2009-01-20 05:18:29Z cjfields $
+# $Id$
 
 use strict;
 

@@ -1,4 +1,3 @@
-# $Id: LinkSet.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Tools::EUtilities::Link::LinkSet
 #
@@ -56,7 +55,7 @@ Report bugs to the Bioperl bug tracking system to
 help us keep track the bugs and their resolution.
 Bug reports can be submitted via the web.
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR 
 
@@ -559,16 +558,14 @@ sub to_string {
                 );
     my $string;
     for my $tag (sort {$a <=> $b} keys %tags) {
-        my ($m, $nm) = ($tags{$tag}->[0], $tags{$tag}->[1]);
+        my ($m, $nm) = (@{$tags{$tag}}[0..1]);
         # using this awkward little construct to deal with both lists and scalars
         my @content = grep {defined $_} $self->$m();
         next unless @content;
-        $string .= sprintf("%-*s%-*s%s\n",
-            $level, '',
-            $pad, $nm,
-            $self->_text_wrap(':',
+        $string .= $self->_text_wrap(
+                 sprintf("%-*s%-*s:",$level, '',$pad, $nm,),
                  ' ' x ($pad).':',
-                 join(', ',@content)));
+                 join(', ',@content))."\n";
     }
     while (my $li = $self->next_LinkInfo) {
         $string .= $li->to_string(4);

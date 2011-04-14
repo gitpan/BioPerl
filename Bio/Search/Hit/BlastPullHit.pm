@@ -1,4 +1,3 @@
-# $Id: BlastPullHit.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Search::Hit::BlastPullHit
 #
@@ -67,7 +66,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Sendu Bala
 
@@ -222,7 +221,9 @@ sub _discover_start_end {
 
 sub _discover_next_hsp {
 	my $self = shift;
-    $self->_chunk_seek($self->{_end_of_previous_hsp} || $self->{_after_header});
+    my $pos = $self->{_end_of_previous_hsp} || $self->{_after_header};
+    return unless $pos;
+    $self->_chunk_seek($pos);
     
     my ($start, $end) = $self->_find_chunk_by_end("\n Score = ");
     if ((defined $end && ($end + $self->_chunk_true_start) > $self->_chunk_true_end) || ! $end) {

@@ -1,13 +1,14 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: embl.t 15635 2009-04-14 19:11:13Z cjfields $
+# $Id$
 
 use strict;
 
 BEGIN {
 	use lib '.';
+	use lib '../..';
 	use Bio::Root::Test;
 	
-	test_begin(-tests => 69);
+	test_begin(-tests => 95);
 	
     use_ok('Bio::SeqIO::embl');
 }
@@ -189,3 +190,128 @@ is($cds_dblink->tagname, 'dblink', 'CDS - OX tagname');
 is($cds_dblink->database, 'NCBI_TaxID', 'CDS - OX database');
 is($cds_dblink->primary_id, '9606', 'CDS - OX primary_id');
 
+#bug 2982 - parsing contig descriptions sans sequence data
+
+ok( $embl = Bio::SeqIO->new(-file => test_input_file('bug2982.embl'),
+			    -format => 'embl') );
+my $i;
+for ($i=0; my $seq = $embl->next_seq; $i++) {
+    ok !$seq->seq;
+    ok ( my $ann = ($seq->annotation->get_Annotations('contig'))[0] );
+    like $ann->value, qr/join\(/;
+}
+is $i, 4;
+
+
+# bug 3086 - parsing long lines correctly
+
+ok( $embl = Bio::SeqIO->new(-file => test_input_file('bug3086.embl'),
+                            -format => 'embl',
+                            -verbose => '$verbose') );
+$seq = $embl->next_seq;
+foreach my $feature ($seq->top_SeqFeatures) {
+    if ($feature->has_tag('product')) {
+        my ($product) = $feature->get_tag_values('product');
+        is($product,
+           'bifunctional phosphoribosylaminoimidazolecarboxamide formyltransferase/IMP cyclohydrolase',
+           'Check if product was parsed correctly');
+    }
+}
+
+# long labels handled
+
+{
+    # Create sequence with feature with a long label qualifier
+    my $seq=Bio::Seq->new(-seq=>'actg');
+    my $feature=Bio::SeqFeature::Generic->new(-primary=>'CDS', -start=>1, -end=>4);
+    $feature->add_tag_value(label=>'1 2 3 4 5 6 7 8 9 a b c d e f g h i j k l m n o p q r');
+    $seq->add_SeqFeature($feature);
+
+    # Write EMBL
+    my $string;
+    open(my $str_fh, '>', \$string) || skip("Can't open string, skipping", 2);
+    
+    my $out=Bio::SeqIO->new(-format=>'embl', -fh => $str_fh);
+    $out->write_seq($seq);
+
+    # Read EMBL
+    my $in=Bio::SeqIO->new(-format=>'embl', -string => $string);
+    my $ret=eval { my $embl=$in->next_seq };
+    my $error;
+    $error=$@ if (!$ret);
+    ok($ret, 'Parse long qualifier');
+    is($error, undef);
+}
+
+# NCBI TaxIDs should roundtrip
+{
+    my $seq=Bio::Seq->new(-seq=>'actg');
+    my $species = Bio::Species->new(-ncbi_taxid => 7165, -classification=>
+                                    [ 'Anopheles gambiae', 'Anopheles', 'Culicoidea',
+                                      'Nematocera', 'Diptera', 'Endopterygota',
+                                      'Neoptera', 'Pterygota', 'Insecta', 'Hexapoda',
+                                      'Arthropoda', 'Metazoa', 'Eukaryota' ]);
+
+    $seq->species($species);
+    is($seq->species->ncbi_taxid, 7165, 'TaxID set correctly');
+
+    # Write EMBL
+    my $string;
+    open(my $str_fh, '>', \$string) || skip("Can't open string, skipping", 2);
+
+    my $out=Bio::SeqIO->new(-format=>'embl', -fh => $str_fh);
+    $out->write_seq($seq);
+
+    # Read EMBL
+    my $in=Bio::SeqIO->new(-format=>'embl', -string => $string);
+    my $embl_seq;
+    my $ret=eval { $embl_seq=$in->next_seq };
+    my $error;
+    $error=$@ if (!$ret);
+
+    # Check that TaxID has roundtripped
+    my $embl_species = $embl_seq->species;
+    ok(defined $embl_species, "The read sequence has a species object");
+    is($embl_species->ncbi_taxid, 7165, "NCBI TaxID has roundtripped");
+    is($embl_species->binomial(), 'Anopheles gambiae', "Name has roundtripped");
+}
+
+# a taxon db_xref on a source feature should override an OX line
+{
+    my $seq=Bio::Seq->new(-seq=>'actg');
+    my $species = Bio::Species->new(-ncbi_taxid => 7165, -classification=>
+                                    [ 'Anopheles gambiae', 'Anopheles', 'Culicoidea',
+                                      'Nematocera', 'Diptera', 'Endopterygota',
+                                      'Neoptera', 'Pterygota', 'Insecta', 'Hexapoda',
+                                      'Arthropoda', 'Metazoa', 'Eukaryota' ]);
+
+    $seq->species($species);
+    is($seq->species->ncbi_taxid, 7165, 'TaxID set correctly');
+
+    my $seq_feature = Bio::SeqFeature::Generic->new(-primary=>'source',
+                                                    -start => 1,
+                                                    -end=> length($seq->seq));
+
+    $seq_feature->add_tag_value('db_xref', 'taxon:9606');
+    $seq->add_SeqFeature($seq_feature);
+
+    # Write EMBL
+    my $string;
+    open(my $str_fh, '>', \$string) || skip("Can't open string, skipping", 2);
+
+    my $out=Bio::SeqIO->new(-format=>'embl', -fh => $str_fh);
+    $out->write_seq($seq);
+
+    # Read EMBL
+    my $in=Bio::SeqIO->new(-format=>'embl', -string => $string);
+    my $embl_seq;
+    my $ret=eval { $embl_seq=$in->next_seq };
+    my $error;
+    $error=$@ if (!$ret);
+
+    # Check that TaxID has roundtripped
+    my $embl_species = $embl_seq->species;
+    ok(defined $embl_species, "The read sequence has a species object");
+    is($embl_species->ncbi_taxid, 9606, "The taxid of the source feature overrides that of the OX line");
+    is($embl_species->binomial(), 'Anopheles gambiae', "Name has roundtripped");
+}

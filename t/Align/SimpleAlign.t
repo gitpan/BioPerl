@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: SimpleAlign.t 16103 2009-09-16 04:27:51Z cjfields $
+# $Id$
 
 use strict;
 
@@ -7,7 +7,7 @@ BEGIN {
     use lib '.';
     use Bio::Root::Test;
 
-    test_begin( -tests => 179 );
+    test_begin( -tests => 199 );
 
     use_ok('Bio::SimpleAlign');
     use_ok('Bio::AlignIO');
@@ -101,11 +101,11 @@ is $aln->num_sequences, 16,   'num_sequences';
 is( sprintf( "%.2f", $aln->overall_percentage_identity() ),
     33.06, 'overall_percentage_identity' );
 is( sprintf( "%.2f", $aln->overall_percentage_identity('align') ),
-    33.06, 'overall_percentage_identity' );
+    33.06, 'overall_percentage_identity (align)' );
 is( sprintf( "%.2f", $aln->overall_percentage_identity('short') ),
-    35.24, 'overall_percentage_identity' );
+    35.24, 'overall_percentage_identity (short)' );
 is( sprintf( "%.2f", $aln->overall_percentage_identity('long') ),
-    33.47, 'overall_percentage_identity' );
+    33.47, 'overall_percentage_identity (long)' );
 is( sprintf( "%.2f", $aln->average_percentage_identity() ),
     66.91, 'average_percentage_identity' );
 
@@ -548,30 +548,35 @@ for my $ls ( sort keys %testdata ) {
 # is _remove_col really working correctly?
 my $a = Bio::LocatableSeq->new(
     -id    => 'a',
+    -strand => 1,
     -seq   => 'atcgatcgatcgatcg',
     -start => 5,
     -end   => 20
 );
 my $b = Bio::LocatableSeq->new(
     -id    => 'b',
+    -strand => 1,
     -seq   => '-tcgatc-atcgatcg',
     -start => 30,
     -end   => 43
 );
 my $c = Bio::LocatableSeq->new(
     -id    => 'c',
+    -strand => -1,
     -seq   => 'atcgatcgatc-atc-',
     -start => 50,
     -end   => 63
 );
 my $d = Bio::LocatableSeq->new(
     -id    => 'd',
+    -strand => -1,
     -seq   => '--cgatcgatcgat--',
     -start => 80,
     -end   => 91
 );
 my $e = Bio::LocatableSeq->new(
     -id    => 'e',
+    -strand => 1,    
     -seq   => '-t-gatcgatcga-c-',
     -start => 100,
     -end   => 111
@@ -629,6 +634,43 @@ foreach my $seq ( $gapless->each_seq ) {
         is $seq->end,   110;
         is $seq->seq,   'gatcatca';
     }
+}
+
+# bug 3077
+
+my $slice = $aln->slice(1,4);
+
+for my $seq ($slice->each_seq) {
+    if ( $seq->id eq 'a' ) {
+        is $seq->start, 5;
+        is $seq->end,   8;
+        is $seq->strand, 1;
+        is $seq->seq,   'atcg';
+    }
+    elsif ( $seq->id eq 'b' ) {
+        is $seq->start, 30;
+        is $seq->end,   32;
+        is $seq->strand, 1;
+        is $seq->seq,   '-tcg';
+    }
+    elsif ( $seq->id eq 'c' ) {
+        is $seq->start, 60;
+        is $seq->end,   63;
+        is $seq->strand, -1;
+        is $seq->seq,   'atcg';
+    }
+    elsif ( $seq->id eq 'd' ) {
+        is $seq->start, 90;
+        is $seq->end,   91;
+        is $seq->strand, -1;
+        is $seq->seq,   '--cg';
+    }
+    elsif ( $seq->id eq 'e' ) {
+        is $seq->start, 100;
+        is $seq->end,   101;
+        is $seq->strand, 1;
+        is $seq->seq,   '-t-g';
+    }    
 }
 
 my $f = Bio::LocatableSeq->new(

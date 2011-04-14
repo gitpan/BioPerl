@@ -25,9 +25,6 @@ exec perl -w -x $0 ${1+"$@"} # -*- mode: perl; perl-indent-level: 2; -*-
 ###                                                        ###
 ##############################################################
 
-## $Revision: 14716 $
-## $Date: 2008-06-11 01:48:28 -0500 (Wed, 11 Jun 2008) $
-## $Author$
 ##
 
 use strict;
@@ -160,7 +157,7 @@ use File::Spec;
 # Globals --------------------------------------------------------------------
 
 # In case we have to print it out:
-my $VERSION = '$Revision: 14716 $';
+my $VERSION = '$Revision$';
 $VERSION =~ s/\S+\s+(\S+)\s+\S+/$1/;
 
 ## Vars set by options:

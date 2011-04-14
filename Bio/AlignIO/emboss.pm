@@ -1,4 +1,3 @@
-# $Id: emboss.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::emboss
 #
@@ -60,7 +59,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -227,11 +226,13 @@ sub next_aln {
     foreach my $seqname ( qw(seq1 seq2) ) {
 	return unless ( defined $data{$seqname} );
 	$data{$seqname}->{'name'} ||= $seqname;
-	my $seq = Bio::LocatableSeq->new('-seq' => $data{$seqname}->{'data'},
-					'-id'  => $data{$seqname}->{'name'},
-					'-start'=> $data{$seqname}->{'start'},
-					'-end' => $data{$seqname}->{'end'},
-					);
+	my $seq = Bio::LocatableSeq->new
+	    ('-seq'         => $data{$seqname}->{'data'},
+	     '-display_id'  => $data{$seqname}->{'name'},
+	     '-start'       => $data{$seqname}->{'start'},
+	     '-end'         => $data{$seqname}->{'end'},
+	     '-alphabet'    => $self->alphabet,
+	     );
 	$aln->add_seq($seq);
     }
     return $aln;

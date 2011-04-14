@@ -1,4 +1,3 @@
-# $Id: pfam.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::pfam
 
@@ -47,7 +46,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHORS - Peter Schattner
 
@@ -106,10 +105,11 @@ sub next_aln {
 	$seq = $4;
 
 
-	$add = Bio::LocatableSeq->new('-seq'=>$seq,
-			    '-id'=>$name,
-			    '-start'=>$start,
-			    '-end'=>$end,
+	$add = Bio::LocatableSeq->new('-seq'         => $seq,
+				      '-display_id'  => $name,
+				      '-start'       => $start,
+				      '-end'         => $end,
+				      '-alphabet'    => $self->alphabet,
 			    );
 
 	$aln->add_seq($add);

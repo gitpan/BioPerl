@@ -1,6 +1,5 @@
 #!/usr/bin/perl -w
 # Author: Jason Stajich, jason@bioperl.org
-# $Id: parse_calc_stats.pl 15087 2008-12-04 02:48:00Z bosborne $
 # $Revision: 6576 $
 
 use strict;

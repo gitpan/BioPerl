@@ -1,5 +1,5 @@
 #-*-perl-*-
-#$Id: Tiling.t 16090 2009-09-15 21:57:56Z cjfields $
+#$Id$
 use strict;
 use warnings;
     use vars qw($EXHAUSTIVE $VERBOSE);
@@ -10,7 +10,7 @@ BEGIN {
     use Bio::Root::Test;
     $EXHAUSTIVE = $ENV{BIOPERL_TILING_EXHAUSTIVE_TESTS};
     $VERBOSE    = $ENV{BIOPERL_TILING_VERBOSE_TESTS};
-    test_begin(-tests => ($EXHAUSTIVE ? 6471 : 1093) );
+    test_begin(-tests => ($EXHAUSTIVE ? 6519 : 1141) );
 }
 
 use_ok('Bio::Search::Tiling::MapTiling');
@@ -20,6 +20,7 @@ use_ok('Bio::Search::Hit::BlastHit');
 use_ok('File::Spec');
 
 my ($blio, $result, $hit, $tiling, $hsp);
+
 my @normal_formats = qw( blast  wublast
                          blastn wublastn
                          blastp wublastp
@@ -98,6 +99,9 @@ my %test_files = (
                )],
     'psiblast' => [qw(
                psiblastreport.out
+               )],
+    'bug2942'  => [qw(
+               bug2942.blastx
                )]
     );
 
@@ -334,6 +338,67 @@ foreach my $alg (@normal_formats, @xltd_formats) {
     }
 }
 
+# bug 2942
+
+my %expected_ranges = ( 'm0' => [7, 11037], #query
+			'm1' => [1770, 10865], #query 
+			'm2' => [2462, 14599], #query
+			'all' => [231, 3563] #subject
+    );
+$blio = Bio::SearchIO->new( -file=>test_input_file( $test_files{'bug2942'}->[0] ),
+			    -format => 'blast' );
+$hit = $blio->next_result->next_hit;
+$tiling = Bio::Search::Tiling::MapTiling->new($hit);
+for ( 'm0', 'm1', 'm2' ) {
+    is_deeply( [$tiling->range('query',$_)], $expected_ranges{$_}, "bug2942: query $_: range correct");
+}
+is_deeply( [$tiling->range('subject', 'all')], $expected_ranges{'all'}, "bug2942: subject all : range correct" );
+
+# test get_tiled_alns
+
+$blio = Bio::SearchIO->new( -file=>test_input_file( 'dcr1_sp.WUBLASTP' ) );
+$result = $blio->next_result;
+while ($hit = $result->next_hit) {
+    last if $hit->name =~ /ASPTN/;
+}
+
+$tiling = Bio::Search::Tiling::MapTiling->new($hit);
+
+ok my @alns = $tiling->get_tiled_alns, "get_tiled_alns";
+is scalar @alns, 6, "got all alns";
+
+for my $aln ( @alns ) {
+    my (@aint, @qint, @sint);
+    my $qs = $aln->get_seq_by_id('query');
+    my $ss = $aln->get_seq_by_id('subject');
+    ok my @qfeats = $qs->get_SeqFeatures;
+    foreach (@qfeats) {
+	push @aint, [$_->start, $_->end];
+	push @qint, [($_->get_tag_values('query_start'))[0],
+		     ($_->get_tag_values('query_end'))[0] ];
+    }
+    is( eval(join('+', map {$$_[1]-$$_[0]+1} @aint)),
+	eval(join('+', map {$$_[1]-$$_[0]+1} @qint)), 
+	"aln and qfeat lengths correspond" );
+    is( $qs->length - $qs->num_gaps('-'), eval(join('+', map {$$_[1]-$$_[0]+1} @qint)), "q length correct");
+    ok my @hfeats = $ss->get_SeqFeatures;
+    @aint = ();
+    ok ( @qfeats == @hfeats, "features on q and s correspond");
+    foreach (@hfeats) {
+	push @aint, [$_->start, $_->end];
+	push @sint, [($_->get_tag_values('subject_start'))[0],
+		     ($_->get_tag_values('subject_end'))[0] ];
+    }
+    is( eval(join('+', map {$$_[1]-$$_[0]+1} @aint)),
+	eval(join('+', map {$$_[1]-$$_[0]+1} @sint)), 
+	"aln and hfeat lengths correspond" );
+    is( $ss->length - $ss->num_gaps('-'), eval(join('+', map {$$_[1]-$$_[0]+1} @sint)), "s length correct");
+
+}
+1;
+
+
+
 package Bio::Search::Tiling::MapTiling;
 
 sub cmp_frac {
@@ -354,6 +419,8 @@ sub cmp_frac {
 }
 
 sub f { my ($d,$val) = @_; sprintf("%.${d}f",$val) }       
+
+    
 
     
 1;

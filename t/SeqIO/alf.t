@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: alf.t 15383 2009-01-16 16:45:08Z cjfields $
+# $Id$
 
 use strict;
 

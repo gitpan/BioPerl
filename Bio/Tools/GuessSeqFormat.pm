@@ -1,4 +1,3 @@
-# $Id: GuessSeqFormat.pm 16123 2009-09-17 12:57:27Z cjfields $
 #------------------------------------------------------------------
 #
 # BioPerl module Bio::Tools::GuessSeqFormat
@@ -87,6 +86,10 @@ EMBL ("embl")
 =item *
 
 FastA sequence ("fasta")
+
+=item *
+
+FastQ sequence ("fastq")
 
 =item *
 
@@ -188,6 +191,10 @@ Swissprot ("swiss")
 
 Tab ("tab")
 
+=item *
+
+Variant Call Format ("vcf")
+
 =back
 
 =head1 FEEDBACK
@@ -219,7 +226,7 @@ Report bugs to the Bioperl bug tracking system to help us
 keep track the bugs and their resolution.  Bug reports can be
 submitted via the web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR
 
@@ -228,6 +235,7 @@ Andreas Kähäri, andreas.kahari@ebi.ac.uk
 =head1 CONTRIBUTORS
 
 Heikki Lehväslaiho, heikki-at-bioperl-dot-org
+Mark A. Jensen, maj-at-fortinbras-dot-us
 
 =cut
 
@@ -406,10 +414,12 @@ sub text
 our %formats = (
     ace         => { test => \&_possibly_ace        },
     blast       => { test => \&_possibly_blast      },
+    bowtie      => { test => \&_possibly_bowtie     },
     clustalw    => { test => \&_possibly_clustalw   },
     codata      => { test => \&_possibly_codata     },
     embl        => { test => \&_possibly_embl       },
     fasta       => { test => \&_possibly_fasta      },
+    fastq       => { test => \&_possibly_fastq      },
     fastxy      => { test => \&_possibly_fastxy     },
     game        => { test => \&_possibly_game       },
     gcg         => { test => \&_possibly_gcg        },
@@ -434,7 +444,8 @@ our %formats = (
     selex       => { test => \&_possibly_selex      },
     stockholm   => { test => \&_possibly_stockholm  },
     swiss       => { test => \&_possibly_swiss      },
-    tab         => { test => \&_possibly_tab        }
+    tab         => { test => \&_possibly_tab        },
+    vcf         => { test => \&_possibly_vcf        }
 );
 
 sub guess
@@ -503,7 +514,8 @@ sub guess
         close($fh);
     } elsif (ref $fh eq 'GLOB') {
         # Try seeking to the start position.
-        seek($fh, $start_pos, 0);
+        seek($fh, $start_pos, 0) || $self->throw("Failed resetting the ".
+                                        "filehandle; IO error occurred");;
     } elsif (defined $fh && $fh->can('setpos')) {
         # Seek to the start position.
         $fh->setpos($start_pos);
@@ -545,6 +557,19 @@ sub _possibly_blast
     my ($line, $lineno) = (shift, shift);
     return ($lineno == 1 &&
         $line =~ /^[[:upper:]]*BLAST[[:upper:]]*.*\[.*\]$/);
+}
+
+=head2 _possibly_bowtie
+
+Contributed by kortsch.
+
+=cut
+
+sub _possibly_bowtie
+{
+    my ($line, $lineno) = (shift, shift);
+    return ($line =~ /^[[:graph:]]+\t[-+]\t[[:graph:]]+\t\d+\t([[:alpha:]]+)\t([[:graph:]]+)\t\d+\t[[:graph:]]?/)
+            && length($1)==length($2);
 }
 
 =head2 _possibly_clustalw
@@ -597,6 +622,19 @@ sub _possibly_fasta
     my ($line, $lineno) = (shift, shift);
     return (($lineno != 1 && $line =~ /^[A-IK-NP-Z]+$/i) ||
             $line =~ /^>\s*\w/);
+}
+
+=head2 _possibly_fastq
+
+From bioperl test data.
+
+=cut
+
+sub _possibly_fastq
+{
+    my ($line, $lineno) = (shift, shift);
+    return ( ($lineno == 1 && $line =~ /^@/) ||
+	     ($lineno == 3 && $line =~ /^\+/) );
 }
 
 =head2 _possibly_fastxy
@@ -867,7 +905,7 @@ From "http://www.ebi.ac.uk/help/formats.html".
 sub _possibly_raw
 {
     my ($line, $lineno) = (shift, shift);
-    return ($line =~ /^(?:[sA-IK-NP-Z]+|[sa-ik-np-z]+)$/);
+    return ($line =~ /^[A-Za-z\s]+$/);
 }
 
 =head2 _possibly_rsf
@@ -889,7 +927,7 @@ sub _possibly_rsf
 
 From "http://www.ebc.ee/WWW/hmmer2-html/node27.html".
 
-Assuming precense of Selex file header.  Data exported by
+Assuming presence of Selex file header.  Data exported by
 Bioperl on Pfam and Selex formats are identical, but Pfam file
 only holds one alignment.
 
@@ -941,5 +979,23 @@ sub _possibly_tab
     my ($line, $lineno) = (shift, shift);
     return ($lineno == 1 && $line =~ /^[^\t]+\t[^\t]+/) ;
 }
+
+=head2 _possibly_vcf
+
+From "http://www.1000genomes.org/wiki/analysis/vcf4.0".
+
+Assumptions made about sanity - format and date lines are line 1 and 2
+respectively. This is not specified in the format document.
+
+=cut
+
+sub _possibly_vcf
+{
+    my ($line, $lineno) = (shift, shift);
+    return (($lineno == 1 && $line =~ /##fileformat=VCFv/) ||
+            ($lineno == 2 && $line =~ /##fileDate=/));
+}
+
+
 
 1;

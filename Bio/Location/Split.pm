@@ -1,4 +1,3 @@
-# $Id: Split.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Location::Split
 # Please direct questions and support issues to <bioperl-l@bioperl.org> 
@@ -77,7 +76,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -115,8 +114,9 @@ sub new {
 	$self->add_sub_Location(@$locations);
     }
     $seqid  && $self->seq_id($seqid);
-    $type = lc ($type);    
-    $self->splittype($type || 'JOIN');
+    $type ||= 'JOIN';
+    $type = lc ($type);
+    $self->splittype($type);
     return $self;
 }
 

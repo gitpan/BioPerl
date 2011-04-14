@@ -84,7 +84,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Sendu Bala
 
@@ -428,12 +428,14 @@ sub get_matrix {
 
 =cut
 
+my %VALID_STRAND = map {$_ => 1} qw(-1 0 1);
+
 sub get_aln {
     my ($self, $id, $via_factors) = @_;
     $id || return;
     my $data = $self->{matrix}->{data}->{$id} || $self->throw("matrix '$id' had no data in DB_File");
     my @data = split(SEPARATOR, $data);
-    
+
     if (! $data[5] && $via_factors) {
         # This is a matrix with no site sequences given in matrix.dat.
         # Find some matching site sequences via factors.
@@ -556,6 +558,8 @@ sub get_aln {
     foreach (@blocks) {
         my ($seq, $seq_acc, $start, $strand) = split('_', $_);
         
+        $self->throw("Invalid strand $strand found in block $_")
+            unless exists $VALID_STRAND{$strand};
         # we can get back multiple different subparts of the same site (sequence),
         # so $seq_acc isn't unique across this loop. Can't use it as the seq id
         # of the alignment (ids must be unique in SimpleAlign), so we
@@ -1201,19 +1205,26 @@ sub _build_index {
                 # sites of a matrix are pre-aligned but padded with spaces on
                 # the left and no padding on the right; pad with -s both sides
                 my $longest_seq = 0;
-                foreach my $site_seq (@site_data) {
-                    $site_seq =~ s/ /-/g;
-                    my $length = length($site_seq);
-                    if ($length > $longest_seq) {
-                        $longest_seq = $length;
-                    }
-                }
-                foreach my $site_seq (@site_data) {
-                    my $length = length($site_seq);
-                    if ($length < $longest_seq) {
-                        $site_seq .= '-' x ($longest_seq - $length);
-                    }
-                }
+                
+                # For all the work, does anything meaningful actually get passed
+                # on here? Commenting out fixes the latest crashes on trunk.
+                # 5-10-10 cjfields
+                
+                #foreach my $site_seq (map {my ($seq) = split("_", $_ ,2); $seq;} @site_data) {
+                #    $site_seq =~ s/ /-/g;
+                #    my $length = length($site_seq);
+                #    if ($length > $longest_seq) {
+                #        $longest_seq = $length;
+                #    }
+                #}
+                #foreach my $site (@site_data) {
+                #    my ($site_seq) = split("_", $site ,2);
+                #    my $length = length($site_seq);
+                #    if ($length < $longest_seq) {
+                #        $site_seq .= '-' x ($longest_seq - $length);
+                #    }
+                #}
+
                 my $site_data = join(INTERNAL_SEPARATOR, @site_data) || '';
                 
                 # accession = id name description num_of_sites matrix_data site_data

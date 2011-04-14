@@ -1,4 +1,3 @@
-# $Id: Seq.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Seq
 #
@@ -257,7 +256,7 @@ more information).
   $seqobj->subseq(5,10);       # part of the sequence as a string
   $seqobj->accession_number(); # when there, the accession number
   $seqobj->alphabet();         # one of 'dna','rna',or 'protein'
-  $seqobj->seq_version()       # when there, the version
+  $seqobj->version()           # when there, the version
   $seqobj->keywords();         # when there, the Keywords line
   $seqobj->length()            # length
   $seqobj->desc();             # description
@@ -434,7 +433,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Ewan Birney, inspired by Ian Korf objects
 
@@ -442,7 +441,8 @@ Email birney@ebi.ac.uk
 
 =head1 CONTRIBUTORS
 
-Jason Stajich E<lt>jason@bioperl.orgE<gt>
+ Jason Stajich E<lt>jason@bioperl.orgE<gt>
+ Mark A. Jensen maj -at- fortinbras -dot- us
 
 =head1 APPENDIX
 
@@ -462,7 +462,7 @@ use strict;
 use Bio::Annotation::Collection;
 use Bio::PrimarySeq;
 
-use base qw(Bio::Root::Root Bio::SeqI Bio::IdentifiableI Bio::DescribableI Bio::AnnotatableI Bio::FeatureHolderI);
+use base qw(Bio::Root::Root Bio::SeqI Bio::IdentifiableI Bio::DescribableI Bio::AnnotatableI Bio::FeatureHolderI Bio::AnnotationCollectionI);
 
 =head2 new
 
@@ -486,7 +486,7 @@ sub new {
 	$caller = ref($caller) if ref($caller);
     }
 
-    # we know our inherietance heirarchy
+    # we know our inherietance hierarchy
     my $self = Bio::Root::Root->new(@args);
     bless $self,$caller;
 
@@ -962,6 +962,74 @@ sub annotation {
     return $obj->{'_annotation'};
 }
 
+=head1 Methods for delegating Bio::AnnotationCollectionI
+
+=head2 get_Annotations()
+
+ Usage   : my @annotations = $seq->get_Annotations('key')
+ Function: Retrieves all the Bio::AnnotationI objects for a specific key
+           for this object
+ Returns : list of Bio::AnnotationI - empty if no objects stored for a key
+ Args    : string which is key for annotations
+
+=cut
+
+sub get_Annotations { shift->annotation->get_Annotations(@_); }
+
+=head2 add_Annotation()
+
+ Usage   : $seq->add_Annotation('reference',$object);
+           $seq->add_Annotation($object,'Bio::MyInterface::DiseaseI');
+           $seq->add_Annotation($object);
+           $seq->add_Annotation('disease',$object,'Bio::MyInterface::DiseaseI');
+ Function: Adds an annotation for a specific key for this sequence object.
+
+           If the key is omitted, the object to be added must provide a value
+           via its tagname().
+
+           If the archetype is provided, this and future objects added under
+           that tag have to comply with the archetype and will be rejected
+           otherwise.
+
+ Returns : none
+ Args    : annotation key ('disease', 'dblink', ...)
+           object to store (must be Bio::AnnotationI compliant)
+           [optional] object archetype to map future storage of object
+           of these types to
+
+=cut
+
+sub add_Annotation { shift->annotation->add_Annotation(@_) }
+
+=head2 remove_Annotations()
+
+ Usage   : $seq->remove_Annotations()
+ Function: Remove the annotations for the specified key from this sequence 
+           object
+ Returns : an list of Bio::AnnotationI compliant objects which were stored
+           under the given key(s) for this sequence object
+ Args    : the key(s) (tag name(s), one or more strings) for which to
+           remove annotations (optional; if none given, flushes all
+           annotations)
+
+=cut
+
+sub remove_Annotations { shift->annotation->remove_Annotations(@_) }
+
+=head2 get_num_of_annotations()
+
+ Usage   : my $count = $seq->get_num_of_annotations()
+ Alias   : num_Annotations
+ Function: Returns the count of all annotations stored for this sequence
+           object      
+ Returns : integer
+ Args    : none
+
+=cut
+
+sub get_num_of_annotations { shift->annotation->get_num_of_annotations(@_) }
+sub num_Annotations { shift->get_num_of_annotations }; #DWYM
+
 =head1 Methods to implement Bio::FeatureHolderI
 
 This includes methods for retrieving, adding, and removing features.
@@ -980,26 +1048,32 @@ This includes methods for retrieving, adding, and removing features.
            feature object in order to traverse all features associated
            with this sequence.
 
+           Top-level features can be obtained by tag, specified in 
+           the argument.
+
            Use get_all_SeqFeatures() if you want the feature tree
            flattened into one single array.
 
  Example :
  Returns : an array of Bio::SeqFeatureI implementing objects
- Args    : none
+ Args    : [optional] scalar string (feature tag)
 
-At some day we may want to expand this method to allow for a feature
-filter to be passed in.
 
 =cut
 
 sub get_SeqFeatures{
    my $self = shift;
+   my $tag = shift;
 
    if( !defined $self->{'_as_feat'} ) {
        $self->{'_as_feat'} = [];
    }
-
-   return @{$self->{'_as_feat'}};
+   if ($tag) {
+       return map { $_->primary_tag eq $tag ? $_ : () } @{$self->{'_as_feat'}};
+   }
+   else {
+       return @{$self->{'_as_feat'}};
+   }
 }
 
 =head2 get_all_SeqFeatures

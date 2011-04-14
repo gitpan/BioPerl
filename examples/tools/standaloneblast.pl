@@ -4,7 +4,6 @@
 # PURPOSE  : Demonstrate possible uses of Bio::Tools::StandAloneBlast.pm
 # AUTHOR   : Peter Schattner schattner@alum.mit.edu
 # CREATED  : Nov 01 2000
-# REVISION : $Id: standaloneblast.pl 15087 2008-12-04 02:48:00Z bosborne $
 #
 # INSTALLATION
 #

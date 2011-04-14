@@ -1,5 +1,3 @@
-# $Id: SeqIO.pm 16090 2009-09-15 21:57:56Z cjfields $
-#
 # BioPerl module for Bio::SeqIO
 #
 # Please direct questions and support issues to <bioperl-l@bioperl.org> 
@@ -110,15 +108,15 @@ and
 This makes the simplest ever reformatter
 
     #!/usr/bin/perl
-
-    $format1 = shift;
-    $format2 = shift || die
+    use strict;
+    my $format1 = shift;
+    my $format2 = shift || die
        "Usage: reformat format1 format2 < input > output";
 
     use Bio::SeqIO;
 
-    $in  = Bio::SeqIO->newFh(-format => $format1, -fh => \*ARGV );
-    $out = Bio::SeqIO->newFh(-format => $format2 );
+    my $in  = Bio::SeqIO->newFh(-format => $format1, -fh => \*ARGV );
+    my $out = Bio::SeqIO->newFh(-format => $format2 );
     # Note: you might want to quote -format to keep older
     # perl's from complaining.
 
@@ -295,7 +293,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Ewan Birney, Lincoln Stein
 
@@ -364,10 +362,17 @@ sub new {
 		my %param = @args;
 		@param{ map { lc $_ } keys %param } = values %param; # lowercase keys
 
-	if (!defined($param{-file}) && !defined($param{-fh})) {
-	  $class->throw("file argument provided, but with an undefined value") if exists($param{'-file'});
-	  $class->throw("fh argument provided, but with an undefined value") if (exists($param{'-fh'}));
-	}
+		unless( defined $param{-file} ||
+			defined $param{-fh}   ||
+			defined $param{-string} ) {
+		    $class->throw("file argument provided, but with an undefined value") 
+			if exists $param{'-file'};
+		    $class->throw("fh argument provided, but with an undefined value") 
+			if exists $param{'-fh'};
+		    $class->throw("string argument provided, but with an undefined value") 
+			if exists($param{'-string'});
+		    # $class->throw("No file, fh, or string argument provided"); # neither defined
+		}
 
 	my $format = $param{'-format'} ||
 	    $class->_guess_format( $param{-file} || $ARGV[0] );
@@ -379,9 +384,11 @@ sub new {
 		$format = Bio::Tools::GuessSeqFormat->new(-fh => $param{-fh}||$ARGV[0] )->guess;
 	    }
 	}
+    # changed 1-3-11; no need to print out an empty string (only way this
+    # exception is triggered) - cjfields
+    $class->throw("Could not guess format from file/fh") unless $format;
 	$format = "\L$format";	# normalize capitalization to lower case
-    $class->throw("Unknown format given or could not determine it [$format]")
-        unless $format;
+
     if ($format =~ /-/) {
         ($format, my $variant) = split('-', $format, 2);
         push @args, (-variant => $variant);
@@ -651,7 +658,8 @@ sub _guess_format {
    return 'phd'     if /\.(phd|phred)$/i;
    return 'pir'     if /\.pir$/i;
    return 'pln'     if /\.pln$/i;
-   return 'raw'     if /\.(txt)$/i;
+   return 'qual'    if /\.qual$/i;
+   return 'raw'     if /\.txt$/i;
    return 'scf'     if /\.scf$/i;
    return 'swiss'   if /\.(swiss|sp)$/i;
 

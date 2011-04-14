@@ -14,7 +14,6 @@
 #
 # Author: Steve Chervitz <sac@bioperl.org>
 #
-# $Id: exceptions3.pl 15087 2008-12-04 02:48:00Z bosborne $
 
 use strict;
 use lib qw(lib/ ../../);

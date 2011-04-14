@@ -1,4 +1,3 @@
-# $Id: OBOEngine.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Ontology::OBOEngine
 #
@@ -52,7 +51,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via
 the web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR
 
@@ -882,7 +881,7 @@ sub find_similar_terms{
 
             foreach my $string ( $term->name, $term->each_synonym() ) {
                 $matching_terms{$term->identifier} = $term and next
-                    if $string =~ /$qstring/ or $qstring =~ /$string/;
+                    if $string =~ /\Q$qstring\E/ or $qstring =~ /\Q$string\E/;
             }
         }
     }

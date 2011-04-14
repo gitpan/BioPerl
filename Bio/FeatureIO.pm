@@ -1,4 +1,3 @@
-# $Id: FeatureIO.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::FeatureIO
 #
@@ -43,11 +42,13 @@ Bio::FeatureIO - Handler for FeatureIO
 
 =head1 DESCRIPTION
 
-An I/O iterator subsystem for genomic sequence features.
+NOTE:  This is a highly experimental I/O iterator subsystem for genomic sequence
+features. It is not complete, and is now undergoing a significant refactoring in
+a separate branch of BioPerl to address specific issues regarding the current
+implementation. Use at your own risk.
 
 Bio::FeatureIO is a handler module for the formats in the FeatureIO set (eg,
-Bio::FeatureIO::GFF). It is the officially sanctioned way of getting at
-the format objects, which most people should use.
+Bio::FeatureIO::GFF).
 
 The Bio::FeatureIO system can be thought of like biological file handles.
 They are attached to filehandles with smart formatting rules (eg,
@@ -226,7 +227,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Allen Day
 

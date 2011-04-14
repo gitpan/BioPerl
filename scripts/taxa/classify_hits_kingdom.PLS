@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id: classify_hits_kingdom.PLS 15088 2008-12-04 02:49:09Z bosborne $
 
 =head1 NAME
 

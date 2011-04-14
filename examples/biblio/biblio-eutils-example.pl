@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id: biblio-eutils-example.pl 15087 2008-12-04 02:48:00Z bosborne $
 =head1 NAME
 
 biblio-eutils-example.pl

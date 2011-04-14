@@ -1,5 +1,3 @@
-# $Id: chaos.pm 16123 2009-09-17 12:57:27Z cjfields $
-# $Date: 2009-09-17 07:57:27 -0500 (Thu, 17 Sep 2009) $
 #
 # BioPerl module for Bio::SeqIO::chaos
 #
@@ -113,7 +111,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.
 Bug reports can be submitted via the web:
 
-  http://bugzilla.bioperl.org
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Chris Mungall
 
@@ -179,7 +177,7 @@ sub _initialize {
                                         [export_perl5lib=>$ENV{PERL5LIB}],
                                         [export_program=>$0],
                                         [export_module=>'Bio::SeqIO::chaos'],
-                                        [export_module_cvs_id=>'$Id: chaos.pm 16123 2009-09-17 12:57:27Z cjfields $'],
+                                        [export_module_cvs_id=>'$Id$'],
                                        ]);
 
     return;

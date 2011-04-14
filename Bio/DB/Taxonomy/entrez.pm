@@ -1,4 +1,3 @@
-# $Id: entrez.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::DB::Taxonomy::entrez
 #
@@ -82,7 +81,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -206,11 +205,12 @@ sub _initialize {
 sub get_taxon {
     my $self = shift;
     if (! $XMLTWIG) {
-        $self->throw("Need to have installed XML::Twig");
+        eval { require XML::Twig };
+        $self->throw("Could not load XML::Twig for get_taxon(): $@") if $@;
     }
-    
+
     my %p = $self->entrez_params;
-    
+
     # convert input request to one or more ids
     my (@taxonids, $taxonid, $want_full);
     if (@_ > 1) {

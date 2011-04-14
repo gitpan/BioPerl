@@ -1,4 +1,3 @@
-# $Id: meme.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 #  BioPerl module for Bio::AlignIO::meme
 #   Based on the Bio::SeqIO modules
@@ -60,7 +59,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHORS - Benjamin Berman
 
@@ -154,12 +153,14 @@ sub next_aln {
 			# Make the sequence.  Meme gives the start coordinate at the left
 			# hand side of the motif relative to the INPUT sequence.
 			my $end_pos = $start_pos + length($central) - 1;
-			my $seq = Bio::LocatableSeq->new(-seq    => $central,
-													  -id     => $seq_name,
-													  -start  => $start_pos,
-													  -end    => $end_pos,
-													  -strand => $strand
-													 );
+			my $seq = Bio::LocatableSeq->new
+			    ('-seq'            => $central,
+			     '-display_id'     => $seq_name,
+			     '-start'          => $start_pos,
+			     '-end'            => $end_pos,
+			     '-strand'         => $strand,
+			     '-alphabet'       => $self->alphabet,
+			     );
 			# Add the sequence motif to the alignment
 			$aln->add_seq($seq);
 		} elsif (($line =~ /^\-/) || ($line =~ /Sequence name/)){

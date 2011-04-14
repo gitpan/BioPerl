@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-#$Id: download_query_genbank.PLS 15515 2009-02-10 13:41:46Z dave_messina $
+#$Id$
 
 =head1 NAME
 
@@ -59,7 +59,7 @@ GetOptions(
 									exit(0);
 								},
 			  'v|verbose'       => \$debug,
-			  'f|for	mat:s'      => \$format,
+			  'f|format:s'      => \$format,
 			  'queryfile:s'     => \$queryfile,
 			  'o|out|outfile:s' => \$outfile,
 			  'gi|gifile|gis:s' => \$gifile,

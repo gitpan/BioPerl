@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id: parse_hmmsearch.PLS 15120 2008-12-09 03:11:13Z cjfields $
 
 use strict;
 
@@ -45,7 +44,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR
 

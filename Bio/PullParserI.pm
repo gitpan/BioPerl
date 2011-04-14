@@ -1,4 +1,3 @@
-# $Id: PullParserI.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::PullParserI
 #
@@ -111,7 +110,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Sendu Bala
 
@@ -487,6 +486,7 @@ sub _line_ending {
 
 sub _chunk_seek {
     my ($self, $pos) = @_;
+    $self->throw("Undefined position passed") unless defined $pos;
     return if $self->_sequential;
     
     my $fh = $self->chunk->_fh;

@@ -1,4 +1,4 @@
-;; $Id: bioperl-mode.el 16153 2009-09-22 17:42:10Z cjfields $
+;; $Id$
 
 ;; use multiple paths in bioperl-module-path
 
@@ -93,7 +93,7 @@
 (require 'bioperl-init)
 (require 'pod)
 
-(defconst bioperl-mode-revision "$Id: bioperl-mode.el 16153 2009-09-22 17:42:10Z cjfields $"
+(defconst bioperl-mode-revision "$Id$"
   "The revision string of bioperl-mode.el")
 
 ;;
@@ -158,9 +158,16 @@ Structure follows the Bio library tree:
 Use `bioperl-add-module-names-to-cache' to, well, do it.")
 
 (defvar bioperl-source-file nil
-  "Contains the source file of pod being viewed. Buffer-local.")
+  "Contains the source file of pod being viewed. Buffer-local.
+Set in `bioperl-view-full-pod'")
 
 (make-variable-buffer-local 'bioperl-source-file)
+
+(defvar bioperl-source-file-path-component nil
+  "Contains the path index (from `bioperl-module-path') for the source file of pod being viewed. Buffer-local.
+Set in `bioperl-view-full-pod'")
+
+(make-variable-buffer-local 'bioperl-source-file-path-component)
 
 (defvar bioperl-this-is-xemacs (or (string-match "^XEmacs" (emacs-version)))
   "Flag indicating whether we're in XEmacs.")
@@ -205,13 +212,21 @@ Use `bioperl-add-module-names-to-cache' to, well, do it.")
 ;;
 
 ;; TODO: refactor bioperl-view-pod to take separate nmspc mod parms...
+
 (defun bioperl-view-pod (module &optional n)
   "View the full pod for a BioPerl module. Use completion facilities to browse interactively.
 MODULE is in double-colon format. N is an index associated with a
 component of `bioperl-module-path'."
   (interactive
-   (let (
-	 (mod (bioperl-completing-read (bioperl-module-at-point) nil t "[pod] "))
+   (let* (
+	 (mod-at-pt (bioperl-module-at-point))
+	 (mod (bioperl-completing-read 
+	       (if mod-at-pt
+		   mod-at-pt
+		 (if (and (boundp 'bioperl-source-file) bioperl-source-file)
+		     ;; in pod view --
+		     (elt (bioperl-perl-from-path bioperl-source-file) 0)
+		   nil)) nil t "[pod] "))
 	 )
      (if (not (member nil (mapcar 'not mod))) (signal 'quit t))     
      (list (apply 'concat 
@@ -280,17 +295,96 @@ N is an index associated with a component of `bioperl-module-path'."
 		    (signal 'quit t))) (car (last mod)))))
   (bioperl-view-pod-section module "APPENDIX" n))
 
+
+(defun bioperl-view-pod-parents (module)
+  "Browse the pod for BioPerl modules from which MODULE inherits.
+MODULE is in double-colon format. Most useful when called from a pod view."
+  (unless (and module (stringp module))
+    (error "String required at arg MODULE"))
+  (if (not module)
+      nil
+    (let* (
+	   (pth-comp (if (boundp 'bioperl-source-file-path-component)
+			 bioperl-source-file-path-component nil))
+	  (pmfile (bioperl-path-from-perl module nil pth-comp))
+	  (parents)
+	  (mod)
+	  )
+      (unless pmfile
+	(error "Module specified by MODULE not found in installation"))
+      (with-temp-buffer
+	(insert-file-contents pmfile)
+	(setq parents (bioperl-find-class-parents (current-buffer))))
+      (if (not parents)
+	  (error "Unable to identify module parents")
+	;; create a (degenerate) alist
+	(setq parents (mapcar 'list parents))
+	(setq mod (completing-read "[pod]: " parents nil t 
+				   (if (= (length parents) 1) 
+				       (elt parents 0)
+				     "Bio::")))
+	(if mod
+	    (bioperl-view-pod mod pth-comp)
+	  nil))
+      )))
+
+
 (defun bioperl-view-source ()
-  "Display the file in `bioperl-source-file' in view mode in a new buffer."
+  "Display the file in the variable `bioperl-source-file' in view mode in a new buffer.  
+When in bioperl-view-mode, `bioperl-source-file' will contain the
+path to the source of the module whose pod is being viewed."
   (interactive)
   (if (not (file-exists-p bioperl-source-file))
       nil
-    (let ( (fname bioperl-source-file) )
+    (let ( (fname bioperl-source-file) 
+	   (pth-comp bioperl-source-file-path-component) )
       (set-buffer (generate-new-buffer "*BioPerl Src*"))
       (insert-file fname)
       (perl-mode)
-      (view-mode)
-      (pop-to-buffer (current-buffer)))))
+      (bioperl-source-mode)
+      (pop-to-buffer (current-buffer))
+      (setq bioperl-source-file fname)
+      (setq bioperl-source-file-path-component pth-comp))))
+
+(defun bioperl-view-parents ()
+  "Browse pod of base classes for the file in `bioperl-source-file' by completion menu.  
+When in bioperl-view-mode, `bioperl-source-file' will contain the
+path to the source of the module whose pod is being viewed."
+  (interactive)
+  (if (not (file-exists-p bioperl-source-file))
+      nil
+    (let (
+	  (mod)
+	  )
+      (mapcar (lambda (x) (setq mod (if mod (concat mod "::" x) x)))
+	      (bioperl-perl-from-path bioperl-source-file))
+      (bioperl-view-pod-parents mod))))
+
+(defun bioperl-view-parents-this-buffer ()
+  "Browse the pod for BioPerl modules from which the current source inherits.
+Callable from bioperl-source-mode only."
+  (interactive)
+  (unless bioperl-source-file
+    (error "This function current works in bioperl-source-mode only."))
+  (let* (
+	 (pth-comp (if (boundp 'bioperl-source-file-path-component)
+		       bioperl-source-file-path-component nil))
+	 (parents)
+	 (mod)
+	 )
+    (setq parents (bioperl-find-class-parents (current-buffer)))
+    (if (not parents)
+	(error "Unable to identify module parents")
+      ;; create a degenerate alist
+      (setq parents (mapcar 'list parents))
+      (setq mod (completing-read "[pod]: " parents nil t 
+				 (if (= (length parents) 1) 
+				     (elt parents 0)
+				   "Bio::")))
+      (if mod
+	  (bioperl-view-pod mod pth-comp)
+	nil))))
+
 
 ;; "uninstall..."
 
@@ -338,6 +432,18 @@ MODULE is in double-colon format."
 	(goto-char (point-min))
 	(bioperl-view-mode)
 	(set (make-local-variable 'bioperl-source-file) pmfile)
+	(set (make-local-variable 'bioperl-source-file-path-component) nil)
+	;; set the path component
+	(let (
+	      (i 0) (done 0) (pth-comp (parse-colon-path bioperl-module-path))
+	      )
+	  (while (and (= done 0) (elt pth-comp i))
+	    (if (string-match 
+		 (regexp-quote (elt pth-comp i)) bioperl-source-file)
+		(setq done 1)
+	      (setq i (1+ i))))
+	  (if (elt pth-comp i)
+	      (setq bioperl-source-file-path-component i)))
 	(pop-to-buffer pod-buf))
       )
     ;;return val
@@ -352,7 +458,7 @@ component of bioperl-module-path."
     (error "String required at arg MODULE"))
   (unless (stringp section) 
     (error "String required at arg SECTION"))
-  (unless (member (upcase section) '("SYNOPSIS" "DESCRIPTION" "APPENDIX"))
+  (unless (member (upcase section) '("SYNOPSIS" "DESCRIPTION" "METHODS" "APPENDIX"))
     (error "SECTION not recognized or handled yet"))
   (unless (or (not n) (numberp n))
     (error "Number required at arg N"))
@@ -783,6 +889,69 @@ Return is a list of the form
 ;; string converters and finders
 ;;
 
+(defun bioperl-find-class-parents (buf)
+  "Look in the current buffer for parent classes to the displayed module.
+Searches for 'use base' and @ISA statements in buffer
+BUF. Returns a list of BioPerl modules in double colon
+format. Will probably fail (not dismally) if multiple packages
+are present in a single module file."
+  ;; how? by searching for 
+  ;; use base STUFF
+  ;; @ISA = STUFF
+  ;; push @ISA, STUFF
+  (unless (or (bufferp buf) (stringp buf))
+    (error "Require buffer or buffer name at BUF"))
+  (let (
+	(retmods)
+	)
+    (save-excursion
+      (set-buffer buf)
+      (goto-char (point-min))
+      ;; search for 'use base'...
+      (let* (
+	     (beg (re-search-forward "use base " (point-max) t))
+	     (end (if beg (re-search-forward ";" (point-max) t) nil))
+	     (txt (if beg (buffer-substring-no-properties beg (1- end)) nil))
+	     (toks)
+	     )
+	(if (not txt)
+	    nil
+	  (setq txt (replace-regexp-in-string "\n" " " txt))
+	  (setq txt (replace-regexp-in-string "\\(?:qw[\[\(\{\|][ \f\t\n\r\v]?\\)" "" txt))
+	  (setq txt (replace-regexp-in-string "[](){}'\"]" "" txt))
+	  (setq toks (split-string txt "[ \f\t\n\r\v]+" t))
+	  (mapcar (lambda (x) (push x retmods)) toks) ))
+      ;; search for @ISA
+      ;; ISA set needs to search over multi lines
+      ;; look at Bio::
+      (goto-char (point-min))
+      (let* (
+	     (beg (re-search-forward "@ISA\s?[,=]\s?" (point-max) t))
+	     (end (if beg (re-search-forward ";" (point-max) t) nil))
+	     (txt (if beg (buffer-substring-no-properties beg (1- end)) nil))
+	     (toks)
+	     (pass 1)
+	     )
+	(while (<= pass 2)
+	  (if (not txt)
+	      (setq pass (1+ pass))
+	    (setq txt (replace-regexp-in-string "\n" " " txt))
+	    (setq txt (replace-regexp-in-string "\\(?:qw[\[\(\{\|][ \f\t\n\r\v]?\\)" "" txt))
+	    (setq txt (replace-regexp-in-string "[](){}'\"]" "" txt))
+	    (setq toks (split-string txt "[ \f\t\n\r\v]+" t))
+	    (mapcar (lambda (x) (push x retmods)) toks) 
+	    (setq pass (1+ pass)))
+	  (setq beg (re-search-forward "@ISA\s?[,=]\s?" (point-max) t))
+	  (setq end (if beg (re-search-forward ";" (point-max) t) nil))
+	  (setq txt (if beg (buffer-substring-no-properties beg (1- end)) nil))
+	  )))
+      ;; filter for fully-qualified Bio:: modules...
+      (setq retmods 
+	    (delete nil (mapcar 
+			 (lambda (x) (if (string-match "^Bio::" x) x nil)) 
+		       retmods)))
+    (nreverse retmods) ))
+
 (defun bioperl-module-at-point ()
   "Look for something like a module identifier at point, and return it."
   (interactive)
@@ -821,6 +990,28 @@ N is the index of the desired bioperl-module-path component."
       (setq pth (bioperl-path-from-perl module n)))
     pth))
 
+(defun bioperl-perl-from-path (pth)
+  "Return a list (namespace module) represented by the path in PTH.
+Returns nil if the path can't be parsed reasonably. namespace is returned
+in double colon format."
+  (unless pth
+    nil)
+  (let (
+	(pth-components) (nmspc "Bio") (mod) (pc)
+	)
+    (setq pth (replace-regexp-in-string "\\\\" "/" pth))
+    (setq pth-components (split-string pth "/"))
+    (while (and pth-components (not (string-equal "Bio" (pop pth-components))))
+      nil)
+    (if (not pth-components) 
+	nil
+      (while pth-components
+	(setq pc (pop pth-components))
+	(if (string-match "\\([a-zA-Z0-9_]+\\)\.pm" pc)
+	    (setq mod (match-string 1 pc))
+	  (setq nmspc (concat nmspc "::" pc))))
+      (list nmspc mod))
+    ))
 
 (defun bioperl-path-from-perl (module &optional dir-first n) 
   "Return a path to the module file represented by the perl string MODULE.

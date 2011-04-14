@@ -1,4 +1,3 @@
-# $Id: scf.pm 16168 2009-09-25 21:07:32Z cjfields $
 #
 # Copyright (c) 1997-2001 bioperl, Chad Matsalla. All Rights Reserved.
 #           This module is free software; you can redistribute it and/or
@@ -53,7 +52,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via
 the web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR Chad Matsalla
 
@@ -479,9 +478,9 @@ sub _parse_v2_traces {
      my $array = 0;
      for (my $offset2 = 0; $offset2< scalar(@read); $offset2+=4) {
               push @{$traces->{'a'}},$read[$offset2];
-              push @{$traces->{'t'}},$read[$offset2+1];
+              push @{$traces->{'c'}},$read[$offset2+1];
               push @{$traces->{'g'}},$read[$offset2+3];
-              push @{$traces->{'c'}},$read[$offset2+2];
+              push @{$traces->{'t'}},$read[$offset2+2];
     }
     return $traces;
 }

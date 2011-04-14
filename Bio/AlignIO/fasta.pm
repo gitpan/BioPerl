@@ -1,4 +1,3 @@
-# $Id: fasta.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::fasta
 #
@@ -42,7 +41,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHORS
 
@@ -105,13 +104,15 @@ sub next_aln {
 			$start = 1;
 			$end = $self->_get_len($seqchar);
 		    }
-		    $seq = Bio::LocatableSeq->new(
-						  -seq         => $seqchar,
-						  -display_id  => $seqname,
-						  -description => $desc,
-						  -start       => $start,
-						  -end         => $end,
-						  );
+		    $seq = Bio::LocatableSeq->new
+			( 
+			  '-seq'         => $seqchar,
+			  '-display_id'  => $seqname,
+			  '-description' => $desc,
+			  '-start'       => $start,
+			  '-end'         => $end,
+			  '-alphabet'    => $self->alphabet,
+			  );
 		    $aln->add_seq($seq);
 		    $self->debug("Reading $seqname\n");
 		}
@@ -146,12 +147,14 @@ sub next_aln {
 	# This logic now also reads empty lines at the 
 	# end of the file. Skip this is seqchar and seqname is null
 	unless ( length($seqchar) == 0 && length($seqname) == 0 ) {
-	    $seq = Bio::LocatableSeq->new(-seq         => $seqchar,
-					  -display_id  => $seqname,
-					  -description => $desc,
-					  -start       => $start,
-					  -end         => $end,
-					  );
+	    $seq = Bio::LocatableSeq->new
+		('-seq'         => $seqchar,
+		 '-display_id'  => $seqname,
+		 '-description' => $desc,
+		 '-start'       => $start,
+		 '-end'         => $end,
+		 '-alphabet'    => $self->alphabet,
+		 );
 	    $aln->add_seq($seq);
 	    $self->debug("Reading $seqname\n");
 	}

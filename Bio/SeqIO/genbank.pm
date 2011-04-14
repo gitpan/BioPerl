@@ -1,4 +1,3 @@
-# $Id: genbank.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::SeqIO::genbank
 #
@@ -147,7 +146,7 @@ with code and data examples if at all possible.
 Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution. Bug reports can be submitted via the web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Bioperl Project
 
@@ -215,7 +214,11 @@ our %DBSOURCE = map {$_ => 1} qw(
     PhotoList    Gramene    WormBase    WormPep    Genew    ZFIN
     PeroxiBase    MaizeDB    TAIR    DrugBank    REBASE    HPA
     swissprot    GenBank    GenPept    REFSEQ    embl    PDB    UniProtKB
-    DIP    PeptideAtlas    PRIDE    CYGD    HOGENOME    Gene3D);
+    DIP    PeptideAtlas    PRIDE    CYGD    HOGENOME    Gene3D
+    Project);
+
+our %VALID_MOLTYPE = map {$_ => 1} qw(NA DNA RNA tRNA rRNA cDNA cRNA ms-DNA
+    mRNA  uRNA  ss-RNA  ss-DNA  snRNA snoRNA PRT);
 
 our %VALID_ALPHABET = (
     'bp' => 'dna',
@@ -249,6 +252,7 @@ sub _initialize {
 
 sub next_seq {
     my ($self,@args) = @_;
+    my %args = @args;
     my $builder = $self->sequence_builder();
     my $seq;
     my %params;
@@ -298,21 +302,26 @@ sub next_seq {
 	$params{'-alphabet'} = (exists $VALID_ALPHABET{$alphabet}) ? $VALID_ALPHABET{$alphabet} :
                            $self->warn("Unknown alphabet: $alphabet");
 	# for aa there is usually no 'molecule' (mRNA etc)
-	if (($params{'-alphabet'} eq 'dna') || (@tokens > 2)) {
-	    $params{'-molecule'} = shift(@tokens);
-	    my $circ = shift(@tokens);
-	    if ($circ eq 'circular') {
-            $params{'-is_circular'} = 1;
-            $params{'-division'} = shift(@tokens);
-	    } else {
-			# 'linear' or 'circular' may actually be omitted altogether
-            $params{'-division'} =
-                (CORE::length($circ) == 3 ) ? $circ : shift(@tokens);
-	    }
-	} else {
-	    $params{'-molecule'} = 'PRT' if($params{'-alphabet'} eq 'aa');
-	    $params{'-division'} = shift(@tokens);
-	}
+    if ($params{'-alphabet'} eq 'protein') {
+	    $params{'-molecule'} = 'PRT'
+    } else {
+        $params{'-molecule'} = shift(@tokens);
+    }
+    # take care of lower case issues
+    if ($params{'-molecule'} eq 'dna' || $params{'-molecule'} eq 'rna') {
+        $params{'-molecule'} = uc $params{'-molecule'};
+    }
+    $self->debug("Unrecognized molecule type:".$params{'-molecule'}) if
+        !exists($VALID_MOLTYPE{$params{'-molecule'}});
+	my $circ = shift(@tokens);
+    if ($circ eq 'circular') {
+        $params{'-is_circular'} = 1;
+        $params{'-division'} = shift(@tokens);
+    } else {
+        # 'linear' or 'circular' may actually be omitted altogether
+        $params{'-division'} =
+            (CORE::length($circ) == 3 ) ? $circ : shift(@tokens);
+    }
 	my $date = join(' ', @tokens); # we lump together the rest
 
 	# this is per request bug #1513
@@ -466,7 +475,7 @@ sub next_seq {
 		next;
 	    }
 	    # Corresponding Genbank nucleotide id, Genpept only
-	    elsif( /^DBSOURCE\s+(\S.+)/ ) {
+	    elsif( /^DB(?:SOURCE|LINK)\s+(\S.+)/ ) {
 		if ($annotation) {
 		    my $dbsource = $1;
 		    while (defined($_ = $self->_readline)) {
@@ -578,15 +587,20 @@ sub next_seq {
                       -version => $version,
                       -database => $db || 'GenBank',
                       -tagname => 'dblink'));
-                } elsif ( $dbsource =~ /(\S+)\.(\d+)/ ) {
-                    my ($id,$version) = ($1,$2);
-                    $annotation->add_Annotation
-                    ('dblink',
-                     Bio::Annotation::DBLink->new
-                     (-primary_id => $id,
-                      -version => $version,
-                      -database => 'GenBank',
-                      -tagname => 'dblink'));
+                } elsif ( $dbsource =~ /(\S+)([\.:])\s*(\d+)/ ) {
+                    my ($id, $db, $version);
+                    if ($2 eq ':') {
+                        ($db, $id) = ($1, $3);
+                    } else {
+                        ($db, $id, $version) = ('GenBank', $1, $3);
+                    }
+                    $annotation->add_Annotation('dblink',
+                        Bio::Annotation::DBLink->new(
+                            -primary_id => $id,
+                            -version => $version,
+                            -database => $db,
+                            -tagname => 'dblink')
+                        );
                 } else {
                     $self->warn("Unrecognized DBSOURCE data: $dbsource\n");
                 }
@@ -625,6 +639,12 @@ sub next_seq {
 	    $buffer = $self->_readline;
 	    # DO NOT read lines in the while condition -- this is done as a side
 	    # effect in _read_FTHelper_GenBank!
+
+#	    part of new circular spec: 
+#	    commented out for now until kinks worked out
+	    #my $sourceEnd = 0;
+	    #$sourceEnd = $2 if ($buffer =~ /(\d+?)\.\.(\d+?)$/);
+
 	    while( defined($buffer) ) {
 				# check immediately -- not at the end of the loop
 				# note: GenPept entries obviously do not have a BASE line
@@ -636,6 +656,16 @@ sub next_seq {
 				# to the last line read before returning
 
 		my $ftunit = $self->_read_FTHelper_GenBank(\$buffer);
+
+#		implement new circular spec: features that cross the origin are now
+#		seamless instead of being 2 separate joined features
+#		commented out until kinks get worked out
+		#if ((! $args{'-nojoin'}) && $ftunit->{'loc'} =~ /^join\((\d+?)\.\.(\d+?),(\d+?)..(\d+?)\)$/ 
+		#&& $sourceEnd == $2 && $3 == 1) {
+			#my $start = $1;
+			#my $end = $2 + $4;
+			#$ftunit->{'loc'} = "$start..$end";
+		#}
 
 				# fix suggested by James Diggans
 
@@ -673,12 +703,17 @@ sub next_seq {
 	if( defined ($_) ) {
 	    if( /^CONTIG/o ) {
 		my @contig;
+		my $ctg = '';
 		while($_ !~ m{^//}) { # end of file
 		    $_ =~ /^(?:CONTIG)?\s+(.*)/;
-		    $annotation->add_Annotation(
-						Bio::Annotation::SimpleValue->new(-value   => $1,
-										  -tagname => 'contig'));
+		    $ctg .= $1;
 		    $_ = $self->_readline;
+		}
+		if ($ctg) {
+		    $annotation->add_Annotation( 
+			Bio::Annotation::SimpleValue->new(-tagname => 'contig',
+							  -value => $ctg )
+			);
 		}
 		$self->_pushback($_);
 	    } elsif( /^WGS|WGS_SCAFLD\s+/o ) { # catch WGS/WGS_SCAFLD lines
@@ -763,7 +798,7 @@ sub write_seq {
 	my $len = $seq->length();
 
 	if ( $seq->can('division') ) {
-	    $div=$seq->division;
+	    $div = $seq->division;
 	}
 	if( !defined $div || ! $div ) { $div = 'UNK'; }
 	my $alpha = $seq->alphabet;
@@ -787,15 +822,14 @@ sub write_seq {
 
 	    $self->warn("No whitespace allowed in GenBank display id [". $seq->display_id. "]")
 		if $seq->display_id =~ /\s/;
-
-	    $temp_line = sprintf ("%-12s%-15s%13s %s%4s%-8s%-8s %3s %-s",
+        
+	    $temp_line = sprintf ("%-12s%-15s%13s %s%4s%-8s%-8s %3s %-s\n",
 				  'LOCUS', $seq->id(),$len,
 				  (lc($alpha) eq 'protein') ? ('aa','', '') :
-				  ('bp', '',$mol),$circular,
-				  $div,$date);
+				  ('bp', '',$mol),$circular,$div,$date);
 	}
 
-	$self->_print("$temp_line\n");
+	$self->_print($temp_line);
 	$self->_write_line_GenBank_regex("DEFINITION  ", "            ",
 					 $seq->desc(),"\\s\+\|\$",80);
 
@@ -843,12 +877,11 @@ sub write_seq {
 
 	# if there, write the DBSOURCE line
 	foreach my $ref ( $seq->annotation->get_Annotations('dblink') ) {
-	    # if ($ref->comment eq 'DBSOURCE') {
-        my $text = $ref->display_text(
-            sub{($ref->database eq 'GenBank' ? '' : $_[0]->database.' ').
-                'accession '.$_[0]->primary_id});
-	    $self->_print("DBSOURCE    $text\n");
-	    # }
+        my ($db, $id) = ($ref->database, $ref->primary_id);
+        my $prefix = $db eq 'Project' ? 'DBLINK' : 'DBSOURCE';
+        my $text =  $db eq 'GenBank' ? ''           :
+                    $db eq 'Project' ? "$db:$id"    :  "$db accession $id";
+	    $self->_print(sprintf ("%-11s %s\n",$prefix, $text));
 	}
 
 	# if there, write the keywords line
@@ -1370,8 +1403,8 @@ sub _read_GenBank_Species {
     # (we don't catch everything lower than species, but it doesn't matter -
     # this is just so we abide by previous behaviour whilst not calling a
     # species a subspecies)
-    if ($species && $species =~ /subsp\.|var\./) {
-	($species, $sub_species) = $species =~ /(.+)\s+((?:subsp\.|var\.).+)/;
+    if ($species && $species =~ /(.+)\s+((?:subsp\.|var\.).+)/) {
+        ($species, $sub_species) = ($1, $2);
     }
 
     # Don't make a species object if it's empty or "Unknown" or "None"
@@ -1589,25 +1622,25 @@ sub _write_line_GenBank_regex {
     my $subl = $length - (length $pre1) - 2;
     my @lines = ();
 
-  CHUNK: while($line) {
-      foreach my $pat ($regex, '[,;\.\/-]\s|'.$regex, '[,;\.\/-]|'.$regex) {
-	  if($line =~ m/^(.{1,$subl})($pat)(.*)/ ) {
-	      my $l = $1.$2;
-	      my $newl = $3;
-	      $line = substr($line,length($l));
-	      # be strict about not padding spaces according to
-	      # genbank format
-	      $l =~ s/\s+$//;
-	      push(@lines, $l);
-	      next CHUNK;
-	  }
-      }
-      # if we get here none of the patterns matched $subl or less chars
-      $self->warn("trouble dissecting \"$line\"\n     into chunks ".
-		  "of $subl chars or less - this tag won't print right");
-      # insert a space char to prevent infinite loops
-      $line = substr($line,0,$subl) . " " . substr($line,$subl);
-  }
+    CHUNK: while($line) {
+        foreach my $pat ($regex, '[,;\.\/-]\s|'.$regex, '[,;\.\/-]|'.$regex) {
+          if($line =~ m/^(.{0,$subl})($pat)(.*)/ ) {
+              my $l = $1.$2;
+              $line = substr($line,length($l));
+              # be strict about not padding spaces according to
+              # genbank format
+              $l =~ s/\s+$//;
+              next CHUNK if ($l eq '');
+              push(@lines, $l);
+              next CHUNK;
+          }
+        }
+        # if we get here none of the patterns matched $subl or less chars
+        $self->warn("trouble dissecting \"$line\"\n     into chunks ".
+            "of $subl chars or less - this tag won't print right");
+        # insert a space char to prevent infinite loops
+        $line = substr($line,0,$subl) . " " . substr($line,$subl);
+    }
     my $s = shift @lines;
     $self->_print("$pre1$s\n") if $s;
     foreach my $s ( @lines ) {

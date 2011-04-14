@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: PodSyntax.t 16147 2009-09-22 01:26:32Z cjfields $
+# $Id$
 
 use strict;
 

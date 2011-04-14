@@ -41,7 +41,7 @@ BEGIN {
 	
 	test_begin(-tests               => $NUMTESTS,
 			   -requires_modules    => [qw(XML::Simple LWP::UserAgent)],
-			   -requires_networking => 1,
+			   -requires_email      => 1,
 			  );
     
     use_ok('Bio::DB::EUtilities');
@@ -49,6 +49,10 @@ BEGIN {
     use_ok('Bio::Tools::EUtilities');
     use_ok('Bio::Tools::EUtilities::EUtilParameters');
 }
+
+my $email = test_email();
+
+diag("Using $email for tests") if $DEBUG;
 
 # NOTE : Bio::DB::EUtilities is just a specialized pipeline to get any 
 # data available via NCBI's Entrez interface, with a few convenience methods
@@ -89,7 +93,8 @@ sub efetch {
         $eutil = Bio::DB::EUtilities->new(
                                         -db         => 'protein',
                                         -id         => [$ids[0]],
-                                        -rettype    => 'fasta'
+                                        -rettype    => 'fasta',
+                                        -email      => $email
                                           );
               
         isa_ok($eutil, 'Bio::DB::GenericWebAgent');
@@ -119,6 +124,7 @@ sub epost {
                                         -eutil      => 'epost',
                                         -db         => 'protein',
                                         -id         => \@ids,
+                                        -email      => $email
                                           );
               
         isa_ok($eutil, 'Bio::DB::GenericWebAgent');
@@ -132,8 +138,10 @@ sub epost {
         is($eutil->get_database, 'protein', '$epost->get_database()');
         is(join(',',$eutil->get_ids), '1621261,20807972,68536103,730439,89318838', '$epost->get_ids()');
         
+        # these are the submitted IDs
+        is($eutil->get_count, 5, '$epost->get_count()');
+        
         # these are not set using epost
-        is($eutil->get_count, undef, '$epost->get_count()');
         is($eutil->get_term, undef, '$epost->get_term()');
 
         my $history = $eutil->next_History;
@@ -234,6 +242,7 @@ sub esummary {
                                          -eutil      => 'esummary',
                                          -db         => 'protein',
                                          -id            => \@ids,
+                                         -email      => $email
                                            );
         isa_ok($eutil, 'Bio::DB::GenericWebAgent');
         
@@ -277,7 +286,8 @@ sub esearch {
                                         -eutil      => 'esearch',
                                         -db         => 'protein',
                                         -term       => $term,
-                                        -retmax     => 100
+                                        -retmax     => 100,
+                                        -email      => $email
                                           );
               
         isa_ok($eutil, 'Bio::DB::GenericWebAgent');
@@ -297,7 +307,8 @@ sub esearch {
                                         -db         => 'protein',
                                         -usehistory => 'y',
                                         -term       => $term,
-                                        -retmax     => 100                                        
+                                        -retmax     => 100,
+                                        -email      => $email
                                           );
         
         eval {$response = $eutil->get_Response; };
@@ -339,6 +350,7 @@ sub einfo {
         $eutil = Bio::DB::EUtilities->new(
                                         -eutil      => 'einfo',
                                         -db         => 'protein',
+                                        -email      => $email
                                           );
         isa_ok($eutil, 'Bio::DB::GenericWebAgent');
         eval {$response = $eutil->get_Response; };
@@ -358,6 +370,7 @@ sub einfo {
         # all databases (list)
         $eutil = Bio::DB::EUtilities->new(
                                         -eutil      => 'einfo',
+                                        -email      => $email
                                           );
         
         eval {$response = $eutil->get_Response; };
@@ -384,9 +397,44 @@ sub elink1 {
                                         -db         => 'taxonomy',
                                         -dbfrom     => 'protein',
                                         -id         => \@ids,
+                                        -email      => $email
                                           );
               
         isa_ok($eutil, 'Bio::DB::GenericWebAgent');
+        eval {$response = $eutil->get_Response; };
+        skip("ELink HTTP error:$@", 7) if $@;
+        isa_ok($response, 'HTTP::Response');
+        like($response->content, qr(<eLinkResult>), 'ELink response');
+        # Data is too volatile to test; commenting for now...
+        #my @ids2 = qw(350054 306537 273068 83332 1394);
+        cmp_ok($eutil->get_ids, '>=', 4);
+        #is_deeply([sort $eutil->get_ids], [sort @ids2],'$elink->get_ids()');
+        
+        # Linkset tests
+        is($eutil->get_LinkSets, 1, '$elink->get_LinkSets()');
+        my $linkobj = $eutil->next_LinkSet;
+        isa_ok($linkobj, 'Bio::Tools::EUtilities::Link::LinkSet');
+        is($linkobj->get_dbfrom, 'protein', '$linkdata->get_dbfrom()');
+        #is_deeply([sort $linkobj->elink_queryids],
+        #          [sort @ids], '$linkdata->elink_queryids()');
+        my $db = $linkobj->get_dbto;
+        is($db, 'taxonomy', '$linkdata->get_dbto()');
+        #is_deeply([sort $linkobj->get_LinkIds_by_db($db)],
+        #          [sort @ids2], '$linkdata->get_LinkIds_by_db($db)');   
+    }
+}
+
+sub elink2 {
+    my @genome_ids = qw(30807 33011 12997 16707 45843 31129 31141 31131 31133 32203 31135);
+    SKIP: {
+        $eutil = Bio::DB::EUtilities->new(
+                                        -eutil      => 'elink',
+                                        -db         => 'nuccore',
+                                        -dbfrom     => 'genomeprj',
+                                        -id         => @genome_ids,
+                                        -email      => $email
+                                          );
+              
         eval {$response = $eutil->get_Response; };
         skip("ELink HTTP error:$@", 7) if $@;
         isa_ok($response, 'HTTP::Response');
@@ -415,6 +463,7 @@ sub egquery {
     $eutil = Bio::DB::EUtilities->new(
                                     -eutil      => 'egquery',
                                     -term       => $term,
+                                    -email      => $email
                                       );
           
     isa_ok($eutil, 'Bio::DB::GenericWebAgent');

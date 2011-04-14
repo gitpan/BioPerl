@@ -7,7 +7,7 @@ BEGIN {
 	use lib '.';
     use Bio::Root::Test;
     
-    test_begin(-tests => 1093);
+    test_begin(-tests => 1348);
 	
 	use_ok('Bio::SearchIO');
 }
@@ -18,6 +18,12 @@ $searchio = Bio::SearchIO->new('-format' => 'blast',
 		'-file'   => test_input_file('ecolitst.bls'));
 
 $result = $searchio->next_result;
+
+is($result->algorithm_reference, 'Altschul, Stephen F., Thomas L. Madden, Alejandro A. Schaffer, 
+Jinghui Zhang, Zheng Zhang, Webb Miller, and David J. Lipman (1997), 
+"Gapped BLAST and PSI-BLAST: a new generation of protein database search
+programs",  Nucleic Acids Res. 25:3389-3402.
+');
 
 is($result->database_name, 'ecoli.aa', 'database_name()');
 is($result->database_entries, 4289);
@@ -47,7 +53,9 @@ is($result->get_statistic('S2'), '92');
 is($result->get_statistic('S2_bits'), '40.0');
 float_is($result->get_parameter('expect'), '1.0e-03');
 is($result->get_statistic('num_extensions'), '82424');
-
+is($result->get_statistic('querylength'), 773);
+is($result->get_statistic('effectivedblength'), 1157407);
+is($result->get_statistic('effectivespaceused'), 894675611);
 
 my @valid = ( [ 'gb|AAC73113.1|', 820, 'AAC73113', '0', 1567, 4058],
 	      [ 'gb|AAC76922.1|', 810, 'AAC76922', '1e-91', 332, 850],
@@ -81,6 +89,7 @@ while( $hit = $result->next_hit ) {
             is(sprintf("%.4f",$hsp->frac_identical('query')), 0.9829);
             is(sprintf("%.4f",$hsp->frac_identical('hit')), 0.9829);
             is($hsp->gaps, 0);
+            is($hsp->n, 1);
             $hsps_left--;
         }
         is($hsps_left, 0);
@@ -93,6 +102,9 @@ $searchio = Bio::SearchIO->new('-format' => 'blast',
 			       '-file'   => test_input_file('ecolitst.wublastp'));
 
 $result = $searchio->next_result;
+
+is($result->algorithm_reference, 'Gish, W. (1996-2000) http://blast.wustl.edu
+'); 
 
 is($result->database_name, 'ecoli.aa');
 is($result->database_letters, 1358990);
@@ -184,6 +196,7 @@ while( $hit = $result->next_hit ) {
             is($hsp->frac_identical('query'), 1.00);
             is($hsp->frac_identical('hit'), 1.00);
             is($hsp->gaps, 0);
+            is($hsp->n, 1);
             $hsps_left--;
         }
         is($hsps_left, 0);
@@ -203,7 +216,8 @@ $searchio = Bio::SearchIO->new('-format' => 'blast',
 			       '-file'   => test_input_file('ecolitst.noseqs.wublastp'));
 
 $result = $searchio->next_result;
-
+is($result->algorithm_reference, 'Gish, W. (1996-2004) http://blast.wustl.edu
+'); 
 is($result->database_name, 'ecoli.aa');
 is($result->database_letters, 1358990);
 is($result->database_entries, 4289);
@@ -262,6 +276,7 @@ while( $hit = $result->next_hit ) {
             is($hsp->frac_identical('query'), 1.00);
             is($hsp->frac_identical('hit'), 1.00);
             is($hsp->gaps, 0);
+            is($hsp->n, 1);
             $hsps_left--;
         }
         is($hsps_left, 0);
@@ -275,6 +290,11 @@ $searchio = Bio::SearchIO->new('-format' => 'blast',
 			       '-file'   => test_input_file('HUMBETGLOA.tblastx'));
 
 $result = $searchio->next_result;
+is($result->algorithm_reference, 'Altschul, Stephen F., Thomas L. Madden, Alejandro A. Schaffer, 
+Jinghui Zhang, Zheng Zhang, Webb Miller, and David J. Lipman (1997), 
+"Gapped BLAST and PSI-BLAST: a new generation of protein database search
+programs",  Nucleic Acids Res. 25:3389-3402.
+');
 is($result->database_name, 'ecoli.nt');
 is($result->database_letters, 4662239);
 is($result->database_entries, 400);
@@ -288,6 +308,10 @@ is($result->get_statistic('lambda'), 0.318);
 is($result->get_statistic('entropy'), 0.401);
 is($result->get_statistic('dbletters'), 4662239);
 is($result->get_statistic('dbentries'), 400);
+is($result->get_statistic('querylength'), 953);
+is($result->get_statistic('effectivedblength'), 1535279);
+is($result->get_statistic('effectivespace'), 1463120887);
+is($result->get_statistic('effectivespaceused'), 1463120887);
 is($result->get_statistic('T'), 13);
 is($result->get_statistic('X1'), 16);
 is($result->get_statistic('X1_bits'), 7.3);
@@ -345,6 +369,7 @@ while( $hit = $result->next_hit ) {
             is(join(' ', $hsp->seq_inds('query', 'nomatch',1)), '1063-1065 1090-1095 1099-1104 1108-1113 1117-1125');
             is(join(' ', $hsp->seq_inds('hit', 'nomatch',1)), '5825-5833 5837-5842 5846-5851 5855-5860 5885-5887');            
             is($hsp->ambiguous_seq_inds, 'query/subject');
+            is($hsp->n, 1);
             $hsps_left--;
         }
         is($hsps_left, 0);
@@ -360,6 +385,12 @@ $searchio = Bio::SearchIO->new('-format' => 'blast',
 
 
 $result = $searchio->next_result;
+is($result->algorithm_reference, 'Altschul, Stephen F., Thomas L. Madden, Alejandro A. Schaffer, 
+Jinghui Zhang, Zheng Zhang, Webb Miller, and David J. Lipman (1997), 
+"Gapped BLAST and PSI-BLAST: a new generation of protein database search
+programs",  Nucleic Acids Res. 25:3389-3402.
+');
+is($result->rid, '1012577175-3730-28291');
 is($result->database_name, 'All GenBank+EMBL+DDBJ+PDB sequences (but no EST, STS, GSS,or phase 0, 1 or 2 HTGS sequences) ');
 is($result->database_letters, 4677375331);
 is($result->database_entries, 1083200);
@@ -370,6 +401,10 @@ is($result->query_length, 60);
 is($result->get_parameter('gapopen'), 5);
 is($result->get_parameter('gapext'), 2);
 is($result->get_parameter('ktup'), undef);
+is($result->get_statistic('querylength'), 41);
+is($result->get_statistic('effectivedblength'), 4656794531);
+is($result->get_statistic('effectivespace'), 190928575771);
+is($result->get_statistic('effectivespaceused'), 190928575771);
 
 is($result->get_statistic('lambda'), 1.37);
 is($result->get_statistic('kappa'), 0.711);
@@ -435,6 +470,7 @@ while( my $hit = $result->next_hit ) {
 			my $aln = $hsp->get_aln;
             is(sprintf("%.2f", $aln->overall_percentage_identity), 96.67);
             is(sprintf("%.2f",$aln->percentage_identity), 98.31);
+            is($hsp->n, 1);
             $hsps_left--;
         }
         is($hsps_left, 0);
@@ -449,6 +485,10 @@ $searchio = Bio::SearchIO->new('-format' => 'blast',
 			      '-file'   => test_input_file('dnaEbsub_ecoli.wublastx'));
 
 $result = $searchio->next_result;
+is($result->algorithm_reference, 'Gish, W. (1996-2000) http://blast.wustl.edu
+Gish, Warren and David J. States (1993).  Identification of protein coding
+regions by database similarity search.  Nat. Genet. 3:266-72.
+');
 is($result->database_name, 'ecoli.aa');
 is($result->database_letters, 1358990);
 is($result->database_entries, 4289);
@@ -523,6 +563,7 @@ while( my $hit = $result->next_hit ) {
             is(join(' ', $hsp->seq_inds('query', 'gaps',1)), '347 1004');
             is(join(' ', $hsp->seq_inds('hit', 'gaps',1)), '100 131 197 362 408');
             is($hsp->ambiguous_seq_inds, 'query');
+            is($hsp->n, 1);
             $hsps_left--;
         }
         is($hsps_left, 0);
@@ -580,6 +621,8 @@ $searchio = Bio::SearchIO->new('-format' => 'blast',
 			      '-file'   => test_input_file('dnaEbsub_ecoli.wutblastn'));
 
 $result = $searchio->next_result;
+is($result->algorithm_reference, 'Gish, W. (1996-2000) http://blast.wustl.edu
+');
 is($result->database_name, 'ecoli.nt');
 is($result->database_letters, 4662239);
 is($result->database_entries, 400);
@@ -640,6 +683,7 @@ while( my $hit = $result->next_hit ) {
             is(join(' ', $hsp->seq_inds('query', 'gaps',1)), '109 328');
             is(join(' ', $hsp->seq_inds('hit', 'gaps',1)), '5077 5170 5368 5863 6001');
             is($hsp->ambiguous_seq_inds, 'subject');
+            is($hsp->n, 1);
             $hsps_left--;
         }
         is($hsps_left, 0);
@@ -653,6 +697,8 @@ $searchio = Bio::SearchIO->new('-format' => 'blast',
 			      '-file'   => test_input_file('dnaEbsub_ecoli.wutblastx'));
 
 $result = $searchio->next_result;
+is($result->algorithm_reference, 'Gish, W. (1996-2000) http://blast.wustl.edu
+');
 is($result->database_name, 'ecoli.nt');
 is($result->database_letters, 4662239);
 is($result->database_entries, 400);
@@ -709,7 +755,8 @@ while( my $hit = $result->next_hit ) {
                 is($hsp->hit->frame(), 1);
                 is($hsp->gaps('query'), 0);
                 is($hsp->gaps('hit'), 0);
-                is($hsp->gaps, 0);	    
+                is($hsp->gaps, 0);
+                is($hsp->n, 1);
                 is($hsp->query_string, 'ALDYLLSRGFTKELINEFQIGYALDSWDFITKFLVKRGFSEAQMEKAGLLIRREDGSGY');
                 is($hsp->hit_string, 'ARQYLEKRGLSHEVIARFAIGFAPPGWDNVLKRFGGNPENRQSLIDAGMLVTNDQGRSY');
                 is($hsp->homology_string, 'A  YL  RG + E+I  F IG+A   WD + K       +   +  AG+L+  + G  Y');
@@ -744,6 +791,7 @@ while( my $hit = $result->next_hit ) {
             is($hsp->gaps('query'), 0);
             is($hsp->gaps('hit'), 0);
             is($hsp->gaps, 0);
+            is($hsp->n, 1);
             is($hsp->query_string, 'WLPRALPEKATTAP**SWIGNMTRFLKRSKYPLPSSRLIR');
             is($hsp->hit_string, 'WLSRTTVGSSTVSPRTFWITRMKVKLSSSKVTLPSTKSTR');
             is($hsp->homology_string, 'WL R     +T +P   WI  M   L  SK  LPS++  R');
@@ -761,7 +809,8 @@ $searchio = Bio::SearchIO->new('-format' => 'blast',
 			       '-file'   => test_input_file('echofilter.wublastn'));
 
 $result = $searchio->next_result;
-
+is($result->algorithm_reference, 'Gish, W. (1996-2006) http://blast.wustl.edu
+');
 is($result->database_name, 'NM_003201.fa');
 is($result->database_letters, 1936);
 is($result->database_entries, 1);
@@ -806,6 +855,7 @@ while( $hit = $result->next_hit ) {
             is($hsp->frac_identical('query'), 1.00);
             is($hsp->frac_identical('hit'), 1.00);
             is($hsp->gaps, 0);
+            is($hsp->n, 1);
             $hsps_left--;
         }
         is($hsps_left, 0);
@@ -822,6 +872,11 @@ $searchio = Bio::SearchIO->new('-format' => 'blast',
 @expected = qw(CATH_RAT CATL_HUMAN CATL_RAT PAPA_CARPA);
 my $results_left = 4;
 while( my $result = $searchio->next_result ) {
+	is($result->algorithm_reference, 'Altschul, Stephen F., Thomas L. Madden, Alejandro A. Schaffer, 
+Jinghui Zhang, Zheng Zhang, Webb Miller, and David J. Lipman (1997), 
+"Gapped BLAST and PSI-BLAST: a new generation of protein database search
+programs",  Nucleic Acids Res. 25:3389-3402.
+');
     is($result->query_name, shift @expected, "Multiblast query test");
     $results_left--;
 }
@@ -832,13 +887,21 @@ is($results_left, 0);
 $searchio = Bio::SearchIO->new('-format' => 'blast',
 			      '-file'   => test_input_file('test.gcgblast'));
 $result = $searchio->next_result();
-
+is($result->algorithm_reference, 'Altschul, Stephen F., Thomas L. Madden, Alejandro A. Schaffer, 
+Jinghui Zhang, Zheng Zhang, Webb Miller, and David J. Lipman (1997), 
+"Gapped BLAST and PSI-BLAST: a new generation of protein database search
+programs",  Nucleic Acids Res. 25:3389-3402.
+');
 is($result->query_name, '/v0/people/staji002/test.gcg');
 is($result->algorithm, 'BLASTP');
 is($result->algorithm_version, '2.2.1 [Apr-13-2001]');
 is($result->database_name, 'pir');
 is($result->database_entries, 274514);
 is($result->database_letters, 93460074);
+is($result->get_statistic('querylength'), 44);
+is($result->get_statistic('effectivedblength'), 65459646);
+is($result->get_statistic('effectivespace'), 2880224424);
+is($result->get_statistic('effectivespaceused'), 2880224424);
 
 $hit = $result->next_hit;
 is($hit->description, 'F22B7.10 protein - Caenorhabditis elegans');
@@ -872,6 +935,16 @@ is($hsp->homology_string, 'C+AEFDF++  T  +   T                 + +   +L +    +  
 $searchio = Bio::SearchIO->new(-format => 'blast',
 				 -file   => test_input_file('testdbaccnums.out'));
 $result = $searchio->next_result;
+is($result->algorithm_reference, 'Altschul, Stephen F., Thomas L. Madden, Alejandro A. Schaffer, 
+Jinghui Zhang, Zheng Zhang, Webb Miller, and David J. Lipman (1997), 
+"Gapped BLAST and PSI-BLAST: a new generation of protein database search
+programs",  Nucleic Acids Res. 25:3389-3402.
+');
+is($result->rid, '1036160600-011802-21377');
+is($result->get_statistic('querylength'), 9);
+is($result->get_statistic('effectivedblength'), 35444647);
+is($result->get_statistic('effectivespace'), 319001823);
+is($result->get_statistic('effectivespaceused'), 319001823);
 
 @valid = ( ['pir||T14789','T14789','T14789','CAB53709','AAH01726'],
 	   ['gb|NP_065733.1|CYT19', 'NP_065733','CYT19'],
@@ -940,6 +1013,10 @@ my @dcompare = ( ['Contig3700', 5631, 396, 785,'0.0', 785, '0.0', 396, 639, 12,
 		  6406, 6620, 1, 1691, 1905, 1]
     );
 
+is($r->algorithm_reference, 'Zheng Zhang, Scott Schwartz, Lukas Wagner, and Webb Miller (2000), 
+"A greedy algorithm for aligning DNA sequences", 
+J Comput Biol 2000; 7(1-2):203-14.
+');
 is($r->algorithm, 'MEGABLAST');
 is($r->query_name, '503384');
 is($r->query_description, '11337 bp 2 contigs');
@@ -947,6 +1024,10 @@ is($r->query_length, 11337);
 is($r->database_name, 'cneoA.nt ');
 is($r->database_letters, 17206226);
 is($r->database_entries, 4935);
+is($r->get_statistic('querylength'), 11318);
+is($r->get_statistic('effectivedblength'), 17112461);
+is($r->get_statistic('effectivespace'), 193678833598);
+is($r->get_statistic('effectivespaceused'), 0);
 
 $hits_left = 4;
 while( my $hit = $r->next_hit ) {
@@ -969,6 +1050,7 @@ while( my $hit = $r->next_hit ) {
     is($hsp->hit->start, shift @$d);
     is($hsp->hit->end, shift @$d);
     is($hsp->hit->strand, shift @$d);
+    is($hsp->n, 1);
     $hits_left--;
 }
 is($hits_left, 0);
@@ -979,9 +1061,14 @@ my $parser = Bio::SearchIO->new(-format => 'blast',
 			       -file   => test_input_file('ecoli_domains.rpsblast'));
 
 $r = $parser->next_result;
+is($r->algorithm_reference, undef);
 is($r->query_name, 'gi|1786183|gb|AAC73113.1|');
 is($r->query_gi, 1786183);
 is($r->num_hits, 7);
+is($r->get_statistic('querylength'), 438);
+is($r->get_statistic('effectivedblength'), 31988);
+is($r->get_statistic('effectivespace'), 14010744);
+is($r->get_statistic('effectivespaceused'), 24054976);
 $hit = $r->next_hit;
 is($hit->name, 'gnl|CDD|3919');
 float_is($hit->significance, 0.064);
@@ -1000,7 +1087,11 @@ $searchio = Bio::SearchIO->new('-format' => 'blast',
 			       '-file'   => test_input_file('psiblastreport.out'));
 
 $result = $searchio->next_result;
-
+is($result->algorithm_reference, 'Altschul, Stephen F., Thomas L. Madden, Alejandro A. Schaffer, 
+Jinghui Zhang, Zheng Zhang, Webb Miller, and David J. Lipman (1997), 
+"Gapped BLAST and PSI-BLAST: a new generation of protein database search
+programs",  Nucleic Acids Res. 25:3389-3402.
+');
 is($result->database_name, '/home/peter/blast/data/swissprot.pr');
 is($result->database_entries, 88780);
 is($result->database_letters, 31984247);
@@ -1015,7 +1106,10 @@ cmp_ok($result->get_statistic('entropy'), '==', 0.230);
 is($result->get_statistic('dbletters'), 31984247);
 is($result->get_statistic('dbentries'), 88780);
 is($result->get_statistic('effective_hsplength'), 49);
+is($result->get_statistic('querylength'), 294);
+is($result->get_statistic('effectivedblength'), 27634027);
 is($result->get_statistic('effectivespace'), 8124403938);
+is($result->get_statistic('effectivespaceused'), 8124403938);
 is($result->get_parameter('matrix'), 'BLOSUM62');
 is($result->get_parameter('gapopen'), 11);
 is($result->get_parameter('gapext'), 1);
@@ -1070,6 +1164,7 @@ while( $iter = $result->next_iteration ) {
                     is(sprintf("%.4f",$hsp->frac_identical('query')), 0.4757);
                     is(sprintf("%.3f",$hsp->frac_identical('hit')), 0.482);
                     is($hsp->gaps, 18);
+                    is($hsp->n, 1);
                     $hsps_left--;
                 }
                 is($hsps_left, 0);
@@ -1147,6 +1242,11 @@ $result = $searchio->next_result;
 isa_ok($result,'Bio::Search::Result::ResultI');
 is($result->query_name, '');
 is($result->algorithm, 'BLASTP');
+is($result->algorithm_reference, undef);
+is($result->get_statistic('querylength'), 320);
+is($result->get_statistic('effectivedblength'), 339);
+is($result->get_statistic('effectivespace'), 108480);
+is($result->get_statistic('effectivespaceused'), 108480);
 $hit = $result->next_hit;
 is($hit->name, 'ALEU_HORVU');
 is($hit->length, 362);
@@ -1169,7 +1269,12 @@ $result = $searchio->next_result;
 isa_ok($result,'Bio::Search::Result::ResultI');
 is($result->query_name, '');
 is($result->algorithm, 'BLASTN');
+is($result->algorithm_reference, undef);
 is($result->query_length, 180);
+is($result->get_statistic('querylength'), 174);
+is($result->get_statistic('effectivedblength'), 173);
+is($result->get_statistic('effectivespace'), 30102);
+is($result->get_statistic('effectivespaceused'), 30102);
 $hit = $result->next_hit;
 is($hit->length, 179);
 is($hit->name, 'human');
@@ -1186,6 +1291,7 @@ is($hsp->hit->strand, -1);
 is($hsp->hit->start, 1);
 is($hsp->hit->end,94);
 is($hsp->gaps, 7);
+is($hsp->n, 1);
 
 # this is blastn bl2seq 
 $searchio = Bio::SearchIO->new(-format => 'blast',
@@ -1195,6 +1301,11 @@ isa_ok($result,'Bio::Search::Result::ResultI');
 is($result->query_name, '');
 is($result->query_length, 180);
 is($result->algorithm, 'BLASTN');
+is($result->algorithm_reference, undef);
+is($result->get_statistic('querylength'), 174);
+is($result->get_statistic('effectivedblength'), 173);
+is($result->get_statistic('effectivespace'), 30102);
+is($result->get_statistic('effectivespaceused'), 30102);
 $hit = $result->next_hit;
 is($hit->name, 'human');
 is($hit->length, 179);
@@ -1211,6 +1322,7 @@ is($hsp->hit->strand, 1);
 is($hsp->hit->start, 86);
 is($hsp->hit->end,179);
 is($hsp->gaps, 7);
+is($hsp->n, 1);
 
 # this is blastp bl2seq
 $searchio = Bio::SearchIO->new(-format => 'blast',
@@ -1221,6 +1333,10 @@ is($result->query_name, 'zinc');
 is($result->algorithm, 'BLASTP');
 is($result->query_description, 'finger protein 135 (clone pHZ-17) [Homo sapiens]. neo_id RS.ctg14243-000000.6.0');
 is($result->query_length, 469);
+is($result->get_statistic('querylength'), 446);
+is($result->get_statistic('effectivedblength'), 446);
+is($result->get_statistic('effectivespace'), 198916);
+is($result->get_statistic('effectivespaceused'), 198916);
 $hit = $result->next_hit;
 is($hit->name, 'gi|4507985|');
 is($hit->ncbi_gi, 4507985);
@@ -1237,6 +1353,8 @@ is($hsp->query->end, 469);
 is($hsp->hit->start, 1);
 is($hsp->hit->end,469);
 is($hsp->gaps, 120);
+is($hsp->n, 1);
+
 ok($hit->next_hsp); # there is more than one HSP here, 
                     # make sure it is parsed at least
 
@@ -1251,7 +1369,12 @@ isa_ok($result,'Bio::Search::Result::ResultI');
 is($result->query_name, 'AE000111.1');
 is($result->query_description, 'Escherichia coli K-12 MG1655 section 1 of 400 of the complete genome');
 is($result->algorithm, 'BLASTX');
+is($result->algorithm_reference, undef);
 is($result->query_length, 720);
+is($result->get_statistic('querylength'), undef);
+is($result->get_statistic('effectivedblength'), 787);
+is($result->get_statistic('effectivespace'), undef);
+is($result->get_statistic('effectivespaceused'), 162122);
 $hit = $result->next_hit;
 is($hit->name, 'AK1H_ECOLI');
 is($hit->description,'P00561 Bifunctional aspartokinase/homoserine dehydrogenase I (AKI-HDI) [Includes: Aspartokinase I ; Homoserine dehydrogenase I ]');
@@ -1271,6 +1394,7 @@ is($hsp->query->frame,0);
 is($hsp->hit->frame,0);
 is($hsp->query->strand,-1);
 is($hsp->hit->strand,0);
+is($hsp->n, 1);
 
 # this is tblastx bl2seq (self against self)
 $searchio = Bio::SearchIO->new(-format => 'blast',
@@ -1279,8 +1403,13 @@ $result = $searchio->next_result;
 isa_ok($result,'Bio::Search::Result::ResultI');
 is($result->query_name, 'Escherichia');
 is($result->algorithm, 'TBLASTX');
+is($result->algorithm_reference, undef);
 is($result->query_description, 'coli K-12 MG1655 section 1 of 400 of the complete genome');
 is($result->query_length, 720);
+is($result->get_statistic('querylength'), undef);
+is($result->get_statistic('effectivedblength'), 221);
+is($result->get_statistic('effectivespace'), undef);
+is($result->get_statistic('effectivespaceused'), 48620);
 $hit = $result->next_hit;
 is($hit->name, 'gi|1786181|gb|AE000111.1|AE000111');
 is($hit->ncbi_gi, 1786181);
@@ -1301,6 +1430,7 @@ is($hsp->query->frame,0);
 is($hsp->hit->frame,0);
 is($hsp->query->strand,1);
 is($hsp->hit->strand,1);
+is($hsp->n, 1);
 
 # this is NCBI tblastn
 $searchio = Bio::SearchIO->new(-format => 'blast',
@@ -1308,6 +1438,15 @@ $searchio = Bio::SearchIO->new(-format => 'blast',
 $result = $searchio->next_result;
 isa_ok($result,'Bio::Search::Result::ResultI');
 is($result->algorithm, 'TBLASTN');
+is($result->algorithm_reference, 'Altschul, Stephen F., Thomas L. Madden, Alejandro A. Schaffer, 
+Jinghui Zhang, Zheng Zhang, Webb Miller, and David J. Lipman (1997), 
+"Gapped BLAST and PSI-BLAST: a new generation of protein database search
+programs",  Nucleic Acids Res. 25:3389-3402.
+');
+is($result->get_statistic('querylength'), 102);
+is($result->get_statistic('effectivedblength'), 4342);
+is($result->get_statistic('effectivespace'), 442884);
+is($result->get_statistic('effectivespaceused'), 442884);
 $hit = $result->next_hit;
 is($hit->name,'gi|10040111|emb|AL390796.6|AL390796');
 
@@ -1315,6 +1454,8 @@ is($hit->name,'gi|10040111|emb|AL390796.6|AL390796');
 $searchio = Bio::SearchIO->new(-file   => test_input_file('no_hsps.blastp'),
 			      -format => 'blast');
 $result = $searchio->next_result;
+is($result->algorithm_reference, 'Gish, W. (1996-2003) http://blast.wustl.edu
+'); 
 is($result->query_name, 'mgri:MG00189.3');
 $hit = $result->next_hit;
 is($hit->name, 'mgri:MG00189.3');
@@ -1376,12 +1517,13 @@ is($hsp->links,'(1)-3-2');
 is($hsp->query->strand, 1);
 is($hsp->hit->strand, 1);
 is($hsp->hsp_group, '1');
-
+is($hsp->n, 1);
 ## Web blast result parsing
 
 $searchio = Bio::SearchIO->new(-format => 'blast',
 			       -file   => test_input_file('catalase-webblast.BLASTP'));
 ok($result = $searchio->next_result);
+is($result->rid, '1118324516-16598-103707467515.BLASTQ1');
 ok($hit = $result->next_hit);
 is($hit->name, 'gi|40747822|gb|EAA66978.1|', 'full hit name');
 is($hit->accession, 'EAA66978', 'hit accession');
@@ -1389,6 +1531,7 @@ is($hit->ncbi_gi, 40747822);
 ok($hsp = $hit->next_hsp);
 is($hsp->query->start, 1, 'query start');
 is($hsp->query->end, 528, 'query start');
+is($hsp->n, 1);
 
 # tests for new BLAST 2.2.13 output
 $searchio = Bio::SearchIO->new(-format => 'blast',
@@ -1400,6 +1543,12 @@ is($result->database_entries, 3742891);
 is($result->database_letters, 16670205594);
 is($result->algorithm, 'BLASTN');
 is($result->algorithm_version, '2.2.13 [Nov-27-2005]');
+is($result->algorithm_reference, 'Altschul, Stephen F., Thomas L. Madden, Alejandro A. Schäffer, 
+Jinghui Zhang, Zheng Zhang, Webb Miller, and David J. Lipman 
+(1997), "Gapped BLAST and PSI-BLAST: a new generation of 
+protein database search programs", Nucleic Acids Res. 25:3389-3402.
+');
+is($result->rid, '1141079027-8324-8848328247.BLASTQ4');
 is($result->query_name, 'pyrR,');
 is($result->query_length, 558);
 is($result->get_statistic('kappa'), '0.711');
@@ -1411,7 +1560,14 @@ is($result->get_statistic('entropy_gapped'), '1.31');
 is($result->get_statistic('dbletters'), '-509663586');
 is($result->get_statistic('dbentries'), 3742891);
 is($result->get_statistic('effective_hsplength'), undef);
-is($result->get_statistic('effectivespace'), undef);
+is($result->get_statistic('effectivespace'), 8935230198384);
+is($result->get_statistic('number_of_hsps_better_than_expect_value_cutoff_without_gapping'), 0); 
+is($result->get_statistic('number_of_hsps_gapped'), 1771);
+is($result->get_statistic('number_of_hsps_successfully_gapped'), 0);
+is($result->get_statistic('length_adjustment'), 22);
+is($result->get_statistic('querylength'), 536);
+is($result->get_statistic('effectivedblength'), 16670205594);
+is($result->get_statistic('effectivespaceused'), 8891094027712);
 is($result->get_parameter('matrix'), 'blastn matrix:1 -3');
 is($result->get_parameter('gapopen'), 5);
 is($result->get_parameter('gapext'), 2);
@@ -1454,6 +1610,7 @@ while( $hit = $result->next_hit ) {
             is(sprintf("%.4f",$hsp->frac_identical('query')), 0.8522);
             is(sprintf("%.4f",$hsp->frac_identical('hit')), 0.8522);
             is($hsp->gaps, 0);
+            is($hsp->n, 1);
             $hsps_left--;
         }
         is($hsps_left, 0);
@@ -1471,6 +1628,7 @@ is($result->database_entries, 4460989);
 is($result->database_letters, 1533424333);
 is($result->algorithm, 'BLASTP');
 is($result->algorithm_version, '2.2.15 [Oct-15-2006]');
+is($result->rid, '1169055516-21385-22799250964.BLASTQ4');
 is($result->query_name, 'gi|15608519|ref|NP_215895.1|');
 is($result->query_gi, 15608519);
 is($result->query_length, 193);
@@ -1498,6 +1656,14 @@ $searchio = Bio::SearchIO->new(-format => 'blast',
                                -verbose => -1,
 							  -file   => test_input_file('bug2246.blast'));
 $result = $searchio->next_result;
+is($result->get_statistic('number_of_hsps_better_than_expect_value_cutoff_without_gapping'), 0); 
+is($result->get_statistic('number_of_hsps_gapped'), 7049);
+is($result->get_statistic('number_of_hsps_successfully_gapped'), 55);
+is($result->get_statistic('length_adjustment'), 125);
+is($result->get_statistic('querylength'), 68);
+is($result->get_statistic('effectivedblength'), 1045382588);
+is($result->get_statistic('effectivespace'), 71086015984);
+is($result->get_statistic('effectivespaceused'), 71086015984);
 $hit = $result->next_hit;
 is $hit->name, 'UniRef50_Q9X0H5';
 is $hit->length, 0;
@@ -1511,6 +1677,10 @@ $searchio = Bio::SearchIO->new(-format => 'blast',
                                -verbose => -1,
 							  -file   => test_input_file('bug1986.blastp'));
 $result = $searchio->next_result;
+is($result->get_statistic('querylength'), 335);
+is($result->get_statistic('effectivedblength'), 18683311);
+is($result->get_statistic('effectivespace'), 6258909185);
+is($result->get_statistic('effectivespaceused'), 6258909185);
 $hit = $result->next_hit;
 is $hit->name, 'ENSP00000350182';
 is $hit->length, 425;
@@ -1586,6 +1756,14 @@ $result = $searchio->next_result;
 is($result->query_name, 'c6_COX;c6_QBL;6|31508172;31503325;31478402|rs36223351|1|dbSNP|C/G');
 is($result->query_description, '');
 is($result->algorithm, 'MEGABLAST');
+is($result->get_statistic('number_of_hsps_better_than_expect_value_cutoff_without_gapping'), undef); 
+is($result->get_statistic('number_of_hsps_gapped'), 0);
+is($result->get_statistic('number_of_hsps_successfully_gapped'), 0);
+is($result->get_statistic('length_adjustment'), 16);
+is($result->get_statistic('querylength'), 85);
+is($result->get_statistic('effectivedblength'), 59358266);
+is($result->get_statistic('effectivespace'), 5045452610);
+is($result->get_statistic('effectivespaceused'), 5045452610);
 
 # bug 2399 - catching Expect(n) values
 
@@ -1599,9 +1777,172 @@ while(my $query = $searchio->next_result) {
         $total_n += grep{$_->n} $subject->hsps;
     }
 }
-is($total_n, 10);
+is($total_n, 80);  # n = at least 1, so this was changed to reflect that
 
 sub cmp_evalue ($$) {
 	my ($tval, $aval) = @_;
 	is(sprintf("%g",$tval), sprintf("%g",$aval));
 }
+
+# bug 3064 - All-gap Query/Subject lines for BLAST+ do not have numbering
+
+$file = test_input_file('blast_plus.blastp');
+
+$searchio = Bio::SearchIO->new(-format => 'blast',
+							  -file   => $file);
+
+my $total_hsps = 0;
+while(my $query = $searchio->next_result) {
+	is($query->get_statistic('querylength'), undef);
+	is($query->get_statistic('effectivedblength'), undef);
+	is($query->get_statistic('effectivespace'), undef);
+	is($query->get_statistic('effectivespaceused'), 55770);
+    while(my $subject = $query->next_hit) {
+        while (my $hsp = $subject->next_hsp) {
+            $total_hsps++;
+            if ($total_hsps == 1) {
+                is($hsp->start('query'), 5);
+                is($hsp->start('hit'), 3);
+                is($hsp->end('query'), 220);
+                is($hsp->end('hit'), 308);
+                is(length($hsp->query_string), length($hsp->hit_string));
+            }
+        }
+    }
+}
+
+is($total_hsps, 2);
+
+# BLAST 2.2.20+ output file ZABJ4EA7014.CH878695.1.blast.txt
+# Tests SearchIO blast parsing of 'Features in/flanking this part of a subject sequence'
+$searchio = Bio::SearchIO->new(-format => 'blast',
+                               -file   => test_input_file('ZABJ4EA7014.CH878695.1.blast.txt'));
+
+$result = $searchio->next_result;
+# Parse BLAST header details 
+is($result->algorithm, 'BLASTN');
+is($result->algorithm_version, '2.2.20+');
+is($result->algorithm_reference, 'Zheng Zhang, Scott Schwartz, Lukas Wagner, and
+Webb Miller (2000), "A greedy algorithm for aligning DNA
+sequences", J Comput Biol 2000; 7(1-2):203-14.
+');
+is($result->database_name, 'human build 35 genome database (reference assembly only)');
+is($result->database_entries, 378);
+is($result->database_letters, 2866055344); 
+is($result->query_name, 'gi|95131563|gb|CH878695.1|');
+is($result->query_description, 'Homo sapiens 211000035829648 genomic scaffold');
+is($result->query_length, 29324);
+# Parse BLAST footer details
+is($result->get_statistic('posted_date'), 'Jul 26, 2007  3:20 PM');
+is($result->get_statistic('dbletters'), -1428911948);
+is($result->get_statistic('lambda'), '1.33');
+is($result->get_statistic('kappa'), '0.621');
+is($result->get_statistic('entropy'), '1.12');
+is($result->get_statistic('lambda_gapped'), '1.28');
+is($result->get_statistic('kappa_gapped'), '0.460');
+is($result->get_statistic('entropy_gapped'), '0.850');
+is($result->get_parameter('matrix'), 'blastn matrix:1 -2');
+is($result->get_parameter('gapopen'), 0);
+is($result->get_parameter('gapext'), 0);
+is($result->get_statistic('num_extensions'), 216);
+is($result->get_statistic('num_successful_extensions'), 216);
+is($result->get_parameter('expect'), '0.01');
+is($result->get_statistic('seqs_better_than_cutoff'), 10);
+is($result->get_statistic('number_of_hsps_better_than_expect_value_cutoff_without_gapping'), 0);
+is($result->get_statistic('number_of_hsps_gapped'), 216);
+is($result->get_statistic('number_of_hsps_successfully_gapped'), 212);
+is($result->get_statistic('length_adjustment'), 34);
+is($result->get_statistic('querylength'), 29290);
+is($result->get_statistic('effectivedblength'), 2866042492);
+is($result->get_statistic('effectivespace'), 83946384590680);
+is($result->get_statistic('effectivespaceused'), 83946384590680);
+is($result->get_statistic('A'), 0);
+is($result->get_statistic('X1'), 23);
+is($result->get_statistic('X1_bits'), '44.2');
+is($result->get_statistic('X2'), 32);
+is($result->get_statistic('X2_bits'), '59.1');
+is($result->get_statistic('X3'), 54);
+is($result->get_statistic('X3_bits'), '99.7');
+is($result->get_statistic('S1'), 23);
+is($result->get_statistic('S1_bits'), '43.6');
+is($result->get_statistic('S2'), 29);
+is($result->get_statistic('S2_bits'), '54.7');
+# Skip the 1st hit. It doesn't have any 'Features in/flanking this part of subject sequence:'
+$hit = $result->next_hit;
+# The 2nd hit has hsps with 'Features flanking this part of subject sequence:' 
+$hit = $result->next_hit;
+is($hit->name, 'gi|51459264|ref|NT_077382.3|Hs1_77431');
+is($hit->description, 'Homo sapiens chromosome 1 genomic contig');
+is($hit->length, 237250);
+# In the 2nd hit, look at the 1st hsp 
+$hsp = $hit->next_hsp;
+is($hsp->hit_features, "16338 bp at 5' side: PRAME family member 8   11926 bp at 3' side: PRAME family member 9");
+is($hsp->bits, 7286);
+is($hsp->score, 3945);
+is($hsp->expect, '0.0');
+is($hsp->hsp_length, 6145);
+is($hsp->num_identical, 5437);
+is(int sprintf("%.2f",$hsp->percent_identity), 88);
+is($hsp->gaps, 152);
+is($hsp->start('query'), 23225);
+is($hsp->start('sbjct'), 86128); 
+is($hsp->end('query'), 29324);
+is($hsp->end('sbjct'), 92165);
+# In the 2nd hit, look at the 2nd hsp
+$hsp = $hit->next_hsp;
+is($hsp->hit_features, "25773 bp at 5' side: PRAME family member 3   3198 bp at 3' side: PRAME family member 5");
+is($hsp->bits, 4732);
+is($hsp->score, 2562);
+is($hsp->expect, '0.0');
+is($hsp->hsp_length, 4367);
+is($hsp->num_identical, 3795);
+is(int sprintf("%.2f",$hsp->percent_identity), 86);
+is($hsp->gaps, 178);
+is($hsp->start('query'), 23894);
+is($hsp->start('sbjct'), 37526); 
+is($hsp->end('query'), 28193);
+is($hsp->end('sbjct'), 41781);
+# In the 2nd hit, look at the 3rd hsp
+$hsp = $hit->next_hsp;
+is($hsp->hit_features, "16338 bp at 5' side: PRAME family member 8   14600 bp at 3' side: PRAME family member 9");
+is($hsp->bits, 3825);
+is($hsp->score, 2071);
+is($hsp->expect, '0.0');
+is($hsp->hsp_length, 3406);
+is($hsp->num_identical, 2976);
+is(int sprintf("%.2f",$hsp->percent_identity), 87);
+is($hsp->gaps, 89);
+is($hsp->start('query'), 14528);
+is($hsp->start('sbjct'), 86128); 
+is($hsp->end('query'), 17886);
+is($hsp->end('sbjct'), 89491);
+# In the 2nd hit, look at the 4th hsp
+$hsp = $hit->next_hsp;
+is($hsp->hit_features, "29101 bp at 5' side: PRAME family member 8   2120 bp at 3' side: PRAME family member 9");
+is($hsp->bits, 3241);
+is($hsp->score, 1755);
+is($hsp->expect, '0.0');
+is($hsp->hsp_length, 3158);
+is($hsp->num_identical, 2711);
+is(int sprintf("%.2f",$hsp->percent_identity), 85);
+is($hsp->gaps, 123);
+is($hsp->start('query'), 23894);
+is($hsp->start('sbjct'), 98891); 
+is($hsp->end('query'), 27005);
+is($hsp->end('sbjct'), 101971);
+# In the 2nd hit, look at the 5th hsp
+$hsp = $hit->next_hsp;
+is($hsp->hit_features, "PRAME family member 13");
+is($hsp->bits, 3142);
+is($hsp->score, 1701);
+is($hsp->expect, '0.0');
+is($hsp->hsp_length, 2507);
+is($hsp->num_identical, 2249);
+is(int sprintf("%.2f",$hsp->percent_identity), 89);
+is($hsp->gaps, 63);
+is($hsp->start('query'), 3255);
+is($hsp->start('sbjct'), 128516); 
+is($hsp->end('query'), 5720);
+is($hsp->end('sbjct'), 131000);
+
+

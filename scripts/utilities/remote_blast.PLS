@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id: remote_blast.PLS 15088 2008-12-04 02:49:09Z bosborne $
 #
 # BioPerl module for remote_blast.pl
 #
@@ -167,7 +166,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Jason Stajich
 

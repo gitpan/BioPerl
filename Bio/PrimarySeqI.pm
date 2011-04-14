@@ -1,8 +1,7 @@
-# $Id: PrimarySeqI.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::PrimarySeqI
 #
-# Please direct questions and support issues to <bioperl-l@bioperl.org> 
+# Please direct questions and support issues to <bioperl-l@bioperl.org>
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
@@ -88,15 +87,15 @@ of the Bioperl mailing lists.  Your participation is much appreciated.
   bioperl-l@bioperl.org                  - General discussion
   http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
 
-=head2 Support 
+=head2 Support
 
 Please direct usage questions or support issues to the mailing list:
 
 I<bioperl-l@bioperl.org>
 
-rather than to the module maintainer directly. Many experienced and 
-reponsive experts will be able look at the problem and quickly 
-address it. Please include a thorough description of the problem 
+rather than to the module maintainer directly. Many experienced and
+reponsive experts will be able look at the problem and quickly
+address it. Please include a thorough description of the problem
 with code and data examples if at all possible.
 
 =head2 Reporting Bugs
@@ -105,7 +104,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Ewan Birney
 
@@ -484,7 +483,7 @@ sub trunc{
  Usage   : $protein_seq_obj = $dna_seq_obj->translate
 
            Or if you expect a complete coding sequence (CDS) translation,
-           with inititator at the beginning and terminator at the end:
+           with initiator at the beginning and terminator at the end:
 
            $protein_seq_obj = $cds_seq_obj->translate(-complete => 1);
 
@@ -505,86 +504,112 @@ sub trunc{
            warning if the first codon is not a valid initiator.
 
  Returns : A Bio::PrimarySeqI implementing object
- Args    : -terminator    - character for terminator        default is *
-           -unknown       - character for unknown           default is X
-           -frame         - frame                           default is 0
-           -codontable_id - codon table id                  default is 1
-           -complete      - complete CDS expected           default is 0
-           -throw         - throw exception if not complete default is 0
-           -orf           - find 1st ORF                    default is 0
-           -start         - alternative initiation codon
-           -codontable    - Bio::Tools::CodonTable object
-		   -offset        - offset for fuzzy locations      default is 0
+ Args    : -terminator
+               character for terminator, default '*'
+           -unknown
+               character for unknown, default 'X'
+           -frame
+               positive integer frame shift (in bases), default 0
+           -codontable_id
+               integer codon table id, default 1
+           -complete
+               boolean, if true, complete CDS is expected. default false
+           -complete_codons
+               boolean, if true, codons which are incomplete are translated if a
+               suitable amino acid is found. For instance, if the incomplete
+               codon is 'GG', the completed codon is 'GGN', which is glycine
+               (G). Defaults to 'false'; setting '-complete' also makes this
+               true.
+           -throw
+               boolean, throw exception if ORF not complete, default false
+           -orf
+               if 'longest', find longest ORF.  other true value, find
+               first ORF.  default 0
+           -codontable
+               optional L<Bio::Tools::CodonTable> object to use for
+               translation
+           -start
+               optional three-character string to force as initiation
+               codon (e.g. 'atg'). If unset, start codons are
+               determined by the CodonTable.  Case insensitive.
+           -offset
+               optional positive integer offset for fuzzy locations.
+               if set, must be either 1, 2, or 3
 
- Notes   : The -start argument only applies when -orf is set to 1. By default
-           all initiation codons found in the given codon table are used
-           but when "start" is set to some codon this codon will be used
-           exclusively as the initiation codon. Note that the default codon
-           table (NCBI "Standard") has 3 initiation codons!
+=head3 Notes
 
-           By default translate() translates termination codons to
-           the some character (default is *), both internal and trailing
-           codons. Setting "-complete" to 1 tells translate() to remove
-           the trailing character.
+The -start argument only applies when -orf is set to 1. By default all
+initiation codons found in the given codon table are used but when
+"start" is set to some codon this codon will be used exclusively as
+the initiation codon. Note that the default codon table (NCBI
+"Standard") has 3 initiation codons!
 
-		   -offset is used for seqfeatures which contain the the \codon_start
-		   tag and can be set to 1, 2, or 3.  This is the offset by which the
-		   sequence translation starts relative to the first base of the
-		   feature
+By default translate() translates termination codons to the some
+character (default is *), both internal and trailing codons. Setting
+"-complete" to 1 tells translate() to remove the trailing character.
+
+-offset is used for seqfeatures which contain the the \codon_start tag
+and can be set to 1, 2, or 3.  This is the offset by which the
+sequence translation starts relative to the first base of the feature
 
 For details on codon tables used by translate() see L<Bio::Tools::CodonTable>.
 
-           Deprecated argument set (v. 1.5.1 and prior versions)
-           where each argument is an element in an array:
+Deprecated argument set (v. 1.5.1 and prior versions) where each argument is an
+element in an array:
 
-           1: character for terminator (optional), defaults to '*'.
-           2: character for unknown amino acid (optional), defaults to 'X'.
-           3: frame (optional), valid values are 0, 1, 2, defaults to 0.
-           4: codon table id (optional), defaults to 1.
-           5: complete coding sequence expected, defaults to 0 (false).
-           6: boolean, throw exception if not complete coding sequence
-              (true), defaults to warning (false)
-           7: codontable, a custom Bio::Tools::CodonTable object (optional).
+  1: character for terminator (optional), defaults to '*'.
+  2: character for unknown amino acid (optional), defaults to 'X'.
+  3: frame (optional), valid values are 0, 1, 2, defaults to 0.
+  4: codon table id (optional), defaults to 1.
+  5: complete coding sequence expected, defaults to 0 (false).
+  6: boolean, throw exception if not complete coding sequence
+     (true), defaults to warning (false)
+  7: codontable, a custom Bio::Tools::CodonTable object (optional).
 
 =cut
 
 sub translate {
 	 my ($self,@args) = @_;
-	 my ($terminator, $unknown, $frame, $codonTableId, $complete, $throw,
-		  $codonTable, $orf, $start_codon, $offset);
+     my ($terminator, $unknown, $frame, $codonTableId, $complete,
+     $complete_codons, $throw, $codonTable, $orf, $start_codon, $offset);
 
 	 ## new API with named parameters, post 1.5.1
 	 if ($args[0] && $args[0] =~ /^-[A-Z]+/i) {
-		 ($terminator, $unknown, $frame, $codonTableId, $complete, $throw,
-		  $codonTable, $orf, $start_codon, $offset) =
+         ($terminator, $unknown, $frame, $codonTableId, $complete,
+         $complete_codons, $throw,$codonTable, $orf, $start_codon, $offset) =
 			 $self->_rearrange([qw(TERMINATOR
-								UNKNOWN
-								FRAME
-								CODONTABLE_ID
-								COMPLETE
-								THROW
-								CODONTABLE
-								ORF
-								START
-								OFFSET)], @args);
+                                               UNKNOWN
+                                               FRAME
+                                               CODONTABLE_ID
+                                               COMPLETE
+                                               COMPLETE_CODONS
+                                               THROW
+                                               CODONTABLE
+                                               ORF
+                                               START
+                                               OFFSET)], @args);
 	 ## old API, 1.5.1 and preceding versions
 	 } else {
 		 ($terminator, $unknown, $frame, $codonTableId,
 		  $complete, $throw, $codonTable, $offset) = @args;
 	 }
-
+    
     ## Initialize termination codon, unknown codon, codon table id, frame
     $terminator = '*'    unless (defined($terminator) and $terminator ne '');
     $unknown = "X"       unless (defined($unknown) and $unknown ne '');
     $frame = 0           unless (defined($frame) and $frame ne '');
     $codonTableId = 1    unless (defined($codonTableId) and $codonTableId ne '');
-
+    $complete_codons ||= $complete || 0;
+    
     ## Get a CodonTable, error if custom CodonTable is invalid
     if ($codonTable) {
 		 $self->throw("Need a Bio::Tools::CodonTable object, not ". $codonTable)
 			unless $codonTable->isa('Bio::Tools::CodonTable');
     } else {
-		 $codonTable = Bio::Tools::CodonTable->new( -id => $codonTableId);
+        
+        # shouldn't this be cached?  Seems wasteful to have a new instance
+        # every time...
+		$codonTable = Bio::Tools::CodonTable->new( -id => $codonTableId);
 	 }
 
     ## Error if alphabet is "protein"
@@ -596,9 +621,9 @@ sub translate {
 		 $self->throw("Invalid start codon: $start_codon.") if
 			( $start_codon !~ /^[A-Z]{3}$/i );
 	 }
-	 
+
 	 my $seq;
-	 
+
 	 if ($offset) {
 		$self->throw("Offset must be 1, 2, or 3.") if
 		    ( $offset !~ /^[123]$/ );
@@ -608,18 +633,19 @@ sub translate {
 		($seq) = $self->seq();
 	 }
 
-    ## ignore frame if an ORF is supposed to be found
-	 if ($orf) {
-		 $seq = $self->_find_orf($seq,$codonTable,$start_codon);
+         ## ignore frame if an ORF is supposed to be found
+	 if ( $orf ) {
+            my ($orf_region) = $self->_find_orfs_nucleotide( $seq, $codonTable, $start_codon, $orf eq 'longest' ? 0 : 'first_only' );
+            $seq = $self->_orf_sequence( $seq, $orf_region );
 	 } else {
 	 ## use frame, error if frame is not 0, 1 or 2
 		 $self->throw("Valid values for frame are 0, 1, or 2, not $frame.")
 			unless ($frame == 0 or $frame == 1 or $frame == 2);
 		 $seq = substr($seq,$frame);
-    }
+         }
 
     ## Translate it
-    my $output = $codonTable->translate($seq);
+    my $output = $codonTable->translate($seq, $complete_codons);
     # Use user-input terminator/unknown
     $output =~ s/\*/$terminator/g;
     $output =~ s/X/$unknown/g;
@@ -635,7 +661,8 @@ sub translate {
 			 $self->warn("Seq [$id]: Not using a valid terminator codon!");
 		 }
 		 # test if there are terminator characters inside the protein sequence!
-		 if ($output =~ /\*/) {
+		 if ($output =~ /\Q$terminator\E/) {
+             $id ||= '';
 			 $throw && $self->throw("Seq [$id]: Terminator codon inside CDS!");
 			 $self->warn("Seq [$id]: Terminator codon inside CDS!");
 		 }
@@ -668,6 +695,73 @@ sub translate {
                               '-verbose' => $self->verbose
 			      );
     return $out;
+}
+
+=head2 transcribe()
+
+ Title   : transcribe
+ Usage   : $xseq = $seq->transcribe
+ Function: Convert base T to base U
+ Returns : PrimarySeqI object of alphabet 'rna' or
+           undef if $seq->alphabet ne 'dna'
+ Args    :
+
+=cut
+
+sub transcribe {
+    my $self = shift;
+    return unless $self->alphabet eq 'dna';
+    my $s = $self->seq;
+    $s =~ tr/tT/uU/;
+    my $class;
+    if ($self->can_call_new) {
+	$class = ref($self);
+    } else {
+	$class = 'Bio::PrimarySeq';
+	$self->_attempt_to_load_Seq;
+    }
+    my $desc = $self->desc || '';
+    return $class->new(
+	'-seq' => $s,
+	'-alphabet' => 'rna',
+	'-display_id'  => $self->display_id,
+	'-accession_number' => $self->accession_number,
+	'-desc' => "${desc}[TRANSCRIBED]",
+	'-verbose' => $self->verbose
+	);
+}
+
+=head2 rev_transcribe()
+
+ Title   : rev_transcribe
+ Usage   : $rtseq = $seq->rev_transcribe
+ Function: Convert base U to base T
+ Returns : PrimarySeqI object of alphabet 'dna' or
+           undef if $seq->alphabet ne 'rna'
+ Args    :
+
+=cut
+
+sub rev_transcribe {
+    my $self = shift;
+    return unless $self->alphabet eq 'rna';
+    my $s = $self->seq;
+    $s =~ tr/uU/tT/;
+    my $class;
+    if ($self->can_call_new) {
+	$class = ref($self);
+    } else {
+	$class = 'Bio::PrimarySeq';
+	$self->_attempt_to_load_Seq;
+    }
+    return $class->new(
+	'-seq' => $s,
+	'-alphabet' => 'dna',
+	'-display_id'  => $self->display_id,
+	'-accession_number' => $self->accession_number,
+	'-desc' => $self->desc . "[REVERSE TRANSCRIBED]",
+	'-verbose' => $self->verbose
+	);
 }
 
 =head2 id
@@ -738,47 +832,83 @@ sub is_circular{
 These are some private functions for the PrimarySeqI interface. You do not
 need to implement these functions
 
-=head2 _find_orf
+=head2 _find_orfs_nucleotide
 
- Title   : _find_orf
+ Title   : _find_orfs_nucleotide
  Usage   :
  Function: Finds ORF starting at 1st initiation codon in nucleotide sequence.
            The ORF is not required to have a termination codon.
  Example :
- Returns : A nucleotide sequence or nothing, if no initiation codon is found.
- Args    : Nucleotide sequence, CodonTable object, alternative initiation
-           codon (optional).
+ Returns : a list of string coordinates of ORF locations (0-based half-open),
+           sorted descending by length (so that the longest is first)
+           as: [ start, end, frame, length ], [ start, end, frame, length ], ...
+ Args    : Nucleotide sequence,
+           CodonTable object,
+           (optional) alternative initiation codon (e.g. 'ATA'),
+           (optional) boolean that, if true, stops after finding the
+                      first available ORF
 
 =cut
 
-sub _find_orf {
-	my ($self,$sequence,$codonTable,$start_codon) = @_;
+sub _find_orfs_nucleotide {
+    my ( $self, $sequence, $codon_table, $start_codon, $first_only ) = @_;
+    $sequence    = uc $sequence;
+    $start_codon = uc $start_codon if $start_codon;
 
-	# find initiation codon and remove leading sequence
-	while ($sequence) {
-		my $codon = substr($sequence,0,3);
-		if ($start_codon) {
-			last if ( $codon =~ /$start_codon/i );
-		} else {
-			last if ($codonTable->is_start_codon($codon));
-		}
-		$sequence = substr($sequence,1);
-	}
-	return unless $sequence;
+    my $is_start = $start_codon
+        ? sub { shift eq $start_codon }
+        : sub { $codon_table->is_start_codon( shift ) };
 
-	# find termination codon and remove trailing sequence
-	my $len = CORE::length($sequence);
-	my $offset = 3;
-	while ($offset < $len) {
-		my $codon = substr($sequence,$offset,3);
-		if ( $codonTable->is_ter_codon($codon) ){
-			$sequence = substr($sequence, 0, $offset + 3);
-			return $sequence;
-		}
-		$offset += 3;
-	}
-	$self->warn("No termination codon found, will translate - sequence:\n$sequence");
-	$sequence;
+    # stores the begin index of the currently-running ORF in each
+    # reading frame
+    my @current_orf_start = (-1,-1,-1);
+
+    #< stores coordinates of longest observed orf (so far) in each
+    #  reading frame
+    my @orfs;
+
+    # go through each base of the sequence, and each reading frame for each base
+    my $seqlen = CORE::length $sequence;
+    for( my $j = 0; $j <= $seqlen-3; $j++ ) {
+        my $frame = $j % 3;
+
+        my $this_codon = substr( $sequence, $j, 3 );
+
+        # if in an orf and this is either a stop codon or the last in-frame codon in the string
+        if ( $current_orf_start[$frame] >= 0 ) {
+            if ( $codon_table->is_ter_codon( $this_codon ) ||( my $is_last_codon_in_frame = ($j >= $seqlen-5)) ) {
+                # record ORF start, end (half-open), length, and frame
+                my @this_orf = ( $current_orf_start[$frame], $j+3, undef, $frame );
+                my $this_orf_length = $this_orf[2] = ( $this_orf[1] - $this_orf[0] );
+
+                $self->warn( "Translating partial ORF "
+                                 .$self->_truncate_seq( $self->_orf_sequence( $sequence, \@this_orf ))
+                                 .' from end of nucleotide sequence'
+                            )
+                    if $first_only && $is_last_codon_in_frame;
+
+                return \@this_orf if $first_only;
+                push @orfs, \@this_orf;
+                $current_orf_start[$frame] = -1;
+            }
+        }
+        # if this is a start codon
+        elsif ( $is_start->($this_codon) ) {
+            $current_orf_start[$frame] = $j;
+        }
+    }
+
+    return sort { $b->[2] <=> $a->[2] } @orfs;
+}
+
+sub _truncate_seq {
+    my ($self,$seq) = @_;
+    return CORE::length($seq) > 200 ? substr($seq,0,50).'...'.substr($seq,-50) : $seq;
+}
+sub _orf_sequence {
+    my ($self, $seq, $orf ) = @_;
+    return '' unless $orf;
+    return substr( $seq, $orf->[0], $orf->[2] )
 }
 
 =head2 _attempt_to_load_Seq

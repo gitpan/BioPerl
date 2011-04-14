@@ -9,7 +9,6 @@
 #
 # Author: Steve Chervitz <sac@bioperl.org>
 #
-# $Id: exceptions4.pl 15087 2008-12-04 02:48:00Z bosborne $
 
 
 # Setting this variable simulates not having Error.pm installed.

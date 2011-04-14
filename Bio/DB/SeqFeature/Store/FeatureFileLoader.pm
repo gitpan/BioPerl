@@ -1,6 +1,5 @@
 package Bio::DB::SeqFeature::Store::FeatureFileLoader;
 
-# $Id$
 
 =head1 NAME
 
@@ -544,9 +543,11 @@ sub handle_feature {
   my $feature = $ld->{CurrentFeature};
   
   $ld->{OldPartType} = $ld->{PartType};
-  $ld->{PartType}    = $attr->{Type}[0] if exists $attr->{Type};
-  $ld->{PartType}    = $attr->{type}[0] if exists $attr->{type};
-  $ld->{PartType}   ||= $type;
+  if (exists $attr->{Type} || exists $attr->{type})  {
+      $ld->{PartType}   = $attr->{Type}[0] || $attr->{type}[0];
+  } else {
+      $ld->{PartType}   = $type;
+  }
 
   if ($feature) {
       local $^W = 0;  # avoid uninit warning when display_name() is called
@@ -625,7 +626,7 @@ sub _make_feature {
     my ($name,$type,$strand,$attributes,$ref,$start,$end) = @_;
 
     # some basic error checking
-     $self->throw("invalid feature line: $_")
+     $self->throw("syntax error at line $.: '$_'")
  	if ($ref   && !defined $start)
  	or ($ref   && !defined $end)
  	or ($start && $start   !~  /^[-\d]+$/)

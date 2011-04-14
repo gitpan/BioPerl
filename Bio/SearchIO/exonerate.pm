@@ -1,4 +1,3 @@
-# $Id: exonerate.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::SearchIO::exonerate
 #
@@ -98,7 +97,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -155,7 +154,7 @@ use base qw(Bio::SearchIO);
     'ExonerateOutput_query-len' => 'RESULT-query_length',
     );
 
-$DEFAULT_WRITER_CLASS = 'Bio::Search::Writer::HitTableWriter';
+$DEFAULT_WRITER_CLASS = 'Bio::SearchIO::Writer::HitTableWriter';
 
 $MIN_INTRON=30; # This is the minimum intron size
 
@@ -220,7 +219,7 @@ sub next_result{
    my (@q_ex, @m_ex, @h_ex); ## gc addition
    while( defined($_ = $self->_readline) ) {
        # warn( "Reading $_");
-       if( /^Query:\s+(\S+)\s*(.+)?/ ) {
+       if( /^\s*Query:\s+(\S+)\s*(.+)?/ ) {
 	   if( $seentop ) {
 	       $self->end_element({'Name' => 'ExonerateOutput'});
 	       $self->_pushback($_);

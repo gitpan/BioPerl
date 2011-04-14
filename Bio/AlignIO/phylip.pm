@@ -1,4 +1,3 @@
-# $Id: phylip.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::phylip
 #
@@ -45,7 +44,7 @@ Bio::AlignIO::phylip - PHYLIP format sequence input/output stream
 =head1 DESCRIPTION
 
 This object can transform Bio::SimpleAlign objects to and from PHYLIP
-fotmat. By deafult it works with the interleaved format. By specifying
+format. By default it works with the interleaved format. By specifying
 the flag -interleaved =E<gt> 0 in the initialization the module can
 read or write data in sequential format.
 
@@ -72,7 +71,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHORS - Heikki Lehvaslaiho and Jason Stajich
 
@@ -176,8 +175,18 @@ sub next_aln {
 	@names,$seqname,$start,$end,$count,$seq);
 
     my $aln =  Bio::SimpleAlign->new(-source => 'phylip');
-    $entry = $self->_readline and
-        ($seqcount, $residuecount) = $entry =~ /\s*(\d+)\s+(\d+)/;
+
+    # skip blank lines until we see header line
+    # if we see a non-blank line that isn't the seqcount and residuecount line
+    # then bail out of next_aln (return)
+    HEADER: while ($entry = $self->_readline) {
+        next if $entry =~ /^\s?$/; 
+        if ($entry =~ /\s*(\d+)\s+(\d+)/) {
+            ($seqcount, $residuecount) = ($1, $2);
+
+        }
+        last HEADER;
+    }
     return unless $seqcount and $residuecount;
 
     # first alignment section
@@ -188,6 +197,7 @@ sub next_aln {
     while( $entry = $self->_readline) {
 	last if( $entry =~ /^\s?$/ && $interleaved );
 
+    # we've hit the next entry.
 	if( $entry =~ /^\s+(\d+)\s+(\d+)\s*$/) {
 	    $self->_pushback($entry);
 	    last;
@@ -216,8 +226,8 @@ sub next_aln {
 	    $str =~ s/\s//g;
 	    $count = scalar @names;
 	    $hash{$count} .= $str;
-	} elsif( $entry =~ /^(.{$idlen})\s+(.*)\s$/ ||
-		 $entry =~ /^(.{$idlen})(\S{$idlen}\s+.+)\s$/ # Handle weirdnes s when id is too long
+	} elsif( $entry =~ /^(.{$idlen})\s*(.*)\s$/ ||
+		 $entry =~ /^(.{$idlen})(\S{$idlen}\s+.+)\s$/ # Handle weirdness when id is too long
 		 ) {
 	    $name = $1;
 	    $str = $2;
@@ -279,18 +289,19 @@ sub next_aln {
 	    $seqname=$name;
 	    $start = 1;
 	    $str = $hash{$count};
-	    $str =~ s/[^A-Za-z]//g;
-	    $end = length($str);
+#	    $str =~ s/[^A-Za-z]//g;
+	    #$end = length($str);
 	}
 	# consistency test
 	$self->throw("Length of sequence [$seqname] is not [$residuecount] it is ".CORE::length($hash{$count})."! ")
 	    unless CORE::length($hash{$count}) == $residuecount;
 
-       $seq = Bio::LocatableSeq->new('-seq'=>$hash{$count},
-				    '-id'=>$seqname,
-				    '-start'=>$start,
-				    '-end'=>$end,
-				   );
+	$seq = Bio::LocatableSeq->new('-seq'           => $hash{$count},
+				      '-display_id'    => $seqname,
+				      '-start'         => $start,
+				      (defined $end) ? ('-end'           => $end) : (),
+				      '-alphabet'      => $self->alphabet,
+				      );
 	$aln->add_seq($seq);
 
    }
@@ -303,7 +314,7 @@ sub next_aln {
 
  Title   : write_aln
  Usage   : $stream->write_aln(@aln)
- Function: writes the $aln object into the stream in MSF format
+ Function: writes the $aln object into the stream in phylip format
  Returns : 1 for success and 0 for error
  Args    : L<Bio::Align::AlignI> object
 

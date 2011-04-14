@@ -1,4 +1,4 @@
-# $Id: Factory.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id$
 # -*-Perl-*-
 
 use strict;

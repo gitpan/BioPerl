@@ -1,4 +1,3 @@
-# $Id: Query.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Tools::EUtilities::Query
 #
@@ -16,14 +15,16 @@
 
 =head1 NAME
 
-Bio::Tools::EUtilities::Query - parse and collect esearch, epost, espell, egquery
-information
+Bio::Tools::EUtilities::Query - parse and collect esearch, epost, espell,
+egquery information
 
 =head1 SYNOPSIS
 
-  #### should not create instance directly; Bio::Tools::EUtilities does this ####
+  ### should not create instance directly; Bio::Tools::EUtilities does this ###
 
-  # can also use '-response' (for HTTP::Response objects) or '-fh' (for filehandles)
+  # can also use '-response' (for HTTP::Response objects) or '-fh' (for
+  # filehandles)
+  
   my $info = Bio::Tools::EUtilities->new(-eutil => 'esearch',
                                          -file => 'esearch.xml');
 
@@ -37,7 +38,7 @@ information
 
 =head1 DESCRIPTION
 
-...
+Pluggable module for handling query-related data returned from eutils.  
 
 =head1 FEEDBACK
 
@@ -69,7 +70,7 @@ Report bugs to the Bioperl bug tracking system to
 help us keep track the bugs and their resolution.
 Bug reports can be submitted via the web.
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR 
 

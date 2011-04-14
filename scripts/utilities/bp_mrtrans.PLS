@@ -1,5 +1,4 @@
 #!perl
-# $Id: bp_mrtrans.PLS 15088 2008-12-04 02:49:09Z bosborne $
 use strict;
 
 # Author:      Jason Stajich <jason-at-bioperl-dot-org>

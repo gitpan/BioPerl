@@ -1,5 +1,4 @@
 #
-# $Id: Compare.pm 11555 2007-07-05 13:05:54Z sendu $
 #
 
 =head1 NAME

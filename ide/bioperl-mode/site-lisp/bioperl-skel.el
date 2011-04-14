@@ -1,4 +1,4 @@
-;; $Id: bioperl-skel.el 16017 2009-09-02 04:00:14Z maj $
+;; $Id$
 
 ;;
 ;; Template insertion skeletons for Bioperl minor mode
@@ -58,7 +58,7 @@
 ;;
 ;; which hangs.
 
-(defconst bioperl-skel-revision "$Id: bioperl-skel.el 16017 2009-09-02 04:00:14Z maj $"
+(defconst bioperl-skel-revision "$Id$"
   "The revision string of bioperl-skel.el")
 
 (make-variable-buffer-local 'prompt-once-alist)
@@ -91,6 +91,11 @@
   nil
   bioperl-abstract-method-skel)
 
+(define-skeleton bioperl-insert-generic-class
+  "Insert a generic package pod template."
+  nil
+  bioperl-generic-class-pod-skel)
+
 (defvar bioperl-method-pod-skel 
       '((prompt-once "Method name:")
 	\N 
@@ -105,6 +110,37 @@
 	\N "=cut" \N)
 "Skeleton for a basic method pod header."
  )
+
+(defvar bioperl-generic-class-pod-skel
+  '(
+    (prompt-once "Class name: ")
+    "package " str ";" \N
+    "use strict;" \N
+    "use warnings;" \N
+    \N
+    "=head1 NAME" \N 
+    \N 
+    str " - " - "DESCRIPTION of Object" \N 
+    \N
+    "=head1 SYNOPSIS" \N 
+    \N
+    "Give standard usage here" \N
+    \N
+    "=head1 DESCRIPTION" \N
+    \N
+    _ "Describe the object here" \N
+    \N
+    ( (prompt-once "Author: ")
+      "=head1 AUTHOR - " str \N )
+    \N
+    "=head1 METHODS" \N
+    \N
+    "=cut" \N
+    \N
+    "# Let the code begin..." \N
+    \N \N \N
+    "1;")
+  "Skeleton for a generic package template")
 
 (defvar bioperl-class-pod-skel
   '(
@@ -165,7 +201,7 @@
     "of the bugs and their resolution. Bug reports can be submitted via" \N
     "the web:" \N
     \N
-    "  http://bugzilla.open-bio.org/" \N 
+    "  https://redmine.open-bio.org/projects/bioperl/" \N 
     \N
     "=head1 AUTHOR - " v1 \N
     \N
@@ -218,7 +254,7 @@
 (defvar bioperl-accessor-skel
   '(
     (prompt-once "Field name: ")
-    "=head2 " str \N
+    "=head2 " str "()" \N
     \N
     " Title   : " str \N 
     " Usage   : $obj->" str "($newval)" \N 

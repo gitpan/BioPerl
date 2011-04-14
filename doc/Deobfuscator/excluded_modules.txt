@@ -8,7 +8,7 @@
 # (i.e. /Module.pm$/ ), so the shortest unique path is probably best.
 # Example: Bio/Tools/pSW.pm
 #
-# $Id: excluded_modules.txt 10660 2006-10-03 01:53:15Z dave_messina $
+# $Id$
 #
 # The modules below are excluded because they require external dependencies
 # to compile (e.g. bioperl-ext), and Class::Inspector can't load modules it

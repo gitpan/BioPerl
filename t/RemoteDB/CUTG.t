@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: CUTG.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id$
 
 use strict;
 
@@ -62,7 +62,7 @@ SKIP: {
 	$db->verbose($verbose ? $verbose : -1);
 	my $cdtable;
 	eval {$cdtable = $db->get_request(-sp =>'Pan troglodytes');};
-	skip "Server/network problems? Skipping those tests\n$@", 5 if $@;
+	skip "Server/network problems? Skipping those tests\n$@", 9 if $@;
 	
 	# tests for Table.pm, the answers seem to change with time, so not specific
 	cmp_ok($cdtable->cds_count(), '>', 10);
@@ -75,7 +75,7 @@ SKIP: {
 	my $db2 = Bio::DB::CUTG->new();
 	$db2->verbose($verbose ? $verbose : -1);
 	eval {$cut2 = $db2->get_request(-sp =>'Wookie magnus');};
-	skip "Server/network problems? Skipping those tests\n$@", 1 if $@;
+	skip "Server/network problems? Skipping those tests\n$@", 5 if $@;
 	is $cut2->species(), 'Homo sapiens';
 	
 	$db = Bio::DB::CUTG->new();

@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-# $Id: revtrans-motif.PLS 16123 2009-09-17 12:57:27Z cjfields $
 use warnings;
 use strict;
 

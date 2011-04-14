@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id: extract_genes.pl 15087 2008-12-04 02:48:00Z bosborne $
 =pod
 
 =head1 NAME

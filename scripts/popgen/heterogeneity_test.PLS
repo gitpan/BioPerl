@@ -1,6 +1,5 @@
 #!/usr/bin/perl -w
 # -*-Perl-*- (for my emacs)
-# $Id: heterogeneity_test.PLS 15088 2008-12-04 02:49:09Z bosborne $
 
 use strict;
 

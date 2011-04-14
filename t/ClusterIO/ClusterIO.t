@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: ClusterIO.t 16089 2009-09-15 21:34:07Z cjfields $
+# $Id$
 
 use strict;
 

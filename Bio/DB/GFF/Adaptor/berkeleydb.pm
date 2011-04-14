@@ -1,6 +1,5 @@
 package Bio::DB::GFF::Adaptor::berkeleydb;
 
-# $Id: berkeleydb.pm 14619 2008-03-19 04:02:25Z jason $
 
 =head1 NAME
 

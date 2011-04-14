@@ -1,5 +1,4 @@
 #!perl -w
-# $Id: biogetseq.PLS 15088 2008-12-04 02:49:09Z bosborne $
 #
 # OBDA Registry compliant sequence retrieval script
 #

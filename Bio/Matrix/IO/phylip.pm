@@ -1,4 +1,3 @@
-# $Id: phylip.pm 16168 2009-09-25 21:07:32Z cjfields $
 #
 # BioPerl module for Bio::Matrix::IO::phylip
 #
@@ -55,7 +54,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Jason Stajich
 

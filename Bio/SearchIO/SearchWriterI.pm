@@ -1,5 +1,4 @@
 #-----------------------------------------------------------------
-# $Id: SearchWriterI.pm 15635 2009-04-14 19:11:13Z cjfields $
 #
 # BioPerl module Bio::SearchIO::SearchWriterI
 #

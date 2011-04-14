@@ -1,7 +1,8 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: StandAloneBlast.t 16089 2009-09-15 21:34:07Z cjfields $
+# $Id$
 
 use strict;
+use warnings;
 use File::Spec;
 
 BEGIN { 
@@ -60,13 +61,13 @@ is $ncbi_factory->I('F'), 'F';
 # quoting the value ourselves
 $ncbi_factory->F('m D');
 my $param_string = $ncbi_factory->_setparams('blastall');
-like $param_string, qr/-F "m D"/;
+like $param_string, qr/-F ['"]m D['"]/;
 $ncbi_factory->F('"m S"');
 $param_string = $ncbi_factory->_setparams('blastall');
-like $param_string, qr/-F "m S"/;
+like $param_string, qr/-F ["']m S['"]/;
 $ncbi_factory->F("'m D'");
 $param_string = $ncbi_factory->_setparams('blastall');
-like $param_string, qr/-F 'm D'/;
+like $param_string, qr/-F ['"]m D["']/;
 
 # dashed parameters should work
 my $outfile = test_output_file();

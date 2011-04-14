@@ -1,4 +1,3 @@
-# $Id: BlastTable.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Index::BlastTable
 #
@@ -14,15 +13,15 @@
 
 =head1 NAME
 
-Bio::Index::BlastTable - Indexes tabular Blast reports (-m 9 format) and supports
-retrieval based on query accession(s)
+Bio::Index::BlastTable - Indexes tabular Blast reports (-m 8 or -m 9 format) and
+supports retrieval based on query accession(s)
 
 =head1 SYNOPSIS
 
     use strict;
     use Bio::Index::BlastTable;
     my ($indexfile,$file1,$file2,$query);
-    my $index = Bio::Index::Blast->new(-filename => $indexfile,
+    my $index = Bio::Index::BlastTable->new(-filename => $indexfile,
 				                          -write_flag => 1);
     $index->make_index($file1,$file2);
 
@@ -88,7 +87,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -138,11 +137,8 @@ sub _version {
 =cut
 
 sub new {
-
   my($class,@args) = @_;
-
   my $self = $class->SUPER::new(@args);
-
 }
 
 =head2 Bio::Index::Blast implemented methods
@@ -193,23 +189,28 @@ sub _index_file {
 		 $i,    # Index-number of file being indexed
 	  ) = @_;
 
-	my( $begin,  # Offset from start of file of the start
-		          # of the last found record.
-	  );
-
 	open(my $BLAST, '<', $file) or $self->throw("cannot open file $file\n");
 	my $indexpoint = 0;
 	my $lastline = 0;
+    my $last_query = '';
+    my $is_m9;
 	while( <$BLAST> ) {
-		if(m{^#\s+T?BLAST[PNX]} ) {
-            my $len = length $_;
-            $indexpoint = tell($BLAST)-$len;
-		}
-        if(m{^#\s+Query:\s+([^\n]+)}) {
+        if (m{^#}) {
+            $is_m9 ||= 1;
+            if(m{^#\s+T?BLAST[PNX]}i ) {
+                $indexpoint = tell($BLAST) - length($_);
+            }
+            next
+        }
+        
+        if (/^(?:([^\t]+)\t)(?:[^\t]+\t){7,}/) {
+            next if $last_query eq $1;
+            $indexpoint = tell($BLAST) - length($_) unless $is_m9;
             foreach my $id ($self->id_parser()->($1)) {
 				$self->debug("id is $id, begin is $indexpoint\n");
 				$self->add_record($id, $i, $indexpoint);
 			}
+            $last_query = $1;
         }
 	}
 }

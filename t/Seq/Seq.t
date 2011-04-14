@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: Seq.t 16090 2009-09-15 21:57:56Z cjfields $
+# $Id$
 
 use strict;
 
@@ -7,7 +7,7 @@ BEGIN {
     use lib '.';
     use Bio::Root::Test;
     
-    test_begin(-tests => 62);
+    test_begin(-tests => 72);
 	
 	use_ok('Bio::Seq');
 	use_ok('Bio::Seq::RichSeq');
@@ -94,10 +94,21 @@ is $descr->tagname(), 'description';
 my $trans = $seq->translate();
 is  $trans->seq(), 'TVAST' , 'translated sequence';
 
-# unambiguous two character codons like 'ACN' and 'GTN' should give out an amino acid
-$seq->seq('ACTGTGGCGTCAAC');
+# unambiguous two character codons like 'ACN' and 'GTN' should give out an amino
+# acid ...with the addendum that there should be no assumption by the method
+# to complete the codon unless specified, using the -complete_codons flag.
+
+$seq->seq('ACTGTGGCGTCAACN'); 
 $trans = $seq->translate();
-is $trans->seq(), 'TVAST', 'translated sequence with unambiguous codons';
+is $trans->seq(), 'TVAST', 'translated sequence with explicit unambiguous codons';
+
+$seq->seq('ACTGTGGCGTCAAC'); 
+$trans = $seq->translate();
+is $trans->seq(), 'TVAS', 'translated sequence with unknown unambiguous codons';
+
+$seq->seq('ACTGTGGCGTCAAC'); 
+$trans = $seq->translate(-complete_codons => 1);
+is $trans->seq(), 'TVAST', 'translated sequence with unknown unambiguous codons, completed';
 
 $seq->seq('ACTGTGGCGTCAACA');
 $trans = $seq->translate();
@@ -108,15 +119,15 @@ $trans = $seq->translate();
 is $trans->seq(), 'TVAST', 'translated sequence with unambiguous codons';
 
 $seq->seq('ACTGTGGCGTCAACAGT');
-$trans = $seq->translate();
-is $trans->seq(), 'TVASTV', 'translated sequence with unambiguous codons';
+$trans = $seq->translate(-complete_codons => 1);
+is $trans->seq(), 'TVASTV', 'translated sequence with unknown unambiguous codons, completed';
 
 $seq->seq('ACTGTGGCGTCAACAGTA');
 $trans = $seq->translate();
 is $trans->seq(), 'TVASTV', 'translated sequence with unambiguous codons';
 
 $seq->seq('AC');
-is $seq->translate->seq , 'T', 'translated sequence with unambigious 2 char codon';
+is $seq->translate(-complete_codons => 1)->seq , 'T', 'translated sequence with unknown unambiguous codons, completed';
 
 #difference between the default and full CDS translation
 
@@ -195,3 +206,16 @@ is ($seq->primary_id, $seq->primary_seq->primary_id);
 $seq = Bio::Seq->new(-display_id => 0, -seq => 'GATC');
 
 is $seq->display_id, 0, "Bug #2864";
+
+# transcribe/rev_transcribe
+
+$seq = Bio::Seq->new( -id => 'seq1', -alphabet=>'dna',
+		      -seq=> 'attTcgcatgT' );
+ok my $xseq = $seq->transcribe;
+is $xseq->alphabet, 'rna';
+ok !($xseq->seq =~ /[tT]/);
+is $xseq->seq, 'auuUcgcaugU';
+ok !$xseq->transcribe;
+ok $seq = $xseq->rev_transcribe;
+is $seq->seq, 'attTcgcatgT';
+is $seq->alphabet, 'dna';

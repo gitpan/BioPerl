@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: GenBank.t 15649 2009-04-17 15:08:36Z cjfields $
+# $Id$
 
 use strict;
 
@@ -7,7 +7,7 @@ BEGIN {
 	use lib '.';
 	use Bio::Root::Test;
 	
-	test_begin(-tests => 21,
+	test_begin(-tests => 18,
 			   -requires_modules => [qw(IO::String
 									    LWP::UserAgent
 										HTTP::Request::Common)],
@@ -50,7 +50,7 @@ SKIP: {
         $done++;
     }
     skip('No seqs returned', 5) if !$done;
-    is $done, 4;
+    is $done, 1;
 }
 
 $seq = $seqio = undef;

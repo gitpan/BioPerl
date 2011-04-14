@@ -1,4 +1,3 @@
-# $Id: Test.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Root::Test
 #
@@ -104,7 +103,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Sendu Bala
 
@@ -180,9 +179,14 @@ our @EXPORT = qw(ok use_ok require_ok
                  test_output_dir
                  test_input_file
                  test_network
+                 test_email
                  test_debug
                  float_is
                  );
+
+if (Test::More->can('done_testing')) {
+    push @EXPORT, 'done_testing';
+}
 
 our $GLOBAL_FRAMEWORK = 'Test::More';
 our @TEMP_FILES;
@@ -206,6 +210,10 @@ our @TEMP_FILES;
            -requires_networking => 1|0 (default 0, if true all tests will be
                                         skipped if network tests haven't been
                                         enabled in Build.PL)
+           -requires_email      => 1   (if true the desired number of tests will
+                                        be skipped if either network tests
+                                        haven't been enabled in Build.PL or an
+                                        email hasn't been entered)
            -excludes_os         => str (default none, if OS suppied, all tests
                                         will skip if running on that OS (eg.
                                         'mswin'))
@@ -229,10 +237,10 @@ sub test_begin {
         if ($skip_all) {
             eval "plan skip_all => '$skip_all';";
         }
-        elsif ($tests == 0) {
+        elsif (defined $tests && $tests == 0) {
             eval "plan skip_all => 'All tests are being skipped, probably because the module(s) being tested here are now deprecated';";
         }
-        else {
+        elsif ($tests) {
             eval "plan tests => $tests;";
         }
         
@@ -280,6 +288,10 @@ sub test_begin {
            -requires_networking => 1   (if true the desired number of tests will
                                         be skipped if network tests haven't been
                                         enabled in Build.PL)
+           -requires_email      => 1   (if true the desired number of tests will
+                                        be skipped if either network tests
+                                        haven't been enabled in Build.PL or an
+                                        email hasn't been entered)
 
 =cut
 
@@ -369,7 +381,24 @@ sub test_input_file {
 sub test_network {
     require Module::Build;
     my $build = Module::Build->current();
-    return $build->notes('network');
+    return $build->notes('Network Tests');
+}
+
+=head2 test_email
+
+ Title   : test_email
+ Usage   : my $do_network_tests = test_email();
+ Function: Ask if email address provided
+ Returns : boolean
+ Args    : none
+
+=cut
+
+sub test_email {
+    require Module::Build;
+    my $build = Module::Build->current();
+    # this should not be settable unless the network tests work
+    return $build->notes('email');
 }
 
 =head2 test_debug
@@ -413,7 +442,7 @@ sub _skip {
     
     # handle input strictly
     my $tests = $args{'-tests'};
-    (defined $tests && $tests =~ /^\d+$/) || die "-tests must be supplied and be an int\n";
+    #(defined $tests && $tests =~ /^\d+$/) || die "-tests must be supplied and be an int\n";
     delete $args{'-tests'};
     
     my $req_mods = $args{'-requires_modules'};
@@ -432,7 +461,10 @@ sub _skip {
     
     my $req_net = $args{'-requires_networking'};
     delete $args{'-requires_networking'};
-
+    
+    my $req_email = $args{'-requires_email'};
+    delete $args{'-requires_email'};
+    
     my $req_env = $args{'-requires_env'};
     delete $args{'-requires_env'};
 
@@ -474,7 +506,11 @@ sub _skip {
     if ($req_net && ! test_network()) {
         return ('Network tests have not been requested', $tests, $framework);
     }
-    
+
+    if ($req_email && ! test_email()) {
+        return ('Valid email not provided; required for tests', $tests, $framework);
+    }
+
     if ($req_exe && !$req_exe->executable) {
         my $msg = 'Required executable for '.ref($req_exe).' is not present';
         diag($msg);
@@ -502,7 +538,12 @@ sub _check_module {
     eval "require $mod;";
     
     if ($@) {
-        return "The optional module $mod (or dependencies thereof) was not installed";
+	if ($@ =~ /Can't locate/) {
+	    return "The optional module $mod (or dependencies thereof) was not installed";
+	}
+	else {
+	    return "The optional module $mod generated the following error: \n$@";
+	}
     }
     elsif ($desired_version) {
         no strict 'refs';

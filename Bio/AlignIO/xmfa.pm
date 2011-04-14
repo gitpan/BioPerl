@@ -1,4 +1,3 @@
-# $Id: xmfa.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::xmfa
 #
@@ -50,7 +49,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHORS
 
@@ -225,19 +224,20 @@ sub _process_seq {
     # put away last name and sequence
     if ( $entry =~ m{^>\s*\d+:(\d+)-(\d+)\s([+-]{1})(?:\s+(\S+)\s*(\S\.*)?)?} ) {
         ($start, $end, $seqname, $desc) = ($1, $2, $4, $5);
-        $strand = ($4 eq '+')  ?  1  : -1;
+        $strand = ($3 eq '+')  ?  1  : -1;
     } else {
         $self->throw("Line does not comform to XMFA format:\n$entry");
     }
     my $seqobj = Bio::LocatableSeq->new(
-             -nowarnonempty => 1,
-             -strand      => $strand,
-             -seq         => $seq,
-             -display_id  => $seqname,
-             -description => $desc || $all,
-             -start       => $start,
-             -end         => $end,
-             );
+					-nowarnonempty => 1,
+					-strand      => $strand,
+					-seq         => $seq,
+					-display_id  => $seqname,
+					-description => $desc || $all,
+					-start       => $start,
+					-end         => $end,
+					-alphabet    => $self->alphabet,
+					);
     $self->debug("Reading $seqname\n");
     return $seqobj;
 }

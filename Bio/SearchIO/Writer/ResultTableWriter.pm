@@ -1,4 +1,3 @@
-# $Id: ResultTableWriter.pm 16123 2009-09-17 12:57:27Z cjfields $
 
 =head1 NAME
 
@@ -112,7 +111,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/           
+  https://redmine.open-bio.org/projects/bioperl/           
 
 =head1 AUTHOR 
 
@@ -208,7 +207,8 @@ sub _set_cols {
     if( ref($col_spec_ref) eq 'ARRAY') {
         # printf "%d columns to process\n", scalar(@$col_spec_ref);
         my @col_spec = @{$col_spec_ref};
-        while( my $item = lc(shift @col_spec) ) {
+        while( my $item = shift @col_spec ) {
+            $item = lc($item);
             if( not defined ($map{$item}) ) {
                 $self->throw(-class =>'Bio::Root::BadParameter',
                              -text => "Unknown column name: $item"

@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: InstanceSite.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id$
 
 use strict;
 

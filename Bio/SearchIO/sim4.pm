@@ -1,4 +1,3 @@
-# $Id: sim4.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::SearchIO::sim4
 #
@@ -66,7 +65,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -99,7 +98,7 @@ use Bio::SearchIO::SearchResultEventBuilder;
 use base qw(Bio::SearchIO);
 
 $DEFAULTFORMAT = 'SIM4';
-$DEFAULT_WRITER_CLASS = 'Bio::Search::Writer::HitTableWriter';
+$DEFAULT_WRITER_CLASS = 'Bio::SearchIO::Writer::HitTableWriter';
 
 %ALIGN_TYPES = (
     0 => 'Ruler',

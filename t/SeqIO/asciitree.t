@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: asciitree.t 16168 2009-09-25 21:07:32Z cjfields $
+# $Id$
 
 # `make test'. After `make install' it should work as `perl test.t'
 

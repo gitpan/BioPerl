@@ -1,5 +1,4 @@
 #-----------------------------------------------------------------
-# $Id: ResultI.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module Bio::Search::Result::ResultI
 #
@@ -89,7 +88,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR 
 
@@ -429,6 +428,25 @@ sub algorithm_version{
 =cut
 
 sub algorithm_reference{
+   my ($self) = @_;
+   return '';
+}
+
+=head2 rid
+
+ Title   : rid
+ Usage   : $obj->rid($newval)
+ Function:
+ Returns : value of the BLAST Request ID (eg. RID: ZABJ4EA7014)
+ Args    : newvalue (optional)
+ Comments: The default implementation in ResultI returns an empty string
+           rather than throwing a NotImplemented exception, since
+           the RID may not always be available and is not critical.
+           See: (1) http://www.ncbi.nlm.nih.gov/Class/MLACourse/Modules/BLAST/rid.html
+                (2) http://www.ncbi.nlm.nih.gov/staff/tao/URLAPI/new/node63.html
+=cut
+
+sub rid{
    my ($self) = @_;
    return '';
 }

@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: SeqFeatCollection.t 16151 2009-09-22 16:52:29Z cjfields $
+# $Id$
 
 use strict;
 

@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: GuessSeqFormat.t 15112 2008-12-08 18:12:38Z sendu $
+# $Id$
 
 
 use strict;
@@ -8,14 +8,14 @@ BEGIN {
    use lib '.';
    use Bio::Root::Test;
    
-   test_begin(-tests => 49);
+   test_begin(-tests => 52);
    
    use_ok('Bio::SeqIO');
    use_ok('Bio::AlignIO');
    use_ok('Bio::Tools::GuessSeqFormat');
 }
 
-my @seqformats = qw{ ace embl fasta gcg genbank mase
+my @seqformats = qw{ ace embl fasta fastq gcg genbank mase
                         pfam pir raw swiss tab game};
 
 my $format;
@@ -76,10 +76,10 @@ foreach $format (@seqformats) {
 # AlignIO formats
 #
 
-@seqformats = qw{ aln:clustalw fasta mase msf nexus pfam phylip
+@seqformats = qw{ aln:clustalw fasta fastq mase msf nexus pfam phylip
                   prodom stockholm}; # not selex (same as pfam, mainly)
 
-my %no_alignio_module = map {$_=>1} qw {};
+my %no_alignio_module = map {$_=>1} qw { fastq };
 
 foreach my $ext (@seqformats) {
     my $format;

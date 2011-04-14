@@ -1,4 +1,3 @@
-# $Id: base.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Restriction::IO::base
 #
@@ -55,7 +54,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR
 
@@ -123,7 +122,7 @@ sub _initialize {
         $self->throw("Format $format not retrievable using 'current'") if (!exists $FILE_FORMAT{$format});
         my $io = $self->new(-url => 'ftp://ftp.neb.com/pub/rebase/VERSION');
         chomp (my $version = $io->_readline);
-        push @args, (-url => "ftp://ftp.neb.com/pub/rebase/$FILE_FORMAT{$format}.$version");
+        push @args, (-url => "ftp://ftp.neb.com/pub/rebase/$FILE_FORMAT{$format}.$version", -retries => 1);
     }
 
     $self->_companies;

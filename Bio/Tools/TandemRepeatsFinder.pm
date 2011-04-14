@@ -81,7 +81,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Eric Just
 
@@ -225,7 +225,7 @@ You appear to be using Verion $version.  Use at your own risk.}) if ($version !=
 
         # Parse Sequence identifier
         # i.e. Sequence: DDB0215018 |Masked Chromosomal Sequence| Chr 2f
-        elsif ( /^Sequence: ([^\s]+)\s(.+)/ ) {
+        elsif ( /^Sequence: ([^\s]+)\s(.+)?/ ) {
             my $seq_id          = $1;
             my $seq_description = $2;
             $self->warn("parsed sequence_id: $seq_id\n") if DEBUG;

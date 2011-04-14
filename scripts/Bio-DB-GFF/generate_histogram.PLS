@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-# $Id: generate_histogram.PLS 15088 2008-12-04 02:49:09Z bosborne $
 
 use strict;
 use lib '.','./blib','../../blib/lib';

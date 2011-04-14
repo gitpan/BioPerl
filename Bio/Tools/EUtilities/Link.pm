@@ -1,4 +1,3 @@
-# $Id: Link.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Tools::EUtilities::Link
 #
@@ -20,11 +19,12 @@ Bio::Tools::EUtilities::Link - general API for accessing data retrieved from eli
 
 =head1 SYNOPSIS
 
-  # ...
+  ...TODO
 
 =head1 DESCRIPTION
 
-  # ...
+Bio::Tools::EUtilities::Link is a loadable plugin for Bio::Tools::EUtilities
+that specifically handles NCBI elink-related data.
 
 =head1 FEEDBACK
 
@@ -56,7 +56,7 @@ Report bugs to the Bioperl bug tracking system to
 help us keep track the bugs and their resolution.
 Bug reports can be submitted via the web.
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR 
 

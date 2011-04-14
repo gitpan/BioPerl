@@ -1,4 +1,3 @@
-# $Id: Fgenesh.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Tools::Fgenesh
 #
@@ -87,7 +86,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Chris Dwan
 
@@ -513,10 +512,10 @@ sub _read_fasta_seq {
       if ($entry =~ /^>FGENESH:\s+(\d+)/) {
          # print STDERR "  this is a predicted gene\n";
          $id  = "_predicted_protein_" . $1;
-      } elsif ($entry =~ /^>FGENESH:\[mRNA\]\s+(\d+)/) {
+      } elsif ($entry =~ /^>FGENESH:\[mRNA\]\s*(\d+)/) {
 	# print STDERR "  this is an mRNA\n";
          $id  = "_predicted_mrna_" . $1;
-      } elsif ($entry =~ /^>FGENESH:\[exon\]\s+Gene:\s+(\d+)/) {
+      } elsif ($entry =~ /^>FGENESH:\[exon\]\s+Gene:\s*(\d+)/) {
          $id  = "_predicted_cds_"  . $1;
       }
       $seq = "";

@@ -1,4 +1,3 @@
-# $Id: Signalp.pm 16123 2009-09-17 12:57:27Z cjfields $
 # Parser module for Signalp Bio::Tools::Signalp
 #
 # 
@@ -70,7 +69,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted va the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR
 

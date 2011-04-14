@@ -1,5 +1,4 @@
 #-----------------------------------------------------------------
-# $Id: Exception.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module Bio::Root::Exception
 #

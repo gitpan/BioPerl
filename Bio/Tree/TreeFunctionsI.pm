@@ -1,4 +1,3 @@
-# $Id: TreeFunctionsI.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Tree::TreeFunctionsI
 #
@@ -62,7 +61,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Jason Stajich, Aaron Mackey, Justin Reese
 
@@ -90,8 +89,6 @@ Internal methods are usually preceded with a _
 
 package Bio::Tree::TreeFunctionsI;
 use strict;
-
-use UNIVERSAL qw(isa);
 
 use base qw(Bio::Tree::TreeI);
 
@@ -638,10 +635,12 @@ sub force_binary {
 
     my @descs = $node->each_Descendent;
     if (@descs > 2) {
-        $self->warn("Node ".($node->can('node_name') ? ($node->node_name || $node->id) : $node->id).
-                    " has more than two descendants\n(".
-                    join(", ", map { $node->can('node_name') ? ($node->node_name || $node->id) : $node->id } @descs).
-                    ")\nWill do an arbitrary balanced split");
+        # Removed overly verbose warning - cjfields 3-12-11
+        
+        # Many nodes have no identifying names, a simple warning is probably
+        # enough.
+
+        $self->warn("Node has more than two descendants\nWill do an arbitrary balanced split");
         my @working = @descs;
         # create an even set of artifical nodes on which to later hang the descs
         my $half = @working / 2;
@@ -715,37 +714,6 @@ sub simplify_to_leaves_string {
     return join(',', @data);
 }
 
-# safe tree clone that doesn't seg fault
-
-=head2 clone()
-
- Title   : clone
- Alias   : _clone
- Usage   : $tree_copy = $tree->clone();
-           $subtree_copy = $tree->clone($internal_node);
- Function: Safe tree clone that doesn't segfault
-           (of Sendu)
- Returns : Bio::Tree::Tree object
- Args    : [optional] $start_node, Bio::Tree::Node object
-
-=cut
-
-sub clone {
-    my ($self, $parent, $parent_clone) = @_;
-    $parent ||= $self->get_root_node;
-    $parent_clone ||= $self->_clone_node($parent);
-
-    foreach my $node ($parent->each_Descendent()) {
-        my $child = $self->_clone_node($node);
-        $child->ancestor($parent_clone);
-        $self->_clone($node, $child);
-    }
-    $parent->ancestor && return;
-
-    my $tree = $self->new(-root => $parent_clone);
-    return $tree;
-}
-
 # alias
 sub _clone { shift->clone(@_) }
 
@@ -798,6 +766,7 @@ sub _simplify_helper {
  Function: returns the distance between two given nodes
  Returns : numerical distance
  Args    : -nodes => arrayref of nodes to test
+           or ($node1, $node2)
 
 =cut
 
@@ -805,7 +774,17 @@ sub distance {
     my ($self,@args) = @_;
     my ($nodes) = $self->_rearrange([qw(NODES)],@args);
     if( ! defined $nodes ) {
-	$self->warn("Must supply -nodes parameter to distance() method");
+	$self->warn("Must supply two nodes or -nodes parameter to distance() method");
+	return;
+    }
+    elsif (ref($nodes) eq 'ARRAY') {
+	1;
+    }
+    elsif ( @args == 2) { # assume these are nodes...
+	    $nodes = \@args;
+    }
+    else {
+	$self->warn("Must supply two nodes or -nodes parameter to distance() method");
 	return;
     }
     $self->throw("Must provide 2 nodes") unless @{$nodes} == 2;
@@ -994,7 +973,6 @@ sub reroot {
     
     $tmp_node = undef;
     $new_root->branch_length(undef);
-    $new_root->remove_tag('B');
 
     $old_root = undef;
     $self->set_root_node($new_root);
@@ -1077,22 +1055,24 @@ sub findnode_by_id {
 sub move_id_to_bootstrap{
    my ($tree) = shift;
    for my $node ( grep { ! $_->is_Leaf } $tree->get_nodes ) {
-       $node->bootstrap($node->id);
+       $node->bootstrap($node->id || '');
        $node->id('');
    }
 }
 
 
-=head2 add_traits
+=head2 add_trait
 
-  Example    : $key = $stat->add_traits($tree, $trait_file, 3);
+  Example    : $key = $tree->add_trait($trait_file, 3);
   Description: Add traits to a Bio::Tree:Tree nodes
                of a tree from a file.
   Returns    : trait name
   Exceptions : log an error if a node has no value in the file
+  Args       : name of trait file (scalar string), 
+               index of trait file column (scalar int)
   Caller     : main()
 
-The trait file is a tab-delimied text file and need to have a header
+The trait file is a tab-delimited text file and needs to have a header
 line giving names to traits. The first column contains the leaf node
 ids. Subsequent columns contain different trait value sets. Columns
 numbering starts from 0. The default trait column is the second

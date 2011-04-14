@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id: run_primer3.pl 15087 2008-12-04 02:48:00Z bosborne $
 
 =head1 NAME
 
@@ -33,7 +32,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR
 

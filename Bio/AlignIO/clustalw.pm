@@ -1,4 +1,3 @@
-# $Id: clustalw.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::clustalw
 #
@@ -55,7 +54,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHORS - Peter Schattner
 
@@ -201,11 +200,13 @@ sub next_aln {
             $str =~ s/[^A-Za-z]//g;
             $end = length($str);
         }
-        my $seq = Bio::LocatableSeq->new(
-            -seq   => $alignments{$name},
-            -id    => $sname,
-            -start => $start,
-            -end   => $end
+        my $seq = Bio::LocatableSeq->new
+	    (
+	     '-seq'         => $alignments{$name},
+	     '-display_id'  => $sname,
+	     '-start'       => $start,
+	     '-end'         => $end,
+	    '-alphabet'     => $self->alphabet,
         );
         $aln->add_seq($seq);
     }
@@ -245,7 +246,7 @@ sub write_aln {
             $aln->set_displayname_flat(1);
         }
         $self->_print(
-            sprintf( "CLUSTAL W(%s) multiple sequence alignment\n\n\n",
+            sprintf( "CLUSTAL W (%s) multiple sequence alignment\n\n\n",
                 $CLUSTALPRINTVERSION )
         ) or return;
         $length = $aln->length();

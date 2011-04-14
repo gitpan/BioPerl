@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id: bp_seqret.PLS 15088 2008-12-04 02:49:09Z bosborne $
 # -*-Perl-*- mode (for emacs)
 
 =head1 NAME

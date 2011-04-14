@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id: authors.pl 10084 2006-07-04 22:23:29Z mauricio $
 #
 =head1 NAME
 
@@ -216,7 +215,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 

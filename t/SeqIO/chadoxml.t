@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: chadoxml.t 15364 2009-01-13 17:18:10Z cjfields $
+# $Id$
 
 use strict;
 

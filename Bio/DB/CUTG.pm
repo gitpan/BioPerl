@@ -1,4 +1,3 @@
-# $Id: CUTG.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::DB::CUTG
 #
@@ -82,7 +81,7 @@ with code and data examples if at all possible.
 Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHORS
 
@@ -219,7 +218,7 @@ sub get_request {
 	$self->url($URL);
 
 	###1st of all search DB to check species exists and is unique
-	my $nameparts =  join "+", $self->sp =~ /(\w+)/g;
+	my $nameparts =  join "+", $self->sp =~ /(\S+)/g;
 	my $search_url = $self->url . "/codon/cgi-bin/spsearch.cgi?species=" 
 					. $nameparts . "&c=s";
 	my $rq = HTTP::Request->new(GET=>$search_url);
@@ -287,7 +286,8 @@ sub _check_args {
 
 	###checks parameters for matching $QUERYKEYS
 	my @args = @_;
-	while (my $key = lc(shift @args)) {
+	while (my $key = shift @args) {
+        $key = lc($key);
 		$key =~ s/\-//;
 		
 		if (!exists ($QUERY_KEYS->{$key})) {

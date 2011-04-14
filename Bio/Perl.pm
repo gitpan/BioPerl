@@ -1,4 +1,3 @@
-# $Id: Perl.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Perl
 #
@@ -96,7 +95,7 @@ with code and data examples if at all possible.
 Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution. Bug reports can be submitted via the web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Ewan Birney
 
@@ -624,7 +623,7 @@ sub reverse_complement {
    } else {
 
      # check this looks vaguely like DNA
-     my $n = ( $scalar =~ tr/ATGCNatgc/ATGCNatgcn/ );
+     my $n = ( $scalar =~ tr/ATGCNatgcn/ATGCNatgcn/ );
 
      if( $n < length($scalar) * 0.85 ) {
        confess("Sequence [$scalar] is less than 85% ATGCN, which doesn't look very DNA to me");

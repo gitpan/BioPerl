@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: pICalculator.t 15505 2009-02-05 18:22:58Z cjfields $
+# $Id$
 
 use strict;
 

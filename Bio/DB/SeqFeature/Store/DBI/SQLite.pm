@@ -151,14 +151,17 @@ use Bio::DB::GFF::Util::Rearrange 'rearrange';
 use Bio::SeqFeature::Lite;
 use File::Spec;
 use constant DEBUG=>0;
+use constant EXPERIMENTAL_COVERAGE=>1;
 
 # Using same limits as MySQL adaptor so I don't have to make something up.
 use constant MAX_INT =>  2_147_483_647;
 use constant MIN_INT => -2_147_483_648;
-use constant MAX_BIN =>  1_000_000_000;  # size of largest feature = 1 Gb
-use constant MIN_BIN =>  1000;           # smallest bin we'll make - on a 100 Mb chromosome, there'll be 100,000 of these
-use constant DEBUG_NONSPATIAL=>0;
+use constant SUMMARY_BIN_SIZE =>  1000;  # we checkpoint coverage this often, about 20 meg overhead per feature type on hg
+use constant USE_SPATIAL=>0;
 
+# The binning scheme places each feature into a bin.
+# Bins are variably sized as powers of two. For example,
+# there are 585 bins of size 2**17 (131072 bases)
 my (@BINS,%BINS);
 {
     @BINS = map {2**$_} (17, 20, 23, 26, 29);  # TO DO: experiment with different bin sizes
@@ -329,7 +332,7 @@ END
   id    integer not null,
   child integer not null
 );
-create index index_parent2child_id_child on parent2child(id,child);
+create unique index index_parent2child_id_child on parent2child(id,child);
 END
 
 	  meta => <<END,
@@ -360,8 +363,19 @@ END
 create index index_feature_location on feature_location(seqid,bin,start,end);
 END
 
-  }
+    }
 
+  if (EXPERIMENTAL_COVERAGE) {
+    $defs->{interval_stats} = <<END;
+(
+   typeid            integer not null,
+   seqid             integer not null,
+   bin               integer not null,
+   cum_count         integer not null,
+   unique(typeid,seqid,bin)
+);
+END
+  }
   return $defs;
 }
 
@@ -385,10 +399,7 @@ sub _create_spatial_index{
     my $dbh   = $self->dbh;
     local $dbh->{PrintError} = 0;
     $dbh->do("DROP TABLE IF EXISTS feature_index"); # spatial index
-    if (DEBUG_NONSPATIAL) {
-	warn "DELIBERATELY BREAKING RTREE FUNCTIONALITY";
-	$dbh->do("CREATE VIRTUAL TABLE feature_index USING BTREE(id,seqid,bin,start,end)");
-    } else {
+    if (USE_SPATIAL) {
 	$dbh->do("CREATE VIRTUAL TABLE feature_index USING RTREE(id,seqid,bin,start,end)");
     }
 }
@@ -406,7 +417,7 @@ sub _finish_bulk_update {
   my $dbh  = $self->dbh;
   my $dir = $self->{dumpdir} || '.';
 
-  $dbh->begin_work; # making this a transaction greatly improves performance
+  $self->begin_work; # making this a transaction greatly improves performance
   
   for my $table ('feature', $self->index_tables) {
     my $fh = $self->dump_filehandle($table);
@@ -436,7 +447,7 @@ sub _finish_bulk_update {
 	} elsif ($table =~ /$feature_index$/) {
 	    $sth = $dbh->prepare(
 		$self->_has_spatial_index ?"REPLACE INTO $qualified_table VALUES (?,?,?,?,?)"
-		                          :"REPLACE INTO $qualified_table VALUES (?,?,?,?,?)"
+		                          :"REPLACE INTO $qualified_table (id,seqid,bin,start,end) VALUES (?,?,?,?,?)"
 		);
 	} else { # attribute or name
 	    $sth = $dbh->prepare("REPLACE INTO $qualified_table VALUES (?,?,?)");
@@ -450,7 +461,7 @@ sub _finish_bulk_update {
     $fh->close();
     unlink $path;
   }
-  $dbh->commit; # commit the transaction
+  $self->commit; # commit the transaction
   delete $self->{bulk_update_in_progress};
   delete $self->{filehandles};
 }
@@ -459,6 +470,21 @@ sub index_tables {
     my $self = shift;
     my @t    = $self->SUPER::index_tables;
     return (@t,$self->_feature_index_table);
+}
+
+sub _enable_keys  { }  # nullop
+sub _disable_keys { }  # nullop
+
+sub _fetch_indexed_features_sql {
+    my $self = shift;
+    my $location_table       = $self->_qualify('feature_location');
+    my $feature_table        = $self->_qualify('feature');
+    return <<END;
+    SELECT typeid,seqid,start-1,end
+  FROM $location_table as l,$feature_table as f 
+ WHERE l.id=f.id AND f.\"indexed\"=1 
+  ORDER BY typeid,seqid,start
+END
 }
 
 ###
@@ -681,7 +707,7 @@ sub _location_sql {
 
   # the additional join on the location_list table badly impacts performance
   # so we build a copy of the table in memory
-  my $seqid = $self->_locationid($seq_id) || 0; # zero is an invalid primary ID, so will return empty
+  my $seqid = $self->_locationid_nocreate($seq_id) || 0; # zero is an invalid primary ID, so will return empty
 
   my $feature_index = $self->_feature_index_table;
   my $from  = "$feature_index as fi";
@@ -740,7 +766,7 @@ sub _name_sql {
   my $from  = "$name_table as n";
   my ($match,$string) = $self->_match_sql($name);
 
-  my $where = "n.id=$join AND lower(n.name) $match";
+  my $where = "n.id=$join AND n.name $match";
   $where   .= " AND n.display_name>0" unless $allow_aliases;
   return ($from,$where,'',$string);
 }
@@ -856,7 +882,7 @@ sub _types_sql {
       ($primary_tag,$source_tag) = split ':',$type,2;
     }
 
-    if (defined $source_tag) {
+    if (length $source_tag) {
       push @matches,"lower(tl.tag)=lower(?)";
       push @args,"$primary_tag:$source_tag";
     } else {
@@ -896,7 +922,7 @@ sub replace {
 REPLACE INTO $features (id,object,"indexed",strand,typeid) VALUES (?,?,?,?,?)
 END
 
-  my ($seqid,$start,$end,$strand,$bin) = $index_flag ? $self->_get_location_and_bin($object) : (undef)x5;
+  my ($seqid,$start,$end,$strand,$bin) = $index_flag ? $self->_get_location_and_bin($object) : (undef)x6;
 
   my $primary_tag = $object->primary_tag;
   my $source_tag  = $object->source_tag || '';
@@ -955,12 +981,14 @@ sub bulk_replace {
 sub _get_location_and_bin {
     my $self = shift;
     my $obj  = shift;
-    my $seqid   = $self->_locationid($obj->seq_id);
+    my $seqid   = $self->_locationid($obj->seq_id||'');
     my $start   = $obj->start;
     my $end     = $obj->end;
     my $strand  = $obj->strand;
     return ($seqid,$start,$end,$strand,$self->calculate_bin($start,$end));
 }
+
+
 
 ###
 # Insert one Bio::SeqFeatureI into database. primary_id must be undef
@@ -983,23 +1011,50 @@ END
   $self->flag_for_indexing($dbh->func('last_insert_rowid')) if $self->{bulk_update_in_progress};
 }
 
-=head2 types
+=head2 toplevel_types
 
- Title   : types
- Usage   : @type_list = $db->types
- Function: Get all the types in the database
+ Title   : toplevel_types
+ Usage   : @type_list = $db->toplevel_types
+ Function: Get the toplevel types in the database
  Returns : array of Bio::DB::GFF::Typename objects
  Args    : none
  Status  : public
 
+This is similar to types() but only returns the types of
+INDEXED (toplevel) features.
+
 =cut
+
+sub toplevel_types {
+    my $self = shift;
+    eval "require Bio::DB::GFF::Typename" 
+	unless Bio::DB::GFF::Typename->can('new');
+    my $typelist_table      = $self->_typelist_table;
+    my $feature_table       = $self->_feature_table;
+    my $sql = <<END;
+SELECT distinct(tag) from $typelist_table as tl,$feature_table as f
+ WHERE tl.id=f.typeid
+   AND f."indexed"=1
+END
+;
+    $self->_print_query($sql) if DEBUG || $self->debug;
+    my $sth = $self->_prepare($sql);
+    $sth->execute() or $self->throw($sth->errstr);
+
+    my @results;
+    while (my($tag) = $sth->fetchrow_array) {
+	push @results,Bio::DB::GFF::Typename->new($tag);
+    }
+    $sth->finish;
+    return @results;
+}
 
 sub _genericid {
   my $self = shift;
   my ($table,$namefield,$name,$add_if_missing) = @_;
   my $qualified_table = $self->_qualify($table);
   my $sth = $self->_prepare(<<END);
-SELECT id FROM $qualified_table WHERE $namefield=?
+SELECT id FROM $qualified_table WHERE lower($namefield)=lower(?)
 END
   $sth->execute($name) or die $sth->errstr;
   my ($id) = $sth->fetchrow_array;
@@ -1058,9 +1113,26 @@ sub _dump_update_name_index {
   my $dbh     = $self->dbh;
   my ($names,$aliases) = $self->feature_names($obj);
   # unlike DBI::mysql, don't quote, as quotes will be quoted when loaded
-  print $fh join("\t",$id,$_,1),"\n" foreach @$names;
-  print $fh join("\t",$id,$_,0),"\n" foreach @$aliases;
+  print $fh join("\t",$id,lc($_),1),"\n" foreach @$names;
+  print $fh join("\t",$id,lc($_),0),"\n" foreach @$aliases;
 }
+
+sub _update_name_index {
+  my $self = shift;
+  my ($obj,$id) = @_;
+  my $name = $self->_name_table;
+  my $primary_id = $obj->primary_id;
+
+  $self->_delete_index($name,$id);
+  my ($names,$aliases) = $self->feature_names($obj);
+
+  my $sth = $self->_prepare("INSERT INTO $name (id,name,display_name) VALUES (?,?,?)");
+
+  $sth->execute($id,lc $_,1) or $self->throw($sth->errstr)   foreach @$names;
+  $sth->execute($id,lc $_,0) or $self->throw($sth->errstr) foreach @$aliases;
+  $sth->finish;
+}
+
 
 sub _dump_update_attribute_index {
   my $self = shift;
@@ -1133,8 +1205,12 @@ Nathan Weeks - Nathan.Weeks@ars.usda.gov
 
 Copyright (c) 2009 Nathan Weeks
 
+Modified 2010 to support cumulative statistics by Lincoln Stein
+<lincoln.stein@gmail.com>.
+
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself.
+it under the same terms as Perl itself. See the Bioperl license for
+more details.
 
 =cut
 

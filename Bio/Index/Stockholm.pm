@@ -1,4 +1,3 @@
-# $Id: Stockholm.pm 16147 2009-09-22 01:26:32Z cjfields $
 #
 # BioPerl module for Bio::Index::Stockholm
 #
@@ -92,7 +91,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Chris Fields
 

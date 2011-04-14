@@ -1,5 +1,4 @@
 #
-# $Id: SwissProt.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::DB::SwissProt
 #
@@ -86,7 +85,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -119,7 +118,7 @@ use base qw(Bio::DB::WebDBSeqI);
 # global vars
 our $DEFAULTSERVERTYPE = 'ebi';
 our $DEFAULTFORMAT = 'swissprot';
-our $DEFAULTIDTRACKER = 'http://www.expasy.ch';
+# our $DEFAULTIDTRACKER = 'http://www.expasy.ch';
 
 # you can add your own here theoretically.
 our %HOSTS = ( 
@@ -143,7 +142,7 @@ our %HOSTS = (
 	   },
 	   'ebi'    => {
 	       'default' => 'uk',
-	       'baseurl' => 'http://%s/cgi-bin/dbfetch',
+	       'baseurl' => 'http://%s/Tools/dbfetch/dbfetch',
 	       'hosts' => { 
 		   'uk'   => 'www.ebi.ac.uk',
 	       },
@@ -153,6 +152,21 @@ our %HOSTS = (
 			       'style' => 'raw' ],
 	   }
 	   );
+
+our %ID_MAPPING_DATABASES = map {$_ => 1} qw(
+ACC+ID ACC ID UPARC NF50 NF90 NF100 EMBL_ID EMBL PIR UNIGENE_ID P_ENTREZGENEID
+P_GI P_IPI P_REFSEQ_AC PDB_ID DISPROT_ID HSSP_ID DIP_ID MEROPS_ID PEROXIBASE_ID
+PPTASEDB_ID REBASE_ID TCDB_ID 2DBASE_ECOLI_ID AARHUS_GHENT_2DPAGE_ID
+ANU_2DPAGE_ID DOSAC_COBS_2DPAGE_ID ECO2DBASE_ID WORLD_2DPAGE_ID ENSEMBL_ID
+ENSEMBL_PRO_ID ENSEMBL_TRS_ID P_ENTREZGENEID GENOMEREVIEWS_ID KEGG_ID TIGR_ID
+UCSC_ID VECTORBASE_ID AGD_ID ARACHNOSERVER_ID BURULIST_ID CGD CYGD_ID
+DICTYBASE_ID ECHOBASE_ID ECOGENE_ID EUHCVDB_ID FLYBASE_ID GENECARDS_ID
+GENEDB_SPOMBE_ID GENEFARM_ID H_INVDB_ID HGNC_ID HPA_ID LEGIOLIST_ID LEPROMA_ID
+LISTILIST_ID MAIZEGDB_ID MIM_ID MGI_ID MYPULIST_ID NMPDR ORPHANET_ID PHARMGKB_ID
+PHOTOLIST_ID PSEUDOCAP_ID RGD_ID SAGALIST_ID SGD_ID SUBTILIST_ID TAIR_ID
+TUBERCULIST_ID WORMBASE_ID WORMPEP_ID XENBASE_ID ZFIN_ID EGGNOG_ID OMA_ID
+ORTHODB_ID BIOCYC_ID REACTOME_ID CLEANEX_ID GERMONLINE_ID DRUGBANK_ID
+NEXTBIO_ID);
 
 # new modules should be a little more lightweight and
 # should use Bio::Root::Root
@@ -377,12 +391,12 @@ sub servertype {
 
 sub hostlocation {
     my ($self, $location ) = @_;
-    $location = lc $location;
     my $servertype = $self->servertype;
     $self->throw("Must have a valid servertype defined not $servertype")
 	unless defined $servertype; 
     my %hosts = %{$HOSTS{$servertype}->{'hosts'}};
     if( defined $location && $location ne '' ) {
+    $location = lc $location;
 	if( ! $hosts{$location} ) {
 	    $self->throw("Must specify a known host, not $location,".
 			 " possible values (".
@@ -468,26 +482,63 @@ sub request_format {
 
 sub idtracker {
     my ($self, $id) = @_;
-    return unless defined $id;
-    my $st = $self->servertype;
-    my $base = ($st eq 'expasy') ? "http://".$HOSTS{$st}->{'hosts'}->{$self->hostlocation}
-        : $DEFAULTIDTRACKER;
-    my $url = $base.'/cgi-bin/idtracker?id='.$id;
-    my $response;
-    eval {$response = $self->ua->get($url)};
-    if ($@ || $response->is_error) {
-        my $error = $@ || $response->error_as_HTML;
-        $self->throw("Error:\n".$error);
+    $self->deprecated(
+         -message => 'The SwissProt IDTracker service is no longer available, '.
+                     'use id_mapper() instead',
+         -warn_version    => 1.006, # warn if $VERSION is >= this version
+         -throw_version   => 1.007 # throw if $VERSION is >= this version
+         );
+}
+
+=head2 id_mapper
+
+ Title   : id_tracker
+ Usage   : my $map = $self->id_mapper( -from => '',
+                                       -to   => '',
+                                       -ids  => \@ids);
+ Function: Retrieve new ID using old ID. 
+ Returns : hash reference of successfully mapped IDs
+ Args    : -from : database mapping from
+           -to   : database mapped to
+           -ids  : a single ID or array ref of IDs to map
+ Note    : For a list of valid database IDs, see:
+           http://www.uniprot.org/faq/28#id_mapping_examples
+
+=cut
+
+sub id_mapper {
+    my $self = shift;
+    my ($from, $to, $ids) = $self->_rearrange([qw(FROM TO IDS)], @_);
+    for ($from, $to) {
+        $self->throw("$_ is not a recognized database") if !exists $ID_MAPPING_DATABASES{$_};
     }
-    if ($response->content =~ /was renamed to <b>(.*?)<\/b>/) {
-        return $1;
-    } elsif ($response->content =~ /<tr><th>Entry name<\/th><th>Accession number<\/th><th>Release created<\/th><\/tr>/){
-        # output indicates no mapping needed, return original ID
-        return $id;
+    my @ids = ref $ids ? @$ids : $ids;
+    my $params = {
+        from => $from,
+        to => $to,
+        format => 'tab',
+        query => join(' ',@ids)
+    };
+    my $ua = $self->ua;
+    push @{ $ua->requests_redirectable }, 'POST';
+    my $response = $ua->post("http://www.uniprot.org/mapping/", $params);
+    while (my $wait = $response->header('Retry-After')) {
+        $self->debug("Waiting...\n");
+        $self->_sleep;
+        $response = $ua->get($response->base);
+    }
+    
+    my %map;
+    if ($response->is_success) {
+        for my $line (split("\n", $response->content)) {
+            my ($id_from, $id_to) = split(/\s+/, $line, 2);
+            next if $id_from eq 'From';
+            $map{$id_from} = $id_to;
+        }
     } else {
-        $self->warn("Unknown response:\n".$response->content);
-        return
+        $self->throw("Error: ".$response->status_line."\n");
     }
+    \%map;
 }
 
 1;

@@ -1,4 +1,3 @@
-# $Id: SeqUtils.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::SeqUtils
 #
@@ -112,7 +111,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
@@ -588,7 +587,7 @@ sub revcom_with_features{
     } 
 
     #move features
-    $revcom->add_SeqFeature(map {$self->_feature_revcom($_, $seq->length)} $seq->get_SeqFeatures);
+    $revcom->add_SeqFeature(map {$self->_feature_revcom($_, $seq->length)} reverse $seq->get_SeqFeatures);
     return $revcom;
 }
 

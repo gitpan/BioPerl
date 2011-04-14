@@ -211,7 +211,8 @@ sub new {
   $self->{start}   = $arg{-start};
   $self->{stop}    = exists $arg{-end} ? $arg{-end} : $arg{-stop};
   $self->{ref}     = $arg{-seq_id} || $arg{-ref};
-  for my $option (qw(class url seq phase desc attributes primary_id)) {
+  $self->{attributes}     = $arg{-attributes} || $arg{-tag};
+  for my $option (qw(class url seq phase desc primary_id)) {
     $self->{$option} = $arg{"-$option"} if exists $arg{"-$option"};
   }
 
@@ -432,7 +433,7 @@ sub dna {
 
 =cut
 
-sub display_name { shift->name }
+sub display_name { shift->name(@_) }
 
 *display_id = \&display_name;
 
@@ -498,7 +499,7 @@ sub alphabet{
 
 sub desc {
   my $self = shift;
-  my $d    = $self->notes;
+  my ($d)    = $self->notes;
   $self->{desc} = shift if @_;
   $d;
 }
@@ -818,7 +819,8 @@ sub format_attributes {
     my @values = $self->each_tag_value($t);
     push @result,join '=',$self->escape($t),join(',', map {$self->escape($_)} @values) if @values;
   }
-  my $id        = $self->escape($self->_real_or_dummy_id) || $fallback_id;
+#  my $id        = $self->escape($self->_real_or_dummy_id) || $fallback_id;
+  my $id        = $fallback_id || $self->escape($self->_real_or_dummy_id);
 
   my $parent_id;
   if (@$parent) {

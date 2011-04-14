@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: RefSeq.t 15291 2009-01-05 04:22:36Z cjfields $
+# $Id$
 
 use strict;
 

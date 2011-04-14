@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: rnamotif.t 15257 2008-12-24 05:27:05Z cjfields $
+# $Id$
 
 use strict;
 

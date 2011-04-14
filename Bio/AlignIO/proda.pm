@@ -1,4 +1,3 @@
-# $Id: proda.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::AlignIO::proda
 #
@@ -57,7 +56,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHORS - Albert Vilella
 
@@ -223,11 +222,12 @@ sub next_aln {
             $end = length($str);
         }
         my $seq = Bio::LocatableSeq->new(
-            -seq   => $alignments{$name},
-            -id    => $sname,
-            -start => $start,
-            -end   => $end
-        );
+					 -seq      => $alignments{$name},
+					 -id       => $sname,
+					 -start    => $start,
+					 -end      => $end,
+					 -alphabet => $self->alphabet,
+					 );
         $aln->add_seq($seq);
     }
     

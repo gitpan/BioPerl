@@ -1,5 +1,4 @@
 #
-# $Id: Qual.pm 16168 2009-09-25 21:07:32Z cjfields $
 #
 # BioPerl module for Bio::DB::Qual
 #

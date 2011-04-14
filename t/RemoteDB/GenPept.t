@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: GenPept.t 16089 2009-09-15 21:34:07Z cjfields $
+# $Id$
 
 use strict;
 
@@ -20,6 +20,7 @@ my %expected_lengths = (
     'AAC06201'  => 353,
     'AAD15290'  => 136,
     'P31383'    => 635,
+    '2AAA_YEAST' => 635
 );
 
 my ($gb, $seq, $seqio);

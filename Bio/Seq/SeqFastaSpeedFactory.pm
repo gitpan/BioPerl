@@ -1,4 +1,3 @@
-# $Id: SeqFastaSpeedFactory.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::Seq::SeqFastaSpeedFactory
 #
@@ -61,7 +60,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Jason Stajich
 
@@ -127,7 +126,7 @@ sub create {
     
     my $sequence = $param{'-seq'};
     my $fulldesc = $param{'-desc'};
-    my $id       = $param{'-id'} || $param{'-primary_id'};
+    my $id       = defined $param{'-id'} ? $param{'-id'} : $param{'-primary_id'};
     my $alphabet = $param{'-alphabet'};
 
     my $seq = bless {}, "Bio::Seq";

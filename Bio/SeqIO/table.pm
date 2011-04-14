@@ -1,4 +1,3 @@
-# $Id: table.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::SeqIO::table
 #
@@ -83,7 +82,7 @@ the bugs and their resolution.
 
 Bug reports can be submitted via email or the web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Hilmar Lapp
 

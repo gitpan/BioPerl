@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: Utilities.t 16168 2009-09-25 21:07:32Z cjfields $
+# $Id$
 
 
 use strict;

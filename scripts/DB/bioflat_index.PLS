@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-#$Id: bioflat_index.PLS 15088 2008-12-04 02:49:09Z bosborne $
+#$Id$
 
 =head1 NAME
 

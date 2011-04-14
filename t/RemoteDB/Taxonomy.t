@@ -1,5 +1,5 @@
 # -*-Perl-*- Test Harness script for Bioperl
-# $Id: Taxonomy.t 15635 2009-04-14 19:11:13Z cjfields $
+# $Id$
 
 use strict;
 
@@ -50,7 +50,7 @@ foreach my $db ($db_entrez, $db_flatfile) {
         is ${$n->name('scientific')}[0], $n->node_name;
         
         my %common_names = map { $_ => 1 } $n->common_names;
-        is keys %common_names, 2;
+        is keys %common_names, 3, ref($db).": common names";
         ok exists $common_names{human};
         ok exists $common_names{man};
         
@@ -131,13 +131,13 @@ $h_list->common_names('woman');
 @names = $h_list->common_names;
 is @names, 1;
 @names = $h_flat->common_names;
-is @names, 2;
+is @names, 3;
 
 # you can switch to another database when you need more information, which also
 # merges information in the node from the two different dbs
 $h_list->db_handle($db_flatfile);
 @names = $h_list->common_names;
-is @names, 3;
+is @names, 4;
 
 # form a tree with the list lineage first, preventing a subsequent database
 # change from giving us all those extra ranks
@@ -211,7 +211,7 @@ SKIP: {
     
     my $lca = $db_entrez->get_taxon(314146);
     my @descs = $db_entrez->get_all_Descendents($lca);
-    is @descs, 17;
+    cmp_ok @descs, '>=', 17;
 }
 
 # bug 2461

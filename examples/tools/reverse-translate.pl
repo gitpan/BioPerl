@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id: reverse-translate.pl 15087 2008-12-04 02:48:00Z bosborne $
 
 =head1 NAME
 

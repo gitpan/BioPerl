@@ -1,4 +1,3 @@
-# $Id: DBFetch.pm 16123 2009-09-17 12:57:27Z cjfields $
 #
 # BioPerl module for Bio::DB::DBFetch
 #
@@ -61,7 +60,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - Heikki Lehvaslaiho
 
@@ -290,12 +289,12 @@ sub servertype {
 
 sub hostlocation {
     my ($self, $location ) = @_;
-    $location = lc $location;
     my $servertype = $self->servertype;
     $self->throw("Must have a valid servertype defined not $servertype")
 	unless defined $servertype; 
     my %hosts = %{$self->hosts->{$servertype}->{'hosts'}};
     if( defined $location && $location ne '' ) {
+    $location = lc $location;
 	if( ! $hosts{$location} ) {
 	    $self->throw("Must specify a known host, not $location,".
 			 " possible values (".

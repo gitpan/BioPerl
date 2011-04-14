@@ -100,7 +100,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  http://bugzilla.open-bio.org/
+  https://redmine.open-bio.org/projects/bioperl/
 
 =head1 AUTHOR - George Hartzell
 
@@ -158,7 +158,7 @@ sub next_result {
 	      goto DONE;
 	  }
 	  else {		#    otherwise start a new one.
-	      my ($id, $desc, $md5) = m|>([^ ]*) (.*) (?:md5:(.*))?|;
+	      my ($id, $desc, $md5) = m|>([^ ]*)\s*(.*)\s*(?:md5:(.*))?|;
 
 	      $result = Bio::Search::Result::GenericResult->new();
 	      $result->algorithm('gmap');
@@ -183,8 +183,8 @@ sub next_result {
 		 m|
                    (\d+)[ ]?(.)?[\t]
                    (\d+)[ ]?(.)?[\t]
-                   # TODO chromosome isn't a number... X, Y....
-                   (\+\|\-)([\dxXyY]+):(\d+)[ ](\d+)[ ](.)
+                   # TODO chromosome isn't a number... X, Y, MT....
+                   (\+\|\-)([\dxXyY]+\|MT):(\d+)[ ](\d+)[ ](.)
                    [\t]?(.)?
                   |xo
 		);
@@ -206,11 +206,13 @@ sub next_result {
   if ($result) {
       $hit->add_hsp( $self->_hsp_from_info(\@hsp_info) ) if (@hsp_info);
 
-      my $hit_length;
+      my ($hit_length,$query_length);
       for my $hsp ($hit->hsps) {
 	  $hit_length += $hsp->length();
+      $query_length += $hsp->length('query');
       }
       $hit->length($hit_length);
+      $hit->query_length($query_length);
       # update this now that we actually know something useful.q
       $hit->name($hsp_info[0]->{hit_chromo}); 
 
@@ -234,6 +236,7 @@ sub _hsp_from_info {
     for my $c (@{$info}) {
 	$a->{-query_seq} .= $c->{query_base};
 	$a->{-hit_seq} .= $c->{hit_base};
+    $a->{-homology_seq} .= $c->{query_base} eq $c->{hit_base} ? $c->{hit_base} : ' ';
 	$identical++ if ( $c->{query_base} eq $c->{hit_base} );
     }
 
