@@ -1135,6 +1135,7 @@ t/Biblio/References.t
 t/ClusterIO/ClusterIO.t
 t/ClusterIO/SequenceFamily.t
 t/ClusterIO/unigene.t
+t/Coordinate/CoordinateBoundaryTest.t
 t/Coordinate/CoordinateGraph.t
 t/Coordinate/CoordinateMapper.t
 t/Coordinate/GeneCoordinateMapper.t
@@ -1254,7 +1255,6 @@ t/data/char-interleave.nex
 t/data/char-matrix-spaces.nex
 t/data/characters+trees.nexml.xml
 t/data/characters.nexml.old.xml
-t/data/characters.nexml.xml
 t/data/codeml.mlc
 t/data/codeml315.mlc
 t/data/codeml4.mlc
@@ -1638,6 +1638,10 @@ t/data/nei_gojobori_test.aln
 t/data/neighbor.dist
 t/data/new_blastn.txt
 t/data/newblast.xml
+t/data/nexml/characters.nexml.8.xml
+t/data/nexml/characters.nexml.xml
+t/data/nexml/trees.nexml.8.xml
+t/data/nexml/trees.nexml.xml
 t/data/nhx-bacteria.nhx
 t/data/NM_002254.gb
 t/data/no-genes.genscan
@@ -1862,7 +1866,6 @@ t/data/transfac_pro/site.dat
 t/data/tree_nonewline.nexus
 t/data/Treebase-chlamy-dna.nex
 t/data/trees.nexml.old.xml
-t/data/trees.nexml.xml
 t/data/tricky.wublast
 t/data/trna.strict.rnamotif
 t/data/U58726.gb
