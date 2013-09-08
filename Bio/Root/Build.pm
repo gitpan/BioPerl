@@ -92,7 +92,7 @@ BEGIN {
 use strict;
 use warnings;
 
-our $VERSION = '1.006901'; # pre-1.7
+our $VERSION = '1.006910'; # pre-1.7
 our @extra_types = qw(options excludes_os feature_requires test); # test must always be last in the list!
 our $checking_types = "requires|conflicts|".join("|", @extra_types);
 
@@ -191,33 +191,6 @@ sub script_files {
     }
 
     return $_ = { map {$_,1} @{$self->rscan_dir('scripts', qr/\.PLS$|\.pl$/)} };
-}
-
-# process scripts normally, except that we change name from *.PLS to bp_*.pl
-sub process_script_files {
-    my $self = shift;
-    my $files = $self->find_script_files;
-    return unless keys %$files;
-
-    my $script_dir = File::Spec->catdir($self->blib, 'script');
-    File::Path::mkpath( $script_dir );
-
-    foreach my $file (keys %$files) {
-        my $result = $self->copy_if_modified($file, $script_dir, 'flatten') or next;
-        $self->fix_shebang_line($result) unless $self->os_type eq 'VMS';
-        $self->make_executable($result);
-
-        my $final = File::Basename::basename($result);
-        $final =~ s/\.PLS$/\.pl/;                  # change from .PLS to .pl
-        $final =~ s/^/bp_/ unless $final =~ /^bp/; # add the "bp" prefix
-        $final = File::Spec->catfile($script_dir, $final);
-        # silence scripts
-        #$self->log_info("$result -> $final\n");
-        if (-e $final) {
-            unlink $final || warn "[WARNING] Deleting '$final' failed!\n";
-        }
-        File::Copy::move($result, $final) or die "Can't rename '$result' to '$final': $!";
-    }
 }
 
 # extended to handle extra checking types
@@ -1159,14 +1132,14 @@ sub make_zip {
 # a method that can be called in a Build.PL script to ask the user if they want
 # internet tests.
 # Should only be called if you have tested for yourself that
-# $build->feature('Network') is true
+# $build->feature('Network Tests') is true
 sub prompt_for_network {
     my ($self, $accept) = @_;
 
     my $proceed = $accept ? 0 : $self->y_n("Do you want to run tests that require connection to servers across the internet\n(likely to cause some failures)? y/n", 'n');
 
     if ($proceed) {
-        $self->notes('Network Tests' => 1);
+        $self->notes('network' => 1);
         $self->log_info("  - will run internet-requiring tests\n");
         my $use_email = $self->y_n("Do you want to run tests requiring a valid email address? y/n",'n');
         if ($use_email) {
@@ -1178,6 +1151,102 @@ sub prompt_for_network {
         $self->notes(network => 0);
         $self->log_info("  - will not run internet-requiring tests\n");
     }
+}
+
+# override the build script warnings flag
+sub print_build_script {
+  my ($self, $fh) = @_;
+
+  my $build_package = $self->build_class;
+
+  my $closedata="";
+
+  my $config_requires;
+  if ( -f $self->metafile ) {
+    my $meta = eval { $self->read_metafile( $self->metafile ) };
+    $config_requires = $meta && $meta->{configure_requires}{'Module::Build'};
+  }
+  $config_requires ||= 0;
+
+  my %q = map {$_, $self->$_()} qw(config_dir base_dir);
+
+  $q{base_dir} = Win32::GetShortPathName($q{base_dir}) if $self->is_windowsish;
+
+  $q{magic_numfile} = $self->config_file('magicnum');
+
+  my @myINC = $self->_added_to_INC;
+  for (@myINC, values %q) {
+    $_ = File::Spec->canonpath( $_ );
+    s/([\\\'])/\\$1/g;
+  }
+
+  my $quoted_INC = join ",\n", map "     '$_'", @myINC;
+  my $shebang = $self->_startperl;
+  my $magic_number = $self->magic_number;
+
+  # unique to bioperl, shut off overly verbose warnings on windows, bug 3215
+  my $w = $^O =~ /win/i ? '# no warnings (win)' : '$^W = 1;  # Use warnings';
+
+  print $fh <<EOF;
+$shebang
+
+use strict;
+use Cwd;
+use File::Basename;
+use File::Spec;
+
+sub magic_number_matches {
+  return 0 unless -e '$q{magic_numfile}';
+  local *FH;
+  open FH, '$q{magic_numfile}' or return 0;
+  my \$filenum = <FH>;
+  close FH;
+  return \$filenum == $magic_number;
+}
+
+my \$progname;
+my \$orig_dir;
+BEGIN {
+  $w
+  \$progname = basename(\$0);
+  \$orig_dir = Cwd::cwd();
+  my \$base_dir = '$q{base_dir}';
+  if (!magic_number_matches()) {
+    unless (chdir(\$base_dir)) {
+      die ("Couldn't chdir(\$base_dir), aborting\\n");
+    }
+    unless (magic_number_matches()) {
+      die ("Configuration seems to be out of date, please re-run 'perl Build.PL' again.\\n");
+    }
+  }
+  unshift \@INC,
+    (
+$quoted_INC
+    );
+}
+
+close(*DATA) unless eof(*DATA); # ensure no open handles to this script
+
+use $build_package;
+Module::Build->VERSION(q{$config_requires});
+
+# Some platforms have problems setting \$^X in shebang contexts, fix it up here
+\$^X = Module::Build->find_perl_interpreter;
+
+if (-e 'Build.PL' and not $build_package->up_to_date('Build.PL', \$progname)) {
+   warn "Warning: Build.PL has been altered.  You may need to run 'perl Build.PL' again.\\n";
+}
+
+# This should have just enough arguments to be able to bootstrap the rest.
+my \$build = $build_package->resume (
+  properties => {
+    config_dir => '$q{config_dir}',
+    orig_dir => \$orig_dir,
+  },
+);
+
+\$build->dispatch;
+EOF
 }
 
 1;

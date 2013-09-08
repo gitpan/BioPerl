@@ -190,6 +190,11 @@ use Bio::Annotation::DBLink;
 
 use base qw(Bio::SeqIO);
 
+# Note that a qualifier that exceeds one line (i.e. a long label) will
+# automatically be quoted regardless:
+
+our $FTQUAL_LINE_LENGTH = 60;
+
 our %FTQUAL_NO_QUOTE = map {$_ => 1} qw(
     anticodon           citation
     codon               codon_start
@@ -587,20 +592,30 @@ sub next_seq {
                       -version => $version,
                       -database => $db || 'GenBank',
                       -tagname => 'dblink'));
-                } elsif ( $dbsource =~ /(\S+)([\.:])\s*(\d+)/ ) {
-                    my ($id, $db, $version);
+                } elsif ( $dbsource =~ /(\S+)([\.:])\s*(\S+)/ ) {
+                    my ($db, $version);
+                    my @ids = ();
                     if ($2 eq ':') {
-                        ($db, $id) = ($1, $3);
+                        $db = $1;
+                        # Genbank 192 release notes say this: "The second field can consist of
+                        #     multiple comma-separated identifiers, if a sequence record has
+                        #     multiple DBLINK cross-references of a given type."
+                        #     For example: DBLINK      Project:100,200,300"
+                        @ids = split (/,/, $3);
                     } else {
-                        ($db, $id, $version) = ('GenBank', $1, $3);
+                        ($db, $version) = ('GenBank', $3);
+                        $ids[0] = $1;
                     }
-                    $annotation->add_Annotation('dblink',
-                        Bio::Annotation::DBLink->new(
-                            -primary_id => $id,
-                            -version => $version,
-                            -database => $db,
-                            -tagname => 'dblink')
+                    
+                    foreach my $id (@ids) {
+                        $annotation->add_Annotation('dblink',
+                            Bio::Annotation::DBLink->new(
+                               -primary_id => $id,
+                               -version => $version,
+                               -database => $db,
+                               -tagname => 'dblink')
                         );
+                    }
                 } else {
                     $self->warn("Unrecognized DBSOURCE data: $dbsource\n");
                 }
@@ -1119,7 +1134,9 @@ sub _print_GenBank_FTHelper {
 	    }
 	    # there are almost 3x more quoted qualifier values and they
 	    # are more common too so we take quoted ones first
-	    elsif (!$FTQUAL_NO_QUOTE{$tag}) {
+            #
+            # Long qualifiers, that will be line wrapped, are always quoted
+	    elsif (!$FTQUAL_NO_QUOTE{$tag} or length("/$tag=$value") >= $FTQUAL_LINE_LENGTH) {
 		my ($pat) = ($value =~ /\s/ ? '\s|$' : '.|$');
 		$self->_write_line_GenBank_regex(" "x21,
 						 " "x21,
@@ -1523,7 +1540,7 @@ sub _read_FTHelper_GenBank {
 		    # to be a sequence (translation for example)
 		    # if(($value.$next) =~ /[^A-Za-z\"\-]/o) {
 		    # changed to explicitly look for translation tag - cjf 06/8/29
-		    if ($qualifier ne 'translation') {
+		    if ($qualifier !~ /^translation$/i ) {
 			$value .= " ";
 		    }
 		    $value .= $next;
