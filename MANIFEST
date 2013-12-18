@@ -827,6 +827,7 @@ Changes
 DEPENDENCIES
 DEPRECATED
 doc/Deobfuscator/bin/deob_index.pl
+doc/Deobfuscator/bin/run-deobfuscator-update.pl
 doc/Deobfuscator/Build.PL
 doc/Deobfuscator/cgi-bin/deob_detail.cgi
 doc/Deobfuscator/cgi-bin/deob_flowchart.png
@@ -1153,6 +1154,7 @@ t/data/bl2seq.blastn.rev
 t/data/bl2seq.blastx.out
 t/data/bl2seq.bug940.out
 t/data/bl2seq.out
+t/data/bl2seq.tblastn.out
 t/data/bl2seq.tblastx.out
 t/data/blast.report
 t/data/blast_no_hit_desc.txt
@@ -1819,6 +1821,7 @@ t/data/X98338_Adh-mRNA.gb
 t/data/yeast.tRNAscanSE
 t/data/yn00.mlc
 t/data/yn00_45.mlc
+t/data/YP_007988852.gp
 t/data/ZABJ4EA7014.CH878695.1.blast.txt
 t/Draw/Pictogram.t
 t/lib/Error.pm
