@@ -65,7 +65,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Ewan Birney, James Gilbert
 
@@ -701,9 +701,7 @@ sub _file_handle {
 		my @rec = $self->unpack_record($self->db->{"__FILE_$i"})
 		  or $self->throw("Can't get filename for index : $i");
 		my $file = $rec[0];
-#		my $fh = Symbol::gensym();
-#		open $fh, '<', $file or $self->throw("Can't read file '$file' : $!");
-		open my $fh, '<', $file or $self->throw("Can't read file '$file' : $!");
+		open my $fh, '<', $file or $self->throw("Could not read file '$file': $!");
 		$self->{'_filehandle'}[$i] = $fh; # Cache filehandle
 	}
 	return $self->{'_filehandle'}[$i];
@@ -839,8 +837,11 @@ sub count_records {
 =cut
 
 sub DESTROY {
-	my $self = shift;
-	untie($self->{'_DB'});
+    my $self = shift;
+    untie($self->{'_DB'});
+    # An additional undef was the only way to force
+    # the object to drop the open filehandles for ActivePerl
+    undef $self->{'_DB'};
 }
 
 1;

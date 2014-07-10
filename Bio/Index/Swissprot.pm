@@ -96,7 +96,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via
 the web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Ewan Birney
 
@@ -149,7 +149,7 @@ sub _index_file {
 
 	my $id_parser = $self->id_parser;
 
-	open my $SWISSPROT,'<',$file or $self->throw("Can't read file: $file");
+	open my $SWISSPROT, '<', $file or $self->throw("Could not read file '$file': $!");
     
         my %done_ids;
 

@@ -121,7 +121,7 @@ with code and data examples if at all possible.
 Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted the web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Matthew Pocock
 
@@ -1293,7 +1293,7 @@ sub TIEHANDLE {
 
 sub READLINE {
     my $self = shift;
-    return $self->{'gffio'}->next_feature() unless wantarray;
+    return $self->{'gffio'}->next_feature() || undef unless wantarray;
     my (@list, $obj);
     push @list, $obj while $obj = $self->{'gffio'}->next_feature();
     return @list;

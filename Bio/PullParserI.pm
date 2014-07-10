@@ -110,7 +110,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Sendu Bala
 
@@ -293,7 +293,7 @@ sub chunk {
             else {
                 unless ($FORCE_TEMP_FILE) {
                     # treat a string as a filehandle
-                    open(my $fake_fh, "+<", \$thing); # requires perl 5.8
+                    open my $fake_fh, "+<", \$thing or $self->throw("Could not open file '$thing': $!"); # requires perl 5.8
                     $self->{_chunk} = Bio::Root::IO->new(-fh => $fake_fh);
                 }
                 else {

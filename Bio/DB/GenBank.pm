@@ -147,7 +147,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Aaron Mackey, Jason Stajich
 
@@ -173,7 +173,7 @@ BEGIN {
     $DEFAULTMODE   = 'single';
     $DEFAULTFORMAT = 'gbwithparts';
     %PARAMSTRING = (
-			 'batch' => { 'db'     => 'nucleotide',
+		    'batch' => { 'db'     => 'nucleotide',
 				  'usehistory' => 'n',
 				  'tool'   => 'bioperl'},
 		     'query' => { 'usehistory' => 'y',
@@ -191,7 +191,7 @@ BEGIN {
 				   'usehistory' => 'n',
 				   'tool'   => 'bioperl',
 				   'retmode' => 'text'},
-			 'webenv' => {
+		      'webenv' => {
 				  'query_key'  => 'querykey',
 				  'WebEnv'  => 'cookie',
 				  'db'     => 'nucleotide',

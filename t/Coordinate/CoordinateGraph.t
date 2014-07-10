@@ -1,31 +1,28 @@
-# -*-Perl-*- Test Harness script for Bioperl
-# $Id$
-
 use strict;
+use warnings;
 
-BEGIN { 
-    use lib '.';
-	use Bio::Root::Test;
-	
-	test_begin(-tests => 7);
-    
-	use_ok('Bio::Coordinate::Graph');
+BEGIN {
+    use Bio::Root::Test;
+
+    test_begin(-tests => 7);
+
+    use_ok('Bio::Coordinate::Graph');
 }
 
 ok my $graph = Bio::Coordinate::Graph->new();
 
 # graph structure
 my $dag = {
-	   9  => [],
-	   8  => [9],
-	   7  => [],
-	   6  => [7, 8],
-	   5  => [],
-	   4  => [5],
-	   3  => [6],
-	   2  => [3, 4, 6],
-	   1  => [2]
-	  };
+           9  => [],
+           8  => [9],
+           7  => [],
+           6  => [7, 8],
+           5  => [],
+           4  => [5],
+           3  => [6],
+           2  => [3, 4, 6],
+           1  => [2]
+          };
 
 ok $graph->hash_of_arrays($dag);
 

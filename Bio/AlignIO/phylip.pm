@@ -71,7 +71,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHORS - Heikki Lehvaslaiho and Jason Stajich
 
@@ -190,7 +190,8 @@ sub next_aln {
             return;
         }
     }
-
+    return unless $seqcount and $residuecount;
+    
     # First alignment section. We expect to see a name and (part of) a sequence.
     my $idlen = $self->idlength;
     $count = 0;

@@ -64,11 +64,18 @@ my %recommends = (
     #'Bio::ASN1::EntrezGene'     => [0,
     #    'Parsing entrezgene/Bio::SeqIO::entrezgene [circular dependency!]'],
 
+    'Bio::Phylo'                => [0,
+        'NeXML related modules/Bio::AlignIO::nexml,Bio::Nexml::Factory,'.
+        'Bio::SeqIO::nexml,Bio::TreeIO::nexml'],
+
     'Clone'                     => [0,
         'Cloning objects/Bio::Root::Root,Bio::Tools::Primer3'],
 
     'Convert::Binary::C'        => [0,
         'Strider functionality/Bio::SeqIO::strider'],
+
+    'DB_File'                   => [0,
+        'Database functionality/Bio::Assemby,Bio::DB'],
 
     'Error'                     => [0,
         'OO-based exception handling (very optional)/Bio::Root::Exception'],
@@ -82,7 +89,7 @@ my %recommends = (
         'Bio::Assembly::Tools::ContigSpectrum'],
 
     'GraphViz'                  => [0,
-        'Phylogenetic Network Visulization/Bio::PhyloNetwork::GraphViz'],
+        'Phylogenetic Network Visualization/Bio::PhyloNetwork::GraphViz'],
 
     'HTML::Entities'            => [0,
         'Remote analysis POST submissions/Bio::SearchIO::blastxml'],
@@ -97,6 +104,9 @@ my %recommends = (
         'GenBank+GenPept sequence retrieval, remote http Blast jobs'.
         '/Bio::DB::*,Bio::Tools::Run::RemoteBlast,'.
         'Bio::Tools::Analysis::Protein*,Bio::Tools::Analysis::DNA*'],
+
+    'IO::Scalar'               => [0,
+        'Deal with non-seekable filehandles/Bio::Tools::GuessSeqFormat'],
 
     'List::MoreUtils'           => [0,
         'Back- or reverse-translation of sequences/'.
@@ -135,8 +145,17 @@ my %recommends = (
     'Text::ParseWords'          => [0,
         'Test scripts/Bio::DB::SeqFeature::Store::FeatureFileLoader'],
 
+    'XML::DOM'                  => [0,
+        'Parsing XML/Bio::SeqIO::bsml,Bio::SeqIO::interpro'],
+
+    'XML::DOM::XPath'           => [0,
+        'Parsing XML/Bio::SeqIO::interpro'],
+
+    'XML::LibXML'               => [0,
+        'Parsing XML/Bio::SeqIO::seqxml,Bio::TreeIO::phyloxml'],
+
     'XML::Parser'               => [0,
-        'parsing xml/Bio::Biblio::IO::medlinexml'],
+        'Parsing XML/Bio::Biblio::IO::medlinexml'],
 
     'XML::Parser::PerlSAX'      => [0,
         'Parsing XML/Bio::SeqIO::tinyseq,Bio::SeqIO::game::gameSubs,',
@@ -180,7 +199,6 @@ my $build = Bio::Root::Build->new(
     requires            => {
                             'perl'                      => '5.6.1',
                             'IO::String'                => 0,    # why is this required?
-                            'DB_File'                   => 0,    # why is this required?
                             'Data::Stag'                => 0.11, # Bio::SeqIO::swiss, we can change to 'recommend' if needed
                             'Scalar::Util'              => 0,    # not in Perl 5.6.1, arrived in core in 5.7.3
                             'ExtUtils::Manifest'        => '1.52', # allows spaces in file names
@@ -319,7 +337,7 @@ sub make_bdb_test {
     my $path0 = File::Spec->catfile('t', 'LocalDB', 'SeqFeature.t');
     my $path = File::Spec->catfile('t', 'LocalDB','SeqFeature_BDB.t');
     unlink($path) if (-e $path);
-    open(my $F, ">", $path) || die "Can't create test file\n";
+    open my $F, '>', $path or die "Could not write test file '$path': $!\n";
     print $F <<END;
 system '$^X $path0 -adaptor berkeleydb -create 1 -temp 1';
 END
@@ -351,7 +369,7 @@ sub make_dbi_test {
     my $test_db = $build->notes('test_db');
     my $user = $build->notes('test_user');
     my $pass = $build->notes('test_pass');
-    open my $F,">$path";
+    open my $F, '>', $path or die "Could not write file '$path' for DBI test: $!\n";
     my $str = "$path0 -adaptor DBI::$driver -create 1 -temp 1 -dsn \"$dsn\"";
     $str .= " -user $user" if $user;
     $str .= " -password $pass" if $pass;

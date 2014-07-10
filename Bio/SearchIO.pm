@@ -90,7 +90,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Jason Stajich & Steve Chervitz
 
@@ -726,7 +726,7 @@ sub TIEHANDLE {
 
 sub READLINE {
   my $self = shift;
-  return $self->{'processor'}->next_result() unless wantarray;
+  return $self->{'processor'}->next_result() || undef unless wantarray;
   my (@list, $obj);
   push @list, $obj while $obj = $self->{'processor'}->next_result();
   return @list;

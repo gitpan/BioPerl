@@ -101,7 +101,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Josh Lauricha
 
@@ -276,7 +276,7 @@ sub _index_file {
 	my($self, $file, $i) = @_;
 	my($begin);
 
-	open(my $HMMER, '<', $file) or $self->throw("cannot open file $file");
+	open my $HMMER, '<', $file or $self->throw("Could not read file '$file': $!");
 
 	my $id;
 	my $indexpoint = 0;

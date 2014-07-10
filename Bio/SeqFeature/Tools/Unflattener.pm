@@ -604,7 +604,7 @@ report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Chris Mungall
 
@@ -936,13 +936,13 @@ sub problem {
     if (@sfs) {
 	foreach my $sf (@sfs) {
 	    $desc .=
-	      sprintf("\nSF [$sf]: %s\n",
+	      sprintf("\nSF [$sf]: ". $sf->location->to_FTstring . "; %s\n",
 		      join('; ',
                            $sf->primary_tag,
 			   map {
 			       $sf->has_tag($_) ?
 				 $sf->get_tag_values($_) : ()
-			     } qw(gene product label)));
+			     } qw(locus_tag gene product label)));
 	}
     }
     my $thresh = $self->error_threshold;

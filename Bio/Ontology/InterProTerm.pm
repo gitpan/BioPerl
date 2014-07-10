@@ -70,7 +70,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Peter Dimitrov
 
@@ -533,7 +533,7 @@ sub to_string {
         $s .= "-- Name:\n";
         $s .= $self->name() . "\n";
         $s .= "-- Definition:\n";
-        $s .= $self->definition() . "\n";
+        $s .= ( $self->definition() || '' ) . "\n";
         $s .= "-- Category:\n";
         if ( defined( $self->ontology() ) ) {
             $s .= $self->ontology()->name() . "\n";

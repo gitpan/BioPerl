@@ -188,7 +188,7 @@ the bugs and their resolution. Bug reports can be submitted via email
 or the web:
 
   bioperl-bugs@bio.perl.org
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Florent E Angly
 
@@ -2050,7 +2050,7 @@ sub _draw_graph {
     }
     $viz->add_edge($id1 => $id2, label => $edge_val);
   }
-  open my $fh, '>', $outfile or die "Error: Could not write file '$outfile'\n$!\n";
+  open my $fh, '>', $outfile or $self->throw("Error: Could not write file '$outfile': $!");
   print $fh $viz->as_png;
   close $fh;
   return 1;

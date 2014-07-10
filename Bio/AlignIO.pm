@@ -36,10 +36,10 @@ Bio::AlignIO - Handler for AlignIO Formats
 
     use Bio::AlignIO;
 
-    open MYIN,"testaln.fasta";
+    open MYIN, '<', 'testaln.fasta' or die "Could not read file 'testaln.fasta': $!\n";
     $in  = Bio::AlignIO->newFh(-fh     => \*MYIN,
                                -format => 'fasta');
-    open my $MYOUT, '>', 'testaln.pfam';
+    open my $MYOUT, '>', 'testaln.pfam' or die "Could not write file 'testaln.pfam': $!\n";
     $out = Bio::AlignIO->newFh(-fh     =>  $MYOUT,
                                -format => 'pfam');
 
@@ -254,7 +254,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Peter Schattner
 
@@ -507,7 +507,7 @@ sub TIEHANDLE {
 
 sub READLINE {
   my $self = shift;
-  return $self->{'alignio'}->next_aln() unless wantarray;
+  return $self->{'alignio'}->next_aln() || undef unless wantarray;
   my (@list,$obj);
   push @list,$obj  while $obj = $self->{'alignio'}->next_aln();
   return @list;

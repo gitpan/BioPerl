@@ -13,7 +13,7 @@
 
 =head1 NAME
 
-Bio::SeqIO::FTHelper - Helper class for Embl/Genbank feature tables
+Bio::SeqIO::FTHelper - Helper class for EMBL/Genbank feature tables
 
 =head1 SYNOPSIS
 
@@ -55,7 +55,7 @@ with code and data examples if at all possible.
 Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Ewan Birney
 
@@ -84,8 +84,6 @@ use Bio::Location::Simple;
 use Bio::Location::Fuzzy;
 use Bio::Location::Split;
 
-
-
 use base qw(Bio::Root::Root);
 
 sub new {
@@ -108,7 +106,6 @@ sub new {
            location strings. The ID (e.g., display_id) of the sequence on which
            this feature is located, optionally a string indicating the source
            (GenBank/EMBL/SwissProt)
-
 
 =cut
 

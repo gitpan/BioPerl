@@ -48,7 +48,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via 
 the web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Peter Schattner
 
@@ -240,6 +240,10 @@ sub _runwublast {
         return;
 	}
     
+    # Use double quotes if executable path have empty spaces
+    if ($exe =~ m/ /) {
+        $exe = "\"$exe\"";
+    }
 	my $commandstring = $exe.$param_string;
     
 	$self->debug("$commandstring\n");

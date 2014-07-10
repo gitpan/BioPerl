@@ -53,7 +53,7 @@ GetOptions(
 my $fh;
 
 if (defined $file) {
-    open($fh, '>', $file) || die "Can't open file : $!";
+    open $fh, '>', $file or die "Could not write file '$file': $!\n";
 } else {
     $fh = \*STDOUT;
 }
@@ -147,7 +147,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Torsten Seemann
 

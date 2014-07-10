@@ -7,7 +7,8 @@ BEGIN {
     use lib '.';
     use Bio::Root::Test;
 
-    test_begin(-tests => 29);
+    test_begin(-tests           => 29,
+               -requires_module => 'Data::Stag');
 
     use_ok('Bio::AlignIO');
 }
@@ -30,7 +31,7 @@ my %files = (
     'testaln.selex'     => ['selex',      1, 1],
     'testaln.mase'      => ['mase',       1, 0],
     'testaln.prodom'    => ['prodom',     1, 0],
-    'testaln.aln'       => ['clustalw',   1, 1],
+    'testaln.clustalw'  => ['clustalw',   1, 1],
     'testaln.metafasta' => ['metafasta',  1, 1],
     'testaln.nexus'     => ['nexus',      1, 1],
     'testaln.po'        => ['po',         1, 1],
@@ -68,7 +69,7 @@ while (my ($file, $fdata) = each %files) {
     if ($out) {
         my $status = 0;
         my $fhin = Bio::AlignIO->newFh(
-           '-file' => test_input_file('testaln.aln'),
+           '-file' => test_input_file('testaln.clustalw'),
                         '-format' => 'clustalw');
         my $fhout = Bio::AlignIO->newFh(
            '-file'  => '>'.test_output_file(),

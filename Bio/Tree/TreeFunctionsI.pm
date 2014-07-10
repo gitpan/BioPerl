@@ -62,7 +62,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Jason Stajich, Aaron Mackey, Justin Reese
 
@@ -1156,7 +1156,7 @@ sub _read_trait_file {
 
     my $trait_name;
     my $trait_values;
-    open my $TRAIT, '<', $file or $self->throw("Could not open file $file: $!\n");
+    open my $TRAIT, '<', $file or $self->throw("Could not read file '$file': $!");
 
     my $first_line = 1;
     while (<$TRAIT>) {

@@ -89,7 +89,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Chris Fields
 
@@ -210,8 +210,7 @@ sub _index_file {
 
   my $id_parser = $self->id_parser;
 
-  open my $STOCKHOLM, '<', $file or 
-  $self->throw("Can't open file for read : $file");
+  open my $STOCKHOLM, '<', $file or $self->throw("Could not read file '$file': $!");
 
   my %done_ids;
     

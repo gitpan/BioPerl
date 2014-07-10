@@ -166,7 +166,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Jason Stajich, Aaron Mackey
 
@@ -904,9 +904,16 @@ sub _parse_distmat {
         last if ( /^\s+$/ && exists $self->{'_summary'}->{'ngmatrix'} );
         next if ( /^\s+$/ || /^NOTE:/i );
         chomp;
-        $_ =~ m/(.+?)\s*(-*\d+?\.\d+?.*)/;
- 		my $seq = $1;
- 		my $rest = $2;
+
+        my ( $seq, $rest );
+        if ( $self->{'_summary'}->{'seqtype'} eq 'YN00' ) {
+             ( $seq, $rest ) = split( /\s+/, $_, 2 );
+        }
+        else {
+            $_ =~ m/(.+?)\s*(-*\d+?\.\d+?.*)/;
+ 	        $seq = $1;
+ 		$rest = $2;
+	}
         $rest = '' unless defined $rest;    # get rid of empty messages
         my $j = 0;
         if ( $self->{'_summary'}->{'seqtype'} eq 'YN00' ) {

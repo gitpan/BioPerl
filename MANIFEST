@@ -943,6 +943,8 @@ maintenance/README
 maintenance/symlink_script.pl
 maintenance/version.pl
 MANIFEST			This list of files
+META.json
+META.yml
 models/biblio.dia
 models/bio_liveseq_variation.dia
 models/bio_map.dia
@@ -1121,6 +1123,7 @@ t/data/AHCYL1.kegg
 t/data/alleles.fas
 t/data/alnfile.fasta
 t/data/amino.fa
+t/data/amphora.newick
 t/data/AnnIX-v003.gbk
 t/data/ar.embl
 t/data/assembly_with_singlets.ace
@@ -1149,6 +1152,7 @@ t/data/biofpc.fpc
 t/data/biorecipe.nhx
 t/data/Bird_Ovomucoids.nex
 t/data/BK000016-tpa.gbk
+t/data/bl2seq+.blastn
 t/data/bl2seq.blastn
 t/data/bl2seq.blastn.rev
 t/data/bl2seq.blastx.out
@@ -1308,6 +1312,7 @@ t/data/EG352462.gbxml
 t/data/empty.bl2seq
 t/data/ENr111.mfa.example.elems
 t/data/entrezgene.dat
+t/data/entrezgene_bug3453.dat
 t/data/ex1.nucl.nhx
 t/data/example.hap
 t/data/example.phase
@@ -1390,7 +1395,6 @@ t/data/gmap_f9.txt
 t/data/GO.defs.test
 t/data/GO.defs.test2
 t/data/headerless.psl
-t/data/hemoglobinA.meg
 t/data/hg16_chroms.gff
 t/data/hmmpfam.out
 t/data/hmmpfam_cs.out
@@ -1402,6 +1406,7 @@ t/data/hmmscan_multi_domain.out
 t/data/hmmscan_sec_struct.out
 t/data/hmmsearch.out
 t/data/hmmsearch3.out
+t/data/hmmsearch3_multi.out
 t/data/hs_est.est2genome
 t/data/hs_fugu.newick
 t/data/hs_owlmonkey.aln
@@ -1733,11 +1738,9 @@ t/data/test.interpro-go.xml
 t/data/test.lasergene
 t/data/test.locuslink
 t/data/test.maq
-t/data/test.mase
 t/data/test.metafasta
 t/data/test.nh
 t/data/test.nhx
-t/data/test.pfam
 t/data/test.phd
 t/data/test.pir
 t/data/test.pln
@@ -1761,12 +1764,13 @@ t/data/test_clear_range.fastq
 t/data/test_data.axt
 t/data/test_singlets.cns.fastq
 t/data/test_singlets.maq
-t/data/testaln.aln
 t/data/testaln.arp
+t/data/testaln.clustalw
 t/data/testaln.fasta
 t/data/testaln.fastq
 t/data/testaln.list
 t/data/testaln.mase
+t/data/testaln.mega
 t/data/testaln.metafasta
 t/data/testaln.msf
 t/data/testaln.nexus
@@ -1806,6 +1810,7 @@ t/data/tricky.wublast
 t/data/trna.strict.rnamotif
 t/data/U58726.gb
 t/data/U71225.gb
+t/data/U71225.gb.mac
 t/data/U71225.gb.unix
 t/data/U71225.gb.win
 t/data/U83300.bsml
@@ -1906,10 +1911,9 @@ t/Restriction/Gel.t
 t/Restriction/IO.t
 t/Root/Exception.t
 t/Root/HTTPget.t
+t/Root/IO.t
 t/Root/RootI.t
-t/Root/RootIO.t
 t/Root/Storable.t
-t/Root/Tempfile.t
 t/Root/Utilities.t
 t/SearchDist.t
 t/SearchIO/axt.t
@@ -1969,7 +1973,6 @@ t/SeqFeature/RangeI.t
 t/SeqFeature/SeqAnalysisParser.t
 t/SeqFeature/SubSeq.t
 t/SeqFeature/Unflattener.t
-t/SeqFeature/Unflattener2.t
 t/SeqIO/abi.t
 t/SeqIO/ace.t
 t/SeqIO/agave.t
@@ -2056,7 +2059,6 @@ t/Tools/Genewise.t
 t/Tools/Genomewise.t
 t/Tools/Genpred.t
 t/Tools/GFF.t
-t/Tools/GuessSeqFormat.t
 t/Tools/Hmmer.t
 t/Tools/IUPAC.t
 t/Tools/Lucy.t
@@ -2120,5 +2122,3 @@ t/Variation/SeqDiff.t
 t/Variation/SNP.t
 t/Variation/Variation_IO.t
 travis_scripts/dependency_installs
-META.yml
-META.json

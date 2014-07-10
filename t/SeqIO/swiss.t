@@ -6,9 +6,10 @@ use strict;
 BEGIN {
     use lib '.';
     use Bio::Root::Test;
-    
-    test_begin(-tests => 247);
-	
+
+    test_begin(-tests           => 247,
+               -requires_module => 'Data::Stag');
+
     use_ok('Bio::SeqIO::swiss');
 }
 
@@ -472,7 +473,7 @@ lives_ok {$seqout->write_seq($seq)};
 
 $seqout->close;
 
-open(my $swissfh, '<', $outfile) || die "Can't open $outfile: $!";
+open my $swissfh, '<', $outfile or die "Could not read file '$outfile': $!\n";
 
 my $seen_gn;
 while (<$swissfh>) {
@@ -481,7 +482,6 @@ while (<$swissfh>) {
         last
     }
 }
-
 close $swissfh;
 
 is $seen_gn, 'bar';

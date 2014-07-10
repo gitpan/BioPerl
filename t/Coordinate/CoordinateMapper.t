@@ -1,20 +1,17 @@
-# -*-Perl-*- Test Harness script for Bioperl
-# $Id$
-
 use strict;
+use warnings;
 
-BEGIN { 
-    use lib '.';
-	use Bio::Root::Test;
-	
-	test_begin(-tests => 175);
-	
-	use_ok('Bio::Location::Simple');
-	use_ok('Bio::Coordinate::Pair');
-	use_ok('Bio::Coordinate::Result::Match');
-	use_ok('Bio::Coordinate::Result::Gap');
-	use_ok('Bio::Coordinate::Chain');
-	use_ok('Bio::Coordinate::Collection');
+BEGIN {
+    use Bio::Root::Test;
+
+    test_begin(-tests => 175);
+
+    use_ok('Bio::Location::Simple');
+    use_ok('Bio::Coordinate::Pair');
+    use_ok('Bio::Coordinate::Result::Match');
+    use_ok('Bio::Coordinate::Result::Gap');
+    use_ok('Bio::Coordinate::Chain');
+    use_ok('Bio::Coordinate::Collection');
 }
 
 my ($c, $value);
@@ -23,16 +20,16 @@ ok $c = Bio::Coordinate::Result::Match-> new;
 ok $c = Bio::Coordinate::Result::Gap-> new;
 
 # propepide
-my $match1 = Bio::Location::Simple->new 
+my $match1 = Bio::Location::Simple->new
     (-seq_id => 'propeptide', -start => 21, -end => 40, -strand=>1 );
 # peptide
 my $match2 = Bio::Location::Simple->new
     (-seq_id => 'peptide', -start => 1, -end => 20, -strand=>1 );
 
 ok my $pair = Bio::Coordinate::Pair->new(-in => $match1,
-					 -out => $match2,
-					 -negative => 0, # false, default
-					);
+                                         -out => $match2,
+                                         -negative => 0, # false, default
+                                        );
 
 ok $pair->test;
 is $pair->strand(), 1; #  = in->strand * out->strand
@@ -45,7 +42,7 @@ my ($count, $pos, $pos2, $res, $match, $res2);
 #
 # match within
 #
-$pos = Bio::Location::Simple->new 
+$pos = Bio::Location::Simple->new
     (-start => 25, -end => 25, -strand=> -1 );
 
 # results are in Bio::Coordinate::Result
@@ -179,8 +176,8 @@ $match1 = Bio::Location::Simple->new
 $match2 = Bio::Location::Simple->new
     (-seq_id => 'to', -start => 2, -end => 11, -strand=>-1 );
 $pair = Bio::Coordinate::Pair->new(-in => $match1,
-				   -out => $match2
-				  );
+                                   -out => $match2
+                                  );
 #
 # match within
 #
@@ -232,7 +229,7 @@ is $res->match->end, 11;
 is $res->match->strand, 1;
 
 #
-# partial match2 =  match & gap 
+# partial match2 =  match & gap
 #
 
 $pos = Bio::Location::Simple->new
@@ -271,15 +268,15 @@ is $gap2->strand, -1;
 #
 
 # propepide
-$match1 = Bio::Location::Simple->new 
+$match1 = Bio::Location::Simple->new
     (-seq_id => 'propeptide', -start => 5, -end => 40, -strand=>1 );
 # peptide
 $match2 = Bio::Location::Simple->new
     (-seq_id => 'peptide', -start => 1, -end => 36, -strand=>1 );
 
 ok $pair = Bio::Coordinate::Pair->new(-in => $match1,
-					 -out => $match2
-					);
+                                      -out => $match2
+                                      );
 
 
 ok my $chain = Bio::Coordinate::Chain->new;
@@ -310,25 +307,25 @@ is $match->strand, 1;
 #         pair1     pair2
 
 # gene
-$match1 = Bio::Location::Simple->new 
+$match1 = Bio::Location::Simple->new
     (-seq_id => 'gene', -start => 5, -end => 9, -strand=>1 );
 # exon2
 $match2 = Bio::Location::Simple->new
     (-seq_id => 'exon1', -start => 1, -end => 5, -strand=>1 );
 
 ok my $pair1 = Bio::Coordinate::Pair->new(-in => $match1,
-					  -out => $match2,
-					);
+                                          -out => $match2,
+                                        );
 # gene
-my $match3 = Bio::Location::Simple->new 
+my $match3 = Bio::Location::Simple->new
     (-seq_id => 'gene', -start => 15, -end => 19, -strand=>1 );
 # exon
 my $match4 = Bio::Location::Simple->new
     (-seq_id => 'exon2', -start => 6, -end => 10, -strand=>1 );
 
 ok my $pair2 = Bio::Coordinate::Pair->new(-in => $match3,
-					  -out => $match4,
-					 );
+                                          -out => $match4,
+                                         );
 
 ok my $transcribe = Bio::Coordinate::Collection->new;
 ok $transcribe->add_mapper($pair1);
@@ -377,15 +374,15 @@ is $res->each_match, 2;
 #
 # create the third pair
 # gene
-my $match5 = Bio::Location::Simple->new 
+my $match5 = Bio::Location::Simple->new
     (-seq_id => 'gene', -start => 25, -end => 29, -strand=>1 );
 # exon
 my $match6 = Bio::Location::Simple->new
     (-seq_id => 'exon3', -start => 11, -end => 15, -strand=>1 );
 
 my $pair3 = Bio::Coordinate::Pair->new(-in => $match5,
-				       -out => $match6
-				      );
+                                       -out => $match6
+                                      );
 
 # create a new collection in wrong order
 $transcribe = Bio::Coordinate::Collection->new;
@@ -408,8 +405,8 @@ load_data($mapper, undef );
 
 # transform a segment entirely within the first rawcontig
 #test_transform ($mapper,
-#		[627012, 2, 5, -1, "rawcontig"],
-#		["chr1", 2, 5, -1]);
+#               [627012, 2, 5, -1, "rawcontig"],
+#               ["chr1", 2, 5, -1]);
 $pos = Bio::Location::Simple->new (-start => 2, -end => 5, -strand => -1);
 $res = $mapper->map($pos);
 is $res->match->start, 2;
@@ -419,9 +416,9 @@ is $res->match->seq_id, '627012';
 
 ## now a split coord
 my @testres = (
-	     [314696, 31917, 31937, -1],
-	     [341, 126, 59773, -1],
-	     [315843, 5332, 5963, +1]
+             [314696, 31917, 31937, -1],
+             [341, 126, 59773, -1],
+             [315843, 5332, 5963, +1]
 );
 $pos = Bio::Location::Simple->new (-start => 383700, -end => 444000, -strand => 1);
 $res = $mapper->map($pos);
@@ -432,9 +429,9 @@ compare (shift @res, shift @testres);
 
 ## now a simple gap
 @testres = (
-	    [627011, 7447, 7507, +1],
-	    ["chr1", 273762, 273781, 1]
-	   );
+            [627011, 7447, 7507, +1],
+            ["chr1", 273762, 273781, 1]
+           );
 $pos = Bio::Location::Simple->new (-start => 273701, -end => 273781, -strand => 1);
 $res = $mapper->map($pos);
 is $res->each_match, 1;
@@ -444,7 +441,7 @@ compare (shift @res, shift @testres);
 compare (shift @res, shift @testres);
 
 ok $mapper->swap;
-$pos = Bio::Location::Simple->new 
+$pos = Bio::Location::Simple->new
     (-start => 2, -end => 5, -strand => -1, -seq_id => '627012');
 $res = $mapper->map($pos);
 is $res->match->start, 2;
@@ -457,14 +454,14 @@ is $res->match->seq_id, 'chr1';
 #
 
 # testing a  simple pair
-$match1 = Bio::Location::Simple->new 
+$match1 = Bio::Location::Simple->new
     (-seq_id => 'a', -start => 5, -end => 17, -strand=>1 );
 $match2 = Bio::Location::Simple->new
     (-seq_id => 'b', -start => 1, -end => 13, -strand=>-1 );
 
 $pair = Bio::Coordinate::Pair->new(-in => $match1,
-					 -out => $match2,
-					);
+                                   -out => $match2,
+                                  );
 
 # split location
 
@@ -503,17 +500,17 @@ my $string;
 #BBB/1-7     -aaaat-tt-
 
 my $s1 = Bio::LocatableSeq->new(-id => 'AAA',
-			    -seq => '--wtatgtng',
-			    -start => 3,
-			    -end => 10,
-  			    -alphabet => 'dna'
-			    );
+                                -seq => '--wtatgtng',
+                                -start => 3,
+                                -end => 10,
+                                -alphabet => 'dna'
+                               );
 my $s2 = Bio::LocatableSeq->new(-id => 'BBB',
-			    -seq => '-aaaat-tt-',
-			    -start => 1,
-			    -end => 7,
-  			    -alphabet => 'dna'
-			    );
+                                -seq => '-aaaat-tt-',
+                                -start => 1,
+                                -end => 7,
+                                -alphabet => 'dna'
+                               );
 $a = Bio::SimpleAlign->new();
 $a->add_seq($s1);
 $a->add_seq($s2);
@@ -526,7 +523,7 @@ is $mapper->return_match, 1;
 is $mapper->return_match(1), 1;
 
 
-$pos = Bio::Location::Simple->new 
+$pos = Bio::Location::Simple->new
     (-start => 4, -end => 8, -strand => 1);
 $res = $mapper->map($pos);
 #print Dumper $res;
@@ -541,7 +538,7 @@ sub compare_arrays {
 
     return 0 unless @$first == @$second;
     for (my $i = 0; $i < @$first; $i++) {
-	return 0 if $first->[$i] ne $second->[$i];
+        return 0 if $first->[$i] ne $second->[$i];
     }
     return 1;
 }
@@ -550,7 +547,7 @@ sub compare_arrays {
 sub compare {
     my ($match, $test) = @_;
     is $match->seq_id eq $test->[0], 1,
-	"Match: |". $match->seq_id. "| Test: ". $test->[0]. "|";
+        "Match: |". $match->seq_id. "| Test: ". $test->[0]. "|";
     is $match->start, $test->[1];
     is $match->end, $test->[2];
     is $match->strand, $test->[3];
@@ -664,26 +661,26 @@ chr1	625357	1189804	1213915	1	24112	1
 chr1	625359	1214016	1216330	1	2315	1
 } );
     # test the auto-sorting feature
-    #	@sgp_dump = reverse (@sgp_dump) if defined $reverse; 
+    #	@sgp_dump = reverse (@sgp_dump) if defined $reverse;
 
     my $first = 1;
     for my $line ( @sgp_dump ) {
-	if( $first ) { $first = 0; next; }
-	my ( $chr_name, $contig_id, $chr_start, $chr_end,
-	     $contig_start, $contig_end, $contig_strand ) =
-		 split ( /\t/, $line );
+        if( $first ) { $first = 0; next; }
+        my ( $chr_name, $contig_id, $chr_start, $chr_end,
+             $contig_start, $contig_end, $contig_strand ) =
+                 split ( /\t/, $line );
 
-	my $match1 = Bio::Location::Simple->new
-	    (-seq_id => $chr_name, -start => $chr_start,
-	     -end => $chr_end, -strand=>1 );
-	my $match2 = Bio::Location::Simple->new
-	    (-seq_id => $contig_id, -start => $contig_start,
-	     -end => $contig_end, -strand=>$contig_strand );
+        my $match1 = Bio::Location::Simple->new
+            (-seq_id => $chr_name, -start => $chr_start,
+             -end => $chr_end, -strand=>1 );
+        my $match2 = Bio::Location::Simple->new
+            (-seq_id => $contig_id, -start => $contig_start,
+             -end => $contig_end, -strand=>$contig_strand );
 
-	my $pair = Bio::Coordinate::Pair->new(-in => $match1,
-					      -out => $match2,
-					     );
-	$map->add_mapper($pair);
+        my $pair = Bio::Coordinate::Pair->new(-in => $match1,
+                                              -out => $match2,
+                                             );
+        $map->add_mapper($pair);
     }
     return $map;
 }

@@ -85,7 +85,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Lincoln Stein
 
@@ -431,14 +431,14 @@ sub postprocess_data {
   }
 
   elsif ($args{'type'} eq 'file') {
-    open (F,$args{'location'}) or $self->throw("Couldn't open $args{location}: $!");
+    open my $F, '<', $args{'location'} or $self->throw("Could not read file '$args{location}': $!");
     # this is dumb, but the error may be anywhere on the first three lines because the
     # CGI headers are sometimes printed out by the server...
-    my @data = grep {defined $_} (scalar <F>,scalar <F>,scalar <F>);
+    my @data = grep {defined $_} (scalar <$F>, scalar <$F>, scalar <$F>);
+    close $F;
     if (join('',@data) =~ /^ERROR (\d+) (.+)/m) {
       $self->throw("BioFetch Error $1: $2");
     }
-    close F;
   }
 
   else {

@@ -242,7 +242,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl
+  https://github.com/bioperl/bioperl-live/issues
 
 
 =head1 SEE ALSO
@@ -445,7 +445,7 @@ sub extract_pod {
 
     $stats{'files'}++;
 
-    open my $fh, $File::Find::name or die "deob_index.pl: couldn't open $file:$!\n";
+    open my $fh, '<', $File::Find::name or die "deob_index.pl: could not read file '$file': $!\n";
 
     # these have to be done in order
     my ( $pkg_name, $short_desc ) = get_pkg_name($fh);

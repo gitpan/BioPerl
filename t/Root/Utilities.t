@@ -4,13 +4,13 @@
 
 use strict;
 
-BEGIN { 
+BEGIN {
     use lib '.';
     use Bio::Root::Test;
-    
+
     test_begin(-tests => 56);
-    
-	use_ok('Bio::Root::Utilities');
+
+    use_ok('Bio::Root::Utilities');
 }
 
 # Object creation
@@ -77,9 +77,15 @@ SKIP: {
     my $gzip = $u->find_exe('gzip');
     skip "gzip not found, skipping gzip tests", 12 unless $gzip;
     ok -x $gzip;
-    
+
     # test compression/decompression of a simple file
     my $zfile = $u->compress($file);
+
+    # In Windows, the folder separator '\' may brake
+    # the following qr{}, so change it to '/'
+    $zfile =~ s'\\'/'g;
+    $file  =~ s'\\'/'g;
+
     like $zfile, qr/$file.gz|tmp.bioperl.gz/;
     ok -s $zfile;
     if ($zfile =~ /tmp.bioperl.gz/) {

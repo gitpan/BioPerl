@@ -4,20 +4,20 @@
 use strict;
 
 BEGIN {
-	eval {require Error;};
-	
-	use lib '.';
-	use Bio::Root::Test;
-	
-	test_begin(-tests => 8,
-			   -requires_module => 'Error');
-	
-	use lib './examples/root/lib';
-	use_ok('TestObject');
+    eval {require Error;};
+
+    use lib '.';
+    use Bio::Root::Test;
+
+    test_begin(-tests => 8,
+               -requires_module => 'Error');
+
+    use lib './examples/root/lib';
+    use_ok('TestObject');
 }
 
 use Error qw(:try);
-$Error::Debug = test_debug(); 
+$Error::Debug = test_debug();
 
 # Set up a tester object.
 ok my $test = TestObject->new(-verbose => test_debug());
@@ -27,17 +27,17 @@ is $test->data('Eeny meeny miney moe.'), 'Eeny meeny miney moe.';
 # This demonstrates what will happen if a method defined in an
 # interface that is not implemented in the implementating object.
 
-eval { 
+eval {
     try {
-		$test->foo();
+        $test->foo();
     }
     catch Bio::Root::NotImplemented with {
-		my $err = shift;
-		is ref $err, 'Bio::Root::NotImplemented';
+        my $err = shift;
+        is ref $err, 'Bio::Root::NotImplemented';
     };
 };
 
-# TestObject::bar() deliberately throws a Bio::TestException, 
+# TestObject::bar() deliberately throws a Bio::TestException,
 # which is defined in TestObject.pm
 try {
     $test->bar;
@@ -63,9 +63,9 @@ catch Bio::Root::Exception with {
 # capture it. Handy eh?
 
 try {
-	$test->foobar();
+    $test->foobar();
 }
 otherwise {
-	my $err = shift;
-	is ref $err, 'Error::Simple';
-}; 
+    my $err = shift;
+    is ref $err, 'Error::Simple';
+};

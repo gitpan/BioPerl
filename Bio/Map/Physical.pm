@@ -96,7 +96,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Gaurav Gupta
 
@@ -1127,6 +1127,8 @@ sub _calc_markerposition {
 	@sortedctgmarker = sort { $a->{'contig'} <=> $b->{'contig'}
 				                  ||
 				  $b->{'start'}  <=> $a->{'start'}
+				                  ||
+				  $b->{'end'}    <=> $a->{'end'}
 			        } @ctgmarker;
 				
 	my $ctg = -1;
@@ -1155,7 +1157,7 @@ sub _calc_markerposition {
 		
 		$depth = $save_depth = 1;
 	    }
-	    elsif ($sortedctgmarker[$i] <= $y) {
+	    elsif ($sortedctgmarker[$i]->{'end'} <= $y) {
 		$stack[$depth++] = $sortedctgmarker[$i]->{'end'};
 		# MAX
 		if ($x < $sortedctgmarker[$i]->{'start'} ) {

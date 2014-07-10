@@ -8,7 +8,8 @@ BEGIN {
     use lib '.','..','./t/lib';
     use Bio::Root::Test;
 
-    test_begin(-tests => TEST_COUNT);
+    test_begin(-tests           => TEST_COUNT,
+               -requires_module => 'DB_File');
 
     $ENV{ORACLE_HOME} ||= '/home/oracle/Home';
     use_ok('Bio::SeqFeature::Generic');

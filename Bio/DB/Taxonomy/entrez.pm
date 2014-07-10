@@ -81,7 +81,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Jason Stajich
 
@@ -472,7 +472,7 @@ sub get_taxonids {
         $DATA_CACHE->{name_to_id}->{$query} = [@data];
     }
     
-    wantarray() ? @data : shift @data;
+    return wantarray() ? @data : shift @data;
 }
 
 *get_taxonid = \&get_taxonids;

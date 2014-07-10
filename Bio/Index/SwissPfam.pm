@@ -78,7 +78,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/project/bioperl
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Ewan Birney
 
@@ -136,7 +136,7 @@ sub _index_file {
     $begin = 0;
     $end   = 0;
 
-    open my $SP, '<', $file or $self->throw("Can't open file for read : $file");
+    open my $SP, '<', $file or $self->throw("Could not read file '$file': $!");
 
     # In Windows, text files have '\r\n' as line separator, but when reading in
     # text mode Perl will only show the '\n'. This means that for a line "ABC\r\n",

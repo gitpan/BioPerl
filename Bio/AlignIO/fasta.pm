@@ -41,7 +41,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHORS
 
@@ -163,6 +163,7 @@ sub next_aln {
 
     # no sequences means empty alignment (possible EOF)
     return $aln if $aln->num_sequences;
+    return;
 }
 
 

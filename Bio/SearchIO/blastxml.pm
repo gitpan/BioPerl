@@ -121,7 +121,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Jason Stajich
 
@@ -406,6 +406,7 @@ XML_END
 
     #chop up XML into edible bits for the parser
     while( defined( my $line = <$fh>) ) {
+        next if $line =~ /^\s*$/;
         next if $line =~ m{^\s*</BlastOutput_iterations>}xmso || $line =~ m{^</BlastOutput>}xmso;
         if( $line =~ m{^RPS-BLAST}i ) {
             $self->{'_type'} = 'RPS-BLAST';

@@ -29,7 +29,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 email or the web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR
 
@@ -57,7 +57,7 @@ my $in = Bio::SearchIO->new(-format => $format,
 			    -file   => $file);
 my $out;
 if( $output ) { 
-    open($out,">$output") || die "cannot open $output for writing";
+    open $out, '>', $output or die "Could not write file '$output': $!\n";
 } else { 
     $out = \*STDOUT;
 }

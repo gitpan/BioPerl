@@ -87,7 +87,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via the
 web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Jason Stajich
 
@@ -189,7 +189,7 @@ sub _index_file {
 		 $i,    # Index-number of file being indexed
 	  ) = @_;
 
-	open(my $BLAST, '<', $file) or $self->throw("cannot open file $file\n");
+	open my $BLAST, '<', $file or $self->throw("Could not read file '$file': $!");
 	my $indexpoint = 0;
 	my $lastline = 0;
     my $last_query = '';

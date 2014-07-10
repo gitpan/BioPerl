@@ -1,19 +1,23 @@
-#
-# BioPerl module for Bio::Root::Test
-#
-# Please direct questions and support issues to <bioperl-l@bioperl.org>
-#
-# Cared for by Sendu Bala <bix@sendu.me.uk>
-#
-# Copyright Sendu Bala
-#
-# You may distribute this module under the same terms as perl itself
+package Bio::Root::Test;
+use strict;
+use warnings;
+# According to Ovid, 'use base' can override signal handling, so use
+# old-fashioned way. This should be a Test::Builder::Module subclass
+# for consistency (as are any Test modules)
+use Test::Most;
+use Test::Builder;
+use Test::Builder::Module;
+use File::Temp qw(tempdir);
+use File::Spec;
 
-# POD documentation - main docs before the code
+our @ISA = qw(Test::Builder::Module);
 
-=head1 NAME
+# ABSTRACT: a common base for all Bioperl test scripts
+# AUTHOR:   Sendu Bala <bix@sendu.me.uk>
+# OWNER:    Sendu Bala
+# LICENSE:  Perl_5
 
-Bio::Root::Test - A common base for all Bioperl test scripts.
+# CONTRIBUTOR: Chris Fields <cjfields@bioperl.org>
 
 =head1 SYNOPSIS
 
@@ -77,66 +81,7 @@ test_debug().
 Finally, it presents a consistent way of getting the path to input and output
 files. See test_input_file(), test_output_file() and test_output_dir().
 
-=head1 FEEDBACK
-
-=head2 Mailing Lists
-
-User feedback is an integral part of the evolution of this and other
-Bioperl modules. Send your comments and suggestions preferably to
-the Bioperl mailing list.  Your participation is much appreciated.
-
-  bioperl-l@bioperl.org                  - General discussion
-  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
-
-=head2 Support
-
-Please direct usage questions or support issues to the mailing list:
-
-I<bioperl-l@bioperl.org>
-
-rather than to the module maintainer directly. Many experienced and
-reponsive experts will be able look at the problem and quickly
-address it. Please include a thorough description of the problem
-with code and data examples if at all possible.
-
-=head2 Reporting Bugs
-
-Report bugs to the Bioperl bug tracking system to help us keep track
-of the bugs and their resolution. Bug reports can be submitted via
-the web:
-
-  https://redmine.open-bio.org/projects/bioperl/
-
-=head1 AUTHOR - Sendu Bala
-
-Email bix@sendu.me.uk
-
-=head1 CONTRIBUTORS
-
-Chris Fields  cjfields at bioperl dot org
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods.
-Internal methods are usually preceded with a _
-
 =cut
-
-package Bio::Root::Test;
-
-use strict;
-use warnings;
-
-# According to Ovid, 'use base' can override signal handling, so use
-# old-fashioned way. This should be a Test::Builder::Module subclass
-# for consistency (as are any Test modules)
-use Test::Most;
-use Test::Builder;
-use Test::Builder::Module;
-use File::Temp qw(tempdir);
-use File::Spec;
-
-our @ISA = qw(Test::Builder::Module);
 
 # TODO: Evil magic ahead; can we clean this up?
 
@@ -162,16 +107,17 @@ our @ISA = qw(Test::Builder::Module);
     }
 
     sub Test::Warn::_diag_found_warning {
-        foreach (@_) {
-            if (ref($_) eq 'HASH') {
-                ${$_}{carped} ? $Tester->diag("found carped warning: ${$_}{carped}")
-                              : (${$_}{Bioperl} ? $Tester->diag("found Bioperl warning: ${$_}{Bioperl}")
-                                 : $Tester->diag("found warning: ${$_}{warn}"));
+        my @warns = @_;
+        foreach my $warn (@warns) {
+            if (ref($warn) eq 'HASH') {
+                   ${$warn}{carped}  ? $Tester->diag("found carped warning: ${$warn}{carped}")
+                : (${$warn}{Bioperl} ? $Tester->diag("found Bioperl warning: ${$warn}{Bioperl}")
+                : $Tester->diag("found warning: ${$warn}{warn}"));
             } else {
-                $Tester->diag( "found warning: $_" );
+                $Tester->diag( "found warning: $warn" );
             }
         }
-        $Tester->diag( "didn't find a warning" ) unless @_;
+        $Tester->diag( "didn't find a warning" ) unless @warns;
     }
 
     sub Test::Warn::_cmp_got_to_exp_warning {
@@ -258,7 +204,7 @@ sub test_begin {
             eval "plan skip_all => '$skip_all';";
         }
         elsif (defined $tests && $tests == 0) {
-            eval "plan skip_all => 'All tests are being skipped, probably because the module(s) being tested here are now deprecated';";
+            eval "plan skip_all => 'These modules are now probably deprecated';";
         }
         elsif ($tests) {
             eval "plan tests => $tests;";
@@ -398,9 +344,7 @@ sub test_input_file {
 =cut
 
 sub test_network {
-    require Module::Build;
-    my $build = Module::Build->current();
-    return $build->notes('network');
+    return $ENV{AUTHOR_TESTING} || $ENV{RELEASE_TESTING};
 }
 
 =head2 test_email
@@ -414,10 +358,7 @@ sub test_network {
 =cut
 
 sub test_email {
-    require Module::Build;
-    my $build = Module::Build->current();
-    # this should not be settable unless the network tests work
-    return $build->notes('email');
+    return $ENV{AUTHOR_TESTING} || $ENV{RELEASE_TESTING};
 }
 
 =head2 test_debug
@@ -455,7 +396,11 @@ sub float_is ($$;$) {
     }
 }
 
-# decide if should skip and generate skip message
+=head2 _skip
+
+Decide if should skip and generate skip message
+=cut
+
 sub _skip {
     my %args = @_;
 
@@ -531,8 +476,8 @@ sub _skip {
     }
 
     if ($req_exe) {
-        eval {$req_exe->executable};
-        if ($@) {
+        my $eval = eval {$req_exe->executable};
+        if ($@ or not defined $eval) {
             my $msg = 'Required executable for '.ref($req_exe).' is not present';
             diag($msg);
             return ($msg, $tests, $framework);
@@ -548,6 +493,10 @@ sub _skip {
     return ('', $tests, $framework);
 }
 
+=head2 _check_module
+
+=cut
+
 sub _check_module {
     my $mod = shift;
 
@@ -560,12 +509,12 @@ sub _check_module {
     eval "require $mod;";
 
     if ($@) {
-	if ($@ =~ /Can't locate/) {
-	    return "The optional module $mod (or dependencies thereof) was not installed";
-	}
-	else {
-	    return "The optional module $mod generated the following error: \n$@";
-	}
+        if ($@ =~ /Can't locate/) {
+            return "The optional module $mod (or dependencies thereof) was not installed";
+        }
+        else {
+            return "The optional module $mod generated the following error: \n$@";
+        }
     }
     elsif ($desired_version) {
         no strict 'refs';

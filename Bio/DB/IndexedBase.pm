@@ -441,7 +441,7 @@ sub glob {
 sub index_dir {
     my ($self, $dir, $force_reindex) = @_;
     my @files = glob( File::Spec->catfile($dir, $self->{glob}) );
-    $self->throw("No suitable files found in $dir") if scalar @files == 0;
+    return if scalar @files == 0;
     $self->{index_name} ||= File::Spec->catfile($dir, 'directory.index');
     my $offsets = $self->_index_files(\@files, $force_reindex);
     return $offsets;
@@ -608,7 +608,13 @@ sub _index_files {
     my $index = $self->index_name;
 
     # If caller has requested reindexing, unlink the index file.
-    unlink $index if $force_reindex;
+    if ($force_reindex) {
+        # Tied-hash in Strawberry Perl creates "$file.index"
+        unlink $index if -e $index;
+        # Tied-hash in ActivePerl creates "$file.index.pag" and "$file.index.dir"
+        unlink "$index.dir" if -e "$index.dir";
+        unlink "$index.pag" if -e "$index.pag";
+    }
 
     # Get the modification time of the index
     my $indextime = (stat $index)[9] || 0;
@@ -1076,7 +1082,13 @@ sub DESTROY {
 
     if ( $self->{clean} || $self->{indexing} ) {
         # Indexing aborted or cleaning requested. Delete the index file.
-        unlink $self->{index_name};
+        my $index = $self->{index_name};
+
+        # Tied-hash in Strawberry Perl creates "$file.index"
+        unlink $index if -e $index;
+        # Tied-hash in ActivePerl creates "$file.index.pag" and "$file.index.dir"
+        unlink "$index.dir" if -e "$index.dir";
+        unlink "$index.pag" if -e "$index.pag";
     }
     return 1;
 }
@@ -1115,7 +1127,7 @@ sub TIEHANDLE {
 
 sub READLINE {
     my $self = shift;
-    return $self->next_seq;
+    return $self->next_seq || undef;
 }
 
 

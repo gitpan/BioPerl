@@ -68,7 +68,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 of the bugs and their resolution. Bug reports can be submitted via
 the web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHOR - Florent Angly
 
@@ -123,7 +123,7 @@ sub _build_taxonomy {
 
    my $taxonomy = Bio::DB::Taxonomy::list->new();
 
-   open my $fh, '<', $taxofile or $self->throw("Could not read file $taxofile: $!");
+   open my $fh, '<', $taxofile or $self->throw("Could not read file '$taxofile': $!");
 
    # Will skip header line: prokMSA_id	taxonomy
    my $prev_taxo_string = 'taxonomy'; 

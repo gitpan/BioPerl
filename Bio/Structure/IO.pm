@@ -194,7 +194,7 @@ Report bugs to the Bioperl bug tracking system to help us keep track
 the bugs and their resolution.
 Bug reports can be submitted via the web:
 
-  https://redmine.open-bio.org/projects/bioperl/
+  https://github.com/bioperl/bioperl-live/issues
 
 =head1 AUTHORS - Ewan Birney, Lincoln Stein, Kris Boulez
 
@@ -536,7 +536,7 @@ sub TIEHANDLE {
 
 sub READLINE {
   my $self = shift;
-  return $self->{'structio'}->next_seq() unless wantarray;
+  return $self->{'structio'}->next_seq() || undef unless wantarray;
   my (@list, $obj);
   push @list, $obj while $obj = $self->{'structio'}->next_seq();
   return @list;

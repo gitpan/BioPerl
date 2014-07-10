@@ -1,19 +1,17 @@
-#
-# bioperl module for Bio::Coordinate::Collection
-#
-# Please direct questions and support issues to <bioperl-l@bioperl.org> 
-#
-# Cared for by Heikki Lehvaslaiho <heikki-at-bioperl-dot-org>
-#
-# Copyright Heikki Lehvaslaiho
-#
-# You may distribute this module under the same terms as perl itself
+package Bio::Coordinate::Collection;
+use utf8;
+use strict;
+use warnings;
+use Bio::Coordinate::Result;
+use Bio::Coordinate::Result::Gap;
+use parent qw(Bio::Root::Root Bio::Coordinate::MapperI);
 
-# POD documentation - main docs before the code
+# ABSTRACT: Noncontinuous match between two coordinate sets.
+# AUTHOR:   Heikki Lehvaslaiho <heikki@bioperl.org>
+# OWNER:    Heikki Lehvaslaiho
+# LICENSE:  Perl_5
 
-=head1 NAME
-
-Bio::Coordinate::Collection - Noncontinuous match between two coordinate sets
+# CONTRIBUTOR: Ewan Birney <birney@ebi.ac.uk>
 
 =head1 SYNOPSIS
 
@@ -52,65 +50,10 @@ To map coordinates to the other direction, you have to swap() the
 collection. Keeping track of the direction and ID restrictions
 are left to the calling code.
 
-
-
-=head1 FEEDBACK
-
-=head2 Mailing Lists
-
-User feedback is an integral part of the evolution of this and other
-Bioperl modules. Send your comments and suggestions preferably to the
-Bioperl mailing lists  Your participation is much appreciated.
-
-  bioperl-l@bioperl.org                  - General discussion
-  http://bioperl.org/wiki/Mailing_lists  - About the mailing lists
-
-=head2 Support 
-
-Please direct usage questions or support issues to the mailing list:
-
-I<bioperl-l@bioperl.org>
-
-rather than to the module maintainer directly. Many experienced and 
-reponsive experts will be able look at the problem and quickly 
-address it. Please include a thorough description of the problem 
-with code and data examples if at all possible.
-
-=head2 Reporting Bugs
-
-report bugs to the Bioperl bug tracking system to help us keep track
-the bugs and their resolution.  Bug reports can be submitted via the
-web:
-
-  https://redmine.open-bio.org/projects/bioperl/
-
-=head1 AUTHOR - Heikki Lehvaslaiho
-
-Email:  heikki-at-bioperl-dot-org
-
-=head1 CONTRIBUTORS
-
-Ewan Birney, birney@ebi.ac.uk
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object
-methods. Internal methods are usually preceded with a _
-
 =cut
 
-
-# Let the code begin...
-
-package Bio::Coordinate::Collection;
-use strict;
-
-# Object preamble - inherits from Bio::Root::Root
-use Bio::Coordinate::Result;
-use Bio::Coordinate::Result::Gap;
-
-use base qw(Bio::Root::Root Bio::Coordinate::MapperI);
-
+=head2 new
+=cut
 
 sub new {
     my($class,@args) = @_;
@@ -119,13 +62,13 @@ sub new {
     $self->{'_mappers'} = [];
 
     my($in, $out, $strict, $mappers, $return_match) =
-	$self->_rearrange([qw(IN
+        $self->_rearrange([qw(IN
                               OUT
                               STRICT
                               MAPPERS
                               RETURN_MATCH
-			     )],
-			 @args);
+                             )],
+                         @args);
 
     $in  && $self->in($in);
     $out  && $self->out($out);
@@ -134,14 +77,13 @@ sub new {
     return $self; # success - we hope!
 }
 
-
 =head2 add_mapper
 
  Title   : add_mapper
  Usage   : $obj->add_mapper($mapper)
  Function: Pushes one Bio::Coordinate::MapperI into the list of mappers.
            Sets _is_sorted() to false.
- Example : 
+ Example :
  Returns : 1 when succeeds, 0 for failure.
  Args    : mapper object
 
@@ -152,11 +94,11 @@ sub add_mapper {
 
   $self->throw("Is not a Bio::Coordinate::MapperI but a [$self]")
       unless defined $value && $value->isa('Bio::Coordinate::MapperI');
-  
+
   # test pair range lengths
   $self->warn("Coordinates in pair [". $value . ":" .
-	      $value->in->seq_id . "/". $value->out->seq_id .
-	      "] are not right.")
+              $value->in->seq_id . "/". $value->out->seq_id .
+              "] are not right.")
       unless $value->test;
 
   $self->_is_sorted(0);
@@ -168,32 +110,33 @@ sub add_mapper {
  Title   : mappers
  Usage   : $obj->mappers();
  Function: Returns or sets a list of mappers.
- Example : 
+ Example :
  Returns : array of mappers
  Args    : array of mappers
 
 =cut
 
 sub mappers{
-   my ($self,@args) = @_;
+        my ($self,@args) = @_;
 
-   if (@args) {
+        if (@args) {
+                if (@args == 1 && ref $args[0] eq 'ARRAY') {
+                        @args = @{$args[0]};
+                }
+                $self->throw("Is not a Bio::Coordinate::MapperI but a [$self]")
+                        unless defined $args[0] && $args[0]->isa('Bio::Coordinate::MapperI');
+                push(@{$self->{'_mappers'}}, @args);
+        }
 
-       $self->throw("Is not a Bio::Coordinate::MapperI but a [$self]")
-	   unless defined $args[0] && $args[0]->isa('Bio::Coordinate::MapperI');
-       push(@{$self->{'_mappers'}}, @args);
-   }
-
-   return @{$self->{'_mappers'}};
+        return @{$self->{'_mappers'}};
 }
-
 
 =head2 each_mapper
 
  Title   : each_mapper
  Usage   : $obj->each_mapper();
  Function: Returns a list of mappers.
- Example : 
+ Example :
  Returns : list of mappers
  Args    : none
 
@@ -208,12 +151,11 @@ sub each_mapper{
 
  Title   : mapper_count
  Usage   : my $count = $collection->mapper_count;
- Function: Get the count of the number of mappers stored 
+ Function: Get the count of the number of mappers stored
            in this collection
  Example :
  Returns : integer
  Args    : none
-
 
 =cut
 
@@ -222,7 +164,6 @@ sub mapper_count{
    return scalar @{$self->{'_mappers'} || []};
 }
 
-
 =head2 swap
 
  Title   : swap
@@ -230,7 +171,7 @@ sub mapper_count{
  Function: Swap the direction of mapping;input <-> output
  Example :
  Returns : 1
- Args    : 
+ Args    :
 
 =cut
 
@@ -264,15 +205,14 @@ sub test {
 
    foreach my $mapper ($self->each_mapper) {
        unless( $mapper->test ) {
-	   $self->warn("Coordinates in pair [". $mapper . ":" .
-		       $mapper->in->seq_id . "/". $mapper->out->seq_id .
-		       "] are not right."); 
-	   $res = 0;
+           $self->warn("Coordinates in pair [". $mapper . ":" .
+                       $mapper->in->seq_id . "/". $mapper->out->seq_id .
+                       "] are not right.");
+           $res = 0;
        }
    }
    $res;
 }
-
 
 =head2 map
 
@@ -298,7 +238,6 @@ sub map {
 
    $self->sort unless $self->_is_sorted;
 
-
    if ($value->isa("Bio::Location::SplitLocationI")) {
 
        my $result = Bio::Coordinate::Result->new();
@@ -314,9 +253,7 @@ sub map {
        return $self->_map($value);
    }
 
-
 }
-
 
 =head2 _map
 
@@ -338,23 +275,23 @@ sub _map {
 
 IDMATCH: {
 
-       # bail out now we if are forcing the use of an ID 
+       # bail out now we if are forcing the use of an ID
        # and it is not in this collection
-       last IDMATCH if defined $value->seq_id && 
-	   ! $self->{'_in_ids'}->{$value->seq_id};
+       last IDMATCH if defined $value->seq_id &&
+           ! $self->{'_in_ids'}->{$value->seq_id};
 
        foreach my $pair ($self->each_mapper) {
 
-	   # if we are limiting input to a certain ID
-	   next if defined $value->seq_id && $value->seq_id ne $pair->in->seq_id;
+           # if we are limiting input to a certain ID
+           next if defined $value->seq_id && $value->seq_id ne $pair->in->seq_id;
 
-	   # if we haven't even reached the start, move on
-	   next if $pair->in->end < $value->start;
-	   # if we have over run, break
-	   last if $pair->in->start > $value->end;
+           # if we haven't even reached the start, move on
+           next if $pair->in->end < $value->start;
+           # if we have over run, break
+           last if $pair->in->start > $value->end;
 
-	   my $subres = $pair->map($value);
-	   $result->add_result($subres);
+           my $subres = $pair->map($value);
+           $result->add_result($subres);
        }
    }
 
@@ -362,10 +299,10 @@ IDMATCH: {
    unless ($result->each_Location) {
        #build one gap;
        my $gap = Bio::Location::Simple->new(-start => $value->start,
-					    -end => $value->end,
-					    -strand => $value->strand,
-					    -location_type => $value->location_type
-					   );
+                                            -end => $value->end,
+                                            -strand => $value->strand,
+                                            -location_type => $value->location_type
+                                           );
        $gap->seq_id($value->seq_id) if defined $value->seq_id;
        bless $gap, 'Bio::Coordinate::Result::Gap';
        $result->seq_id($value->seq_id) if defined $value->seq_id;
@@ -373,7 +310,6 @@ IDMATCH: {
    }
    return $result;
 }
-
 
 =head2 sort
 
@@ -383,7 +319,7 @@ IDMATCH: {
            input coordinate start
  Example :
  Returns : 1
- Args    : 
+ Args    :
 
 =cut
 
@@ -392,7 +328,7 @@ sub sort{
 
    @{$self->{'_mappers'}} = map { $_->[0] }
                             sort { $a->[1] <=> $b->[1] }
-                            map { [ $_, $_->in->start] } 
+                            map { [ $_, $_->in->start] }
                             @{$self->{'_mappers'}};
 
    #create hashes for sequence ids
@@ -425,4 +361,3 @@ sub _is_sorted{
 }
 
 1;
-
